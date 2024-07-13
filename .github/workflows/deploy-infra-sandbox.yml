@@ -1,8 +1,6 @@
 name: Deploy AWS Infra to Sandbox
 
 on:
-  push:
-    branches: [feature-addAWSsetup]
   workflow_dispatch:
 
 jobs:        

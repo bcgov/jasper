@@ -6,7 +6,7 @@ locals {
 }
 
 module "security" {
-  source = "../../../modules/security"
+  source = "../../modules/security"
   environment = local.environment
     application_name = local.application_name
     kms_key_name = "jasper-kms-key"
@@ -14,7 +14,7 @@ module "security" {
 }
 
 module "storage" {
-  source = "../../../modules/storage"
+  source = "../../modules/storage"
   environment = local.environment
     application_name = local.application_name
     kms_key_name = module.security.kms_key_alias

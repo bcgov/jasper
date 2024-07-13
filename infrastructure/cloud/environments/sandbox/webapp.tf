@@ -19,4 +19,5 @@ module "storage" {
     application_name = local.application_name
     kms_key_name = module.security.kms_key_alias
     test_s3_bucket_name = var.test_s3_bucket_name
+    depends_on = [ module.security ]
 }

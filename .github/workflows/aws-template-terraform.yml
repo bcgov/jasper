@@ -1,0 +1,108 @@
+name: AWS Bootstrap Workflow
+
+on:
+  workflow_call:
+    inputs:
+      CONTEXT_FOLDER:
+        required: true
+        type: string
+      ENVIRONMENT_NAME:
+        required: true
+        type: string
+      CHANGE_FOLDER_NAME:
+        required: true
+        type: string
+      TEST_BUCKET_NAME:
+        required: true
+        type: string 
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check_changes:
+    name: Check Changes
+    runs-on: ubuntu-20.04
+    outputs:
+      infra_changed: ${{ steps.check_changes.outputs.infra_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check modified folders
+        id: check_changes
+        env:
+          CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
+          CHANGE_FOLDER_NAME: ${{ inputs.CHANGE_FOLDER_NAME }}
+        run: |            
+          echo "=============== list modified files ==============="
+          git diff --name-only HEAD^ HEAD
+          
+          echo "========== check paths of modified files =========="
+          git diff --name-only HEAD^ HEAD >> files.txt
+          infra_changed=false
+          while IFS= read -r file
+          do
+            echo $file
+            if [[ $file == $CHANGE_FOLDER_NAME/* ]]; then
+              infra_changed=true
+              break
+            fi
+          done < files.txt
+          echo "infra_changed=$infra_changed" >> "$GITHUB_OUTPUT"
+
+  deploy_infra:
+    name: Deploy Infra
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.ENVIRONMENT_NAME }}
+    needs: [check_changes]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4    
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-skip-session-tagging: true
+        aws-region: ${{ vars.AWS_REGION }}
+        role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+        role-duration-seconds: 1800
+        role-session-name: ci-deployment
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.9.0
+    - name: Terraform Init
+      id: init
+      env: 
+        CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
+      run: |
+        terraform init -input=false
+      working-directory: ${{ inputs.CONTEXT_FOLDER }}
+    - name: Terraform Plan
+      id: plan
+      env: 
+        CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
+        TF_VAR_test_s3_bucket_name: ${{ inputs.TEST_BUCKET_NAME }}
+      run: |
+        terraform plan -no-color -input=false
+      continue-on-error: true
+      working-directory: ${{ inputs.CONTEXT_FOLDER }}
+    - name: Terraform Plan Status
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+    - name: Terraform Apply
+      env: 
+        CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
+        TF_VAR_test_s3_bucket_name: ${{ inputs.TEST_BUCKET_NAME }}
+      run: |
+        terraform apply --auto-approve -input=false
+      working-directory: ${{ inputs.CONTEXT_FOLDER }}
+
+  
+
+
+      

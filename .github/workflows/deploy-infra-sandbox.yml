@@ -1,0 +1,18 @@
+name: Deploy AWS Infra to Sandbox
+
+on:
+  push:
+    branches: [feature-addAWSsetup]
+  workflow_dispatch:
+
+jobs:        
+  infrastructure_deploy_snd:
+    uses: ./.github/workflows/aws-template-terraform.yml
+    with:
+      CONTEXT_FOLDER: ./infrastructure/cloud/environments/sandbox
+      CHANGE_FOLDER_NAME: environments/sandbox
+      ENVIRONMENT_NAME: sandbox
+      TEST_BUCKET_NAME: jasper-test-bucket      
+    secrets: inherit
+
+  

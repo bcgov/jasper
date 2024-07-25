@@ -21,4 +21,5 @@ module "container" {
   source      = "../../modules/container"
   environment = var.environment
   app_name    = var.app_name
+  depends_on  = [module.security, module.networking]
 }

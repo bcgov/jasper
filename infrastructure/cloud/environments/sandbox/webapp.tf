@@ -1,5 +1,3 @@
-
-
 module "security" {
   source       = "../../modules/security"
   environment  = var.environment
@@ -17,15 +15,19 @@ module "storage" {
   depends_on          = [module.security]
 }
 
-module "container" {
-  source      = "../../modules/container"
-  environment = var.environment
-  app_name    = var.app_name
-  depends_on  = [module.security, module.networking]
-}
-
 module "networking" {
   source      = "../../modules/networking"
   environment = var.environment
   app_name    = var.app_name
+}
+
+module "container" {
+  source                          = "../../modules/container"
+  environment                     = var.environment
+  app_name                        = var.app_name
+  ecs_task_execution_iam_role_arn = module.security.ecs_task_execution_iam_role_arn
+  subnet_private_id               = module.networking.subnet_private_id
+  ecs_sg_id                       = module.networking.ecs_sg_id
+  lb_listener                     = module.networking.lb_listener
+  lb_tg_arn                       = module.networking.lb_tg_arn
 }

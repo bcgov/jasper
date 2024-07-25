@@ -27,8 +27,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     }
   ])
 
-  execution_role_arn = module.security.ecs_task_execution_iam_role_arn
-  task_role_arn      = module.security.ecs_task_execution_iam_role_arn
+  execution_role_arn = var.ecs_task_execution_iam_role_arn
+  task_role_arn      = var.ecs_task_execution_iam_role_arn
 }
 
 resource "aws_ecs_service" "ecs_service" {
@@ -39,16 +39,16 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 1
 
   network_configuration {
-    subnets          = module.networking.subnet_private_id
-    security_groups  = [module.networking.ecs_sg_id]
+    subnets          = var.subnet_private_id
+    security_groups  = [var.ecs_sg_id]
     assign_public_ip = false
   }
 
   load_balancer {
-    target_group_arn = module.networking.lb_tg_arn
+    target_group_arn = var.lb_tg_arn
     container_name   = "${var.app_name}-container-${var.environment}"
     container_port   = 80
   }
 
-  depends_on = [module.networking.lb_listener]
+  depends_on = [var.lb_listener]
 }

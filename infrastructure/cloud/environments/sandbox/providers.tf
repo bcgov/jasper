@@ -15,7 +15,7 @@ terraform {
   backend "s3" {
     bucket         = "terraform-remote-state-sandbox-12345"
     key            = "terraform.tfstate"
-    region         = var.region
+    region         = "ca-central-1"
     dynamodb_table = "terraform-remote-state-lock-12345"
   }
 

@@ -23,7 +23,8 @@ resource "aws_route_table" "route_table" {
 }
 
 resource "aws_route_table_association" "route_table_association" {
-  subnet_id      = aws_subnet.subnet[*].id
+  count          = length(var.private_subnets)
+  subnet_id      = element(aws_subnet.subnet.*.id, count.index)
   route_table_id = aws_route_table.route_table.id
 }
 

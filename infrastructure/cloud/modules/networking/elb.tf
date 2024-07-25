@@ -3,7 +3,13 @@ resource "aws_lb" "lb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.ecs_security_group.id]
-  subnets            = aws_subnet.private[*].id
+  subnets            = aws_subnet.subnet[*].id
+
+  enable_deletion_protection = false
+
+  tags = {
+    Name = "${var.app_name}-lb-${var.environment}"
+  }
 }
 
 

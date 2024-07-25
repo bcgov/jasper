@@ -12,8 +12,8 @@ variable "ecs_task_execution_iam_role_arn" {
   description = "ECS Task Execution IAM Role ARN"
 }
 
-variable "subnet_private_id" {
-  description = "Private Subnet ID"
+variable "subnet_id" {
+  description = "Subnet ID"
 }
 
 variable "ecs_sg_id" {

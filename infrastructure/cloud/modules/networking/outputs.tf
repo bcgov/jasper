@@ -1,5 +1,5 @@
-output "subnet_private_id" {
-  value = aws_subnet.private[*].id
+output "subnet_id" {
+  value = aws_subnet.subnet[*].id
 }
 
 output "ecs_sg_id" {

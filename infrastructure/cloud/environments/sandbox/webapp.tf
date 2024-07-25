@@ -26,7 +26,7 @@ module "container" {
   environment                     = var.environment
   app_name                        = var.app_name
   ecs_task_execution_iam_role_arn = module.security.ecs_task_execution_iam_role_arn
-  subnet_private_id               = module.networking.subnet_private_id
+  subnet_id                       = module.networking.subnet_id
   ecs_sg_id                       = module.networking.ecs_sg_id
   lb_listener                     = module.networking.lb_listener
   lb_tg_arn                       = module.networking.lb_tg_arn

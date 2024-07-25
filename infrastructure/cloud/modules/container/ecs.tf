@@ -39,7 +39,7 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 1
 
   network_configuration {
-    subnets          = var.subnet_id
+    subnets          = [var.subnet_id]
     security_groups  = [var.ecs_sg_id]
     assign_public_ip = false
   }

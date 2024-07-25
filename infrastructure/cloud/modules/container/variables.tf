@@ -3,8 +3,7 @@ variable "environment" {
   description = "The environment to deploy the application to"
 }
 
-variable "ecr_repository_name" {
+variable "app_name" {
+  description = "The name of the application"
   type        = string
-  description = "Name of AWS ECR Repository"
-  default     = "aws_ecr_repository"
 }

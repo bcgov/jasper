@@ -10,9 +10,9 @@ resource "aws_s3_bucket" "test_s3_bucket" {
   bucket = "${var.test_s3_bucket_name}-${var.environment}"
 
   tags = {
-    Application="${var.application_name}-${var.environment}"
-    Name="${var.test_s3_bucket_name}-${var.environment}"
-    Environment="${var.environment}"
+    Application = "${var.app_name}-${var.environment}"
+    Name        = "${var.test_s3_bucket_name}-${var.environment}"
+    Environment = "${var.environment}"
   }
 }
 

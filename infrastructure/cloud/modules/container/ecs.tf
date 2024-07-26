@@ -6,8 +6,8 @@ resource "aws_ecs_cluster" "ecs_cluster" {
   }
 }
 
-resource "aws_ecs_task_definition" "ecs_task_definition" {
-  family                   = "${var.app_name}-task-${var.environment}"
+resource "aws_ecs_task_definition" "ecs_web_task_definition" {
+  family                   = "${var.app_name}-web-task-${var.environment}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = 256
@@ -15,8 +15,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
 
   container_definitions = jsonencode([
     {
-      name      = "${var.app_name}-container-${var.environment}"
-      image     = "${aws_ecr_repository.ecr_repository.repository_url}:latest"
+      name      = "${var.app_name}-web-container-${var.environment}"
+      image     = "${aws_ecr_repository.ecr_repository.repository_url}:${var.web_image_name}"
       essential = true
       portMappings = [
         {
@@ -34,7 +34,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
 resource "aws_ecs_service" "ecs_service" {
   name            = "${var.app_name}-service-${var.environment}"
   cluster         = aws_ecs_cluster.ecs_cluster.id
-  task_definition = aws_ecs_task_definition.ecs_task_definition.arn
+  task_definition = aws_ecs_task_definition.ecs_web_task_definition.arn
   launch_type     = "FARGATE"
   desired_count   = 1
 

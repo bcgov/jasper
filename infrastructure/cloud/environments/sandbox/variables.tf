@@ -18,7 +18,7 @@ variable "kms_key_name" {
 variable "app_name" {
   description = "The name of the application"
   type        = string
-  default     = "jasper-aws"
+  default     = "jasper"
 }
 
 variable "environment" {

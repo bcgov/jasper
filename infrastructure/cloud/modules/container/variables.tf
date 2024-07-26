@@ -27,3 +27,14 @@ variable "lb_tg_arn" {
 variable "lb_listener" {
   description = "Load Balancer Listener"
 }
+
+variable "web_image_name" {
+  description = "Image Name of the frontend app"
+  default     = "jasper-web"
+}
+
+variable "api_image_name" {
+  description = "Image Name of the backend app"
+  default     = "jasper-api"
+}
+

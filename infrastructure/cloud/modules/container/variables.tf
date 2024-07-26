@@ -29,12 +29,19 @@ variable "lb_listener" {
 }
 
 variable "web_image_name" {
-  description = "Image Name of the frontend app"
+  description = "Image Name of the Web app"
+  type        = string
   default     = "jasper-web"
 }
 
 variable "api_image_name" {
-  description = "Image Name of the backend app"
+  description = "Image Name of the API"
+  type        = string
   default     = "jasper-api"
 }
 
+variable "web_port" {
+  description = "Port Number of the Web app"
+  type        = string
+  default     = 80
+}

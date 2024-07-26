@@ -42,6 +42,6 @@ variable "api_image_name" {
 
 variable "web_port" {
   description = "Port Number of the Web app"
-  type        = string
+  type        = number
   default     = 80
 }

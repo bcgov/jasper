@@ -6,6 +6,7 @@ resource "aws_ecs_cluster" "ecs_cluster" {
   }
 }
 
+# Web
 resource "aws_ecs_task_definition" "ecs_web_task_definition" {
   family                   = "${var.app_name}-web-task-${var.environment}"
   network_mode             = "awsvpc"
@@ -20,8 +21,8 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
       essential = true
       portMappings = [
         {
-          containerPort = 80
-          hostPort      = 80
+          containerPort = var.web_port
+          hostPort      = var.web_port
         }
       ]
     }
@@ -31,7 +32,7 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
   task_role_arn      = var.ecs_task_execution_iam_role_arn
 }
 
-resource "aws_ecs_service" "ecs_service" {
+resource "aws_ecs_service" "ecs_web_service" {
   name            = "${var.app_name}-service-${var.environment}"
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_web_task_definition.arn
@@ -46,8 +47,8 @@ resource "aws_ecs_service" "ecs_service" {
 
   load_balancer {
     target_group_arn = var.lb_tg_arn
-    container_name   = "${var.app_name}-container-${var.environment}"
-    container_port   = 80
+    container_name   = "${var.app_name}-web-container-${var.environment}"
+    container_port   = var.web_port
   }
 
   depends_on = [var.lb_listener]

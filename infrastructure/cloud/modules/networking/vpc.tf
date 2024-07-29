@@ -29,7 +29,7 @@ resource "aws_route_table_association" "route_table_association" {
 }
 
 resource "aws_security_group" "ecs_security_group" {
-  name   = "${var.app_name}-sg-${var.environment}"
+  name   = "${var.app_name}-ecs-sg-${var.environment}"
   vpc_id = aws_vpc.vpc.id
 
   ingress {
@@ -47,6 +47,6 @@ resource "aws_security_group" "ecs_security_group" {
   }
 
   tags = {
-    Name = "${var.app_name}-sg-${var.environment}"
+    Name = "${var.app_name}-ecs-sg-${var.environment}"
   }
 }

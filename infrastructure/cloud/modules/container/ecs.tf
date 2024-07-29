@@ -1,14 +1,14 @@
 resource "aws_ecs_cluster" "ecs_cluster" {
-  name = "${var.app_name}-cluster-${var.environment}"
+  name = "${var.app_name}-ecs-cluster-${var.environment}"
 
   tags = {
-    name = "${var.app_name}-cluster-${var.environment}"
+    name = "${var.app_name}-ecs-cluster-${var.environment}"
   }
 }
 
 # Web
 resource "aws_ecs_task_definition" "ecs_web_task_definition" {
-  family                   = "${var.app_name}-web-task-${var.environment}"
+  family                   = "${var.app_name}-web-task-definition-${var.environment}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = 256
@@ -33,7 +33,7 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
 }
 
 resource "aws_ecs_service" "ecs_web_service" {
-  name            = "${var.app_name}-service-${var.environment}"
+  name            = "${var.app_name}-ecs-web-service-${var.environment}"
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_web_task_definition.arn
   launch_type     = "FARGATE"
@@ -42,7 +42,7 @@ resource "aws_ecs_service" "ecs_web_service" {
   network_configuration {
     subnets          = var.subnet_id
     security_groups  = [var.ecs_sg_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {

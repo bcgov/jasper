@@ -8,6 +8,11 @@ variable "app_name" {
   type        = string
 }
 
+variable "region" {
+  description = "The AWS region"
+  type        = string
+}
+
 variable "ecs_web_task_execution_iam_role_arn" {
   description = "ECS Task Execution IAM Role ARN for Web app"
 }
@@ -43,5 +48,5 @@ variable "api_image_name" {
 variable "web_port" {
   description = "Port Number of the Web app"
   type        = number
-  default     = 80
+  default     = 8080
 }

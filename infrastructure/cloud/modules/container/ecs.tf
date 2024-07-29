@@ -25,6 +25,15 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
           hostPort      = var.web_port
         }
       ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-create-group  = "true"
+          awslogs-group         = "/ecs/${var.app_name}"
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 

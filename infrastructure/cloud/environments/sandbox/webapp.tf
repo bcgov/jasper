@@ -25,6 +25,7 @@ module "container" {
   source                              = "../../modules/container"
   environment                         = var.environment
   app_name                            = var.app_name
+  region                              = var.region
   ecs_web_task_execution_iam_role_arn = module.security.ecs_web_task_execution_iam_role_arn
   subnet_id                           = module.networking.subnet_id
   ecs_sg_id                           = module.networking.ecs_sg_id

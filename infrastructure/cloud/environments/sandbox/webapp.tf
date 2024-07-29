@@ -31,4 +31,11 @@ module "container" {
   ecs_sg_id                           = module.networking.ecs_sg_id
   lb_listener                         = module.networking.lb_listener
   lb_tg_arn                           = module.networking.lb_tg_arn
+  ecs_web_log_group_name              = module.monitoring.ecs_web_log_group_name
+}
+
+module "monitoring" {
+  source      = "../../modules/monitoring"
+  environment = var.environment
+  app_name    = var.app_name
 }

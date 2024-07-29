@@ -50,3 +50,8 @@ variable "web_port" {
   type        = number
   default     = 8080
 }
+
+variable "ecs_web_log_group_name" {
+  description = "ECS Web Log Group Name in CloudWatch"
+  type        = string
+}

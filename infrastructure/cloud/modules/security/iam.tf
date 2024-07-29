@@ -29,6 +29,7 @@ resource "aws_iam_role_policy" "ecs_web_task_execution_policy" {
           "ecr:GetDownloadUrlForLayer",
           "ecr:GetAuthorizationToken"
         ]
+        Resource = var.ecs_web_task_definition_arn
       }
     ]
   })

@@ -1,9 +1,9 @@
 module "security" {
-  source       = "../../modules/security"
-  environment  = var.environment
-  app_name     = var.app_name
-  kms_key_name = var.kms_key_name
-
+  source                      = "../../modules/security"
+  environment                 = var.environment
+  app_name                    = var.app_name
+  kms_key_name                = var.kms_key_name
+  ecs_web_task_definition_arn = module.container.ecs_web_task_definition_arn
 }
 
 module "storage" {

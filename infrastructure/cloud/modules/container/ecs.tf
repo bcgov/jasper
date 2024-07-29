@@ -28,8 +28,8 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
     }
   ])
 
-  execution_role_arn = var.ecs_task_execution_iam_role_arn
-  task_role_arn      = var.ecs_task_execution_iam_role_arn
+  execution_role_arn = var.ecs_web_task_execution_iam_role_arn
+  task_role_arn      = var.ecs_web_task_execution_iam_role_arn
 }
 
 resource "aws_ecs_service" "ecs_web_service" {

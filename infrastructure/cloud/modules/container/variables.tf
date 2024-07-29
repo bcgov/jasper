@@ -8,8 +8,8 @@ variable "app_name" {
   type        = string
 }
 
-variable "ecs_task_execution_iam_role_arn" {
-  description = "ECS Task Execution IAM Role ARN"
+variable "ecs_web_task_execution_iam_role_arn" {
+  description = "ECS Task Execution IAM Role ARN for Web app"
 }
 
 variable "subnet_id" {

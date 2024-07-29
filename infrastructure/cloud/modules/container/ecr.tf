@@ -1,5 +1,5 @@
 resource "aws_ecr_repository" "ecr_repository" {
-  name                 = "${var.app_name}-repo-${var.environment}"
+  name                 = "${var.app_name}-ecr-repo-${var.environment}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 

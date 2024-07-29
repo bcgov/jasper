@@ -27,9 +27,10 @@ resource "aws_iam_role_policy" "ecs_web_task_execution_policy" {
         Action = [
           "ecr:BatchGetImage",
           "ecr:GetDownloadUrlForLayer",
-          "ecr:GetAuthorizationToken"
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability"
         ]
-        Resource = var.ecs_web_task_definition_arn
+        Resource = "*"
       }
     ]
   })

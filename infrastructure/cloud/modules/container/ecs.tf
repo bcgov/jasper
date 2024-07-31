@@ -25,14 +25,6 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
           hostPort      = var.web_port
         }
       ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = var.ecs_web_log_group_name
-          awslogs-region        = var.region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
     }
   ])
 
@@ -48,7 +40,7 @@ resource "aws_ecs_service" "ecs_web_service" {
   desired_count   = 1
 
   network_configuration {
-    subnets          = var.subnet_id
+    subnets          = [var.subnet_1_id, var.subnet_2_id]
     security_groups  = [var.ecs_sg_id]
     assign_public_ip = true
   }
@@ -58,6 +50,4 @@ resource "aws_ecs_service" "ecs_web_service" {
     container_name   = "${var.app_name}-web-container-${var.environment}"
     container_port   = var.web_port
   }
-
-  depends_on = [var.lb_listener]
 }

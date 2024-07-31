@@ -1,28 +1,40 @@
 variable "test_s3_bucket_name" {
-  type        = string
   description = "The name of the S3 bucket to create for testing"
+  type        = string
 }
 
 variable "region" {
   description = "The AWS region"
   type        = string
-  default     = "ca-central-1"
 }
 
 variable "kms_key_name" {
   description = "Name of KMS key"
   type        = string
-  default     = "jasper-kms-key"
 }
 
 variable "app_name" {
   description = "The name of the application"
   type        = string
-  default     = "jasper"
 }
 
 variable "environment" {
   description = "The AWS environment to deploy to"
   type        = string
-  default     = "snd"
 }
+
+variable "vpc_cidr" {
+  description = "The CIDR block for the VPC"
+  type        = string
+}
+
+variable "subnet_1" {
+  description = "CIDR block for private subnet 1"
+  type        = string
+}
+
+variable "subnet_2" {
+  description = "CIDR block for private subnet 2"
+  type        = string
+}
+

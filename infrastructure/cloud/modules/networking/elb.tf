@@ -2,10 +2,8 @@ resource "aws_lb" "lb" {
   name               = "${var.app_name}-lb-${var.environment}"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_security_group.id]
-  subnets            = aws_subnet.subnet[*].id
-
-  enable_deletion_protection = false
+  subnets            = [aws_subnet.subnet_1.id, aws_subnet.subnet_2.id]
+  security_groups    = [aws_security_group.lb_sg.id]
 
   tags = {
     Name = "${var.app_name}-lb-${var.environment}"
@@ -15,13 +13,18 @@ resource "aws_lb" "lb" {
 
 resource "aws_lb_target_group" "lb_target_group" {
   name        = "${var.app_name}-lb-tg-${var.environment}"
-  port        = 80
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = aws_vpc.vpc.id
   target_type = "ip"
 
-  lifecycle {
-    create_before_destroy = true
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+    matcher             = "200-299"
   }
 }
 

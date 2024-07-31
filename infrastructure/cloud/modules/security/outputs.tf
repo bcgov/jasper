@@ -4,5 +4,5 @@ output "kms_key_alias" {
 }
 
 output "ecs_web_task_execution_iam_role_arn" {
-  value = aws_iam_role.ecs_web_task_execution_role.arn
+  value = aws_iam_role.ecs_web_task_exec_role.arn
 }

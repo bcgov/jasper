@@ -17,8 +17,16 @@ variable "ecs_web_task_execution_iam_role_arn" {
   description = "ECS Task Execution IAM Role ARN for Web app"
 }
 
-variable "subnet_id" {
-  description = "Subnet ID"
+variable "subnet_1_id" {
+  description = "Private Subnet 1 ID"
+}
+
+variable "subnet_2_id" {
+  description = "Private Subnet 2 ID"
+}
+
+variable "lb_sg_id" {
+  description = "Load Balancer Security Group ID"
 }
 
 variable "ecs_sg_id" {
@@ -27,10 +35,6 @@ variable "ecs_sg_id" {
 
 variable "lb_tg_arn" {
   description = "Load Balancer Target Group ARN"
-}
-
-variable "lb_listener" {
-  description = "Load Balancer Listener"
 }
 
 variable "web_image_name" {

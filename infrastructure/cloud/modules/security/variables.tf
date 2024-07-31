@@ -15,8 +15,3 @@ variable "kms_key_name" {
   description = "The name of the KMS key to create"
   default     = "jasper-kms-key"
 }
-
-variable "ecs_web_task_definition_arn" {
-  type        = string
-  description = "The ECS Web Task Execution ARN"
-}

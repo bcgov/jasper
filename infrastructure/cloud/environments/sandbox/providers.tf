@@ -13,10 +13,10 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "terraform-remote-state-sandbox-12345"
+    bucket         = "terraform-remote-state-sandbox-1234567"
     key            = "terraform.tfstate"
-    region         = "ca-central-1"
-    dynamodb_table = "terraform-remote-state-lock-12345"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-remote-state-lock-1234567"
   }
 
 }

@@ -13,6 +13,7 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = 256
   memory                   = 512
+  execution_role_arn       = var.ecs_execution_role_arn
 
   container_definitions = jsonencode([
     {
@@ -22,14 +23,18 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
       portMappings = [
         {
           containerPort = var.web_port
-          hostPort      = var.web_port
         }
-      ]
+      ],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = var.ecs_web_log_group_name,
+          awslogs-region        = var.region,
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
-
-  execution_role_arn = var.ecs_web_task_execution_iam_role_arn
-  task_role_arn      = var.ecs_web_task_execution_iam_role_arn
 }
 
 resource "aws_ecs_service" "ecs_web_service" {
@@ -40,8 +45,8 @@ resource "aws_ecs_service" "ecs_web_service" {
   desired_count   = 1
 
   network_configuration {
-    subnets          = [var.subnet_1_id, var.subnet_2_id]
-    security_groups  = [var.ecs_sg_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.sg_id]
     assign_public_ip = true
   }
 

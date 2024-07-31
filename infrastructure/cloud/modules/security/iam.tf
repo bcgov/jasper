@@ -1,5 +1,5 @@
-resource "aws_iam_role" "ecs_web_task_exec_role" {
-  name = "${var.app_name}-ecs-web-task-exec-role-${var.environment}"
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "${var.app_name}-ecs-execution-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,23 +15,39 @@ resource "aws_iam_role" "ecs_web_task_exec_role" {
   })
 }
 
-resource "aws_iam_role_policy" "ecs_web_task_exec_policy" {
-  name = "${var.app_name}-ecs-web-task-exec-policy-${var.environment}"
-  role = aws_iam_role.ecs_web_task_exec_role.id
+resource "aws_iam_role_policy" "ecs_execution_policy" {
+  name = "${var.app_name}-ecs-execution-policy-${var.environment}"
+  role = aws_iam_role.ecs_execution_role.id
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
         Action = [
-          "ecr:BatchGetImage",
-          "ecr:GetDownloadUrlForLayer",
           "ecr:GetAuthorizationToken",
           "ecr:BatchCheckLayerAvailability",
-          "logs:CreateLogStream",
-        ]
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetRepositoryPolicy",
+          "ecr:DescribeRepositories",
+          "ecr:ListImages",
+          "ecr:DescribeImages",
+          "ecr:BatchGetImage",
+          "ecr:GetLifecyclePolicy",
+          "ecr:GetLifecyclePolicyPreview",
+          "ecr:ListTagsForResource",
+          "ecr:DescribeImageScanFindings"
+        ],
+        Effect   = "Allow",
         Resource = "*"
+      },
+      {
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:CreateLogGroup"
+        ],
+        Effect   = "Allow",
+        Resource = "arn:aws:logs:*:*:*"
       }
     ]
   })

@@ -13,24 +13,18 @@ variable "region" {
   type        = string
 }
 
-variable "ecs_web_task_execution_iam_role_arn" {
-  description = "ECS Task Execution IAM Role ARN for Web app"
+variable "ecs_execution_role_arn" {
+  description = "ECS Execution Role ARN"
+  type        = string
 }
 
-variable "subnet_1_id" {
-  description = "Private Subnet 1 ID"
+variable "subnet_ids" {
+  description = "Public Subnet IDs"
+  type        = list(string)
 }
 
-variable "subnet_2_id" {
-  description = "Private Subnet 2 ID"
-}
-
-variable "lb_sg_id" {
+variable "sg_id" {
   description = "Load Balancer Security Group ID"
-}
-
-variable "ecs_sg_id" {
-  description = "ECS Security Group ID"
 }
 
 variable "lb_tg_arn" {

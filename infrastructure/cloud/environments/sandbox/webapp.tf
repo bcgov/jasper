@@ -19,7 +19,6 @@ module "networking" {
   environment = var.environment
   app_name    = var.app_name
   region      = var.region
-  vpc_cidr    = var.vpc_cidr
   subnet_ids  = module.networking.subnet_ids
 }
 

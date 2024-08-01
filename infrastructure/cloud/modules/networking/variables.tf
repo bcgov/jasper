@@ -1,16 +1,20 @@
 variable "app_name" {
-  type = string
+  description = "The name of the application"
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "The AWS environment to deploy to"
+  type        = string
 }
 
 variable "region" {
-  type = string
+  description = "The AWS region"
+  type        = string
 }
 
 variable "subnet_ids" {
-  type = list(string)
+  description = "The default VPC subnet ids"
+  type        = list(string)
 }
 

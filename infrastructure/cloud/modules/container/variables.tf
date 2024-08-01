@@ -1,6 +1,6 @@
 variable "environment" {
-  type        = string
   description = "The environment to deploy the application to"
+  type        = string
 }
 
 variable "app_name" {
@@ -25,28 +25,12 @@ variable "subnet_ids" {
 
 variable "sg_id" {
   description = "Load Balancer Security Group ID"
+  type        = string
 }
 
 variable "lb_tg_arn" {
   description = "Load Balancer Target Group ARN"
-}
-
-variable "web_image_name" {
-  description = "Image Name of the Web app"
   type        = string
-  default     = "jasper-web"
-}
-
-variable "api_image_name" {
-  description = "Image Name of the API"
-  type        = string
-  default     = "jasper-api"
-}
-
-variable "web_port" {
-  description = "Port Number of the Web app"
-  type        = number
-  default     = 8080
 }
 
 variable "ecs_web_log_group_name" {

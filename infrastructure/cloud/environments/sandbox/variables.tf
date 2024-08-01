@@ -22,19 +22,3 @@ variable "environment" {
   description = "The AWS environment to deploy to"
   type        = string
 }
-
-variable "vpc_cidr" {
-  description = "The CIDR block for the VPC"
-  type        = string
-}
-
-variable "subnet_1" {
-  description = "CIDR block for private subnet 1"
-  type        = string
-}
-
-variable "subnet_2" {
-  description = "CIDR block for private subnet 2"
-  type        = string
-}
-

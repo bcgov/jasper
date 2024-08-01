@@ -18,11 +18,11 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
   container_definitions = jsonencode([
     {
       name      = "${var.app_name}-web-container-${var.environment}"
-      image     = "${aws_ecr_repository.ecr_repository.repository_url}:${var.web_image_name}"
+      image     = "${aws_ecr_repository.ecr_repository.repository_url}:${var.app_name}-web"
       essential = true
       portMappings = [
         {
-          containerPort = var.web_port
+          containerPort = 8080
         }
       ],
       logConfiguration = {
@@ -53,6 +53,6 @@ resource "aws_ecs_service" "ecs_web_service" {
   load_balancer {
     target_group_arn = var.lb_tg_arn
     container_name   = "${var.app_name}-web-container-${var.environment}"
-    container_port   = var.web_port
+    container_port   = 8080
   }
 }

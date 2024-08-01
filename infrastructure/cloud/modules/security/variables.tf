@@ -1,17 +1,14 @@
-variable "app_name" {
+variable "kms_key_name" {
+  description = "Name of KMS key"
   type        = string
+}
+
+variable "app_name" {
   description = "The name of the application"
-  default     = "bcgov-jasper-aws-bootstrap"
+  type        = string
 }
 
 variable "environment" {
+  description = "The AWS environment to deploy to"
   type        = string
-  description = "The environment to deploy the application to"
-  default     = "dev"
-}
-
-variable "kms_key_name" {
-  type        = string
-  description = "The name of the KMS key to create"
-  default     = "jasper-kms-key"
 }

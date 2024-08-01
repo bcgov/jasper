@@ -1,0 +1,14 @@
+name: Deploy AWS Infra to Dev
+
+on:
+  workflow_dispatch:
+
+jobs:
+  infrastructure_deploy_snd:
+    uses: ./.github/workflows/aws-template-terraform.yml
+    with:
+      CONTEXT_FOLDER: ./infrastructure/cloud/environments/dev
+      CHANGE_FOLDER_NAME: environments/dev
+      ENVIRONMENT_NAME: dev
+      TEST_BUCKET_NAME: jasper-test-bucket
+    secrets: inherit

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  infrastructure_deploy_snd:
+  infrastructure_deploy_dev:
     uses: ./.github/workflows/aws-template-terraform.yml
     with:
       CONTEXT_FOLDER: ./infrastructure/cloud/environments/dev

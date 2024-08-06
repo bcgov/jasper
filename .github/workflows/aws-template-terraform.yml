@@ -57,6 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.ENVIRONMENT_NAME }}
+    env:
+      TF_VAR_app_name: ${{ vars.APP_NAME }}
+      TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
+      TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
     needs: [check_changes]
     steps:
       - name: Checkout repository

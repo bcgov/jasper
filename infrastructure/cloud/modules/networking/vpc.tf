@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 resource "aws_vpc" "vpc" {
   cidr_block           = "10.120.0.0/16"
   instance_tenancy     = "default"
@@ -92,3 +93,20 @@ resource "aws_route_table_association" "rt_assoc_pub_subnets" {
   subnet_id      = aws_subnet.public_subnets[count.index].id
   route_table_id = aws_vpc.vpc.main_route_table_id
 }
+=======
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default_public" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
+  }
+}
+>>>>>>> master

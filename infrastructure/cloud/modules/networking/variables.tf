@@ -12,12 +12,3 @@ variable "region" {
   description = "The AWS region"
   type        = string
 }
-<<<<<<< HEAD
-=======
-
-variable "subnet_ids" {
-  description = "The default VPC subnet ids"
-  type        = list(string)
-}
-
->>>>>>> master

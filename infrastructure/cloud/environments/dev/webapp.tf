@@ -15,10 +15,14 @@ module "storage" {
 }
 
 module "networking" {
-  source      = "../../modules/networking"
-  environment = var.environment
-  app_name    = var.app_name
-  region      = var.region
+  source           = "../../modules/networking"
+  environment      = var.environment
+  app_name         = var.app_name
+  region           = var.region
+  vpc_id           = var.vpc_id
+  web_subnet_names = var.web_subnet_names
+  # api_subnet_names = var.api_subnet_names
+  # db_subnet_names  = var.db_subnet_names
 }
 
 module "container" {
@@ -27,7 +31,7 @@ module "container" {
   app_name               = var.app_name
   region                 = var.region
   ecs_execution_role_arn = module.security.ecs_execution_role_arn
-  subnet_ids             = module.networking.private_subnets_web
+  subnet_ids             = module.networking.web_subnets_ids
   sg_id                  = module.networking.sg_id
   lb_tg_arn              = module.networking.lb_tg_arn
   ecs_web_log_group_name = module.monitoring.ecs_web_log_group_name

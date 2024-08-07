@@ -1,7 +1,7 @@
 resource "aws_lb" "lb" {
   name               = "${var.app_name}-lb-${var.environment}"
-  subnets            = [aws_subnet.public_subnets[0].id, aws_subnet.public_subnets[1].id]
-  security_groups    = [aws_security_group.sg.id]
+  subnets            = local.web_subnets
+  security_groups    = [data.aws_security_group.sg.id]
   internal           = false
   load_balancer_type = "application"
   enable_http2       = true
@@ -11,12 +11,11 @@ resource "aws_lb" "lb" {
   }
 }
 
-
 resource "aws_lb_target_group" "lb_target_group" {
   name                 = "${var.app_name}-lb-tg-${var.environment}"
   port                 = 8080
   protocol             = "HTTP"
-  vpc_id               = aws_vpc.vpc.id
+  vpc_id               = data.aws_vpc.vpc.id
   target_type          = "ip"
   deregistration_delay = 5
 

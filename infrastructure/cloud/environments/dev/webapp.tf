@@ -32,7 +32,7 @@ module "container" {
   region                    = var.region
   ecs_execution_role_arn    = module.security.ecs_execution_role_arn
   subnet_ids                = module.networking.web_subnets_ids
-  sg_id                     = module.networking.sg_id
+  sg_id                     = module.networking.ecs_sg_id
   lb_tg_arn                 = module.networking.lb_tg_arn
   ecs_web_td_log_group_name = module.monitoring.ecs_web_td_log_group_name
   depends_on                = [module.monitoring]

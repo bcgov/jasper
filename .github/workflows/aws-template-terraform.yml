@@ -61,6 +61,7 @@ jobs:
       TF_VAR_app_name: ${{ vars.APP_NAME }}
       TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
       TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
+      TF_VAR_vpc_id: ${{ vars.VPC_ID }}
     needs: [check_changes]
     steps:
       - name: Checkout repository

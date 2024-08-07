@@ -51,15 +51,18 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# resource "aws_default_route_table" "rt_public" {
-#   default_route_table_id = data.aws_vpc.vpc.default_route_table_id
+resource "aws_route_table" "rt" {
+  vpc_id = data.aws_vpc.vpc.id
+}
 
-#   route {
-#     cidr_block = "0.0.0.0/0"
-#     gateway_id = aws_internet_gateway.igw.id
-#   }
+resource "aws_route" "route" {
+  route_table_id         = aws_route_table.rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
+}
 
-#   tags = {
-#     Name = "${var.app_name}_public_rt_${var.environment}"
-#   }
-# }
+resource "aws_route_table_association" "rt_assoc" {
+  count          = length(var.web_subnet_names)
+  subnet_id      = local.web_subnets[count.index]
+  route_table_id = aws_route_table.rt.id
+}

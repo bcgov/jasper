@@ -44,25 +44,25 @@ locals {
   # }
 }
 
-resource "aws_internet_gateway" "igw" {
-  vpc_id = data.aws_vpc.vpc.id
-  tags = {
-    Name = "${var.app_name}_igw_${var.environment}"
-  }
-}
+# resource "aws_internet_gateway" "igw" {
+#   vpc_id = data.aws_vpc.vpc.id
+#   tags = {
+#     Name = "${var.app_name}_igw_${var.environment}"
+#   }
+# }
 
-resource "aws_route_table" "rt" {
-  vpc_id = data.aws_vpc.vpc.id
-}
+# resource "aws_route_table" "rt" {
+#   vpc_id = data.aws_vpc.vpc.id
+# }
 
-resource "aws_route" "route" {
-  route_table_id         = aws_route_table.rt.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.igw.id
-}
+# resource "aws_route" "route" {
+#   route_table_id         = aws_route_table.rt.id
+#   destination_cidr_block = "0.0.0.0/0"
+#   gateway_id             = aws_internet_gateway.igw.id
+# }
 
-resource "aws_route_table_association" "rt_assoc" {
-  count          = length(var.web_subnet_names)
-  subnet_id      = local.web_subnets[count.index]
-  route_table_id = aws_route_table.rt.id
-}
+# resource "aws_route_table_association" "rt_assoc" {
+#   count          = length(var.web_subnet_names)
+#   subnet_id      = local.web_subnets[count.index]
+#   route_table_id = aws_route_table.rt.id
+# }

@@ -24,13 +24,13 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
         {
           containerPort = 8080
         }
-      ],
+      ]
       logConfiguration = {
-        logDriver = "awslogs",
+        logDriver = "awslogs"
         options = {
-          awslogs-group         = var.ecs_web_log_group_name,
-          awslogs-region        = var.region,
-          awslogs-stream-prefix = "ecs"
+          "awslogs-group"         = var.ecs_web_td_log_group_name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "ecs"
         }
       }
     }

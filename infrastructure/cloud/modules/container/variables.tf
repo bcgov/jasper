@@ -19,7 +19,7 @@ variable "ecs_execution_role_arn" {
 }
 
 variable "subnet_ids" {
-  description = "Public Subnet IDs"
+  description = "Subnet IDs in which ECS will deploy the tasks"
   type        = list(string)
 }
 

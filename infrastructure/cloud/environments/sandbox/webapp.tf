@@ -19,7 +19,6 @@ module "networking" {
   environment = var.environment
   app_name    = var.app_name
   region      = var.region
-  subnet_ids  = module.networking.subnet_ids
 }
 
 module "container" {
@@ -28,7 +27,7 @@ module "container" {
   app_name               = var.app_name
   region                 = var.region
   ecs_execution_role_arn = module.security.ecs_execution_role_arn
-  subnet_ids             = module.networking.subnet_ids
+  subnet_ids             = [module.networking.private_subnets_web[0], module.networking.private_subnets_web[1]]
   sg_id                  = module.networking.sg_id
   lb_tg_arn              = module.networking.lb_tg_arn
   ecs_web_log_group_name = module.monitoring.ecs_web_log_group_name

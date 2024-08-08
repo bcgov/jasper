@@ -4,7 +4,8 @@ import base64url from "base64url";
 import { v4 as uuidv4 } from 'uuid';
 
 export default {
-  openDocumentsPdf(documentType: CourtDocumentType, documentData: DocumentData): void {
+  pdfLink : '',
+  openDocumentsPdf(documentType: CourtDocumentType, documentData: DocumentData): void | string {
     const fileName = this.generateFileName(documentType, documentData).replace(/\//g,"_");
     const isCriminal = documentType == CourtDocumentType.Criminal;
     const documentId = documentData.documentId
@@ -14,10 +15,7 @@ export default {
         
     switch (documentType) {
       case CourtDocumentType.CSR:
-        window.open(
-          `${process.env.BASE_URL}api/files/civil/court-summary-report/${documentData.appearanceId}/${encodeURIComponent(fileName)}?vcCivilFileId=${documentData.fileId}`
-        );
-        break;
+           return `${process.env.BASE_URL}api/files/civil/court-summary-report/${documentData.appearanceId}/${encodeURIComponent(fileName)}?vcCivilFileId=${documentData.fileId}`;
       case CourtDocumentType.ROP:
         window.open(
           `${process.env.BASE_URL}api/files/criminal/record-of-proceedings/${documentData.partId}/${encodeURIComponent(fileName)}?profSequenceNumber=${documentData.profSeqNo}&courtLevelCode=${documentData.courtLevel}&courtClassCode=${documentData.courtClass}`

@@ -243,6 +243,19 @@ $indicator-thickness: 0.2em;
   text-align: right;
 }
 
+.modal-lg .modal-dialog {
+  max-width: 90%;
+  margin: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 90vh;
+  display: flex;
+  position: fixed;
+  z-index: 100000;
+}
+
 // https://www.freecodecamp.org/news/how-to-keep-your-footer-where-it-belongs-59c6aa05c59c/
 
 // #footer {

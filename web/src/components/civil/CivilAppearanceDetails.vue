@@ -305,25 +305,34 @@
       <b-card border-variant="white">{{ adjudicatorComment }}</b-card>
       <b-button class="mt-3 bg-info" @click="$bvModal.hide('bv-modal-comment')">Close</b-button>
     </b-modal>
+
+    <b-modal v-if="showPdfModal"
+    v-model="showPdfModal"
+    modal-class="modal-lg"
+    size="xl"
+    hide-footer
+    id="bv-modal-pdf">
+      <embed :src="pdfLink" frameborder="0" width="100%" height="100%">
+    </b-modal>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from "vue-property-decorator";
-import { namespace } from "vuex-class";
-import shared from "../shared";
-import { CourtDocumentType, DocumentData } from "@/types/shared";
-import "@store/modules/CommonInformation";
-import "@store/modules/CivilFileInformation";
 import {
   appearanceAdditionalInfoType,
-  civilAppearanceInfoType,
-  appearancePartiesType,
-  appearanceMethodsType,
   appearanceDocumentsType,
+  appearanceMethodsType,
+  appearancePartiesType,
   civilAppearanceDetailsInfoType,
+  civilAppearanceInfoType,
 } from "@/types/civil";
 import { CourtRoomsJsonInfoType, InputNamesType, UserInfo } from "@/types/common";
+import { CourtDocumentType, DocumentData } from "@/types/shared";
+import "@store/modules/CivilFileInformation";
+import "@store/modules/CommonInformation";
+import { Component, Prop, Vue } from "vue-property-decorator";
+import { namespace } from "vuex-class";
+import shared from "../shared";
 const civilState = namespace("CivilFileInformation");
 const commonState = namespace("CommonInformation");
 
@@ -353,6 +362,8 @@ export default class CivilAppearanceDetails extends Vue {
   isMounted = false;
   isDataReady = false;
   stripedStyle = false;
+  showPdfModal = false;
+  pdfLink: any = '';
   appearanceDetailsJson;
   additionalInfo = {} as civilAppearanceDetailsInfoType;
   adjudicatorComment = "";
@@ -659,12 +670,17 @@ export default class CivilAppearanceDetails extends Vue {
       location: location ? location : "",
     };
     console.log(documentData);
-    shared.openDocumentsPdf(documentType, documentData);
+   
+    this.pdfLink =  shared.openDocumentsPdf(documentType, documentData);
+    if(this.pdfLink){
+      this.showPdfModal = true;
+    }
     this.loadingPdf = false;
   }
 
   public OpenAdjudicatorComment() {
     this.showAdjudicatorComment = true;
   }
+  
 }
 </script>

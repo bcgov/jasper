@@ -1,18 +1,24 @@
-name: APP (Vue)
+name: Web CI
 
 on:
-  push:
-    branches: [master]
+  # PR targeting master is created or new commits are pushed
   pull_request:
-    branches: [master]
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+    paths:
+      - "web/**"
+
+  # Manual trigger via GH Actions UI
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      CI: true
       working-directory: ./web
-      codeCov-token: ${{ secrets.CodeCov }}
 
     strategy:
       matrix:
@@ -20,11 +26,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+
       - run: npm ci
         working-directory: ${{env.working-directory}}
-      - run: npm run build --if-present
+
+      - run: npm run lint
+        working-directory: ${{env.working-directory}}
+        continue-on-error: true
+
+      - run: npm run build
+        working-directory: ${{env.working-directory}}
+
+      - run: npm run test --if-present
         working-directory: ${{env.working-directory}}

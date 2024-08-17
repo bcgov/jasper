@@ -9,7 +9,7 @@ on:
       - opened
       - synchronize
     paths:
-      - "web/**"
+      - "api/**"
 
   # Manual trigger via GH Actions UI
   workflow_dispatch:

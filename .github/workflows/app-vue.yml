@@ -71,6 +71,9 @@ jobs:
           cd ..
           docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
           docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Docker Push Image to GCHR
+        run: |
           output=$(docker push ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }})
           echo $output
           digest=$(echo "$output" | grep "digest: sha256" | awk '{ print $3 }')

@@ -14,6 +14,7 @@ on:
 env:
   WORKING_DIRECTORY: ./web
   IMAGE_NAME: jasper-web
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper/
 
 jobs:
   build:
@@ -55,6 +56,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get short SHA
+        id: short_sha
+        run: |
+          echo "::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)"
+          echo "Short SHA: $SHORT_SHA"
+
       - name: Docker Build Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../
         run: |
@@ -62,20 +69,23 @@ jobs:
           cd web
           docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
           cd ..
+          docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
+          docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
+          output=$(docker push ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }})
+          echo $output
+          digest=$(echo "$output" | grep "digest: sha256" | awk '{ print $3 }')
+          echo "::set-output name=digest::$digest"
 
-  # deploy2dev:
-  #   runs-on: ubuntu-latest
+  deploy2dev:
+    needs: build
+    env:
+      ENVIRONMENT: dev
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    environment: dev
 
-  #   steps:
-  #     - name: Docker Build Image
-  #       run: |
-  #         docker build --tag nginx-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
-  #         cd web
-  #         docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
-  #         cd ..
-  #         docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
-  #         docker tag ${{ env.IMAGE_NAME }} artifacts.developer.gov.bc.ca/ccb6-images/${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
-  #         docker push artifacts.developer.gov.bc.ca/ccb6-images/${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
-
-  #     - name: Publish image to AWS ECR
-  #       run: /
+    steps:
+      - name: Publish image to AWS ECR
+        run: /
+          echo ${{ needs.build.outputs.digest }}

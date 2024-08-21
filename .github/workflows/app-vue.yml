@@ -61,8 +61,11 @@ jobs:
           docker build --tag nginx-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
           cd web
           docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
+          echo "DONE!!! docker build --tag ss-web-artifacts"
+          docker image ls
           cd ..
           docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
+          docker image ls
 
       - name: Log in to the GHCR
         uses: docker/login-action@v3

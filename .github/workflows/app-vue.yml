@@ -49,13 +49,6 @@ jobs:
       - run: npm run test --if-present
         working-directory: ${{env.WORKING_DIRECTORY}}
 
-      - name: Log in to the GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Get short SHA
         id: short_sha
         run: |
@@ -70,10 +63,17 @@ jobs:
           docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
           cd ..
           docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
-          docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker Push Image to GCHR
         run: |
+          docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
           output=$(docker push ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }})
           echo $output
           digest=$(echo "$output" | grep "digest: sha256" | awk '{ print $3 }')

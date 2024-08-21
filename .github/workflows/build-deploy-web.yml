@@ -1,0 +1,81 @@
+name: Build and Deploy Web Image
+
+on:
+  # PR targeting master is created or new commits are pushed
+  push:
+    branches:
+      - master
+    paths:
+      - "web/**"
+
+  # Manual trigger via GH Actions UI
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: ./web
+  IMAGE_NAME: jasper-web
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: npm ci
+        working-directory: ${{env.WORKING_DIRECTORY}}
+
+      # Lint errors exists from SCC and will be worked on separately.
+      - run: npm run lint
+        working-directory: ${{env.WORKING_DIRECTORY}}
+        continue-on-error: true
+
+      - run: npm run build
+        working-directory: ${{env.WORKING_DIRECTORY}}
+
+      # Unit test is not configured in SCC and will be worked on separately.
+      - run: npm run test --if-present
+        working-directory: ${{env.WORKING_DIRECTORY}}
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker Build Image
+        run: |
+          cd ..
+          docker build --tag nginx-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
+          cd web
+          docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
+          cd ..
+
+  # deploy2dev:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Docker Build Image
+  #       run: |
+  #         docker build --tag nginx-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
+  #         cd web
+  #         docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
+  #         cd ..
+  #         docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
+  #         docker tag ${{ env.IMAGE_NAME }} artifacts.developer.gov.bc.ca/ccb6-images/${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
+  #         docker push artifacts.developer.gov.bc.ca/ccb6-images/${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
+
+  #     - name: Publish image to AWS ECR
+  #       run: /

@@ -20,6 +20,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.docker_push.outputs.digest }}
 
     strategy:
       matrix:
@@ -72,12 +74,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push Image to GCHR
+        id: docker_push
         run: |
           docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }}
           output=$(docker push ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:dev-${{ steps.short_sha.outputs.SHORT_SHA }})
           echo $output
           digest=$(echo "$output" | grep "digest: sha256" | awk '{ print $3 }')
-          echo "::set-output name=digest::$digest"
+          echo "digest=$digest" >> $GITHUB_OUTPUT
 
   deploy2dev:
     name: Deploy to DEV
@@ -92,4 +95,4 @@ jobs:
     steps:
       - name: Publish image to AWS ECR
         run: |
-          echo ${{ needs.build.outputs.digest }}
+          echo "Image digest: ${{ needs.build.outputs.digest }}"

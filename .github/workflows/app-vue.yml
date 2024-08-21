@@ -58,9 +58,9 @@ jobs:
       - name: Docker Build Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../
         run: |
-          docker build --tag nginx-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
+          docker build --tag web-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
           cd web
-          docker build --tag ss-web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
+          docker build --tag web-artifacts -f Dockerfile.node . --build-arg WEB_BASE_HREF=/
           echo "DONE!!! docker build --tag ss-web-artifacts"
           docker image ls
           cd ..

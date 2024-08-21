@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "preinstall": "npx npm-force-resolutions",
     "serve": "cross-env WEB_BASE_HREF='/' vue-cli-service serve",
     "build": "vue-cli-service build",
     "clean": "",

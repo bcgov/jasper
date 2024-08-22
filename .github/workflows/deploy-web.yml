@@ -1,14 +1,12 @@
-name: App (Vue)
+name: Deploy Web
 
 on:
-  # PR targeting master is created or new commits are pushed
   push:
     branches:
       - master
     paths:
       - "web/**"
 
-  # Manual trigger via GH Actions UI
   workflow_dispatch:
 
 env:

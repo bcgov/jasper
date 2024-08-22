@@ -1,0 +1,53 @@
+name: Deploy to AWS
+description: Deploy image to AWS Instance
+
+inputs:
+  environment:
+    description: The environment to which the image will be deployed.
+    required: true
+
+  # Image parameters
+  ghcr_token:
+    description: The token to use to login to the GHCR.
+    required: true
+  github_image_repo:
+    description: The GCHR repo where images are stored.
+    required: true
+  image_name:
+    description: The name of the image to be deployed.
+    required: true
+  image_digest:
+    description: The digest of the image to be deployed. Identifies the unique image tag in the GHCR.
+    required: true
+
+runs:
+  using: composite
+  env:
+    aws_ecr_repo_url: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-ecr-repo-${{ inputs.environment }}
+  steps:
+    - name: Log in to the GHCR
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.ghcr_token }}
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-skip-session-tagging: true
+        aws-region: ${{ vars.AWS_REGION }}
+        role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+        role-duration-seconds: 1800
+        role-session-name: ci-deployment
+
+    - name: Login to AWS CLI
+      run: |
+        aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.aws_ecr_repo_url }}
+
+    - name: Tag the image in the GHCR as ${{ inputs.environment }}
+      shell: bash
+      run: |
+        docker pull ${{ github_image_repo}}${{ inputs.image_name }}@${{ inputs.image_digest }}
+        docker tag ${{ github_image_repo}}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ env.aws_ecr_repo_url }}:${{ inputs.image_name }}
+        docker push ${{ env.aws_ecr_repo_url }}:${{ inputs.image_name }}

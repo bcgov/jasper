@@ -59,6 +59,6 @@ runs:
     - name: Tag the image in the GHCR as ${{ inputs.environment }}
       shell: bash
       run: |
-        docker pull ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
-        docker tag ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}:${{ inputs.image_name }}
+        docker pull ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
+        docker tag ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}:${{ inputs.image_name }}
         docker push ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}:${{ inputs.image_name }}

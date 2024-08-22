@@ -55,12 +55,13 @@ runs:
         role-session-name: ci-deployment
 
     - name: Login to AWS CLI
+      shell: bash
       run: |
         aws ecr get-login-password --region ${{ inputs.region }} | docker login --username AWS --password-stdin ${{ env.AWS_ECR_REPO_URL }}
 
     - name: Tag the image in the GHCR as ${{ inputs.environment }}
       shell: bash
       run: |
-        docker pull ${{ github_image_repo}}${{ inputs.image_name }}@${{ inputs.image_digest }}
-        docker tag ${{ github_image_repo}}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ env.AWS_ECR_REPO_URL }}:${{ inputs.image_name }}
+        docker pull ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
+        docker tag ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ env.AWS_ECR_REPO_URL }}:${{ inputs.image_name }}
         docker push ${{ env.AWS_ECR_REPO_URL }}:${{ inputs.image_name }}

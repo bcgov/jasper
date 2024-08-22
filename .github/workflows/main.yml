@@ -1,18 +1,10 @@
-name: API CI
+name: API (.NET Core)
 
 on:
-  # PR targeting master is created or new commits are pushed
+  push:
+    branches: [master]
   pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - synchronize
-    paths:
-      - "api/**"
-
-  # Manual trigger via GH Actions UI
-  workflow_dispatch:
+    branches: [master]
 
 jobs:
   build:
@@ -22,25 +14,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 8.0.101
-
-      # Lint errors exists from SCC and will be worked on separately.
-      - name: Lint
-        run: dotnet format --verify-no-changes --severity info
-        continue-on-error: true
-
       - name: Install dependencies
         run: dotnet restore
         working-directory: ${{env.working-directory}}
-
       - name: Build
         run: dotnet build --configuration Release --no-restore
         working-directory: ${{env.working-directory}}
-
       - name: Test
         run: dotnet test --no-restore --verbosity normal
         working-directory: ${{env.working-directory}}

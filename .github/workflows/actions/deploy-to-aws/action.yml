@@ -32,9 +32,6 @@ inputs:
     description: The digest of the image to be deployed. Identifies the unique image tag in the GHCR.
     required: true
 
-env:
-  AWS_ECR_REPO_URL: ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}
-
 runs:
   using: composite
   steps:
@@ -57,11 +54,11 @@ runs:
     - name: Login to AWS CLI
       shell: bash
       run: |
-        aws ecr get-login-password --region ${{ inputs.region }} | docker login --username AWS --password-stdin ${{ env.AWS_ECR_REPO_URL }}
+        aws ecr get-login-password --region ${{ inputs.region }} | docker login --username AWS --password-stdin ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}
 
     - name: Tag the image in the GHCR as ${{ inputs.environment }}
       shell: bash
       run: |
         docker pull ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
-        docker tag ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ env.AWS_ECR_REPO_URL }}:${{ inputs.image_name }}
-        docker push ${{ env.AWS_ECR_REPO_URL }}:${{ inputs.image_name }}
+        docker tag ${{ github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}:${{ inputs.image_name }}
+        docker push ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}:${{ inputs.image_name }}

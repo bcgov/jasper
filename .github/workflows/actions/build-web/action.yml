@@ -12,24 +12,23 @@ inputs:
 runs:
   using: composite
 
-
   steps:
     - name: Use Node.js ${{ inputs.node_version }}
-        uses: actions/setup-node@v1
-        with:
+      uses: actions/setup-node@v1
+      with:
         node-version: ${{ inputs.node_version }}
 
     - run: npm ci
-        working-directory: ${{ inputs.working_directory }}
+      working-directory: ${{ inputs.working_directory }}
 
     # Lint errors exists from SCC and will be worked on separately.
     - run: npm run lint
-        working-directory: ${{ inputs.working_directory }}
-        continue-on-error: true
+      working-directory: ${{ inputs.working_directory }}
+      continue-on-error: true
 
     - run: npm run build
-        working-directory: ${{ inputs.working_directory }}
+      working-directory: ${{ inputs.working_directory }}
 
     # Unit test is not configured in SCC and will be worked on separately.
     - run: npm run test --if-present
-        working-directory: ${{ inputs.working_directory }}
+      working-directory: ${{ inputs.working_directory }}

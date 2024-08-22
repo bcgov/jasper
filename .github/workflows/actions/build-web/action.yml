@@ -5,31 +5,31 @@ inputs:
   working_directory:
     description: The working directory where the code will be built.
     required: true
+  node_version:
+    description: The node version that will be used.
+    required: true
 
 runs:
   using: composite
-  
-  strategy:
-    matrix:
-      node-version: [12.x]
+
 
   steps:
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js ${{ inputs.node_version }}
         uses: actions/setup-node@v1
         with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ inputs.node_version }}
 
     - run: npm ci
-        working-directory: ${{env.working_directory}}
+        working-directory: ${{ inputs.working_directory }}
 
     # Lint errors exists from SCC and will be worked on separately.
     - run: npm run lint
-        working-directory: ${{env.working_directory}}
+        working-directory: ${{ inputs.working_directory }}
         continue-on-error: true
 
     - run: npm run build
-        working-directory: ${{env.working_directory}}
+        working-directory: ${{ inputs.working_directory }}
 
     # Unit test is not configured in SCC and will be worked on separately.
     - run: npm run test --if-present
-        working-directory: ${{env.working_directory}}
+        working-directory: ${{ inputs.working_directory }}

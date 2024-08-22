@@ -5,6 +5,18 @@ inputs:
   environment:
     description: The environment to which the image will be deployed.
     required: true
+  aws_account:
+    description: The AWS Account ID.
+    required: true
+  region:
+    description: The AWS Region of the AWS Account.
+    required: true
+  app_name:
+    description: The application name.
+    required: true
+  aws_role_arn:
+    description: The AWS Role ARN to assume.
+    required: true
 
   # Image parameters
   ghcr_token:
@@ -23,7 +35,7 @@ inputs:
 runs:
   using: composite
   env:
-    aws_ecr_repo_url: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-ecr-repo-${{ inputs.environment }}
+    aws_ecr_repo_url: ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}
   steps:
     - name: Log in to the GHCR
       uses: docker/login-action@v2
@@ -36,14 +48,14 @@ runs:
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-skip-session-tagging: true
-        aws-region: ${{ vars.AWS_REGION }}
-        role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+        aws-region: ${{ inputs.region }}
+        role-to-assume: ${{ inputs.aws_role_arn }}
         role-duration-seconds: 1800
         role-session-name: ci-deployment
 
     - name: Login to AWS CLI
       run: |
-        aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.aws_ecr_repo_url }}
+        aws ecr get-login-password --region ${{ inputs.region }} | docker login --username AWS --password-stdin ${{ env.aws_ecr_repo_url }}
 
     - name: Tag the image in the GHCR as ${{ inputs.environment }}
       shell: bash

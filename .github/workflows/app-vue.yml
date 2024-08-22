@@ -18,20 +18,16 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build, Create and Push Image
     runs-on: ubuntu-latest
     outputs:
       image_digest: ${{ steps.docker_push.outputs.digest }}
-
-    strategy:
-      matrix:
-        node-version: [12.x]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Building Web codebase
         uses: ./.github/workflows/actions/build-web
         with:
           node-version: ${{ env.WORKING_DIRECTORY }}

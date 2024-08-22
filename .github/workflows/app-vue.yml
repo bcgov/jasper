@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to ${{ env.ENVIRONMENT }}
-        uses: ./.github/worflows/actions/deploy-to-aws
+        uses: ./.github/workflows/actions/deploy-to-aws
         with:
           environment: ${{ env.ENVIRONMENT }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}

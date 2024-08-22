@@ -96,25 +96,60 @@ jobs:
           image_name: ${{ env.IMAGE_NAME  }}
           image_digest: ${{ needs.build.outputs.image_digest }}
 
-  # deploy2test:
-  #   name: Deploy to TEST
-  #   needs: [build, deploy2dev]
-  #   env:
-  #     ENVIRONMENT: test
-  #   permissions:
-  #     packages: write
-  #   runs-on: ubuntu-latest
-  #   environment: test
+  deploy2test:
+    name: Deploy to TEST
+    needs: [build, deploy2dev]
+    env:
+      ENVIRONMENT: test
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: test
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  #     - name: Deploy to ${{ env.ENVIRONMENT }}
-  #       uses: ./.github/worflows/actions/deploy-to-aws
-  #       with:
-  #         environment: ${{ env.ENVIRONMENT }}
-  #         ghcr_token: ${{ secrets.GITHUB_TOKEN }}
-  #         github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-  #         image_name: ${{ env.IMAGE_NAME  }}
-  #         image_digest: ${{ needs.build.outputs.image_digest }}
+      # Uncomment when infra in AWS in TEST environment has been configured
+      # - name: Deploy to ${{ env.ENVIRONMENT }}
+      #   uses: ./.github/workflows/actions/deploy-to-aws
+      #   with:
+      #     environment: ${{ env.ENVIRONMENT }}
+      #     aws_account: ${{ vars.AWS_ACCOUNT }}
+      #     region: ${{ vars.AWS_REGION }}
+      #     app_name: ${{ vars.APP_NAME }}
+      #     aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+      #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+      #     image_name: ${{ env.IMAGE_NAME  }}
+      #     image_digest: ${{ needs.build.outputs.image_digest }}
+
+  deploy2prod:
+    name: Deploy to PROD
+    needs: [build, deploy2dev, deploy2test]
+    env:
+      ENVIRONMENT: prod
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Uncomment when infra in AWS in PROD environment has been configured
+      # - name: Deploy to ${{ env.ENVIRONMENT }}
+      #   uses: ./.github/workflows/actions/deploy-to-aws
+      #   with:
+      #     environment: ${{ env.ENVIRONMENT }}
+      #     aws_account: ${{ vars.AWS_ACCOUNT }}
+      #     region: ${{ vars.AWS_REGION }}
+      #     app_name: ${{ vars.APP_NAME }}
+      #     aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+      #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+      #     image_name: ${{ env.IMAGE_NAME  }}
+      #     image_digest: ${{ needs.build.outputs.image_digest }}

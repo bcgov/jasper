@@ -1,0 +1,29 @@
+name: Build API
+description: Builds the API codebase
+
+inputs:
+  working_directory:
+    description: The working directory where the code will be built.
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.101
+
+  - name: Install dependencies
+    run: dotnet restore
+    working-directory: ${{env.WORKING_DIRECTORY}}
+
+  - name: Build
+    run: dotnet build --configuration Release --no-restore
+    working-directory: ${{env.WORKING_DIRECTORY}}
+
+  - name: Test
+    run: dotnet test --no-restore --verbosity normal
+    working-directory: ${{env.WORKING_DIRECTORY}}
+

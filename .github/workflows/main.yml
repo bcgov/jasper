@@ -1,29 +1,87 @@
-name: API (.NET Core)
+name: Deploy API
 
 on:
   push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+    branches:
+      - master
+    paths:
+      - "api/**"
+      - "db/**"
+
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: ./api
+  IMAGE_NAME: api
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper/
 
 jobs:
   build:
+    name: Build, Create and Push Image
     runs-on: ubuntu-latest
-    env:
-      working-directory: ./api
+    outputs:
+      image_digest: ${{ steps.docker_push.outputs.digest }}
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build API codebase
+        uses: ./.github/workflows/actions/build-api
         with:
-          dotnet-version: 8.0.101
-      - name: Install dependencies
-        run: dotnet restore
-        working-directory: ${{env.working-directory}}
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-        working-directory: ${{env.working-directory}}
-      - name: Test
-        run: dotnet test --no-restore --verbosity normal
-        working-directory: ${{env.working-directory}}
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short SHA
+        id: short_sha
+        run: |
+          echo "::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)"
+          echo "Short SHA: $SHORT_SHA"
+
+      - name: Build Docker Image
+        working-directory: ${{env.WORKING_DIRECTORY}}/../
+        run: |
+          docker build --tag ${{ env.IMAGE_NAME }} -f api/Dockerfile . 
+          docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Push Image to GCHR
+        id: docker_push
+        run: |
+          output=$(docker push ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }})
+          echo $output
+          digest=$(echo "$output" | grep "digest: sha256" | awk '{ print $3 }')
+          echo "digest=$digest" >> $GITHUB_OUTPUT
+
+  deploy2dev:
+    name: Deploy to DEV
+    needs: build
+    env:
+      ENVIRONMENT: dev
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to ${{ env.ENVIRONMENT }}
+        uses: ./.github/workflows/actions/deploy-to-aws
+        with:
+          environment: ${{ env.ENVIRONMENT }}
+          aws_account: ${{ vars.AWS_ACCOUNT }}
+          region: ${{ vars.AWS_REGION }}
+          app_name: ${{ vars.APP_NAME }}
+          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+          image_name: ${{ env.IMAGE_NAME  }}
+          image_digest: ${{ needs.build.outputs.image_digest }}

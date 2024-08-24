@@ -15,14 +15,18 @@ runs:
       with:
         dotnet-version: 8.0.101
 
-    - name: Install dependencies
-      run: dotnet restore
+    - run: dotnet format --verify-no-changes --severity info
+      shell: bash
       working-directory: ${{env.WORKING_DIRECTORY}}
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+    - run: dotnet restore
+      shell: bash
       working-directory: ${{env.WORKING_DIRECTORY}}
 
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+    - run: dotnet build --configuration Release --no-restore
+      shell: bash
+      working-directory: ${{env.WORKING_DIRECTORY}}
+
+    - run: dotnet test --no-restore --verbosity normal
+      shell: bash
       working-directory: ${{env.WORKING_DIRECTORY}}

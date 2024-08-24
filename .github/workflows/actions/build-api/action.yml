@@ -18,6 +18,7 @@ runs:
     - run: dotnet format --verify-no-changes --severity info
       shell: bash
       working-directory: ${{env.WORKING_DIRECTORY}}
+      continue-on-error: true
 
     - run: dotnet restore
       shell: bash

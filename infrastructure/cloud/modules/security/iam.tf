@@ -1,3 +1,4 @@
+# ECS
 resource "aws_iam_role" "ecs_execution_role" {
   name = "${var.app_name}-ecs-execution-role-${var.environment}"
 
@@ -52,6 +53,25 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         Resource = [
           var.ecs_web_td_arn
         ]
+      }
+    ]
+  })
+}
+
+# KMS
+resource "aws_kms_key_policy" "kms_key_policy" {
+  key_id = aws_kms_key.kms_key.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
       }
     ]
   })

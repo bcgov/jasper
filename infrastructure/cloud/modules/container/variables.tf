@@ -37,3 +37,9 @@ variable "ecs_web_td_log_group_name" {
   description = "ECS Web Task Definition Log Group Name in CloudWatch"
   type        = string
 }
+
+variable "kms_key_id" {
+  description = "The KMS Key ID"
+  type        = string
+}
+

@@ -1,9 +1,11 @@
 # Load Balancer Security Group	
 resource "aws_security_group" "sg" {
-  name   = "${var.app_name}-lb-sg-${var.environment}"
-  vpc_id = data.aws_vpc.vpc.id
+  name        = "${var.app_name}-lb-sg-${var.environment}"
+  vpc_id      = data.aws_vpc.vpc.id
+  description = "May change once Network Architecture has been finalized."
 
   ingress {
+    description = "Allow inbound HTTP traffic on port 80"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -11,6 +13,7 @@ resource "aws_security_group" "sg" {
   }
 
   ingress {
+    description = "Accept traffic on port 8080"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
@@ -18,6 +21,7 @@ resource "aws_security_group" "sg" {
   }
 
   egress {
+    description = "Unrestricted"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -32,10 +36,12 @@ resource "aws_security_group" "sg" {
 
 # ECS Security Group	
 resource "aws_security_group" "ecs_sg" {
-  name   = "${var.app_name}-ecs-sg-${var.environment}"
-  vpc_id = data.aws_vpc.vpc.id
+  name        = "${var.app_name}-ecs-sg-${var.environment}"
+  vpc_id      = data.aws_vpc.vpc.id
+  description = "May change once Network Architecture has been finalized."
 
   ingress {
+    description     = "Accept traffic on port 8080 and from specific Security Group"
     from_port       = 8080
     to_port         = 8080
     protocol        = "tcp"
@@ -44,6 +50,7 @@ resource "aws_security_group" "ecs_sg" {
   }
 
   egress {
+    description = "Unrestricted"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

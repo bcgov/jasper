@@ -37,8 +37,10 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "ecr:ListTagsForResource",
           "ecr:DescribeImageScanFindings"
         ],
-        Effect   = "Allow",
-        Resource = "*"
+        Effect = "Allow",
+        Resource = [
+          var.ecs_web_td_arn
+        ]
       },
       {
         Action = [
@@ -46,8 +48,10 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "logs:PutLogEvents",
           "logs:CreateLogGroup"
         ],
-        Effect   = "Allow",
-        Resource = "arn:aws:logs:*:*:*"
+        Effect = "Allow",
+        Resource = [
+          var.ecs_web_td_arn
+        ]
       }
     ]
   })

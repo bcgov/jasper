@@ -12,3 +12,8 @@ variable "environment" {
   description = "The AWS environment to deploy to"
   type        = string
 }
+
+variable "ecs_web_td_arn" {
+  description = "The ECR Repository ARN"
+  type        = string
+}

@@ -1,10 +1,11 @@
 resource "aws_lb" "lb" {
-  name               = "${var.app_name}-lb-${var.environment}"
-  subnets            = local.web_subnets
-  security_groups    = [aws_security_group.sg.id]
-  internal           = true
-  load_balancer_type = "application"
-  enable_http2       = true
+  name                       = "${var.app_name}-lb-${var.environment}"
+  subnets                    = local.web_subnets
+  security_groups            = [aws_security_group.sg.id]
+  internal                   = true
+  load_balancer_type         = "application"
+  enable_http2               = true
+  drop_invalid_header_fields = true
 
   tags = {
     Name = "${var.app_name}-lb-${var.environment}"

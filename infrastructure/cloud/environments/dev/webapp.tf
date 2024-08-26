@@ -1,8 +1,9 @@
 module "security" {
-  source       = "../../modules/security"
-  environment  = var.environment
-  app_name     = var.app_name
-  kms_key_name = var.kms_key_name
+  source         = "../../modules/security"
+  environment    = var.environment
+  app_name       = var.app_name
+  kms_key_name   = var.kms_key_name
+  ecs_web_td_arn = module.container.ecs_web_td_arn
 }
 
 module "storage" {
@@ -35,12 +36,13 @@ module "container" {
   sg_id                     = module.networking.ecs_sg_id
   lb_tg_arn                 = module.networking.lb_tg_arn
   ecs_web_td_log_group_name = module.monitoring.ecs_web_td_log_group_name
+  kms_key_id                = module.security.kms_key_id
   depends_on                = [module.monitoring]
-
 }
 
 module "monitoring" {
   source      = "../../modules/monitoring"
   environment = var.environment
   app_name    = var.app_name
+  kms_key_arn = module.security.kms_key_arn
 }

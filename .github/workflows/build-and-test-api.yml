@@ -1,0 +1,30 @@
+name: Build and Test API
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "api/**"
+      - "db/**"
+
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: ./api
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Building Web codebase
+        uses: ./.github/workflows/actions/build-api
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}

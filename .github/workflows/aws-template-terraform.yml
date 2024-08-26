@@ -67,7 +67,6 @@ jobs:
         with:
           working_directory: ${{ inputs.CONTEXT_FOLDER }}
           additional_args: "--tfvars-file=${{ inputs.CONTEXT_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars"
-          soft_fail: false
           github_token: ${{ secrets.GITHUB_TOKEN }}
     needs: [check_changes]
 

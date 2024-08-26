@@ -13,7 +13,12 @@ variable "environment" {
   type        = string
 }
 
-variable "ecs_web_td_arn" {
+variable "ecs_web_td_log_group_arn" {
+  description = "The ECS Web Task Definition Log Group ARN"
+  type        = string
+}
+
+variable "ecr_repository_arn" {
   description = "The ECR Repository ARN"
   type        = string
 }

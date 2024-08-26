@@ -1,9 +1,10 @@
 module "security" {
-  source         = "../../modules/security"
-  environment    = var.environment
-  app_name       = var.app_name
-  kms_key_name   = var.kms_key_name
-  ecs_web_td_arn = module.container.ecs_web_td_arn
+  source                   = "../../modules/security"
+  environment              = var.environment
+  app_name                 = var.app_name
+  kms_key_name             = var.kms_key_name
+  ecs_web_td_log_group_arn = module.container.ecs_web_td_log_group_arn
+  ecr_repository_arn       = module.container.ecr_repository_arn
 }
 
 module "storage" {

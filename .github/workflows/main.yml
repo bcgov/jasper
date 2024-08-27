@@ -24,7 +24,8 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-version: [8.0]
+        dotnet-major-version: [8]
+        dotnet-minor-version: [x]
 
     steps:
       - name: Checkout repository
@@ -34,7 +35,7 @@ jobs:
         uses: ./.github/workflows/actions/build-api
         with:
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          dotnet_version: ${{ matrix.dotnet-version }}
+          dotnet_version: ${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
 
       - name: Log in to the GHCR
         uses: docker/login-action@v3
@@ -52,7 +53,7 @@ jobs:
       - name: Build Docker Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../
         run: |
-          docker build --build-arg dotnet_version=${{ matrix.dotnet-version }} --tag ${{ env.IMAGE_NAME }} -f docker/api/Dockerfile.release . 
+          docker build --build-arg dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }} --tag ${{ env.IMAGE_NAME }} -f docker/api/Dockerfile.release . 
           docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
 
       - name: Push Image to GCHR

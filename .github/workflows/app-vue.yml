@@ -53,7 +53,7 @@ jobs:
         working-directory: ${{env.WORKING_DIRECTORY}}/../
         run: |
           docker build --tag web-runtime -f docker/nginx-runtime/Dockerfile ./docker/nginx-runtime/
-          docker build --tag web-artifacts -f --build-arg node_version=${{ matrix.node-version }} --build-arg WEB_BASE_HREF=${{ env.WEB_BASE_HREF }} docker/web/Dockerfile . 
+          docker build --tag web-artifacts --build-arg node_version=${{ matrix.node-version }} --build-arg WEB_BASE_HREF=${{ env.WEB_BASE_HREF }} -f docker/web/Dockerfile . 
           docker build --tag ${{ env.IMAGE_NAME }} -f docker/vue-on-nginx/Dockerfile ./docker/vue-on-nginx/
           docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
 

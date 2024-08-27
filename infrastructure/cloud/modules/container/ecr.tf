@@ -12,6 +12,12 @@ resource "aws_ecr_repository" "ecr_repository" {
     kms_key         = var.kms_key_id
   }
 
+  lifecycle {
+    ignore_changes = [
+      encryption_configuration,
+    ]
+  }
+
   tags = {
     name = "${var.app_name}-ecr-repo-${var.environment}"
   }

@@ -47,8 +47,8 @@ jobs:
       - name: Get short SHA
         id: short_sha
         run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "Short SHA: $SHORT_SHA"
 
       - name: Build Docker Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../

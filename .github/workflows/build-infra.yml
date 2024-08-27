@@ -1,0 +1,33 @@
+name: Build Infra
+
+on:
+  # When a PR is created targeting master branch
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "infrastructure/**"
+
+  # Manual trigger via GH Actions UI
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/aws-template-terraform.yml
+    with:
+      CONTEXT_FOLDER: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
+      CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
+      ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
+      TEST_BUCKET_NAME: jasper-test-bucket
+      APPLY_TF_CODE: false
+    secrets: inherit

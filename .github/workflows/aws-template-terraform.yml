@@ -1,4 +1,4 @@
-name: AWS Bootstrap Workflow
+name: AWS Template Workflow
 
 on:
   workflow_call:
@@ -15,6 +15,10 @@ on:
       TEST_BUCKET_NAME:
         required: true
         type: string
+      APPLY_TF_CODE:
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   id-token: write
@@ -52,6 +56,21 @@ jobs:
           done < files.txt
           echo "infra_changed=$infra_changed" >> "$GITHUB_OUTPUT"
 
+  scan:
+    name: Scan TF Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ inputs.CONTEXT_FOLDER }}
+          additional_args: "--tfvars-file=${{ inputs.CONTEXT_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars"
+          soft_fail: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+    needs: [check_changes]
+
   deploy_infra:
     name: Deploy Infra
     runs-on: ubuntu-latest
@@ -62,7 +81,7 @@ jobs:
       TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
       TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
       TF_VAR_vpc_id: ${{ vars.VPC_ID }}
-    needs: [check_changes]
+    needs: [scan]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -100,6 +119,7 @@ jobs:
         if: steps.plan.outcome == 'failure'
         run: exit 1
       - name: Terraform Apply
+        if: inputs.APPLY_TF_CODE == true
         env:
           CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
           #TF_VAR_test_s3_bucket_name: ${{ inputs.TEST_BUCKET_NAME }}

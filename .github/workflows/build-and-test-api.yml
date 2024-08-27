@@ -19,7 +19,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        dotnet-version: [8.0]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,3 +29,4 @@ jobs:
         uses: ./.github/workflows/actions/build-api
         with:
           working_directory: ${{ env.WORKING_DIRECTORY }}
+          dotnet_version: ${{ matrix.dotnet-version }}

@@ -22,14 +22,19 @@ jobs:
     outputs:
       image_digest: ${{ steps.docker_push.outputs.digest }}
 
+    strategy:
+      matrix:
+        dotnet-version: [8.0]
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build API codebase
         uses: ./.github/workflows/actions/build-api
         with:
           working_directory: ${{ env.WORKING_DIRECTORY }}
+          dotnet_version: ${{ matrix.dotnet-version }}
 
       - name: Log in to the GHCR
         uses: docker/login-action@v3
@@ -41,13 +46,13 @@ jobs:
       - name: Get short SHA
         id: short_sha
         run: |
-          echo "::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)"
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "Short SHA: $SHORT_SHA"
 
       - name: Build Docker Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../
         run: |
-          docker build --tag ${{ env.IMAGE_NAME }} -f api/Dockerfile . 
+          docker build --build-arg DOTNET_VERSION=${{ matrix.dotnet-version }} --tag ${{ env.IMAGE_NAME }} -f api/Dockerfile.release . 
           docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
 
       - name: Push Image to GCHR

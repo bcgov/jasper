@@ -1,4 +1,6 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+# Dockerfile used by Github Action
+ARG DOTNET_VERSION=8.0
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS base
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://*:8080
@@ -7,7 +9,7 @@ ENV DOTNET_gcServer=1
 ARG VERSION
 ENV VERSION=$VERSION
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 
 WORKDIR /src
 

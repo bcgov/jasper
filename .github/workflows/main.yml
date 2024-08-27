@@ -52,7 +52,7 @@ jobs:
       - name: Build Docker Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../
         run: |
-          docker build --build-arg DOTNET_VERSION=${{ matrix.dotnet-version }} --tag ${{ env.IMAGE_NAME }} -f api/Dockerfile.release . 
+          docker build --build-arg dotnet_version=${{ matrix.dotnet-version }} --tag ${{ env.IMAGE_NAME }} -f docker/api/Dockerfile.release . 
           docker tag ${{ env.IMAGE_NAME }} ${{ env.GITHUB_IMAGE_REPO }}${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
 
       - name: Push Image to GCHR

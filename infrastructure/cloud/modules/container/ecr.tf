@@ -12,10 +12,6 @@ resource "aws_ecr_repository" "ecr_repository" {
     kms_key         = var.kms_key_id
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   tags = {
     name = "${var.app_name}-ecr-repo-${var.environment}"
   }

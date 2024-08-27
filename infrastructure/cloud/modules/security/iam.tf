@@ -45,7 +45,7 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         ],
         Effect = "Allow",
         Resource = [
-          var.ecr_repository_arn
+          "*"
         ]
       },
       {
@@ -54,10 +54,8 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "logs:PutLogEvents",
           "logs:CreateLogGroup"
         ],
-        Effect = "Allow",
-        Resource = [
-          var.ecs_web_td_log_group_arn
-        ]
+        Effect   = "Allow",
+        Resource = "arn:aws:logs:*:*:*"
       }
     ]
   })

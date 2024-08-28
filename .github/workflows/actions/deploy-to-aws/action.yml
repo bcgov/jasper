@@ -63,35 +63,16 @@ runs:
         role-duration-seconds: 1800
         role-session-name: ci-deployment
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Pull Docker image from GHCR
       shell: bash
       run: |
         docker pull ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
-
-    - name: Setup Image Metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: |
-          ${{ steps.vars.outputs.full_ecr_repo_url }}
-        tags: |
-          type=raw,value=${{ inputs.image_name }}
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-
-    - name: Retag and Push Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        load: true
+        docker tag ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}
+        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}
 
     - name: Download task definition
       shell: bash

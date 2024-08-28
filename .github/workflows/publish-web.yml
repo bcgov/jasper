@@ -93,6 +93,7 @@ jobs:
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
           image_name: ${{ env.IMAGE_NAME  }}
           image_digest: ${{ needs.build.outputs.image_digest }}
+          tier_name: web
 
   deploy2test:
     name: Deploy to TEST
@@ -122,6 +123,7 @@ jobs:
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
       #     image_name: ${{ env.IMAGE_NAME  }}
       #     image_digest: ${{ needs.build.outputs.image_digest }}
+      #     tier_name: web
 
   deploy2prod:
     name: Deploy to PROD
@@ -151,3 +153,4 @@ jobs:
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
       #     image_name: ${{ env.IMAGE_NAME  }}
       #     image_digest: ${{ needs.build.outputs.image_digest }}
+      #     tier_name: web

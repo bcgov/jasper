@@ -39,6 +39,7 @@ runs:
   steps:
     - name: Set reusable variables
       id: vars
+      shell: bash
       run: |
         echo "task_definition_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-task-definition-${{ inputs.environment }}" >> $GITHUB_OUTPUT
         echo "container_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-container-${{ inputs.environment }}" >> $GITHUB_OUTPUT
@@ -66,6 +67,7 @@ runs:
       uses: docker/setup-buildx-action@v3
 
     - name: Pull Docker image from GHCR
+      shell: bash
       run: |
         docker pull ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
 
@@ -92,6 +94,7 @@ runs:
         load: true
 
     - name: Download task definition
+      shell: bash
       run: |
         aws ecs describe-task-definition --task-definition ${{ steps.vars.outputs.task_definition_name }} --query taskDefinition > ${{ steps.vars.outputs.task_definition_name }}.json
 

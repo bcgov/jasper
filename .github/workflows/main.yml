@@ -68,7 +68,7 @@ jobs:
         with:
           push: true
           context: .
-          file: /docker/api/Dockerfile.release
+          file: ./docker/api/Dockerfile.release
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           target: ${{ github.ref_name }}

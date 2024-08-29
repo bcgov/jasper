@@ -74,7 +74,7 @@ jobs:
       - name: list all images
         shell: bash
         run: |
-          docker ls image
+          docker image ls
 
       - name: Build ${{ env.IMAGE_NAME}} image
         uses: docker/build-push-action@v5

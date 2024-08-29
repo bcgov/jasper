@@ -63,7 +63,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          context: .
+          context: ./docker/nginx-runtime
           file: ./docker/nginx-runtime/Dockerfile
           tags: ${{ steps.meta_wr.outputs.tags }}
           labels: ${{ steps.meta_wr.outputs.labels }}

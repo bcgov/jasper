@@ -18,3 +18,38 @@ resource "aws_kms_alias" "kms_alias" {
   name          = "alias/${var.kms_key_name}-${var.environment}"
   target_key_id = aws_kms_key.kms_key.key_id
 }
+
+resource "aws_kms_key_policy" "kms_key_policy" {
+  key_id = aws_kms_key.kms_key.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # Allow full access to the key for administrators
+      {
+        Sid    = "EnableIAMUserPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+
+      # Allow CloudWatch Logs to use the key
+      {
+        Sid    = "AllowCloudWatchLogsUsage"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}

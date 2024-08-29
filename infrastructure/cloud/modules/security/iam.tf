@@ -23,8 +23,14 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
     Version = "2012-10-17",
     Statement = [
       {
+        Effect = "Allow",
         Action = [
-          "ecr:GetAuthorizationToken",
+          "ecr:GetAuthorizationToken"
+        ],
+        Resource = "*"
+      },
+      {
+        Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:GetRepositoryPolicy",
@@ -37,8 +43,10 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "ecr:ListTagsForResource",
           "ecr:DescribeImageScanFindings"
         ],
-        Effect   = "Allow",
-        Resource = "*"
+        Effect = "Allow",
+        Resource = [
+          var.ecr_repository_arn
+        ]
       },
       {
         Action = [
@@ -46,8 +54,11 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "logs:PutLogEvents",
           "logs:CreateLogGroup"
         ],
-        Effect   = "Allow",
-        Resource = "arn:aws:logs:*:*:*"
+        Effect = "Allow",
+        Resource = [
+          "${var.ecs_web_td_log_group_arn}:*",
+          "${var.ecs_api_td_log_group_arn}:*"
+        ]
       }
     ]
   })

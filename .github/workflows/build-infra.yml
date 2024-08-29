@@ -22,7 +22,7 @@ on:
           - prod
 
 jobs:
-  deploy:
+  build:
     uses: ./.github/workflows/aws-template-terraform.yml
     with:
       CONTEXT_FOLDER: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"

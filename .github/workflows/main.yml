@@ -20,7 +20,6 @@ jobs:
     name: Build, Create and Push Image
     runs-on: ubuntu-latest
     outputs:
-      image_digest: ${{ steps.build_image.outputs.digest }}
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
 
     strategy:
@@ -101,7 +100,6 @@ jobs:
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
           image_name: ${{ env.IMAGE_NAME  }}
-          image_digest: ${{ needs.build.outputs.image_digest }}
           tier_name: api
           short_sha: ${{ needs.build.outputs.short_sha }}
 
@@ -132,7 +130,6 @@ jobs:
       #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
       #     image_name: ${{ env.IMAGE_NAME  }}
-      #     image_digest: ${{ needs.build.outputs.image_digest }}
       #     tier_name: api
       #     short_sha: ${{ needs.build.outputs.short_sha }}
 
@@ -163,6 +160,5 @@ jobs:
       #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
       #     image_name: ${{ env.IMAGE_NAME  }}
-      #     image_digest: ${{ needs.build.outputs.image_digest }}
       #     tier_name: api
       #     short_sha: ${{ needs.build.outputs.short_sha }}

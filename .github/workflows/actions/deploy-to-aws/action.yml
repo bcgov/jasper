@@ -26,9 +26,6 @@ inputs:
   image_name:
     description: The name of the image to be deployed.
     required: true
-  image_digest:
-    description: The digest of the image to be deployed. Identifies the unique image tag in the GHCR.
-    required: true
   tier_name:
     description: The tier/layer name such as web or api.
     required: true
@@ -72,8 +69,8 @@ runs:
     - name: Pull Docker image from GHCR
       shell: bash
       run: |
-        docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}@${{ inputs.image_digest }}
-        docker tag ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}@${{ inputs.image_digest }} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
+        docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}
+        docker tag ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
         docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
 
     - name: Download task definition

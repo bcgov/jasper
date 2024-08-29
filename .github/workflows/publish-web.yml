@@ -64,7 +64,7 @@ jobs:
       - name: Build web-runtime image
         uses: docker/build-push-action@v5
         with:
-          push: false
+          push: true
           context: ./docker/nginx-runtime
           file: ./docker/nginx-runtime/Dockerfile
           tags: ${{ steps.meta_wr.outputs.tags }}
@@ -84,7 +84,7 @@ jobs:
       - name: Build web-artifacts image
         uses: docker/build-push-action@v5
         with:
-          push: false
+          push: true
           context: .
           file: ./docker/web/Dockerfile
           tags: ${{ steps.meta_wa.outputs.tags }}

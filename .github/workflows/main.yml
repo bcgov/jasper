@@ -71,7 +71,6 @@ jobs:
           file: ./docker/api/Dockerfile.release
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          target: ${{ github.ref_name }}
           load: true
           build-args: |
             dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}

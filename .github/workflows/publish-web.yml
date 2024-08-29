@@ -58,7 +58,7 @@ jobs:
           push: false
           context: ./docker/nginx-runtime/
           file: ./docker/nginx-runtime/Dockerfile
-          tags: web-runtime
+          tags: web-runtime:latest
 
       - name: Build web-artifacts image
         uses: docker/build-push-action@v5
@@ -66,10 +66,15 @@ jobs:
           push: false
           context: .
           file: ./docker/web/Dockerfile
-          tags: web-artifacts
+          tags: web-artifacts:latest
           build-args: |
             node_version=${{ matrix.node-major-version }}
             WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
+
+      - name: list all images
+        shell: bash
+        run: |
+          docker ls image
 
       - name: Build ${{ env.IMAGE_NAME}} image
         uses: docker/build-push-action@v5

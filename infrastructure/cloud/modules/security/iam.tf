@@ -56,8 +56,8 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         ],
         Effect = "Allow",
         Resource = [
-          var.ecs_web_td_log_group_arn,
-          var.ecs_api_td_log_group_arn
+          "${var.ecs_web_td_log_group_arn}:*",
+          "${var.ecs_api_td_log_group_arn}:*"
         ]
       }
     ]

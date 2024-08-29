@@ -56,8 +56,10 @@ jobs:
         id: meta_wr
         uses: docker/metadata-action@v5
         with:
+          images: |
+            web-runtime
           tags: |
-            type=raw,value=web-runtime
+            type=raw,value=latest
 
       - name: Build web-runtime image
         uses: docker/build-push-action@v5
@@ -74,8 +76,10 @@ jobs:
         id: meta_wa
         uses: docker/metadata-action@v5
         with:
+          images: |
+            web-artifacts
           tags: |
-            type=raw,value=web-artifacts
+            type=raw,value=latest
 
       - name: Build web-artifacts image
         uses: docker/build-push-action@v5

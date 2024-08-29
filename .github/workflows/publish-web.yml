@@ -59,7 +59,7 @@ jobs:
           load: true
           context: ./docker/nginx-runtime/
           file: ./docker/nginx-runtime/Dockerfile
-          tags: web-runtime:latest
+          tags: web-runtime
 
       - name: list all images
         shell: bash
@@ -73,7 +73,7 @@ jobs:
           load: true
           context: .
           file: ./docker/web/Dockerfile
-          tags: web-artifacts:latest
+          tags: web-artifacts
           build-args: |
             node_version=${{ matrix.node-major-version }}
             WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
@@ -87,7 +87,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: .
+          context: ./docker/vue-on-nginx/
           file: ./docker/vue-on-nginx/Dockerfile
           tags: ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
 

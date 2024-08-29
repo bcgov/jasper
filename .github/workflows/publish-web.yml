@@ -60,6 +60,11 @@ jobs:
           file: ./docker/nginx-runtime/Dockerfile
           tags: web-runtime:latest
 
+      - name: list all images
+        shell: bash
+        run: |
+          docker image ls
+
       - name: Build web-artifacts image
         uses: docker/build-push-action@v5
         with:

@@ -67,14 +67,13 @@ runs:
         role-session-name: ci-deployment
 
     - name: Login to Amazon ECR
-      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
     - name: Pull Docker image from GHCR
       shell: bash
       run: |
-        docker pull ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
-        docker tag ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
+        docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}@${{ inputs.image_digest }}
+        docker tag ${{ inputs.github_image_repo }}/${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
         docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
 
     - name: Download task definition

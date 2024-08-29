@@ -55,8 +55,7 @@ jobs:
       - name: Build web-runtime image
         uses: docker/build-push-action@v5
         with:
-          push: false
-          load: true
+          push: true
           context: ./docker/nginx-runtime/
           file: ./docker/nginx-runtime/Dockerfile
           tags: web-runtime
@@ -69,8 +68,7 @@ jobs:
       - name: Build web-artifacts image
         uses: docker/build-push-action@v5
         with:
-          push: false
-          load: true
+          push: true
           context: .
           file: ./docker/web/Dockerfile
           tags: web-artifacts
@@ -87,7 +85,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: ./docker/vue-on-nginx/
+          context: .
           file: ./docker/vue-on-nginx/Dockerfile
           tags: ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
 

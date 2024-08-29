@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_digest: ${{ steps.docker_push.outputs.digest }}
+      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
 
     strategy:
       matrix:
@@ -47,8 +48,7 @@ jobs:
       - name: Get short SHA
         id: short_sha
         run: |
-          echo "::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)"
-          echo "Short SHA: $SHORT_SHA"
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
         working-directory: ${{env.WORKING_DIRECTORY}}/../
@@ -94,6 +94,7 @@ jobs:
           image_name: ${{ env.IMAGE_NAME  }}
           image_digest: ${{ needs.build.outputs.image_digest }}
           tier_name: web
+          short_sha: ${{ needs.build.outputs.short_sha }}
 
   deploy2test:
     name: Deploy to TEST
@@ -124,6 +125,7 @@ jobs:
       #     image_name: ${{ env.IMAGE_NAME  }}
       #     image_digest: ${{ needs.build.outputs.image_digest }}
       #     tier_name: web
+      #     short_sha: ${{ needs.build.outputs.short_sha }}
 
   deploy2prod:
     name: Deploy to PROD
@@ -154,3 +156,4 @@ jobs:
       #     image_name: ${{ env.IMAGE_NAME  }}
       #     image_digest: ${{ needs.build.outputs.image_digest }}
       #     tier_name: web
+      #     short_sha: ${{ needs.build.outputs.short_sha }}

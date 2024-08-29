@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_digest: ${{ steps.docker_push.outputs.digest }}
+      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
 
     strategy:
       matrix:
@@ -91,6 +92,7 @@ jobs:
           image_name: ${{ env.IMAGE_NAME  }}
           image_digest: ${{ needs.build.outputs.image_digest }}
           tier_name: api
+          short_sha: ${{ needs.build.outputs.short_sha }}
 
   deploy2test:
     name: Deploy to TEST
@@ -121,6 +123,7 @@ jobs:
       #     image_name: ${{ env.IMAGE_NAME  }}
       #     image_digest: ${{ needs.build.outputs.image_digest }}
       #     tier_name: api
+      #     short_sha: ${{ needs.build.outputs.short_sha }}
 
   deploy2prod:
     name: Deploy to PROD
@@ -151,3 +154,4 @@ jobs:
       #     image_name: ${{ env.IMAGE_NAME  }}
       #     image_digest: ${{ needs.build.outputs.image_digest }}
       #     tier_name: api
+      #     short_sha: ${{ needs.build.outputs.short_sha }}

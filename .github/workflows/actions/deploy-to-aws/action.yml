@@ -32,6 +32,9 @@ inputs:
   tier_name:
     description: The tier/layer name such as web or api.
     required: true
+  short_sha:
+    description: The short SHA used to tag image in GCHR.
+    required: true
 
 runs:
   using: composite
@@ -71,8 +74,8 @@ runs:
       shell: bash
       run: |
         docker pull ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }}
-        docker tag ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ github.sha }}
-        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ github.sha }}
+        docker tag ${{ inputs.github_image_repo }}${{ inputs.image_name }}@${{ inputs.image_digest }} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
+        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
 
     - name: Download task definition
       shell: bash
@@ -85,7 +88,7 @@ runs:
       with:
         task-definition: ${{ steps.vars.outputs.task_definition_name }}.json
         container-name: ${{ steps.vars.outputs.container_name }}
-        image: "${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ github.sha }}"
+        image: "${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}"
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v2

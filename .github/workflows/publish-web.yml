@@ -11,7 +11,9 @@ on:
 
 env:
   WORKING_DIRECTORY: ./web
-  IMAGE_NAME: web
+  WEB_IMAGE_NAME: web
+  WEB_RUNTIME_IMAGE_NAME: web-runtime
+  WEB_ARTIFACTS_IMAGE_NAME: web-artifacts
   GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
   WEB_BASE_HREF: /
 
@@ -54,30 +56,56 @@ jobs:
         with:
           driver: docker
 
-      - name: Build web-runtime image
+      - name: Setup ${{ env.WEB_RUNTIME_IMAGE_NAME }} Image Metadata
+        id: meta_wr
+        uses: docker/metadata-action@v5
+        with:
+          tags: |
+            type=raw,value=${{ env.WEB_RUNTIME_IMAGE_NAME }}
+
+      - name: Build ${{ env.WEB_RUNTIME_IMAGE_NAME }} image
         uses: docker/build-push-action@v5
         with:
           context: ./docker/nginx-runtime/
           file: ./docker/nginx-runtime/Dockerfile
-          tags: web-runtime
+          tags: ${{ steps.meta_wr.outputs.tags }}
+          labels: ${{ steps.meta_wr.outputs.labels }}
 
-      - name: Build web-artifacts image
+      - name: Setup ${{ env.WEB_ARTIFACTS_IMAGE_NAME }} Image Metadata
+        id: meta_wa
+        uses: docker/metadata-action@v5
+        with:
+          tags: |
+            type=raw,value=${{ env.WEB_ARTIFACTS_IMAGE_NAME }}
+
+      - name: Build ${{ env.WEB_ARTIFACTS_IMAGE_NAME }} image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/web/Dockerfile
-          tags: web-artifacts
+          tags: ${{ steps.meta_wa.outputs.tags }}
+          labels: ${{ steps.meta_wa.outputs.labels }}
           build-args: |
             node_version=${{ matrix.node-major-version }}
             WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
 
-      - name: Build ${{ env.IMAGE_NAME}} image
+      - name: Setup ${{ env.WEB_IMAGE_NAME }} Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GITHUB_IMAGE_REPO }}/${{ env.WEB_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Build ${{ env.WEB_IMAGE_NAME }} image
         uses: docker/build-push-action@v5
         with:
           push: true
           context: ./docker/vue-on-nginx/
           file: ./docker/vue-on-nginx/Dockerfile
-          tags: ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.short_sha.outputs.SHORT_SHA }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   deploy2dev:
     name: Deploy to DEV
@@ -104,7 +132,7 @@ jobs:
           aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          image_name: ${{ env.IMAGE_NAME  }}
+          WEB_IMAGE_NAME: ${{ env.WEB_IMAGE_NAME }}
           tier_name: web
           short_sha: ${{ needs.build.outputs.short_sha }}
 
@@ -134,7 +162,7 @@ jobs:
       #     aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
       #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-      #     image_name: ${{ env.IMAGE_NAME  }}
+      #     WEB_IMAGE_NAME: ${{ env.WEB_IMAGE_NAME }}
       #     tier_name: web
       #     short_sha: ${{ needs.build.outputs.short_sha }}
 
@@ -164,6 +192,6 @@ jobs:
       #     aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
       #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-      #     image_name: ${{ env.IMAGE_NAME  }}
+      #     image_name: ${{ env.WEB_IMAGE_NAME }}
       #     tier_name: web
       #     short_sha: ${{ needs.build.outputs.short_sha }}

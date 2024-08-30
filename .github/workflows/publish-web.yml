@@ -132,7 +132,7 @@ jobs:
           aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          WEB_IMAGE_NAME: ${{ env.WEB_IMAGE_NAME }}
+          image_name: ${{ env.WEB_IMAGE_NAME }}
           tier_name: web
           short_sha: ${{ needs.build.outputs.short_sha }}
 
@@ -162,7 +162,7 @@ jobs:
       #     aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
       #     ghcr_token: ${{ secrets.GITHUB_TOKEN }}
       #     github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-      #     WEB_IMAGE_NAME: ${{ env.WEB_IMAGE_NAME }}
+      #     image_name: ${{ env.WEB_IMAGE_NAME }}
       #     tier_name: web
       #     short_sha: ${{ needs.build.outputs.short_sha }}
 

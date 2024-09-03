@@ -56,7 +56,9 @@ USER 104
 ARG node_version=10
 FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} as artifacts
 
+USER root
 WORKDIR /opt/app-root/src
+
 COPY ./web .
 
 RUN npm install

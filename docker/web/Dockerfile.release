@@ -24,6 +24,9 @@ LABEL io.openshift.s2i.scripts-url=image:///usr/libexec/s2i
 # Copy config from source to container
 COPY ../../docker/nginx-runtime/nginx.conf.template /tmp/
 
+# (NEW) Copy run script
+COPY ../../docker/nginx-runtime/s2i/bin/run /usr/libexec/s2i/run
+
 # =================================================================================
 # Fix up permissions
 # ref: https://torstenwalter.de/openshift/nginx/2017/08/04/nginx-on-openshift.html

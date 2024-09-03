@@ -76,8 +76,8 @@ jobs:
           build-args: |
             NODE_VERSION=${{ matrix.node-major-version }}
             WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
-            NGINX_RUNTIME_SRC=../../nginx-runtime
-            VUE_ON_NGINX_SRC=../../vue-on-nginx
+            NGINX_RUNTIME_SRC=../../docker/nginx-runtime
+            VUE_ON_NGINX_SRC=../../docker/vue-on-nginx
             WEB_SRC=../../web
 
   deploy2dev:

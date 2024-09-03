@@ -1,3 +1,4 @@
+# This Dockerfile is used by the publish-web CI/CD Pipeline
 ARG NODE_VERSION=10
 ARG WEB_BASE_HREF=/
 
@@ -15,16 +16,16 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy our OpenShift s2i scripts over to default location
-COPY ./docker/vue-on-nginx/s2i/bin/ /usr/libexec/s2i/
+COPY ../../docker/vue-on-nginx/s2i/bin/ /usr/libexec/s2i/
 
 # Expose this variable to OpenShift
 LABEL io.openshift.s2i.scripts-url=image:///usr/libexec/s2i
 
 # Copy config from source to container
-COPY ./docker/nginx-runtime/nginx.conf.template /tmp/
+COPY ../../docker/nginx-runtime/nginx.conf.template /tmp/
 
 # (NEW) Copy run script
-COPY ./docker/nginx-runtime/s2i/bin/run /usr/libexec/s2i/run
+COPY ../../docker/nginx-runtime/s2i/bin/run /usr/libexec/s2i/run
 
 # =================================================================================
 # Fix up permissions
@@ -77,7 +78,7 @@ FROM runtime
 COPY --from=artifacts /opt/app-root/src/dist/. /tmp/app/dist/
 
 # # Ensure S2I script copied over is runnable.
-COPY ./docker/vue-on-nginx/s2i/bin/fix-base-url /usr/libexec/s2i/fix-base-url
+COPY ../../docker/vue-on-nginx/s2i/bin/fix-base-url /usr/libexec/s2i/fix-base-url
 
 # Fix permissions.
 USER root

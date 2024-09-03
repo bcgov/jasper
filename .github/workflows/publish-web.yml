@@ -74,7 +74,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            node_version=${{ matrix.node-major-version }}
+            NODE_VERSION=${{ matrix.node-major-version }}
             WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
 
   deploy2dev:

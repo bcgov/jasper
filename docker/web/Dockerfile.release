@@ -24,9 +24,6 @@ LABEL io.openshift.s2i.scripts-url=image:///usr/libexec/s2i
 # Copy config from source to container
 COPY ../../docker/nginx-runtime/nginx.conf.template /tmp/
 
-# (NEW) Copy run script
-COPY ../../docker/nginx-runtime/s2i/bin/run /usr/libexec/s2i/run
-
 # =================================================================================
 # Fix up permissions
 # ref: https://torstenwalter.de/openshift/nginx/2017/08/04/nginx-on-openshift.html
@@ -59,14 +56,10 @@ USER 104
 ARG node_version=10
 FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} as artifacts
 
-USER root
 WORKDIR /opt/app-root/src
-
 COPY ./web .
 
-# --unsafe-perm param needs to be added to prevent
-# permission denied error when npm installing
-RUN npm install --unsafe-perm
+RUN npm install
 RUN npm run build 
 
 #######

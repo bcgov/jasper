@@ -56,39 +56,6 @@ jobs:
         with:
           driver: docker
 
-      # - name: Setup ${{ env.WEB_RUNTIME_IMAGE_NAME }} Image Metadata
-      #   id: meta_wr
-      #   uses: docker/metadata-action@v5
-      #   with:
-      #     tags: |
-      #       type=raw,value=${{ env.WEB_RUNTIME_IMAGE_NAME }}
-
-      # - name: Build ${{ env.WEB_RUNTIME_IMAGE_NAME }} image
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: ./docker/nginx-runtime/
-      #     file: ./docker/nginx-runtime/Dockerfile
-      #     tags: ${{ steps.meta_wr.outputs.tags }}
-      #     labels: ${{ steps.meta_wr.outputs.labels }}
-
-      # - name: Setup ${{ env.WEB_ARTIFACTS_IMAGE_NAME }} Image Metadata
-      #   id: meta_wa
-      #   uses: docker/metadata-action@v5
-      #   with:
-      #     tags: |
-      #       type=raw,value=${{ env.WEB_ARTIFACTS_IMAGE_NAME }}
-
-      # - name: Build ${{ env.WEB_ARTIFACTS_IMAGE_NAME }} image
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     file: ./docker/web/Dockerfile
-      #     tags: ${{ steps.meta_wa.outputs.tags }}
-      #     labels: ${{ steps.meta_wa.outputs.labels }}
-      #     build-args: |
-      #       node_version=${{ matrix.node-major-version }}
-      #       WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
-
       - name: Setup ${{ env.WEB_IMAGE_NAME }} Image Metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -102,7 +69,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: ..
+          context: .
           file: ./docker/web/Dockerfile.release
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

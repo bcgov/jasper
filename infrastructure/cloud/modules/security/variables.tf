@@ -1,19 +1,29 @@
+variable "kms_key_name" {
+  description = "Name of KMS key"
+  type        = string
+}
 
-
-variable application_name {
-  type = string
+variable "app_name" {
   description = "The name of the application"
-  default = "bcgov-jasper-aws-bootstrap"
+  type        = string
 }
 
-variable environment {
-  type = string
-  description = "The environment to deploy the application to"
-  default = "dev"
+variable "environment" {
+  description = "The AWS environment to deploy to"
+  type        = string
 }
 
-variable kms_key_name {
-  type = string
-  description = "The name of the KMS key to create"
-  default = "jasper-kms-key"
+variable "ecs_web_td_log_group_arn" {
+  description = "The ECS Web Task Definition Log Group ARN"
+  type        = string
+}
+
+variable "ecs_api_td_log_group_arn" {
+  description = "The ECS API Task Definition Log Group ARN"
+  type        = string
+}
+
+variable "ecr_repository_arn" {
+  description = "The ECR Repository ARN"
+  type        = string
 }

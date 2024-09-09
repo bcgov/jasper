@@ -1,0 +1,38 @@
+name: Build Web
+description: Builds the Web codebase
+
+inputs:
+  working_directory:
+    description: The working directory where the code will be built.
+    required: true
+  node_version:
+    description: The node version that will be used.
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Use Node.js ${{ inputs.node_version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ inputs.node_version }}
+
+    - run: npm ci
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+
+    # Lint errors exists from SCC and will be worked on separately.
+    - run: npm run lint
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      continue-on-error: true
+
+    - run: npm run build
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+
+    # Unit test is not configured in SCC and will be worked on separately.
+    - run: npm run test --if-present
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}

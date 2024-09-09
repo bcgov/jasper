@@ -89,38 +89,18 @@ build-web() {
   #
   # web
   #
-  # The web-runtime image is used for the final runtime image.
-  # The artifacts image is used to build the artifacts for the vue distribution.
-  # The vue-on-nginx image is copy of the nginx-runtime image complete with a copy of the build artifacts.
-  #
-  echo -e "\n\n===================================================================================================="
-  echo -e "Building the ${COMPOSE_PROJECT_NAME}-web-runtime (nginx-runtime) image using Docker ..."
-  echo -e "----------------------------------------------------------------------------------------------------"
-  docker build \
-    -t "${COMPOSE_PROJECT_NAME}-web-runtime" \
-    -f './nginx-runtime/Dockerfile' './nginx-runtime/'
-  echo -e "===================================================================================================="
-
-  # Apparently vue-cli-tools wants WEB_BASE_HREF -> vue.config.js -> publicPath at compile time.
-  # I tried using __webpack_public_path__, but the CSS file path and JS file path weren't correctly updated.
-  # Also note we don't load in environment variables from the arguments here.
-  echo -e "\n\n===================================================================================================="
-  echo -e "Building the ${COMPOSE_PROJECT_NAME}-web-artifacts image using s2i ..."
-  echo -e "----------------------------------------------------------------------------------------------------"
-  ${S2I_EXE} build \
-    --copy \
-    '../web' \
-    'quay.io/centos7/nodejs-12-centos7:master' \
-    "${COMPOSE_PROJECT_NAME}-web-artifacts"
-  echo -e "===================================================================================================="
-
   echo -e "\n\n===================================================================================================="
   echo -e "Building the ${COMPOSE_PROJECT_NAME}-web image using Docker ..."
   echo -e "----------------------------------------------------------------------------------------------------"
   docker build \
     -t "${COMPOSE_PROJECT_NAME}-web" \
     --build-arg IMAGE_PREFIX=${COMPOSE_PROJECT_NAME}- \
-    -f './vue-on-nginx/Dockerfile' './vue-on-nginx/'
+    --build-arg NODE_VERSION=12 \
+    --build-arg NGINX_RUNTIME_SRC='../docker/nginx-runtime' \
+    --build-arg VUE_ON_NGINX_SRC='../docker/vue-on-nginx' \
+    --build-arg WEB_SRC='./web' \
+    --build-arg NPM_INSTALL_ARGS='--unsafe-perm' \
+    -f './web/Dockerfile.release' '..'
   echo -e "===================================================================================================="
 }
 

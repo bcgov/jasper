@@ -12,6 +12,7 @@ COPY ./s2i/bin/fix-base-url /usr/libexec/s2i/fix-base-url
 # Fix permissions.
 USER root
 RUN chmod 674 /usr/libexec/s2i/fix-base-url
+RUN chmod -R 674 /tmp/app/dist/
 
 # From nginx-runtime.
 USER 104

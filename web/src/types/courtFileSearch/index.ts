@@ -23,4 +23,7 @@ export interface CourtFileSearchCriteria {
   proceedingDates: string[];
 
   registry: string;
+
+  startDate?: string;
+  endDate?: string;
 }

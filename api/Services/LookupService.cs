@@ -77,12 +77,12 @@ namespace Scv.Api.Services
 
         private async Task<CodeLookup> GetCivilCounselAttendanceTypes()
         {
-            return await GetDataFromCache("CivilCounselAttendanceTypes", 
+            return await GetDataFromCache("CivilCounselAttendanceTypes",
                 async () => await _lookupClient.CodesCivilPastappearancePartyappearancemethodCounselGetAsync());
         }
         private async Task<CodeLookup> GetCivilDocumentIssueTypes()
         {
-            return await GetDataFromCache("GetCivilDocumentIssueTypes", 
+            return await GetDataFromCache("GetCivilDocumentIssueTypes",
                 async () => await _lookupClient.CodesCivilDocumentIssuetypesGetAsync());
         }
 
@@ -106,28 +106,28 @@ namespace Scv.Api.Services
 
         private async Task<CodeLookup> GetCriminalAccusedAttends()
         {
-            return await GetDataFromCache("CriminalAccusedAttends", 
+            return await GetDataFromCache("CriminalAccusedAttends",
                 async () => await _lookupClient.CodesCriminalPastappearancePartyappearancemethodAccusedcounselGetAsync());
         }
 
         private async Task<CodeLookup> GetCriminalAdjudicatorAttends()
         {
-            return await GetDataFromCache("CriminalAdjudicatorAttends", 
+            return await GetDataFromCache("CriminalAdjudicatorAttends",
                 async () => await _lookupClient.CodesCriminalPastappearancePartyappearancemethodAdjudicatorGetAsync());
         }
 
         private async Task<CodeLookup> GetCriminalCounselAttends()
         {
-            return await GetDataFromCache("CriminalCounselAttends", 
+            return await GetDataFromCache("CriminalCounselAttends",
                 async () => await _lookupClient.CodesCriminalPastappearancePartyappearancemethodAccusedcounselGetAsync());
         }
 
         private async Task<CodeLookup> GetCriminalCrownAttends()
         {
-            return await GetDataFromCache("CriminalCrownAttends", 
+            return await GetDataFromCache("CriminalCrownAttends",
                 async () => await _lookupClient.CodesCriminalPastappearancePartyappearancemethodCrownGetAsync());
         }
-        
+
         private async Task<CodeLookup> GetCriminalAppearanceReasons()
         {
             return await GetDataFromCache("CriminalAppearanceReasons",
@@ -154,38 +154,38 @@ namespace Scv.Api.Services
 
         private async Task<CodeLookup> GetFindings()
         {
-            return await GetDataFromCache("Findings", 
+            return await GetDataFromCache("Findings",
                 async () => await _lookupClient.CodesFindingsGetAsync());
         }
 
-        private async Task<CodeLookup> GetCourtClass()
+        public async Task<CodeLookup> GetCourtClass()
         {
-            var courtClasses = await GetDataFromCache("CourtClasses", 
+            var courtClasses = await GetDataFromCache("CourtClasses",
                 async () => await _lookupClient.CodesCourtClassesGetAsync());
             return courtClasses;
         }
 
-        private async Task<CodeLookup> GetCourtLevel()
+        public async Task<CodeLookup> GetCourtLevel()
         {
-            return await GetDataFromCache("CourtLevels", 
+            return await GetDataFromCache("CourtLevels",
                 async () => await _lookupClient.CodesCourtLevelsGetAsync());
         }
 
         private async Task<CodeLookup> GetCriminalAssets()
         {
-            return await GetDataFromCache("CriminalAssets", 
+            return await GetDataFromCache("CriminalAssets",
                 async () => await _lookupClient.CodesCriminalAssetsGetAsync());
         }
 
         private async Task<CodeLookup> GetDocuments()
         {
-            return await GetDataFromCache("Documents", 
+            return await GetDataFromCache("Documents",
                 async () => await _lookupClient.CodesDocumentsGetAsync());
         }
 
         private async Task<CodeLookup> GetRoles()
         {
-            return await GetDataFromCache("Roles", 
+            return await GetDataFromCache("Roles",
                 async () => await _lookupClient.CodesRolesGetAsync());
         }
 
@@ -197,7 +197,7 @@ namespace Scv.Api.Services
 
         private async Task<CodeLookup> GetWitnessRoles()
         {
-            return await GetDataFromCache("WitnessRoles", 
+            return await GetDataFromCache("WitnessRoles",
                 async () => await _lookupClient.CodesWitnessRolesGetAsync());
         }
 
@@ -226,7 +226,7 @@ namespace Scv.Api.Services
         public async Task<string> GetCivilAppearanceReasonsDescription(string code) => FindShortDescriptionFromCode(await GetCivilAppearanceReasons(), code);
 
         public async Task<string> GetCivilAppearanceResultsDescription(string code) => FindShortDescriptionFromCode(await GetCivilAppearanceResults(), code);
-        
+
         public async Task<string> GetCivilAssetsDescription(string code) => FindLongDescriptionFromCode(await GetCivilAssets(), code);
 
         public async Task<string> GetCivilCounselAttendanceType(string code) => FindShortDescriptionFromCode(await GetCivilCounselAttendanceTypes(), code);

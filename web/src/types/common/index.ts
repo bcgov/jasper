@@ -70,3 +70,10 @@ export interface UserInfo {
     subRole: string;
     isSupremeUser: string;
 }
+
+export interface LookupCode {
+    codeType: string;
+    code: string;
+    shortDesc: string;
+    longDesc: string;
+}

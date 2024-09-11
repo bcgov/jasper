@@ -48,8 +48,9 @@
                       :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'file' }">
                       <b-form-radio class=" mt-2" value="file"> File Number </b-form-radio>
                       <b-row class="flex-grow-1" v-if="searchCriteria.selectedFileNoOrParty === 'file'">
-                        <b-col md="3">
+                        <b-col md="3" class="text-right">
                           <b-form-input placeholder="e.g. 99999999" v-model="searchCriteria.fileNumber"></b-form-input>
+                          <span class="text-danger" v-show="errors.isMissingFileNoOrParty">Field required</span>
                         </b-col>
                         <b-col md="6" offset-md="3" v-if="searchCriteria.isCriminal">
                           <b-card bg-variant="light" class="ml-1" body-class="p-2">
@@ -75,8 +76,9 @@
                       :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'surname' }">
                       <b-form-radio class="mt-2" value="surname"> Surname </b-form-radio>
                       <b-row v-if="searchCriteria.selectedFileNoOrParty === 'surname'">
-                        <b-col>
+                        <b-col class="text-right">
                           <b-form-input v-model="searchCriteria.surname"></b-form-input>
+                          <span class="text-danger" v-show="errors.isMissingSurname">Field required</span>
                         </b-col>
                         <b-col>
                           <b-form-input placeholder="Given Name" v-model="searchCriteria.givenName"></b-form-input>
@@ -87,8 +89,9 @@
                       :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'org' }">
                       <b-form-radio class="mt-2" value="org"> Organisation </b-form-radio>
                       <b-row v-if="searchCriteria.selectedFileNoOrParty === 'org'">
-                        <b-col>
+                        <b-col class="text-right">
                           <b-form-input placeholder="e.g. MegaCorp Inc." v-model="searchCriteria.org"></b-form-input>
+                          <span class="text-danger" v-show="errors.isMissingOrg">Field required</span>
                         </b-col>
                       </b-row>
                     </div>
@@ -223,8 +226,8 @@ export default class CourtFileSearchView extends Vue {
   errorCode = 0;
   errorText = "";
   courtRooms: roomsInfoType[] = [];
-  levels: LookupCode[];
-  classes: LookupCode[];
+  levels: LookupCode[] = [];
+  classes: LookupCode[] = [];
 
   isLookupDataMounted = false;
   isLookupDataReady = false;
@@ -275,21 +278,27 @@ export default class CourtFileSearchView extends Vue {
     registry: "",
   };
 
+  errors = {
+    isMissingFileNoOrParty: false,
+    isMissingSurname: false,
+    isMissingOrg: false
+  };
+
   mounted() {
     this.loadLookups();
   }
 
-  public async loadLookups(): void {
+  public async loadLookups(): Promise<void> {
     try {
       const [courtRoomsResp, levelsResp, classesResp] = await Promise.all([
-        this.$http.get<CourtRoomsJsonInfoType[]>("api/location/court-rooms"),
-        this.$http.get<LookupCode[]>("api/codes/court/levels"),
-        this.$http.get<LookupCode[]>("api/codes/court/classes"),
+        this.$http.get("api/location/court-rooms"),
+        this.$http.get("api/codes/court/levels"),
+        this.$http.get("api/codes/court/classes"),
       ]);
 
-      this.loadCourtRooms(courtRoomsResp.data);
-      this.levels = levelsResp.data;
-      this.classes = classesResp.data;
+      this.loadCourtRooms(courtRoomsResp.data as CourtRoomsJsonInfoType[]);
+      this.levels = levelsResp.data as LookupCode[];
+      this.classes = classesResp.data as LookupCode[];
 
       this.isLookupDataReady = true;
     } catch (err) {
@@ -357,6 +366,24 @@ export default class CourtFileSearchView extends Vue {
 
   public handleSubmit() {
     console.log(this.searchCriteria);
+
+    this.resetErrors();
+
+    // Validate
+    if (this.searchCriteria.isCriminal || this.searchCriteria.isCivil) {
+      this.errors.isMissingFileNoOrParty = this.searchCriteria.selectedFileNoOrParty === 'file' && !this.searchCriteria.fileNumber;
+      this.errors.isMissingSurname = this.searchCriteria.selectedFileNoOrParty === 'surname' && !this.searchCriteria.surname;
+      this.errors.isMissingOrg = this.searchCriteria.selectedFileNoOrParty === 'org' && !this.searchCriteria.org;
+    }
+
+    if (this.errors.length > 0) {
+      return;
+    }
+  }
+
+  resetErrors(): void {
+    this.errors.isMissingFileNoOrParty = false;
+    this.errors.isMissingSurname = false;
   }
 
   loadCourtRooms(courtRooms: CourtRoomsJsonInfoType[]): void {

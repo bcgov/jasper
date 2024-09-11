@@ -21,6 +21,10 @@ namespace Scv.Api.Controllers
             _lookupService = lookupService;
         }
 
+        /// <summary>
+        /// Gets the Court Levels
+        /// </summary>
+        /// <returns>Court Levels Lookup</returns>
         [HttpGet]
         [Route("court/levels")]
         public async Task<ActionResult<List<LookupCode>>> GetCourtLevels()
@@ -37,6 +41,10 @@ namespace Scv.Api.Controllers
             return Ok(levelsList);
         }
 
+        /// <summary>
+        /// Gets the Court Classes
+        /// </summary>
+        /// <returns>Court Classes Lookup</returns>
         [HttpGet]
         [Route("court/classes")]
         public async Task<ActionResult<List<LookupCode>>> GetCourtClasses()

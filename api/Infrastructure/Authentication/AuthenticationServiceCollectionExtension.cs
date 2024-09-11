@@ -129,7 +129,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                         var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
                         var logger = loggerFactory.CreateLogger("OnTokenValidated");
-                        logger.LogInformation($"OpenIdConnect UserId - { context.Principal.UserId() } - logged in.");
+                        logger.LogInformation($"OpenIdConnect UserId - {context.Principal.UserId()} - logged in.");
 
                         //Cleanup keycloak claims, that are unused.
                         foreach (var claim in identity.Claims.WhereToList(c =>
@@ -152,13 +152,13 @@ namespace Scv.Api.Infrastructure.Authentication
 
                             if (fileAccess != null && !string.IsNullOrEmpty(fileAccess.PartId) && !string.IsNullOrEmpty(fileAccess.AgencyId))
                             {
-                                logger.LogInformation($"UserId - { context.Principal.UserId() } - Using credentials passed in from A2A.");
+                                logger.LogInformation($"UserId - {context.Principal.UserId()} - Using credentials passed in from A2A.");
                                 var aesGcmEncryption = context.HttpContext.RequestServices.GetRequiredService<AesGcmEncryption>();
                                 partId = aesGcmEncryption.Decrypt(fileAccess.PartId);
                                 agencyId = aesGcmEncryption.Decrypt(fileAccess.AgencyId);
                                 applicationCode = "A2A";
                             }
-                        } 
+                        }
                         else if (context.Principal.IsIdirUser() && context.Principal.Groups().Contains("court-viewer-supreme"))
                         {
                             isSupremeUser = true;
@@ -197,8 +197,11 @@ namespace Scv.Api.Infrastructure.Authentication
                             var forwardedHost = context.HttpContext.Request.Headers["X-Forwarded-Host"];
                             var forwardedPort = context.HttpContext.Request.Headers["X-Forwarded-Port"];
                             var baseUrl = context.HttpContext.Request.Headers["X-Base-Href"];
-                            context.ProtocolMessage.RedirectUri =
-                                $"{XForwardedForHelper.BuildUrlString(forwardedHost, forwardedPort, baseUrl)}{options.CallbackPath}";
+                            context.ProtocolMessage.RedirectUri = XForwardedForHelper.BuildUrlString(
+                                forwardedHost,
+                                forwardedPort,
+                                baseUrl,
+                                options.CallbackPath);
                         }
                         return Task.CompletedTask;
                     }

@@ -99,7 +99,12 @@ namespace Scv.Api.Controllers
 
             return Ok(new
             {
-                Url = $"{XForwardedForHelper.BuildUrlString(forwardedHost, forwardedPort, baseUrl)}civil-file/{request.FileId}?fromA2A=true"
+                Url = XForwardedForHelper.BuildUrlString(
+                    forwardedHost,
+                    forwardedPort,
+                    baseUrl,
+                    $"civil-file/{request.FileId}",
+                    "fromA2A=true")
             });
         }
 

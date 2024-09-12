@@ -5,6 +5,8 @@ ENV WEB_BASE_HREF=${WEB_BASE_HREF}
 ENV WEB1_BASE_HREF=${WEB_BASE_HREF}
 WORKDIR /opt/app-root/src
 COPY ../../web .
+COPY ../../public ./web/public
+COPY ../../public web/public
 RUN echo "$WEB1_BASE_HREF"
 RUN echo "$WEB_BASE_HREF"
 USER root

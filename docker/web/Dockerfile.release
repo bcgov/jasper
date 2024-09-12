@@ -4,6 +4,7 @@ ARG WEB_BASE_HREF=/
 ARG NGINX_RUNTIME_SRC=./nginx-runtime
 ARG VUE_ON_NGINX_SRC=./vue-on-nginx
 ARG WEB_SRC=./web
+ARG PUBLIC_SRC=./public
 ARG NPM_INSTALL_ARGS=""
 
 ###################################################################################
@@ -65,12 +66,15 @@ USER 104
 FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} as artifacts
 ARG NODE_VERSION
 ARG WEB_SRC
+ARG PUBLIC_SRC
 ARG NPM_INSTALL_ARGS
 
 USER root
 WORKDIR /opt/app-root/src
 
 COPY ${WEB_SRC} .
+COPY ${PUBLIC_SRC} .
+
 
 RUN npm install ${NPM_INSTALL_ARGS}
 RUN npm run build 
@@ -92,6 +96,7 @@ COPY ${VUE_ON_NGINX_SRC}/s2i/bin/fix-base-url /usr/libexec/s2i/fix-base-url
 USER root
 RUN chmod 674 /usr/libexec/s2i/fix-base-url
 RUN chmod -R 674 /tmp/app/dist/
+
 
 # From nginx-runtime.
 USER 104

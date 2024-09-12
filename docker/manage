@@ -99,6 +99,7 @@ build-web() {
     --build-arg NGINX_RUNTIME_SRC='../docker/nginx-runtime' \
     --build-arg VUE_ON_NGINX_SRC='../docker/vue-on-nginx' \
     --build-arg WEB_SRC='./web' \
+    --build-arg PUBLIC_SRC='./public' \
     --build-arg NPM_INSTALL_ARGS='--unsafe-perm' \
     -f './web/Dockerfile.release' '..'
   echo -e "===================================================================================================="

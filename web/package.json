@@ -32,6 +32,7 @@
     "regenerator-runtime": "^0.13.5",
     "splunk-logging": "^0.11.1",
     "underscore": "^1.13.1",
+    "@pdftron/webviewer": "^10.0.0",
     "vue": "2.6.11",
     "vue-class-component": "6.3.2",
     "vue-property-decorator": "^8.4.2",

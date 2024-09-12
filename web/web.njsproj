@@ -97,11 +97,15 @@
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Content Include="vue.config.js" />
+    <Content Include="public\ui\index.html" />
+      <Content Include="public\ui\webviewer-ui.min.js.map" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="dist\" />
     <Folder Include="public\" />
     <Folder Include="public\images\" />
+    <Folder Include="public\core\" />
+    <Folder Include="public\ui\" />
     <Folder Include="src\" />
     <Folder Include="src\assets\" />
     <Folder Include="src\components\" />

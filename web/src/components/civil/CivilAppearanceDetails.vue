@@ -312,7 +312,9 @@
     size="xl"
     hide-footer
     id="bv-modal-pdf">
-      <embed :src="pdfLink" frameborder="0" width="100%" height="100%">
+
+    <div ref="viewer" style="height:100%"></div>
+
     </b-modal>
   </div>
 </template>
@@ -328,6 +330,7 @@ import {
 } from "@/types/civil";
 import { CourtRoomsJsonInfoType, InputNamesType, UserInfo } from "@/types/common";
 import { CourtDocumentType, DocumentData } from "@/types/shared";
+import WebViewer from "@pdftron/webviewer";
 import "@store/modules/CivilFileInformation";
 import "@store/modules/CommonInformation";
 import { Component, Prop, Vue } from "vue-property-decorator";
@@ -357,7 +360,8 @@ export default class CivilAppearanceDetails extends Vue {
   appearanceDocuments: appearanceDocumentsType[] = [];
   appearanceParties: appearancePartiesType[] = [];
   appearanceMethods: appearanceMethodsType[] = [];
-
+  linkArray: any[] = [];
+  extentionArray: any[] = [];
   loadingPdf = false;
   isMounted = false;
   isDataReady = false;
@@ -467,6 +471,11 @@ export default class CivilAppearanceDetails extends Vue {
   ];
 
   appearanceMethodsField = [{ key: "key", label: "Key", cellClass: "text-danger", cellStyle: "white-space: pre-line" }];
+  $http: any;
+  $bvToast: any;
+  $refs: any;
+  beautify_date: any;
+  $bvModal: any;
 
   mounted() {
     this.getAdditionalInfo();
@@ -650,8 +659,8 @@ export default class CivilAppearanceDetails extends Vue {
   }
 
   public documentClick(document) {
-    console.log(document);
-    console.log(this.appearanceDetailsJson);
+    //console.log(document);
+   // console.log(this.appearanceDetailsJson);
 
     this.loadingPdf = true;
     const documentType = document.item == null ? CourtDocumentType.CSR : CourtDocumentType.Civil;
@@ -669,14 +678,97 @@ export default class CivilAppearanceDetails extends Vue {
       fileNumberText: this.appearanceDetailsJson.fileNumberTxt,
       location: location ? location : "",
     };
-    console.log(documentData);
+   // console.log(documentData);
    
     this.pdfLink =  shared.openDocumentsPdf(documentType, documentData);
+
+    this.$nextTick(() => {
+  setTimeout(() => {
+    this.initPDFViewer(this.pdfLink);
+  }, 1000); 
+});
+
+    //this.initPDFViewer(this.pdfLink);
+
     if(this.pdfLink){
       this.showPdfModal = true;
     }
     this.loadingPdf = false;
   }
+
+  public initPDFViewer(pdfFileLink) {
+     // Path to the document you want to display
+     //console.log('3',pdfFileLink);
+  //  console.log('linkArray before ' + this.linkArray.length,this.linkArray);
+  this.linkArray = JSON.parse(localStorage.getItem('pdfLinkArray')!) || [];
+    console.log('linkArray before ' + this.linkArray.length,this.linkArray);
+     if(!this.linkArray.includes(pdfFileLink)){
+      this.linkArray.push(pdfFileLink);
+     // this.extentionArray.push('pdf');
+      }
+      localStorage.setItem('pdfLinkArray', JSON.stringify(this.linkArray));
+     console.log('pdfFileLink',pdfFileLink);
+     console.log('linkArray after ' + this.linkArray.length,this.linkArray);
+
+WebViewer({
+        path: '/',
+        initialDoc: this.linkArray,
+        extension: ["pdf"],
+       // extension: this.extentionArray,
+      }, this.$refs.viewer)
+      .then(instance => {
+    //    const { docViewer } = instance.Core;
+        const { UI } = instance;
+     //   const { Events } = UI;
+
+     //   instance.UI.disableElements(['toolbarGroup-Shapes']);
+     //  instance.UI.disableElements(['toolbarGroup-Edit']);
+     // instance.UI.disableElements(['toolbarGroup-Insert']);
+
+        // docViewer.on('documentLoaded', () => {
+        //   console.log('Document loaded, Events', Events);
+        // });
+        instance.UI.enableFeatures([instance.UI.Feature.MultiTab]);
+       // instance.UI.enableFeatures([UI.Feature.TabManager]);
+        instance.UI.addEventListener(UI.Events.TAB_DELETED, (deletedTab) => {
+          
+       //  console.log('Tab deleted:', deletedTab.detail.src);
+         const deletedObject  = deletedTab.detail.src;
+    //     console.log('Tab deleted typeof', typeof deletedObject);
+         this.linkArray = JSON.parse(localStorage.getItem('pdfLinkArray')!) || [];
+         if(typeof deletedObject == 'string')
+         {
+
+          // find the index of deletedObject in linkArray
+          const index = this.linkArray.indexOf(deletedObject);
+          // if the index is greater than -1, it means deletedObject exists in linkArray
+          if (index > -1) {
+            // remove deletedObject from linkArray
+            this.linkArray.splice(index, 1);
+          }
+         }
+        else
+        {
+        //   // find in array contais and delete
+     //   console.log('src Tab deleted:', deletedTab.detail.src ? deletedTab.detail.src.name : '');
+        const otherTab = deletedTab.detail.src ? deletedTab.detail.src.name : '';
+        const index = this.linkArray.findIndex((x) => x.includes(otherTab));
+        if (index > -1) {
+            // remove deletedObject from linkArray
+            this.linkArray.splice(index, 1);
+          }
+        }
+      //      console.log('linkArray after delet ' + this.linkArray.length,this.linkArray);
+             localStorage.setItem('pdfLinkArray', JSON.stringify(this.linkArray));
+     });
+
+      })
+      .catch(error => {
+        console.error('Failed to load WebViewer:', error);
+      });
+
+    }
+
 
   public OpenAdjudicatorComment() {
     this.showAdjudicatorComment = true;

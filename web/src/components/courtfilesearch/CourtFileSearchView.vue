@@ -140,7 +140,7 @@
 </template>
 <script lang="ts">
 import { CourtRoomsJsonInfoType, LookupCode } from "@/types/common";
-import { CourtFileSearchCriteria, CriminalCourtFileSearchDetail, SearchModeEnum } from "@/types/courtFileSearch";
+import { CourtFileSearchCriteria, FileDetail, SearchModeEnum } from "@/types/courtFileSearch";
 import { roomsInfoType } from "@/types/courtlist";
 import CourtFileSearchResult from "@components/courtfilesearch/CourtFileSearchResult.vue";
 import { Component, Vue } from "vue-property-decorator";
@@ -158,7 +158,7 @@ export default class CourtFileSearchView extends Vue {
   errorText = "";
   courtRooms: roomsInfoType[] = [];
   classes: LookupCode[] = [];
-  searchResults: CriminalCourtFileSearchDetail[] = [];
+  searchResults: FileDetail[] = [];
 
   isLookupDataMounted = false;
   isLookupDataReady = false;
@@ -233,8 +233,10 @@ export default class CourtFileSearchView extends Vue {
 
     const queryParams = this.buildQueryParams();
 
-    const result = await this.$filesService.searchCriminalFiles(queryParams);
-    this.searchResults = result.fileDetail;
+    this.searchResults = this.searchCriteria.isCriminal
+      ? (await this.$filesService.searchCriminalFiles(queryParams)).fileDetail
+      : (await this.$filesService.searchCivilFiles(queryParams)).fileDetail;
+
     this.hasSearched = true;
     this.isSearching = false;
   }

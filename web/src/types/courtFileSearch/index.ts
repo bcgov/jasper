@@ -1,3 +1,5 @@
+import { chargeType } from "../criminal/jsonTypes";
+
 // Intefaces
 export interface CourtFileSearchCriteria {
   isCriminal: boolean;
@@ -13,13 +15,13 @@ export interface CourtFileSearchCriteria {
   location: string;
 }
 
-export interface CriminalCourtFileSearchResult {
+export interface CourtFileSearchResponse {
   recCount: number;
   responseCd: number;
-  fileDetail: CriminalCourtFileSearchDetail[];
+  fileDetail: FileDetail[];
 }
 
-export interface CriminalCourtFileSearchDetail {
+export interface FileDetail {
   mdocJustinNo: string;
   physicalFileId: string;
   fileHomeAgencyId: string;
@@ -33,17 +35,12 @@ export interface CriminalCourtFileSearchDetail {
   pcssCourtDivisionCd: string;
   sealStatusCd: string;
   approvalCrownAgencyTypeCd: string;
-  participant: CriminalCourtFileSearchParticipant[];
+  participant: Participant[];
 }
 
-export interface CriminalCourtFileSearchParticipant {
+export interface Participant {
   fullNm: string;
-  charge: CriminalCourtFileSearchCharge[];
-}
-
-export interface CriminalCourtFileSearchCharge {
-  sectionTxt: string;
-  sectionDscTxt: string;
+  charge: chargeType[];
 }
 
 // Enums

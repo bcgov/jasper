@@ -174,6 +174,56 @@ namespace Scv.Api.Controllers
             return BuildPdfFileResponse(justinReportResponse.ReportContent);
         }
 
+        /// <summary>
+        /// Search Civil Court Files
+        /// </summary>
+        /// <param name="searchMode">The searchMode whether if its PARTNAM or FILENO</param>
+        /// <param name="fileHomeAgencyId">The court location</param>
+        /// <param name="fileNumberTxt">The file number</param>
+        /// <param name="courtClassCd">THe court class code.</param>
+        /// <param name="lastNm">Last Name</param>
+        /// <param name="givenNm">Given Name</param>
+        /// <param name="orgNm">Organisation Name</param>
+        /// <returns>FileSearchResponse</returns>
+        [HttpGet]
+        [Route("civil/search")]
+        public async Task<ActionResult<List<RedactedCivilFileDetailResponse>>> SearchCivilFiles(
+            [FromQuery] string searchMode,
+            [FromQuery] string fileHomeAgencyId,
+            [FromQuery] string fileNumberTxt = null,
+            [FromQuery] string courtClassCd = null,
+            [FromQuery] string lastNm = null,
+            [FromQuery] string givenNm = null,
+            [FromQuery] string orgNm = null
+        )
+        {
+            var query = new FilesCivilQuery
+            {
+                FileHomeAgencyId = fileHomeAgencyId,
+                FileNumber = fileNumberTxt,
+                FilePrefix = filePrefixTxt,
+                FileSuffixNumber = fileSuffixNo,
+                MDocReferenceTypeCode = mdocRefTypeCd,
+                LastName = lastNm,
+                GivenName = givenNm,
+                OrgName = orgNm
+            };
+
+            if (!string.IsNullOrWhiteSpace(searchMode) && Enum.TryParse(searchMode, out SearchMode mode))
+            {
+                query.SearchMode = mode;
+            }
+
+            if (!string.IsNullOrWhiteSpace(courtClassCd) && Enum.TryParse(courtClassCd, out CourtClassCd courtClass))
+            {
+                query.CourtClass = courtClass;
+            }
+
+            var civilFiles = await _civilFilesService.SearchAsync(query);
+
+            return Ok(civilFiles);
+        }
+
         #endregion Civil Only
 
         #region Criminal Only
@@ -258,9 +308,23 @@ namespace Scv.Api.Controllers
             return BuildPdfFileResponse(recordsOfProceeding.B64Content);
         }
 
+        /// <summary>
+        /// Search Criminal Court Files
+        /// </summary>
+        /// <param name="searchMode">The searchMode whether if its PARTNAM or FILENO</param>
+        /// <param name="fileHomeAgencyId">The court location</param>
+        /// <param name="fileNumberTxt">The file number</param>
+        /// <param name="filePrefixTxt">The file prefix</param>
+        /// <param name="fileSuffixNo">The file suffix number</param>
+        /// <param name="mdocRefTypeCd">The document reference type code.</param>
+        /// <param name="courtClassCd">THe court class code.</param>
+        /// <param name="lastNm">Last Name</param>
+        /// <param name="givenNm">Given Name</param>
+        /// <param name="orgNm">Organisation Name</param>
+        /// <returns>FileSearchResponse</returns>
         [HttpGet]
         [Route("criminal/search")]
-        public async Task<ActionResult<List<RedactedCriminalFileDetailResponse>>> SearchCriminalFiles(
+        public async Task<ActionResult> SearchCriminalFiles(
             [FromQuery] string searchMode,
             [FromQuery] string fileHomeAgencyId,
             [FromQuery] string fileNumberTxt = null,

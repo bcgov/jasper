@@ -1,4 +1,4 @@
-import { CriminalCourtFileSearchResult } from "@/types/courtFileSearch";
+import { CourtFileSearchResponse } from "@/types/courtFileSearch";
 import { HttpService } from "./HttpService";
 
 export class FilesService {
@@ -8,7 +8,11 @@ export class FilesService {
     this.httpService = httpService;
   }
 
-  async searchCriminalFiles(query): Promise<CriminalCourtFileSearchResult> {
-    return await this.httpService.get<CriminalCourtFileSearchResult>(`api/files/criminal/search?${query}`);
+  async searchCriminalFiles(query): Promise<CourtFileSearchResponse> {
+    return await this.httpService.get<CourtFileSearchResponse>(`api/files/criminal/search?${query}`);
+  }
+
+  async searchCivilFiles(query): Promise<CourtFileSearchResponse> {
+    return await this.httpService.get<CourtFileSearchResponse>(`api/files/civil/search?${query}`);
   }
 }

@@ -66,7 +66,7 @@
 </template>
 <script lang="ts">
 import { LookupCode } from "@/types/common";
-import { CourtClassEnum, CriminalCourtFileSearchDetail } from '@/types/courtFileSearch';
+import { CourtClassEnum, FileDetail } from '@/types/courtFileSearch';
 import { roomsInfoType } from "@/types/courtlist";
 import { Component, Prop, Vue } from "vue-property-decorator";
 
@@ -76,7 +76,7 @@ export default class CourtFileSearchResult extends Vue {
   courtRooms!: roomsInfoType[];
 
   @Prop({ type: Array, default: () => [] })
-  searchResults!: CriminalCourtFileSearchDetail[];
+  searchResults!: FileDetail[];
 
   @Prop({ type: Array, default: () => [] })
   classes!: LookupCode[];
@@ -158,7 +158,7 @@ export default class CourtFileSearchResult extends Vue {
   get filteredFields() {
     return this.isCriminal
       ? this.allFields
-      : this.allFields.filter(f => !['charges', 'ow', 'ic'].includes(f.key));
+      : this.allFields.filter(f => !['charges', 'warrantyYN', 'inCustodyYN'].includes(f.key));
   }
 
   getLocation(fileHomeAgencyId: string) {

@@ -259,7 +259,7 @@ namespace Scv.Api.Controllers
         }
 
         [HttpGet]
-        [Route("search")]
+        [Route("criminal/search")]
         public async Task<ActionResult<List<RedactedCriminalFileDetailResponse>>> SearchCriminalFiles(
             [FromQuery] string searchMode,
             [FromQuery] string fileHomeAgencyId,
@@ -268,19 +268,9 @@ namespace Scv.Api.Controllers
             [FromQuery] string fileSuffixNo = null,
             [FromQuery] string mdocRefTypeCd = null,
             [FromQuery] string courtClassCd = null,
-            [FromQuery] string courtLevelCd = null,
-            [FromQuery] string nameSearchTypeCd = null,
             [FromQuery] string lastNm = null,
-            [FromQuery] string orgNm = null,
             [FromQuery] string givenNm = null,
-            [FromQuery] string birthDt = null,
-            [FromQuery] string searchByCrownPartId = null,
-            [FromQuery] string searchByCrownActiveOnlyYN = null,
-            [FromQuery] string searchByCrownFileDesignationDd = null,
-            [FromQuery] string mdocJustInnoset = null,
-            [FromQuery] string physicalFileIdSet = null,
-            [FromQuery] DateTime? appearanceDateFilterStart = null,
-            [FromQuery] DateTime? appearanceDateFilterEnd = null
+            [FromQuery] string orgNm = null
         )
         {
             var query = new FilesCriminalQuery
@@ -290,23 +280,19 @@ namespace Scv.Api.Controllers
                 FilePrefixTxt = filePrefixTxt,
                 FileSuffixNo = fileSuffixNo,
                 MdocRefTypeCode = mdocRefTypeCd,
-                CourtClass = (CourtClassCd)Enum.ToObject(typeof(CourtClassCd), courtClassCd),
-                CourtLevel = (CourtLevelCd)Enum.ToObject(typeof(CourtLevelCd), courtLevelCd),
-                NameSearchTypeCd = (NameSearchTypeCd)Enum.ToObject(typeof(NameSearchTypeCd), nameSearchTypeCd),
                 LastName = lastNm,
                 GivenName = givenNm,
-                OrgName = orgNm,
-                SearchByCrownPartId = searchByCrownPartId,
-                SearchByCrownActiveOnly = (SearchByCrownActiveOnlyYN)Enum.ToObject(typeof(SearchByCrownActiveOnlyYN), searchByCrownActiveOnlyYN),
-                SearchByCrownFileDesignation = (SearchByCrownFileDesignationCd)Enum.ToObject(typeof(SearchByCrownFileDesignationCd), searchByCrownFileDesignationDd),
-                Birth = DateTime.TryParse(birthDt, out DateTime birthDate) ? birthDate : null,
-                MdocJustinNoSet = mdocJustInnoset,
-                PhysicalFileIdSet = physicalFileIdSet
+                OrgName = orgNm
             };
 
-            if (!string.IsNullOrWhiteSpace(searchMode))
+            if (!string.IsNullOrWhiteSpace(searchMode) && Enum.TryParse(searchMode, out SearchMode mode))
             {
-                query.SearchMode = (SearchMode)Enum.ToObject(typeof(SearchMode), searchMode);
+                query.SearchMode = mode;
+            }
+
+            if (!string.IsNullOrWhiteSpace(courtClassCd) && Enum.TryParse(courtClassCd, out CourtClassCd courtClass))
+            {
+                query.CourtClass = courtClass;
             }
 
             var criminalFiles = await _criminalFilesService.SearchAsync(query);

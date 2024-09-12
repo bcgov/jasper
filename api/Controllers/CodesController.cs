@@ -22,26 +22,6 @@ namespace Scv.Api.Controllers
         }
 
         /// <summary>
-        /// Gets the Court Levels
-        /// </summary>
-        /// <returns>Court Levels Lookup</returns>
-        [HttpGet]
-        [Route("court/levels")]
-        public async Task<ActionResult<List<LookupCode>>> GetCourtLevels()
-        {
-            var levels = await _lookupService.GetCourtLevel();
-
-            var levelsList = levels.Select(level => new LookupCode
-            {
-                LongDesc = level.LongDesc,
-                ShortDesc = level.ShortDesc,
-                Code = level.Code
-            }).ToList();
-
-            return Ok(levelsList);
-        }
-
-        /// <summary>
         /// Gets the Court Classes
         /// </summary>
         /// <returns>Court Classes Lookup</returns>

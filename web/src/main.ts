@@ -1,21 +1,23 @@
+import LoadingSpinner from "@components/LoadingSpinner.vue"
+import "@styles/index.scss"
+import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
 import 'core-js/stable'
-import 'regenerator-runtime/runtime'
 import 'intersection-observer'
+import 'regenerator-runtime/runtime'
 import Vue from 'vue'
 import VueResource from 'vue-resource'
 import VueRouter from 'vue-router'
-import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
-import "@styles/index.scss";
-import App from './App.vue';
+import App from './App.vue'
+import "./filters"
+import ServicePlugin from './plugins/ServicePlugin'
 import routes from './router/index'
 import store from './store/index'
-import "./filters"
-import LoadingSpinner from "@components/LoadingSpinner.vue";
 
 Vue.use(VueResource);
 Vue.use(VueRouter);
 Vue.use(BootstrapVue);
 Vue.use(BootstrapVueIcons);
+Vue.use(ServicePlugin);
 Vue.config.productionTip = true;
 Vue.component('loading-spinner', LoadingSpinner);
 

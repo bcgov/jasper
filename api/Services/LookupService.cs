@@ -165,7 +165,7 @@ namespace Scv.Api.Services
             return courtClasses;
         }
 
-        public async Task<CodeLookup> GetCourtLevel()
+        private async Task<CodeLookup> GetCourtLevel()
         {
             return await GetDataFromCache("CourtLevels",
                 async () => await _lookupClient.CodesCourtLevelsGetAsync());

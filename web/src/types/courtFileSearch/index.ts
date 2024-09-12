@@ -1,9 +1,6 @@
+// Intefaces
 export interface CourtFileSearchCriteria {
-  division: string;
   isCriminal: boolean;
-  isCivil: boolean;
-  isOther: boolean;
-
   selectedFileNoOrParty: string;
   fileNumber?: string;
   prefix?: string;
@@ -12,18 +9,19 @@ export interface CourtFileSearchCriteria {
   surname?: string;
   givenName?: string;
   org?: string;
-  class: string;
+  class?: string;
+  location: string;
+}
 
-  selectedType?: string;
-  courtOfAppeal?: string;
-  otrOrSealed?: string;
-  styleOfCause?: string;
-  judge?: string;
-  room?: string;
-  proceedingDates: string[];
+// Enums
+export enum CourtClassEnum {
+  Adult = "A",
+  Family = "F",
+  SmallClaims = "C",
+  Youth = "Y"
+}
 
-  registry: string;
-
-  startDate?: string;
-  endDate?: string;
+export enum SearchModeEnum {
+  FileNo = "FILENO",
+  PartName = "PARTNAME",
 }

@@ -13,44 +13,20 @@
     </b-card>
     <div v-if="!isSearching">
       <!-- Navbar -->
-      <b-card no-body>
+      <b-card no-body class="mb-3">
         <b-navbar type="white" variant="white">
           <b-navbar-nav type="white" variant="white">
-            <b-nav-text class="text-primary pt-0">
-              <h2>Found {{ items.length }} Similar Cases</h2>
+            <b-nav-text class="text-primary">
+              <h2 class="mb-0">Search Results</h2>
             </b-nav-text>
-          </b-navbar-nav>
-          <b-navbar-nav class="d-flex align-items-center ml-auto">
-            <b-form-group label="Start Date:" class="mr-3 mb-0">
-              <b-input-group>
-                <b-form-input type="text" placeholder="YYYY-MM-DD"></b-form-input>
-                <b-input-group-append>
-                  <b-form-datepicker button-only right locale="en-US"></b-form-datepicker>
-                </b-input-group-append>
-              </b-input-group>
-            </b-form-group>
-            <b-form-group label="End Date:" class="mr-3 mb-0">
-              <b-input-group>
-                <b-form-input type="text" placeholder="YYYY-MM-DD"></b-form-input>
-                <b-input-group-append>
-                  <b-form-datepicker button-only right locale="en-US"></b-form-datepicker>
-                </b-input-group-append>
-              </b-input-group>
-            </b-form-group>
-            <b-button variant="primary" type="button" class="align-self-end">
-              Search
-            </b-button>
           </b-navbar-nav>
         </b-navbar>
       </b-card>
-      <b-card class="pl-3" no-body>
-        <b-card-text><small>Choose or refine your search</small></b-card-text>
-      </b-card>
       <!-- Data -->
       <b-card bg-variant="white" class="mb-3" no-body v-if="courtRooms.length > 0">
-        <b-table class="p-3" :fields="fields" :items="items" borderless small responsive="sm">
-          <template v-for="(field, index) in fields" v-slot:[`head(${field.key})`]="data">
-            <b v-bind:key="index" :class="field.headerStyle"> {{ data.label }}</b>
+        <b-table class="p-3" :fields="filteredFields" :items="items" borderless small responsive="md">
+          <template v-for="(field, index) in filteredFields" v-slot:[`head(${field.key})`]="data">
+            <b-th v-bind:key="index" :class="field.headerStyle"> {{ data.label }}</b-th>
           </template>
 
           <template v-slot:cell(fileNumber)="data">
@@ -62,7 +38,7 @@
               <br />(sealed)
             </span>
           </template>
-          <template v-slot:cell(accused)="data">
+          <template v-slot:cell(participant)="data">
             <span :style="data.field.cellStyle">
               {{ data.item.participant.map(p => p.fullNm).join("; ") }}
             </span>
@@ -70,14 +46,32 @@
           <template v-slot:cell(location)="data">
             {{ getLocation(data.item.fileHomeAgencyId) }}
           </template>
-          <template v-slot:cell(level)="data">
-            {{ getLevel(data.item.courtLevelCd) }}
-          </template>
           <template v-slot:cell(class)="data">
-            {{ getClass(data.item.courtClassCd) }}
+            <span :class="getClassColor(data.item.courtClassCd)">
+              {{ getClass(data.item.courtClassCd) }}
+            </span>
+          </template>
+          <template v-slot:cell(ow)="data">
+            <b-badge v-if="data.item.warrantYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle">
+              <span>W</span>
+            </b-badge>
+          </template>
+          <template v-slot:cell(ic)="data">
+            <b-badge v-if="data.item.inCustodyYN === 'Y'" variant="primary text-success" :style="data.field.cellStyle">
+              IC
+            </b-badge>
+          </template>
+          <template v-slot:cell(nextApprDt)="data">
+            <span>
+              {{ data.item.nextApprDt | beautify_date }}
+            </span>
           </template>
           <template v-slot:cell(action)="data">
-            <b-button variant="primary" @click="() => handleCaseClick(data.item.mdocJustinNo)">View</b-button>
+            <div class="d-flex justify-content-end no-wrap">
+              <b-button variant="outline-primary" class="mr-3 py-0">Add File</b-button>
+              <b-button variant="primary" @click="() => handleCaseClick(data.item.mdocJustinNo)">Add File and
+                View</b-button>
+            </div>
           </template>
         </b-table>
       </b-card>
@@ -88,6 +82,7 @@
 import { Component, Vue, Prop } from "vue-property-decorator";
 import { roomsInfoType } from "@/types/courtlist";
 import { LookupCode } from "@/types/common";
+import { CourtClassEnum } from '@/types/courtFileSearch'
 
 @Component
 export default class CourtFileSearchResult extends Vue {
@@ -95,45 +90,67 @@ export default class CourtFileSearchResult extends Vue {
   courtRooms!: roomsInfoType[];
 
   @Prop({ type: Array, default: () => [] })
-  levels!: LookupCode[];
-
-  @Prop({ type: Array, default: () => [] })
   classes!: LookupCode[];
 
   @Prop({ type: Boolean, default: () => false })
   isSearching;
 
-  isCriminal = true;
-  fields = [
-    {
-      key: "fileNumber",
-      label: "File Number",
-      tdClass: "border-top"
-    },
-    {
-      key: "accused",
-      label: this.isCriminal ? "Accused" : "Party",
-      tdClass: "border-top max-width-300"
-    },
+  @Prop({ type: Boolean, default: () => true })
+  isCriminal;
+
+  allFields = [
     {
       key: "location",
       label: "Location",
-      tdClass: "border-top"
-    },
-    {
-      key: "level",
-      label: "Level",
-      tdClass: "border-top"
+      tdClass: "border-top",
+      sortable: true
     },
     {
       key: "class",
-      label: "Classification",
+      label: "Class",
+      tdClass: "border-top",
+      sortable: true
+    },
+    {
+      key: "fileNumber",
+      label: "File Number",
+      tdClass: "border-top",
+      sortable: true
+    },
+    {
+      key: "participant",
+      label: "Participant",
+      tdClass: "border-top",
+      sortable: true
+    },
+    {
+      key: "charges",
+      label: "Charges",
       tdClass: "border-top"
+    },
+    {
+      key: "ow",
+      label: "OW",
+      tdClass: "border-top",
+      sortable: true
+    },
+    {
+      key: "ic",
+      label: "IC",
+      tdClass: "border-top",
+      sortable: true
+    },
+    {
+      key: "nextApprDt",
+      label: "Next Appearance",
+      tdClass: "border-top",
+      thClass: "text-danger",
+      sortable: true
     },
     {
       key: "action",
       label: "",
-      tdClass: "border-top text-right"
+      tdClass: "border-top"
     },
   ];
 
@@ -148,8 +165,8 @@ export default class CourtFileSearchResult extends Vue {
       "mdocRefTypeCd": null,
       "courtLevelCd": "P",
       "courtClassCd": "A",
-      "warrantYN": "N",
-      "inCustodyYN": "N",
+      "warrantYN": "Y",
+      "inCustodyYN": "Y",
       "nextApprDt": "1998-01-22 00:00:00.0",
       "pcssCourtDivisionCd": "R",
       "sealStatusCd": "NA",
@@ -4681,16 +4698,34 @@ export default class CourtFileSearchResult extends Vue {
     }
   ];
 
+  get filteredFields() {
+    return this.isCriminal
+      ? this.allFields
+      : this.allFields.filter(f => !['charges', 'ow', 'ic'].includes(f.key));
+  }
+
   getLocation(fileHomeAgencyId: string) {
     return this.courtRooms.find(r => r.value === fileHomeAgencyId)?.text || '';
   }
 
-  getLevel(courtLevelCd: string) {
-    return this.levels.find(l => l.code === courtLevelCd)?.shortDesc || '';
-  }
-
   getClass(courtClassCd: string) {
     return this.classes.find(l => l.code === courtClassCd)?.shortDesc || '';
+  }
+
+  getClassColor(courtClassCd: string) {
+    switch (courtClassCd) {
+      case CourtClassEnum.Adult:
+      case CourtClassEnum.Youth:
+        return 'text-blue';
+
+      case CourtClassEnum.Family:
+        return 'text-green';
+
+      case CourtClassEnum.SmallClaims:
+        return 'text-purple';
+      default:
+        return "";
+    }
   }
 
   public handleCaseClick(mdocJustinNo: string) {
@@ -4699,8 +4734,30 @@ export default class CourtFileSearchResult extends Vue {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import '../../assets/_custom.scss';
+
 .card {
   border: white;
+}
+
+.text-blue {
+  color: $blue-100;
+}
+
+.text-green {
+  color: $green;
+}
+
+.text-purple {
+  color: $purple;
+}
+
+table {
+  table-layout: auto;
+}
+
+.no-wrap {
+  white-space: nowrap;
 }
 </style>

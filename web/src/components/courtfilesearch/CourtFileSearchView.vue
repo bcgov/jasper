@@ -118,9 +118,9 @@
               </b-form-group>
               <b-row>
                 <b-col offset-md="3">
-                  <b-button variant="primary" type="submit">
+                  <b-button variant="primary" type="submit" :disabled="isSearching">
                     <b-icon icon="search"></b-icon>
-                    {{ searchCriteria.isOther ? 'Enter Details of Request' : 'Search' }}
+                    Search
                   </b-button>
                   <b-button variant="outline-primary" class="ml-3" type="button" @click="() => handleReset(true)">
                     Reset Search
@@ -131,18 +131,19 @@
           </b-card>
         </b-col>
       </b-row>
-      <court-file-search-result :isLookupDataMounted="isLookupDataMounted" :isLookupDataReady="isLookupDataReady"
-        :courtRooms="courtRooms" :classes="classes" :isCriminal="searchCriteria.isCriminal">
+      <court-file-search-result v-if="isSearching || hasSearched" :isLookupDataMounted="isLookupDataMounted"
+        :isLookupDataReady="isLookupDataReady" :courtRooms="courtRooms" :classes="classes"
+        :isCriminal="searchCriteria.isCriminal" :searchResults="searchResults" :isSearching="isSearching">
       </court-file-search-result>
     </b-card>
   </b-card>
 </template>
 <script lang="ts">
-import { CourtFileSearchCriteria, SearchModeEnum } from "@/types/courtFileSearch";
-import CourtFileSearchResult from "@components/courtfilesearch/CourtFileSearchResult.vue";
-import { roomsInfoType } from "@/types/courtlist";
-import { Component, Vue } from "vue-property-decorator";
 import { CourtRoomsJsonInfoType, LookupCode } from "@/types/common";
+import { CourtFileSearchCriteria, CriminalCourtFileSearchDetail, SearchModeEnum } from "@/types/courtFileSearch";
+import { roomsInfoType } from "@/types/courtlist";
+import CourtFileSearchResult from "@components/courtfilesearch/CourtFileSearchResult.vue";
+import { Component, Vue } from "vue-property-decorator";
 
 const CRIMINAL_CODE = "R";
 const CIVIL_CODE = ["I", "F"];
@@ -157,17 +158,20 @@ export default class CourtFileSearchView extends Vue {
   errorText = "";
   courtRooms: roomsInfoType[] = [];
   classes: LookupCode[] = [];
+  searchResults: CriminalCourtFileSearchDetail[] = [];
 
   isLookupDataMounted = false;
   isLookupDataReady = false;
+  hasSearched = false;
   isSearching = false;
+  defaultLocation = this.$store.state.CommonInformation.userInfo.agencyCode;
 
   classOptions: LookupCode[] = [];
 
   searchCriteria: CourtFileSearchCriteria = {
     isCriminal: true,
     selectedFileNoOrParty: 'file',
-    location: "83.0001",
+    location: this.defaultLocation,
   };
 
   errors = {
@@ -176,7 +180,7 @@ export default class CourtFileSearchView extends Vue {
     isMissingOrg: false
   };
 
-  mounted() {
+  async mounted() {
     this.loadLookups();
   }
 
@@ -213,8 +217,7 @@ export default class CourtFileSearchView extends Vue {
   }
 
   public async handleSubmit() {
-    console.log(this.searchCriteria);
-
+    this.isSearching = true;
     this.sanitizeTextInputs();
     this.resetErrors();
 
@@ -230,12 +233,15 @@ export default class CourtFileSearchView extends Vue {
 
     const queryParams = this.buildQueryParams();
 
-    await this.$filesService.searchCriminalFiles(queryParams);
+    const result = await this.$filesService.searchCriminalFiles(queryParams);
+    this.searchResults = result.fileDetail;
+    this.hasSearched = true;
+    this.isSearching = false;
   }
 
   public handleReset(resetDivision = false): void {
     this.searchCriteria.isCriminal = resetDivision ? true : this.searchCriteria.isCriminal;
-    this.searchCriteria.location = "";
+    this.searchCriteria.location = this.defaultLocation;
     this.searchCriteria.selectedFileNoOrParty = 'file';
     this.searchCriteria.fileNumber = undefined;
     this.searchCriteria.surname = undefined;
@@ -248,8 +254,12 @@ export default class CourtFileSearchView extends Vue {
       this.searchCriteria.seqNum = undefined;
       this.searchCriteria.typeRef = undefined;
     }
+
     this.loadClasses();
     this.resetErrors();
+
+    this.searchResults = [];
+    this.hasSearched = false;
   }
 
   sanitizeTextInputs(): void {

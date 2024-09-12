@@ -1,4 +1,4 @@
-import { criminalFileDetailsType } from "@/types/criminal/jsonTypes";
+import { CriminalCourtFileSearchResult } from "@/types/courtFileSearch";
 import { HttpService } from "./HttpService";
 
 export class FilesService {
@@ -8,7 +8,7 @@ export class FilesService {
     this.httpService = httpService;
   }
 
-  async searchCriminalFiles(query): Promise<criminalFileDetailsType[]> {
-    return await this.httpService.get<criminalFileDetailsType[]>(`api/files/criminal/search?${query}`);
+  async searchCriminalFiles(query): Promise<CriminalCourtFileSearchResult> {
+    return await this.httpService.get<CriminalCourtFileSearchResult>(`api/files/criminal/search?${query}`);
   }
 }

@@ -133,6 +133,7 @@ namespace Scv.Api.Controllers
                 Role = HttpContext.User.Role(),
                 SubRole = HttpContext.User.SubRole(),
                 IsSupremeUser = HttpContext.User.IsSupremeUser(),
+                AgencyCode = HttpContext.User.AgencyCode(),
                 DateTime.UtcNow
             });
         }

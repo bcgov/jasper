@@ -201,9 +201,6 @@ namespace Scv.Api.Controllers
             {
                 FileHomeAgencyId = fileHomeAgencyId,
                 FileNumber = fileNumberTxt,
-                FilePrefix = filePrefixTxt,
-                FileSuffixNumber = fileSuffixNo,
-                MDocReferenceTypeCode = mdocRefTypeCd,
                 LastName = lastNm,
                 GivenName = givenNm,
                 OrgName = orgNm

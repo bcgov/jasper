@@ -12,11 +12,10 @@ export class LocationService {
   async getCourtRooms(): Promise<roomsInfoType[]> {
     const courtRoomsJson = await this.httpService.get<CourtRoomsJsonInfoType[]>('api/location/court-rooms');
 
-    const sortedCourtRooms = courtRoomsJson
-      .sort((a, b) => a.name.toLocaleLowerCase().localeCompare(b.name.toLowerCase()))
+    courtRoomsJson.sort((a, b) => a.name.toLocaleLowerCase().localeCompare(b.name.toLowerCase()))
     const courtRooms: roomsInfoType[] = []
 
-    sortedCourtRooms.map(cr => {
+    courtRoomsJson.map(cr => {
       courtRooms.push({
         text: cr.name,
         value: cr.code

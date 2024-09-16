@@ -1,5 +1,5 @@
 <template>
-  <b-card body-class="pb-0" bg-variant="light">
+  <b-card bg-variant="light">
     <b-card bg-variant="light" v-if="isSearching">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
@@ -23,9 +23,11 @@
         </b-navbar>
       </b-card>
       <!-- Data -->
-      <b-card bg-variant="white" class="mb-3" no-body v-if="courtRooms.length > 0">
-        <b-table class="p-3" :fields="filteredFields" :items="searchResults" borderless small responsive="md"
-          sort-icon-left>
+      <b-card bg-variant="white" no-body v-if="courtRooms.length > 0">
+        <b-table class="p-3 mb-0" :fields="filteredFields" :items="searchResults" borderless small responsive="md"
+          sort-icon-left
+          empty-text="No cases matching the filter criteria were found. Please check to ensure the search criteria is correct."
+          show-empty>
           <template #head(nextApprDt)="data">
             <span class="text-danger no-wrap">{{ data.label }}</span>
           </template>
@@ -123,7 +125,7 @@ export default class CourtFileSearchResult extends Vue {
     {
       key: "charges",
       label: "Charges",
-      tdClass: "border-top",
+      tdClass: "border-top max-width-300",
       sortable: true,
       sortByFormatted: true,
       formatter: (value, key, item) => {

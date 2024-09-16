@@ -217,7 +217,6 @@ export default class CourtFileSearchView extends Vue {
   }
 
   public async handleSubmit() {
-    this.isSearching = true;
     this.sanitizeTextInputs();
     this.resetErrors();
 
@@ -233,12 +232,27 @@ export default class CourtFileSearchView extends Vue {
 
     const queryParams = this.buildQueryParams();
 
-    this.searchResults = this.searchCriteria.isCriminal
-      ? (await this.$filesService.searchCriminalFiles(queryParams)).fileDetail
-      : (await this.$filesService.searchCivilFiles(queryParams)).fileDetail;
-
-    this.hasSearched = true;
-    this.isSearching = false;
+    try {
+      this.isSearching = true;
+      this.searchResults.length = 0;
+      this.searchResults = this.searchCriteria.isCriminal
+        ? (await this.$filesService.searchCriminalFiles(queryParams)).fileDetail
+        : (await this.$filesService.searchCivilFiles(queryParams)).fileDetail;
+    } catch (err) {
+      this.errorCode = err.status;
+      this.errorText = err.statusText;
+      if (this.errorCode != 401) {
+        this.$bvToast.toast(`Error - ${this.errorCode} - ${this.errorText}`, {
+          title: "An error has occured.",
+          variant: "danger",
+          autoHideDelay: 10000,
+        });
+      }
+      console.log(this.errorCode);
+    } finally {
+      this.hasSearched = true;
+      this.isSearching = false;
+    }
   }
 
   public handleReset(resetDivision = false): void {
@@ -260,7 +274,7 @@ export default class CourtFileSearchView extends Vue {
     this.loadClasses();
     this.resetErrors();
 
-    this.searchResults = [];
+    this.searchResults.length = 0;
     this.hasSearched = false;
   }
 

@@ -4,15 +4,15 @@ import { chargeType } from "../criminal/jsonTypes";
 export interface CourtFileSearchCriteria {
   isCriminal: boolean;
   selectedFileNoOrParty: string;
-  fileNumber?: string;
-  prefix?: string;
-  seqNum?: string;
-  typeRef?: string;
-  surname?: string;
+  fileNumberTxt?: string;
+  filePrefixTxt?: string;
+  fileSuffixNo?: string;
+  mDocRefTypeCode?: string;
+  lastName?: string;
   givenName?: string;
-  org?: string;
+  orgName?: string;
   class?: string;
-  location: string;
+  fileHomeAgencyId: string;
 }
 
 export interface CourtFileSearchResponse {
@@ -45,13 +45,16 @@ export interface Participant {
 
 // Enums
 export enum CourtClassEnum {
-  Adult = "A",
-  Family = "F",
-  SmallClaims = "C",
-  Youth = "Y"
+  A = 0, // Adult
+  Y = 1, // Youth
+  T = 2, // Trafic
+  F = 3, // Family
+  C = 4, // Small Claims
+  M = 5, // Motor Vehicle
+  L = 6  // Enforcement/Legistated Statute
 }
 
 export enum SearchModeEnum {
-  FileNo = "FILENO",
-  PartName = "PARTNAME",
+  FileNo = 0,
+  PartName = 1,
 }

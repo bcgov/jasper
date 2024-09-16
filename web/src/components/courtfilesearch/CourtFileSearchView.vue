@@ -50,21 +50,24 @@
                     <b-form-radio class=" mt-2" value="file"> File Number </b-form-radio>
                     <b-row class="flex-grow-1" v-if="searchCriteria.selectedFileNoOrParty === 'file'">
                       <b-col md="5" class="text-right">
-                        <b-form-input placeholder="e.g. 99999999" v-model="searchCriteria.fileNumber"></b-form-input>
+                        <b-form-input placeholder="e.g. 99999999" v-model="searchCriteria.fileNumberTxt"></b-form-input>
                         <span class="text-danger" v-show="errors.isMissingFileNoOrParty">Field required</span>
                       </b-col>
                       <b-col md="6" offset-md="1" v-if="searchCriteria.isCriminal">
                         <b-card bg-variant="light" class="ml-1" body-class="p-2">
                           <b-form-group class="mb-0" label="Optional..." label-align="center">
-                            <b-form-group label-cols="4" label="Prefix" label-for="prefix" label-align="right">
-                              <b-form-input id="prefix" placeholder="AH" v-model="searchCriteria.prefix"></b-form-input>
+                            <b-form-group label-cols="4" label="Prefix" label-for="filePrefixTxt" label-align="right">
+                              <b-form-input id="filePrefixTxt" placeholder="AH"
+                                v-model="searchCriteria.filePrefixTxt"></b-form-input>
                             </b-form-group>
-                            <b-form-group label-cols="4" label="Seq Num" label-for="seqNum" label-align="right">
-                              <b-form-input id="seqNum" placeholder="1" v-model="searchCriteria.seqNum"></b-form-input>
+                            <b-form-group label-cols="4" label="Seq Num" label-for="fileSuffixNo" label-align="right">
+                              <b-form-input id="fileSuffixNo" placeholder="1"
+                                v-model="searchCriteria.fileSuffixNo"></b-form-input>
                             </b-form-group>
-                            <b-form-group label-cols="4" label="Type Ref" label-for="typeRef" label-align="right">
-                              <b-form-input id="typeRef" placeholder="B"
-                                v-model="searchCriteria.typeRef"></b-form-input>
+                            <b-form-group label-cols="4" label="Type Ref" label-for="mDocRefTypeCode"
+                              label-align="right">
+                              <b-form-input id="mDocRefTypeCode" placeholder="B"
+                                v-model="searchCriteria.mDocRefTypeCode"></b-form-input>
                             </b-form-group>
                           </b-form-group>
                         </b-card>
@@ -72,11 +75,11 @@
                     </b-row>
                   </div>
                   <div class="radio-container p-2 rounded d-flex"
-                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'surname' }">
-                    <b-form-radio class="mt-2" value="surname"> Surname </b-form-radio>
-                    <b-row v-if="searchCriteria.selectedFileNoOrParty === 'surname'">
+                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'lastName' }">
+                    <b-form-radio class="mt-2" value="lastName"> Surname </b-form-radio>
+                    <b-row v-if="searchCriteria.selectedFileNoOrParty === 'lastName'">
                       <b-col class="text-right">
-                        <b-form-input v-model="searchCriteria.surname"></b-form-input>
+                        <b-form-input v-model="searchCriteria.lastName"></b-form-input>
                         <span class="text-danger" v-show="errors.isMissingSurname">Field required</span>
                       </b-col>
                       <b-col>
@@ -85,11 +88,11 @@
                     </b-row>
                   </div>
                   <div class="radio-container p-2 rounded d-flex"
-                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'org' }">
-                    <b-form-radio class="mt-2" value="org"> Organisation </b-form-radio>
-                    <b-row v-if="searchCriteria.selectedFileNoOrParty === 'org'">
+                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'orgName' }">
+                    <b-form-radio class="mt-2" value="orgName"> Organisation </b-form-radio>
+                    <b-row v-if="searchCriteria.selectedFileNoOrParty === 'orgName'">
                       <b-col class="text-right">
-                        <b-form-input placeholder="e.g. MegaCorp Inc." v-model="searchCriteria.org"></b-form-input>
+                        <b-form-input placeholder="e.g. MegaCorp Inc." v-model="searchCriteria.orgName"></b-form-input>
                         <span class="text-danger" v-show="errors.isMissingOrg">Field required</span>
                       </b-col>
                     </b-row>
@@ -108,11 +111,11 @@
                   </b-col>
                 </b-row>
               </b-form-group>
-              <!-- location -->
+              <!-- fileHomeAgencyId -->
               <b-form-group label="Location:" label-cols="3" label-align="right">
                 <b-row>
                   <b-col cols="5">
-                    <b-form-select v-model="searchCriteria.location" :options="courtRooms"></b-form-select>
+                    <b-form-select v-model="searchCriteria.fileHomeAgencyId" :options="courtRooms"></b-form-select>
                   </b-col>
                 </b-row>
               </b-form-group>
@@ -140,7 +143,7 @@
 </template>
 <script lang="ts">
 import { CourtRoomsJsonInfoType, LookupCode } from "@/types/common";
-import { CourtFileSearchCriteria, FileDetail, SearchModeEnum } from "@/types/courtFileSearch";
+import { CourtFileSearchCriteria, FileDetail, SearchModeEnum, CourtClassEnum } from "@/types/courtFileSearch";
 import { roomsInfoType } from "@/types/courtlist";
 import CourtFileSearchResult from "@components/courtfilesearch/CourtFileSearchResult.vue";
 import { Component, Vue } from "vue-property-decorator";
@@ -171,7 +174,7 @@ export default class CourtFileSearchView extends Vue {
   searchCriteria: CourtFileSearchCriteria = {
     isCriminal: true,
     selectedFileNoOrParty: 'file',
-    location: this.defaultLocation,
+    fileHomeAgencyId: this.defaultLocation,
   };
 
   errors = {
@@ -220,9 +223,9 @@ export default class CourtFileSearchView extends Vue {
     this.sanitizeTextInputs();
     this.resetErrors();
 
-    this.errors.isMissingFileNoOrParty = this.searchCriteria.selectedFileNoOrParty === 'file' && !this.searchCriteria.fileNumber;
-    this.errors.isMissingSurname = this.searchCriteria.selectedFileNoOrParty === 'surname' && !this.searchCriteria.surname;
-    this.errors.isMissingOrg = this.searchCriteria.selectedFileNoOrParty === 'org' && !this.searchCriteria.org;
+    this.errors.isMissingFileNoOrParty = this.searchCriteria.selectedFileNoOrParty === 'file' && !this.searchCriteria.fileNumberTxt;
+    this.errors.isMissingSurname = this.searchCriteria.selectedFileNoOrParty === 'lastName' && !this.searchCriteria.lastName;
+    this.errors.isMissingOrg = this.searchCriteria.selectedFileNoOrParty === 'orgName' && !this.searchCriteria.orgName;
 
     // Don't proceed if any of the validation flag is set to true
     const hasNoErrors = Object.values(this.errors).every(value => value === false);
@@ -230,14 +233,12 @@ export default class CourtFileSearchView extends Vue {
       return;
     }
 
-    const queryParams = this.buildQueryParams();
-
     try {
       this.isSearching = true;
       this.searchResults.length = 0;
       this.searchResults = this.searchCriteria.isCriminal
-        ? (await this.$filesService.searchCriminalFiles(queryParams)).fileDetail
-        : (await this.$filesService.searchCivilFiles(queryParams)).fileDetail;
+        ? (await this.$filesService.searchCriminalFiles(this.buildQueryParams())).fileDetail
+        : (await this.$filesService.searchCivilFiles(this.buildQueryParams())).fileDetail;
     } catch (err) {
       this.errorCode = err.status;
       this.errorText = err.statusText;
@@ -257,18 +258,18 @@ export default class CourtFileSearchView extends Vue {
 
   public handleReset(resetDivision = false): void {
     this.searchCriteria.isCriminal = resetDivision ? true : this.searchCriteria.isCriminal;
-    this.searchCriteria.location = this.defaultLocation;
+    this.searchCriteria.fileHomeAgencyId = this.defaultLocation;
     this.searchCriteria.selectedFileNoOrParty = 'file';
-    this.searchCriteria.fileNumber = undefined;
-    this.searchCriteria.surname = undefined;
+    this.searchCriteria.fileNumberTxt = undefined;
+    this.searchCriteria.lastName = undefined;
     this.searchCriteria.givenName = undefined;
-    this.searchCriteria.org = undefined;
+    this.searchCriteria.orgName = undefined;
     this.searchCriteria.class = undefined
 
     if (this.searchCriteria.isCriminal) {
-      this.searchCriteria.prefix = undefined;
-      this.searchCriteria.seqNum = undefined;
-      this.searchCriteria.typeRef = undefined;
+      this.searchCriteria.filePrefixTxt = undefined;
+      this.searchCriteria.fileSuffixNo = undefined;
+      this.searchCriteria.mDocRefTypeCode = undefined;
     }
 
     this.loadClasses();
@@ -279,15 +280,15 @@ export default class CourtFileSearchView extends Vue {
   }
 
   sanitizeTextInputs(): void {
-    this.searchCriteria.fileNumber = this.searchCriteria.fileNumber?.trim();
-    this.searchCriteria.prefix = this.searchCriteria.prefix?.trim();
-    this.searchCriteria.seqNum = this.searchCriteria.seqNum?.trim();
-    this.searchCriteria.typeRef = this.searchCriteria.typeRef?.trim();
+    this.searchCriteria.fileNumberTxt = this.searchCriteria.fileNumberTxt?.trim();
+    this.searchCriteria.filePrefixTxt = this.searchCriteria.filePrefixTxt?.trim();
+    this.searchCriteria.fileSuffixNo = this.searchCriteria.fileSuffixNo?.trim();
+    this.searchCriteria.mDocRefTypeCode = this.searchCriteria.mDocRefTypeCode?.trim();
 
-    this.searchCriteria.surname = this.searchCriteria.surname?.trim();
+    this.searchCriteria.lastName = this.searchCriteria.lastName?.trim();
     this.searchCriteria.givenName = this.searchCriteria.givenName?.trim();
 
-    this.searchCriteria.org = this.searchCriteria.org?.trim();
+    this.searchCriteria.orgName = this.searchCriteria.orgName?.trim();
   }
 
   resetErrors(): void {
@@ -314,43 +315,43 @@ export default class CourtFileSearchView extends Vue {
       : this.classes.filter(c => CIVIL_CODE.includes(c.longDesc));
   }
 
-  buildQueryParams(): string {
-    const queryParams: string[] = [];
+  buildQueryParams() {
+    const queryParams = {
+      fileHomeAgencyId: this.searchCriteria.fileHomeAgencyId
+    };
 
     if (this.searchCriteria.selectedFileNoOrParty === 'file') {
-      queryParams.push(`searchMode=${SearchModeEnum.FileNo}`)
-      queryParams.push(`fileNumberTxt=${this.searchCriteria.fileNumber}`)
+      queryParams['searchMode'] = SearchModeEnum.FileNo;
+      queryParams['fileNumberTxt'] = this.searchCriteria.fileNumberTxt;
 
-      if (this.searchCriteria.prefix) {
-        queryParams.push(`filePrefixTxt=${this.searchCriteria.prefix}`)
+      if (this.searchCriteria.filePrefixTxt) {
+        queryParams['filePrefixTxt'] = this.searchCriteria.filePrefixTxt;
       }
-      if (this.searchCriteria.seqNum) {
-        queryParams.push(`fileSuffixNo=${this.searchCriteria.seqNum}`)
+      if (this.searchCriteria.fileSuffixNo) {
+        queryParams['fileSuffixNo'] = this.searchCriteria.fileSuffixNo;
       }
-      if (this.searchCriteria.typeRef) {
-        queryParams.push(`mdocRefTypeCd=${this.searchCriteria.typeRef}`)
+      if (this.searchCriteria.mDocRefTypeCode) {
+        queryParams['mDocRefTypeCode'] = this.searchCriteria.mDocRefTypeCode;
       }
     }
-    else if (this.searchCriteria.selectedFileNoOrParty === 'surname') {
-      queryParams.push(`searchMode=${SearchModeEnum.PartName}`)
-      queryParams.push(`lastNm=${this.searchCriteria.surname}`);
+    else if (this.searchCriteria.selectedFileNoOrParty === 'lastName') {
+      queryParams['searchMode'] = SearchModeEnum.PartName;
+      queryParams['lastName'] = this.searchCriteria.lastName;
 
       if (this.searchCriteria.givenName) {
-        queryParams.push(`givenNm=${this.searchCriteria.givenName}`);
+        queryParams['givenName'] = this.searchCriteria.givenName;
       }
     }
     else {
-      queryParams.push(`searchMode=${SearchModeEnum.PartName}`)
-      queryParams.push(`orgNm=${this.searchCriteria.org}`);
+      queryParams['searchMode'] = SearchModeEnum.PartName;
+      queryParams['orgName'] = this.searchCriteria.orgName;
     }
 
     if (this.searchCriteria.class) {
-      queryParams.push(`courtClassCd=${this.searchCriteria.class}`);
+      queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
     }
 
-    queryParams.push(`fileHomeAgencyId=${this.searchCriteria.location}`);
-
-    return queryParams.join("&");
+    return queryParams;
   }
 }
 </script>

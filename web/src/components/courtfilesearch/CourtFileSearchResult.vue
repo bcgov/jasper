@@ -172,15 +172,17 @@ export default class CourtFileSearchResult extends Vue {
   }
 
   getClassColor(courtClassCd: string) {
-    switch (courtClassCd) {
-      case CourtClassEnum.Adult:
-      case CourtClassEnum.Youth:
+    const classValue = CourtClassEnum[courtClassCd];
+
+    switch (classValue) {
+      case CourtClassEnum.A:
+      case CourtClassEnum.Y:
         return 'text-blue';
 
-      case CourtClassEnum.Family:
+      case CourtClassEnum.F:
         return 'text-green';
 
-      case CourtClassEnum.SmallClaims:
+      case CourtClassEnum.C:
         return 'text-purple';
       default:
         return "";

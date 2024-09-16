@@ -8,11 +8,11 @@ export class FilesService {
     this.httpService = httpService;
   }
 
-  async searchCriminalFiles(query): Promise<CourtFileSearchResponse> {
-    return await this.httpService.get<CourtFileSearchResponse>(`api/files/criminal/search?${query}`);
+  async searchCriminalFiles(queryParams: any): Promise<CourtFileSearchResponse> {
+    return await this.httpService.get<CourtFileSearchResponse>(`api/files/criminal/search`, queryParams);
   }
 
-  async searchCivilFiles(query): Promise<CourtFileSearchResponse> {
-    return await this.httpService.get<CourtFileSearchResponse>(`api/files/civil/search?${query}`);
+  async searchCivilFiles(queryParams: any): Promise<CourtFileSearchResponse> {
+    return await this.httpService.get<CourtFileSearchResponse>(`api/files/civil/search?`, queryParams);
   }
 }

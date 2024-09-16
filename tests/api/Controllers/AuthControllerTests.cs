@@ -13,30 +13,17 @@ using Xunit;
 
 namespace tests.api.Controllers
 {
-    public class TestUserInfo
-    {
-        public string UserType { get; set; }
-        public bool EnableArchive { get; set; }
-        public string Role { get; set; }
-        public string SubRole { get; set; }
-        public bool IsSupremeUser { get; set; }
-        public string AgencyCode { get; set; }
-        public DateTime UtcNow { get; set; }
-    }
-
     public class AuthControllerTests
     {
-        // private readonly Mock<IServiceProvider> mockServiceProvider;
-        private readonly Faker _faker = new();
         private readonly Mock<IConfiguration> _mockConfig;
         private readonly Mock<ScvDbContext> _dbContext;
+
+        private readonly Faker _faker = new();
 
         public AuthControllerTests()
         {
             _mockConfig = new Mock<IConfiguration>();
             _dbContext = new Mock<ScvDbContext>();
-
-
         }
 
         #region Unit Tests

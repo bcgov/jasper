@@ -3,7 +3,9 @@ import { chargeType } from "../criminal/jsonTypes";
 // Intefaces
 export interface CourtFileSearchCriteria {
   isCriminal: boolean;
-  selectedFileNoOrParty: string;
+  isFamily: boolean;
+  isSmallClaims: boolean;
+  searchBy: string;
   fileNumberTxt?: string;
   filePrefixTxt?: string;
   fileSuffixNo?: string;

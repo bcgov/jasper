@@ -38,7 +38,7 @@
         </template>
         <template v-slot:cell(inCustodyYN)="data">
           <b-badge v-if="data.item.inCustodyYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle"
-            v-b-tooltip.hover title="In Custody">
+            v-b-tooltip.hover title="In custody">
             IC
           </b-badge>
         </template>
@@ -49,13 +49,60 @@
         </template>
         <template v-slot:cell(action)="data">
           <div class="d-flex justify-content-end no-wrap">
-            <b-button variant="outline-primary" class="mr-3 py-0">Add File</b-button>
-            <b-button variant="primary" @click="() => handleCaseClick(data.item.mdocJustinNo)">Add File and
+            <b-button variant="outline-primary" class="mr-3" @click="() => handleCaseClick(data.item[idSelector])">Add
+              File</b-button>
+            <b-button variant="primary" @click="() => handleCaseClick(data.item[idSelector])">Add File and
               View</b-button>
           </div>
         </template>
       </b-table>
-
+      <div v-if="selectedFiles.length > 0">
+        <h3 class="mt-3">Files to View</h3>
+        <b-table :fields="filteredFields" :items="selectedFiles" borderless small responsive="md" sort-icon-left
+          striped>
+          <template #head(nextApprDt)="data">
+            <span class="text-danger no-wrap">{{ data.label }}</span>
+          </template>
+          <template v-slot:cell(sealStatusCd)="data">
+            <span v-if="data.item.sealStatusCd === 'SD'" class="text-danger">(Sealed)</span>
+          </template>
+          <template v-slot:cell(courtClassCd)="data">
+            <span :class="getClassColor(data.item.courtClassCd)">
+              {{ getClass(data.item.courtClassCd) }}
+            </span>
+          </template>
+          <template v-slot:cell(warrantYN)="data">
+            <b-badge v-if="data.item.warrantYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle"
+              v-b-tooltip.hover title="Outstanding warrant">
+              <span>W</span>
+            </b-badge>
+          </template>
+          <template v-slot:cell(inCustodyYN)="data">
+            <b-badge v-if="data.item.inCustodyYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle"
+              v-b-tooltip.hover title="In custody">
+              IC
+            </b-badge>
+          </template>
+          <template v-slot:cell(nextApprDt)="data">
+            <span>
+              {{ data.item.nextApprDt | beautify_date }}
+            </span>
+          </template>
+          <template v-slot:cell(action)="data">
+            <div class="d-flex justify-content-end no-wrap">
+              <b-button variant="link" class="remove" @click="() => handleDeleteClick(data.item[idSelector])">
+                <b-icon icon="trash"></b-icon> Remove
+              </b-button>
+            </div>
+          </template>
+        </b-table>
+        <div class="my-3 bg-light p-3">
+          <div class="d-flex">
+            <b-button variant="primary" class="mr-3" @click="handleViewFilesClick">View File(s)</b-button>
+            <b-button variant="outline-primary" @click="handleDeleteAllClick">Remove All Files and Start Over</b-button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -77,10 +124,12 @@ export default class CourtFileSearchResult extends Vue {
   classes!: LookupCode[];
 
   @Prop({ type: Boolean, default: () => false })
-  isSearching;
+  isSearching!: boolean;
 
   @Prop({ type: Boolean, default: () => true })
-  isCriminal;
+  isCriminal!: boolean;
+
+  idSelector = this.isCriminal ? 'mdocJustinNo' : 'physicalFileId';
 
   allFields = [
     {
@@ -167,6 +216,8 @@ export default class CourtFileSearchResult extends Vue {
     },
   ];
 
+  selectedFiles: FileDetail[] = [];
+
   get filteredFields() {
     return this.isCriminal
       ? this.allFields
@@ -199,8 +250,33 @@ export default class CourtFileSearchResult extends Vue {
     }
   }
 
-  public handleCaseClick(mdocJustinNo: string) {
-    console.log(mdocJustinNo);
+  public handleCaseClick(id: string) {
+    console.log(id);
+    console.log(this.idSelector)
+
+    const isExist = this.selectedFiles.find(c => c[this.idSelector] === id);
+    if (isExist) {
+      return;
+    }
+
+    const file = this.searchResults.find(c => c[this.idSelector] === id);
+    console.log(file);
+    if (file) {
+      this.selectedFiles.push(file);
+    }
+  }
+
+  public handleDeleteClick(id: string) {
+    this.selectedFiles = this.selectedFiles.filter(c => c[this.idSelector] !== id);
+  }
+
+  public handleDeleteAllClick() {
+    this.selectedFiles = [];
+  }
+
+  public handleViewFilesClick() {
+    const caseDetailUrl = `/${this.isCriminal ? 'criminal-file' : 'civil-file'}/${this.selectedFiles[0][this.idSelector]}`;
+    this.$router.push(caseDetailUrl);
   }
 }
 </script>
@@ -230,5 +306,13 @@ table thead tr th {
 
 .no-wrap {
   white-space: nowrap;
+}
+
+.remove,
+.remove:hover,
+.remove:focus {
+  text-decoration: none !important;
+  color: $danger !important;
+  box-shadow: none;
 }
 </style>

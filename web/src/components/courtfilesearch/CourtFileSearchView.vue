@@ -38,13 +38,17 @@
           <!-- Division -->
           <b-form-group label="Division*" class="mr-3">
             <b-button-group>
-              <b-button value="criminal" @click="handleDivisionChange"
+              <b-button value="isCriminal" @click="handleDivisionChange"
                 :variant="searchCriteria.isCriminal ? 'primary' : 'outline-primary'">
                 Criminal
               </b-button>
-              <b-button value="civil" @click="handleDivisionChange"
-                :variant="!searchCriteria.isCriminal ? 'primary' : 'outline-primary'">
-                Civil
+              <b-button value="isFamily" @click="handleDivisionChange"
+                :variant="searchCriteria.isFamily ? 'primary' : 'outline-primary'">
+                Family
+              </b-button>
+              <b-button value="isSmallClaims" @click="handleDivisionChange"
+                :variant="searchCriteria.isSmallClaims ? 'primary' : 'outline-primary'">
+                Small Claims
               </b-button>
             </b-button-group>
           </b-form-group>
@@ -64,24 +68,24 @@
         <!-- Search -->
         <div class="d-flex align-items-end">
           <b-form-group label="Search*" horizontal>
-            <b-form-select class="search" v-model="searchCriteria.selectedFileNoOrParty">
-              <option value="file">File number</option>
+            <b-form-select class="search" v-model="searchCriteria.searchBy">
+              <option value="fileNumber">File number</option>
               <option value="lastName">Surname</option>
               <option value="orgName">Organization</option>
             </b-form-select>
           </b-form-group>
 
-          <b-form-group v-if="searchCriteria.selectedFileNoOrParty === 'file'">
+          <b-form-group v-if="searchCriteria.searchBy === 'fileNumber'">
             <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingFileNo }"
               placeholder="e.g. 99999999" v-model="searchCriteria.fileNumberTxt"></b-form-input>
           </b-form-group>
 
-          <b-form-group v-if="searchCriteria.selectedFileNoOrParty === 'lastName'">
+          <b-form-group v-if="searchCriteria.searchBy === 'lastName'">
             <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingSurname }"
               v-model="searchCriteria.lastName"></b-form-input>
           </b-form-group>
 
-          <b-form-group v-if="searchCriteria.selectedFileNoOrParty === 'orgName'">
+          <b-form-group v-if="searchCriteria.searchBy === 'orgName'">
             <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingOrg }"
               placeholder="e.g. MegaCorp Inc." v-model="searchCriteria.orgName"></b-form-input>
           </b-form-group>
@@ -95,10 +99,10 @@
             Reset search
           </b-button>
         </div>
-        <div v-if="searchCriteria.isCriminal && searchCriteria.selectedFileNoOrParty !== 'orgName'">
+        <div v-if="searchCriteria.isCriminal && searchCriteria.searchBy !== 'orgName'">
           <span>Optional...</span>
           <div class="d-flex p-3 bg-light">
-            <div class="d-flex" v-if="searchCriteria.selectedFileNoOrParty === 'file'">
+            <div class="d-flex" v-if="searchCriteria.searchBy === 'fileNumber'">
               <b-form-group class="mr-3" label="Prefix" label-for="filePrefixTxt">
                 <b-form-input id="filePrefixTxt" placeholder="AH" v-model="searchCriteria.filePrefixTxt"></b-form-input>
               </b-form-group>
@@ -113,16 +117,16 @@
               </b-form-group>
             </div>
 
-            <b-form-group label="Given Name" label-for="givenName"
-              v-if="searchCriteria.selectedFileNoOrParty === 'lastName'">
+            <b-form-group label="Given Name" label-for="givenName" v-if="searchCriteria.searchBy === 'lastName'">
               <b-form-input id="givenName" placeholder="e.g. John" v-model="searchCriteria.givenName"></b-form-input>
             </b-form-group>
           </div>
         </div>
       </b-form>
-      <court-file-search-result v-if="isSearching || hasSearched" :isLookupDataMounted="isLookupDataMounted"
-        :isLookupDataReady="isLookupDataReady" :courtRooms="courtRooms" :classes="classes"
-        :isCriminal="searchCriteria.isCriminal" :searchResults="searchResults" :isSearching="isSearching">
+      <court-file-search-result class="mb-5" v-if="isSearching || hasSearched"
+        :isLookupDataMounted="isLookupDataMounted" :isLookupDataReady="isLookupDataReady" :courtRooms="courtRooms"
+        :classes="classes" :isCriminal="searchCriteria.isCriminal" :searchResults="searchResults"
+        :isSearching="isSearching">
       </court-file-search-result>
     </b-card>
   </b-card>
@@ -135,7 +139,7 @@ import CourtFileSearchResult from "@components/courtfilesearch/CourtFileSearchRe
 import { Component, Vue } from "vue-property-decorator";
 
 const CRIMINAL_CODE = "R";
-const CIVIL_CODE = ["I", "F"];
+const SMALL_CLAIMS_CODE = "I";
 
 @Component({
   components: {
@@ -159,7 +163,9 @@ export default class CourtFileSearchView extends Vue {
 
   searchCriteria: CourtFileSearchCriteria = {
     isCriminal: true,
-    selectedFileNoOrParty: 'file',
+    isFamily: false,
+    isSmallClaims: false,
+    searchBy: 'fileNumber',
     fileHomeAgencyId: this.defaultLocation,
   };
 
@@ -200,8 +206,14 @@ export default class CourtFileSearchView extends Vue {
     }
   }
 
-  public handleDivisionChange() {
-    this.searchCriteria.isCriminal = !this.searchCriteria.isCriminal;
+  public handleDivisionChange(event: Event) {
+    this.searchCriteria.isCriminal = false;
+    this.searchCriteria.isFamily = false;
+    this.searchCriteria.isSmallClaims = false;
+
+    const target = event.target as HTMLInputElement;
+    this.searchCriteria[target.value] = true;
+
     this.handleReset();
   }
 
@@ -209,9 +221,9 @@ export default class CourtFileSearchView extends Vue {
     this.sanitizeTextInputs();
     this.resetErrors();
 
-    this.errors.isMissingFileNo = this.searchCriteria.selectedFileNoOrParty === 'file' && !this.searchCriteria.fileNumberTxt;
-    this.errors.isMissingSurname = this.searchCriteria.selectedFileNoOrParty === 'lastName' && !this.searchCriteria.lastName;
-    this.errors.isMissingOrg = this.searchCriteria.selectedFileNoOrParty === 'orgName' && !this.searchCriteria.orgName;
+    this.errors.isMissingFileNo = this.searchCriteria.searchBy === 'fileNumber' && !this.searchCriteria.fileNumberTxt;
+    this.errors.isMissingSurname = this.searchCriteria.searchBy === 'lastName' && !this.searchCriteria.lastName;
+    this.errors.isMissingOrg = this.searchCriteria.searchBy === 'orgName' && !this.searchCriteria.orgName;
 
     // Don't proceed if any of the validation flag is set to true
     const hasNoErrors = Object.values(this.errors).every(value => value === false);
@@ -244,8 +256,10 @@ export default class CourtFileSearchView extends Vue {
 
   public handleReset(resetDivision = false): void {
     this.searchCriteria.isCriminal = resetDivision ? true : this.searchCriteria.isCriminal;
+    this.searchCriteria.isFamily = resetDivision ? false : this.searchCriteria.isFamily;
+    this.searchCriteria.isSmallClaims = resetDivision ? false : this.searchCriteria.isSmallClaims;
     this.searchCriteria.fileHomeAgencyId = this.defaultLocation;
-    this.searchCriteria.selectedFileNoOrParty = 'file';
+    this.searchCriteria.searchBy = 'fileNumber';
     this.searchCriteria.fileNumberTxt = undefined;
     this.searchCriteria.lastName = undefined;
     this.searchCriteria.givenName = undefined;
@@ -296,15 +310,22 @@ export default class CourtFileSearchView extends Vue {
   }
 
   loadClasses(): void {
-    this.classOptions = this.searchCriteria.isCriminal
-      ? this.classes.filter(c => c.longDesc === CRIMINAL_CODE)
-      : this.classes.filter(c => CIVIL_CODE.includes(c.longDesc));
+    if (this.searchCriteria.isCriminal) {
+      this.classOptions = this.classes.filter(c => c.longDesc === CRIMINAL_CODE);
+    }
+    else if (this.searchCriteria.isFamily) {
+      this.classOptions = [];
+    }
+    else if (this.searchCriteria.isSmallClaims) {
+      this.classOptions = this.classes.filter(c => c.longDesc === SMALL_CLAIMS_CODE && c.code !== CourtClassEnum[CourtClassEnum.C]);
+    }
   }
 
   buildQueryParams() {
     const queryParams = {};
 
-    if (this.searchCriteria.selectedFileNoOrParty === 'file') {
+    // Search By
+    if (this.searchCriteria.searchBy === 'fileNumber') {
       queryParams['searchMode'] = SearchModeEnum.FileNo;
       queryParams['fileNumberTxt'] = this.searchCriteria.fileNumberTxt;
 
@@ -318,7 +339,7 @@ export default class CourtFileSearchView extends Vue {
         queryParams['mDocRefTypeCode'] = this.searchCriteria.mDocRefTypeCode;
       }
     }
-    else if (this.searchCriteria.selectedFileNoOrParty === 'lastName') {
+    else if (this.searchCriteria.searchBy === 'lastName') {
       queryParams['searchMode'] = SearchModeEnum.PartName;
       queryParams['lastName'] = this.searchCriteria.lastName;
 
@@ -331,8 +352,19 @@ export default class CourtFileSearchView extends Vue {
       queryParams['orgName'] = this.searchCriteria.orgName;
     }
 
-    if (this.searchCriteria.class) {
-      queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
+    // Class
+    if (this.searchCriteria.isFamily) {
+      queryParams['courtClass'] = CourtClassEnum.F;
+    }
+    else {
+      if (this.searchCriteria.class) {
+        queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
+      }
+      else {
+        if (this.searchCriteria.isSmallClaims) {
+          queryParams['courtClass'] = CourtClassEnum.C;
+        }
+      }
     }
 
     if (this.searchCriteria.fileHomeAgencyId) {

@@ -574,9 +574,6 @@ namespace JCCommon.Clients.FileServices
             if (searchMode == null)
                 throw new System.ArgumentNullException("searchMode");
 
-            // if (fileHomeAgencyId == null)
-            //     throw new System.ArgumentNullException("fileHomeAgencyId");
-
             if (filePermissions == null)
                 throw new System.ArgumentNullException("filePermissions");
 

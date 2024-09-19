@@ -253,3 +253,20 @@ $indicator-thickness: 0.2em;
 //   height: 3.5rem; /* Footer height */
 // }
 
+html,
+body,
+.custom-select
+.b-form-input {
+  font-size: $base-font-size;
+}
+
+.btn {
+  font-size: $base-font-size;
+}
+
+// Use this class on every new page to align the header.
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}

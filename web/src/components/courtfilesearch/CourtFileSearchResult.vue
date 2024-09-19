@@ -1,6 +1,6 @@
 <template>
-  <b-card bg-variant="light">
-    <b-card bg-variant="light" v-if="isSearching">
+  <div>
+    <b-card class="mt-3" bg-variant="light" v-if="isSearching">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
         <template v-slot:overlay>
@@ -12,59 +12,52 @@
       </b-overlay>
     </b-card>
     <div v-if="!isSearching">
-      <!-- Navbar -->
-      <b-card no-body class="mb-3">
-        <b-navbar type="white" variant="white">
-          <b-navbar-nav type="white" variant="white">
-            <b-nav-text class="text-primary">
-              <h2 class="mb-0">Search Results</h2>
-            </b-nav-text>
-          </b-navbar-nav>
-        </b-navbar>
-      </b-card>
-      <!-- Data -->
-      <b-card bg-variant="white" no-body v-if="courtRooms.length > 0">
-        <b-table class="p-3 mb-0" :fields="filteredFields" :items="searchResults" borderless small responsive="md"
-          sort-icon-left
-          empty-text="No cases matching the filter criteria were found. Please check to ensure the search criteria is correct."
-          show-empty>
-          <template #head(nextApprDt)="data">
-            <span class="text-danger no-wrap">{{ data.label }}</span>
-          </template>
-          <template v-slot:cell(location)="data">
-            {{ getLocation(data.item.fileHomeAgencyId) }}
-          </template>
-          <template v-slot:cell(courtClassCd)="data">
-            <span :class="getClassColor(data.item.courtClassCd)">
-              {{ getClass(data.item.courtClassCd) }}
-            </span>
-          </template>
-          <template v-slot:cell(warrantYN)="data">
-            <b-badge v-if="data.item.warrantYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle">
-              <span>W</span>
-            </b-badge>
-          </template>
-          <template v-slot:cell(inCustodyYN)="data">
-            <b-badge v-if="data.item.inCustodyYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle">
-              IC
-            </b-badge>
-          </template>
-          <template v-slot:cell(nextApprDt)="data">
-            <span>
-              {{ data.item.nextApprDt | beautify_date }}
-            </span>
-          </template>
-          <template v-slot:cell(action)="data">
-            <div class="d-flex justify-content-end no-wrap">
-              <b-button variant="outline-primary" class="mr-3 py-0">Add File</b-button>
-              <b-button variant="primary" @click="() => handleCaseClick(data.item.mdocJustinNo)">Add File and
-                View</b-button>
-            </div>
-          </template>
-        </b-table>
-      </b-card>
+      <div class="my-3 bg-warning p-2" v-if="searchResults.length > 100">
+        <span>More than 100 records match the search criteria, only the first 100 are returned.</span>
+      </div>
+      <h3 class="mt-3">Search Results</h3>
+      <b-table :fields="filteredFields" :items="searchResults" borderless small responsive="md" sort-icon-left
+        empty-text="No cases matching the filter criteria were found. Please check to ensure the search criteria is correct."
+        show-empty striped>
+        <template #head(nextApprDt)="data">
+          <span class="text-danger no-wrap">{{ data.label }}</span>
+        </template>
+        <template v-slot:cell(sealStatusCd)="data">
+          <span v-if="data.item.sealStatusCd === 'SD'" class="text-danger">(Sealed)</span>
+        </template>
+        <template v-slot:cell(courtClassCd)="data">
+          <span :class="getClassColor(data.item.courtClassCd)">
+            {{ getClass(data.item.courtClassCd) }}
+          </span>
+        </template>
+        <template v-slot:cell(warrantYN)="data">
+          <b-badge v-if="data.item.warrantYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle"
+            v-b-tooltip.hover title="Outstanding warrant">
+            <span>W</span>
+          </b-badge>
+        </template>
+        <template v-slot:cell(inCustodyYN)="data">
+          <b-badge v-if="data.item.inCustodyYN === 'Y'" variant="primary text-light" :style="data.field.cellStyle"
+            v-b-tooltip.hover title="In Custody">
+            IC
+          </b-badge>
+        </template>
+        <template v-slot:cell(nextApprDt)="data">
+          <span>
+            {{ data.item.nextApprDt | beautify_date }}
+          </span>
+        </template>
+        <template v-slot:cell(action)="data">
+          <div class="d-flex justify-content-end no-wrap">
+            <b-button variant="outline-primary" class="mr-3 py-0">Add File</b-button>
+            <b-button variant="primary" @click="() => handleCaseClick(data.item.mdocJustinNo)">Add File and
+              View</b-button>
+          </div>
+        </template>
+      </b-table>
+
     </div>
-  </b-card>
+  </div>
 </template>
 <script lang="ts">
 import { LookupCode } from "@/types/common";
@@ -94,18 +87,25 @@ export default class CourtFileSearchResult extends Vue {
       key: "location",
       label: "Location",
       tdClass: "border-top",
-      sortable: true
+      thClass: "text-primary",
+      sortable: true,
+      sortByFormatted: true,
+      formatter: (value, key, item) => {
+        return this.getLocation(item.fileHomeAgencyId);
+      }
     },
     {
       key: "courtClassCd",
       label: "Class",
       tdClass: "border-top",
+      thClass: "text-primary",
       sortable: true
     },
     {
       key: "fileNumberTxt",
-      label: "File Number",
+      label: "File number",
       tdClass: "border-top",
+      thClass: "text-primary",
       sortable: true,
       sortByFormatted: true,
       formatter: (value, key, item) => {
@@ -114,12 +114,13 @@ export default class CourtFileSearchResult extends Vue {
     },
     {
       key: "participant",
-      label: "Participant",
+      label: "Participants",
       tdClass: "border-top max-width-300",
+      thClass: "text-primary",
       sortable: true,
       sortByFormatted: true,
       formatter: (value, key, item) => {
-        return item.participant.map(p => p.fullNm).join("; ");
+        return [...new Set(item.participant.map(p => p.fullNm))].join("; ");
       }
     },
     {
@@ -129,26 +130,35 @@ export default class CourtFileSearchResult extends Vue {
       sortable: true,
       sortByFormatted: true,
       formatter: (value, key, item) => {
-        return item.participant.flatMap(p => p.charge).map(c => c.sectionTxt).join("; ");
+        const uniqueCharges = [... new Set(item.participant.flatMap(p => p.charge).map(c => c.sectionTxt))];
+        const firstCharge = uniqueCharges.length > 0 ? uniqueCharges[0] : '';
+        return uniqueCharges.length > 1 ? `${firstCharge} + [${uniqueCharges.length - 1}]` : firstCharge;
       }
     },
     {
       key: "warrantyYN",
       label: "OW",
       tdClass: "border-top",
+      thClass: "text-primary",
       sortable: true
     },
     {
       key: "inCustodyYN",
       label: "IC",
       tdClass: "border-top",
+      thClass: "text-primary",
       sortable: true
     },
     {
       key: "nextApprDt",
-      label: "Next Appearance",
+      label: "Next appearance",
       tdClass: "border-top",
       sortable: true
+    },
+    {
+      key: "sealStatusCd",
+      label: "",
+      tdClass: "border-top",
     },
     {
       key: "action",

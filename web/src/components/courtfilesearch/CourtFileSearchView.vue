@@ -1,6 +1,6 @@
 <template>
-  <b-card no-body bg-variant="white">
-    <b-card bg-variant="light" v-if="!isLookupDataMounted && !isLookupDataReady">
+  <b-card class="container px-0" no-body bg-variant="white">
+    <b-card body-class="px-0" bg-variant="light" v-if="!isLookupDataMounted && !isLookupDataReady">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
         <template v-slot:overlay>
@@ -11,7 +11,7 @@
         </template>
       </b-overlay>
     </b-card>
-    <b-card bg-variant="light" v-else-if="isLookupDataMounted && !isLookupDataReady">
+    <b-card body-class="px-0" bg-variant="light" v-else-if="isLookupDataMounted && !isLookupDataReady">
       <b-card style="min-height: 40px;">
         <span v-if="errorCode > 0">
           <span v-if="errorCode == 403"> You are not authorized to access this page. </span>
@@ -21,119 +21,105 @@
         <span v-else> No Court File Search Found. </span>
       </b-card>
     </b-card>
-    <b-card v-else>
-      <b-navbar type="white" variant="white">
-        <h2 class="mb-0">Court File Search</h2>
-      </b-navbar>
-      <b-row class="mb-2" body-class="py-0">
-        <b-col md="8">
-          <b-card v-if="isLookupDataMounted && isLookupDataReady" body-class="py-1">
-            <b-form @submit.prevent="handleSubmit">
-              <!-- Division -->
-              <b-form-group label="Division:" label-cols="3" label-align="right">
-                <b-button-group>
-                  <b-button value="criminal" @click="handleDivisionChange"
-                    :variant="searchCriteria.isCriminal ? 'primary' : 'outline-primary'">
-                    Criminal
-                  </b-button>
-                  <b-button value="civil" @click="handleDivisionChange"
-                    :variant="!searchCriteria.isCriminal ? 'primary' : 'outline-primary'">
-                    Civil
-                  </b-button>
-                </b-button-group>
+    <b-card body-class="px-0" v-else>
+      <h2>Court File Search</h2>
+      <b-form class="search-form" v-if="isLookupDataMounted && isLookupDataReady" @submit.prevent="handleSubmit">
+        <div class="d-flex">
+          <!-- Location -->
+          <b-form-group label="Location:" class="mr-3">
+            <b-form-select v-model="searchCriteria.fileHomeAgencyId">
+              <option value=""></option>
+              <option v-for="option in courtRooms" :key="option.value" :value="option.value">
+                {{ option.text }}
+              </option>
+            </b-form-select>
+          </b-form-group>
+
+          <!-- Division -->
+          <b-form-group label="Division*" class="mr-3">
+            <b-button-group>
+              <b-button value="criminal" @click="handleDivisionChange"
+                :variant="searchCriteria.isCriminal ? 'primary' : 'outline-primary'">
+                Criminal
+              </b-button>
+              <b-button value="civil" @click="handleDivisionChange"
+                :variant="!searchCriteria.isCriminal ? 'primary' : 'outline-primary'">
+                Civil
+              </b-button>
+            </b-button-group>
+          </b-form-group>
+
+          <!-- Class -->
+          <b-form-group label="Class:" class="mr-3">
+            <b-form-select v-model="searchCriteria.class">
+              <option value=""></option>
+              <option v-for="option in classOptions" :key="option.code" :value="option.code">
+                {{ option.shortDesc }}
+              </option>
+            </b-form-select>
+          </b-form-group>
+
+        </div>
+
+        <!-- Search -->
+        <div class="d-flex align-items-end">
+          <b-form-group label="Search*" horizontal>
+            <b-form-select class="search" v-model="searchCriteria.selectedFileNoOrParty">
+              <option value="file">File number</option>
+              <option value="lastName">Surname</option>
+              <option value="orgName">Organization</option>
+            </b-form-select>
+          </b-form-group>
+
+          <b-form-group v-if="searchCriteria.selectedFileNoOrParty === 'file'">
+            <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingFileNo }"
+              placeholder="e.g. 99999999" v-model="searchCriteria.fileNumberTxt"></b-form-input>
+          </b-form-group>
+
+          <b-form-group v-if="searchCriteria.selectedFileNoOrParty === 'lastName'">
+            <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingSurname }"
+              v-model="searchCriteria.lastName"></b-form-input>
+          </b-form-group>
+
+          <b-form-group v-if="searchCriteria.selectedFileNoOrParty === 'orgName'">
+            <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingOrg }"
+              placeholder="e.g. MegaCorp Inc." v-model="searchCriteria.orgName"></b-form-input>
+          </b-form-group>
+          <!-- Submit -->
+          <b-button variant="primary" class="search-btn mb-3" type="submit" :disabled="isSearching">
+            <b-icon icon="search"></b-icon>
+            Search
+          </b-button>
+          <!-- Reset -->
+          <b-button variant="link" class="reset mb-3" @click="() => handleReset(true)">
+            Reset search
+          </b-button>
+        </div>
+        <div v-if="searchCriteria.isCriminal && searchCriteria.selectedFileNoOrParty !== 'orgName'">
+          <span>Optional...</span>
+          <div class="d-flex p-3 bg-light">
+            <div class="d-flex" v-if="searchCriteria.selectedFileNoOrParty === 'file'">
+              <b-form-group class="mr-3" label="Prefix" label-for="filePrefixTxt">
+                <b-form-input id="filePrefixTxt" placeholder="AH" v-model="searchCriteria.filePrefixTxt"></b-form-input>
               </b-form-group>
-              <!-- File Number or Party Name -->
-              <b-form-group label="File Number or Party Name:" label-cols="3" label-align="right">
-                <b-form-radio-group v-model="searchCriteria.selectedFileNoOrParty" name="file-radio-group">
-                  <div class="radio-container p-2 rounded d-flex"
-                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'file' }">
-                    <b-form-radio class=" mt-2" value="file"> File Number </b-form-radio>
-                    <b-row class="flex-grow-1" v-if="searchCriteria.selectedFileNoOrParty === 'file'">
-                      <b-col md="5" class="text-right">
-                        <b-form-input placeholder="e.g. 99999999" v-model="searchCriteria.fileNumberTxt"></b-form-input>
-                        <span class="text-danger" v-show="errors.isMissingFileNoOrParty">Field required</span>
-                      </b-col>
-                      <b-col md="6" offset-md="1" v-if="searchCriteria.isCriminal">
-                        <b-card bg-variant="light" class="ml-1" body-class="p-2">
-                          <b-form-group class="mb-0" label="Optional..." label-align="center">
-                            <b-form-group label-cols="4" label="Prefix" label-for="filePrefixTxt" label-align="right">
-                              <b-form-input id="filePrefixTxt" placeholder="AH"
-                                v-model="searchCriteria.filePrefixTxt"></b-form-input>
-                            </b-form-group>
-                            <b-form-group label-cols="4" label="Seq Num" label-for="fileSuffixNo" label-align="right">
-                              <b-form-input id="fileSuffixNo" placeholder="1"
-                                v-model="searchCriteria.fileSuffixNo"></b-form-input>
-                            </b-form-group>
-                            <b-form-group label-cols="4" label="Type Ref" label-for="mDocRefTypeCode"
-                              label-align="right">
-                              <b-form-input id="mDocRefTypeCode" placeholder="B"
-                                v-model="searchCriteria.mDocRefTypeCode"></b-form-input>
-                            </b-form-group>
-                          </b-form-group>
-                        </b-card>
-                      </b-col>
-                    </b-row>
-                  </div>
-                  <div class="radio-container p-2 rounded d-flex"
-                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'lastName' }">
-                    <b-form-radio class="mt-2" value="lastName"> Surname </b-form-radio>
-                    <b-row v-if="searchCriteria.selectedFileNoOrParty === 'lastName'">
-                      <b-col class="text-right">
-                        <b-form-input v-model="searchCriteria.lastName"></b-form-input>
-                        <span class="text-danger" v-show="errors.isMissingSurname">Field required</span>
-                      </b-col>
-                      <b-col>
-                        <b-form-input placeholder="Given Name" v-model="searchCriteria.givenName"></b-form-input>
-                      </b-col>
-                    </b-row>
-                  </div>
-                  <div class="radio-container p-2 rounded d-flex"
-                    :class="{ 'bg-info': searchCriteria.selectedFileNoOrParty === 'orgName' }">
-                    <b-form-radio class="mt-2" value="orgName"> Organisation </b-form-radio>
-                    <b-row v-if="searchCriteria.selectedFileNoOrParty === 'orgName'">
-                      <b-col class="text-right">
-                        <b-form-input placeholder="e.g. MegaCorp Inc." v-model="searchCriteria.orgName"></b-form-input>
-                        <span class="text-danger" v-show="errors.isMissingOrg">Field required</span>
-                      </b-col>
-                    </b-row>
-                  </div>
-                </b-form-radio-group>
+
+              <b-form-group class="mr-3" label="Seq Num" label-for="fileSuffixNo">
+                <b-form-input id="fileSuffixNo" placeholder="1" v-model="searchCriteria.fileSuffixNo"></b-form-input>
               </b-form-group>
-              <b-form-group label="Class:" label-cols="3" label-align="right">
-                <b-row>
-                  <b-col cols="3">
-                    <b-form-select v-model="searchCriteria.class">
-                      <option value=""></option>
-                      <option v-for="option in classOptions" :key="option.code" :value="option.code">
-                        {{ option.shortDesc }}
-                      </option>
-                    </b-form-select>
-                  </b-col>
-                </b-row>
+
+              <b-form-group label="Type Ref" label-for="mDocRefTypeCode">
+                <b-form-input id="mDocRefTypeCode" placeholder="B"
+                  v-model="searchCriteria.mDocRefTypeCode"></b-form-input>
               </b-form-group>
-              <!-- fileHomeAgencyId -->
-              <b-form-group label="Location:" label-cols="3" label-align="right">
-                <b-row>
-                  <b-col cols="5">
-                    <b-form-select v-model="searchCriteria.fileHomeAgencyId" :options="courtRooms"></b-form-select>
-                  </b-col>
-                </b-row>
-              </b-form-group>
-              <b-row>
-                <b-col offset-md="3">
-                  <b-button variant="primary" type="submit" :disabled="isSearching">
-                    <b-icon icon="search"></b-icon>
-                    Search
-                  </b-button>
-                  <b-button variant="outline-primary" class="ml-3" type="button" @click="() => handleReset(true)">
-                    Reset Search
-                  </b-button>
-                </b-col>
-              </b-row>
-            </b-form>
-          </b-card>
-        </b-col>
-      </b-row>
+            </div>
+
+            <b-form-group label="Given Name" label-for="givenName"
+              v-if="searchCriteria.selectedFileNoOrParty === 'lastName'">
+              <b-form-input id="givenName" placeholder="e.g. John" v-model="searchCriteria.givenName"></b-form-input>
+            </b-form-group>
+          </div>
+        </div>
+      </b-form>
       <court-file-search-result v-if="isSearching || hasSearched" :isLookupDataMounted="isLookupDataMounted"
         :isLookupDataReady="isLookupDataReady" :courtRooms="courtRooms" :classes="classes"
         :isCriminal="searchCriteria.isCriminal" :searchResults="searchResults" :isSearching="isSearching">
@@ -178,7 +164,7 @@ export default class CourtFileSearchView extends Vue {
   };
 
   errors = {
-    isMissingFileNoOrParty: false,
+    isMissingFileNo: false,
     isMissingSurname: false,
     isMissingOrg: false
   };
@@ -223,7 +209,7 @@ export default class CourtFileSearchView extends Vue {
     this.sanitizeTextInputs();
     this.resetErrors();
 
-    this.errors.isMissingFileNoOrParty = this.searchCriteria.selectedFileNoOrParty === 'file' && !this.searchCriteria.fileNumberTxt;
+    this.errors.isMissingFileNo = this.searchCriteria.selectedFileNoOrParty === 'file' && !this.searchCriteria.fileNumberTxt;
     this.errors.isMissingSurname = this.searchCriteria.selectedFileNoOrParty === 'lastName' && !this.searchCriteria.lastName;
     this.errors.isMissingOrg = this.searchCriteria.selectedFileNoOrParty === 'orgName' && !this.searchCriteria.orgName;
 
@@ -292,7 +278,7 @@ export default class CourtFileSearchView extends Vue {
   }
 
   resetErrors(): void {
-    this.errors.isMissingFileNoOrParty = false;
+    this.errors.isMissingFileNo = false;
     this.errors.isMissingSurname = false;
     this.errors.isMissingOrg = false;
   }
@@ -316,9 +302,7 @@ export default class CourtFileSearchView extends Vue {
   }
 
   buildQueryParams() {
-    const queryParams = {
-      fileHomeAgencyId: this.searchCriteria.fileHomeAgencyId
-    };
+    const queryParams = {};
 
     if (this.searchCriteria.selectedFileNoOrParty === 'file') {
       queryParams['searchMode'] = SearchModeEnum.FileNo;
@@ -351,6 +335,10 @@ export default class CourtFileSearchView extends Vue {
       queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
     }
 
+    if (this.searchCriteria.fileHomeAgencyId) {
+      queryParams['fileHomeAgencyId'] = this.searchCriteria.fileHomeAgencyId;
+    }
+
     return queryParams;
   }
 }
@@ -369,5 +357,27 @@ export default class CourtFileSearchView extends Vue {
 
 .transparent {
   background-color: transparent;
+}
+
+.reset,
+.reset:hover,
+.reset:focus {
+  text-decoration: none !important;
+  color: $primary !important;
+  box-shadow: none;
+}
+
+.search {
+  border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.search-input {
+  border-radius: 0;
+}
+
+.search-btn {
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
 }
 </style>

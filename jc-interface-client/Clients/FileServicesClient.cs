@@ -18,7 +18,7 @@ namespace JCCommon.Clients.FileServices
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.10.0 (NJsonSchema v10.6.10.0 (Newtonsoft.Json v12.0.0.0))")]
-    public partial class FileServicesClient 
+    public partial class FileServicesClient
     {
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings;
@@ -476,10 +476,10 @@ namespace JCCommon.Clients.FileServices
                     if (applicationCd == null)
                         throw new System.ArgumentNullException("applicationCd");
                     request_.Headers.TryAddWithoutValidation("applicationCd", ConvertToString(applicationCd, System.Globalization.CultureInfo.InvariantCulture));
-                    
+
                     if (correlationId != null)
                         request_.Headers.TryAddWithoutValidation("correlationId", ConvertToString(correlationId, System.Globalization.CultureInfo.InvariantCulture));
-                    
+
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
 
@@ -506,19 +506,19 @@ namespace JCCommon.Clients.FileServices
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 400)
                         {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("Bad request.", status_, responseText_, headers_, null);
                         }
                         else
                         if (status_ == 404)
                         {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("Document was not found.", status_, responseText_, headers_, null);
                         }
                         else
                         if (status_ == 500)
                         {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("Unexpected error.", status_, responseText_, headers_, null);
                         }
                         else
@@ -574,8 +574,8 @@ namespace JCCommon.Clients.FileServices
             if (searchMode == null)
                 throw new System.ArgumentNullException("searchMode");
 
-            if (fileHomeAgencyId == null)
-                throw new System.ArgumentNullException("fileHomeAgencyId");
+            // if (fileHomeAgencyId == null)
+            //     throw new System.ArgumentNullException("fileHomeAgencyId");
 
             if (filePermissions == null)
                 throw new System.ArgumentNullException("filePermissions");
@@ -583,7 +583,10 @@ namespace JCCommon.Clients.FileServices
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("files/criminal?");
             urlBuilder_.Append(System.Uri.EscapeDataString("searchMode") + "=").Append(System.Uri.EscapeDataString(ConvertToString(searchMode, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("fileHomeAgencyId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(fileHomeAgencyId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            if (fileHomeAgencyId != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("fileHomeAgencyId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(fileHomeAgencyId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             if (fileNumberTxt != null)
             {
                 urlBuilder_.Append(System.Uri.EscapeDataString("fileNumberTxt") + "=").Append(System.Uri.EscapeDataString(ConvertToString(fileNumberTxt, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
@@ -1312,16 +1315,16 @@ namespace JCCommon.Clients.FileServices
             if (searchMode == null)
                 throw new System.ArgumentNullException("searchMode");
 
-            if (fileHomeAgencyId == null)
-                throw new System.ArgumentNullException("fileHomeAgencyId");
-
             if (filePermissions == null)
                 throw new System.ArgumentNullException("filePermissions");
 
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("files/civil?");
             urlBuilder_.Append(System.Uri.EscapeDataString("searchMode") + "=").Append(System.Uri.EscapeDataString(ConvertToString(searchMode, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("fileHomeAgencyId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(fileHomeAgencyId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            if (fileHomeAgencyId != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("fileHomeAgencyId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(fileHomeAgencyId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             if (fileNumberTxt != null)
             {
                 urlBuilder_.Append(System.Uri.EscapeDataString("fileNumberTxt") + "=").Append(System.Uri.EscapeDataString(ConvertToString(fileNumberTxt, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
@@ -2207,7 +2210,7 @@ namespace JCCommon.Clients.FileServices
                     var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -2219,17 +2222,17 @@ namespace JCCommon.Clients.FileServices
                     return converted == null ? string.Empty : converted;
                 }
             }
-            else if (value is bool) 
+            else if (value is bool)
             {
                 return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
             }
             else if (value is byte[])
             {
-                return System.Convert.ToBase64String((byte[]) value);
+                return System.Convert.ToBase64String((byte[])value);
             }
             else if (value.GetType().IsArray)
             {
-                var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
+                var array = System.Linq.Enumerable.OfType<object>((System.Array)value);
                 return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
             }
 
@@ -6971,8 +6974,8 @@ namespace JCCommon.Clients.FileServices
 
 #pragma warning restore 1591
 #pragma warning restore 1573
-#pragma warning restore  472
-#pragma warning restore  114
-#pragma warning restore  108
+#pragma warning restore 472
+#pragma warning restore 114
+#pragma warning restore 108
 #pragma warning restore 3016
 #pragma warning restore 8603

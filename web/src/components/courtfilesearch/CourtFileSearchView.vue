@@ -126,14 +126,14 @@
       <court-file-search-result class="mb-5" v-if="isSearching || hasSearched"
         :isLookupDataMounted="isLookupDataMounted" :isLookupDataReady="isLookupDataReady" :courtRooms="courtRooms"
         :classes="classes" :isCriminal="searchCriteria.isCriminal" :searchResults="searchResults"
-        :isSearching="isSearching">
+        :isSearching="isSearching" @files-viewed="viewFiles" :selectedFiles="selectedFiles">
       </court-file-search-result>
     </b-card>
   </b-card>
 </template>
 <script lang="ts">
-import { CLEAR_FILES } from "@/store/modules/SelectedCourtFiles";
-import { CourtRoomsJsonInfoType, LookupCode } from "@/types/common";
+import { ADD_FILES_FOR_VIEWING, CLEAR_SELECTED_FILES, GET_CURRENT_SEARCH_CRITERIA, GET_CURRENT_SEARCH_RESULTS, GET_SELECTED_FILES } from "@/store/modules/CourtFileSearchInformation";
+import { CourtRoomsJsonInfoType, KeyValueInfo, LookupCode } from "@/types/common";
 import { CourtFileSearchCriteria, FileDetail, SearchModeEnum, CourtClassEnum } from "@/types/courtFileSearch";
 import { roomsInfoType } from "@/types/courtlist";
 import CourtFileSearchResult from "@components/courtfilesearch/CourtFileSearchResult.vue";
@@ -153,6 +153,7 @@ export default class CourtFileSearchView extends Vue {
   courtRooms: roomsInfoType[] = [];
   classes: LookupCode[] = [];
   searchResults: FileDetail[] = [];
+  selectedFiles: FileDetail[] = [];
 
   isLookupDataMounted = false;
   isLookupDataReady = false;
@@ -177,10 +178,10 @@ export default class CourtFileSearchView extends Vue {
   };
 
   async mounted() {
-    this.loadLookups();
+    this.loadData();
   }
 
-  public async loadLookups(): Promise<void> {
+  public async loadData(): Promise<void> {
     try {
       const [courtRooms, courtClasses] = await Promise.all([
         this.$locationService.getCourtRooms(),
@@ -189,6 +190,7 @@ export default class CourtFileSearchView extends Vue {
 
       this.courtRooms = courtRooms;
       this.classes = courtClasses;
+      this.loadDataFromState();
       this.loadClasses();
       this.isLookupDataReady = true;
     } catch (err) {
@@ -219,7 +221,7 @@ export default class CourtFileSearchView extends Vue {
   }
 
   public async handleSubmit() {
-    this.$store.commit(CLEAR_FILES);
+    this.$store.commit(CLEAR_SELECTED_FILES);
 
     this.sanitizeTextInputs();
     this.resetErrors();
@@ -258,7 +260,7 @@ export default class CourtFileSearchView extends Vue {
   }
 
   public handleReset(resetDivision = false): void {
-    this.$store.commit(CLEAR_FILES);
+    this.$store.commit(CLEAR_SELECTED_FILES);
     this.searchCriteria.isCriminal = resetDivision ? true : this.searchCriteria.isCriminal;
     this.searchCriteria.isFamily = resetDivision ? false : this.searchCriteria.isFamily;
     this.searchCriteria.isSmallClaims = resetDivision ? false : this.searchCriteria.isSmallClaims;
@@ -376,6 +378,36 @@ export default class CourtFileSearchView extends Vue {
     }
 
     return queryParams;
+  }
+
+  loadDataFromState(): void {
+    const searchCriteria = this.$store.getters[GET_CURRENT_SEARCH_CRITERIA];
+    const searchResults = this.$store.getters[GET_CURRENT_SEARCH_RESULTS];
+    const selectedFiles = this.$store.getters[GET_SELECTED_FILES];
+
+    if (searchCriteria && searchResults) {
+      this.searchCriteria = searchCriteria;
+      this.searchResults = [...searchResults];
+
+      const idSelector = this.searchCriteria.isCriminal ? 'mdocJustinNo' : 'physicalFileId';
+      const files = this.searchResults.filter(c => selectedFiles.some(f => f.key === c[idSelector]));
+      this.selectedFiles = [...files];
+
+      this.hasSearched = true;
+    }
+  }
+
+  viewFiles(selectedFiles: KeyValueInfo[]): void {
+    this.$store.commit(
+      ADD_FILES_FOR_VIEWING,
+      {
+        searchCriteria: this.searchCriteria,
+        searchResults: this.searchResults,
+        files: selectedFiles
+      }
+    );
+    const caseDetailUrl = `/${this.searchCriteria.isCriminal ? 'criminal-file' : 'civil-file'}/${selectedFiles[0].key}`;
+    this.$router.push(caseDetailUrl);
   }
 }
 </script>

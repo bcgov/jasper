@@ -37,8 +37,8 @@
 
     <b-row cols="2">
       <b-col md="2" cols="2" class="px-0" style="overflow: auto;">
-        <criminal-files-selector v-if="isDataReady && selectedFiles.length > 0" :files="selectedFiles"
-          :passedFileId="currentFileId" @file-changed="changeCase" @file-removed="removeCase" />
+        <court-files-selector v-if="isDataReady && selectedFiles.length > 0" :files="selectedFiles"
+          :passedFileId="currentFileId" @file-changed="changeCase" @file-removed="removeCase" @add-files="addFiles" />
         <criminal-side-panel v-if="isDataReady" />
       </b-col>
       <b-col col md="10" cols="10" class="px-0" style="overflow: auto;">
@@ -86,7 +86,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from "vue-property-decorator";
+import { Component, Vue } from "vue-property-decorator";
 import { namespace } from "vuex-class";
 import CriminalDocumentsView from "@components/criminal/CriminalDocumentsView.vue";
 import CriminalHeaderTop from "@components/criminal/CriminalHeaderTop.vue";
@@ -100,7 +100,7 @@ import CriminalFutureAppearances from "@components/criminal/CriminalFutureAppear
 import CriminalCrownNotes from "@components/criminal/CriminalCrownNotes.vue";
 import CriminalWitnesses from "@components/criminal/CriminalWitnesses.vue";
 import CriminalSentence from "@components/criminal/CriminalSentence.vue";
-import CriminalFilesSelector from "@components/criminal/CriminalFilesSelector.vue";
+import CourtFilesSelector from "@components/shared/CourtFilesSelector.vue";
 import CustomOverlay from "../CustomOverlay.vue";
 import {
   bansInfoType,
@@ -122,10 +122,10 @@ import base64url from "base64url";
 import shared from "../shared";
 import { CourtDocumentType, DocumentData } from "@/types/shared";
 import { criminalHearingRestrictionType, criminalParticipantType } from "@/types/criminal/jsonTypes";
-import { REMOVE_FILE_ID, SET_FILE_ID } from "@/store/modules/SelectedCourtFiles";
+import { REMOVE_CURRENT_VIEWED_FILE_ID, UPDATE_CURRENT_VIEWED_FILE_ID } from "@/store/modules/CourtFileSearchInformation";
 const criminalState = namespace("CriminalFileInformation");
 const commonState = namespace("CommonInformation");
-const selectedCourtFilesState = namespace('SelectedCourtFiles');
+const courtFileSearchState = namespace('CourtFileSearchInformation');
 
 enum DecodeCourtLevel {
   "P" = 0,
@@ -155,6 +155,7 @@ enum DecodeCourtClass {
 
 @Component({
   components: {
+    CourtFilesSelector,
     CriminalDocumentsView,
     CriminalSidePanel,
     CriminalHeaderTop,
@@ -162,7 +163,6 @@ enum DecodeCourtClass {
     CriminalParticipants,
     CriminalAdjudicatorRestrictions,
     CriminalCrownInformation,
-    CriminalFilesSelector,
     CriminalPastAppearances,
     CriminalFutureAppearances,
     CriminalCrownNotes,
@@ -190,10 +190,10 @@ export default class CriminalCaseDetails extends Vue {
   @commonState.Action
   public UpdateDisplayName!: (newInputNames: InputNamesType) => void;
 
-  @selectedCourtFilesState.Getter('selectedFiles')
+  @courtFileSearchState.Getter('selectedFiles')
   public selectedFiles!: KeyValueInfo[];
 
-  @selectedCourtFilesState.Getter('currentFileId')
+  @courtFileSearchState.Getter('currentFileId')
   public currentFileId!: string;
 
   participantList: participantListInfoType[] = [];
@@ -482,17 +482,23 @@ export default class CriminalCaseDetails extends Vue {
   }
 
   public changeCase(fileId: string) {
-    this.$store.commit(SET_FILE_ID, fileId);
+    this.$store.commit(UPDATE_CURRENT_VIEWED_FILE_ID, fileId);
     this.$router.replace({ name: "CriminalCaseDetails", params: { fileNumber: fileId } });
     this.reloadCaseDetails();
   }
 
   public removeCase(fileId: string) {
-    this.$store.commit(REMOVE_FILE_ID, fileId);
+    this.$store.commit(REMOVE_CURRENT_VIEWED_FILE_ID, fileId);
     if (this.currentFileId) {
       this.$router.replace({ name: "CriminalCaseDetails", params: { fileNumber: this.currentFileId } });
       this.reloadCaseDetails();
+    } else {
+      this.$router.push({ name: "CourtFileSearchView" });
     }
+  }
+
+  public addFiles() {
+    this.$router.push({ name: "CourtFileSearchView" });
   }
 
   private reloadCaseDetails(): void {

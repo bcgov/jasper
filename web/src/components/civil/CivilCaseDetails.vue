@@ -1,5 +1,5 @@
 <template>
-  <div style="overflow:hidden">
+  <div class="container" style="overflow:hidden">
     <b-card bg-variant="light" v-if="!isMounted && !isDataReady">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
@@ -14,13 +14,12 @@
 
     <b-card bg-variant="light" v-if="isMounted && !isDataReady">
       <b-card style="min-height: 100px;">
-        <span v-if="errorCode == 404"
-          >This <b>File-Number '{{ this.civilFileInformation.fileNumber }}'</b> doesn't exist in the
-          <b>civil</b> records.</span
-        >
+        <span v-if="errorCode == 404">This <b>File-Number '{{ this.civilFileInformation.fileNumber }}'</b> doesn't exist
+          in
+          the
+          <b>civil</b> records.</span>
         <span v-else-if="errorCode == 200 || errorCode == 204">
-          Bad Data in <b>File-Number '{{ this.civilFileInformation.fileNumber }}'</b>.</span
-        >
+          Bad Data in <b>File-Number '{{ this.civilFileInformation.fileNumber }}'</b>.</span>
         <span v-else-if="errorCode == 403"> You are not authorized to access this file. </span>
         <span v-else>
           Server is not responding. <b>({{ errorText }})</b>
@@ -36,10 +35,12 @@
 
     <b-card no-body>
       <b-row cols="2">
-        <b-col md="2" cols="2" style="overflow: auto;">
+        <b-col md="2" cols="2" class="px-0" style="overflow: auto;">
+          <court-files-selector v-if="isDataReady && selectedFiles.length > 0" :files="selectedFiles"
+            :passedFileId="currentFileId" @file-changed="changeCase" @file-removed="removeCase" @add-files="addFiles" />
           <civil-side-panel v-if="isDataReady" />
         </b-col>
-        <b-col col md="10" cols="10" style="overflow: auto;">
+        <b-col col md="10" cols="10" class="px-0" style="overflow: auto;">
           <civil-header-top v-if="isDataReady" />
           <civil-header v-if="isDataReady" />
 
@@ -47,18 +48,10 @@
             <h2 style="white-space: pre" v-if="isDataReady">
               {{ selectedSideBar }}
             </h2>
-            <custom-overlay
-              v-if="isDataReady"
-              :show="!downloadCompleted"
-              style="padding: 0 1rem; margin-left:auto; margin-right:2rem;"
-            >
-              <b-button
-                v-if="enableArchive"
-                @click="downloadAllDocuments()"
-                size="md"
-                variant="info"
-                style="padding: 0 1rem; margin-left:auto; margin-right:2rem;"
-              >
+            <custom-overlay v-if="isDataReady" :show="!downloadCompleted"
+              style="padding: 0 1rem; margin-left:auto; margin-right:2rem;">
+              <b-button v-if="enableArchive" @click="downloadAllDocuments()" size="md" variant="info"
+                style="padding: 0 1rem; margin-left:auto; margin-right:2rem;">
                 Download All Documents
               </b-button>
             </custom-overlay>
@@ -104,6 +97,7 @@ import CivilParties from "@components/civil/CivilParties.vue";
 import CivilHeaderTop from "@components/civil/CivilHeaderTop.vue";
 import CivilHeader from "@components/civil/CivilHeader.vue";
 import CivilSidePanel from "@components/civil/CivilSidePanel.vue";
+import CourtFilesSelector from "@components/shared/CourtFilesSelector.vue";
 import {
   civilFileInformationType,
   partiesInfoType,
@@ -117,6 +111,7 @@ import {
   AdjudicatorRestrictionsInfoType,
   ArchiveInfoType,
   DocumentRequestsInfoType,
+  KeyValueInfo,
 } from "@/types/common";
 import "@store/modules/CommonInformation";
 import "@store/modules/CivilFileInformation";
@@ -132,7 +127,9 @@ import shared from "../shared";
 import { CourtDocumentType, DocumentData } from "@/types/shared";
 const civilState = namespace("CivilFileInformation");
 const commonState = namespace("CommonInformation");
-import {civilShowSectionsType} from '@/types/civil';
+import { civilShowSectionsType } from '@/types/civil';
+import { REMOVE_CURRENT_VIEWED_FILE_ID, UPDATE_CURRENT_VIEWED_FILE_ID } from "@/store/modules/CourtFileSearchInformation";
+const selectedCourtFilesState = namespace('CourtFileSearchInformation');
 
 @Component({
   components: {
@@ -146,6 +143,7 @@ import {civilShowSectionsType} from '@/types/civil';
     CivilSidePanel,
     CivilHeaderTop,
     CivilHeader,
+    CourtFilesSelector,
     CustomOverlay,
   },
 })
@@ -173,6 +171,12 @@ export default class CivilCaseDetails extends Vue {
 
   @civilState.Action
   public UpdateShowSections!: (newShowSections: civilShowSectionsType) => void
+
+  @selectedCourtFilesState.Getter('selectedFiles')
+  public selectedFiles!: KeyValueInfo[];
+
+  @selectedCourtFilesState.Getter('currentFileId')
+  public currentFileId!: string;
 
   leftPartiesInfo: partiesInfoType[] = [];
   rightPartiesInfo: partiesInfoType[] = [];
@@ -215,7 +219,7 @@ export default class CivilCaseDetails extends Vue {
   public navigateToSection(section): void {
     if (section) {
       const sections = this.showSections;
-      for(const item of this.sidePanelTitles) {
+      for (const item of this.sidePanelTitles) {
         if (item == section)
           sections[item] = true;
         else
@@ -583,6 +587,47 @@ export default class CivilCaseDetails extends Vue {
   public navigateToLandingPage() {
     this.$router.push({ name: "Home" });
   }
+
+  public changeCase(fileId: string) {
+    this.$store.commit(UPDATE_CURRENT_VIEWED_FILE_ID, fileId);
+    this.$router.replace({ name: "CivilCaseDetails", params: { fileNumber: fileId } });
+    this.reloadCaseDetails();
+  }
+
+  public removeCase(fileId: string) {
+    this.$store.commit(REMOVE_CURRENT_VIEWED_FILE_ID, fileId);
+    if (this.currentFileId) {
+      this.$router.replace({ name: "CivilCaseDetails", params: { fileNumber: this.currentFileId } });
+      this.reloadCaseDetails();
+    } else {
+      this.$router.push({ name: "CourtFileSearchView" });
+    }
+  }
+
+  public addFiles() {
+    this.$router.push({ name: "CourtFileSearchView" });
+  }
+
+  private reloadCaseDetails(): void {
+    // Reset the properties to load new case details.
+    this.civilFileInformation.fileNumber = this.$route.params.fileNumber;
+    this.isMounted = false;
+    this.isDataReady = false;
+    this.partiesJson.length = 0;
+    this.adjudicatorRestrictionsJson.length = 0;
+    this.documentsDetailsJson.length = 0;
+    this.providedDocumentsDetailsJson.length = 0;
+    this.categories.length = 0;
+    this.providedDocumentCategories.length = 0;
+    this.leftPartiesInfo.length = 0;
+    this.rightPartiesInfo.length = 0;
+    this.adjudicatorRestrictionsInfo.length = 0;
+    this.documentsInfo.length = 0;
+    this.providedDocumentsInfo.length = 0;
+    this.summaryDocumentsInfo.length = 0;
+
+    this.getFileDetails();
+  }
 }
 </script>
 
@@ -590,6 +635,7 @@ export default class CivilCaseDetails extends Vue {
 .card {
   border: white;
 }
+
 body {
   overflow-x: hidden;
 }

@@ -4,7 +4,7 @@ import CourtListInformation from '@/store/modules/CourtListInformation'
 import CriminalFileInformation from '@/store/modules/CriminalFileInformation'
 import Vue from 'vue'
 import Vuex from 'vuex'
-import SelectedCourtFiles from './modules/SelectedCourtFiles'
+import CourtFileSearchInformation from './modules/CourtFileSearchInformation'
 
 Vue.use(Vuex)
 
@@ -14,7 +14,7 @@ const store = new Vuex.Store({
     CriminalFileInformation,
     CommonInformation,
     CourtListInformation,
-    SelectedCourtFiles
+    CourtFileSearchInformation
   }
 })
 

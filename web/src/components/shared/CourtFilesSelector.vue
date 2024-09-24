@@ -7,10 +7,9 @@
       </option>
     </b-form-select>
     <div class="d-flex mb-2">
-      <b-button class="extra-sm flex-fill mr-2" variant="outline-primary">Add File(s)</b-button>
+      <b-button class="extra-sm flex-fill mr-2" variant="outline-primary" @click="handleAdd">Add File(s)</b-button>
       <b-button class="extra-sm flex-fill" variant="outline-primary" @click="handleRemove">Remove this File</b-button>
     </div>
-    <b-button class="extra-sm w-100" variant="primary">Schedule Appearance</b-button>
   </div>
 </template>
 <script lang="ts">
@@ -18,7 +17,7 @@ import { KeyValueInfo } from '@/types/common';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component
-export default class CriminalFilesSelector extends Vue {
+export default class CourtFilesSelector extends Vue {
   @Prop({ type: Array, default: () => [] })
   files!: KeyValueInfo[];
 
@@ -38,6 +37,10 @@ export default class CriminalFilesSelector extends Vue {
   handleRemove() {
     this.$emit('file-removed', this.selectedFileId);
   }
+
+  handleAdd() {
+    this.$emit('add-files');
+  }
 }
 </script>
 <style scoped>
@@ -46,6 +49,6 @@ export default class CriminalFilesSelector extends Vue {
 }
 
 .extra-sm {
-  font-size: 0.5rem !important;
+  font-size: 0.625rem !important;
 }
 </style>

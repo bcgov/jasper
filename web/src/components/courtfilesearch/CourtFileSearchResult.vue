@@ -107,7 +107,7 @@
   </div>
 </template>
 <script lang="ts">
-import { ADD_FILES, CLEAR_FILES } from "@/store/modules/SelectedCourtFiles";
+import { CLEAR_SELECTED_FILES } from "@/store/modules/CourtFileSearchInformation";
 import { KeyValueInfo, LookupCode } from "@/types/common";
 import { CourtClassEnum, FileDetail } from '@/types/courtFileSearch';
 import { roomsInfoType } from "@/types/courtlist";
@@ -129,6 +129,9 @@ export default class CourtFileSearchResult extends Vue {
 
   @Prop({ type: Boolean, default: () => true })
   isCriminal!: boolean;
+
+  @Prop({ type: Array, default: () => [] })
+  selectedFiles!: FileDetail[];
 
   idSelector = "";
 
@@ -217,8 +220,6 @@ export default class CourtFileSearchResult extends Vue {
     },
   ];
 
-  selectedFiles: FileDetail[] = [];
-
   mounted() {
     this.idSelector = this.isCriminal ? 'mdocJustinNo' : 'physicalFileId';
   }
@@ -289,7 +290,7 @@ export default class CourtFileSearchResult extends Vue {
 
   public handleDeleteAllClick() {
     this.selectedFiles = [];
-    this.$store.commit(CLEAR_FILES);
+    this.$store.commit(CLEAR_SELECTED_FILES);
   }
 
   public handleViewFilesClick() {
@@ -298,10 +299,8 @@ export default class CourtFileSearchResult extends Vue {
         key: c[this.idSelector],
         value: this.getFormattedFileNumber(c)
       } as KeyValueInfo));
-    this.$store.commit(ADD_FILES, files);
 
-    const caseDetailUrl = `/${this.isCriminal ? 'criminal-file' : 'civil-file'}/${this.selectedFiles[0][this.idSelector]}`;
-    this.$router.push(caseDetailUrl);
+    this.$emit('files-viewed', files);
   }
 }
 </script>

@@ -132,6 +132,7 @@
   </b-card>
 </template>
 <script lang="ts">
+import { CLEAR_FILES } from "@/store/modules/SelectedCourtFiles";
 import { CourtRoomsJsonInfoType, LookupCode } from "@/types/common";
 import { CourtFileSearchCriteria, FileDetail, SearchModeEnum, CourtClassEnum } from "@/types/courtFileSearch";
 import { roomsInfoType } from "@/types/courtlist";
@@ -218,6 +219,8 @@ export default class CourtFileSearchView extends Vue {
   }
 
   public async handleSubmit() {
+    this.$store.commit(CLEAR_FILES);
+
     this.sanitizeTextInputs();
     this.resetErrors();
 
@@ -255,6 +258,7 @@ export default class CourtFileSearchView extends Vue {
   }
 
   public handleReset(resetDivision = false): void {
+    this.$store.commit(CLEAR_FILES);
     this.searchCriteria.isCriminal = resetDivision ? true : this.searchCriteria.isCriminal;
     this.searchCriteria.isFamily = resetDivision ? false : this.searchCriteria.isFamily;
     this.searchCriteria.isSmallClaims = resetDivision ? false : this.searchCriteria.isSmallClaims;

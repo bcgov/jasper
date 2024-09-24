@@ -31,6 +31,8 @@ export interface FileDetail {
   mdocSeqNo: string;
   courtLevelCd: string;
   courtClassCd: string;
+  ticketSeriesTxt: string;
+  mdocRefTypeCd: string;
   warrantYN: string;
   inCustodyYN: string;
   nextApprDt: string;

@@ -51,7 +51,7 @@
           <div class="d-flex justify-content-end no-wrap">
             <b-button variant="outline-primary" class="mr-3" @click="() => handleCaseClick(data.item[idSelector])">Add
               File</b-button>
-            <b-button variant="primary" @click="() => handleCaseClick(data.item[idSelector])">Add File and
+            <b-button variant="primary" @click="() => handleAddFileAndViewClick(data.item[idSelector])">Add File and
               View</b-button>
           </div>
         </template>
@@ -107,7 +107,8 @@
   </div>
 </template>
 <script lang="ts">
-import { LookupCode } from "@/types/common";
+import { ADD_FILES, CLEAR_FILES } from "@/store/modules/SelectedCourtFiles";
+import { KeyValueInfo, LookupCode } from "@/types/common";
 import { CourtClassEnum, FileDetail } from '@/types/courtFileSearch';
 import { roomsInfoType } from "@/types/courtlist";
 import { Component, Prop, Vue } from "vue-property-decorator";
@@ -129,7 +130,7 @@ export default class CourtFileSearchResult extends Vue {
   @Prop({ type: Boolean, default: () => true })
   isCriminal!: boolean;
 
-  idSelector = this.isCriminal ? 'mdocJustinNo' : 'physicalFileId';
+  idSelector = "";
 
   allFields = [
     {
@@ -158,7 +159,7 @@ export default class CourtFileSearchResult extends Vue {
       sortable: true,
       sortByFormatted: true,
       formatter: (value, key, item) => {
-        return `${item.ticketSeriesTxt ?? ""}${item.fileNumberTxt}${item.mdocSeqNo ? "-" + item.mdocSeqNo : ""}${item.mdocRefTypeCd ? "-" + item.mdocRefTypeCd : ""}`;
+        return this.getFormattedFileNumber(item);
       }
     },
     {
@@ -218,10 +219,18 @@ export default class CourtFileSearchResult extends Vue {
 
   selectedFiles: FileDetail[] = [];
 
+  mounted() {
+    this.idSelector = this.isCriminal ? 'mdocJustinNo' : 'physicalFileId';
+  }
+
   get filteredFields() {
     return this.isCriminal
       ? this.allFields
       : this.allFields.filter(f => !['charges', 'warrantyYN', 'inCustodyYN'].includes(f.key));
+  }
+
+  getFormattedFileNumber(detail: FileDetail) {
+    return `${detail.ticketSeriesTxt ?? ""}${detail.fileNumberTxt}${detail.mdocSeqNo ? "-" + detail.mdocSeqNo : ""}${detail.mdocRefTypeCd ? "-" + detail.mdocRefTypeCd : ""}`;
   }
 
   getLocation(fileHomeAgencyId: string) {
@@ -251,19 +260,27 @@ export default class CourtFileSearchResult extends Vue {
   }
 
   public handleCaseClick(id: string) {
-    console.log(id);
-    console.log(this.idSelector)
-
     const isExist = this.selectedFiles.find(c => c[this.idSelector] === id);
     if (isExist) {
       return;
     }
 
     const file = this.searchResults.find(c => c[this.idSelector] === id);
-    console.log(file);
     if (file) {
       this.selectedFiles.push(file);
     }
+  }
+
+  public handleAddFileAndViewClick(id: string) {
+    const isExist = this.selectedFiles.find(c => c[this.idSelector] === id);
+    if (!isExist) {
+      const file = this.searchResults.find(c => c[this.idSelector] === id);
+      if (file) {
+        this.selectedFiles.push(file);
+      }
+    }
+
+    this.handleViewFilesClick();
   }
 
   public handleDeleteClick(id: string) {
@@ -272,9 +289,17 @@ export default class CourtFileSearchResult extends Vue {
 
   public handleDeleteAllClick() {
     this.selectedFiles = [];
+    this.$store.commit(CLEAR_FILES);
   }
 
   public handleViewFilesClick() {
+    const files = this.selectedFiles
+      .map(c => ({
+        key: c[this.idSelector],
+        value: this.getFormattedFileNumber(c)
+      } as KeyValueInfo));
+    this.$store.commit(ADD_FILES, files);
+
     const caseDetailUrl = `/${this.isCriminal ? 'criminal-file' : 'civil-file'}/${this.selectedFiles[0][this.idSelector]}`;
     this.$router.push(caseDetailUrl);
   }

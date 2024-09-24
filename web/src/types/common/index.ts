@@ -77,3 +77,8 @@ export interface LookupCode {
     shortDesc: string;
     longDesc: string;
 }
+
+export interface KeyValueInfo {
+    key: string;
+    value: string;
+}

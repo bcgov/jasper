@@ -12,7 +12,7 @@
       </b-overlay>
     </b-card>
     <div v-if="!isSearching">
-      <div class="my-3 bg-warning p-2" v-if="searchResults.length > 100">
+      <div class="my-3 bg-warning p-2" v-if="isSearchResultsOver">
         <span>More than 100 records match the search criteria, only the first 100 are returned.</span>
       </div>
       <h3 class="mt-3">Search Results</h3>
@@ -132,6 +132,9 @@ export default class CourtFileSearchResult extends Vue {
 
   @Prop({ type: Array, default: () => [] })
   selectedFiles!: FileDetail[];
+
+  @Prop({ type: Boolean, default: () => false })
+  isSearchResultsOver!: boolean;
 
   idSelector = "";
 
@@ -268,7 +271,7 @@ export default class CourtFileSearchResult extends Vue {
 
     const file = this.searchResults.find(c => c[this.idSelector] === id);
     if (file) {
-      this.selectedFiles.push(file);
+      this.$emit('add-selected', file);
     }
   }
 
@@ -277,7 +280,7 @@ export default class CourtFileSearchResult extends Vue {
     if (!isExist) {
       const file = this.searchResults.find(c => c[this.idSelector] === id);
       if (file) {
-        this.selectedFiles.push(file);
+        this.$emit('add-selected', file);
       }
     }
 
@@ -285,12 +288,11 @@ export default class CourtFileSearchResult extends Vue {
   }
 
   public handleDeleteClick(id: string) {
-    this.selectedFiles = this.selectedFiles.filter(c => c[this.idSelector] !== id);
+    this.$emit('remove-selected', this.idSelector, id);
   }
 
   public handleDeleteAllClick() {
-    this.selectedFiles = [];
-    this.$store.commit(CLEAR_SELECTED_FILES);
+    this.$emit('clear-selected');
   }
 
   public handleViewFilesClick() {

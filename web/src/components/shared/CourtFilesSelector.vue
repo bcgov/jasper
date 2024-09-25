@@ -49,6 +49,6 @@ export default class CourtFilesSelector extends Vue {
 }
 
 .extra-sm {
-  font-size: 0.625rem !important;
+  font-size: 0.6rem !important;
 }
 </style>

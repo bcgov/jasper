@@ -237,7 +237,6 @@ export default class CriminalCaseDetails extends Vue {
 
   mounted() {
     this.criminalFileInformation.fileNumber = this.$route.params.fileNumber;
-    console.log(this.criminalFileInformation);
     this.UpdateCriminalFile(this.criminalFileInformation);
     this.getFileDetails();
   }

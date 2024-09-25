@@ -81,8 +81,8 @@
           </b-form-group>
 
           <b-form-group v-if="searchCriteria.searchBy === 'lastName'">
-            <b-form-input class="search-input" :class="{ 'is-invalid': errors.isMissingSurname }"
-              v-model="searchCriteria.lastName"></b-form-input>
+            <b-form-input class="search-input" placeholder="MacDonald"
+              :class="{ 'is-invalid': errors.isMissingSurname }" v-model="searchCriteria.lastName"></b-form-input>
           </b-form-group>
 
           <b-form-group v-if="searchCriteria.searchBy === 'orgName'">
@@ -99,7 +99,8 @@
             Reset search
           </b-button>
         </div>
-        <div v-if="searchCriteria.isCriminal && searchCriteria.searchBy !== 'orgName'">
+        <div
+          v-if="(searchCriteria.isCriminal && searchCriteria.searchBy === 'fileNumber') || searchCriteria.searchBy === 'lastName'">
           <span>Optional...</span>
           <div class="d-flex p-3 bg-light">
             <div class="d-flex" v-if="searchCriteria.searchBy === 'fileNumber'">
@@ -126,7 +127,9 @@
       <court-file-search-result class="mb-5" v-if="isSearching || hasSearched"
         :isLookupDataMounted="isLookupDataMounted" :isLookupDataReady="isLookupDataReady" :courtRooms="courtRooms"
         :classes="classes" :isCriminal="searchCriteria.isCriminal" :searchResults="searchResults"
-        :isSearching="isSearching" @files-viewed="viewFiles" :selectedFiles="selectedFiles">
+        :isSearching="isSearching" @files-viewed="viewFiles" :selectedFiles="selectedFiles"
+        @add-selected="addSelectedFile" @remove-selected="removeSelectedFile" @clear-selected="clearSelectedFiles"
+        :isSearchResultsOver="isSearchResultsOver">
       </court-file-search-result>
     </b-card>
   </b-card>
@@ -141,6 +144,7 @@ import { Component, Vue } from "vue-property-decorator";
 
 const CRIMINAL_CODE = "R";
 const SMALL_CLAIMS_CODE = "I";
+const SEARCH_RESULT_LIMIT = 100;
 
 @Component({
   components: {
@@ -159,6 +163,7 @@ export default class CourtFileSearchView extends Vue {
   isLookupDataReady = false;
   hasSearched = false;
   isSearching = false;
+  isSearchResultsOver = false;
   defaultLocation = this.$store.state.CommonInformation.userInfo.agencyCode;
 
   classOptions: LookupCode[] = [];
@@ -239,9 +244,15 @@ export default class CourtFileSearchView extends Vue {
     try {
       this.isSearching = true;
       this.searchResults.length = 0;
-      this.searchResults = this.searchCriteria.isCriminal
-        ? (await this.$filesService.searchCriminalFiles(this.buildQueryParams())).fileDetail
-        : (await this.$filesService.searchCivilFiles(this.buildQueryParams())).fileDetail;
+      this.isSearchResultsOver = false;
+
+      const { recCount, fileDetail } = this.searchCriteria.isCriminal
+        ? (await this.$filesService.searchCriminalFiles(this.buildQueryParams()))
+        : (await this.$filesService.searchCivilFiles(this.buildQueryParams()));
+
+      // Make sure that to only show up to 100 results
+      this.isSearchResultsOver = recCount > SEARCH_RESULT_LIMIT;
+      this.searchResults = fileDetail.slice(0, SEARCH_RESULT_LIMIT);
     } catch (err) {
       this.errorCode = err.status;
       this.errorText = err.statusText;
@@ -408,6 +419,19 @@ export default class CourtFileSearchView extends Vue {
     );
     const caseDetailUrl = `/${this.searchCriteria.isCriminal ? 'criminal-file' : 'civil-file'}/${selectedFiles[0].key}`;
     this.$router.push(caseDetailUrl);
+  }
+
+  addSelectedFile(file: FileDetail): void {
+    this.selectedFiles.push(file);
+  }
+
+  removeSelectedFile(idSelector: string, fileId: string): void {
+    this.selectedFiles = this.selectedFiles.filter(c => c[idSelector] !== fileId);
+  }
+
+  clearSelectedFiles(): void {
+    this.selectedFiles = [];
+    this.$store.commit(CLEAR_SELECTED_FILES);
   }
 }
 </script>

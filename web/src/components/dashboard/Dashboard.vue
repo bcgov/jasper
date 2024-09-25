@@ -11,7 +11,7 @@
             </div>
         </header>
         <section class="dashboard-container">
-            <div class="dashboard">Calendar</div>
+            <div class="dashboard-calendar"><Calendar :events='ar' @monthChange="getMonthlySchedule"/></div>
             <div class="right-menu">
                 <div>&nbsp;</div>
                 <div>&nbsp;</div>
@@ -51,10 +51,8 @@ header {
     align-items: flex-start;
 }
 
-.dashboard {
+.dashboard-calendar {
     width: 80%;
-    border: 1px solid;
-    height: 500px;
 }
 
 .right-menu {
@@ -83,10 +81,43 @@ header {
 </style>
 <script lang="ts">
 import NavigationTopbar from "@components/NavigationTopbar.vue";
+import Calendar from '@components/calendar/Calendar.vue';
 import { Component, Vue } from 'vue-property-decorator';
 @Component({
     components: {
         NavigationTopbar,
+        Calendar
     }
 })
-export default class Dashboard extends Vue { }</script>
+export default class Dashboard extends Vue { 
+ 
+ public ar = [{ title: 'Today Meeting', start: new Date() }];
+  public getMonthlySchedule(currentMonth): void {
+    this.ar = [];
+     this.$http
+      .get(
+        "api/assignments/monthly-schedule/" +
+        `${currentMonth.getFullYear()}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
+      )
+      .then(
+        (Response) => Response.json(),
+        (err) => {
+            this.$bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
+                title: "An error has occured.",
+                variant: "danger",
+                autoHideDelay: 10000,
+            });
+          console.log(err);
+        }
+      )
+      .then((data) => {
+        if (data) {
+          this.ar = data;
+        } else {
+          window.alert("bad data!");
+        }
+        
+      });
+  }
+}
+</script>

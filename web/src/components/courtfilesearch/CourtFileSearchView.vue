@@ -339,9 +339,29 @@ export default class CourtFileSearchView extends Vue {
   }
 
   buildQueryParams() {
+    const queryParams = this.buildSearchByQueryParams();
+
+    // Class
+    if (this.searchCriteria.isFamily) {
+      queryParams['courtClass'] = CourtClassEnum.F;
+    }
+    else if (this.searchCriteria.class) {
+      queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
+    }
+    else if (this.searchCriteria.isSmallClaims) {
+      queryParams['courtClass'] = CourtClassEnum.C;
+    }
+
+    if (this.searchCriteria.fileHomeAgencyId) {
+      queryParams['fileHomeAgencyId'] = this.searchCriteria.fileHomeAgencyId;
+    }
+
+    return queryParams;
+  }
+
+  buildSearchByQueryParams() {
     const queryParams = {};
 
-    // Search By
     if (this.searchCriteria.searchBy === 'fileNumber') {
       queryParams['searchMode'] = SearchModeEnum.FileNo;
       queryParams['fileNumberTxt'] = this.searchCriteria.fileNumberTxt;
@@ -367,25 +387,6 @@ export default class CourtFileSearchView extends Vue {
     else {
       queryParams['searchMode'] = SearchModeEnum.PartName;
       queryParams['orgName'] = this.searchCriteria.orgName;
-    }
-
-    // Class
-    if (this.searchCriteria.isFamily) {
-      queryParams['courtClass'] = CourtClassEnum.F;
-    }
-    else {
-      if (this.searchCriteria.class) {
-        queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
-      }
-      else {
-        if (this.searchCriteria.isSmallClaims) {
-          queryParams['courtClass'] = CourtClassEnum.C;
-        }
-      }
-    }
-
-    if (this.searchCriteria.fileHomeAgencyId) {
-      queryParams['fileHomeAgencyId'] = this.searchCriteria.fileHomeAgencyId;
     }
 
     return queryParams;

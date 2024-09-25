@@ -107,7 +107,6 @@
   </div>
 </template>
 <script lang="ts">
-import { CLEAR_SELECTED_FILES } from "@/store/modules/CourtFileSearchInformation";
 import { KeyValueInfo, LookupCode } from "@/types/common";
 import { CourtClassEnum, FileDetail } from '@/types/courtFileSearch';
 import { roomsInfoType } from "@/types/courtlist";

@@ -101,6 +101,9 @@ namespace Scv.Api.Controllers
             if (User.IsVcUser() && civilFileDetailResponse.SealedYN != "N")
                 return Forbid();
 
+            if (User.IsSupremeUser() && civilFileDetailResponse.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.S)
+                return Forbid();
+
             return Ok(civilFileDetailResponse);
         }
 
@@ -219,6 +222,9 @@ namespace Scv.Api.Controllers
             var redactedCriminalFileDetailResponse = await _criminalFilesService.FileIdAsync(fileId);
             if (redactedCriminalFileDetailResponse?.JustinNo == null)
                 throw new NotFoundException("Couldn't find criminal file with this id.");
+
+            if (User.IsSupremeUser() && redactedCriminalFileDetailResponse.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.S)
+                return Forbid();
 
             return Ok(redactedCriminalFileDetailResponse);
         }

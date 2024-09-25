@@ -1,5 +1,5 @@
 <template>
-  <b-card class="container px-0" no-body bg-variant="white">
+  <b-card class="court-file-search px-0" no-body bg-variant="white">
     <b-card body-class="px-0" bg-variant="light" v-if="!isLookupDataMounted && !isLookupDataReady">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
@@ -472,5 +472,11 @@ export default class CourtFileSearchView extends Vue {
 .search-btn {
   border-bottom-left-radius: 0;
   border-top-left-radius: 0;
+}
+
+.court-file-search {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 </style>

@@ -14,7 +14,7 @@ export default {
                     }
                 },
     watch: {
-        events: function(newValue, oldValue) {
+        events: function(newValue) {
             this.calendarOptions.events = newValue;
         }
     },
@@ -55,7 +55,7 @@ export default {
 .fc-day-sat, .fc-day-sun { background: #f0f0f0; }
 .fc-toolbar-title:before{
         content:"Scheduled for ";
-        font-size: 17x;
+        font-size: 17px;
     }
     .fc .fc-toolbar-title{
         font-size: 17px;
@@ -80,18 +80,19 @@ justify-content:flex-start;
         color: black;
         border: 1px solid black;
         cursor: pointer;
-        color: black;
         font-size:17px;
         height:41px;
     }
     .fc-toolbar-title{
          width: 265px; 
     }
-        .fc .fc-day-today{
-background: ###ffffff!important;
+    .fc .fc-day-today{
+        background: #f4fafd!important;
+        color: #1d98d7!important;
     }
     .fc .fc-day-selected{
-background: #fdfaf4!important;
+        background: #fdfaf4!important;
+        color: #d7961e!important;
     }
 </style>
 <template>

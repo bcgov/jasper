@@ -263,3 +263,10 @@ body,
 .btn {
   font-size: $base-font-size;
 }
+
+// Class to use to follow the size/position of new header
+.main-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}

@@ -1,5 +1,5 @@
 <template>
-  <div class="container" style="overflow:hidden">
+  <div class="main-container" style="overflow:hidden">
     <b-card bg-variant="light" v-if="!isMounted && !isDataReady">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
@@ -35,12 +35,12 @@
 
     <b-card no-body>
       <b-row cols="2">
-        <b-col md="2" cols="2" class="px-0" style="overflow: auto;">
+        <b-col md="3" cols="3" style="overflow: auto;">
           <court-files-selector v-if="isDataReady && selectedFiles.length > 0" :files="selectedFiles"
-            :passedFileId="currentFileId" @file-changed="changeCase" @file-removed="removeCase" @add-files="addFiles" />
+            @reload-case-details="reloadCaseDetails" targetCaseDetails="CivilCaseDetails" />
           <civil-side-panel v-if="isDataReady" />
         </b-col>
-        <b-col col md="10" cols="10" class="px-0" style="overflow: auto;">
+        <b-col col md="9" cols="9" class="px-0" style="overflow: auto;">
           <civil-header-top v-if="isDataReady" />
           <civil-header v-if="isDataReady" />
 
@@ -125,10 +125,10 @@ import {
 import base64url from "base64url";
 import shared from "../shared";
 import { CourtDocumentType, DocumentData } from "@/types/shared";
+import { civilShowSectionsType } from '@/types/civil';
+
 const civilState = namespace("CivilFileInformation");
 const commonState = namespace("CommonInformation");
-import { civilShowSectionsType } from '@/types/civil';
-import { REMOVE_CURRENT_VIEWED_FILE_ID, UPDATE_CURRENT_VIEWED_FILE_ID } from "@/store/modules/CourtFileSearchInformation";
 const selectedCourtFilesState = namespace('CourtFileSearchInformation');
 
 @Component({
@@ -174,9 +174,6 @@ export default class CivilCaseDetails extends Vue {
 
   @selectedCourtFilesState.Getter('selectedFiles')
   public selectedFiles!: KeyValueInfo[];
-
-  @selectedCourtFilesState.Getter('currentFileId')
-  public currentFileId!: string;
 
   leftPartiesInfo: partiesInfoType[] = [];
   rightPartiesInfo: partiesInfoType[] = [];
@@ -586,26 +583,6 @@ export default class CivilCaseDetails extends Vue {
 
   public navigateToLandingPage() {
     this.$router.push({ name: "Home" });
-  }
-
-  public changeCase(fileId: string) {
-    this.$store.commit(UPDATE_CURRENT_VIEWED_FILE_ID, fileId);
-    this.$router.replace({ name: "CivilCaseDetails", params: { fileNumber: fileId } });
-    this.reloadCaseDetails();
-  }
-
-  public removeCase(fileId: string) {
-    this.$store.commit(REMOVE_CURRENT_VIEWED_FILE_ID, fileId);
-    if (this.currentFileId) {
-      this.$router.replace({ name: "CivilCaseDetails", params: { fileNumber: this.currentFileId } });
-      this.reloadCaseDetails();
-    } else {
-      this.$router.push({ name: "CourtFileSearchView" });
-    }
-  }
-
-  public addFiles() {
-    this.$router.push({ name: "CourtFileSearchView" });
   }
 
   private reloadCaseDetails(): void {

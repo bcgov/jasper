@@ -1,5 +1,5 @@
 <template>
-  <div class="container" style="overflow:hidden">
+  <div class="main-container" style="overflow:hidden">
     <b-card bg-variant="light" v-if="!isMounted && !isDataReady">
       <b-overlay :show="true">
         <b-card style="min-height: 100px;" />
@@ -36,12 +36,12 @@
     </b-card>
 
     <b-row cols="2">
-      <b-col md="2" cols="2" class="px-0" style="overflow: auto;">
+      <b-col md="3" cols="3" style="overflow: auto;">
         <court-files-selector v-if="isDataReady && selectedFiles.length > 0" :files="selectedFiles"
-          :passedFileId="currentFileId" @file-changed="changeCase" @file-removed="removeCase" @add-files="addFiles" />
+          @reload-case-details="reloadCaseDetails" targetCaseDetails="CriminalCaseDetails" />
         <criminal-side-panel v-if="isDataReady" />
       </b-col>
-      <b-col col md="10" cols="10" class="px-0" style="overflow: auto;">
+      <b-col col md="9" cols="9" class="px-0" style="overflow: auto;">
         <criminal-header-top v-if="isDataReady" />
         <criminal-header v-if="isDataReady" />
 
@@ -122,7 +122,7 @@ import base64url from "base64url";
 import shared from "../shared";
 import { CourtDocumentType, DocumentData } from "@/types/shared";
 import { criminalHearingRestrictionType, criminalParticipantType } from "@/types/criminal/jsonTypes";
-import { REMOVE_CURRENT_VIEWED_FILE_ID, UPDATE_CURRENT_VIEWED_FILE_ID } from "@/store/modules/CourtFileSearchInformation";
+import { REMOVE_CURRENT_VIEWED_FILE_ID } from "@/store/modules/CourtFileSearchInformation";
 const criminalState = namespace("CriminalFileInformation");
 const commonState = namespace("CommonInformation");
 const courtFileSearchState = namespace('CourtFileSearchInformation');
@@ -192,9 +192,6 @@ export default class CriminalCaseDetails extends Vue {
 
   @courtFileSearchState.Getter('selectedFiles')
   public selectedFiles!: KeyValueInfo[];
-
-  @courtFileSearchState.Getter('currentFileId')
-  public currentFileId!: string;
 
   participantList: participantListInfoType[] = [];
   adjudicatorRestrictionsInfo: AdjudicatorRestrictionsInfoType[] = [];
@@ -478,26 +475,6 @@ export default class CriminalCaseDetails extends Vue {
 
   public navigateToLandingPage() {
     this.$router.push({ name: "Home" });
-  }
-
-  public changeCase(fileId: string) {
-    this.$store.commit(UPDATE_CURRENT_VIEWED_FILE_ID, fileId);
-    this.$router.replace({ name: "CriminalCaseDetails", params: { fileNumber: fileId } });
-    this.reloadCaseDetails();
-  }
-
-  public removeCase(fileId: string) {
-    this.$store.commit(REMOVE_CURRENT_VIEWED_FILE_ID, fileId);
-    if (this.currentFileId) {
-      this.$router.replace({ name: "CriminalCaseDetails", params: { fileNumber: this.currentFileId } });
-      this.reloadCaseDetails();
-    } else {
-      this.$router.push({ name: "CourtFileSearchView" });
-    }
-  }
-
-  public addFiles() {
-    this.$router.push({ name: "CourtFileSearchView" });
   }
 
   private reloadCaseDetails(): void {

@@ -33,12 +33,7 @@ variable "web_subnet_names" {
   type        = list(string)
 }
 
-# variable "api_subnet_names" {
-#   description = "List of Subnets for API"
-#   type        = list(string)
-# }
-
-# variable "db_subnet_names" {
-#   description = "List of Subnets for Database"
-#   type        = list(string)
-# }
+variable "openshift_iam_user" {
+  description = "Openshift IAM Username"
+  type        = string
+}

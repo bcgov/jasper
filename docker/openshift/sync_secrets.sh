@@ -8,10 +8,6 @@ export HTTP_PROXY=http://swpxkam.gov.bc.ca:8080
 export HTTPS_PROXY=http://swpxkam.gov.bc.ca:8080
 export NO_PROXY=.cluster.local,.svc,10.91.0.0/16,172.30.0.0/16,127.0.0.1,localhost,.gov.bc.ca
 
-# AWS Secrets Manager details
-export AWS_DEFAULT_REGION=ca-central-1
-export AWS_REGION=ca-central-1
-
 aws_secret_format="jasper-X-secret-$VAULT_SECRET_ENV"
 secret_keys="\
   aspnet_core \

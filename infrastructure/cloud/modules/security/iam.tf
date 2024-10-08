@@ -115,6 +115,8 @@ resource "aws_iam_policy" "openshift_role_policy" {
   })
 }
 
+# This assumes that the openshift user has been added in the target AWS environment
+# https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/
 data "aws_iam_user" "openshift_user" {
   user_name = var.openshift_iam_user
 }

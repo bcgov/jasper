@@ -19,7 +19,6 @@ secret_keys="\
   lookup_services_client \
   misc \
   request \
-  services_client \
   splunk \
   user_services_client"
 

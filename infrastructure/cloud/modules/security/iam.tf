@@ -99,6 +99,7 @@ resource "aws_iam_policy" "openshift_role_policy" {
         Effect = "Allow"
         Resource = [
           aws_secretsmanager_secret.aspnet_core_secret.arn,
+          aws_secretsmanager_secret.auth_secret.arn,
           aws_secretsmanager_secret.database_secret.arn,
           aws_secretsmanager_secret.file_services_client_secret.arn,
           aws_secretsmanager_secret.keycloak_secret.arn,
@@ -106,7 +107,6 @@ resource "aws_iam_policy" "openshift_role_policy" {
           aws_secretsmanager_secret.lookup_services_client_secret.arn,
           aws_secretsmanager_secret.misc_secret.arn,
           aws_secretsmanager_secret.request_secret.arn,
-          aws_secretsmanager_secret.site_minder_secret.arn,
           aws_secretsmanager_secret.splunk_secret.arn,
           aws_secretsmanager_secret.user_services_client_secret.arn
         ]

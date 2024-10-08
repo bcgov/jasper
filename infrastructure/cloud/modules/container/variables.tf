@@ -48,3 +48,17 @@ variable "kms_key_id" {
   type        = string
 }
 
+variable "api_secrets" {
+  description = "List if env variable secrets used in API"
+  type        = list(list(string))
+}
+
+variable "web_secrets" {
+  description = "List if env variable secrets used in Web"
+  type        = list(list(string))
+}
+
+variable "db_secrets" {
+  description = "List if env variable secrets used in Database"
+  type        = list(list(string))
+}

@@ -11,6 +11,7 @@ export NO_PROXY=.cluster.local,.svc,10.91.0.0/16,172.30.0.0/16,127.0.0.1,localho
 aws_secret_format="jasper-X-secret-$VAULT_SECRET_ENV"
 secret_keys="\
   aspnet_core \
+  auth \
   database \
   file_services_client \
   keycloak \
@@ -19,7 +20,6 @@ secret_keys="\
   misc \
   request \
   services_client \
-  site_minder \
   splunk \
   user_services_client"
 

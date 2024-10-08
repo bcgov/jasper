@@ -87,9 +87,9 @@ resource "aws_secretsmanager_secret" "splunk_secret" {
 resource "aws_secretsmanager_secret_version" "splunk_secret_value" {
   secret_id = aws_secretsmanager_secret.splunk_secret.id
   secret_string = jsonencode({
-    collectionUrl = "",
-    token         = "",
-    collectorId   = ""
+    collectorId  = ""
+    collectorUrl = "",
+    token        = "",
   })
 }
 
@@ -120,19 +120,6 @@ resource "aws_secretsmanager_secret_version" "aspnet_core_secret_value" {
   })
 }
 
-resource "aws_secretsmanager_secret" "site_minder_secret" {
-  name = "${var.app_name}-site-minder-secret-${var.environment}"
-}
-
-resource "aws_secretsmanager_secret_version" "site_minder_secret_value" {
-  secret_id = aws_secretsmanager_secret.site_minder_secret.id
-  secret_string = jsonencode({
-    logoutUrl      = "",
-    includeHeaders = "",
-    allowUserType  = ""
-  })
-}
-
 resource "aws_secretsmanager_secret" "misc_secret" {
   name = "${var.app_name}-misc-secret-${var.environment}"
 }
@@ -145,8 +132,21 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     useSelfSignedSsl               = "",
     ipFilterRules                  = "",
     realIpFrom                     = "",
-    userId                         = "",
-    userPassword                   = "",
     apiUrl                         = ""
+    siteMinderLogoutUrl            = "",
+    includeSiteMinderHeaders       = ""
+  })
+}
+
+resource "aws_secretsmanager_secret" "auth_secret" {
+  name = "${var.app_name}-auth-secret-${var.environment}"
+}
+
+resource "aws_secretsmanager_secret_version" "auth_secret_value" {
+  secret_id = aws_secretsmanager_secret.auth_secret.id
+  secret_string = jsonencode({
+    userId                  = "",
+    userPassword            = "",
+    allowSiteMinderUserType = ""
   })
 }

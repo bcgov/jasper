@@ -41,6 +41,9 @@ module "container" {
   ecs_web_td_log_group_name = module.monitoring.ecs_web_td_log_group_name
   ecs_api_td_log_group_name = module.monitoring.ecs_api_td_log_group_name
   kms_key_id                = module.security.kms_key_id
+  api_secrets               = module.security.api_secrets
+  web_secrets               = module.security.web_secrets
+  db_secrets                = module.security.db_secrets
   depends_on                = [module.monitoring]
 }
 

@@ -150,3 +150,48 @@ resource "aws_secretsmanager_secret_version" "auth_secret_value" {
     allowSiteMinderUserType = ""
   })
 }
+
+# Use data to retrieve secrets that was populated by Openshift CronJob
+data "aws_secretsmanager_secret_version" "aspnet_core_secret_version" {
+  secret_id = aws_secretsmanager_secret.aspnet_core_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "auth_secret_version" {
+  secret_id = aws_secretsmanager_secret.auth_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "database_secret_version" {
+  secret_id = aws_secretsmanager_secret.database_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "misc_secret_version" {
+  secret_id = aws_secretsmanager_secret.misc_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "file_services_client_secret_version" {
+  secret_id = aws_secretsmanager_secret.file_services_client_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "keycloak_secret_version" {
+  secret_id = aws_secretsmanager_secret.keycloak_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "location_services_client_secret_version" {
+  secret_id = aws_secretsmanager_secret.location_services_client_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "lookup_services_client_secret_version" {
+  secret_id = aws_secretsmanager_secret.lookup_services_client_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "request_secret_version" {
+  secret_id = aws_secretsmanager_secret.request_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "splunk_secret_version" {
+  secret_id = aws_secretsmanager_secret.splunk_secret.id
+}
+
+data "aws_secretsmanager_secret_version" "user_services_client_secret_version" {
+  secret_id = aws_secretsmanager_secret.user_services_client_secret.id
+}

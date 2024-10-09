@@ -38,10 +38,10 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
-      secrets = [
+      environment = [
         for secret_kv in var.web_secrets : {
-          name      = secret_kv[0]
-          valueFrom = secret_kv[1]
+          name  = secret_kv[0]
+          value = secret_kv[1]
         }
       ]
     }
@@ -95,10 +95,10 @@ resource "aws_ecs_task_definition" "ecs_api_task_definition" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
-      secrets = [
+      environment = [
         for secret_kv in var.api_secrets : {
-          name      = secret_kv[0]
-          valueFrom = secret_kv[1]
+          name  = secret_kv[0]
+          value = secret_kv[1]
         }
       ]
     }

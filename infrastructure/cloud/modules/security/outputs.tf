@@ -17,57 +17,60 @@ output "kms_key_arn" {
 
 output "api_secrets" {
   value = [
-    ["ASPNETCORE_URLS", "${aws_secretsmanager_secret.aspnet_core_secret.arn}:urls"],
-    ["Auth__UserId", "${aws_secretsmanager_secret.auth_secret.arn}:userId"],
-    ["Auth__UserPassword", "${aws_secretsmanager_secret.auth_secret.arn}:userPassword"],
-    ["Auth__AllowSiteMinderUserType", "${aws_secretsmanager_secret.auth_secret.arn}:allowSiteMinderUserType"],
-    ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString"],
-    ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey"],
-    ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username"],
-    ["FileServicesClient__Password", "${aws_secretsmanager_secret.file_services_client_secret.arn}:password"],
-    ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl"],
-    ["Keycloak__Audience", "${aws_secretsmanager_secret.keycloak_secret.arn}:audience"],
-    ["Keycloak__Authority", "${aws_secretsmanager_secret.keycloak_secret.arn}:authority"],
-    ["Keycloak__Client", "${aws_secretsmanager_secret.keycloak_secret.arn}:client"],
-    ["Keycloak__PresReqConfId", "${aws_secretsmanager_secret.keycloak_secret.arn}:presReqConfId"],
-    ["Keycloak__Secret", "${aws_secretsmanager_secret.keycloak_secret.arn}:secret"],
-    ["Keycloak__VcIdpHint", "${aws_secretsmanager_secret.keycloak_secret.arn}:vcIdpHint"],
-    ["LocationServicesClient__Username", "${aws_secretsmanager_secret.location_services_client_secret.arn}:username"],
-    ["LocationServicesClient__Password", "${aws_secretsmanager_secret.location_services_client_secret.arn}:password"],
-    ["LocationServicesClient__Url", "${aws_secretsmanager_secret.location_services_client_secret.arn}:baseUrl"],
-    ["LookupServicesClient__Username", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:username"],
-    ["LookupServicesClient__Password", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:password"],
-    ["LookupServicesClient__Url", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:baseUrl"],
-    ["Request__ApplicationCd", "${aws_secretsmanager_secret.request_secret.arn}:applicationCd"],
-    ["Request__AgencyIdentifierId", "${aws_secretsmanager_secret.request_secret.arn}:agencyIdentifierId"],
-    ["Request__GetUserLoginDefaultAgencyId", "${aws_secretsmanager_secret.request_secret.arn}:getUserLoginDefaultAgencyId"],
-    ["Request__PartId", "${aws_secretsmanager_secret.request_secret.arn}:partId"],
-    ["SiteMinderLogoutUrl", "${aws_secretsmanager_secret.misc_secret.arn}:siteMinderLogoutUrl"],
-    ["SplunkCollectorId", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorId"],
-    ["SplunkCollectorUrl", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorUrl"],
-    ["SplunkToken", "${aws_secretsmanager_secret.splunk_secret.arn}:token"],
-    ["UserServicesClient__Username", "${aws_secretsmanager_secret.user_services_client_secret.arn}:username"],
-    ["UserServicesClient__Password", "${aws_secretsmanager_secret.user_services_client_secret.arn}:password"],
-    ["UserServicesClient__Url", "${aws_secretsmanager_secret.user_services_client_secret.arn}:baseUrl"],
+    ["ASPNETCORE_URLS", jsondecode(data.aws_secretsmanager_secret_version.aspnet_core_secret_version.secret_string)["urls"]],
+    ["Auth__UserId", jsondecode(data.aws_secretsmanager_secret_version.auth_secret_version.secret_string)["userId"]],
+    ["Auth__UserPassword", jsondecode(data.aws_secretsmanager_secret_version.auth_secret_version.secret_string)["userPassword"]],
+    ["Auth__AllowSiteMinderUserType", jsondecode(data.aws_secretsmanager_secret_version.auth_secret_version.secret_string)["allowSiteMinderUserType"]],
+    ["DatabaseConnectionString", jsondecode(data.aws_secretsmanager_secret_version.database_secret_version.secret_string)["dbConnectionString"]],
+    ["DataProtectionKeyEncryptionKey", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["dataProtectionKeyEncryptionKey"]],
+    ["FileServicesClient__Username", jsondecode(data.aws_secretsmanager_secret_version.file_services_client_secret_version.secret_string)["username"]],
+    ["FileServicesClient__Password", jsondecode(data.aws_secretsmanager_secret_version.file_services_client_secret_version.secret_string)["password"]],
+    ["FileServicesClient__Url", jsondecode(data.aws_secretsmanager_secret_version.file_services_client_secret_version.secret_string)["baseUrl"]],
+    ["Keycloak__Audience", jsondecode(data.aws_secretsmanager_secret_version.keycloak_secret_version.secret_string)["audience"]],
+    ["Keycloak__Authority", jsondecode(data.aws_secretsmanager_secret_version.keycloak_secret_version.secret_string)["authority"]],
+    ["Keycloak__Client", jsondecode(data.aws_secretsmanager_secret_version.keycloak_secret_version.secret_string)["client"]],
+    ["Keycloak__PresReqConfId", jsondecode(data.aws_secretsmanager_secret_version.keycloak_secret_version.secret_string)["presReqConfId"]],
+    ["Keycloak__Secret", jsondecode(data.aws_secretsmanager_secret_version.keycloak_secret_version.secret_string)["secret"]],
+    ["Keycloak__VcIdpHint", jsondecode(data.aws_secretsmanager_secret_version.keycloak_secret_version.secret_string)["vcIdpHint"]],
+    ["LocationServicesClient__Username", jsondecode(data.aws_secretsmanager_secret_version.location_services_client_secret_version.secret_string)["username"]],
+    ["LocationServicesClient__Password", jsondecode(data.aws_secretsmanager_secret_version.location_services_client_secret_version.secret_string)["password"]],
+    ["LocationServicesClient__Url", jsondecode(data.aws_secretsmanager_secret_version.location_services_client_secret_version.secret_string)["baseUrl"]],
+    ["LookupServicesClient__Username", jsondecode(data.aws_secretsmanager_secret_version.lookup_services_client_secret_version.secret_string)["username"]],
+    ["LookupServicesClient__Password", jsondecode(data.aws_secretsmanager_secret_version.lookup_services_client_secret_version.secret_string)["password"]],
+    ["LookupServicesClient__Url", jsondecode(data.aws_secretsmanager_secret_version.lookup_services_client_secret_version.secret_string)["baseUrl"]],
+    ["Request__ApplicationCd", jsondecode(data.aws_secretsmanager_secret_version.request_secret_version.secret_string)["applicationCd"]],
+    ["Request__AgencyIdentifierId", jsondecode(data.aws_secretsmanager_secret_version.request_secret_version.secret_string)["agencyIdentifierId"]],
+    ["Request__GetUserLoginDefaultAgencyId", jsondecode(data.aws_secretsmanager_secret_version.request_secret_version.secret_string)["getUserLoginDefaultAgencyId"]],
+    ["Request__PartId", jsondecode(data.aws_secretsmanager_secret_version.request_secret_version.secret_string)["partId"]],
+    ["SiteMinderLogoutUrl", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["siteMinderLogoutUrl"]],
+    ["SplunkCollectorId", jsondecode(data.aws_secretsmanager_secret_version.splunk_secret_version.secret_string)["collectorId"]],
+    ["SplunkCollectorUrl", jsondecode(data.aws_secretsmanager_secret_version.splunk_secret_version.secret_string)["collectorUrl"]],
+    ["SplunkToken", jsondecode(data.aws_secretsmanager_secret_version.splunk_secret_version.secret_string)["token"]],
+    ["UserServicesClient__Username", jsondecode(data.aws_secretsmanager_secret_version.user_services_client_secret_version.secret_string)["username"]],
+    ["UserServicesClient__Password", jsondecode(data.aws_secretsmanager_secret_version.user_services_client_secret_version.secret_string)["password"]],
+    ["UserServicesClient__Url", jsondecode(data.aws_secretsmanager_secret_version.user_services_client_secret_version.secret_string)["baseUrl"]],
   ]
+  sensitive = true
 }
 
 output "web_secrets" {
   value = [
-    ["API_URL", "${aws_secretsmanager_secret.misc_secret.arn}:apiUrl"],
-    ["USE_SELF_SIGNED_SSL", "${aws_secretsmanager_secret.misc_secret.arn}:useSelfSignedSsl"],
-    ["IpFilterRules", "${aws_secretsmanager_secret.misc_secret.arn}:ipFilterRules"],
-    ["RealIpFrom", "${aws_secretsmanager_secret.misc_secret.arn}:realIpFrom"],
-    ["WEB_BASE_HREF", "${aws_secretsmanager_secret.misc_secret.arn}:webBaseHref"],
-    ["IncludeSiteminderHeaders", "${aws_secretsmanager_secret.misc_secret.arn}:includeSiteMinderHeaders"]
+    ["API_URL", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["apiUrl"]],
+    ["USE_SELF_SIGNED_SSL", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["useSelfSignedSsl"]],
+    ["IpFilterRules", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["ipFilterRules"]],
+    ["RealIpFrom", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["realIpFrom"]],
+    ["WEB_BASE_HREF", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["webBaseHref"]],
+    ["IncludeSiteminderHeaders", jsondecode(data.aws_secretsmanager_secret_version.misc_secret_version.secret_string)["includeSiteMinderHeaders"]]
   ]
+  sensitive = true
 }
 
 output "db_secrets" {
   value = [
-    ["POSTGRESQL_USER", "${aws_secretsmanager_secret.database_secret.arn}:user"],
-    ["POSTGRESQL_PASSWORD", "${aws_secretsmanager_secret.database_secret.arn}:password"],
-    ["POSTGRESQL_DATABASE", "${aws_secretsmanager_secret.database_secret.arn}:database"],
-    ["POSTGRESQL_ADMIN_PASSWORD", "${aws_secretsmanager_secret.database_secret.arn}:adminPassword"]
+    ["POSTGRESQL_USER", jsondecode(data.aws_secretsmanager_secret_version.database_secret_version.secret_string)["user"]],
+    ["POSTGRESQL_PASSWORD", jsondecode(data.aws_secretsmanager_secret_version.database_secret_version.secret_string)["password"]],
+    ["POSTGRESQL_DATABASE", jsondecode(data.aws_secretsmanager_secret_version.database_secret_version.secret_string)["database"]],
+    ["POSTGRESQL_ADMIN_PASSWORD", jsondecode(data.aws_secretsmanager_secret_version.database_secret_version.secret_string)["adminPassword"]]
   ]
+  sensitive = true
 }

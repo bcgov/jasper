@@ -54,7 +54,38 @@ namespace Scv.Api.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-	}
+
+        /// <summary>
+        /// Returns list of assignments for a given day for current user.
+        /// </summary>
+        /// <param name="year">selected year</param>
+        /// <param name="month">selected month</param>
+        /// <param name="day">selected day</param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("daily-schedule/{year}/{month}/{day}")]
+        public async Task<ActionResult<IEnumerable<Assignment>>> GetDailySchedule(int year, int month, int day)
+        {
+            try
+            {
+            var assignments = await _assignmentService.DailyScheduleAsync(year, month, day);
+            if (assignments == null)
+            {
+                return Ok(new List<Assignment>());
+            }
+            return Ok(assignments);
+            }
+            catch (Exception ex)
+            {
+            // Log the exception
+            return StatusCode(500, "Internal server error");
+            }
+        }
+
+ 
+           
+
+    }
 
 
 }

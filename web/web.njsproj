@@ -57,6 +57,14 @@
     <Content Include="src\assets\bc-logo.svg" />
     <Content Include="src\assets\landing.jpg" />
     <Content Include="src\assets\logo.png" />
+    <Content Include="src\assets\arrow-down.svg" />
+    <Content Include="src\assets\arrow-up.svg" />
+    <Content Include="src\assets\filters.svg" />
+    <Content Include="src\assets\more3dots.svg" />
+    <Content Include="src\assets\print-icon.svg" />
+    <Content Include="src\assets\up-down.svg" />
+   <Content Include="src\assets\calendar-select.svg" />
+    <Content Include="src\assets\video.svg" />
     <Content Include="src\components\civil\CivilAdjudicatorRestrictions.vue" />
     <Content Include="src\components\civil\CivilAppearanceDetails.vue" />
     <Content Include="src\components\civil\CivilCaseDetails.vue" />

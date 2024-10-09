@@ -80,7 +80,6 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<AssignmentService>();
-            services.AddScoped<PCSSAssignmentService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
 

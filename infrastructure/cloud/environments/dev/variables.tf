@@ -39,6 +39,6 @@ variable "app_subnet_names" {
 }
 
 variable "data_subnet_names" {
-  description = "List of Subnets for Dadta"
+  description = "List of Subnets for Data"
   type        = list(string)
 }

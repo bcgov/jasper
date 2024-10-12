@@ -23,7 +23,7 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
-variable "sg_id" {
+variable "ecs_sg_id" {
   description = "Load Balancer Security Group ID"
   type        = string
 }

@@ -9,7 +9,8 @@
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/terraform:1": {},
     "ghcr.io/devcontainers/features/docker-from-docker:1.5.0": {},
-    "ghcr.io/devcontainers-contrib/features/aws-cdk:2": {}
+    "ghcr.io/devcontainers-contrib/features/aws-cdk:2": {},
+    "ghcr.io/dhoeric/features/tfsec:1": {}
   },
   "customizations": {
     "vscode": {

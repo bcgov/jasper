@@ -21,7 +21,8 @@ RUN apk add --no-cache --virtual oc-build curl tar \
 COPY ${SRC}/sync_secrets.sh ${APP_ROOT}/sync_secrets.sh
 
 # Ensure that SH script has executable permissions
-RUN chmod +x ${APP_ROOT}/sync_secrets.sh
+RUN chmod +x ${APP_ROOT}/sync_secrets.sh \
+    chmod +x ${APP_ROOT}/oc
 
 # Command to run the script
 CMD [ "./sync_secrets.sh" ]

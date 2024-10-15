@@ -11,11 +11,11 @@ RUN apk add --no-cache \
     curl \
     tar
 
-# Download and install the OpenShift CLI (oc)
-RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz -o /tmp/oc.tar.gz \
-    && tar -xvzf /tmp/oc.tar.gz -C ${APP_ROOT} \
-    && chmod +x ${APP_ROOT} \
-    && rm /tmp/oc.tar.gz
+# Install Openshift CLI
+RUN apk add --no-cache --virtual oc-build curl tar \
+    && curl -sfL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.10/openshift-client-linux.tar.gz | tar -zxvf - -C ${APP_ROOT} \
+    && apk del oc-build \
+    && rm -rf /var/cache/apk/*
 
 # Copy the shell script to the container
 COPY ${SRC}/sync_secrets.sh ${APP_ROOT}/sync_secrets.sh
@@ -23,7 +23,7 @@ COPY ${SRC}/sync_secrets.sh ${APP_ROOT}/sync_secrets.sh
 # Ensure that SH script has executable permissions
 RUN chmod +x ${APP_ROOT}/sync_secrets.sh
 
-RUN oc version --client && jq --version && aws --version
+RUN jq --version && aws --version && oc version --client
 
 # Command to run the script
 CMD [ "./sync_secrets.sh" ]

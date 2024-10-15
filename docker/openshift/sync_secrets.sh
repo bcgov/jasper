@@ -4,10 +4,6 @@
 VAULT_SECRET_ENV="${VAULT_SECRET_ENV}"
 LOCAL_SECRET_PATH="${LOCAL_SECRET_PATH}"
 
-export HTTP_PROXY=http://swpxkam.gov.bc.ca:8080
-export HTTPS_PROXY=http://swpxkam.gov.bc.ca:8080
-export NO_PROXY=.cluster.local,.svc,10.91.0.0/16,172.30.0.0/16,127.0.0.1,localhost,.gov.bc.ca
-
 aws_secret_format="jasper-X-secret-$VAULT_SECRET_ENV"
 secret_keys="\
   aspnet_core \
@@ -22,18 +18,13 @@ secret_keys="\
   splunk \
   user_services_client"
 
-echo "Show all s3 buckets"
-aws s3 ls
+# AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
+# https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
+update_aws_keys
 
-# TODO: Add access keys rotation
-
-# Iterate on each key to get the value from Vault and save in AWS secrets manager
+# Iterate on each key to get the value from Vault and save to AWS secrets manager
 for key in $secret_keys; do
   value=$(jq -r ".${VAULT_SECRET_ENV}_$key" "$LOCAL_SECRET_PATH")
-
-  echo "=========================="
-  echo "KEY: $key"
-  echo "VALUE: $value"
 
   sanitizedKey=$(echo "$key" | sed "s/_/-/g")
   secret_name=$(echo "$aws_secret_format" | sed "s/X/$sanitizedKey/")
@@ -50,3 +41,27 @@ if [ $? -eq 0 ]; then
 else
   echo "Failed to sync secrets."
 fi
+
+update_aws_keys() {
+  echo "Checking if AWS keys needs to be rotated."
+  openshiftuser_aws_keys=$(aws ssm get-parameter --name "/iam_users/openshiftuser${VAULT_SECRET_ENV}_keys" --with-decryption)
+
+  if [ $? -eq 0 ]; then
+    pendingAccessKeyId=$(echo $openshiftuser_aws_keys | jq -r '.Parameter.Value.pending_deletion.AccessKeyID')
+    pendingSecretAccessKey=$(echo $openshiftuser_aws_keys | jq -r '.Parameter.Value.pending_deletion.SecretAccessKey')
+    currentAccessKeyId=$(echo $openshiftuser_aws_keys | jq -r '.Parameter.Value.current.AccessKeyID')
+    currentSecretAccessKey=$(echo $openshiftuser_aws_keys | jq -r '.Parameter.Value.current.SecretAccessKey')
+
+    if [ "$AWS_ACCESS_KEY_ID" = "$pendingAccessKeyId" || "$AWS_SECRET_ACCESS_KEY" = "$pendingSecretAccessKey"  ]; then
+      oc create secret generic aws-secret \
+        --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
+        --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \
+        --dry-run=client -o yaml | oc apply -f -
+      echo "AWS access key id and secret access key has been updated."
+    then
+      echo "AWS access key id and secret access key is up-to-date."
+    fi
+  else
+    echo "Failed to openshiftuser key values."
+  fi
+}

@@ -35,7 +35,7 @@ if [ $? -eq 0 ]; then
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \
       --dry-run=client -o yaml | oc apply -f -
     echo "AWS access key id and secret access key has been updated."
-  then
+  else
     echo "AWS access key id and secret access key is up-to-date."
   fi
 else

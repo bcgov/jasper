@@ -34,7 +34,7 @@ if [ $? -eq 0 ]; then
   echo $AWS_SECRET_ACCESS_KEY
   echo $pendingSecretAccessKey
 
-  if [ "$AWS_ACCESS_KEY_ID" -eq "$pendingAccessKeyId" || "$AWS_SECRET_ACCESS_KEY" -eq "$pendingSecretAccessKey"  ]; then
+  if [ "$AWS_ACCESS_KEY_ID" -eq "$pendingAccessKeyId"] || [ "$AWS_SECRET_ACCESS_KEY" -eq "$pendingSecretAccessKey" ]; then
     oc create secret generic aws-secret \
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \

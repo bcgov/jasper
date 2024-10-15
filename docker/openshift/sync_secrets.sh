@@ -18,6 +18,8 @@ secret_keys="\
   splunk \
   user_services_client"
 
+set -x
+
 # AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
 echo "Checking if AWS keys needs to be updated..."
@@ -29,7 +31,7 @@ if [ $? -eq 0 ]; then
   currentAccessKeyId=$(echo "$param_value" | jq -r '.current.AccessKeyID')
   currentSecretAccessKey=$(echo "$param_value" | jq -r '.current.SecretAccessKey')
 
-  if [ "$AWS_ACCESS_KEY_ID" -eq "$pendingAccessKeyId" ] || [ "$AWS_SECRET_ACCESS_KEY" -eq "$pendingSecretAccessKey" ]; then
+  if [ "$AWS_ACCESS_KEY_ID" = "$pendingAccessKeyId" ] || [ "$AWS_SECRET_ACCESS_KEY" = "$pendingSecretAccessKey" ]; then
     oc create secret generic aws-secret \
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \

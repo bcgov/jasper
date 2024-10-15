@@ -22,6 +22,11 @@ secret_keys="\
   splunk \
   user_services_client"
 
+echo "Show all s3 buckets"
+aws s3 ls
+
+# TODO: Add access keys rotation
+
 # Iterate on each key to get the value from Vault and save in AWS secrets manager
 for key in $secret_keys; do
   value=$(jq -r ".${VAULT_SECRET_ENV}_$key" "$LOCAL_SECRET_PATH")

@@ -18,8 +18,6 @@ secret_keys="\
   splunk \
   user_services_client"
 
-set -x
-
 # AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
 echo "Checking if AWS keys needs to be updated..."
@@ -36,6 +34,8 @@ if [ $? -eq 0 ]; then
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \
       --dry-run=client -o yaml | oc apply -f -
+    export AWS_ACCESS_KEY_ID=$currentAccessKeyId
+    export AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey
     echo "AWS access key id and secret access key has been updated."
   else
     echo "AWS access key id and secret access key is up-to-date."

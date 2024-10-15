@@ -32,10 +32,12 @@ for key in $secret_keys; do
 
   sanitizedKey=$(echo "$key" | sed "s/_/-/g")
   secret_name=$(echo "$aws_secret_format" | sed "s/X/$sanitizedKey/")
+  secret_string=$(echo "$value" | jq -c '.')
+
   echo "Uploading $secret_name"
   aws secretsmanager put-secret-value \
     --secret-id $secret_name \
-    --secret-string $value
+    --secret-string "$secret_string"
 done
 
 if [ $? -eq 0 ]; then

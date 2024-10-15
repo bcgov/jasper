@@ -20,7 +20,7 @@ secret_keys="\
 
 # AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
-echo "Checking if AWS keys needs to be rotated."
+echo "Checking if AWS keys needs to be rotated..."
 param_value=$(aws ssm get-parameter --name "/iam_users/openshiftuser${VAULT_SECRET_ENV}_keys" --with-decryption | jq -r '.Parameter.Value')
 
 if [ $? -eq 0 ]; then
@@ -29,7 +29,12 @@ if [ $? -eq 0 ]; then
   currentAccessKeyId=$(echo "$param_value" | jq -r '.current.AccessKeyID')
   currentSecretAccessKey=$(echo "$param_value" | jq -r '.current.SecretAccessKey')
 
-  if [ "$AWS_ACCESS_KEY_ID" = "$pendingAccessKeyId" || "$AWS_SECRET_ACCESS_KEY" = "$pendingSecretAccessKey"  ]; then
+  echo $AWS_ACCESS_KEY_ID
+  echo $pendingAccessKeyId
+  echo $AWS_SECRET_ACCESS_KEY
+  echo $pendingSecretAccessKey
+
+  if [ "$AWS_ACCESS_KEY_ID" -eq "$pendingAccessKeyId" || "$AWS_SECRET_ACCESS_KEY" -eq "$pendingSecretAccessKey"  ]; then
     oc create secret generic aws-secret \
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \
@@ -42,6 +47,7 @@ else
   echo "Failed to update openshiftuser key values."
 fi
 
+echo "Syncing secrets..."
 # Iterate on each key to get the value from Vault and save to AWS secrets manager
 for key in $secret_keys; do
   value=$(jq -r ".${VAULT_SECRET_ENV}_$key" "$LOCAL_SECRET_PATH")

@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     jq \
     aws-cli \
     curl \
-    tar
+    tar \
+    sudo
 
 # Install Openshift CLI
 RUN apk add --no-cache --virtual oc-build curl tar \

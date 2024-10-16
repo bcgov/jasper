@@ -52,6 +52,9 @@ resource "aws_security_group" "ecs_sg" {
 }
 
 # ECS Ingress Rules
+# Remove ecs_sg_ingress_allow_icmp and ecs_sg_ingress_allow_ssh once the JASPER
+# is publicly accessible. These ingress rules is for tesing SG-SG connectivity using
+# EC2 Instance and EC2 Instance Connect Endpoint 
 resource "aws_vpc_security_group_ingress_rule" "ecs_sg_ingress_allow_from_lb_sg" {
   security_group_id            = aws_security_group.ecs_sg.id
   referenced_security_group_id = aws_security_group.lb_sg.id
@@ -81,7 +84,7 @@ resource "aws_vpc_security_group_ingress_rule" "ecs_sg_ingress_allow_ssh" {
   ip_protocol       = "tcp"
   from_port         = 22
   to_port           = 22
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = data.aws_vpc.vpc.cidr_block
 }
 
 # ECS Egress Rules
@@ -106,6 +109,9 @@ resource "aws_security_group" "lambda_sg" {
 }
 
 # Lambda Ingress Rules
+# Remove lambda_sg_ingress_allow_icmp and lambda_sg_ingress_allow_ssh once the JASPER
+# is publicly accessible. These ingress rules is for tesing SG-SG connectivity using
+# EC2 Instance and EC2 Instance Connect Endpoint 
 resource "aws_vpc_security_group_ingress_rule" "lambda_sg_ingress_allow_from_ecs_sg" {
   security_group_id            = aws_security_group.lambda_sg.id
   referenced_security_group_id = aws_security_group.ecs_sg.id
@@ -128,7 +134,7 @@ resource "aws_vpc_security_group_ingress_rule" "lambda_sg_ingress_allow_ssh" {
   ip_protocol       = "tcp"
   from_port         = 22
   to_port           = 22
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = data.aws_vpc.vpc.cidr_block
 }
 
 # Lambda Egress Rules

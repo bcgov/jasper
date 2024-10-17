@@ -38,6 +38,12 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
+      secrets = [
+        for secret in var.web_secrets : {
+          name      = secret[0]
+          valueFrom = secret[1]
+        }
+      ]
     }
   ])
 }
@@ -79,6 +85,18 @@ resource "aws_ecs_task_definition" "ecs_api_task_definition" {
       portMappings = [
         {
           containerPort = 5000
+        }
+      ]
+      environment = [
+        {
+          name  = "CORS_DOMAIN"
+          value = var.lb_dns_name
+        }
+      ]
+      secrets = [
+        for secret in var.api_secrets : {
+          name      = secret[0]
+          valueFrom = secret[1]
         }
       ]
       logConfiguration = {

@@ -27,8 +27,3 @@ variable "ecr_repository_arn" {
   description = "The ECR Repository ARN"
   type        = string
 }
-
-variable "lb_dns_name" {
-  description = "Load Balancer DNS Name"
-  type        = string
-}

@@ -1,3 +1,6 @@
+#
+# ECS
+#
 resource "aws_iam_role" "ecs_execution_role" {
   name = "${var.app_name}-ecs-execution-role-${var.environment}"
 
@@ -63,3 +66,25 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
     ]
   })
 }
+
+#
+# RolesAnywhere
+#
+# resource "aws_iam_role" "rolesanywhere_role" {
+#   name = "${var.app_name}-rolesanywhere-role-${var.environment}"
+
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [{
+#       Action = [
+#         "sts:AssumeRole",
+#         "sts:TagSession",
+#         "sts:SetSourceIdentity"
+#       ]
+#       Principal = {
+#         Service = "rolesanywhere.amazonaws.com"
+#       }
+#       Effect = "Allow"
+#     }]
+#   })
+# }

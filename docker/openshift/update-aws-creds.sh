@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
 echo "Checking if AWS keys needs to be updated..."

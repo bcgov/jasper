@@ -63,7 +63,7 @@ jobs:
 
       - name: Build and Push Image to ghcr.io
         id: build_image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           context: .

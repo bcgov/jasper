@@ -2,28 +2,30 @@ FROM alpine:latest
 ARG VAULT_VERSION="1.17.6"
 ARG APP_ROOT=/usr/local/bin
 ARG SRC=./docker/openshift
-WORKDIR ${APP_ROOT}
 
-# Install dependencies (jq and AWS CLI)
+# Install dependencies
 RUN apk add --no-cache \
     jq \
     aws-cli \
     curl \
     tar \
-    sudo
+    bash \
+    libc6-compat
 
-# Install Openshift CLI
-RUN apk add --no-cache --virtual oc-build curl tar \
-    && curl -sfL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.10/openshift-client-linux.tar.gz | tar -zxvf - -C ${APP_ROOT} \
-    && apk del oc-build \
-    && rm -rf /var/cache/apk/*
+# Download and install the OpenShift CLI (oc)
+RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz -o /tmp/openshift-client-linux.tar.gz && \
+    tar -zxvf /tmp/openshift-client-linux.tar.gz -C /usr/local/bin && \
+    rm /tmp/openshift-client-linux.tar.gz
+
+WORKDIR ${APP_ROOT}
 
 # Copy the shell script to the container
 COPY ${SRC}/sync_secrets.sh ${APP_ROOT}/sync_secrets.sh
 
-# Ensure that SH script has executable permissions
-USER root
-RUN chmod +x ${APP_ROOT}/sync_secrets.sh
+# Ensure that oc and SH script has executable permissions
+RUN chmod +x ${APP_ROOT}/sync_secrets.sh oc
+
+RUN oc version --client
 
 # Command to run the script
 CMD [ "./sync_secrets.sh" ]

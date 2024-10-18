@@ -42,3 +42,8 @@ variable "data_subnet_names" {
   description = "List of Subnets for Data"
   type        = list(string)
 }
+
+variable "openshift_iam_user" {
+  description = "Openshift IAM Username"
+  type        = string
+}

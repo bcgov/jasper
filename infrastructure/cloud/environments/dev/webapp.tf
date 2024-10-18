@@ -6,6 +6,7 @@ module "security" {
   ecs_web_td_log_group_arn = module.monitoring.ecs_web_td_log_group_arn
   ecs_api_td_log_group_arn = module.monitoring.ecs_api_td_log_group_arn
   ecr_repository_arn       = module.container.ecr_repository_arn
+  openshift_iam_user       = var.openshift_iam_user
 }
 
 module "storage" {

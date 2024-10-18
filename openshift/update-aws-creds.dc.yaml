@@ -1,0 +1,150 @@
+# For the now, this template is deployed manually via oc process / oc appply command.
+# Team is investigating the integration of ArgoCD as a long term solution.
+#   e.g.
+#       # Removes existing components to start from a clean slate
+#       oc delete cronjob,pvc,rolebinding,sa,roles -n $NAMESPACE -l app=update-aws-creds 
+#
+#       # Dry Run
+#       oc process -f update-aws-creds.yaml --param-file=.env
+#
+#       # Create and Apply
+#       oc process -f update-aws-creds.yaml --param-file=.env | oc apply -f -
+#
+#       # Manually create and trigger a job based from the cronjob template
+#       oc create job -n $NAMESPACE "update-aws-creds-manual-$(date +%s)" --from=cronjob/update-aws-creds
+#
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  app: update-aws-creds
+  template: update-aws-creds-template
+metadata:
+  name: update-aws-creds
+
+objects:
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: update-aws-creds
+
+  - apiVersion: authorization.openshift.io/v1
+    kind: Role
+    metadata:
+      annotations:
+        openshift.io/description: Least-priviledge role for the update-aws-creds job
+      name: update-aws-creds
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - secrets
+        verbs:
+          - list
+          - get
+          - patch
+
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: update-aws-creds
+    subjects:
+    - kind: ServiceAccount
+      name: update-aws-creds
+    roleRef:
+      kind: Role
+      name: update-aws-creds
+
+  - apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: update-aws-creds
+    spec:
+      concurrencyPolicy: Forbid
+      failedJobsHistoryLimit: 3
+      successfulJobsHistoryLimit: 3
+      startingDeadlineSeconds: 60
+      jobTemplate:
+        metadata:
+        spec:
+          backoffLimit: 6
+          activeDeadlineSeconds: 600
+          parallelism: 1
+          completions: 1
+          template:
+            metadata:
+              labels:
+                app: update-aws-creds
+                template: update-aws-creds-template
+                DataClass: Medium
+                role: update-aws-creds
+            spec:
+              serviceAccountName: update-aws-creds
+              containers:
+              - name: update-aws-creds
+                image: "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+                imagePullPolicy: Always
+                env:
+                  - name: AWS_ACCESS_KEY_ID
+                    valueFrom:
+                      secretKeyRef:
+                        name: aws-secret
+                        key: AWS_ACCESS_KEY_ID
+                  - name: AWS_SECRET_ACCESS_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: aws-secret
+                        key: AWS_SECRET_ACCESS_KEY
+                  - name: AWS_REGION
+                    valueFrom:
+                      secretKeyRef:
+                        name: aws-secret
+                        key: AWS_REGION
+                  - name: HTTP_PROXY
+                    valueFrom:
+                      secretKeyRef:
+                        name: proxy-config
+                        key: HTTP_PROXY
+                  - name: HTTPS_PROXY
+                    valueFrom:
+                      secretKeyRef:
+                        name: proxy-config
+                        key: HTTPS_PROXY
+                  - name: NO_PROXY
+                    valueFrom:
+                      secretKeyRef:
+                        name: proxy-config
+                        key: NO_PROXY
+                resources:
+                  requests:
+                    cpu: 50m
+                  limits:
+                    cpu: 250m
+              restartPolicy: Never
+      schedule: ${CRON_SCHEDULE}
+      suspend: false
+
+parameters:
+  - name: CRON_SCHEDULE
+    description: Cronjob Schedule
+    required: true
+    value: "0 0 * * *"  # This runs the job daily at midnight; adjust as needed
+
+  - name: IMAGE_REGISTRY
+    description: Image Registry
+    required: true
+    value: "ghcr.io"
+
+  - name: IMAGE_NAMESPACE
+    description: Image Namespace
+    required: true
+    value: "bcgov/jasper"
+
+  - name: IMAGE_NAME
+    description: Image Name
+    required: true
+    value: "update-aws-creds"
+
+  - name: IMAGE_TAG
+    description: Image tag
+    required: true
+    value: "latest"

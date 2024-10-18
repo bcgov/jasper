@@ -27,3 +27,8 @@ variable "ecr_repository_arn" {
   description = "The ECR Repository ARN"
   type        = string
 }
+
+variable "openshift_iam_user" {
+  description = "Openshift IAM Username"
+  type        = string
+}

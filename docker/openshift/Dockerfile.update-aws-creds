@@ -20,12 +20,13 @@ RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/ope
 WORKDIR ${APP_ROOT}
 
 # Copy the shell script to the container
-COPY ${SRC}/sync_secrets.sh ${APP_ROOT}/sync_secrets.sh
+COPY ${SRC}/update-aws-creds.sh ${APP_ROOT}/update-aws-creds.sh
 
-# Ensure that oc and SH script has executable permissions
-RUN chmod +x ${APP_ROOT}/sync_secrets.sh oc
+# Ensure that shell script and od has executable permissions
+RUN chmod +x ${APP_ROOT}/update-aws-creds.sh oc
 
+# Test if oc is installed correctly
 RUN oc version --client
 
 # Command to run the script
-CMD [ "./sync_secrets.sh" ]
+CMD [ "./update-aws-creds.sh" ]

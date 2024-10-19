@@ -1,9 +1,10 @@
 #!/bin/sh
+ENVIRONMENT="${ENVIRONMENT}"
 
 # AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
 echo "Checking if AWS keys needs to be updated..."
-param_value=$(aws ssm get-parameter --name "/iam_users/openshiftuser${VAULT_SECRET_ENV}_keys" --with-decryption | jq -r '.Parameter.Value')
+param_value=$(aws ssm get-parameter --name "/iam_users/openshiftuser${ENVIRONMENT}_keys" --with-decryption | jq -r '.Parameter.Value')
 
 if [ $? -eq 0 ]; then
   pendingAccessKeyId=$(echo "$param_value" | jq -r '.pending_deletion.AccessKeyID')

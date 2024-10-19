@@ -5,10 +5,10 @@
 #       oc delete cronjob,pvc,rolebinding,sa,roles -n $NAMESPACE -l app=update-aws-creds 
 #
 #       # Dry Run
-#       oc process -f update-aws-creds.yaml --param-file=.env
+#       oc process -f update-aws-creds.dc.yaml --param-file=.env
 #
 #       # Create and Apply
-#       oc process -f update-aws-creds.yaml --param-file=.env | oc apply -f -
+#       oc process -f update-aws-creds.dc.yaml --param-file=.env | oc apply -f -
 #
 #       # Manually create and trigger a job based from the cronjob template
 #       oc create job -n $NAMESPACE "update-aws-creds-manual-$(date +%s)" --from=cronjob/update-aws-creds
@@ -84,6 +84,8 @@ objects:
                 image: "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
                 imagePullPolicy: Always
                 env:
+                  - name: ENVIRONMENT
+                    value: "${ENVIRONMENT}"
                   - name: AWS_ACCESS_KEY_ID
                     valueFrom:
                       secretKeyRef:
@@ -124,6 +126,11 @@ objects:
       suspend: false
 
 parameters:
+  - name: ENVIRONMENT
+    description: Current environment (dev, test, prod)
+    required: true
+    value: "dev"
+
   - name: CRON_SCHEDULE
     description: Cronjob Schedule
     required: true

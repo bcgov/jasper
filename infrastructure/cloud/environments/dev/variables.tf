@@ -47,3 +47,8 @@ variable "openshift_iam_user" {
   description = "Openshift IAM Username"
   type        = string
 }
+
+variable "iam_user_table_name" {
+  description = "The BCGOV DynamoDb IAM user table"
+  type        = string
+}

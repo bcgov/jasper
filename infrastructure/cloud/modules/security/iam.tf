@@ -205,6 +205,7 @@ resource "aws_iam_policy" "openshift_role_policy" {
           "ssm:GetParameter",
           "ssm:GetParameters",
           "ssm:GetParametersByPath",
+          "kms:Encrypt",
           "kms:Decrypt"
         ],
         "Effect" : "Allow",

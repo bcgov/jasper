@@ -30,7 +30,10 @@ resource "aws_kms_key_policy" "kms_key_policy" {
         Sid    = "EnableIAMUserPermissions"
         Effect = "Allow"
         Principal = {
-          AWS = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+          AWS = [
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${var.openshift_iam_user}",
+          ]
         }
         Action   = "kms:*"
         Resource = "*"

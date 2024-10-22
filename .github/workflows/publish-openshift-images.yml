@@ -1,4 +1,4 @@
-name: Publish Sync Secrets
+name: Publish Openshift Images
 
 on:
   workflow_dispatch:
@@ -8,7 +8,6 @@ on:
       - "openshift/**"
 
 env:
-  IMAGE_NAME: sync-secrets
   GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
   SRC_PATH: ../../docker/openshift
 

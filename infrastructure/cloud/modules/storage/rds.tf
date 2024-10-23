@@ -10,4 +10,7 @@ resource "aws_db_instance" "postgres_db_instance" {
   parameter_group_name   = "default.postgres16"
   vpc_security_group_ids = [var.data_sg_id]
   db_subnet_group_name   = "default-${var.vpc_id}"
+  storage_encrypted      = true
+  kms_key_id             = var.kms_key_id
+  ca_cert_identifier     = var.rds_db_ca_cert
 }

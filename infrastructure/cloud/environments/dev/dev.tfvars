@@ -6,3 +6,4 @@ data_subnet_names   = ["Data_Dev_aza_net", "Data_Dev_azb_net"]
 openshift_iam_user  = "openshiftuserdev"
 iam_user_table_name = "BCGOV_IAM_USER_TABLE"
 lb_name             = "default"
+rds_db_ca_cert      = "rds-ca-rsa2048-g1"

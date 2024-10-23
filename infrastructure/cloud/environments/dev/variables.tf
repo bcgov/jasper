@@ -57,3 +57,8 @@ variable "lb_name" {
   description = "The BCGOV provisioned Load Balancer name"
   type        = string
 }
+
+variable "rds_db_ca_cert" {
+  description = "The Certifiate Authority identifier used in RDS"
+  type        = string
+}

@@ -40,3 +40,13 @@ variable "vpc_id" {
   description = "The provisioned VPC ID"
   type        = string
 }
+
+variable "kms_key_id" {
+  description = "The custom KMS Key Id"
+  type        = string
+}
+
+variable "rds_db_ca_cert" {
+  description = "The Certifiate Authority identifier used in RDS"
+  type        = string
+}

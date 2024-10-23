@@ -13,3 +13,7 @@ output "web_subnets_ids" {
 output "lb_dns_name" {
   value = aws_lb.lb.dns_name
 }
+
+output "data_sg_id" {
+  value = data.aws_security_group.data_sg.id
+}

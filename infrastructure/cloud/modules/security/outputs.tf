@@ -70,3 +70,13 @@ output "db_secrets" {
     ["POSTGRES_DB", "${aws_secretsmanager_secret.database_secret.arn}:database::"]
   ]
 }
+
+output "db_username" {
+  value     = jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string).user
+  sensitive = true
+}
+
+output "db_password" {
+  value     = jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string).password
+  sensitive = true
+}

@@ -32,3 +32,8 @@ variable "data_subnet_names" {
   description = "List of Subnets for Data"
   type        = list(string)
 }
+
+variable "lb_name" {
+  description = "The BCGOV provisioned Load Balancer name"
+  type        = string
+}

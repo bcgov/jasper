@@ -16,6 +16,9 @@ module "storage" {
   app_name            = var.app_name
   kms_key_name        = module.security.kms_key_alias
   test_s3_bucket_name = var.test_s3_bucket_name
+  data_sg_id          = module.networking.data_sg_id
+  db_username         = module.security.db_username
+  db_password         = module.security.db_password
   depends_on          = [module.security]
 }
 
@@ -28,6 +31,7 @@ module "networking" {
   web_subnet_names  = var.web_subnet_names
   app_subnet_names  = var.app_subnet_names
   data_subnet_names = var.data_subnet_names
+  lb_name           = var.lb_name
 }
 
 module "container" {

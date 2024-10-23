@@ -52,3 +52,8 @@ variable "iam_user_table_name" {
   description = "The BCGOV DynamoDb IAM user table"
   type        = string
 }
+
+variable "lb_name" {
+  description = "The BCGOV provisioned Load Balancer name"
+  type        = string
+}

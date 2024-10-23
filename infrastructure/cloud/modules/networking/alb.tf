@@ -12,6 +12,10 @@ resource "aws_lb" "lb" {
   }
 }
 
+data "aws_lb" "default_lb" {
+  name = var.lb_name
+}
+
 resource "aws_lb_target_group" "lb_target_group" {
   name                 = "${var.app_name}-lb-tg-${var.environment}"
   port                 = 8080
@@ -37,12 +41,76 @@ resource "aws_lb_target_group" "lb_target_group" {
   }
 }
 
-resource "aws_lb_listener" "lb_listener" {
-  load_balancer_arn = aws_lb.lb.arn
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = data.aws_lb.default_lb.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
+    type = "redirect"
+
+    redirect {
+      host        = "#{host}"
+      path        = "/"
+      port        = "443"
+      protocol    = "HTTPS"
+      query       = "#{query}"
+      status_code = "HTTP_301" # Use HTTP_302 for temporary redirects
+    }
+  }
+}
+
+data "aws_lb_listener" "https_listener" {
+  load_balancer_arn = data.aws_lb.default_lb.arn
+  port              = 443
+}
+
+resource "aws_lb_listener_rule" "web_path_lr" {
+
+  listener_arn = data.aws_lb_listener.https_listener.arn
+  priority     = 1
+
+  condition {
+    path_pattern {
+      values = ["/app"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lb_target_group.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "api_path_lr" {
+
+  listener_arn = data.aws_lb_listener.https_listener.arn
+  priority     = 2
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lb_target_group.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "host_lr" {
+
+  listener_arn = data.aws_lb_listener.https_listener.arn
+  priority     = 3
+
+  condition {
+    host_header {
+      values = ["nimbus.cloud.gov.bc.ca"]
+    }
+  }
+
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.lb_target_group.arn
   }

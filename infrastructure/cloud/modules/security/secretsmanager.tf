@@ -116,6 +116,10 @@ resource "aws_secretsmanager_secret_version" "database_secret_value" {
   })
 }
 
+data "aws_secretsmanager_secret_version" "current_db_secret_value" {
+  secret_id = aws_secretsmanager_secret.database_secret.id
+}
+
 resource "aws_secretsmanager_secret" "aspnet_core_secret" {
   name       = "external/${var.app_name}-aspnet-core-secret-${var.environment}"
   kms_key_id = aws_kms_key.kms_key.arn

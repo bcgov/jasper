@@ -18,3 +18,20 @@ variable "environment" {
   description = "The AWS environment to deploy to"
   type        = string
 }
+
+variable "data_sg_id" {
+  description = "The Data Security Group Id that will be used by database"
+  type        = string
+}
+
+variable "db_username" {
+  description = "Database username from Secrets Manager"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_password" {
+  description = "Database password from Secrets Manager"
+  type        = string
+  sensitive   = true
+}

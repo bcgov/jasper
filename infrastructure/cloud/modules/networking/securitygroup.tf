@@ -1,4 +1,15 @@
 #
+# BCGOV provisioned security groups
+#
+data "aws_security_group" "web_sg" {
+  name = "Web_sg"
+}
+
+data "aws_security_group" "data_sg" {
+  name = "Data_sg"
+}
+
+#
 # Load Balancer Security Group
 #
 resource "aws_security_group" "lb_sg" {
@@ -55,10 +66,10 @@ resource "aws_security_group" "ecs_sg" {
 # Remove ecs_sg_ingress_allow_icmp and ecs_sg_ingress_allow_ssh once the JASPER
 # is publicly accessible. These ingress rules is for tesing SG-SG connectivity using
 # EC2 Instance and EC2 Instance Connect Endpoint 
-resource "aws_vpc_security_group_ingress_rule" "ecs_sg_ingress_allow_from_lb_sg" {
+resource "aws_vpc_security_group_ingress_rule" "ecs_sg_ingress_allow_from_web_sg" {
   security_group_id            = aws_security_group.ecs_sg.id
-  referenced_security_group_id = aws_security_group.lb_sg.id
-  description                  = "Allow all inbound traffic from ECS SG"
+  referenced_security_group_id = data.aws_security_group.web_sg.id
+  description                  = "Allow all inbound traffic from Web SG"
   ip_protocol                  = -1
 }
 

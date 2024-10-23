@@ -20,7 +20,7 @@ module "storage" {
   db_username         = module.security.db_username
   db_password         = module.security.db_password
   vpc_id              = var.vpc_id
-  kms_key_id          = module.security.kms_key_id
+  kms_key_arn         = module.security.kms_key_arn
   rds_db_ca_cert      = var.rds_db_ca_cert
   depends_on          = [module.security]
 }

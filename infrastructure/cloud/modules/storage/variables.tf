@@ -41,8 +41,8 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "kms_key_id" {
-  description = "The custom KMS Key Id"
+variable "kms_key_arn" {
+  description = "The custom KMS Key ARN"
   type        = string
 }
 

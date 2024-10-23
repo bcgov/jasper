@@ -19,6 +19,7 @@ module "storage" {
   data_sg_id          = module.networking.data_sg_id
   db_username         = module.security.db_username
   db_password         = module.security.db_password
+  vpc_id              = var.vpc_id
   depends_on          = [module.security]
 }
 

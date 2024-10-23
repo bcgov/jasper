@@ -9,4 +9,5 @@ resource "aws_db_instance" "postgres_db_instance" {
   password               = var.db_password
   parameter_group_name   = "default.postgres16"
   vpc_security_group_ids = [var.data_sg_id]
+  db_subnet_group_name   = "default-${var.vpc_id}"
 }

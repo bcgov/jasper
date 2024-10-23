@@ -35,3 +35,8 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "vpc_id" {
+  description = "The provisioned VPC ID"
+  type        = string
+}

@@ -214,7 +214,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import shared from "../shared";
 import {
   criminalFileInformationType,

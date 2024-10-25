@@ -87,7 +87,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import CriminalDocumentsView from "@components/criminal/CriminalDocumentsView.vue";
 import CriminalHeaderTop from "@components/criminal/CriminalHeaderTop.vue";
 import CriminalHeader from "@components/criminal/CriminalHeader.vue";

@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import "@store/modules/CriminalFileInformation";
 import { criminalFileInformationType } from "@/types/criminal";
 const criminalState = namespace("CriminalFileInformation");

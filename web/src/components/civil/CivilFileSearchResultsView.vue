@@ -95,7 +95,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import * as _ from "underscore";
 import { civilFileInformationType, fileSearchCivilInfoType } from "@/types/civil";
 import { InputNamesType } from "@/types/common";

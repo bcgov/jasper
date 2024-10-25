@@ -16,7 +16,7 @@
 import { REMOVE_CURRENT_VIEWED_FILE_ID, UPDATE_CURRENT_VIEWED_FILE_ID } from '@/store/modules/CourtFileSearchInformation';
 import { KeyValueInfo } from '@/types/common';
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 
 const courtFileSearchState = namespace('CourtFileSearchInformation');
 

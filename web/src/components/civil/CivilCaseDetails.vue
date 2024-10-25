@@ -85,7 +85,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import * as _ from "underscore";
 import CivilDocumentsView from "@components/civil/CivilDocumentsView.vue";
 import CivilProvidedDocumentsView from "@components/civil/CivilProvidedDocumentsView.vue";

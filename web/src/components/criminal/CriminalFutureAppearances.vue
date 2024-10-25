@@ -93,7 +93,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import * as _ from "underscore";
 import CriminalAppearanceDetails from "@components/criminal/CriminalAppearanceDetails.vue";
 import "@store/modules/CommonInformation";

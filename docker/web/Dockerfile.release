@@ -1,5 +1,5 @@
 # Define ARG at the top level
-ARG NODE_VERSION=10
+ARG NODE_VERSION=12
 ARG WEB_BASE_HREF=/
 ARG NGINX_RUNTIME_SRC=./nginx-runtime
 ARG VUE_ON_NGINX_SRC=./vue-on-nginx
@@ -62,7 +62,7 @@ USER 104
 ###################################################################################
 # 2. Build web-artifacts
 ###################################################################################
-FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} as artifacts
+FROM registry.access.redhat.com/ubi8/nodejs-${NODE_VERSION} as artifacts
 ARG NODE_VERSION
 ARG WEB_SRC
 ARG NPM_INSTALL_ARGS

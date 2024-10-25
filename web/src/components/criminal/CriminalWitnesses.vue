@@ -71,7 +71,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import "@store/modules/CriminalFileInformation";
 import "@store/modules/CommonInformation";
 import { witnessListInfoType, witnessCountInfoType, criminalFileInformationType } from "@/types/criminal";

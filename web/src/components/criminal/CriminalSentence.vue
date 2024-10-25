@@ -117,7 +117,7 @@
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
 import * as _ from "underscore";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import CriminalSentenceDetails from "@components/criminal/CriminalSentenceDetails.vue";
 import "@store/modules/CriminalFileInformation";
 import "@store/modules/CommonInformation";

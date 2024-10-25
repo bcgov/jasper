@@ -21,7 +21,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
+import { namespace } from "vuex-facing-decorator";
 import "@store/modules/CivilFileInformation";
 import { civilFileInformationType, civilNotesType } from "@/types/civil";
 import { UserInfo } from "@/types/common";

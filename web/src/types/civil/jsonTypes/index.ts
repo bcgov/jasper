@@ -8,7 +8,7 @@ export interface partyCounselType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface partyType {
@@ -25,7 +25,7 @@ export interface partyType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilDocumentIssueType {
@@ -40,7 +40,7 @@ export interface civilDocumentIssueType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilDocumentSupportType {
@@ -49,7 +49,7 @@ export interface civilDocumentSupportType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilDocumentAppearanceType {
@@ -61,7 +61,7 @@ export interface civilDocumentAppearanceType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilDocumentType {    
@@ -90,7 +90,7 @@ export interface civilDocumentType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}        
+    additionalProp3: {};        
 }
 
 export interface civilReferenceDocumentJsonType {    
@@ -107,13 +107,13 @@ export interface civilReferenceDocumentJsonType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface referenceDocumentInterestJsonType {    
     PartyId: string;   
     PartyName: string;
-    NonPartyName: string
+    NonPartyName: string;
 }
 
 export interface civilHearingRestrictionType {
@@ -130,7 +130,7 @@ export interface civilHearingRestrictionType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilApprDetailType {
@@ -161,7 +161,7 @@ export interface civilApprDetailType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilAppearancesType {
@@ -173,7 +173,7 @@ export interface civilAppearancesType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface civilFileDetailsType {    
@@ -203,5 +203,5 @@ export interface civilFileDetailsType {
     document: civilDocumentType[];
     referenceDocument: civilReferenceDocumentJsonType[];
     hearingRestriction: civilHearingRestrictionType[];
-    appearances: civilAppearancesType
+    appearances: civilAppearancesType;
 }

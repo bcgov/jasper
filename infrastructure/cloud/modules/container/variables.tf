@@ -23,7 +23,7 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
-variable "ecs_sg_id" {
+variable "sg_id" {
   description = "Load Balancer Security Group ID"
   type        = string
 }
@@ -48,22 +48,3 @@ variable "kms_key_id" {
   type        = string
 }
 
-variable "lb_dns_name" {
-  description = "Load Balancer DNS Name"
-  type        = string
-}
-
-variable "api_secrets" {
-  description = "List if env variable secrets used in API"
-  type        = list(list(string))
-}
-
-variable "web_secrets" {
-  description = "List if env variable secrets used in Web"
-  type        = list(list(string))
-}
-
-variable "db_secrets" {
-  description = "List if env variable secrets used in Database"
-  type        = list(list(string))
-}

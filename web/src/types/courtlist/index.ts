@@ -18,7 +18,7 @@ export interface courtRoomsAndLocationsInfoType {
 export interface locationInfoType {
     Location: string;
     LocationID: string;
-    Rooms: roomsInfoType[]
+    Rooms: roomsInfoType[];
 
 }
 
@@ -52,7 +52,7 @@ export interface civilListInfoType {
 
 export interface hearingRestrictionInfoType {
     abbr: string;
-    key: string
+    key: string;
 }
 
 export interface fileMarkerInfoType {

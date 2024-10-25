@@ -33,22 +33,12 @@ variable "web_subnet_names" {
   type        = list(string)
 }
 
-variable "app_subnet_names" {
-  description = "List of Subnets for App"
-  type        = list(string)
-}
+# variable "api_subnet_names" {
+#   description = "List of Subnets for API"
+#   type        = list(string)
+# }
 
-variable "data_subnet_names" {
-  description = "List of Subnets for Data"
-  type        = list(string)
-}
-
-variable "openshift_iam_user" {
-  description = "Openshift IAM Username"
-  type        = string
-}
-
-variable "iam_user_table_name" {
-  description = "The BCGOV DynamoDb IAM user table"
-  type        = string
-}
+# variable "db_subnet_names" {
+#   description = "List of Subnets for Database"
+#   type        = list(string)
+# }

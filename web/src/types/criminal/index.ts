@@ -32,7 +32,7 @@ export interface chargesInfoType {
 export interface statusFieldsType {
     key: string;
     abbr: string;
-    code:string;
+    code: string;
 }
 
 export interface criminalFileInformationType {
@@ -74,8 +74,8 @@ export interface participantDocumentsInfoType {
     imageId: string;
     status: string;
     statusDate: string;
-    isChecked:boolean;
-    isEnabled:boolean; 
+    isChecked: boolean;
+    isEnabled: boolean; 
 }
 
 export interface ropRequestsInfoType {
@@ -94,8 +94,8 @@ export interface participantROPInfoType {
     index: string;
     partId: string;
     profSeqNo: string;
-    isChecked:boolean;
-    isEnabled:boolean; 
+    isChecked: boolean;
+    isEnabled: boolean; 
 } 
 
 export interface criminalAppearancesListType {
@@ -243,7 +243,7 @@ export interface fileSearchCriminalInfoType {
     level: string;
     fileNumber: string;
     nextAppearance: string;
-    isChecked:boolean;
+    isChecked: boolean;
     today: boolean;
 }
 

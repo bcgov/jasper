@@ -38,12 +38,6 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
-      secrets = [
-        for secret in var.web_secrets : {
-          name      = secret[0]
-          valueFrom = secret[1]
-        }
-      ]
     }
   ])
 }
@@ -57,7 +51,7 @@ resource "aws_ecs_service" "ecs_web_service" {
 
   network_configuration {
     subnets          = var.subnet_ids
-    security_groups  = [var.ecs_sg_id]
+    security_groups  = [var.sg_id]
     assign_public_ip = true
   }
 
@@ -87,18 +81,6 @@ resource "aws_ecs_task_definition" "ecs_api_task_definition" {
           containerPort = 5000
         }
       ]
-      environment = [
-        {
-          name  = "CORS_DOMAIN"
-          value = var.lb_dns_name
-        }
-      ]
-      secrets = [
-        for secret in var.api_secrets : {
-          name      = secret[0]
-          valueFrom = secret[1]
-        }
-      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -120,7 +102,7 @@ resource "aws_ecs_service" "ecs_api_service" {
 
   network_configuration {
     subnets          = var.subnet_ids
-    security_groups  = [var.ecs_sg_id]
+    security_groups  = [var.sg_id]
     assign_public_ip = true
   }
 

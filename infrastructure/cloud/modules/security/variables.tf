@@ -27,13 +27,3 @@ variable "ecr_repository_arn" {
   description = "The ECR Repository ARN"
   type        = string
 }
-
-variable "openshift_iam_user" {
-  description = "Openshift IAM Username"
-  type        = string
-}
-
-variable "iam_user_table_name" {
-  description = "The BCGOV IAM User DynamoDb table name"
-  type        = string
-}

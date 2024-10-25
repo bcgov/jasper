@@ -1,5 +1,5 @@
-import Vue from 'vue'
 import { Logger as SplunkLogger } from 'splunk-logging';
+import Vue from 'vue';
 
 export const SessionManager = {
     getSettings: async function(store) {

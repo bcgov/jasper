@@ -20,7 +20,7 @@ export interface countSentenceType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface countType {
@@ -38,7 +38,7 @@ export interface countType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
     }
 
 export interface documentType {
@@ -58,7 +58,7 @@ export interface documentType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface chargeType {    
@@ -67,7 +67,7 @@ export interface chargeType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}        
+    additionalProp3: {};        
 }
 
 export interface banType {    
@@ -84,7 +84,7 @@ export interface banType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}        
+    additionalProp3: {};        
 }
 
 export interface witnessType {
@@ -104,7 +104,7 @@ export interface witnessType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface criminalTrialRemarkType {    
@@ -112,7 +112,7 @@ export interface criminalTrialRemarkType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface criminalParticipantType {
@@ -142,7 +142,7 @@ export interface criminalParticipantType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface criminalHearingRestrictionType {
@@ -160,7 +160,7 @@ export interface criminalHearingRestrictionType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface crownType {
@@ -168,7 +168,7 @@ export interface crownType {
     assigned: boolean;
     fullName: string;
     lastNm: string;
-    givenNm: string
+    givenNm: string;
 }
 
 export interface criminalApprDetailType {
@@ -201,7 +201,7 @@ export interface criminalApprDetailType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface criminalAppearancesType {
@@ -213,7 +213,7 @@ export interface criminalAppearancesType {
     additionalProperties: AdditionalProperties;
     additionalProp1: {};
     additionalProp2: {};
-    additionalProp3: {}
+    additionalProp3: {};
 }
 
 export interface criminalFileDetailsType {
@@ -255,5 +255,5 @@ export interface criminalFileDetailsType {
     witness: witnessType[];
     crown: crownType[];
     hearingRestriction: criminalHearingRestrictionType[];
-    appearances: criminalAppearancesType
+    appearances: criminalAppearancesType;
 }

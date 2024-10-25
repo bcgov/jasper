@@ -61,8 +61,8 @@ export interface summaryDocumentsInfoType {
     appearanceDate: string;
     appearanceId: string;
     pdfAvail: boolean;
-    isChecked:boolean;
-    isEnabled:boolean;    
+    isChecked: boolean;
+    isEnabled: boolean;    
 }
 
 export interface civilFileInformationType {
@@ -86,7 +86,7 @@ export interface csrRequestsInfoType {
 
 export interface civilAppearanceInfoType {
     fileNo: string;
-    appearanceId: string
+    appearanceId: string;
     supplementalEquipmentTxt: string;
     securityRestrictionTxt: string;
     outOfTownJudgeTxt: string;
@@ -122,17 +122,17 @@ export interface appearanceDocumentsType {
 
 export interface currentCounselType {
     name: string; 
-    info: string
+    info: string;
 }
 
 export interface representativeType {
     name: string; 
-    info: string
+    info: string;
 }
 
 export interface legalRepresentativeType {
     name: string; 
-    type: string
+    type: string;
 }
 
 export interface appearancePartiesType {
@@ -181,7 +181,7 @@ export interface civilAppearancesListType {
 
 export interface civilNotesType {
     notesFieldName: string;
-    notesValue: string
+    notesValue: string;
 }
 
 export interface civilShowSectionsType {
@@ -196,5 +196,5 @@ export interface fileSearchCivilInfoType {
     fileNumber?: string;
     nextAppearance: string;
     level?: string;
-    isChecked:boolean;
+    isChecked: boolean;
 }

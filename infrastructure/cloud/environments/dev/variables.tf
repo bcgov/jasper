@@ -62,3 +62,9 @@ variable "rds_db_ca_cert" {
   description = "The Certifiate Authority identifier used in RDS"
   type        = string
 }
+
+variable "cert_domain_name" {
+  description = "The BCGov provisioned certificate domain name"
+  type        = string
+}
+

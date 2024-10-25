@@ -18,6 +18,7 @@ output "kms_key_arn" {
 output "api_secrets" {
   value = [
     ["ASPNETCORE_URLS", "${aws_secretsmanager_secret.aspnet_core_secret.arn}:urls::"],
+    ["ASPNETCORE_ENVIRONMENT", "${aws_secretsmanager_secret.aspnet_core_secret.arn}:environment::"],
     ["Auth__UserId", "${aws_secretsmanager_secret.auth_secret.arn}:userId::"],
     ["Auth__UserPassword", "${aws_secretsmanager_secret.auth_secret.arn}:userPassword::"],
     ["Auth__AllowSiteMinderUserType", "${aws_secretsmanager_secret.auth_secret.arn}:allowSiteMinderUserType::"],
@@ -63,14 +64,6 @@ output "web_secrets" {
   ]
 }
 
-output "db_secrets" {
-  value = [
-    ["POSTGRES_USER", "${aws_secretsmanager_secret.database_secret.arn}:user::"],
-    ["POSTGRES_PASSWORD", "${aws_secretsmanager_secret.database_secret.arn}:password::"],
-    ["POSTGRES_DB", "${aws_secretsmanager_secret.database_secret.arn}:database::"]
-  ]
-}
-
 output "db_username" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string).user
   sensitive = true
@@ -79,4 +72,8 @@ output "db_username" {
 output "db_password" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string).password
   sensitive = true
+}
+
+output "default_lb_cert_arn" {
+  value = data.aws_acm_certificate.default_lb_cert.arn
 }

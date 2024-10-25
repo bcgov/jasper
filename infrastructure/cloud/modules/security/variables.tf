@@ -37,3 +37,8 @@ variable "iam_user_table_name" {
   description = "The BCGOV IAM User DynamoDb table name"
   type        = string
 }
+
+variable "cert_domain_name" {
+  description = "The BCGov provisioned certificate domain name"
+  type        = string
+}

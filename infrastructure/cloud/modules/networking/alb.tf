@@ -1,47 +1,12 @@
-resource "aws_lb" "lb" {
-  name                       = "${var.app_name}-lb-${var.environment}"
-  subnets                    = local.web_subnets
-  security_groups            = [aws_security_group.lb_sg.id]
-  internal                   = true
-  load_balancer_type         = "application"
-  enable_http2               = true
-  drop_invalid_header_fields = true
-
-  tags = {
-    Name = "${var.app_name}-lb-${var.environment}"
-  }
-}
-
+#
+# Default Load Balancer
+#
 data "aws_lb" "default_lb" {
   name = var.lb_name
 }
 
-resource "aws_lb_target_group" "lb_target_group" {
-  name                 = "${var.app_name}-lb-tg-${var.environment}"
-  port                 = 8080
-  protocol             = "HTTP"
-  vpc_id               = data.aws_vpc.vpc.id
-  target_type          = "ip"
-  deregistration_delay = 5
-
-  health_check {
-    enabled             = true
-    interval            = 15
-    path                = "/"
-    port                = 8080
-    protocol            = "HTTP"
-    timeout             = 10
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    matcher             = "200"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_lb_listener" "http" {
+# HTTP Listener
+resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = data.aws_lb.default_lb.arn
   port              = 80
   protocol          = "HTTP"
@@ -60,32 +25,47 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-data "aws_lb_listener" "https_listener" {
+# HTTPS Listener
+resource "aws_lb_listener" "https_listener" {
   load_balancer_arn = data.aws_lb.default_lb.arn
   port              = 443
+  protocol          = "HTTPS"
+  certificate_arn   = var.default_lb_cert_arn
+
+  default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "application/json"
+      status_code  = 200
+    }
+  }
 }
 
-resource "aws_lb_listener_rule" "web_path_lr" {
-
-  listener_arn = data.aws_lb_listener.https_listener.arn
-  priority     = 1
+# HTTPS Listener Rules
+resource "aws_lb_listener_rule" "web_lr" {
+  listener_arn = aws_lb_listener.https_listener.arn
+  priority     = 200
 
   condition {
     path_pattern {
-      values = ["/app"]
+      values = ["/*"]
     }
   }
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.lb_target_group.arn
+    target_group_arn = aws_lb_target_group.web_target_group.arn
+  }
+
+  tags = {
+    Name = "${var.app_name}-web-lr-${var.environment}"
   }
 }
 
 resource "aws_lb_listener_rule" "api_path_lr" {
-
-  listener_arn = data.aws_lb_listener.https_listener.arn
-  priority     = 2
+  listener_arn = aws_lb_listener.https_listener.arn
+  priority     = 100
 
   condition {
     path_pattern {
@@ -95,23 +75,11 @@ resource "aws_lb_listener_rule" "api_path_lr" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.lb_target_group.arn
+    target_group_arn = aws_lb_target_group.api_target_group.arn
+  }
+
+  tags = {
+    Name = "${var.app_name}-api-lr-${var.environment}"
   }
 }
 
-resource "aws_lb_listener_rule" "host_lr" {
-
-  listener_arn = data.aws_lb_listener.https_listener.arn
-  priority     = 3
-
-  condition {
-    host_header {
-      values = ["nimbus.cloud.gov.bc.ca"]
-    }
-  }
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.lb_target_group.arn
-  }
-}

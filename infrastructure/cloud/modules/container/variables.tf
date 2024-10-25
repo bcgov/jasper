@@ -18,18 +18,33 @@ variable "ecs_execution_role_arn" {
   type        = string
 }
 
-variable "subnet_ids" {
-  description = "Subnet IDs in which ECS will deploy the tasks"
+variable "web_subnet_ids" {
+  description = "The Web Subnet IDs"
   type        = list(string)
 }
 
-variable "ecs_sg_id" {
-  description = "Load Balancer Security Group ID"
+variable "app_subnet_ids" {
+  description = "The App Subnet IDs"
+  type        = list(string)
+}
+
+variable "web_sg_id" {
+  description = "The BCGOV provisioned Web Security Group"
   type        = string
 }
 
-variable "lb_tg_arn" {
-  description = "Load Balancer Target Group ARN"
+variable "app_sg_id" {
+  description = "The BCGOV provisioned App Security Group"
+  type        = string
+}
+
+variable "web_tg_arn" {
+  description = "The Web Target Group ARN"
+  type        = string
+}
+
+variable "api_tg_arn" {
+  description = "The API Target Group ARN"
   type        = string
 }
 
@@ -48,8 +63,8 @@ variable "kms_key_id" {
   type        = string
 }
 
-variable "lb_dns_name" {
-  description = "Load Balancer DNS Name"
+variable "default_lb_dns_name" {
+  description = "The BCGov Load Balancer DNS Name"
   type        = string
 }
 
@@ -60,10 +75,5 @@ variable "api_secrets" {
 
 variable "web_secrets" {
   description = "List if env variable secrets used in Web"
-  type        = list(list(string))
-}
-
-variable "db_secrets" {
-  description = "List if env variable secrets used in Database"
   type        = list(list(string))
 }

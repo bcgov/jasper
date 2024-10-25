@@ -89,34 +89,41 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         ],
         Effect   = "Allow",
         Resource = aws_kms_key.kms_key.arn
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "rds:DescribeDBInstances",
+          "rds:Connect",
+          "rds:DescribeDBSecurityGroups"
+        ],
+        "Resource" : "arn:aws:rds:*:*:db:${var.app_name}-postgres-db-${var.environment}"
       }
     ]
   })
 }
 
-#
-# RolesAnywhere
-#
-# resource "aws_iam_role" "rolesanywhere_role" {
-#   name = "${var.app_name}-rolesanywhere-role-${var.environment}"
+# Attach the AmazonECSTaskExecutionRolePolicy
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
 
-#   assume_role_policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [{
-#       Action = [
-#         "sts:AssumeRole",
-#         "sts:TagSession",
-#         "sts:SetSourceIdentity"
-#       ]
-#       Principal = {
-#         Service = "rolesanywhere.amazonaws.com"
-#       }
-#       Effect = "Allow"
-#     }]
-#   })
-# }
+# Attach the AmazonSSMManagedInstanceCore policy for ECS Exec
+resource "aws_iam_role_policy_attachment" "ecs_task_ssm_policy" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
 
+# (Optional) Attach CloudWatch Logs policy if logging is needed
+resource "aws_iam_role_policy_attachment" "ecs_task_cloudwatch_policy" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
+#
 # Openshift
+#
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/
 # Step 1: Add opeshiftuser if not exist
 data "aws_dynamodb_table" "iam_user_table" {

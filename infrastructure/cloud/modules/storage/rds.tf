@@ -14,4 +14,5 @@ resource "aws_db_instance" "postgres_db_instance" {
   kms_key_id             = var.kms_key_arn
   ca_cert_identifier     = var.rds_db_ca_cert
   identifier             = "${var.app_name}-postgres-db-${var.environment}"
+  skip_final_snapshot    = true
 }

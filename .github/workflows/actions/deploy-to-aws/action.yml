@@ -70,7 +70,7 @@ runs:
       id: ecr-check
       shell: bash
       run: |
-        IMAGE_TAG=${{ inputs.image_name }}:${{ inputs.short_sha}}
+        IMAGE_TAG=${{ inputs.image_name }}-${{ inputs.short_sha}}
         REPOSITORY_NAME=${{ inputs.app_name }}-ecr-repo-${{ inputs.environment }}
         
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)

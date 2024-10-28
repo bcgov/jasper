@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         IMAGE_TAG=${{ inputs.image_name }}:${{ inputs.short_sha}}
-        REPOSITORY_NAME=${{ inputs.github_image_repo }}
+        REPOSITORY_NAME=${{ steps.vars.outputs.full_ecr_repo_url }}
         
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
 

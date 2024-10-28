@@ -1,15 +1,16 @@
 # Web
 resource "aws_lb_target_group" "web_target_group" {
   name                 = "${var.app_name}-web-tg-${var.environment}"
-  port                 = 80
-  protocol             = "HTTP"
+  port                 = 8080
+  protocol             = "HTTPS"
   vpc_id               = data.aws_vpc.vpc.id
   target_type          = "ip"
   deregistration_delay = 5
 
   health_check {
+    protocol            = "HTTPS"
     path                = "/"
-    port                = 80
+    port                = 8080
     interval            = 30
     timeout             = 5
     enabled             = true

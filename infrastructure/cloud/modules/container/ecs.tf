@@ -21,15 +21,19 @@ resource "aws_ecs_task_definition" "ecs_web_task_definition" {
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
 
+  lifecycle {
+    ignore_changes = [container_definitions]
+  }
+
   container_definitions = jsonencode([
     {
       name      = "${var.app_name}-web-container-${var.environment}"
-      image     = "${aws_ecr_repository.ecr_repository.repository_url}:hello-world-app3"
+      image     = "${aws_ecr_repository.ecr_repository.repository_url}:jasper-web"
       essential = true
       portMappings = [
         {
-          containerPort = 80
-          hostPort      = 80
+          containerPort = 8080
+          hostPort      = 8080
           protocol      = "tcp"
         }
       ]
@@ -61,14 +65,18 @@ resource "aws_ecs_service" "ecs_web_service" {
 
   network_configuration {
     subnets          = var.web_subnet_ids
-    security_groups  = [var.web_sg_id]
+    security_groups  = [var.app_sg_id]
     assign_public_ip = true
   }
 
   load_balancer {
     target_group_arn = var.web_tg_arn
     container_name   = "${var.app_name}-web-container-${var.environment}"
-    container_port   = 80
+    container_port   = 8080
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -81,6 +89,10 @@ resource "aws_ecs_task_definition" "ecs_api_task_definition" {
   memory                   = 512
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
+
+  lifecycle {
+    ignore_changes = [container_definitions]
+  }
 
   container_definitions = jsonencode([
     {
@@ -135,5 +147,9 @@ resource "aws_ecs_service" "ecs_api_service" {
     target_group_arn = var.api_tg_arn
     container_name   = "${var.app_name}-api-container-${var.environment}"
     container_port   = 5000
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }

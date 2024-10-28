@@ -66,7 +66,24 @@ runs:
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Pull Docker image from GHCR
+    - name: Check ECR Image exists
+      id: ecr-check
+      run: |
+        IMAGE_TAG=${{ inputs.image_name }}:${{ inputs.short_sha}}
+        REPOSITORY_NAME=${{ inputs.github_image_repo }}
+        
+        IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+
+        if [ -z "$IMAGE_EXISTS" ]; then
+          echo "Image with tag $IMAGE_TAG does not exist."
+          echo "exists=false" >> $GITHUB_OUTPUT
+        else
+          echo "Image with tag $IMAGE_TAG already exists."
+          echo "exists=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Push if Docker image does not exist
+      if: steps.ecr-check.outputs-exists == 'false'
       shell: bash
       run: |
         docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}

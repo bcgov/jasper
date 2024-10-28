@@ -84,7 +84,7 @@ runs:
         fi
 
     - name: Push if Docker image does not exist
-      if: steps.ecr-check.outputs-exists == 'false'
+      if: steps.ecr-check.outputs.exists == 'false'
       shell: bash
       run: |
         docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}

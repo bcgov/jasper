@@ -68,6 +68,7 @@ runs:
 
     - name: Check ECR Image exists
       id: ecr-check
+      shell: bash
       run: |
         IMAGE_TAG=${{ inputs.image_name }}:${{ inputs.short_sha}}
         REPOSITORY_NAME=${{ inputs.github_image_repo }}

@@ -1,0 +1,51 @@
+name: Deploy Lambda Functions
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "aws/**"
+
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: ./aws
+  NODE_VERSION: 20
+  
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Run build
+        run: npm run build
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-skip-session-tagging: true
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-duration-seconds: 1800
+          role-session-name: ci-deployment
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}

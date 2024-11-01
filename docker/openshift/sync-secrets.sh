@@ -14,6 +14,7 @@ secret_keys="\
   location_services_client \
   lookup_services_client \
   misc \
+  mtls_cert \
   request \
   splunk \
   user_services_client"

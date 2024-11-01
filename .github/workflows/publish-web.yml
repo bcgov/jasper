@@ -96,7 +96,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to ${{ env.ENVIRONMENT }}
-        uses: ./.github/workflows/actions/deploy-to-aws
+        uses: ./.github/workflows/actions/deploy-app
         with:
           environment: ${{ env.ENVIRONMENT }}
           aws_account: ${{ vars.AWS_ACCOUNT }}
@@ -126,7 +126,7 @@ jobs:
 
       # Uncomment when infra in AWS in TEST environment has been configured
       # - name: Deploy to ${{ env.ENVIRONMENT }}
-      #   uses: ./.github/workflows/actions/deploy-to-aws
+      #   uses: ./.github/workflows/actions/deploy-app
       #   with:
       #     environment: ${{ env.ENVIRONMENT }}
       #     aws_account: ${{ vars.AWS_ACCOUNT }}
@@ -156,7 +156,7 @@ jobs:
 
       # Uncomment when infra in AWS in PROD environment has been configured
       # - name: Deploy to ${{ env.ENVIRONMENT }}
-      #   uses: ./.github/workflows/actions/deploy-to-aws
+      #   uses: ./.github/workflows/actions/deploy-app
       #   with:
       #     environment: ${{ env.ENVIRONMENT }}
       #     aws_account: ${{ vars.AWS_ACCOUNT }}

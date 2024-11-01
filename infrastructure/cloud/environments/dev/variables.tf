@@ -67,4 +67,3 @@ variable "cert_domain_name" {
   description = "The BCGov provisioned certificate domain name"
   type        = string
 }
-

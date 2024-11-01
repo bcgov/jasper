@@ -57,10 +57,12 @@ namespace Scv.Api.Infrastructure
 
             services.AddHttpClient<LocationServicesClient>(client =>
             {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                    configuration.GetNonEmptyValue("LocationServicesClient:Username"),
-                    configuration.GetNonEmptyValue("LocationServicesClient:Password"));
+                // client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
+                //     configuration.GetNonEmptyValue("LocationServicesClient:Username"),
+                //     configuration.GetNonEmptyValue("LocationServicesClient:Password"));
                 client.BaseAddress = new Uri(configuration.GetNonEmptyValue("LocationServicesClient:Url").EnsureEndingForwardSlash());
+                var apiKey = configuration.GetNonEmptyValue("AWS_API_GATEWAY_API_KEY");
+                client.DefaultRequestHeaders.Add("x-api-key", apiKey);
             }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<UserServiceClient>(client =>

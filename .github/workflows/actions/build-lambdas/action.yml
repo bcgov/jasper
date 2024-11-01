@@ -1,0 +1,36 @@
+name: Build Lambda
+description: Builds all Lambda functions
+
+inputs:
+  working_directory:
+    description: The working directory where the code will be built.
+    required: true
+  node_version:
+    description: The node version that will be used.
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.node_version }}
+
+    - run: npm ci
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+
+    - run: npm run lint
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      continue-on-error: false
+
+    - run: npm run build
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+
+    - run: npm run test --if-present
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}

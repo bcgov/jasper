@@ -44,23 +44,32 @@ module.exports = {
 				"@styles": path.resolve(__dirname, vueSrc.concat("/styles"))
 			},
 			extensions: ['.ts', '.vue', '.json', '.scss', '.svg', '.png', '.jpg']
-		}
-	},
-	chainWebpack: config => {
-		config.resolve.alias.set('vue', '@vue/compat')
-	
-		config.module
-		  .rule('vue')
-		  .use('vue-loader')
-		  .tap(options => {
-			return {
-			  ...options,
-			  compilerOptions: {
-				compatConfig: {
-				  MODE: 2
-				}
+		},
+		module: {
+			rules: [
+			  {
+				test: /\.mjs$/,
+				include: /node_modules/,
+				type: 'javascript/auto'
 			  }
-			}
-		  })
-		}
+			]
+		  }
+	// },
+	// chainWebpack: config => {
+	// 	config.resolve.alias.set('vue', '@vue/compat')
+	
+	// 	config.module
+	// 	  .rule('vue')
+	// 	  .use('vue-loader')
+	// 	  .tap(options => {
+	// 		return {
+	// 		  ...options,
+	// 		  compilerOptions: {
+	// 			compatConfig: {
+	// 			  MODE: 2
+	// 			}
+	// 		  }
+	// 		}
+	// 	  })
+	}
 };

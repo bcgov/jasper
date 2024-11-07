@@ -95,7 +95,7 @@ build-web() {
   docker build \
     -t "${COMPOSE_PROJECT_NAME}-web" \
     --build-arg IMAGE_PREFIX=${COMPOSE_PROJECT_NAME}- \
-    --build-arg NODE_VERSION=12 \
+    --build-arg NODE_VERSION=20 \
     --build-arg NGINX_RUNTIME_SRC='../docker/nginx-runtime' \
     --build-arg VUE_ON_NGINX_SRC='../docker/vue-on-nginx' \
     --build-arg WEB_SRC='./web' \

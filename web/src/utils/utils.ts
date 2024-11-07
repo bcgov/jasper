@@ -1,12 +1,11 @@
 import { Logger as SplunkLogger } from 'splunk-logging';
-import Vue from 'vue';
 
 export const SessionManager = {
     getSettings: async function(store) {
         try {
             if (!store.state.userInfo) {
-                const response = await Vue.http.get('api/auth/info');
-                store.commit("CommonInformation/setEnableArchive", response.body.enableArchive);
+                const response = await fetch('api/auth/info');
+                //store.commit("CommonInformation/setEnableArchive", response.body.enableArchive);
                 store.commit("CommonInformation/setUserInfo", response.body);
             }
             return true;

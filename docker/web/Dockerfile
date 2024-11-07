@@ -1,4 +1,4 @@
-ARG node_version=10
+ARG node_version=20
 ARG WEB_BASE_HREF=/
 FROM centos/nodejs-${node_version}-centos7:${node_version}
 ENV WEB_BASE_HREF=${WEB_BASE_HREF}

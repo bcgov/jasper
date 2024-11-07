@@ -11,7 +11,7 @@ export class HttpService {
 
   public async get<T>(resource: string, queryParams = null): Promise<T> {
     try {
-      const response = await Vue.http.get(resource, { params: queryParams });
+      const response = await fetch(resource, { params: queryParams });
       return this.handleResponse(response);
     } catch (error: any) {
       if (error.status === 401) {

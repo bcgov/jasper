@@ -14,9 +14,6 @@ inputs:
   app_name:
     description: The application name.
     required: true
-  resource:
-    description: The resource path of the lambda function.
-    required: true
   lambda_name:
     description: The lambda function name name.
     required: true
@@ -71,7 +68,7 @@ runs:
       id: ecr-check
       shell: bash
       run: |
-        IMAGE_TAG=${{ inputs.resource }}${{ inputs.lambda_name }}-${{ inputs.short_sha }}
+        IMAGE_TAG=${{ inputs.lambda_name }}-${{ inputs.short_sha }}
         REPOSITORY_NAME=${{ inputs.app_name }}-lambda-repo-${{ inputs.environment }}
         
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)

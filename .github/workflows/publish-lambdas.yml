@@ -48,7 +48,7 @@ jobs:
           LAMBDA_DIR_LIST=$(echo "${LAMBDA_DIRS}" | jq -R 'split(";")' -c)
           echo "LAMBDA_DIR_LIST=$LAMBDA_DIR_LIST" >> $GITHUB_OUTPUT
 
-  deploy-to-gchr:
+  deploy2gchr:
     needs: get-lambdas
     environment: ${{ inputs.environment }}
     permissions:
@@ -121,7 +121,7 @@ jobs:
 
   deploy2dev:
     name: Deploy to DEV
-    needs: [get-lambdas, deploy-to-gchr]
+    needs: [get-lambdas, deploy2gchr]
     env:
       ENVIRONMENT: dev
     permissions:
@@ -157,7 +157,6 @@ jobs:
           aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          resource: ${{ env.RESOURCE }}
           lambda_name: ${{ env.LAMBDA }}
           image_name: ${{ env.RESOURCE }}.${{ env.LAMBDA }}
-          short_sha: ${{ needs.deploy-to-gchr.outputs.short_sha }}
+          short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}

@@ -181,3 +181,27 @@ resource "aws_secretsmanager_secret_version" "mtls_cert_secret_value" {
     ca   = ""
   })
 }
+
+resource "aws_secretsmanager_secret" "api_authorizer_secret" {
+  name       = "${var.app_name}-api-authorizer-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+
+}
+
+resource "random_uuid" "initial_api_auth_value" {}
+
+resource "aws_secretsmanager_secret_rotation" "api_authorizer_secret_rotation" {
+  secret_id           = aws_secretsmanager_secret.api_authorizer_secret.id
+  rotation_lambda_arn = var.rotate_key_lambda_arn
+
+  rotation_rules {
+    schedule_expression = "cron(0 8 * * ? *)" # Daily @ 8AM UTC (12AM PST)
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "api_authorizer_secret_value" {
+  secret_id = aws_secretsmanager_secret.api_authorizer_secret.id
+  secret_string = jsonencode({
+    "verifyKey" = random_uuid.initial_api_auth_value.result
+  })
+}

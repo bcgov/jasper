@@ -11,7 +11,8 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.mtls_cert_secret.arn,
     aws_secretsmanager_secret.request_secret.arn,
     aws_secretsmanager_secret.splunk_secret.arn,
-    aws_secretsmanager_secret.user_services_client_secret.arn
+    aws_secretsmanager_secret.user_services_client_secret.arn,
+    aws_secretsmanager_secret.api_authorizer_secret.arn
   ]
 }
 
@@ -23,6 +24,7 @@ output "api_secrets" {
     ["Auth__UserId", "${aws_secretsmanager_secret.auth_secret.arn}:userId::"],
     ["Auth__UserPassword", "${aws_secretsmanager_secret.auth_secret.arn}:userPassword::"],
     ["Auth__AllowSiteMinderUserType", "${aws_secretsmanager_secret.auth_secret.arn}:allowSiteMinderUserType::"],
+    ["AuthorizerKey", "${aws_secretsmanager_secret.api_authorizer_secret.arn}:verifyKey::"],
     ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString::"],
     ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey::"],
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
@@ -77,4 +79,8 @@ output "db_password" {
 
 output "mtls_secret_name" {
   value = aws_secretsmanager_secret.mtls_cert_secret.name
+}
+
+output "api_authorizer_secret" {
+  value = aws_secretsmanager_secret.api_authorizer_secret
 }

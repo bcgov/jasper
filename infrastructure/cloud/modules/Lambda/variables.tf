@@ -16,31 +16,16 @@ variable "lambda_role_arn" {
 variable "functions" {
   description = "Lambda functions config"
   type = map(object({
-    http_method   = string
-    resource_path = string
-    env_variables = optional(map(string), {})
-    timeout       = optional(number, 300)
-    memory_size   = optional(number, 2048)
+    http_method         = string
+    resource_path       = string
+    env_variables       = optional(map(string), {})
+    timeout             = optional(number, 300)
+    memory_size         = optional(number, 2048)
+    statement_id_prefix = optional(string, "AllowAPIGatewayInvoke")
+    principal           = optional(string, "apigateway.amazonaws.com")
+    source_arn          = optional(string, null)
   }))
-  default = {
-    # Keys should match the folder name in lambda code
-    "get-locations" = {
-      http_method   = "GET"
-      resource_path = "/locations"
-    },
-    "get-rooms" = {
-      http_method   = "GET"
-      resource_path = "/locations/rooms"
-    },
-    "search-criminal-files" = {
-      http_method   = "GET"
-      resource_path = "/files/criminal"
-    },
-    "search-civil-files" = {
-      http_method   = "GET"
-      resource_path = "/files/civil"
-    }
-  }
+  default = {}
 }
 
 variable "apigw_execution_arn" {

@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       lambda_dir_list: ${{ steps.convert.outputs.LAMBDA_DIR_LIST }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,6 +52,8 @@ jobs:
   deploy2gchr:
     needs: get-lambdas
     environment: ${{ inputs.environment }}
+    outputs:
+      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
     permissions:
       id-token: write
       packages: write
@@ -82,7 +85,7 @@ jobs:
       - name: Get short SHA
         id: short_sha
         run: |
-          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Parse Resource and Lambda Name
         id: parse
@@ -100,7 +103,7 @@ jobs:
           images: |
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.RESOURCE }}.${{ env.LAMBDA }}
           tags: |
-            type=raw,value=${{ env.SHORT_SHA }}
+            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

@@ -66,10 +66,8 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         Action = [
           "secretsmanager:GetSecretValue"
         ],
-        Effect = "Allow",
-        Resource = [
-          "arn:aws:secretsmanager:*:*:secret:external/*"
-        ]
+        Effect   = "Allow",
+        Resource = var.secrets_arn_list
       },
       {
         Action = [
@@ -256,7 +254,9 @@ resource "aws_iam_policy" "lambda_role_policy" {
       {
         "Action" : [
           "kms:Encrypt",
-          "kms:Decrypt"
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:GenerateDataKeyWithoutPlaintext"
         ],
         "Effect" : "Allow",
         "Resource" : [
@@ -268,6 +268,8 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret",
           "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:UpdateSecretVersionStage"
         ]
         Effect   = "Allow"
         Resource = var.secrets_arn_list
@@ -280,6 +282,24 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/${var.app_name}-*-lambda-${var.environment}:*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "ecs:UpdateService",
+          "ecs:DescribeServices",
+          "ecs:ListServices"
+        ],
+        "Resource" : "*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ],
+        "Resource" : "*"
       }
     ]
   })

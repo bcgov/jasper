@@ -31,3 +31,13 @@ variable "ecs_execution_role_arn" {
   description = "The ECS Task Definition Execution role ARN"
   type        = string
 }
+
+variable "log_group_arn" {
+  description = "The API Gateway Cloudwatch Log Group ARN"
+  type        = string
+}
+
+variable "apigw_logging_role_arn" {
+  description = "The API Gateway Logging IAM Role ARN"
+  type        = string
+}

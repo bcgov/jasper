@@ -5,13 +5,56 @@ resource "aws_api_gateway_rest_api" "apigw" {
 
 resource "aws_api_gateway_deployment" "apigw_deployment" {
   depends_on = [
+    # Add new integration here so that it registers in API Gateway
     aws_api_gateway_integration.get_locations_integration,
     aws_api_gateway_integration.get_locations_rooms_integration,
     aws_api_gateway_integration.get_files_civil_integration,
     aws_api_gateway_integration.get_files_criminal_integration,
   ]
   rest_api_id = aws_api_gateway_rest_api.apigw.id
-  stage_name  = var.environment
+
+  triggers = {
+    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.apigw.body))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_api_gateway_stage" "apigw_stage" {
+  stage_name           = var.environment
+  deployment_id        = aws_api_gateway_deployment.apigw_deployment.id
+  rest_api_id          = aws_api_gateway_rest_api.apigw.id
+  xray_tracing_enabled = true
+
+  access_log_settings {
+    destination_arn = var.log_group_arn
+    format = jsonencode({
+      requestId      = "$context.requestId",
+      ip             = "$context.identity.sourceIp",
+      caller         = "$context.identity.caller",
+      user           = "$context.identity.user",
+      requestTime    = "$context.requestTime",
+      httpMethod     = "$context.httpMethod",
+      resourcePath   = "$context.resourcePath",
+      status         = "$context.status",
+      protocol       = "$context.protocol",
+      responseLength = "$context.responseLength"
+    })
+  }
+}
+
+resource "aws_api_gateway_method_settings" "apgw_method_settings" {
+  rest_api_id = aws_api_gateway_rest_api.apigw.id
+  stage_name  = aws_api_gateway_stage.apigw_stage.stage_name
+  method_path = "*/*"
+
+  settings {
+    data_trace_enabled = true
+    metrics_enabled    = true
+    logging_level      = "INFO"
+  }
 }
 
 resource "aws_api_gateway_rest_api_policy" "apigw_rest_api_policy" {
@@ -21,8 +64,9 @@ resource "aws_api_gateway_rest_api_policy" "apigw_rest_api_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
-        Principal = var.ecs_execution_role_arn
+        Effect = "Allow"
+        #Principal = var.ecs_execution_role_arn
+        Principal = "*"
         Action    = "execute-api:Invoke"
         Resource  = "arn:aws:execute-api:${var.region}:${var.account_id}:${aws_api_gateway_rest_api.apigw.id}/*"
       }
@@ -30,12 +74,18 @@ resource "aws_api_gateway_rest_api_policy" "apigw_rest_api_policy" {
   })
 }
 
+resource "aws_api_gateway_account" "apigateway_account" {
+  cloudwatch_role_arn = var.apigw_logging_role_arn
+
+  depends_on = [aws_api_gateway_stage.apigw_stage]
+}
+
 resource "aws_api_gateway_usage_plan" "apigw_usage_plan" {
   name = "${var.app_name}-apigw-usage-plan-${var.environment}"
 
   api_stages {
     api_id = aws_api_gateway_rest_api.apigw.id
-    stage  = aws_api_gateway_deployment.apigw_deployment.stage_name
+    stage  = aws_api_gateway_stage.apigw_stage.stage_name
   }
 }
 
@@ -47,6 +97,17 @@ resource "aws_api_gateway_usage_plan_key" "apigw_usage_plan_key" {
   key_id        = aws_api_gateway_api_key.apigw_api_key.id
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.apigw_usage_plan.id
+}
+
+#
+# Authorizer
+#
+resource "aws_api_gateway_authorizer" "authorizer" {
+  name            = "${var.app_name}-authorizer-${var.environment}"
+  rest_api_id     = aws_api_gateway_rest_api.apigw.id
+  authorizer_uri  = var.lambda_functions["authorizer"].invoke_arn
+  type            = "REQUEST"
+  identity_source = "method.request.header.x-origin-verify"
 }
 
 #
@@ -63,7 +124,8 @@ resource "aws_api_gateway_method" "get_locations_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.locations_resource.id
   http_method      = var.lambda_functions["get-locations"].http_method
-  authorization    = "AWS_IAM"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
   api_key_required = true
 
   request_parameters = {
@@ -92,7 +154,8 @@ resource "aws_api_gateway_method" "get_locations_rooms_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.rooms_resource.id
   http_method      = var.lambda_functions["get-rooms"].http_method
-  authorization    = "AWS_IAM"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
   api_key_required = true
 
   request_parameters = {
@@ -130,8 +193,13 @@ resource "aws_api_gateway_method" "get_files_civil_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.civil_resource.id
   http_method      = var.lambda_functions["search-civil-files"].http_method
-  authorization    = "AWS_IAM"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
   api_key_required = true
+
+  request_parameters = {
+    "method.request.header.x-origin-verify" = true
+  }
 }
 
 resource "aws_api_gateway_integration" "get_files_civil_integration" {
@@ -155,8 +223,13 @@ resource "aws_api_gateway_method" "get_files_criminal_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.criminal_resource.id
   http_method      = var.lambda_functions["search-criminal-files"].http_method
-  authorization    = "AWS_IAM"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
   api_key_required = true
+
+  request_parameters = {
+    "method.request.header.x-origin-verify" = true
+  }
 }
 
 resource "aws_api_gateway_integration" "get_files_criminal_integration" {

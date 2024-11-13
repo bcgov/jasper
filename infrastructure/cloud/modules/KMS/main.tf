@@ -45,11 +45,18 @@ resource "aws_kms_key_policy" "kms_key_policy" {
         Principal = {
           Service = "logs.amazonaws.com"
         }
-        Action = [
-          "kms:Decrypt",
-          "kms:Encrypt",
-          "kms:GenerateDataKey"
-        ]
+        Action   = "kms:*"
+        Resource = "*"
+      },
+
+      # Allow Lambda Functions to use the key
+      {
+        Sid    = "AllowLambdasUsage"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action   = "kms:*"
         Resource = "*"
       }
     ]

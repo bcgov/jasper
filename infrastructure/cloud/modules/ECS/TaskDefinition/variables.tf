@@ -68,3 +68,8 @@ variable "image_name" {
   type        = string
   default     = "dummy-image"
 }
+
+variable "log_group_name" {
+  description = "The Cloudwatch Log Group Name"
+  type        = string
+}

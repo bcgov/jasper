@@ -22,13 +22,22 @@
         "ms-dotnettools.csdevkit",
         "ms-dotnettools.csharp",
         "ms-dotnettools.vscode-dotnet-runtime",
-        "amazonwebservices.aws-toolkit-vscode"
+        "amazonwebservices.aws-toolkit-vscode",
+        "hashicorp.terraform"
       ],
       "settings": {
         "editor.codeActionsOnSave": {
           "source.organizeImports": "explicit"
         },
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[csharp]": {
+          "editor.defaultFormatter": "ms-dotnettools.csharp"
+        },
+        "[terraform]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "hashicorp.terraform"
+        }
       }
     }
   },

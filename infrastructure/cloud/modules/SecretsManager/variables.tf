@@ -17,3 +17,8 @@ variable "kms_key_arn" {
   description = "The KMS Key ARN"
   type        = string
 }
+
+variable "rotate_key_lambda_arn" {
+  description = "The Rotate Key Lambda ARN"
+  type        = string
+}

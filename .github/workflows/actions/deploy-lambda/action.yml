@@ -68,7 +68,7 @@ runs:
       id: ecr-check
       shell: bash
       run: |
-        IMAGE_TAG=${{ inputs.lambda_name }}-${{ inputs.short_sha }}
+        IMAGE_TAG=${{ inputs.image_name }}-${{ inputs.short_sha }}
         REPOSITORY_NAME=${{ inputs.app_name }}-lambda-repo-${{ inputs.environment }}
         
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
@@ -94,4 +94,4 @@ runs:
       run: |
         aws lambda update-function-code \
           --function-name ${{ inputs.app_name }}-${{ inputs.lambda_name }}-lambda-${{ inputs.environment }} \
-          --image-uri ${{ env.full_ecr_repo_url }}:${{ inputs.resource }}.${{ inputs.lambda_name }}-${{ inputs.short_sha }}
+          --image-uri ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}

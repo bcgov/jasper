@@ -45,11 +45,12 @@ data "aws_ecr_repository" "lambda_ecr_repo" {
 
 # Create Secrets placeholder for Secrets Manager
 module "secrets_manager" {
-  source      = "../../modules/SecretsManager"
-  environment = var.environment
-  app_name    = var.app_name
-  region      = var.region
-  kms_key_arn = data.aws_kms_key.kms_key.arn
+  source                = "../../modules/SecretsManager"
+  environment           = var.environment
+  app_name              = var.app_name
+  region                = var.region
+  kms_key_arn           = data.aws_kms_key.kms_key.arn
+  rotate_key_lambda_arn = module.lambda.lambda_functions["rotate-key"].arn
 }
 
 # Create RDS Database
@@ -129,6 +130,54 @@ module "lambda" {
   apigw_execution_arn = module.apigw.apigw_execution_arn
   lambda_ecr_repo_url = data.aws_ecr_repository.lambda_ecr_repo.repository_url
   mtls_secret_name    = module.secrets_manager.mtls_secret_name
+  functions = {
+    "authorizer" = {
+      http_method   = "*"
+      resource_path = "/*"
+      env_variables = {
+        VERIFY_SECRET_NAME = module.secrets_manager.api_authorizer_secret.name
+      }
+    },
+    "rotate-key" = {
+      http_method         = "POST"
+      resource_path       = "/*"
+      statement_id_prefix = "AllowSecretsManagerInvoke"
+      source_arn          = module.secrets_manager.api_authorizer_secret.arn
+      principal           = "secretsmanager.amazonaws.com"
+      env_variables = {
+        VERIFY_SECRET_NAME = module.secrets_manager.api_authorizer_secret.name
+        CLUSTER_NAME       = module.ecs_cluster.ecs_cluster.name
+      }
+    }
+  }
+}
+
+# Create Cloudwatch LogGroups
+module "ecs_api_td_log_group" {
+  source        = "../../modules/Cloudwatch/LogGroup"
+  environment   = var.environment
+  app_name      = var.app_name
+  kms_key_arn   = data.aws_kms_key.kms_key.arn
+  resource_name = "ecs"
+  name          = "api-td"
+}
+
+module "ecs_web_td_log_group" {
+  source        = "../../modules/Cloudwatch/LogGroup"
+  environment   = var.environment
+  app_name      = var.app_name
+  kms_key_arn   = data.aws_kms_key.kms_key.arn
+  resource_name = "ecs"
+  name          = "web-td"
+}
+
+module "apigw_api_log_group" {
+  source        = "../../modules/Cloudwatch/LogGroup"
+  environment   = var.environment
+  app_name      = var.app_name
+  kms_key_arn   = data.aws_kms_key.kms_key.arn
+  resource_name = "apigateway"
+  name          = "api"
 }
 
 # Create API Gateway
@@ -140,6 +189,8 @@ module "apigw" {
   account_id             = data.aws_caller_identity.current.account_id
   lambda_functions       = module.lambda.lambda_functions
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
+  log_group_arn          = module.apigw_api_log_group.log_group.arn
+  apigw_logging_role_arn = module.iam.apigw_logging_role_arn
 }
 
 # Create ECS Cluster
@@ -162,6 +213,7 @@ module "ecs_web_td" {
   port                   = 8080
   secret_env_variables   = module.secrets_manager.web_secrets
   kms_key_arn            = data.aws_kms_key.kms_key.arn
+  log_group_name         = module.ecs_web_td_log_group.log_group.name
 }
 
 # Create API ECS Task Definition
@@ -186,6 +238,7 @@ module "ecs_api_td" {
   ]
   secret_env_variables = module.secrets_manager.api_secrets
   kms_key_arn          = data.aws_kms_key.kms_key.arn
+  log_group_name       = module.ecs_api_td_log_group.log_group.name
 }
 
 # Create Web ECS Service
@@ -194,7 +247,7 @@ module "ecs_web_service" {
   environment    = var.environment
   app_name       = var.app_name
   name           = "web"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster_id
+  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
   ecs_td_arn     = module.ecs_web_td.ecs_td_arn
   tg_arn         = module.tg_web.tg_arn
   sg_id          = data.aws_security_group.app_sg.id
@@ -208,7 +261,7 @@ module "ecs_api_service" {
   environment    = var.environment
   app_name       = var.app_name
   name           = "api"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster_id
+  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
   ecs_td_arn     = module.ecs_api_td.ecs_td_arn
   tg_arn         = module.tg_api.tg_arn
   sg_id          = data.aws_security_group.app_sg.id

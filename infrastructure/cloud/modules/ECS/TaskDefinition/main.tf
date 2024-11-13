@@ -7,11 +7,11 @@ resource "aws_ecs_task_definition" "ecs_td" {
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
 
-  # lifecycle {
-  #   # Since the dummy-image will be replaced when the GHA pipeline runs,
-  #   # the whole container_definition edits has been ignored.
-  #   ignore_changes = [container_definitions]
-  # }
+  lifecycle {
+    # Since the dummy-image will be replaced when the GHA pipeline runs,
+    # the whole container_definition edits has been ignored.
+    ignore_changes = [container_definitions]
+  }
 
   container_definitions = jsonencode([
     {
@@ -28,7 +28,7 @@ resource "aws_ecs_task_definition" "ecs_td" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/${var.name}-td"
+          "awslogs-group"         = var.log_group_name
           "awslogs-region"        = var.region
           "awslogs-stream-prefix" = "ecs"
         }

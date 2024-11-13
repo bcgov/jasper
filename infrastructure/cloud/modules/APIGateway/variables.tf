@@ -26,3 +26,8 @@ variable "lambda_functions" {
     invoke_arn    = string
   }))
 }
+
+variable "ecs_execution_role_arn" {
+  description = "The ECS Task Definition Execution role ARN"
+  type        = string
+}

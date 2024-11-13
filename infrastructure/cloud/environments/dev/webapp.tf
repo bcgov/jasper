@@ -133,12 +133,13 @@ module "lambda" {
 
 # Create API Gateway
 module "apigw" {
-  source           = "../../modules/APIGateway"
-  environment      = var.environment
-  app_name         = var.app_name
-  region           = var.region
-  account_id       = data.aws_caller_identity.current.account_id
-  lambda_functions = module.lambda.lambda_functions
+  source                 = "../../modules/APIGateway"
+  environment            = var.environment
+  app_name               = var.app_name
+  region                 = var.region
+  account_id             = data.aws_caller_identity.current.account_id
+  lambda_functions       = module.lambda.lambda_functions
+  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
 }
 
 # Create ECS Cluster

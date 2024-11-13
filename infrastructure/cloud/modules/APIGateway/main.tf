@@ -22,7 +22,7 @@ resource "aws_api_gateway_rest_api_policy" "apigw_rest_api_policy" {
     Statement = [
       {
         Effect    = "Allow"
-        Principal = "*"
+        Principal = var.ecs_execution_role_arn
         Action    = "execute-api:Invoke"
         Resource  = "arn:aws:execute-api:${var.region}:${var.account_id}:${aws_api_gateway_rest_api.apigw.id}/*"
       }
@@ -63,7 +63,7 @@ resource "aws_api_gateway_method" "get_locations_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.locations_resource.id
   http_method      = var.lambda_functions["get-locations"].http_method
-  authorization    = "NONE"
+  authorization    = "AWS_IAM"
   api_key_required = true
 
   request_parameters = {
@@ -92,7 +92,7 @@ resource "aws_api_gateway_method" "get_locations_rooms_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.rooms_resource.id
   http_method      = var.lambda_functions["get-rooms"].http_method
-  authorization    = "NONE"
+  authorization    = "AWS_IAM"
   api_key_required = true
 
   request_parameters = {
@@ -130,7 +130,7 @@ resource "aws_api_gateway_method" "get_files_civil_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.civil_resource.id
   http_method      = var.lambda_functions["search-civil-files"].http_method
-  authorization    = "NONE"
+  authorization    = "AWS_IAM"
   api_key_required = true
 }
 
@@ -155,7 +155,7 @@ resource "aws_api_gateway_method" "get_files_criminal_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
   resource_id      = aws_api_gateway_resource.criminal_resource.id
   http_method      = var.lambda_functions["search-criminal-files"].http_method
-  authorization    = "NONE"
+  authorization    = "AWS_IAM"
   api_key_required = true
 }
 

@@ -290,7 +290,10 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "ecs:DescribeServices",
           "ecs:ListServices"
         ],
-        "Resource" : "*"
+        "Resource" : [
+          "arn:aws:ecs:*:*:cluster/${var.app_name}-app-cluster-${var.environment}",
+          "arn:aws:ecs:*:*:service/${var.app_name}-app-cluster-${var.environment}/${var.app_name}-*-ecs-service-${var.environment}"
+        ]
       },
       {
         "Effect" : "Allow",
@@ -299,7 +302,9 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "ecr:BatchGetImage",
           "ecr:BatchCheckLayerAvailability"
         ],
-        "Resource" : "*"
+        "Resource" : [
+          "arn:aws:ecr:*:*:repository/${var.app_name}-*-repo-${var.environment}"
+        ]
       }
     ]
   })

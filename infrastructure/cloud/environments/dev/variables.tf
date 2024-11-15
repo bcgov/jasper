@@ -67,3 +67,8 @@ variable "cert_domain_name" {
   description = "The BCGov provisioned certificate domain name"
   type        = string
 }
+
+variable "lambda_memory_size" {
+  description = "The Lambda Function default Memory Size"
+  type        = number
+}

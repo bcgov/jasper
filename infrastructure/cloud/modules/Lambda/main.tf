@@ -22,14 +22,15 @@ locals {
   lambda_functions = {
     for k, v in merge(local.default_functions, var.functions) : k => {
       name                = k
-      memory_size         = lookup(v, "memory_size", 2048)
-      timeout             = lookup(v, "timeout", 30)
+      memory_size         = coalesce(lookup(v, "memory_size", null), var.lambda_memory_size)
+      timeout             = coalesce(lookup(v, "timeout", null), var.lambda_timeout)
       http_method         = v.http_method
       resource_path       = v.resource_path
-      statement_id_prefix = lookup(v, "statement_id_prefix", "AllowAPIGatewayInvoke")
-      principal           = lookup(v, "principal", "apigateway.amazonaws.com")
-      env_variables       = lookup(v, "env_variables", {})
       source_arn          = lookup(v, "source_arn", "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
+      statement_id_prefix = coalesce(lookup(v, "statement_id_prefix", null), "AllowAPIGatewayInvoke")
+      principal           = coalesce(lookup(v, "principal", null), "apigateway.amazonaws.com")
+      env_variables       = coalesce(lookup(v, "env_variables", null), {})
+      source_arn          = coalesce(lookup(v, "source_arn", null), "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
     }
   }
 

@@ -19,8 +19,8 @@ variable "functions" {
     http_method         = string
     resource_path       = string
     env_variables       = optional(map(string), {})
-    timeout             = optional(number, 300)
-    memory_size         = optional(number, 2048)
+    timeout             = optional(number, null)
+    memory_size         = optional(number, null)
     statement_id_prefix = optional(string, "AllowAPIGatewayInvoke")
     principal           = optional(string, "apigateway.amazonaws.com")
     source_arn          = optional(string, null)
@@ -41,4 +41,15 @@ variable "lambda_ecr_repo_url" {
 variable "mtls_secret_name" {
   description = "The secret name of mTLS Cert in Secrets Manager"
   type        = string
+}
+
+variable "lambda_memory_size" {
+  description = "The Lambda Function default Memory Size"
+  type        = number
+}
+
+variable "lambda_timeout" {
+  description = "The Lambda Fucntion default timeout"
+  type        = number
+  default     = 30
 }

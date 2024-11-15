@@ -130,10 +130,11 @@ module "lambda" {
   apigw_execution_arn = module.apigw.apigw_execution_arn
   lambda_ecr_repo_url = data.aws_ecr_repository.lambda_ecr_repo.repository_url
   mtls_secret_name    = module.secrets_manager.mtls_secret_name
+  lambda_memory_size  = var.lambda_memory_size
   functions = {
     "authorizer" = {
       http_method   = "*"
-      resource_path = "/*"
+      resource_path = ""
       env_variables = {
         VERIFY_SECRET_NAME = module.secrets_manager.api_authorizer_secret.name
       }

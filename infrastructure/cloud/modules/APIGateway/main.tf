@@ -64,10 +64,12 @@ resource "aws_api_gateway_rest_api_policy" "apigw_rest_api_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
-        Principal = var.ecs_execution_role_arn
-        Action    = "execute-api:Invoke"
-        Resource  = "arn:aws:execute-api:${var.region}:${var.account_id}:${aws_api_gateway_rest_api.apigw.id}/*"
+        Effect = "Allow"
+        Principal = {
+          AWS = var.ecs_execution_role_arn
+        }
+        Action   = "execute-api:Invoke"
+        Resource = "arn:aws:execute-api:${var.region}:${var.account_id}:${aws_api_gateway_rest_api.apigw.id}/*"
       }
     ]
   })

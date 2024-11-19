@@ -21,6 +21,8 @@
             <div class="dashboard-collapse">Reserved Judgement (4)</div>
             <div class="dashboard-collapse">Reserved Judgement (5)</div>
         </section>
+
+        <FullCalendar :options="calendarOptions" />
     </div>
 </template>
 <style>
@@ -84,9 +86,22 @@ header {
 <script lang="ts">
 import NavigationTopbar from "@components/NavigationTopbar.vue";
 import { Component, Vue } from 'vue-property-decorator';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import FullCalendar from '@fullcalendar/vue';
 @Component({
     components: {
         NavigationTopbar,
+        FullCalendar
+    },
+    data() {
+        return {
+            calendarOptions: {
+                plugins: [dayGridPlugin, interactionPlugin],
+                initialView: 'dayGridMonth'
+            }
+        }
     }
 })
-export default class Dashboard extends Vue { }</script>
+export default class Dashboard extends Vue { }
+</script>

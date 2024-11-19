@@ -10,7 +10,7 @@ ARG NPM_INSTALL_ARGS=""
 # 1. Build web-runtime
 ###################################################################################
 # Use the offical nginx (based on debian)
-FROM nginx:stable as runtime
+FROM nginx:stable AS runtime
 ARG NGINX_RUNTIME_SRC
 ARG VUE_ON_NGINX_SRC
 
@@ -62,7 +62,7 @@ USER 104
 ###################################################################################
 # 2. Build web-artifacts
 ###################################################################################
-FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} as artifacts
+FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} AS artifacts
 ARG NODE_VERSION
 ARG WEB_SRC
 ARG NPM_INSTALL_ARGS
@@ -70,9 +70,15 @@ ARG NPM_INSTALL_ARGS
 USER root
 WORKDIR /opt/app-root/src
 
+# Copy package.json and package-lock.json
+COPY ${WEB_SRC}/package*.json .
+
+# Install packages
+RUN npm install ${NPM_INSTALL_ARGS}
+
+# Copy the rest of the code
 COPY ${WEB_SRC} .
 
-RUN npm install ${NPM_INSTALL_ARGS}
 RUN npm run build 
 
 ###################################################################################

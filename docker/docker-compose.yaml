@@ -67,6 +67,8 @@ services:
       - SplunkCollectorUrl=${SplunkCollectorUrl}
       - SplunkCollectorId=${SplunkCollectorId}
       - SplunkToken=${SplunkToken}
+      - AWS_API_GATEWAY_URL=${AWS_API_GATEWAY_URL}
+      - AWS_API_GATEWAY_API_KEY=${AWS_API_GATEWAY_API_KEY}
     ports:
       - 5000:5000
     volumes:

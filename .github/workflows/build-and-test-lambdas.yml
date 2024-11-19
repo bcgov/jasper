@@ -1,0 +1,28 @@
+name: Build and Test Lambdas
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "aws/**"
+
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: ./aws
+  NODE_VERSION: 20
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Building Lambdas codebase
+        uses: ./.github/workflows/actions/build-lambdas
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          node_version: ${{ env.NODE_VERSION }}

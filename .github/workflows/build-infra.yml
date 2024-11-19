@@ -22,12 +22,22 @@ on:
           - prod
 
 jobs:
+  build-initial:
+    uses: ./.github/workflows/aws-template-terraform.yml
+    with:
+      CONTEXT_FOLDER: "./infrastructure/cloud/environments/initial"
+      CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
+      ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
+      APPLY_TF_CODE: false
+    secrets: inherit
+
   build:
+    needs: [build-initial]
     uses: ./.github/workflows/aws-template-terraform.yml
     with:
       CONTEXT_FOLDER: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
       CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
       ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
-      TEST_BUCKET_NAME: jasper-test-bucket
       APPLY_TF_CODE: false
     secrets: inherit
+    

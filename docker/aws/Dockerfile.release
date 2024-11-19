@@ -1,0 +1,28 @@
+# Use base Node image for building
+ARG NODE_VERSION=20
+
+FROM node:${NODE_VERSION} AS build
+
+# Copy package.json to install dependencies once
+WORKDIR /app
+COPY /package.json .
+
+RUN npm install
+
+# Copy the rest of the code
+COPY . .
+
+ARG TARGET_FUNCTION
+# Use esbuild to bundle the specific function code
+RUN npx esbuild lambdas/${TARGET_FUNCTION}/index.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=/app/dist/index.js
+
+# Final runtime image with AWS Lambda base
+ARG NODE_VERSION
+FROM public.ecr.aws/lambda/nodejs:${NODE_VERSION}
+
+# # Copy only the bundled code for the target function
+WORKDIR /var/task
+COPY --from=build /app/dist/index.js ./
+
+# Set the command for the Lambda handler
+CMD ["index.handler"]

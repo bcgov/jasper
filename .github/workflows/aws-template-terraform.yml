@@ -12,9 +12,6 @@ on:
       CHANGE_FOLDER_NAME:
         required: true
         type: string
-      TEST_BUCKET_NAME:
-        required: true
-        type: string
       APPLY_TF_CODE:
         required: true
         default: false
@@ -88,6 +85,7 @@ jobs:
       TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
       TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
       TF_VAR_vpc_id: ${{ vars.VPC_ID }}
+      TF_VAR_lambda_memory_size: ${{ vars.LAMBDA_MEMORY_SIZE }}
     needs: [check_changes, scan]
     steps:
       - name: Checkout repository
@@ -117,7 +115,6 @@ jobs:
         id: plan
         env:
           CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
-          #TF_VAR_test_s3_bucket_name: ${{ inputs.TEST_BUCKET_NAME }}
         run: |
           terraform plan -no-color -input=false -var-file=${{ inputs.ENVIRONMENT_NAME }}.tfvars
         continue-on-error: true
@@ -129,7 +126,6 @@ jobs:
         if: inputs.APPLY_TF_CODE == true
         env:
           CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
-          #TF_VAR_test_s3_bucket_name: ${{ inputs.TEST_BUCKET_NAME }}
         run: |
           terraform apply --auto-approve -input=false -var-file=${{ inputs.ENVIRONMENT_NAME }}.tfvars
         working-directory: ${{ inputs.CONTEXT_FOLDER }}

@@ -22,6 +22,9 @@ namespace Scv.Api.Infrastructure
 {
     public static class ServiceCollectionExtensions
     {
+        const string X_APIGW_KEY_HEADER = "x-api-key";
+        const string X_ORIGIN_VERIFY_HEADER = "x-origin-verify";
+
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
         {
             var config = TypeAdapterConfig.GlobalSettings;
@@ -37,6 +40,9 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
+            var apigwKey = configuration.GetNonEmptyValue("AWS_API_GATEWAY_API_KEY");
+            var authorizerKey = configuration.GetNonEmptyValue("AuthorizerKey");
+
             services.AddTransient<TimingHandler>();
             services.AddHttpClient<FileServicesClient>(client =>
             {
@@ -57,10 +63,12 @@ namespace Scv.Api.Infrastructure
 
             services.AddHttpClient<LocationServicesClient>(client =>
             {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                    configuration.GetNonEmptyValue("LocationServicesClient:Username"),
-                    configuration.GetNonEmptyValue("LocationServicesClient:Password"));
+                // client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
+                //     configuration.GetNonEmptyValue("LocationServicesClient:Username"),
+                //     configuration.GetNonEmptyValue("LocationServicesClient:Password"));
                 client.BaseAddress = new Uri(configuration.GetNonEmptyValue("LocationServicesClient:Url").EnsureEndingForwardSlash());
+                client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
+                client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);
             }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<UserServiceClient>(client =>

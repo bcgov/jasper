@@ -20,6 +20,9 @@ export const useCivilFileStore = defineStore('CivilFileStore', {
       supplementalEquipmentTxt: '',
       securityRestrictionTxt: '',
       outOfTownJudgeTxt: '',
+      fileNo: '',
+      appearanceId: '',
+      date: '',
     },
   }),
   actions: {

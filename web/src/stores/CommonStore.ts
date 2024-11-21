@@ -12,6 +12,7 @@ export const useCommonStore = defineStore('CommonStore', {
     displayName: '',
     userInfo: {
       agencyCode: '',
+      userType: '',
     },
     time: '',
     duration: '',

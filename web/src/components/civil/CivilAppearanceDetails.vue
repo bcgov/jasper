@@ -120,10 +120,10 @@
                     :style="data.field.cellStyle"
                     class="text-muted"
                   >
-                    {{ data.value | beautify_date }}
+                    {{ beautifyDate(data.value) }}
                   </span>
                   <span v-else :style="data.field.cellStyle">
-                    {{ data.value | beautify_date }}
+                    {{ beautifyDate(data.value) }}
                   </span>
                 </template>
 
@@ -271,7 +271,6 @@
             v-slot:[`cell(${field.key})`]="data"
           >
             <span
-              v-bind:key="index"
               :style="field.cellStyle"
               v-if="data.field.key == 'currentCounsel' && data.value.length > 0"
             >
@@ -293,7 +292,6 @@
               </span>
             </span>
             <span
-              v-bind:key="index"
               :style="field.cellStyle"
               v-else-if="data.field.key == 'role' && data.value.length > 0"
             >
@@ -304,7 +302,6 @@
               /></span>
             </span>
             <span
-              v-bind:key="index"
               :style="field.cellStyle"
               v-else-if="data.field.key == 'name' && data.item.info.length == 0"
             >
@@ -312,7 +309,6 @@
             </span>
             <span
               class="text-success"
-              v-bind:key="index"
               :style="field.cellStyle"
               v-else-if="data.field.key == 'name' && data.item.info.length > 0"
               v-b-tooltip.hover.right.html="data.item.info"
@@ -320,7 +316,6 @@
               {{ data.value }}
             </span>
             <span
-              v-bind:key="index"
               :style="field.cellStyle"
               v-else-if="
                 data.field.key == 'representative' && data.value.length > 0
@@ -368,14 +363,15 @@
         <h2 class="mb-0">Adjudicator Comment</h2>
       </template>
       <b-card border-variant="white">{{ adjudicatorComment }}</b-card>
-      <b-button class="mt-3 bg-info" @click="$bvModal.hide('bv-modal-comment')"
+      <!-- <b-button class="mt-3 bg-info" @click="$bvModal.hide('bv-modal-comment')"
         >Close</b-button
-      >
+      > -->
     </b-modal>
   </div>
 </template>
 
 <script lang="ts">
+  import { beautifyDate } from '@/filters';
   import { useCivilFileStore, useCommonStore } from '@/stores';
   import {
     appearanceAdditionalInfoType,
@@ -385,12 +381,8 @@
     civilAppearanceDetailsInfoType,
   } from '@/types/civil';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
-  import '@store/modules/CivilFileInformation';
-  import '@store/modules/CommonInformation';
   import { defineComponent, onMounted, reactive, ref, toRefs } from 'vue';
   import shared from '../shared';
-  const civilState = namespace('CivilFileInformation');
-  const commonState = namespace('CommonInformation');
 
   export default defineComponent({
     props: {
@@ -408,9 +400,9 @@
       const appearanceParties = ref<appearancePartiesType[]>([]);
       const appearanceMethods = ref<appearanceMethodsType[]>([]);
 
-      const loadingPdf = ref(false);
-      const isMounted = ref(false);
-      const isDataReady = ref(false);
+      let loadingPdf = ref(false);
+      let isMounted = ref(false);
+      let isDataReady = ref(false);
       const stripedStyle = ref(false);
       const appearanceDetailsJson = ref<any>(null);
       const additionalInfo = reactive<civilAppearanceDetailsInfoType>({
@@ -662,11 +654,11 @@
           const partyInfo = {} as appearancePartiesType;
           partyInfo.firstName = party.givenNm ? party.givenNm : '';
           partyInfo.lastName = party.lastNm ? party.lastNm : party.orgNm;
-          this.UpdateDisplayName({
+          commonStore.updateDisplayName({
             lastName: partyInfo.lastName,
             givenName: partyInfo.firstName,
           });
-          partyInfo.name = this.displayName;
+          partyInfo.name = displayName.value;
           partyInfo.info = '';
           if (party.appearanceMethodDesc) {
             partyInfo.info = 'Appeared by ' + party.appearanceMethodDesc;
@@ -746,55 +738,74 @@
               partyInfo.role.push(role.roleTypeDsc);
             }
           }
-          this.appearanceParties.push(partyInfo);
+          appearanceParties.value.push(partyInfo);
         }
 
-        for (const appearanceMethod of this.appearanceDetailsJson
+        for (const appearanceMethod of appearanceDetailsJson.value
           .appearanceMethod) {
           const methodInfo = {} as appearanceMethodsType;
           methodInfo.role = appearanceMethod.roleTypeDesc;
           methodInfo.method = appearanceMethod.appearanceMethodDesc;
-          this.appearanceMethods.push(methodInfo);
+          appearanceMethods.value.push(methodInfo);
         }
       };
 
       const documentClick = (document) => {
         console.log(document);
-        console.log(this.appearanceDetailsJson);
+        console.log(appearanceDetailsJson.value);
 
-        this.loadingPdf = true;
+        loadingPdf.value = true;
         const documentType =
           document.item == null
             ? CourtDocumentType.CSR
             : CourtDocumentType.Civil;
-        const location = this.courtRoomsAndLocations.filter((location) => {
-          return location.locationId == this.appearanceDetailsJson?.agencyId;
+        const location = courtRoomsAndLocations.value.filter((location) => {
+          return location.locationId == appearanceDetailsJson.value?.agencyId;
         })[0]?.name;
         const documentData: DocumentData = {
           appearanceId: document.appearanceId,
-          appearanceDate: this.appearanceDetailsJson?.appearanceDt.substring(
+          appearanceDate: appearanceDetailsJson.value?.appearanceDt.substring(
             0,
             10
           ),
-          courtLevel: this.appearanceDetailsJson?.courtLevelCd,
-          dateFiled: document.item
-            ? Vue.filter('beautify_date')(document.item.dateFiled)
-            : '',
+          courtLevel: appearanceDetailsJson.value?.courtLevelCd,
+          dateFiled: document.item ? beautifyDate(document.item.dateFiled) : '',
           documentId: document.item ? document.item.id : '',
           documentDescription: document.item
             ? document.item.documentType
             : document.documentDescription,
-          fileId: this.civilAppearanceInfo.fileNo,
-          fileNumberText: this.appearanceDetailsJson.fileNumberTxt,
+          fileId: civilAppearanceInfo.value.fileNo,
+          fileNumberText: appearanceDetailsJson.value.fileNumberTxt,
           location: location ? location : '',
         };
         console.log(documentData);
         shared.openDocumentsPdf(documentType, documentData);
-        this.loadingPdf = false;
+        loadingPdf.value = false;
       };
 
       const OpenAdjudicatorComment = () => {
-        this.showAdjudicatorComment = true;
+        showAdjudicatorComment.value = true;
+      };
+
+      return {
+        isMounted,
+        loadingPdf,
+        documentClick,
+        civilAppearanceInfo,
+        appearanceDocuments,
+        documentFields,
+        beautifyDate,
+        issueFields,
+        OpenAdjudicatorComment,
+        adjudicatorComment,
+        appearanceAdditionalInfo,
+        userInfo,
+        addInfoFields,
+        appearanceMethods,
+        appearanceMethodsField,
+        appearanceParties,
+        partyFields,
+        showAdjudicatorComment,
       };
     },
   });

@@ -13,49 +13,58 @@
   </div>
 </template>
 <script lang="ts">
-import { REMOVE_CURRENT_VIEWED_FILE_ID, UPDATE_CURRENT_VIEWED_FILE_ID } from '@/store/modules/CourtFileSearchInformation';
 import { KeyValueInfo } from '@/types/common';
-import { Component, Prop, Vue } from 'vue-property-decorator';
-import { namespace } from "vuex-facing-decorator";
+import { defineComponent } from 'vue';
+import { useCourtFileSearchStore } from "@stores";
 
-const courtFileSearchState = namespace('CourtFileSearchInformation');
+export default defineComponent('CourtFilesSelector', {
+  data() {
+    const store = useCourtFileSearchStore();
 
-@Component
-export default class CourtFilesSelector extends Vue {
-  @Prop({ type: Array, default: () => [] })
-  files!: KeyValueInfo[];
-
-  @Prop({ type: String, default: () => "" })
-  targetCaseDetails;
-
-  @courtFileSearchState.Getter('currentFileId')
-  public currentFileId!: string;
-
-  get fileId(): string {
-    return this.currentFileId;
-  }
-
-  set fileId(newFileId: string) {
-    this.$store.commit(UPDATE_CURRENT_VIEWED_FILE_ID, newFileId);
-  }
-
-  handleChange() {
-    this.$router.replace({ name: this.targetCaseDetails, params: { fileNumber: this.currentFileId } });
-    this.$emit('reload-case-details');
-  }
-
-  handleRemove() {
-    this.$store.commit(REMOVE_CURRENT_VIEWED_FILE_ID, this.currentFileId);
-    if (this.currentFileId) {
-      this.$router.replace({ name: this.targetCaseDetails, params: { fileNumber: this.currentFileId } });
-      this.$emit('reload-case-details');
-    } else {
-      this.$router.push({ name: "CourtFileSearchView" });
+    return {
+      store
     }
-  }
-
-  handleAdd() {
-    this.$router.push({ name: "CourtFileSearchView" });
-  }
-}
+  },
+  computed: {
+    fileId: {
+      get(): string {
+        return this.store.currentFileId;
+      },
+      set(newFileId: string) {
+        this.store.updateCurrentViewedFileId(newFileId);
+      },
+    },
+    currentFileId(): string {
+      return this.store.currentFileId;
+    },
+  },
+  methods: {
+    handleChange() {
+      this.$router.replace({
+        name: this.targetCaseDetails,
+        params: { fileNumber: this.currentFileId },
+      });
+      this.$emit('reload-case-details');
+    },
+    handleRemove() {
+      this.store.removeCurrentViewedFileId(this.currentFileId);
+      if (this.currentFileId) {
+        this.$router.replace({
+          name: this.targetCaseDetails,
+          params: { fileNumber: this.currentFileId },
+        });
+        this.$emit('reload-case-details');
+      } else {
+        this.$router.push({ name: 'CourtFileSearchView' });
+      }
+    },
+    handleAdd() {
+      this.$router.push({ name: 'CourtFileSearchView' });
+    },
+  },
+  props: {
+    files: { type: Array, default: () => [] },
+    targetCaseDetails: { type: String, default: () => '' },
+  },
+});
 </script>

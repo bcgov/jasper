@@ -1,5 +1,5 @@
 # Define ARG at the top level
-ARG NODE_VERSION=20
+ARG NODE_VERSION=18
 ARG WEB_BASE_HREF=/
 ARG NGINX_RUNTIME_SRC=./nginx-runtime
 ARG VUE_ON_NGINX_SRC=./vue-on-nginx
@@ -70,9 +70,14 @@ ARG NPM_INSTALL_ARGS
 USER root
 WORKDIR /opt/app-root/src
 
-COPY ${WEB_SRC} .
+# Copy package.json and package-lock.json
+COPY ${WEB_SRC}/package*.json .
 
 RUN npm install ${NPM_INSTALL_ARGS}
+
+# Copy the rest of the code
+COPY ${WEB_SRC} .
+
 RUN npm run build 
 
 ###################################################################################

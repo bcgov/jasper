@@ -18,13 +18,9 @@
 
         <b-dropdown class="mt-1 mr-2" no-caret right variant="white">
           <template v-slot:button-content>
-            <b-button
-              variant="outline-primary text-info"
+            <b-button variant="outline-primary text-info"
               style="transform: translate(0,-4px); border:0px; font-size:14px; text-overflow: ellipsis;"
-              v-b-tooltip.hover.bottomleft
-              :title="partyDisplayedTxt"
-              size="sm"
-            >
+              v-b-tooltip.hover.bottomleft :title="partyDisplayedTxt" size="sm">
               <b-icon class="mr-2" icon="person-fill"></b-icon>
               <b style="text-overflow: ellipsis;"> {{ getNameOfPartyTrunc() }} </b>
               <b-icon class="ml-1" icon="caret-down-fill" font-scale="1"></b-icon>
@@ -43,36 +39,21 @@
           <b-badge pill variant="danger">{{ adjudicatorRestrictionsInfo.length }}</b-badge>
         </b-nav-text>
 
-        <b-nav-item-dropdown
-          right
-          no-caret
-          :disabled="adjudicatorRestrictionsInfo.length == 0"
-          v-if="userInfo.userType != 'vc'"
-        >
+        <b-nav-item-dropdown right no-caret :disabled="adjudicatorRestrictionsInfo.length == 0"
+          v-if="userInfo.userType != 'vc'">
           <template v-slot:button-content>
-            <b-button
-              :variant="adjudicatorRestrictionsInfo.length > 0 ? 'outline-primary text-info' : 'white'"
+            <b-button :variant="adjudicatorRestrictionsInfo.length > 0 ? 'outline-primary text-info' : 'white'"
               :disabled="adjudicatorRestrictionsInfo.length == 0"
-              style="transform: translate(-5px,0); border:0px; font-size:12px;text-overflow: ellipsis;"
-              size="sm"
-            >
+              style="transform: translate(-5px,0); border:0px; font-size:12px;text-overflow: ellipsis;" size="sm">
               Adjudicator Restrictions
-              <b-icon
-                v-if="adjudicatorRestrictionsInfo.length > 0"
-                class="ml-1"
-                icon="caret-down-fill"
-                font-scale="1"
-              ></b-icon>
+              <b-icon v-if="adjudicatorRestrictionsInfo.length > 0" class="ml-1" icon="caret-down-fill"
+                font-scale="1"></b-icon>
             </b-button>
           </template>
 
           <b-dropdown-item-button v-for="(restriction, index) in adjudicatorRestrictionsInfo" :key="index">
-            <b-button
-              style="font-size: 12px; padding: 5px 5px;"
-              variant="secondary"
-              v-b-tooltip.hover.left
-              :title="restriction.fullName"
-            >
+            <b-button style="font-size: 12px; padding: 5px 5px;" variant="secondary" v-b-tooltip.hover.left
+              :title="restriction.fullName">
               {{ restriction.adjRestriction }}
             </b-button>
           </b-dropdown-item-button>
@@ -83,11 +64,8 @@
         </b-nav-text>
         <b-nav-item-dropdown v-if="sheriffComment.length > 0" right no-caret>
           <template v-slot:button-content>
-            <b-button
-              variant="outline-primary text-info"
-              style="transform: translate(-5px,0); border:0px; font-size:12px;text-overflow: ellipsis;"
-              size="sm"
-            >
+            <b-button variant="outline-primary text-info"
+              style="transform: translate(-5px,0); border:0px; font-size:12px;text-overflow: ellipsis;" size="sm">
               Sheriff Comments
               <b-icon class="ml-1" icon="caret-down-fill" font-scale="1"></b-icon>
             </b-button>
@@ -110,8 +88,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-facing-decorator";
+import { Component, Vue, namespace } from "vue-facing-decorator";
 import "@store/modules/CivilFileInformation";
 import "@store/modules/CommonInformation";
 import { civilFileInformationType, partiesInfoType } from "@/types/civil";

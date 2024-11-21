@@ -9,13 +9,29 @@ export class HttpService {
     return response.body;
   }
 
-  public async get<T>(resource: string, queryParams = null): Promise<T> {
+  private isHttpError(error: unknown): error is { status: number } {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      typeof (error as any).status === 'number'
+    );
+  }
+
+  public async get<T>(resource: string, queryParams: any = null): Promise<T> {
     try {
-      const response = await fetch(resource, { params: queryParams });
+      const url = new URL(resource);
+      Object.entries(queryParams).forEach(([key, value]) =>
+        url.searchParams.append(key, value as string)
+      );
+
+      const response = await fetch(url);
       return this.handleResponse(response);
-    } catch (error: any) {
-      if (error.status === 401) {
-        return this.get(resource);
+    } catch (error) {
+      if (this.isHttpError(error)) {
+        if (error.status === 401) {
+          return this.get(resource);
+        }
       }
       throw error;
     }
@@ -25,9 +41,11 @@ export class HttpService {
     try {
       const response = await Vue.http.post(resource, data);
       return this.handleResponse(response);
-    } catch (error: any) {
-      if (error.status === 401) {
-        return this.post(resource, data);
+    } catch (error) {
+      if (this.isHttpError(error)) {
+        if (error.status === 401) {
+          return this.post(resource, data);
+        }
       }
       throw error;
     }

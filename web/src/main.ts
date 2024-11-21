@@ -1,48 +1,45 @@
-import LoadingSpinner from "@components/LoadingSpinner.vue"
-import "@styles/index.scss"
-import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
-import 'core-js/stable'
-import 'intersection-observer'
-import 'regenerator-runtime/runtime'
-import Vue from 'vue'
-import VueResource from 'vue-resource'
-import VueRouter from 'vue-router'
-import App from './App.vue'
-import "./filters"
-import ServicePlugin from './plugins/ServicePlugin'
-import routes from './router/index'
-import store from './store/index'
+import LoadingSpinner from '@components/LoadingSpinner.vue';
+//import "@styles/index.scss"
+import axios from 'axios';
+import 'core-js/stable';
+import 'intersection-observer';
+import 'regenerator-runtime/runtime';
+import { createApp } from 'vue';
+import App from './App.vue';
+import './filters';
+import ServicePlugin from './plugins/ServicePlugin';
+import router from './router/index';
+import { registerPinia } from './stores';
 
-Vue.use(VueResource);
-Vue.use(VueRouter);
-Vue.use(BootstrapVue);
-Vue.use(BootstrapVueIcons);
-Vue.use(ServicePlugin);
-Vue.config.productionTip = true;
-Vue.component('loading-spinner', LoadingSpinner);
+// Configure Axios as needed
+axios.defaults.baseURL = process.env.BASE_URL;
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.location.replace(
+        `${process.env.BASE_URL}api/auth/login?redirectUri=${window.location}`
+      );
+    }
+    return Promise.reject(error);
+  }
+);
 
-Vue.http.interceptors.push(function () {
-	return function (response) {
-		if (response.status == 401) {
-			location.replace(`${process.env.BASE_URL}api/auth/login?redirectUri=${window.location}`);
-		}
-	};
-});
+// Create Vue App
+const app = createApp(App);
 
-Vue.http.options.root = process.env.BASE_URL;
+// Plugins
+//app.use(VueResource);
+registerPinia(app);
+app.use(router);
+//app.use(BootstrapVue);
+//app.use(BootstrapVueIcons);
+app.use(ServicePlugin);
+app.component('LoadingSpinner', LoadingSpinner);
+
+app.mount('#app');
 
 // Redirect from / to /jasper/
-if (location.pathname == "/")
-	history.pushState({ page: "home" }, "", process.env.BASE_URL);
-
-const router = new VueRouter({
-	mode: 'history',
-	base: process.env.BASE_URL,
-	routes: routes
-});
-
-new Vue({
-	router,
-	store,
-	render: h => h(App)
-}).$mount('#app');
+if (location.pathname == '/') {
+  history.pushState({ page: 'home' }, '', process.env.BASE_URL);
+}

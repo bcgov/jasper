@@ -1,11 +1,9 @@
-import { AdjudicatorRestrictionsInfoType } from '@/types/common';
+import { civilFileInformationType } from '@/types/civil';
 import { defineStore } from 'pinia';
 
 export const useCivilFileStore = defineStore('CivilFileStore', {
   state: () => ({
-    civilFileInformation: {
-      adjudicatorRestrictionsInfo: [] as AdjudicatorRestrictionsInfoType[],
-    },
+    civilFileInformation: {} as civilFileInformationType,
     civilFileInfoLoaded: false,
     hasNonParty: false,
     showSections: {

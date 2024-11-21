@@ -9,6 +9,7 @@ import App from './App.vue';
 import './filters';
 import ServicePlugin from './plugins/ServicePlugin';
 import router from './router/index';
+import { HttpService } from './services/HttpService';
 import { registerPinia } from './stores';
 
 // Configure Axios as needed
@@ -35,6 +36,10 @@ app.use(router);
 //app.use(BootstrapVue);
 //app.use(BootstrapVueIcons);
 app.use(ServicePlugin);
+
+const httpService = new HttpService(process.env.API_URL);
+app.provide('httpService', httpService);
+
 app.component('LoadingSpinner', LoadingSpinner);
 
 app.mount('#app');

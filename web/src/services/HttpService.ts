@@ -1,52 +1,50 @@
-import Vue from 'vue';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { IHttpService } from './IHttpService';
 
-export class HttpService {
-  private handleResponse(response): any {
-    if (!response.ok) {
-      console.error('Error response:', response);
-      throw new Error(`API error: ${response.statusText}`);
-    }
-    return response.body;
+export class HttpService implements IHttpService {
+  private axiosInstance: AxiosInstance;
+
+  constructor(baseURL: string) {
+    this.axiosInstance = axios.create({
+      baseURL,
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 
-  private isHttpError(error: unknown): error is { status: number } {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      'status' in error &&
-      typeof (error as any).status === 'number'
-    );
-  }
-
-  public async get<T>(resource: string, queryParams: any = null): Promise<T> {
+  public async get<T>(
+    resource: string,
+    queryParams: Record<string, any> = {}
+  ): Promise<T> {
     try {
-      const url = new URL(resource);
-      Object.entries(queryParams).forEach(([key, value]) =>
-        url.searchParams.append(key, value as string)
-      );
-
-      const response = await fetch(url);
-      return this.handleResponse(response);
+      const response = await this.axiosInstance.get<T>(resource, {
+        params: queryParams,
+      });
+      return response.data;
     } catch (error) {
-      if (this.isHttpError(error)) {
-        if (error.status === 401) {
-          return this.get(resource);
-        }
-      }
+      console.error('Error in GET request: ', error);
       throw error;
     }
   }
 
-  public async post<T>(resource: string, data: any): Promise<T> {
+  public async post<T>(
+    resource: string,
+    data: any,
+    headers: Record<string, string> = {},
+    responseType: 'json' | 'blob' = 'json'
+  ): Promise<T> {
+    const config: AxiosRequestConfig = {
+      headers,
+      responseType,
+    };
+
     try {
-      const response = await Vue.http.post(resource, data);
-      return this.handleResponse(response);
+      const response = await this.axiosInstance.post<T>(resource, data, config);
+      return response.data;
     } catch (error) {
-      if (this.isHttpError(error)) {
-        if (error.status === 401) {
-          return this.post(resource, data);
-        }
-      }
+      console.error('Error in POST request: ', error);
       throw error;
     }
   }

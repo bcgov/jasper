@@ -372,6 +372,7 @@
 
 <script lang="ts">
   import { beautifyDate } from '@/filters';
+  import { HttpService } from '@/services/HttpService';
   import { useCivilFileStore, useCommonStore } from '@/stores';
   import {
     appearanceAdditionalInfoType,
@@ -381,7 +382,14 @@
     civilAppearanceDetailsInfoType,
   } from '@/types/civil';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
-  import { defineComponent, onMounted, reactive, ref, toRefs } from 'vue';
+  import {
+    defineComponent,
+    inject,
+    onMounted,
+    reactive,
+    ref,
+    toRefs,
+  } from 'vue';
   import shared from '../shared';
 
   export default defineComponent({
@@ -394,6 +402,7 @@
     setup(props) {
       const commonStore = useCommonStore();
       const civilFileStore = useCivilFileStore();
+      const httpService = inject<HttpService>('httpService');
 
       const appearanceAdditionalInfo = ref<appearanceAdditionalInfoType[]>([]);
       const appearanceDocuments = ref<appearanceDocumentsType[]>([]);
@@ -402,8 +411,6 @@
 
       let loadingPdf = ref(false);
       let isMounted = ref(false);
-      let isDataReady = ref(false);
-      const stripedStyle = ref(false);
       const appearanceDetailsJson = ref<any>(null);
       const additionalInfo = reactive<civilAppearanceDetailsInfoType>({
         supplementalEquipment: '',
@@ -540,46 +547,43 @@
         getAppearanceDetails();
       });
 
-      const getAppearanceDetails = () =>
-        void (
-          {
-            // this.$http
-            //   .get(
-            //     'api/files/civil/' +
-            //       this.civilAppearanceInfo.fileNo +
-            //       '/appearance-detail/' +
-            //       this.civilAppearanceInfo.appearanceId
-            //   )
-            //   .then(
-            //     (Response) => Response.json(),
-            //     (err) => {
-            //       this.$bvToast.toast(
-            //         `Error - ${err.url} - ${err.status} - ${err.statusText}`,
-            //         {
-            //           title: 'An error has occured.',
-            //           variant: 'danger',
-            //           autoHideDelay: 10000,
-            //         }
-            //       );
-            //       console.log(err);
-            //     }
-            //   )
-            //   .then((data) => {
-            //     if (data) {
-            //       this.appearanceDetailsJson = data;
-            //       this.ExtractAppearanceDetailsInfo();
-            //       const element = document.getElementById(this.tagcasename);
-            //       if (element != null)
-            //         setTimeout(() => {
-            //           element.scrollIntoView();
-            //         }, 100);
-            //     } else {
-            //       window.alert('bad data!');
-            //     }
-            //     this.isMounted = true;
-            //   });
-          }
-        );
+      const getAppearanceDetails = () => {
+        httpService
+          .get<any>(
+            'api/files/civil/' +
+              civilFileStore.civilAppearanceInfo.fileNo +
+              '/appearance-detail/' +
+              civilFileStore.civilAppearanceInfo.appearanceId
+          )
+          .then(
+            (Response) => Response.json(),
+            (err) => {
+              // this.$bvToast.toast(
+              //   `Error - ${err.url} - ${err.status} - ${err.statusText}`,
+              //   {
+              //     title: 'An error has occured.',
+              //     variant: 'danger',
+              //     autoHideDelay: 10000,
+              //   }
+              // );
+              console.log(err);
+            }
+          )
+          .then((data) => {
+            if (data) {
+              appearanceDetailsJson.value = data;
+              ExtractAppearanceDetailsInfo();
+              const element = document.getElementById(props.tagcasename);
+              if (element != null)
+                setTimeout(() => {
+                  element.scrollIntoView();
+                }, 100);
+            } else {
+              window.alert('bad data!');
+            }
+            isMounted.value = true;
+          });
+      };
 
       const getAdditionalInfo = () => {
         additionalInfo.supplementalEquipment = civilAppearanceInfo.value

@@ -14,6 +14,7 @@
     <DocumentationFile>bin\$(Configuration)\net8.0\api.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="ColeSoft.Extensions.Logging.Splunk" Version="1.0.72" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
@@ -34,6 +35,7 @@
   <ItemGroup>
     <ProjectReference Include="..\db\db.csproj" />
     <ProjectReference Include="..\jc-interface-client\jc-interface-client.csproj" />
+    <ProjectReference Include="..\pcss-client\pcss-client.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\EF\" />

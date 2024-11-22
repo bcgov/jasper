@@ -16,9 +16,11 @@ WORKDIR /src
 COPY ["api/api.csproj", "api/"]
 COPY ["db/db.csproj", "db/"]
 COPY ["jc-interface-client/jc-interface-client.csproj", "jc-interface-client/"]
+COPY ["pcss-client/pcss-client.csproj", "pcss-client/"]
 RUN dotnet restore api/api.csproj
 RUN dotnet restore db/db.csproj
 RUN dotnet restore jc-interface-client/jc-interface-client.csproj
+RUN dotnet restore pcss-client/pcss-client.csproj
 COPY . .
 RUN dotnet build "api/api.csproj" -c Release
 # build

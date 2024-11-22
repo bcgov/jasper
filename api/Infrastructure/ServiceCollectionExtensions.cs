@@ -17,6 +17,9 @@ using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using Scv.Api.Infrastructure.Handler;
+using PCSSClient.Clients.JudicialCalendarsServices;
+using PCSSClient.Clients.CourtCalendarsServices;
+
 
 namespace Scv.Api.Infrastructure
 {
@@ -84,6 +87,10 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
+            services.AddSingleton<JudicialCalendarService>();
+
+            services.AddSingleton<JudicialCalendarsServicesClient>();
+            services.AddSingleton<CourtCalendarsServicesClient>();
 
             return services;
         }

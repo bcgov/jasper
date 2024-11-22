@@ -75,6 +75,7 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-..}/api/:/opt/app-root/src/api
       - ${LOCAL_WORKSPACE_FOLDER-..}/db/:/opt/app-root/src/db
       - ${LOCAL_WORKSPACE_FOLDER-..}/jc-interface-client/:/opt/app-root/src/jc-interface-client
+      - ${LOCAL_WORKSPACE_FOLDER-..}/pcss-client/:/opt/app-root/src/pcss-client
       - api-dev-bin:/opt/app-root/src/api/bin
       - api-dev-obj:/opt/app-root/src/api/obj
       - ${LOCAL_WORKSPACE_FOLDER-.}/seed:/opt/app-root/data

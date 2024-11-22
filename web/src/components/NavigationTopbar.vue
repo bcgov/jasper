@@ -24,7 +24,7 @@
       <div style="width: 80%;">
         <ul>
           <li>
-            <a class="nav-link" href="/Home">Dashboard</a>
+            <a class="nav-link" href="/Dashboard">Dashboard</a>
           </li>
           <li>
             <a class="nav-link">Court Calendar</a>

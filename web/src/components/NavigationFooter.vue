@@ -51,30 +51,29 @@
   </footer>
 </template>
 
-
 <script lang="ts">
-import { defineComponent } from "vue";
+  import { defineComponent } from 'vue';
 
   export default defineComponent({
-      data() {
-          return {
-              footerPosition: 'fixed-bottom'
-        };
+    data() {
+      return {
+        footerPosition: 'fixed-bottom',
+      };
+    },
+    created() {
+      window.addEventListener('resize', this.onResize);
+    },
+    destroyed() {
+      window.removeEventListener('resize', this.onResize);
+    },
+    methods: {
+      onResize() {
+        if (window.innerWidth > 1100) {
+          this.footerPosition = 'fixed-bottom';
+        } else {
+          this.footerPosition = 'flex-bottom';
+        }
       },
-      created() {
-          window.addEventListener("resize", this.onResize);
-      },
-      destroyed() {
-          window.removeEventListener("resize", this.onResize);
-      },
-      methods: {
-          onResize() {
-              if(window.innerWidth > 1100) { this.footerPosition ='fixed-bottom';}
-              else {this.footerPosition = 'flex-bottom';}
-          }
-    }
-})
-
+    },
+  });
 </script>
-
-

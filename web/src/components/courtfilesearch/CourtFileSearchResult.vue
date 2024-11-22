@@ -67,7 +67,7 @@
         </template>
         <template v-slot:cell(nextApprDt)="data">
           <span>
-            {{ data.item.nextApprDt | beautify_date }}
+            {{ beautifyDate(data.item.nextApprDt) }}
           </span>
         </template>
         <template v-slot:cell(action)="data">
@@ -134,7 +134,7 @@
           </template>
           <template v-slot:cell(nextApprDt)="data">
             <span>
-              {{ data.item.nextApprDt | beautify_date }}
+              {{ beautifyDate(data.item.nextApprDt) }}
             </span>
           </template>
           <template v-slot:cell(action)="data">
@@ -167,14 +167,15 @@
   </div>
 </template>
 <script lang="ts">
-  import { KeyValueInfo, LookupCode } from '@/types/common';
+  import { beautifyDate } from '@/filters';
+  import { KeyValueInfo } from '@/types/common';
   import { CourtClassEnum, FileDetail } from '@/types/courtFileSearch';
-  import { roomsInfoType } from '@/types/courtlist';
   import { defineComponent } from 'vue';
 
   export default defineComponent({
     data() {
       return {
+        beautifyDate,
         idSelector: '',
         allFields: [
           {

@@ -1,8 +1,11 @@
 <template>
   <div>
-    <b-card bg-variant="light" v-if="!isLocationDataMounted && !isLocationDataReady">
+    <b-card
+      bg-variant="light"
+      v-if="!isLocationDataMounted && !isLocationDataReady"
+    >
       <b-overlay :show="true">
-        <b-card style="min-height: 100px;" />
+        <b-card style="min-height: 100px" />
         <template v-slot:overlay>
           <div>
             <loading-spinner />
@@ -12,12 +15,18 @@
       </b-overlay>
     </b-card>
 
-    <b-card bg-variant="light" v-else-if="isLocationDataMounted && !isLocationDataReady">
-      <b-card style="min-height: 40px;">
+    <b-card
+      bg-variant="light"
+      v-else-if="isLocationDataMounted && !isLocationDataReady"
+    >
+      <b-card style="min-height: 40px">
         <span v-if="errorCode > 0">
-          <span v-if="errorCode == 403"> You are not authorized to access this page. </span>
+          <span v-if="errorCode == 403">
+            You are not authorized to access this page.
+          </span>
           <span v-else>
-            Server is not responding. <b>({{ errorText }} "{{ errorCode }}")</b></span
+            Server is not responding.
+            <b>({{ errorText }} "{{ errorCode }}")</b></span
           >
         </span>
         <span v-else> No Court Location Found. </span>
@@ -31,13 +40,13 @@
     </b-card>
 
     <b-card v-else>
-      <b-navbar type="white" variant="white" style="height:45px">
+      <b-navbar type="white" variant="white" style="height: 45px">
         <h2 class="ml-1 mt-2">Court List</h2>
         <b-navbar-nav class="ml-auto">
           <b-button
             size="sm"
             :disabled="!searchAllowed"
-            @click="this.BackToPreviouDay"
+            @click="BackToPreviousDay"
             variant="primary"
             class="my-2 my-sm-0"
           >
@@ -47,7 +56,7 @@
           <b-button
             size="sm"
             :disabled="!searchAllowed"
-            @click="this.JumpToNextDay"
+            @click="JumpToNextDay"
             variant="primary"
             class="ml-2 my-2 my-sm-0"
           >
@@ -60,21 +69,25 @@
       <b-row class="mt-2 ml-2">
         <b-col md="4">
           <b-form-group>
-            <label for="locationSelect">Location<span class="text-danger">*</span></label>
+            <label for="locationSelect"
+              >Location<span class="text-danger">*</span></label
+            >
             <b-form-select
               v-model="selectedCourtLocation"
               id="locationSelect"
               :disabled="!searchAllowed"
               :state="selectedCourtLocationState ? null : false"
-              @change="this.LocationChanged"
+              @change="LocationChanged"
               :options="courtRoomsAndLocations"
-              style="height:39px"
+              style="height: 39px"
             >
             </b-form-select>
           </b-form-group>
         </b-col>
         <b-col md="3">
-          <label for="datepicker">Date<span class="text-danger">*</span> (YYYY-MM-DD)</label>
+          <label for="datepicker"
+            >Date<span class="text-danger">*</span> (YYYY-MM-DD)</label
+          >
 
           <b-input-group class="mb-3">
             <b-form-input
@@ -93,23 +106,25 @@
                 :disabled="!searchAllowed"
                 right
                 locale="en-US"
-                @context="this.onCalenderContext"
+                @context="onCalenderContext"
               ></b-form-datepicker>
             </b-input-group-append>
           </b-input-group>
         </b-col>
         <b-col md="2">
           <b-form-group class="mr-3">
-            <label for="roomSelect">Room<span class="text-danger">*</span></label>
+            <label for="roomSelect"
+              >Room<span class="text-danger">*</span></label
+            >
             <b-form-select
               v-if="syncFlag"
               v-model="selectedCourtRoom"
               id="roomSelect"
               :disabled="!searchAllowed"
-              @change="this.RoomChanged"
+              @change="RoomChanged"
               :options="selectedCourtLocation.Rooms"
               :state="selectedCourtRoomState ? null : false"
-              style="height:39px"
+              style="height: 39px"
             >
             </b-form-select>
           </b-form-group>
@@ -118,7 +133,12 @@
 
       <b-row class="ml-2 mt-2">
         <b-col md="4">
-          <b-button @click="this.searchForCourtList" :disabled="!searchAllowed" variant="primary" class="mb-2">
+          <b-button
+            @click="searchForCourtList"
+            :disabled="!searchAllowed"
+            variant="primary"
+            class="mb-2"
+          >
             <b-icon icon="search"></b-icon>
             Search
           </b-button>
@@ -127,29 +147,35 @@
 
       <b-card bg-variant="light" v-if="searchingRequest">
         <b-card class="mb-2">
-          <b-navbar type="white" variant="white" style="height:40px;">
+          <b-navbar type="white" variant="white" style="height: 40px">
             <b-navbar-nav>
               <b-nav-text class="text-primary mt-3">
                 <h2>{{ fullSelectedDate }}</h2>
               </b-nav-text>
 
-              <b-nav-text class="text-muted ml-4" style="padding-top:28px">
+              <b-nav-text class="text-muted ml-4" style="padding-top: 28px">
                 <h4>{{ courtListLocation }}</h4>
               </b-nav-text>
-              <b-nav-text class="text-muted ml-1" style="padding-top:29px">
+              <b-nav-text class="text-muted ml-1" style="padding-top: 29px">
                 <h5>({{ courtListLocationID }})</h5>
               </b-nav-text>
 
-              <b-nav-text class=" ml-4" style="padding-top:25px">
+              <b-nav-text class="ml-4" style="padding-top: 25px">
                 <h3>CourtRoom: {{ courtListRoom }}</h3>
               </b-nav-text>
             </b-navbar-nav>
             <b-navbar-nav class="ml-auto">
-              <b-nav-text class=" mr-1" style="font-size:12px; line-height: 1.4;">
+              <b-nav-text
+                class="mr-1"
+                style="font-size: 12px; line-height: 1.4"
+              >
                 <b-row class="text-primary">
                   Total Cases (<b>{{ totalCases }}</b
                   >)
-                  <span style="transform: translate(0,-1px);" class="border text-muted ml-3">
+                  <span
+                    style="transform: translate(0, -1px)"
+                    class="border text-muted ml-3"
+                  >
                     <b> {{ totalTime }}</b> {{ totalTimeUnit }}
                   </span>
                 </b-row>
@@ -172,7 +198,7 @@
 
         <b-card bg-variant="light" v-if="!isMounted && !isDataReady">
           <b-overlay :show="true">
-            <b-card style="min-height: 100px;" />
+            <b-card style="min-height: 100px" />
             <template v-slot:overlay>
               <div>
                 <loading-spinner />
@@ -183,9 +209,10 @@
         </b-card>
 
         <b-card class="mt-1" v-if="isMounted && !isDataReady">
-          <b-card class="ml-3" style="min-height: 40px;">
+          <b-card class="ml-3" style="min-height: 40px">
             <span v-if="errorCode > 0">
-              Server is not responding. <b>({{ errorText }} "{{ errorCode }}")</b>
+              Server is not responding.
+              <b>({{ errorText }} "{{ errorCode }}")</b>
             </span>
             <span v-else> No appearances. </span>
           </b-card>
@@ -210,366 +237,413 @@
 </template>
 
 <script lang="ts">
-  import { useCommonStore, useCourtListStore } from '@/stores';
-  import { defineComponent, onMounted, nextTick, inject, ref } from 'vue';
-  import { CourtRoomsJsonInfoType } from "@/types/common";
   import { HttpService } from '@/services/HttpService';
-  import * as _ from "underscore";
+  import { useCommonStore, useCourtListStore } from '@/stores';
+  import { CourtRoomsJsonInfoType } from '@/types/common';
+  import * as _ from 'underscore';
+  import { defineComponent, inject, nextTick, onMounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
 
   import {
-    courtListInformationInfoType,
-    roomsInfoType,
     courtRoomsAndLocationsInfoType,
     locationInfoType,
-  } from "@/types/courtlist";
+    roomsInfoType,
+  } from '@/types/courtlist';
+  import { getSingleValue } from '@/utils/utils';
 
   export default defineComponent({
-  setup () {
-    const commonStore = useCommonStore();
-    const courtListStore = useCourtListStore();
-    // State variables
-    const errorCode = ref(0);
-    const errorText = ref('');
-    const isDataReady = ref(false);
-    const isMounted = ref(false);
-    const searchingRequest = ref(false);
-    const isLocationDataReady = ref(false);
-    const isLocationDataMounted = ref(false);
-    const searchAllowed = ref(true);
-    const syncFlag = ref(true);
-    const totalCases = ref(0);
-    const criminalCases = ref(0);
-    const familyCases = ref(0);
-    const civilCases = ref(0);
-    const totalHours = ref(0);
-    const totalMins = ref(0);
-    const totalTime = ref('');
-    const totalTimeUnit = ref('Hours');
-    const courtRoomsAndLocationsJson = ref<CourtRoomsJsonInfoType[]>([]);
-    const courtRoomsAndLocations = ref<courtRoomsAndLocationsInfoType[]>([]);
-    const selectedDate = ref(new Date().toISOString().substring(0, 10));
-    const validSelectedDate = ref(selectedDate.value);
-    const fullSelectedDate = ref('');
-    const selectedDateState = ref(true);
-    const selectedCourtRoom = ref(null);
-    const selectedCourtRoomState = ref(true);
-    let selectedCourtLocation = {} as locationInfoType;
-    const selectedCourtLocationState = ref(true);
-    const courtListLocation = ref('Vancouver');
-    const courtListLocationID = ref('4801');
-    const courtListRoom = ref('005');
-    const httpService = inject<HttpService>('httpService');
-    const router = useRouter();
-    const route = useRoute();
+    setup() {
+      const commonStore = useCommonStore();
+      const courtListStore = useCourtListStore();
+      // State variables
+      const errorCode = ref(0);
+      const errorText = ref('');
+      const isDataReady = ref(false);
+      const isMounted = ref(false);
+      const searchingRequest = ref(false);
+      const isLocationDataReady = ref(false);
+      const isLocationDataMounted = ref(false);
+      const searchAllowed = ref(true);
+      const syncFlag = ref(true);
+      const totalCases = ref(0);
+      const criminalCases = ref(0);
+      const familyCases = ref(0);
+      const civilCases = ref(0);
+      const totalHours = ref(0);
+      const totalMins = ref(0);
+      const totalTime = ref('');
+      const totalTimeUnit = ref('Hours');
+      const courtRoomsAndLocationsJson = ref<CourtRoomsJsonInfoType[]>([]);
+      const courtRoomsAndLocations = ref<courtRoomsAndLocationsInfoType[]>([]);
+      const selectedDate = ref(new Date().toISOString().substring(0, 10));
+      const validSelectedDate = ref(selectedDate.value);
+      const fullSelectedDate = ref('');
+      const selectedDateState = ref(true);
+      const selectedCourtRoom = ref('');
+      const selectedCourtRoomState = ref(true);
+      let selectedCourtLocation = {} as locationInfoType;
+      const selectedCourtLocationState = ref(true);
+      const courtListLocation = ref('Vancouver');
+      const courtListLocationID = ref('4801');
+      const courtListRoom = ref('005');
+      const httpService = inject<HttpService>('httpService');
+      const router = useRouter();
+      const route = useRoute();
 
-   // Fetch data on mount
-   onMounted(() => {
-      getListOfAvailableCourts();
-    });
-
-  const getListOfAvailableCourts = () => {
-      errorCode.value = 0;
-      fetch(
-        'api/location/court-rooms'
-      )
-        .then(
-          (Response) => Response.json(),
-          (err) => {
-            // this.$bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
-            //   title: "An error has occured.",
-            //   variant: "danger",
-            //   autoHideDelay: 10000,
-            // });
-            errorCode.value = err.status;
-            errorText.value = err.statusText;
-            console.log(err);
-          }
-        )
-        .then((data) => {
-          if (data) {
-            courtRoomsAndLocationsJson.value = data;
-            commonStore.updateCourtRoomsAndLocations(data);
-            ExtractCourtRoomsAndLocationsInfo();
-            if (courtRoomsAndLocations.value.length > 0) {
-              isLocationDataReady.value = true;
-              searchByRouterParams();
-            }
-          }
-          isLocationDataMounted.value = true;
-        })
-    }
-
-
-  const getCourtListDetails = () => {
-    isDataReady.value = false;
-    isMounted.value = false;
-    searchingRequest.value = true;
-    totalCases.value = 0;
-    criminalCases.value = 0;
-    familyCases.value = 0;
-    civilCases.value = 0;
-    totalHours.value = 0;
-    totalMins.value = 0;
-    totalTime.value = "0";
-    totalTimeUnit.value = "Hours";
-    errorCode.value = 0;
-
-    fetch(
-        "api/courtlist/court-list?agencyId=" +
-          courtListLocationID.value +
-          "&roomCode=" +
-          courtListRoom.value +
-          "&proceeding=" +
-          validSelectedDate.value
-      )
-      .then(
-        (Response) => Response.json(),
-        // (err) => {
-        //   this.$bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
-        //     title: "An error has occured.",
-        //     variant: "danger",
-        //     autoHideDelay: 10000,
-        //   });
-        //   errorCode.value = err.status;
-        //   errorText.value = err.statusText;
-        //   console.log(err);
-        // }
-      )
-      .then((data) => {
-        if (data) {
-          courtListStore.courtListInformation = data;
-          totalCases.value = data.civilCourtList.length + data.criminalCourtList.length;
-          criminalCases.value = data.criminalCourtList.length;
-          for (const civil of data.civilCourtList) {
-            if (civil.activityClassCd == "F" || civil.activityClassCd == "E") familyCases.value++;
-            else civilCases.value++;
-            setTotalTimeForRoom(civil.estimatedTimeHour, civil.estimatedTimeMin);
-          }
-
-          for (const criminal of data.criminalCourtList) {
-            setTotalTimeForRoom(criminal.estimatedTimeHour, criminal.estimatedTimeMin);
-          }
-
-          courtListStore.updateCourtList(courtListStore.courtListInformation);
-
-          if (data.civilCourtList.length > 0 || data.criminalCourtList.length > 0) {
-            isDataReady.value = true;
-          }
-
-          if (totalMins.value > 0 && totalHours.value > 0) {
-            totalTime.value = (totalHours.value + totalMins.value / 60).toFixed(1);
-            totalTimeUnit.value = "Hours";
-          } else if (totalMins.value > 0 && totalHours.value == 0) {
-            totalTime.value = totalMins.value.toString();
-            totalTimeUnit.value = "Mins";
-          } else {
-            totalTime.value = totalHours.value.toString();
-            totalTimeUnit.value = "Hours";
-          }
-        }
-        isMounted.value = true;
-        searchAllowed.value = true;
-      });
-  }
-
-  const ExtractCourtRoomsAndLocationsInfo = () => {
-    for (const jroomAndLocation of courtRoomsAndLocationsJson.value) {
-      if (jroomAndLocation.courtRooms.length > 0) {
-        const roomAndLocationInfo = {} as courtRoomsAndLocationsInfoType;
-        roomAndLocationInfo["text"] = jroomAndLocation.name + " (" + jroomAndLocation.locationId + ")";
-
-        const rooms: roomsInfoType[] = [];
-        for (const jroom of jroomAndLocation.courtRooms) {
-          const roomInfo = {} as roomsInfoType;
-          roomInfo["value"] = jroom.room;
-          roomInfo["text"] = jroom.room;
-          rooms.push(roomInfo);
-        }
-        roomAndLocationInfo.value = {} as locationInfoType;
-        roomAndLocationInfo.value["Location"] = jroomAndLocation.name;
-        roomAndLocationInfo.value["LocationID"] = jroomAndLocation.locationId;
-        roomAndLocationInfo.value["Rooms"] = rooms;
-
-        courtRoomsAndLocations.value.push(roomAndLocationInfo);
+      if (!httpService) {
+        throw new Error('Service is undefined.');
       }
-    }
-    courtRoomsAndLocations.value = _.sortBy(courtRoomsAndLocations.value, "text");
-    selectedCourtLocation = courtRoomsAndLocations.value[0].value;
-  }
 
-  const getCourtNameById = (locationId) => {
-    return courtRoomsAndLocations.value.filter((location) => {
-      return location.value["LocationID"] == locationId;
-    });
-  }
+      // Fetch data on mount
+      onMounted(() => {
+        getListOfAvailableCourts();
+      });
 
-  const getRoomInLocationByRoomNo = (location, roomNo) => {
-    return location.value["Rooms"].filter((room) => {
-      return room.value == roomNo;
-    });
-  }
+      const getListOfAvailableCourts = () => {
+        errorCode.value = 0;
+        httpService
+          .get<any>('api/location/court-rooms')
+          .then(
+            (Response) => Response.json(),
+            (err) => {
+              // $bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
+              //   title: "An error has occured.",
+              //   variant: "danger",
+              //   autoHideDelay: 10000,
+              // });
+              errorCode.value = err.status;
+              errorText.value = err.statusText;
+              console.log(err);
+            }
+          )
+          .then((data) => {
+            if (data) {
+              courtRoomsAndLocationsJson.value = data;
+              commonStore.updateCourtRoomsAndLocations(data);
+              ExtractCourtRoomsAndLocationsInfo();
+              if (courtRoomsAndLocations.value.length > 0) {
+                isLocationDataReady.value = true;
+                searchByRouterParams();
+              }
+            }
+            isLocationDataMounted.value = true;
+          });
+      };
 
-  const searchByRouterParams = () => {
-    if (route.params.location && route.params.room && route.params.date) {
-      const location = getCourtNameById(route.params.location)[0];
-      if (location) {
-        selectedCourtLocation = location.value;
-        selectedCourtLocationState.value = true;
-        selectedDate.value[0].value = route.params.date;
-        const room = true; //this.getRoomInLocationByRoomNo(location, route.params.room)[0];
-        if (room) {
-          selectedCourtRoom.value = route.params.room;
-          selectedCourtRoomState.value = true;
+      const getCourtListDetails = () => {
+        isDataReady.value = false;
+        isMounted.value = false;
+        searchingRequest.value = true;
+        totalCases.value = 0;
+        criminalCases.value = 0;
+        familyCases.value = 0;
+        civilCases.value = 0;
+        totalHours.value = 0;
+        totalMins.value = 0;
+        totalTime.value = '0';
+        totalTimeUnit.value = 'Hours';
+        errorCode.value = 0;
+
+        fetch(
+          'api/courtlist/court-list?agencyId=' +
+            courtListLocationID.value +
+            '&roomCode=' +
+            courtListRoom.value +
+            '&proceeding=' +
+            validSelectedDate.value
+        )
+          .then(
+            (Response) => Response.json()
+            // (err) => {
+            //   $bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
+            //     title: "An error has occured.",
+            //     variant: "danger",
+            //     autoHideDelay: 10000,
+            //   });
+            //   errorCode.value = err.status;
+            //   errorText.value = err.statusText;
+            //   console.log(err);
+            // }
+          )
+          .then((data) => {
+            if (data) {
+              courtListStore.courtListInformation = data;
+              totalCases.value =
+                data.civilCourtList.length + data.criminalCourtList.length;
+              criminalCases.value = data.criminalCourtList.length;
+              for (const civil of data.civilCourtList) {
+                if (
+                  civil.activityClassCd == 'F' ||
+                  civil.activityClassCd == 'E'
+                )
+                  familyCases.value++;
+                else civilCases.value++;
+                setTotalTimeForRoom(
+                  civil.estimatedTimeHour,
+                  civil.estimatedTimeMin
+                );
+              }
+
+              for (const criminal of data.criminalCourtList) {
+                setTotalTimeForRoom(
+                  criminal.estimatedTimeHour,
+                  criminal.estimatedTimeMin
+                );
+              }
+
+              courtListStore.updateCourtList(
+                courtListStore.courtListInformation
+              );
+
+              if (
+                data.civilCourtList.length > 0 ||
+                data.criminalCourtList.length > 0
+              ) {
+                isDataReady.value = true;
+              }
+
+              if (totalMins.value > 0 && totalHours.value > 0) {
+                totalTime.value = (
+                  totalHours.value +
+                  totalMins.value / 60
+                ).toFixed(1);
+                totalTimeUnit.value = 'Hours';
+              } else if (totalMins.value > 0 && totalHours.value == 0) {
+                totalTime.value = totalMins.value.toString();
+                totalTimeUnit.value = 'Mins';
+              } else {
+                totalTime.value = totalHours.value.toString();
+                totalTimeUnit.value = 'Hours';
+              }
+            }
+            isMounted.value = true;
+            searchAllowed.value = true;
+          });
+      };
+
+      const ExtractCourtRoomsAndLocationsInfo = () => {
+        for (const jroomAndLocation of courtRoomsAndLocationsJson.value) {
+          if (jroomAndLocation.courtRooms.length > 0) {
+            const roomAndLocationInfo = {} as courtRoomsAndLocationsInfoType;
+            roomAndLocationInfo['text'] =
+              jroomAndLocation.name + ' (' + jroomAndLocation.locationId + ')';
+
+            const rooms: roomsInfoType[] = [];
+            for (const jroom of jroomAndLocation.courtRooms) {
+              const roomInfo = {} as roomsInfoType;
+              roomInfo['value'] = jroom.room;
+              roomInfo['text'] = jroom.room;
+              rooms.push(roomInfo);
+            }
+            roomAndLocationInfo.value = {} as locationInfoType;
+            roomAndLocationInfo.value['Location'] = jroomAndLocation.name;
+            roomAndLocationInfo.value['LocationID'] =
+              jroomAndLocation.locationId;
+            roomAndLocationInfo.value['Rooms'] = rooms;
+
+            courtRoomsAndLocations.value.push(roomAndLocationInfo);
+          }
+        }
+        courtRoomsAndLocations.value = _.sortBy(
+          courtRoomsAndLocations.value,
+          'text'
+        );
+        selectedCourtLocation = courtRoomsAndLocations.value[0].value;
+      };
+
+      const getCourtNameById = (locationId) => {
+        return courtRoomsAndLocations.value.filter((location) => {
+          return location.value['LocationID'] == locationId;
+        });
+      };
+
+      const getRoomInLocationByRoomNo = (location, roomNo) => {
+        return location.value['Rooms'].filter((room) => {
+          return room.value == roomNo;
+        });
+      };
+
+      const searchByRouterParams = () => {
+        if (route.params.location && route.params.room && route.params.date) {
+          const location = getCourtNameById(route.params.location)[0];
+          if (location) {
+            selectedCourtLocation = location.value;
+            selectedCourtLocationState.value = true;
+            selectedDate.value = getSingleValue(route.params.date);
+            const room = true; //getRoomInLocationByRoomNo(location, route.params.room)[0];
+            if (room) {
+              selectedCourtRoom.value = getSingleValue(route.params.room);
+              selectedCourtRoomState.value = true;
+              nextTick().then(() => {
+                searchForCourtList();
+              });
+            } else {
+              selectedCourtRoom.value = 'null';
+              selectedCourtRoomState.value = false;
+              searchAllowed.value = true;
+            }
+          } else {
+            selectedCourtLocation = courtRoomsAndLocations.value[0].value;
+            selectedCourtLocationState.value = false;
+            searchAllowed.value = true;
+          }
+        }
+      };
+
+      const onCalenderContext = (datePicked) => {
+        searchingRequest.value = false;
+        if (datePicked.selectedYMD) {
+          validSelectedDate.value = datePicked.selectedYMD;
+          fullSelectedDate.value = datePicked.selectedFormatted;
+        }
+      };
+
+      const BackToPreviousDay = () => {
+        if (!checkDateInValid()) {
+          searchAllowed.value = false;
+          const olddate = seperateIsoDate(selectedDate.value);
+          const date = new Date(
+            olddate.year,
+            olddate.month - 1,
+            olddate.day,
+            0,
+            0,
+            0,
+            0
+          );
+          date.setDate(date.getDate() - 1);
+          selectedDate.value = date.toISOString().substring(0, 10);
           nextTick().then(() => {
             searchForCourtList();
           });
-        } else {
-          selectedCourtRoom.value = "null";
-          selectedCourtRoomState.value = false;
-          searchAllowed.value = true;
         }
-      } else {
-        selectedCourtLocation = courtRoomsAndLocations.value[0].value;
-        selectedCourtLocationState.value = false;
-        searchAllowed.value = true;
-      }
-    }
-  }
+      };
 
-  const onCalenderContext = (datePicked) => {
-    searchingRequest.value = false;
-    if (datePicked.selectedYMD) {
-      validSelectedDate.value = datePicked.selectedYMD;
-      fullSelectedDate.value = datePicked.selectedFormatted;
-    }
-  }
-
-  const BackToPreviouDay = () => {
-    if (!checkDateInValid()) {
-      searchAllowed.value = false;
-      const olddate = seperateIsoDate(selectedDate.value);
-      const date = new Date(olddate.year, olddate.month - 1, olddate.day, 0, 0, 0, 0);
-      date.setDate(date.getDate() - 1);
-      selectedDate.value = date.toISOString().substring(0, 10);
-      nextTick().then(() => {
-        searchForCourtList();
-      });
-    }
-  }
-
-  const JumpToNextDay = () => {
-    if (!checkDateInValid()) {
-      searchAllowed.value = false;
-      const olddate = seperateIsoDate(selectedDate.value);
-      const date = new Date(olddate.year, olddate.month - 1, olddate.day, 0, 0, 0, 0);
-      date.setDate(date.getDate() + 1);
-      selectedDate.value = date.toISOString().substring(0, 10);
-      nextTick().then(() => {
-        searchForCourtList();
-      });
-    }
-  }
-
-  const checkDateInValid = () => {
-    if (isValidDate(selectedDate.value)) {
-      selectedDateState.value = true;
-      return false;
-    } else {
-      selectedDateState.value = false;
-      return true;
-    }
-  }
-
-  const isValidDate = (dateString) => {
-    if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateString)) return false;
-
-    const seperatedDate = seperateIsoDate(dateString);
-    const day = seperatedDate.day;
-    const month = seperatedDate.month;
-    const year = seperatedDate.year;
-
-    if (year < 1800 || year > 3000 || month == 0 || month > 12) return false;
-
-    const monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-    // Adjust for leap years
-    if (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0)) monthLength[1] = 29;
-
-    return day > 0 && day <= monthLength[month - 1];
-  }
-
-  const seperateIsoDate = (dateString) => {
-    const seperatedDate = { day: 0, month: 0, year: 0 };
-    const parts = dateString.split("-");
-    seperatedDate.day = parseInt(parts[2], 10);
-    seperatedDate.month = parseInt(parts[1], 10);
-    seperatedDate.year = parseInt(parts[0], 10);
-    return seperatedDate;
-  }
-
-  const searchForCourtList = () => {
-    if (!selectedCourtLocation.Location) {
-      selectedCourtLocationState.value = false;
-      searchAllowed.value = true;
-    } else {
-      if (checkDateInValid()) {
-        searchAllowed.value = true;
-      } else {
-        courtListLocation.value = selectedCourtLocation.Location;
-        courtListLocationID.value = selectedCourtLocation.LocationID;
-
-        if (selectedCourtRoom.value == "null" || selectedCourtRoom.value == undefined) {
-          selectedCourtRoomState.value = false;
-          searchAllowed.value = true;
-        } else {
-          courtListRoom.value = selectedCourtRoom.value;
-
-          if (
-            route.params.location != courtListLocationID.value ||
-            route.params.room != courtListRoom.value ||
-            route.params.date != validSelectedDate.value
-          ) {
-            route.params.location = courtListLocationID.value;
-            route.params.room = courtListRoom.value;
-            route.params.date = validSelectedDate.value;
-            router.push({ name: "CourtListResult" });
-          }
+      const JumpToNextDay = () => {
+        if (!checkDateInValid()) {
           searchAllowed.value = false;
-          setTimeout(() => {
-            getCourtListDetails();
-          }, 50);
+          const olddate = seperateIsoDate(selectedDate.value);
+          const date = new Date(
+            olddate.year,
+            olddate.month - 1,
+            olddate.day,
+            0,
+            0,
+            0,
+            0
+          );
+          date.setDate(date.getDate() + 1);
+          selectedDate.value = date.toISOString().substring(0, 10);
+          nextTick().then(() => {
+            searchForCourtList();
+          });
         }
-      }
-    }
-  }
+      };
 
-  const LocationChanged = () => {
-    searchingRequest.value = false;
-    selectedCourtRoom.value = "null";
-    selectedCourtLocationState.value = true;
-    syncFlag.value = false;
-    syncFlag.value = true;
-  }
+      const checkDateInValid = () => {
+        if (isValidDate(selectedDate.value)) {
+          selectedDateState.value = true;
+          return false;
+        } else {
+          selectedDateState.value = false;
+          return true;
+        }
+      };
 
-  const RoomChanged = () => {
-    searchingRequest.value = false;
-    selectedCourtRoomState.value = true;
-  }
+      const isValidDate = (dateString) => {
+        if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateString)) return false;
 
-  const setTotalTimeForRoom = (hrs, mins) => {
-    if (!mins) mins = "0";
-    if (!hrs) hrs = "0";
-    totalMins.value += parseInt(mins);
-    totalHours.value += Math.floor(totalMins.value / 60) + parseInt(hrs);
-    totalMins.value %= 60;
-  }
+        const seperatedDate = seperateIsoDate(dateString);
+        const day = seperatedDate.day;
+        const month = seperatedDate.month;
+        const year = seperatedDate.year;
 
-  const navigateToLandingPage = () => {
-    router.push({ name: "Home" });
-  }
+        if (year < 1800 || year > 3000 || month == 0 || month > 12)
+          return false;
 
-  // Return the reactive variables to the template
+        const monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        // Adjust for leap years
+        if (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
+          monthLength[1] = 29;
+
+        return day > 0 && day <= monthLength[month - 1];
+      };
+
+      const seperateIsoDate = (dateString) => {
+        const seperatedDate = { day: 0, month: 0, year: 0 };
+        const parts = dateString.split('-');
+        seperatedDate.day = parseInt(parts[2], 10);
+        seperatedDate.month = parseInt(parts[1], 10);
+        seperatedDate.year = parseInt(parts[0], 10);
+        return seperatedDate;
+      };
+
+      const searchForCourtList = () => {
+        if (!selectedCourtLocation.Location) {
+          selectedCourtLocationState.value = false;
+          searchAllowed.value = true;
+        } else {
+          if (checkDateInValid()) {
+            searchAllowed.value = true;
+          } else {
+            courtListLocation.value = selectedCourtLocation.Location;
+            courtListLocationID.value = selectedCourtLocation.LocationID;
+
+            if (
+              selectedCourtRoom.value == 'null' ||
+              selectedCourtRoom.value == undefined
+            ) {
+              selectedCourtRoomState.value = false;
+              searchAllowed.value = true;
+            } else {
+              courtListRoom.value = selectedCourtRoom.value;
+
+              if (
+                route.params.location != courtListLocationID.value ||
+                route.params.room != courtListRoom.value ||
+                route.params.date != validSelectedDate.value
+              ) {
+                route.params.location = courtListLocationID.value;
+                route.params.room = courtListRoom.value;
+                route.params.date = validSelectedDate.value;
+                router.push({ name: 'CourtListResult' });
+              }
+              searchAllowed.value = false;
+              setTimeout(() => {
+                getCourtListDetails();
+              }, 50);
+            }
+          }
+        }
+      };
+
+      const LocationChanged = () => {
+        searchingRequest.value = false;
+        selectedCourtRoom.value = 'null';
+        selectedCourtLocationState.value = true;
+        syncFlag.value = false;
+        syncFlag.value = true;
+      };
+
+      const RoomChanged = () => {
+        searchingRequest.value = false;
+        selectedCourtRoomState.value = true;
+      };
+
+      const setTotalTimeForRoom = (hrs, mins) => {
+        if (!mins) mins = '0';
+        if (!hrs) hrs = '0';
+        totalMins.value += parseInt(mins);
+        totalHours.value += Math.floor(totalMins.value / 60) + parseInt(hrs);
+        totalMins.value %= 60;
+      };
+
+      const navigateToLandingPage = () => {
+        router.push({ name: 'Home' });
+      };
+
+      // Return the reactive variables to the template
       return {
         errorCode,
         errorText,
@@ -601,13 +675,20 @@
         courtListLocation,
         courtListLocationID,
         courtListRoom,
+        BackToPreviousDay,
+        onCalenderContext,
+        JumpToNextDay,
+        LocationChanged,
+        RoomChanged,
+        navigateToLandingPage,
+        getRoomInLocationByRoomNo,
       };
     },
   });
 </script>
 
 <style scoped>
-.card {
-  border: white;
-}
+  .card {
+    border: white;
+  }
 </style>

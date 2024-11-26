@@ -43,11 +43,6 @@ export const useCommonStore = defineStore('CommonStore', {
         newDisplayName = inputNames.givenName;
       } else if (inputNames.givenName.length == 0) {
         newDisplayName = inputNames.lastName;
-      } else if (
-        inputNames.givenName.length == 0 &&
-        inputNames.lastName.length == 0
-      ) {
-        newDisplayName = '';
       } else {
         newDisplayName =
           inputNames.lastName.charAt(0).toUpperCase() +

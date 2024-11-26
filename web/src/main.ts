@@ -40,7 +40,7 @@ app.use(BootstrapVue);
 app.use(BootstrapVueIcons);
 
 // Setup services
-const httpService = new HttpService(process.env.API_URL);
+const httpService = new HttpService(process.env.API_URL!);
 const lookupService = new LookupService(httpService);
 const locationService = new LocationService(httpService);
 const filesService = new FilesService(httpService);

@@ -130,6 +130,7 @@
 </template>
 
 <script lang="ts">
+  import { HttpService } from '@/services/HttpService';
   import { useCivilFileStore, useCriminalFileStore } from '@/stores';
   import {
     civilFileInformationType,
@@ -145,9 +146,10 @@
     fileSearchCriminalInfoType,
   } from '@/types/criminal';
   import * as _ from 'underscore';
-  import { defineComponent } from 'vue';
+  import { defineComponent, inject } from 'vue';
 
   export default defineComponent({
+    name: 'HomeView',
     data() {
       const fileSearchCriminalInfo: fileSearchCriminalInfoType[] = [];
       const fileSearchCivilInfo: fileSearchCivilInfoType[] = [];
@@ -227,23 +229,28 @@
         }
       },
       getListOfAvailableCourts(): void {
+        const httpService = inject<HttpService>('httpService');
+        if (!httpService) {
+          throw new Error('Service is undefined');
+        }
+
         this.errorCode = 0;
-        this.$http
-          .get('api/location/court-rooms')
+        httpService
+          .get<any>('api/location/court-rooms')
           .then(
             (Response) => Response.json(),
             (err) => {
               this.errorCode = err.status;
               this.errorText = err.statusText;
               if (this.errorCode != 401) {
-                this.$bvToast.toast(
-                  `Error - ${this.errorCode} - ${this.errorText}`,
-                  {
-                    title: 'An error has occured.',
-                    variant: 'danger',
-                    autoHideDelay: 10000,
-                  }
-                );
+                // this.$bvToast.toast(
+                //   `Error - ${this.errorCode} - ${this.errorText}`,
+                //   {
+                //     title: 'An error has occured.',
+                //     variant: 'danger',
+                //     autoHideDelay: 10000,
+                //   }
+                // );
               }
               console.log(this.errorCode);
             }
@@ -286,17 +293,13 @@
       navigateToCourtList(): void {
         this.$router.push({ name: 'CourtList' });
       },
-      UpdateCivilFile(
-        newCivilFileInformation: civilFileInformationType
-      ): Promise<void> {
-        return this.civilFileStore.updateCivilFile(newCivilFileInformation);
+      UpdateCivilFile(newCivilFileInformation: civilFileInformationType): void {
+        this.civilFileStore.updateCivilFile(newCivilFileInformation);
       },
       UpdateCriminalFile(
         newCriminalFileInformation: criminalFileInformationType
-      ): Promise<void> {
-        return this.criminalFileStore.updateCriminalFile(
-          newCriminalFileInformation
-        );
+      ): void {
+        this.criminalFileStore.updateCriminalFile(newCriminalFileInformation);
       },
     },
   });

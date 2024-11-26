@@ -6,8 +6,8 @@ export const useCourtFileSearchStore = defineStore('CourtFileSearchStore', {
   state: () => ({
     filesForViewing: [] as KeyValueInfo[],
     currentViewedFileId: '',
-    searchCriteria: undefined as CourtFileSearchCriteria | undefined,
-    searchResults: undefined as FileDetail[] | undefined,
+    searchCriteria: {} as CourtFileSearchCriteria,
+    searchResults: {} as FileDetail[],
   }),
   getters: {
     selectedFiles: (state) => state.filesForViewing,
@@ -27,8 +27,8 @@ export const useCourtFileSearchStore = defineStore('CourtFileSearchStore', {
     },
     clearSelectedFiles(): void {
       this.filesForViewing.length = 0;
-      this.searchCriteria = undefined;
-      this.searchResults = undefined;
+      this.searchCriteria = {} as CourtFileSearchCriteria;
+      this.searchResults = [];
       this.currentViewedFileId = '';
     },
     removeCurrentViewedFileId(fileId: string): void {

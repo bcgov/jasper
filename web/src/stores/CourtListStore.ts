@@ -1,8 +1,9 @@
+import { courtListInformationInfoType } from '@/types/courtlist';
 import { defineStore } from 'pinia';
 
 export const useCourtListStore = defineStore('CourtListStore', {
   state: () => ({
-    courtListInformation: {},
+    courtListInformation: {} as courtListInformationInfoType,
   }),
 
   actions: {

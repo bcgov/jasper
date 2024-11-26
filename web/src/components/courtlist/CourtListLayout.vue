@@ -13,7 +13,7 @@
     </b-card>
 
     <b-card bg-variant="white" v-if="isDataReady" no-body class="mx-3" style="overflow:auto">
-      <b-table :items="SortedCourtList" :fields="fields" borderless small responsive="sm">
+      <b-table :items="this.SortedCourtList" :fields="fields" borderless small responsive="sm">
         <template v-slot:head()="data">
           <b> {{ data.label }}</b>
         </template>
@@ -31,7 +31,7 @@
             :id="data.item.listClass + 'case-' + data.item.tag"
             :href="'#' + data.item.listClass + 'case-' + data.item.tag"
             @click="
-              data.item.listClass == 'criminal' ? OpenCriminalDetails(data) : OpenCivilDetails(data);
+              data.item.listClass == 'criminal' ? this.OpenCriminalDetails(data) : this.OpenCivilDetails(data);
               data.toggleDetails();
             "
             :variant="'outline-primary border-white text-' + data.item.listClass"
@@ -74,7 +74,7 @@
             v-if="data.item.listClass == 'criminal'"
             :style="data.field.cellStyle"
             size="sm"
-            @click="OpenCriminalFilePage(data)"
+            @click="this.OpenCriminalFilePage(data)"
             v-b-tooltip.hover.right
             :title="data.item['accusedTruncApplied'] ? data.item['accusedDesc'] : null"
             variant="outline-primary border-white text-criminal"
@@ -89,7 +89,7 @@
             v-if="data.item.listClass != 'criminal' && data.value.length > 0"
             :style="data.field.cellStyle"
             size="sm"
-            @click="OpenCivilFilePage(data, 'All Documents')"
+            @click="this.OpenCivilFilePage(data, 'All Documents')"
             v-b-tooltip.hover.right
             :title="data.item.partiesTruncApplied ? data.item.partiesDesc : null"
             :variant="'outline-primary border-white text-' + data.item.listClass"
@@ -101,7 +101,7 @@
             v-else-if="data.item.listClass != 'criminal' && data.value.length == 0"
             :style="data.field.cellStyle"
             size="sm"
-            @click="OpenCivilFilePage(data, 'All Documents')"
+            @click="this.OpenCivilFilePage(data, 'All Documents')"
             v-b-tooltip.hover.right
             :title="data.item.partiesTruncApplied ? data.item.partiesDesc : null"
             :variant="'outline-primary border-white text-' + data.item.listClass"
@@ -113,7 +113,7 @@
 
         <template v-slot:cell(time)="data">
           <div :style="data.field.cellStyle">
-            {{ data.value | convert_time }}
+            {{ data.value | this.convertTime }}
           </div>
         </template>
 
@@ -122,24 +122,24 @@
             class="text-center"
           >
             <b-button
-              v-if="countReferenceDocs(data) == 1"
+              v-if="this.countReferenceDocs(data) == 1"
               :style="data.field.cellStyle"
               size="sm"
               :variant="'outline-primary border-white text-' + data.item.listClass"
               class="mr-2"
-              @click="downloadProvidedDocument(data)"
+              @click="this.downloadProvidedDocument(data)"
             >
               <b-icon-file-earmark-text
                 :variant="data.item.listClass"
               ></b-icon-file-earmark-text>
             </b-button>
             <b-button
-              v-else-if="countReferenceDocs(data) > 1"
+              v-else-if="this.countReferenceDocs(data) > 1"
               :style="data.field.cellStyle"
               size="sm"
               :variant="'outline-primary border-white text-' + data.item.listClass"
               class="mr-2"
-              @click="OpenCivilFilePage(data, 'Provided Documents')"
+              @click="this.OpenCivilFilePage(data, 'Provided Documents')"
             >
               <b-icon-files
                 :variant="data.item.listClass"
@@ -155,7 +155,7 @@
           <b-badge
             v-if="data.item.listClass != 'criminal' && data.item.counselDesc"
             variant="white text-success"
-            v-b-tooltip.hover.left.html="getFullCounsel(data.item.counselDesc)"
+            v-b-tooltip.hover.left.html="this.getFullCounsel(data.item.counselDesc)"
             :style="data.field.cellStyle"
           >
             {{ data.value }}
@@ -219,7 +219,7 @@
             v-if="data.item.noteExist"
             size="sm"
             :style="data.field.cellStyle"
-            @click="OpenNotes(data.value)"
+            @click="this.OpenNotes(data.value)"
             variant="outline-primary border-white text-info"
             class="mt-1"
             v-b-tooltip.hover.left
@@ -235,24 +235,24 @@
       <template v-slot:modal-title>
         <h2 class="mb-0">Notes</h2>
       </template>
-      <b-card v-if="notes.trialNotes" title="Trial Notes" border-variant="white">
-        {{ notes.trialNotes }}
+      <b-card v-if="this.notes.trialNotes" title="Trial Notes" border-variant="white">
+        {{ this.notes.trialNotes }}
       </b-card>
 
-      <b-card v-if="notes.fileComment" title="File Comment" border-variant="white">
-        {{ notes.fileComment }}
+      <b-card v-if="this.notes.fileComment" title="File Comment" border-variant="white">
+        {{ this.notes.fileComment }}
       </b-card>
 
-      <b-card v-if="notes.commentToJudge" title="Comment To Judge" border-variant="white">
-        {{ notes.commentToJudge }}
+      <b-card v-if="this.notes.commentToJudge" title="Comment To Judge" border-variant="white">
+        {{ this.notes.commentToJudge }}
       </b-card>
 
-      <b-card v-if="notes.sheriffComment" title="Sheriff Comment" border-variant="white">
-        {{ notes.sheriffComment }}
+      <b-card v-if="this.notes.sheriffComment" title="Sheriff Comment" border-variant="white">
+        {{ this.notes.sheriffComment }}
       </b-card>
 
-      <b-card v-if="notes.text" title="Trial Notes" border-variant="white">
-        {{ notes.text }}
+      <b-card v-if="this.notes.text" title="Trial Notes" border-variant="white">
+        {{ this.notes.text }}
       </b-card>
       <!-- As per Kevin's request SCV-140, hide JCM Notes. 
             <b-card 
@@ -271,106 +271,62 @@
             </b-card>             
             -->
 
-      <b-button class="mt-3 bg-info" @click="$bvModal.hide('bv-modal-notes')">Close</b-button>
+      <!--<b-button class="mt-3 bg-info" @click="$bvModal.hide('bv-modal-notes')">Close</b-button>-->
     </b-modal>
   </b-card>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-facing-decorator";
-import CivilAppearanceDetails from "@components/civil/CivilAppearanceDetails.vue";
-import * as _ from "underscore";
-import CriminalAppearanceDetails from "@components/criminal/CriminalAppearanceDetails.vue";
-import { criminalFileInformationType, criminalAppearanceInfoType } from "@/types/criminal";
-import { courtListInformationInfoType, civilListInfoType, courtListInfoType } from "@/types/courtlist";
-import { civilFileInformationType, civilAppearanceInfoType } from "@/types/civil";
-import { InputNamesType, DurationType, IconInfoType, IconStyleType } from "@/types/common";
-import "@store/modules/CommonInformation";
-const commonState = namespace("CommonInformation");
-import "@store/modules/CourtListInformation";
-const courtListState = namespace("CourtListInformation");
-import "@store/modules/CivilFileInformation";
-import { civilCourtListType } from "@/types/courtlist/jsonTypes";
-const civilState = namespace("CivilFileInformation");
-import "@store/modules/CriminalFileInformation";
-import { criminalCourtListType } from "@/types/courtlist/jsonTypes";
-const criminalState = namespace("CriminalFileInformation");
-import shared from "../shared";
-import { CourtDocumentType, DocumentData } from "@/types/shared";
+  import * as _ from "underscore";
+  import { useCourtListStore, useCommonStore, useCriminalFileStore, useCivilFileStore } from "@/stores";
+  import { criminalFileInformationType } from "@/types/criminal";
+  import { courtListInformationInfoType, civilListInfoType, courtListInfoType } from "@/types/courtlist";
+  import { IconInfoType } from "@/types/common";
+  import { CourtDocumentType, DocumentData } from "@/types/shared";
+  import { defineComponent, onMounted, nextTick, inject, ref } from 'vue';
+  import { courtListType } from "@/types/courtlist/jsonTypes";
+
+  import { beautifyDate } from '@/filters';
+  import { HttpService } from '@/services/HttpService';
+  import { useRouter } from 'vue-router';
+
+ import { civilCourtListType } from "@/types/courtlist/jsonTypes";
+ import { criminalCourtListType } from "@/types/courtlist/jsonTypes";
+ import shared from "../shared";
 
 enum HearingType {
-  "A" = "+",
-  "G" = "@",
-  "D" = "-",
-  "S" = "*",
+  'A' = '+',
+  'G' = '@',
+  'D' = '-',
+  'S' = '*',
 }
 
-@Component({
-  components: {
-    CivilAppearanceDetails,
-    CriminalAppearanceDetails
-  },
-})
-export default class CourtListLayout extends Vue {
-  @courtListState.State
-  public courtListInformation!: courtListInformationInfoType;
+export default defineComponent({
+  setup () {
+    const civilCourtListJson = ref<civilCourtListType[]>([]);
+    const criminalCourtListJson = ref<criminalCourtListType[]>([]);
+    const courtListJson = ref<courtListType[]>([]);
+    const courtList = ref<courtListInfoType[]>([]);
+    const fields = ref<any>([]);
+    const courtRoom = ref('');
+    const isMounted = ref(false);
+    const isDataReady = ref(false);
+    const showNotes = ref(false);
 
-  @civilState.State
-  public civilAppearanceInfo!: civilAppearanceInfoType;
+    const notes = { remarks: [], text: "", trialNotes: "", fileComment: "", commentToJudge: "", sheriffComment: "" };
+    const physicalIds = ref<string[]>([]);
+    const referenceDocs = ref<any>([]);
 
-  @criminalState.State
-  public criminalAppearanceInfo!: criminalAppearanceInfoType;
+    const router = useRouter();
+    const courtListInformation = ref<courtListInformationInfoType[]>([]);
 
-  @civilState.Action
-  public UpdateCivilAppearanceInfo!: (newCivilAppearanceInfo: civilAppearanceInfoType) => void;
+    const commonStore = useCommonStore();
+    const courtListStore = useCourtListStore();
+    const criminalFileStore = useCriminalFileStore();
+    const civilFileStore = useCivilFileStore();
+    const httpService = inject<HttpService>('httpService');
 
-  @civilState.Action
-  public UpdateCivilFile!: (newCivilFileInformation: civilFileInformationType) => void;
-
-  @criminalState.Action
-  public UpdateCriminalAppearanceInfo!: (newAppearanceInfo: criminalAppearanceInfoType) => void;
-
-  @criminalState.Action
-  public UpdateCriminalFile!: (newCriminalFileInformation: criminalFileInformationType) => void;
-
-  @commonState.State
-  public iconStyles!: IconStyleType[];
-
-  @commonState.State
-  public displayName!: string;
-
-  @commonState.State
-  public duration;
-
-  @commonState.State
-  public time;
-
-  @commonState.Action
-  public UpdateIconStyle!: (newIconsInfo: IconInfoType[]) => void;
-
-  @commonState.Action
-  public UpdateDisplayName!: (newInputNames: InputNamesType) => void;
-
-  @commonState.Action
-  public UpdateDuration!: (duration: DurationType) => void;
-
-  @commonState.Action
-  public UpdateTime!: (time: string) => void;
-
-  civilCourtListJson: civilCourtListType[] = [];
-  criminalCourtListJson: criminalCourtListType[] = [];
-  courtList: courtListInfoType[] = [];
-  fields: any = [];
-  courtRoom;
-  isMounted = false;
-  isDataReady = false;
-  showNotes = false;
-  notes = { remarks: [], text: "", trialNotes: "", fileComment: "", commentToJudge: "", sheriffComment: "" };
-  physicalIds: string[] = [];
-  referenceDocs: any[] = [];
-
-  initialFields = [
+  const initialFields = [
     {
       key: "seq",
       label: "Seq.",
@@ -434,35 +390,36 @@ export default class CourtListLayout extends Vue {
     { key: "notes", label: "Notes", tdClass: "border-top", cellStyle: "font-size:12px; border:0px;" },
   ];
 
-  mounted() {
-    this.getCourtList();
+     // Fetch data on mount
+    onMounted(() => {
+      getCourtList();
+    });
+
+  const getCourtList = () => {
+    const data = courtListStore.courtListInformation.detailsData;
+    civilCourtListJson.value = data.civilCourtList;
+    courtRoom.value = data.courtRoomCode;
+    ExtractCivilListInfo();
+    criminalCourtListJson.value = data.criminalCourtList;
+    ExtractCriminalListInfo();
+    BuildReferenceDocsList();
+    fields.value = JSON.parse(JSON.stringify(initialFields.values));
+    if (criminalCourtListJson.value.length == 0) {
+      fields.value.splice(4, 1);
+    }
+    if (civilCourtListJson.value.length == 0) {
+      fields.value.splice(3, 1);
+    }
+    if (courtList.value.length) {
+      isDataReady.value = true;
+    }
+    isMounted.value = true;
   }
 
-  public async getCourtList() {
-    const data = this.courtListInformation.detailsData;
-    this.civilCourtListJson = data.civilCourtList;
-    this.courtRoom = data.courtRoomCode;
-    this.ExtractCivilListInfo();
-    this.criminalCourtListJson = data.criminalCourtList;
-    this.ExtractCriminalListInfo();
-    await this.BuildReferenceDocsList();
-    this.fields = JSON.parse(JSON.stringify(this.initialFields));
-    if (this.criminalCourtListJson.length == 0) {
-      this.fields.splice(4, 1);
-    }
-    if (this.civilCourtListJson.length == 0) {
-      this.fields.splice(3, 1);
-    }
-    if (this.courtList.length) {
-      this.isDataReady = true;
-    }
-    this.isMounted = true;
-  }
-
-  public ExtractCriminalListInfo(): void {
-    for (const criminalListIndex in this.criminalCourtListJson) {
+  const ExtractCriminalListInfo = () => {
+    for (const criminalListIndex in criminalCourtListJson) {
       const criminalListInfo = {} as courtListInfoType;
-      const jcriminalList = this.criminalCourtListJson[criminalListIndex];
+      const jcriminalList = criminalCourtListJson[criminalListIndex];
 
       criminalListInfo.index = criminalListIndex;
 
@@ -488,15 +445,15 @@ export default class CourtListLayout extends Vue {
         iconExists = true;
       }
       if (iconExists) {
-        this.UpdateIconStyle(iconInfo);
-        criminalListInfo.icons = this.iconStyles;
+        commonStore.updateIconStyle(iconInfo);
+        criminalListInfo.icons = commonStore.iconStyles;
       }
       criminalListInfo.caseAge = jcriminalList.caseAgeDaysNumber ? jcriminalList.caseAgeDaysNumber : "";
-      criminalListInfo.time = this.getTime(jcriminalList.appearanceTime.split(" ")[1].substr(0, 5));
+      criminalListInfo.time = getTime(jcriminalList.appearanceTime.split(" ")[1].substr(0, 5));
 
-      criminalListInfo.room = this.courtRoom;
+      criminalListInfo.room = courtRoom.value;
 
-      const accusedName = this.getNameOfAccusedTrunc(jcriminalList.accusedFullName);
+      const accusedName = getNameOfAccusedTrunc(jcriminalList.accusedFullName);
       criminalListInfo.accused = accusedName.name;
       criminalListInfo.accusedTruncApplied = accusedName.trunc;
       criminalListInfo.accusedDesc = jcriminalList.accusedFullName;
@@ -523,7 +480,7 @@ export default class CourtListLayout extends Vue {
 
         if (criminalListInfo.crownDesc) criminalListInfo.crownDesc += criminalListInfo.crown;
       }
-      criminalListInfo.est = this.getDuration(jcriminalList.estimatedTimeHour, jcriminalList.estimatedTimeMin);
+      criminalListInfo.est = getDuration(jcriminalList.estimatedTimeHour, jcriminalList.estimatedTimeMin);
       criminalListInfo.partId = jcriminalList.fileInformation.partId;
       criminalListInfo.justinNo = jcriminalList.fileInformation.mdocJustinNo;
       criminalListInfo.appearanceId = jcriminalList.criminalAppearanceID;
@@ -561,46 +518,47 @@ export default class CourtListLayout extends Vue {
       criminalListInfo.courtLevel = jcriminalList.fileInformation.courtLevelCd;
       criminalListInfo.courtClass = jcriminalList.fileInformation.courtClassCd;
       criminalListInfo.profSeqNo = jcriminalList.fileInformation.profSeqNo;
-      criminalListInfo.noteExist = this.isCriminalNoteAvailable(criminalListInfo);
+      criminalListInfo.noteExist = isCriminalNoteAvailable(criminalListInfo);
       criminalListInfo.listClass = "criminal";
-      this.courtList.push(criminalListInfo);
+      courtList.value.push(criminalListInfo);
     }
   }
 
-  public isCriminalNoteAvailable(criminalListInfo) {
+  const isCriminalNoteAvailable = (criminalListInfo) => {
     if (criminalListInfo.trialRemarks.length > 0) return true;
     if (criminalListInfo.trialNotes) return true;
     return false;
   }
-  public OpenCriminalNotes(notesData) {
-    this.notes = notesData;
-    this.showNotes = true;
+
+  const OpenCriminalNotes = (notesData) => {
+    notes.text = notesData;
+    showNotes.value = true;
   }
 
-  public getNameOfParticipant(lastName, givenName) {
-    this.UpdateDisplayName({ lastName: lastName, givenName: givenName });
-    return this.displayName;
+  const getNameOfParticipant = (lastName, givenName) => {
+    commonStore.updateDisplayName({ lastName: lastName, givenName: givenName });
+    return commonStore.displayName;
   }
 
-  public OpenCriminalFilePage(data) {
+  const OpenCriminalFilePage = (data) => {
     const fileInformation = {} as criminalFileInformationType;
     fileInformation.fileNumber = data.item.justinNo;
-    this.UpdateCriminalFile(fileInformation);
-    const routeData = this.$router.resolve({
+    criminalFileStore.updateCriminalFile(fileInformation);
+    const routeData = router.resolve({
       name: "CriminalCaseDetails",
       params: { fileNumber: fileInformation.fileNumber },
     });
     window.open(routeData.href, "_blank");
   }
 
-  public getNameOfAccusedTrunc(nameOfAccused) {
+  const getNameOfAccusedTrunc = (nameOfAccused) => {
     const maximumFullNameLength = 20;
     if (nameOfAccused.length > maximumFullNameLength)
       return { name: nameOfAccused.substr(0, maximumFullNameLength) + " ... ", trunc: true };
     else return { name: nameOfAccused, trunc: false };
   }
 
-  public ExtractCivilListInfo(): void {
+  const ExtractCivilListInfo = () => {
     const familyListClass = ["F", "E"];
     const civilListClass = ["I", "B", "V", "D", "H", "P", "S"];
     /* 
@@ -617,9 +575,9 @@ export default class CourtListLayout extends Vue {
             SCV – Supreme Court Trial List
         */
 
-    for (const civilListIndex in this.civilCourtListJson) {
+    for (const civilListIndex in civilCourtListJson) {
       const civilListInfo = {} as civilListInfoType;
-      const jcivilList = this.civilCourtListJson[civilListIndex];
+      const jcivilList = civilCourtListJson[civilListIndex];
       civilListInfo.index = civilListIndex;
       if (familyListClass.indexOf(jcivilList.activityClassCd) != -1) {
         civilListInfo.listClass = "family";
@@ -643,19 +601,19 @@ export default class CourtListLayout extends Vue {
         iconExists = true;
       }
       if (iconExists) {
-        this.UpdateIconStyle(iconInfo);
-        civilListInfo.icons = this.iconStyles;
+        commonStore.updateIconStyle(iconInfo);
+        civilListInfo.icons = commonStore.iconStyles;
       }
 
-      civilListInfo.time = this.getTime(jcivilList.appearanceTime.substr(0, 5));
-      civilListInfo.room = this.courtRoom;
-      const partyNames = this.getNameOfPartyTrunc(jcivilList.sealFileSOCText);
+      civilListInfo.time = getTime(jcivilList.appearanceTime.substr(0, 5));
+      civilListInfo.room = courtRoom.value;
+      const partyNames = getNameOfPartyTrunc(jcivilList.sealFileSOCText);
       civilListInfo.parties = partyNames.name;
       civilListInfo.partiesTruncApplied = partyNames.trunc;
       civilListInfo.partiesDesc = jcivilList.sealFileSOCText;
       civilListInfo.reason = jcivilList.appearanceReasonCd;
       civilListInfo.reasonDesc = jcivilList.appearanceReasonDesc;
-      civilListInfo.est = this.getDuration(jcivilList.estimatedTimeHour, jcivilList.estimatedTimeMin);
+      civilListInfo.est = getDuration(jcivilList.estimatedTimeHour, jcivilList.estimatedTimeMin);
 
       civilListInfo.supplementalEquipment = jcivilList.supplementalEquipment;
       civilListInfo.securityRestriction = jcivilList.securityRestriction;
@@ -677,7 +635,7 @@ export default class CourtListLayout extends Vue {
       if (civilListInfo.counselDesc) civilListInfo.counselDesc += civilListInfo.counsel;
 
       civilListInfo.fileId = jcivilList.physicalFile.physicalFileID;
-      this.physicalIds.push(jcivilList.physicalFile.physicalFileID);
+      physicalIds.value.push(jcivilList.physicalFile.physicalFileID);
       civilListInfo.appearanceId = jcivilList.appearanceId;
 
       civilListInfo.fileMarkers = [];
@@ -699,12 +657,12 @@ export default class CourtListLayout extends Vue {
         CommentToJudge: jcivilList.commentToJudgeText,
         SheriffComment: jcivilList.sheriffCommentText,
       };
-      civilListInfo.noteExist = this.isNoteAvailable(civilListInfo);
-      this.courtList.push(civilListInfo);
+      civilListInfo.noteExist = isNoteAvailable(civilListInfo);
+      courtList.value.push(civilListInfo);
     }
   }
 
-  public isNoteAvailable(civilListInfo) {
+  const isNoteAvailable = (civilListInfo) => {
     if (
       civilListInfo.notes.TrialNotes ||
       civilListInfo.notes.FileComment ||
@@ -714,12 +672,12 @@ export default class CourtListLayout extends Vue {
       return true;
     else return false;
   }
-  public OpenNotes(notesData) {
-    this.notes = notesData;
-    this.showNotes = true;
+  const OpenNotes = (notesData) => {
+    notes.text = notesData;
+    showNotes.value = true;
   }
 
-  public getNameOfPartyTrunc(partyNames) {
+  const getNameOfPartyTrunc = (partyNames) => {
     const maximumFullNameLength = 15;
     let truncApplied = false;
     if (partyNames) {
@@ -742,69 +700,70 @@ export default class CourtListLayout extends Vue {
     }
   }
 
-  public getTime(time) {
+  const getTime = (time) => {
     return time;
   }
 
-  public getDuration(hr, min) {
-    this.UpdateDuration({ hr: hr, min: min });
-    return this.duration;
+  const getDuration = (hr, min) => {
+    commonStore.updateDuration({ hr: hr, min: min });
+    return commonStore.duration;
   }
 
-  public OpenCriminalDetails(data) {
+  const OpenCriminalDetails = (data) => {
     if (!data.detailsShowing) {
-      this.criminalAppearanceInfo.fileNo = data.item.justinNo;
-      this.criminalAppearanceInfo.appearanceId = data.item.appearanceId;
-      this.criminalAppearanceInfo.partId = data.item.partId;
-      this.criminalAppearanceInfo.supplementalEquipmentTxt = data.item.supplementalEquipment;
-      this.criminalAppearanceInfo.securityRestrictionTxt = data.item.securityRestriction;
-      this.criminalAppearanceInfo.outOfTownJudgeTxt = data.item.outOfTownJudge;
-      this.criminalAppearanceInfo.courtLevel = data.item.courtLevel;
-      this.criminalAppearanceInfo.courtClass = data.item.courtClass;
-      this.criminalAppearanceInfo.profSeqNo = data.item.profSeqNo;
-      this.UpdateCriminalAppearanceInfo(this.criminalAppearanceInfo);
+      criminalFileStore.criminalAppearanceInfo = data;
+      // criminalFileStore.criminalAppearanceInfo.fileNo = data.item.justinNo;
+      // criminalFileStore.criminalAppearanceInfo.appearanceId = data.item.appearanceId;
+      // criminalFileStore.criminalAppearanceInfo.partId = data.item.partId;
+      // criminalFileStore.criminalAppearanceInfo.supplementalEquipmentTxt = data.item.supplementalEquipment;
+      // criminalFileStore.criminalAppearanceInfo.securityRestrictionTxt = data.item.securityRestriction;
+      // criminalFileStore.criminalAppearanceInfo.outOfTownJudgeTxt = data.item.outOfTownJudge;
+      // criminalFileStore.criminalAppearanceInfo.courtLevel = data.item.courtLevel;
+      // criminalFileStore.criminalAppearanceInfo.courtClass = data.item.courtClass;
+      // criminalFileStore.criminalAppearanceInfo.profSeqNo = data.item.profSeqNo;
+      criminalFileStore.updateCriminalAppearanceInfo(criminalFileStore.criminalAppearanceInfo);
     }
   }
 
-  public OpenCivilDetails(data) {
+  const OpenCivilDetails = (data) => {
     if (!data.detailsShowing) {
-      this.civilAppearanceInfo.fileNo = data.item.fileId;
-      this.civilAppearanceInfo.appearanceId = data.item.appearanceId;
-      this.civilAppearanceInfo.supplementalEquipmentTxt = data.item.supplementalEquipment;
-      this.civilAppearanceInfo.securityRestrictionTxt = data.item.securityRestriction;
-      this.civilAppearanceInfo.outOfTownJudgeTxt = data.item.outOfTownJudge;
-      this.UpdateCivilAppearanceInfo(this.civilAppearanceInfo);
+      civilFileStore.civilAppearanceInfo.fileNo = data.item.fileId;
+      civilFileStore.civilAppearanceInfo.appearanceId = data.item.appearanceId;
+      civilFileStore.civilAppearanceInfo.supplementalEquipmentTxt = data.item.supplementalEquipment;
+      civilFileStore.civilAppearanceInfo.securityRestrictionTxt = data.item.securityRestriction;
+      civilFileStore.civilAppearanceInfo.outOfTownJudgeTxt = data.item.outOfTownJudge;
+      civilFileStore.updateCivilAppearanceInfo(civilFileStore.civilAppearanceInfo);
     }
   }
 
-  public countReferenceDocs(data) {
+  const countReferenceDocs = (data) => {
     if (data?.item?.fileId) {
-      const target = this.referenceDocs.find(doc => doc["fileId"] === data.item.fileId);
+      const target = referenceDocs.value.find(doc => doc["fileId"] === data.item.fileId);
       return target["doc"].length;
     }
     return 0;
   }
 
-  public downloadProvidedDocument(data) {
-    const target = this.referenceDocs.find(rd => rd.fileId === data.item.fileId);
+  const downloadProvidedDocument = (data) => {
+    const target = referenceDocs.value.find(rd => rd.fileId === data.item.fileId);
     shared.openDocumentsPdf(CourtDocumentType.ProvidedCivil, target.doc[0]);
   }
 
-  public async BuildReferenceDocsList() {
+  const BuildReferenceDocsList = () => {
     const promises: Promise<any>[] = [];
-    for (const physicalId of this.physicalIds) {
-      promises.push(this.getReferenceDocs(physicalId));
+    for (const physicalId of physicalIds.value) {
+      promises.push(getReferenceDocs(physicalId));
     }
 
-    await Promise.all(promises).then((values) => {
-      this.referenceDocs = values;
+    Promise.all(promises).then((values) => {
+      referenceDocs.value = values;
     });
   }
 
-  public getReferenceDocs(fileId: string): Promise<any> {
+  const getReferenceDocs = (fileId: string): Promise<any> => {
     return new Promise<any>(resolve => {
-      this.$http
-        .get(`api/files/civil/${fileId}`)
+      httpService
+        .get<any>('api/files/civil/${fileId}')
         .then(
           (Response) => Response.json()
         )
@@ -817,7 +776,7 @@ export default class CourtListLayout extends Vue {
             const doc = documents[docIndex];
 
             const documentData: DocumentData = {
-              appearanceDate: Vue.filter("beautify_date")(doc.AppearanceDate),
+              appearanceDate: beautifyDate(doc.AppearanceDate),
               courtClass: detailsData.courtClassCd,
               courtLevel: detailsData.courtLevelCd,
               documentId: doc.ObjectGuid,
@@ -838,7 +797,7 @@ export default class CourtListLayout extends Vue {
     })
   }
 
-  public OpenCivilFilePage(data, section = "") {
+  const OpenCivilFilePage = (data, section = "") => {
     let params;
     if (section) {
       params = {
@@ -849,22 +808,37 @@ export default class CourtListLayout extends Vue {
       params = { fileNumber: data.item.fileId };
     }
 
-    const routeData = this.$router.resolve({
+    const routeData = router.resolve({
       name: "CivilCaseDetails",
       params: params,
     });
     window.open(routeData.href, "_blank");
   }
 
-  public getFullCounsel(counselDesc) {
+  const getFullCounsel = (counselDesc) => {
     return '<b style="white-space: pre-line;">' + counselDesc + "</b>";
   }
 
-  get SortedCourtList() {
+  const SortedCourtList = () => {
     // TODO: sort by appearance time
-    return _.sortBy(this.courtList, "time");
+    return _.sortBy(courtList.value, "time");
   }
-}
+    // Return the reactive variables to the template
+    return {
+      civilCourtListJson,
+      criminalCourtListJson,
+      courtList,
+      fields,
+      courtRoom,
+      isMounted,
+      isDataReady,
+      showNotes,
+      notes,
+      physicalIds,
+      referenceDocs,
+      };
+  }
+});
 </script>
 
 <style scoped>

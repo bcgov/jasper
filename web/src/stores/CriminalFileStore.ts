@@ -1,9 +1,13 @@
-import { participantSentencesDetailsInfoType } from '@/types/criminal';
+import {
+  criminalAppearanceInfoType,
+  criminalFileInformationType,
+  participantSentencesDetailsInfoType,
+} from '@/types/criminal';
 import { defineStore } from 'pinia';
 
 export const useCriminalFileStore = defineStore('CriminalFileStore', {
   state: () => ({
-    criminalFileInformation: {},
+    criminalFileInformation: {} as criminalFileInformationType,
     criminalFileInfoLoaded: false,
     activeCriminalParticipantIndex: 0,
 
@@ -18,7 +22,7 @@ export const useCriminalFileStore = defineStore('CriminalFileStore', {
       Documents: false,
       'Sentence/Order Details': false,
     },
-    criminalAppearanceInfo: {},
+    criminalAppearanceInfo: {} as criminalAppearanceInfoType,
   }),
   actions: {
     setCriminalFile(criminalFileInformation): void {

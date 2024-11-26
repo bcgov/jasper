@@ -70,9 +70,8 @@
               >
             </template>
 
-            <template
-              v-slot:[`cell(${fields[fieldsTab][datePlace[fieldsTab]].key})`]="data"
-            >
+            <!-- v-slot:[`cell(${fields[fieldsTab][datePlace[fieldsTab]].key})`]="data" -->
+            <template v-slot:cell(dateFiled)="data">
               <span
                 v-if="data.item.sealed"
                 :style="data.field.cellStyle"
@@ -85,9 +84,8 @@
               </span>
             </template>
 
-            <template
-              v-slot:[`cell(${fields[fieldsTab][documentPlace[fieldsTab]].key})`]="data"
-            >
+            <!-- v-slot:[`cell-${fields[fieldsTab][documentPlace[fieldsTab]].key}`]="data" -->
+            <template v-slot:cell(documentType)="data">
               <b-button
                 v-if="data.item.pdfAvail"
                 variant="outline-primary text-info"
@@ -249,7 +247,7 @@
       let downloadCompleted = ref(true);
       let allDocumentsChecked = ref(false);
 
-      const fields = [
+      const fields = ref([
         [
           {
             key: 'select',
@@ -559,7 +557,7 @@
             tdClass: 'max-width-300',
           },
         ],
-      ];
+      ]);
 
       const getDocuments = () => {
         documents.value = civilFileStore.civilFileInformation.documentsInfo;

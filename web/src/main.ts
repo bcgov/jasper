@@ -7,9 +7,11 @@ import 'regenerator-runtime/runtime';
 import { createApp } from 'vue';
 import App from './App.vue';
 import './filters';
-import ServicePlugin from './plugins/ServicePlugin';
 import router from './router/index';
+import { FilesService } from './services/FilesService';
 import { HttpService } from './services/HttpService';
+import { LocationService } from './services/LocationService';
+import { LookupService } from './services/LookupService';
 import { registerPinia } from './stores';
 
 // Configure Axios as needed
@@ -35,10 +37,17 @@ registerPinia(app);
 app.use(router);
 //app.use(BootstrapVue);
 //app.use(BootstrapVueIcons);
-app.use(ServicePlugin);
 
+// Setup services
 const httpService = new HttpService(process.env.API_URL);
+const lookupService = new LookupService(httpService);
+const locationService = new LocationService(httpService);
+const filesService = new FilesService(httpService);
+
 app.provide('httpService', httpService);
+app.provide('lookupService', lookupService);
+app.provide('locationService', locationService);
+app.provide('filesService', filesService);
 
 app.component('LoadingSpinner', LoadingSpinner);
 

@@ -17,7 +17,7 @@ module.exports = {
       watchOptions: {
         ignored: /node_modules/,
         aggregateTimeout: 300,
-        poll: 1000
+        poll: 1000,
       },
       proxy: {
         //This is for WEB_BASE_HREF = '/' specifically.
@@ -28,11 +28,11 @@ module.exports = {
             Connection: 'keep-alive',
             'X-Forwarded-Host': 'localhost',
             'X-Forwarded-Port': '8080',
-            'X-Base-Href': '/'
+            'X-Base-Href': '/',
           },
-          changeOrigin: true
-        }
-      }
+          changeOrigin: true,
+        },
+      },
     },
     resolve: {
       modules: [vueSrc],
@@ -42,9 +42,8 @@ module.exports = {
         '@components': path.resolve(__dirname, vueSrc.concat('/components')),
         '@router': path.resolve(__dirname, vueSrc.concat('/router')),
         '@store': path.resolve(__dirname, vueSrc.concat('/store')),
-        '@styles': path.resolve(__dirname, vueSrc.concat('/styles'))
+        '@styles': path.resolve(__dirname, vueSrc.concat('/styles')),
       },
-      extensions: ['.ts', '.vue', '.json', '.scss', '.svg', '.png', '.jpg'],
       fallback: {
         https: require.resolve('https-browserify'),
         http: require.resolve('http-browserify'),
@@ -55,25 +54,25 @@ module.exports = {
         util: require.resolve('util'),
         fs: false, // 'fs' is not needed in the browser
         path: require.resolve('path-browserify'),
-        url: require.resolve('url-polyfill')
-      }
-    }
+        url: require.resolve('url-polyfill'),
+      },
+    },
   },
-  chainWebpack: config => {
+  chainWebpack: (config) => {
     config.resolve.alias.set('vue', '@vue/compat');
 
     config.module
       .rule('vue')
       .use('vue-loader')
-      .tap(options => {
+      .tap((options) => {
         return {
           ...options,
           compilerOptions: {
             compatConfig: {
-              MODE: 2
-            }
-          }
+              MODE: 2,
+            },
+          },
         };
       });
-  }
+  },
 };

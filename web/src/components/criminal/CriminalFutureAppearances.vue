@@ -141,10 +141,10 @@
 
       const futureAppearancesList = ref<criminalAppearancesListType[]>([]);
       const futureAppearancesJson = ref<criminalApprDetailType[]>([]);
-      let isMounted = ref(false);
-      let isDataReady = ref(false);
-      let sortBy = ref('date');
-      let sortDesc = ref(true);
+      const isMounted = ref(false);
+      const isDataReady = ref(false);
+      const sortBy = ref('date');
+      const sortDesc = ref(true);
 
       const fields = [
         {

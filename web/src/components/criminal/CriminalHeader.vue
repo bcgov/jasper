@@ -194,9 +194,9 @@
 
       const maximumFullNameLength = 15;
       let numberOfParticipants = 0;
-      let fileNumberText = ref('');
-      let agencyLocation = ref({ name: '', code: '0', region: '' });
-      let isMounted = ref(false);
+      const fileNumberText = ref('');
+      const agencyLocation = ref({ name: '', code: '0', region: '' });
+      const isMounted = ref(false);
 
       const fields = [
         {
@@ -260,7 +260,7 @@
         bans.value = criminalFileStore.criminalFileInformation.bans;
         numberOfParticipants = participantList.value.length - 1;
         isMounted.value = true;
-        setActiveParticipantIndex(SortedParticipants[0].index);
+        setActiveParticipantIndex(SortedParticipants.value[0].index);
       };
 
       const setActiveParticipantIndex = (index) => {

@@ -176,7 +176,7 @@
 
       const maximumFullNameLength = 15;
       const activeParty = 0;
-      let fileNumberText = ref('');
+      const fileNumberText = ref('');
       const sheriffComment = ref('');
       let activityClassCode;
       const agencyLocation = ref({ name: '', code: '0', region: '' });

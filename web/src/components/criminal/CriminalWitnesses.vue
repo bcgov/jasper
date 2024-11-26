@@ -112,16 +112,16 @@
       const witnessList = ref<witnessListInfoType[]>([]);
       const witnessCounts = ref<witnessCountInfoType[]>([]);
 
-      let isMounted = ref(false);
+      const isMounted = ref(false);
       let witnessesJson: witnessType[] = [];
 
       let numberOfTotalWitnesses = 0;
       let numberOfPersonnelWitnesses = 0;
       let numberOfCivilianWitnesses = 0;
       let numberOfExpertWitnesses = 0;
-      let sortBy = ref('name');
-      let sortDesc = ref(false);
-      let selectedType = ref('Required Only');
+      const sortBy = ref('name');
+      const sortDesc = ref(false);
+      const selectedType = ref('Required Only');
 
       const witnessFields = [
         {

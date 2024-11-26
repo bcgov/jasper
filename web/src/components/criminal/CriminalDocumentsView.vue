@@ -189,22 +189,22 @@
 
       let courtLevel = '';
       let courtClass = '';
-      let message = ref('Loading');
-      let loadingPdf = ref(false);
-      let activetab = ref('ALL');
-      let tabIndex = ref(0);
-      let sortBy = ref('date');
-      let sortDesc = ref(true);
-      let hoverRow = ref(-1);
-      let hoverCol = ref(0);
-      let isMounted = ref(false);
-      let isDataValid = ref(false);
+      const message = ref('Loading');
+      const loadingPdf = ref(false);
+      const activetab = ref('ALL');
+      const tabIndex = ref(0);
+      const sortBy = ref('date');
+      const sortDesc = ref(true);
+      const hoverRow = ref(-1);
+      const hoverCol = ref(0);
+      const isMounted = ref(false);
+      const isDataValid = ref(false);
 
       let fieldsTab = fieldTab.Categories;
       const documentPlace = ref([2, 1, 2]);
       let selectedDocuments = {} as ArchiveInfoType;
-      let downloadCompleted = ref(true);
-      let allDocumentsChecked = ref(false);
+      const downloadCompleted = ref(true);
+      const allDocumentsChecked = ref(false);
 
       const fields = [
         [

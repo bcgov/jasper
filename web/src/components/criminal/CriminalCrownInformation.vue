@@ -43,7 +43,7 @@
       const criminalFileStore = useCriminalFileStore();
 
       const crownInformation = ref<criminalCrownInformationInfoType[]>([]);
-      let isMounted = ref(false);
+      const isMounted = ref(false);
       const fields = [
         {
           key: 'crownInfoFieldName',

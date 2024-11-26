@@ -198,16 +198,16 @@
       const providedDocumentsInfo = ref<referenceDocumentsInfoType[]>([]);
       const summaryDocumentsInfo = ref<summaryDocumentsInfoType[]>([]);
 
-      let isDataReady = ref(false);
-      let isMounted = ref(false);
-      let downloadCompleted = ref(true);
-      let isSealed = ref(false);
-      let docIsSealed = ref(false);
-      let showSealedWarning = ref(false);
-      let errorCode = ref(0);
-      let errorText = ref('');
+      const isDataReady = ref(false);
+      const isMounted = ref(false);
+      const downloadCompleted = ref(true);
+      const isSealed = ref(false);
+      const docIsSealed = ref(false);
+      const showSealedWarning = ref(false);
+      const errorCode = ref(0);
+      const errorText = ref('');
 
-      let partiesJson = ref<partyType[]>([]);
+      const partiesJson = ref<partyType[]>([]);
       const adjudicatorRestrictionsJson = ref<civilHearingRestrictionType[]>(
         []
       );

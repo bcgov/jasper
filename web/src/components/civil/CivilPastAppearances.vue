@@ -195,7 +195,7 @@
       const sortDesc = ref(true);
       const fromA2a = ref(false);
 
-      let fields = ref([
+      const fields = ref([
         {
           key: 'date',
           label: 'Date',

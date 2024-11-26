@@ -235,17 +235,17 @@
 
       const documents = ref<documentsInfoType[]>([]);
       const summaryDocuments = ref<summaryDocumentsInfoType[]>([]);
-      let loadingPdf = ref(false);
-      let isMounted = ref(false);
-      let activetab = ref('ALL');
-      let sortDesc = ref(false);
+      const loadingPdf = ref(false);
+      const isMounted = ref(false);
+      const activetab = ref('ALL');
+      const sortDesc = ref(false);
       const categories = ref<string[]>([]);
       const fieldsTab = ref(fieldTab.Categories);
       const documentPlace = [2, 1, 2, 2, 2];
       const datePlace = [4, 2, 3, 5, 3];
       let selectedDocuments = reactive({} as ArchiveInfoType);
-      let downloadCompleted = ref(true);
-      let allDocumentsChecked = ref(false);
+      const downloadCompleted = ref(true);
+      const allDocumentsChecked = ref(false);
 
       const fields = ref([
         [

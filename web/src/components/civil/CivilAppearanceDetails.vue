@@ -273,6 +273,7 @@
             <span
               :style="field.cellStyle"
               v-if="data.field.key == 'currentCounsel' && data.value.length > 0"
+              v-bind:key="index"
             >
               <span
                 v-for="(counsel, counselIndex) in data.value"
@@ -293,6 +294,7 @@
             </span>
             <span
               :style="field.cellStyle"
+              v-bind:key="index"
               v-else-if="data.field.key == 'role' && data.value.length > 0"
             >
               <span
@@ -404,20 +406,24 @@
       const civilFileStore = useCivilFileStore();
       const httpService = inject<HttpService>('httpService');
 
+      if (!httpService) {
+        throw new Error('HttpService is not available!');
+      }
+
       const appearanceAdditionalInfo = ref<appearanceAdditionalInfoType[]>([]);
       const appearanceDocuments = ref<appearanceDocumentsType[]>([]);
       const appearanceParties = ref<appearancePartiesType[]>([]);
       const appearanceMethods = ref<appearanceMethodsType[]>([]);
 
-      let loadingPdf = ref(false);
-      let isMounted = ref(false);
+      const loadingPdf = ref(false);
+      const isMounted = ref(false);
       const appearanceDetailsJson = ref<any>(null);
       const additionalInfo = reactive<civilAppearanceDetailsInfoType>({
         supplementalEquipment: '',
         securityRestriction: '',
         outOfTownJudge: '',
       });
-      let adjudicatorComment = ref('');
+      const adjudicatorComment = ref('');
       const showAdjudicatorComment = ref(false);
 
       const addInfoFields = [
@@ -610,7 +616,8 @@
       };
 
       const ExtractAppearanceDetailsInfo = () => {
-        adjudicatorComment = appearanceDetailsJson.value.adjudicatorComment
+        adjudicatorComment.value = appearanceDetailsJson.value
+          .adjudicatorComment
           ? appearanceDetailsJson.value.adjudicatorComment
           : '';
         for (const documentIndex in appearanceDetailsJson.value.document) {
@@ -658,7 +665,7 @@
           const partyInfo = {} as appearancePartiesType;
           partyInfo.firstName = party.givenNm ? party.givenNm : '';
           partyInfo.lastName = party.lastNm ? party.lastNm : party.orgNm;
-          commonStore.updateDisplayName({
+          updateDisplayName.value({
             lastName: partyInfo.lastName,
             givenName: partyInfo.firstName,
           });

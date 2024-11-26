@@ -210,12 +210,12 @@
       >([]);
       const bans = ref<bansInfoType[]>([]);
 
-      let isDataReady = ref(false);
-      let isMounted = ref(false);
-      let downloadCompleted = ref(true);
-      let banExists = ref(false);
-      let errorCode = ref(0);
-      let errorText = ref('');
+      const isDataReady = ref(false);
+      const isMounted = ref(false);
+      const downloadCompleted = ref(true);
+      const banExists = ref(false);
+      const errorCode = ref(0);
+      const errorText = ref('');
 
       const participantJson = ref<criminalParticipantType[]>([]);
       const adjudicatorRestrictionsJson = ref<criminalHearingRestrictionType[]>(

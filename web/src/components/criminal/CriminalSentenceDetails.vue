@@ -107,10 +107,10 @@
     setup() {
       const criminalFileStore = useCriminalFileStore();
 
-      let sortBy = ref('date');
-      let dateSortDir = ref('desc');
-      let isMounted = ref(false);
-      let selectedParticipant = ref(0);
+      const sortBy = ref('date');
+      const dateSortDir = ref('desc');
+      const isMounted = ref(false);
+      const selectedParticipant = ref(0);
       const participantSentences = ref<participantSentencesInfoType[]>([]);
 
       const fields = [
@@ -214,7 +214,7 @@
       };
 
       const sortClick = (data) => {
-        sortBy = data.key;
+        sortBy.value = data.key;
         if (dateSortDir.value == 'desc') dateSortDir.value = 'asc';
         else dateSortDir.value = 'desc';
       };

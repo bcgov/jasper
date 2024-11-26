@@ -45,7 +45,7 @@
       const criminalFileStore = useCriminalFileStore();
 
       const crownNotes = ref<criminalCrownNotesInfoType[]>([]);
-      let isMounted = ref(false);
+      const isMounted = ref(false);
 
       const fields = [{ key: 'crownNotes', label: 'Crown Notes' }];
 

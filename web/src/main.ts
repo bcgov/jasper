@@ -1,10 +1,11 @@
 import LoadingSpinner from '@components/LoadingSpinner.vue';
-//import "@styles/index.scss"
+import '@styles/index.scss';
+import { createApp } from '@vue/compat';
 import axios from 'axios';
+import BootstrapVue, { BootstrapVueIcons } from 'bootstrap-vue';
 import 'core-js/stable';
 import 'intersection-observer';
 import 'regenerator-runtime/runtime';
-import { createApp } from 'vue';
 import App from './App.vue';
 import './filters';
 import router from './router/index';
@@ -35,8 +36,8 @@ const app = createApp(App);
 //app.use(VueResource);
 registerPinia(app);
 app.use(router);
-//app.use(BootstrapVue);
-//app.use(BootstrapVueIcons);
+app.use(BootstrapVue);
+app.use(BootstrapVueIcons);
 
 // Setup services
 const httpService = new HttpService(process.env.API_URL);

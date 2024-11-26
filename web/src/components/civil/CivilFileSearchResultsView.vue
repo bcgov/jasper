@@ -178,7 +178,7 @@
       const civilList = ref<fileSearchCivilInfoType[]>();
       const isMounted = ref(false);
       const isDataReady = ref(false);
-      let loadCompleted = ref(true);
+      const loadCompleted = ref(true);
       const errorCode = ref(0);
       const errorText = ref('');
       const allFilesChecked = ref(false);

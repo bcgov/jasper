@@ -28,13 +28,13 @@
     setup() {
       const criminalFileStore = useCriminalFileStore();
 
-      let courtLevelDescription = ref('');
-      let courtClassDescription = ref('');
-      let indictable = ref('');
-      let assignmentTypeDescription = ref('');
-      let hasCrownNotesToJCM = ref(false);
-      let hasAssignmentTypeDsc = ref(false);
-      let isMounted = ref(false);
+      const courtLevelDescription = ref('');
+      const courtClassDescription = ref('');
+      const indictable = ref('');
+      const assignmentTypeDescription = ref('');
+      const hasCrownNotesToJCM = ref(false);
+      const hasAssignmentTypeDsc = ref(false);
+      const isMounted = ref(false);
 
       onMounted(() => {
         getFileDescription();

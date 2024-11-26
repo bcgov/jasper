@@ -304,12 +304,12 @@
         []
       );
 
-      let documentTypeRop = ref(CourtDocumentType.ROP);
-      let documentTypeCriminal = CourtDocumentType.Criminal;
-      let loadingPdf = ref(false);
-      let loadingROP = ref(false);
-      let isMounted = ref(false);
-      let isDataReady = ref(false);
+      const documentTypeRop = ref(CourtDocumentType.ROP);
+      const documentTypeCriminal = CourtDocumentType.Criminal;
+      const loadingPdf = ref(false);
+      const loadingROP = ref(false);
+      const isMounted = ref(false);
+      const isDataReady = ref(false);
       let appearanceDetailsJson = {
         agencyId: '',
         judgesRecommendation: '',
@@ -357,15 +357,15 @@
           partyAppearanceMethodDesc: string;
         },
       };
-      let sortBy = ref('date');
-      let sortDesc = ref(true);
-      let showNotes = ref(false);
-      let informationsFileExists = ref(false);
+      const sortBy = ref('date');
+      const sortDesc = ref(true);
+      const showNotes = ref(false);
+      const informationsFileExists = ref(false);
       let notes = reactive({} as appearanceNotesInfoType);
-      let appearanceDetailsInfo = reactive(
+      const appearanceDetailsInfo = reactive(
         {} as criminalAppearanceDetailsInfoType
       );
-      let initiatingDocuments: initiatingDocument[] = [];
+      const initiatingDocuments: initiatingDocument[] = [];
 
       const addInfoFields = [
         { key: 'key', label: 'key', sortable: false },

@@ -160,8 +160,8 @@
 
       const futureAppearancesList = ref<civilAppearancesListType[]>([]);
       const futureAppearancesJson = ref<civilApprDetailType[]>([]);
-      let sortBy = ref('date');
-      let sortDesc = ref(true);
+      const sortBy = ref('date');
+      const sortDesc = ref(true);
 
       const fields = [
         {

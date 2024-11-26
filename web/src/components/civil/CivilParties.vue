@@ -134,11 +134,11 @@
     setup() {
       const civilFileStore = useCivilFileStore();
 
-      let isMounted = ref(false);
+      const isMounted = ref(false);
       const leftPartiesInfo = ref<partiesInfoType[]>([]);
       const rightPartiesInfo = ref<partiesInfoType[]>([]);
-      let leftRole = ref('');
-      let rightRole = ref('');
+      const leftRole = ref('');
+      const rightRole = ref('');
       const numberOfLeftParties = ref(0);
       const numberOfRightParties = ref(0);
       const sortBy = 'name';

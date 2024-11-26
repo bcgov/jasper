@@ -181,12 +181,12 @@
       const route = useRoute();
 
       const criminalList = ref<fileSearchCriminalInfoType[]>([]);
-      let isMounted = ref(false);
-      let isDataReady = ref(false);
-      let loadCompleted = ref(true);
-      let errorCode = ref(0);
-      let errorText = ref('');
-      let allFilesChecked = ref(false);
+      const isMounted = ref(false);
+      const isDataReady = ref(false);
+      const loadCompleted = ref(true);
+      const errorCode = ref(0);
+      const errorText = ref('');
+      const allFilesChecked = ref(false);
       const selectedFiles = ref<string[]>([]);
 
       const fields = [

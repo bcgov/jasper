@@ -54,9 +54,9 @@
         []
       );
 
-      let sortBy = ref('adjudicator');
-      let sortDesc = ref(false);
-      let isMounted = ref(false);
+      const sortBy = ref('adjudicator');
+      const sortDesc = ref(false);
+      const isMounted = ref(false);
 
       const fields = [
         {

@@ -28,11 +28,9 @@
 <script lang="ts">
   import { useCivilFileStore } from '@/stores';
   import { defineComponent } from 'vue';
-  import { useRouter } from 'vue-router';
 
   export default defineComponent({
     setup() {
-      const router = useRouter();
       const civilFileStore = useCivilFileStore();
 
       const panelItems = [
@@ -54,9 +52,6 @@
         civilFileStore.updateShowSections(sections);
       };
 
-      const navigateToHomePage = () => {
-        router.push({ name: 'Home' });
-      };
       return {
         panelItems,
         SelectPanelItem,

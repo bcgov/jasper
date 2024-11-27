@@ -147,7 +147,6 @@
   } from '@/types/common';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
   import { getSingleValue } from '@/utils/utils';
-  import CivilAdjudicatorRestrictions from '@components/civil/CivilAdjudicatorRestrictions.vue';
   import CivilCommentNotes from '@components/civil/CivilCommentNotes.vue';
   import CivilDocumentsView from '@components/civil/CivilDocumentsView.vue';
   import CivilFutureAppearances from '@components/civil/CivilFutureAppearances.vue';
@@ -161,13 +160,12 @@
   import base64url from 'base64url';
   import _ from 'underscore';
   import { computed, defineComponent, inject, onMounted, ref } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import { useRoute } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
   import shared from '../shared';
 
   export default defineComponent({
     components: {
-      CivilAdjudicatorRestrictions,
       CivilCommentNotes,
       CivilDocumentsView,
       CivilProvidedDocumentsView,
@@ -186,7 +184,10 @@
       const courtFileSearchStore = useCourtFileSearchStore();
       const httpService = inject<HttpService>('httpService');
 
-      const router = useRouter();
+      if (!httpService) {
+        throw new Error('Service is undefined.');
+      }
+
       const route = useRoute();
 
       const leftPartiesInfo = ref<partiesInfoType[]>([]);
@@ -235,17 +236,16 @@
         navigateToSection(route.params.section);
       });
 
-      const navigateToSection = (section) =>
-        void {
-          if(section) {
-            const sections = civilFileStore.showSections;
-            for (const item of sidePanelTitles.value) {
-              if (item == section) sections[item] = true;
-              else sections[item] = false;
-            }
-            civilFileStore.updateShowSections(sections);
-          },
-        };
+      const navigateToSection = (section) => {
+        if (section) {
+          const sections = civilFileStore.showSections;
+          for (const item of sidePanelTitles.value) {
+            if (item == section) sections[item] = true;
+            else sections[item] = false;
+          }
+          civilFileStore.updateShowSections(sections);
+        }
+      };
 
       const getFileDetails = () => {
         errorCode.value = 0;
@@ -275,7 +275,7 @@
               if (data.sealedYN == 'Y') {
                 isSealed.value = true;
               }
-              //ExtractCaseInfo();
+              ExtractCaseInfo();
               if (
                 adjudicatorRestrictionsInfo.value.length > 0 ||
                 leftPartiesInfo.value.length > 0 ||
@@ -420,12 +420,6 @@
           documentsToDownload.csrRequests.length > 0 ||
           documentsToDownload.documentRequests.length > 0
         ) {
-          const options = {
-            responseType: 'blob',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
           downloadCompleted.value = false;
           httpService
             .post<Blob>(
@@ -707,9 +701,9 @@
         });
       };
 
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
-      };
+      // const navigateToLandingPage = () => {
+      //   router.push({ name: 'Home' });
+      // };
 
       const reloadCaseDetails = () => {
         // Reset the properties to load new case details.

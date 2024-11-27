@@ -175,14 +175,17 @@
       const router = useRouter();
       const route = useRoute();
 
-      const civilList = ref<fileSearchCivilInfoType[]>();
+      if (!httpService) {
+        throw new Error('Service is undefined.');
+      }
+
+      const civilList = ref<fileSearchCivilInfoType[]>([]);
       const isMounted = ref(false);
       const isDataReady = ref(false);
       const loadCompleted = ref(true);
       const errorCode = ref(0);
       const errorText = ref('');
       const allFilesChecked = ref(false);
-      const selectedFiles = ref<string[]>([]);
 
       const fields = [
         {
@@ -345,9 +348,9 @@
         return _.sortBy(civilList, 'fileId');
       });
 
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
-      };
+      // const navigateToLandingPage = () => {
+      //   router.push({ name: 'Home' });
+      // };
 
       return {
         loadCompleted,

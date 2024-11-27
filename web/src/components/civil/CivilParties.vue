@@ -141,8 +141,6 @@
       const rightRole = ref('');
       const numberOfLeftParties = ref(0);
       const numberOfRightParties = ref(0);
-      const sortBy = 'name';
-      const sortDesc = false;
 
       const fields = [
         {

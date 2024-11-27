@@ -204,9 +204,9 @@
           );
       });
 
-      const NumberOfCounts = () => {
-        return participantSentences[selectedParticipant.value].counts.length;
-      };
+      // const NumberOfCounts = () => {
+      //   return participantSentences[selectedParticipant.value].counts.length;
+      // };
 
       const getRowStyle = (index) => {
         if (index == 0) return 'border-top : 1px solid #999;';

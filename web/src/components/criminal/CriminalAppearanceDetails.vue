@@ -297,6 +297,10 @@
       const commonStore = useCommonStore();
       const httpService = inject<HttpService>('httpService');
 
+      if (!httpService) {
+        throw new Error('HttpService is not available!');
+      }
+
       const appearanceAdditionalInfo = ref<appearanceAdditionalInfoType[]>([]);
       const appearanceCharges = ref<appearanceChargesInfoType[]>([]);
       const appearanceMethods = ref<criminalAppearanceMethodsInfoType[]>([]);
@@ -309,7 +313,7 @@
       const loadingPdf = ref(false);
       const loadingROP = ref(false);
       const isMounted = ref(false);
-      const isDataReady = ref(false);
+      //const isDataReady = ref(false);
       let appearanceDetailsJson = {
         agencyId: '',
         judgesRecommendation: '',
@@ -357,8 +361,8 @@
           partyAppearanceMethodDesc: string;
         },
       };
-      const sortBy = ref('date');
-      const sortDesc = ref(true);
+      //const sortBy = ref('date');
+      //const sortDesc = ref(true);
       const showNotes = ref(false);
       const informationsFileExists = ref(false);
       let notes = reactive({} as appearanceNotesInfoType);

@@ -99,13 +99,13 @@
 </template>
 
 <script lang="ts">
-  import { useCommonStore, useCriminalFileStore } from '@/stores';
+  import { useCriminalFileStore } from '@/stores';
   import { participantListInfoType } from '@/types/criminal';
   import { defineComponent, onMounted, ref } from 'vue';
 
   export default defineComponent({
     setup() {
-      const commonStore = useCommonStore();
+//      const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
 
       const participantList = ref<participantListInfoType[]>([]);

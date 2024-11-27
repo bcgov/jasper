@@ -183,22 +183,26 @@
       const router = useRouter();
       const httpService = inject<HttpService>('httpService');
 
+      if (!httpService) {
+        throw new Error('HttpService is not available!');
+      }
+
       const participantFiles: participantListInfoType[] = [];
       let participantList: participantListInfoType[] = [];
       const categories = ref<string[]>([]);
 
       let courtLevel = '';
       let courtClass = '';
-      const message = ref('Loading');
+//      const message = ref('Loading');
       const loadingPdf = ref(false);
       const activetab = ref('ALL');
-      const tabIndex = ref(0);
+//      const tabIndex = ref(0);
       const sortBy = ref('date');
       const sortDesc = ref(true);
-      const hoverRow = ref(-1);
-      const hoverCol = ref(0);
+//      const hoverRow = ref(-1);
+//      const hoverCol = ref(0);
       const isMounted = ref(false);
-      const isDataValid = ref(false);
+//      const isDataValid = ref(false);
 
       let fieldsTab = fieldTab.Categories;
       const documentPlace = ref([2, 1, 2]);
@@ -366,9 +370,9 @@
         criminalFileStore.updateActiveCriminalParticipantIndex(index);
       };
 
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
-      };
+      // const navigateToLandingPage = () => {
+      //   router.push({ name: 'Home' });
+      // };
 
       const getNameOfParticipant = (num) => {
         commonStore.updateDisplayName({

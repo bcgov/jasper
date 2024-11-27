@@ -173,7 +173,7 @@
 
 <script lang="ts">
   import { beautifyDate } from '@/filters';
-  import { useCommonStore, useCriminalFileStore } from '@/stores';
+  import { useCriminalFileStore } from '@/stores';
   import {
     countInfoType,
     participantListInfoType,
@@ -190,7 +190,7 @@
       CriminalSentenceDetails,
     },
     setup() {
-      const commonStore = useCommonStore();
+//      const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
 
       const participantSentences = ref<participantSentencesInfoType[]>([]);

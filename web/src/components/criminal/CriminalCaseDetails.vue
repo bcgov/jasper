@@ -31,12 +31,12 @@
           Server is not responding. <b>({{ errorText }})</b>
         </span>
       </b-card>
-      <!-- <b-card>
+      <b-card>
             <b-button id="backToLandingPage" variant="outline-primary text-dark bg-warning" @click="navigateToLandingPage">
                 <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
                 Return to Main Page
             </b-button>         
-        </b-card> -->
+        </b-card>
     </b-card>
 
     <b-row cols="2">
@@ -191,7 +191,7 @@
       CriminalCrownInformation,
       CriminalPastAppearances,
       CriminalFutureAppearances,
-      CriminalCrownNotes,
+//      CriminalCrownNotes,
       CriminalWitnesses,
       CriminalSentence,
       CustomOverlay,
@@ -203,6 +203,10 @@
       const route = useRoute();
       const router = useRouter();
       const httpService = inject<HttpService>('httpService');
+
+      if (!httpService) {
+        throw new Error('HttpService is not available!');
+      }
 
       const participantList = ref<participantListInfoType[]>([]);
       const adjudicatorRestrictionsInfo = ref<
@@ -406,12 +410,12 @@
           documentsToDownload.ropRequests.length > 0 ||
           documentsToDownload.documentRequests.length > 0
         ) {
-          const options = {
-            responseType: 'blob',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
+          // const options = {
+          //   responseType: 'blob',
+          //   headers: {
+          //     'Content-Type': 'application/json',
+          //   },
+          // };
           downloadCompleted.value = false;
           httpService
             .post<Blob>(

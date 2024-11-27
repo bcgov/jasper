@@ -16,12 +16,12 @@
         </b-nav-item>
       </b-nav>
     </div>
-    <!-- <div class="mt-4">
-            <b-button variant="outline-primary text-dark bg-warning" @click="navigateToHomePage()">
-                <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
-                Return to Main Page
-            </b-button>
-        </div> -->
+    <div class="mt-4">
+        <b-button variant="outline-primary text-dark bg-warning" @click="navigateToHomePage()">
+            <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
+            Return to Main Page
+        </b-button>
+    </div> 
   </div>
 </template>
 

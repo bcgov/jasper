@@ -177,6 +177,11 @@
       const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
       const httpService = inject<HttpService>('httpService');
+
+      if (!httpService) {
+        throw new Error('HttpService is not available!');
+      }
+
       const router = useRouter();
       const route = useRoute();
 
@@ -187,7 +192,7 @@
       const errorCode = ref(0);
       const errorText = ref('');
       const allFilesChecked = ref(false);
-      const selectedFiles = ref<string[]>([]);
+//      const selectedFiles = ref<string[]>([]);
 
       const fields = [
         {

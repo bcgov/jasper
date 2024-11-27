@@ -32,10 +32,10 @@
         </span>
       </b-card>
       <b-card>
-            <b-button id="backToLandingPage" variant="outline-primary text-dark bg-warning" @click="navigateToLandingPage">
+            <!-- <b-button id="backToLandingPage" variant="outline-primary text-dark bg-warning" @click="navigateToLandingPage">
                 <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
                 Return to Main Page
-            </b-button>         
+            </b-button>          -->
         </b-card>
     </b-card>
 
@@ -136,7 +136,7 @@
   import { getSingleValue } from '@/utils/utils';
   import CriminalAdjudicatorRestrictions from '@components/criminal/CriminalAdjudicatorRestrictions.vue';
   import CriminalCrownInformation from '@components/criminal/CriminalCrownInformation.vue';
-  import CriminalCrownNotes from '@components/criminal/CriminalCrownNotes.vue';
+//  import CriminalCrownNotes from '@components/criminal/CriminalCrownNotes.vue';
   import CriminalDocumentsView from '@components/criminal/CriminalDocumentsView.vue';
   import CriminalFutureAppearances from '@components/criminal/CriminalFutureAppearances.vue';
   import CriminalHeader from '@components/criminal/CriminalHeader.vue';
@@ -149,7 +149,7 @@
   import CourtFilesSelector from '@components/shared/CourtFilesSelector.vue';
   import base64url from 'base64url';
   import { computed, defineComponent, inject, onMounted, ref } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import { useRoute } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
   import shared from '../shared';
 
@@ -201,7 +201,7 @@
       const courtFileSearchStore = useCourtFileSearchStore();
       const criminalFileStore = useCriminalFileStore();
       const route = useRoute();
-      const router = useRouter();
+//      const router = useRouter();
       const httpService = inject<HttpService>('httpService');
 
       if (!httpService) {
@@ -584,9 +584,9 @@
         }
       };
 
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
-      };
+      // const navigateToLandingPage = () => {
+      //   router.push({ name: 'Home' });
+      // };
 
       const reloadCaseDetails = () => {
         // Reset the properties to load new case details.

@@ -31,7 +31,7 @@
     <b-card bg-variant="light" v-if="isMounted && !isDataReady">
       <b-card style="min-height: 100px">
         <span v-if="errorCode == 404"
-          >This <b>File-Number '{{ this.$route.query.fileNumber }}'</b> at
+          >This <b>File-Number '{{ route.query.fileNumber }}'</b> at
           <b> location '{{ this.$route.query.location }}' </b> doesn't exist in
           the <b>criminal</b> records.
         </span>
@@ -367,9 +367,9 @@
         if (item.today) return 'table-warning';
       };
 
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
-      };
+      // const navigateToLandingPage = () => {
+      //   router.push({ name: 'Home' });
+      // };
 
       return {
         isMounted,

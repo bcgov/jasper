@@ -221,7 +221,6 @@
 
             <template
               v-slot:cell(appearance)="data"
-              :style="data.field.cellStyle"
             >
               <span>{{ data.value }}</span>
               <span

@@ -164,7 +164,7 @@
     onMounted,
     ref,
   } from 'vue';
-  import { useRouter } from 'vue-router';
+//  import { useRouter } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
 
   enum fieldTab {
@@ -180,7 +180,7 @@
     setup() {
       const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
-      const router = useRouter();
+//      const router = useRouter();
       const httpService = inject<HttpService>('httpService');
 
       if (!httpService) {
@@ -191,8 +191,8 @@
       let participantList: participantListInfoType[] = [];
       const categories = ref<string[]>([]);
 
-      let courtLevel = '';
-      let courtClass = '';
+//      let courtLevel;
+//      let courtClass;
 //      const message = ref('Loading');
       const loadingPdf = ref(false);
       const activetab = ref('ALL');
@@ -343,8 +343,8 @@
       const getDocuments = () => {
         participantList =
           criminalFileStore.criminalFileInformation.participantList;
-        courtLevel = criminalFileStore.criminalFileInformation.courtLevel;
-        courtClass = criminalFileStore.criminalFileInformation.courtClass;
+//        courtLevel = criminalFileStore.criminalFileInformation.courtLevel;
+//        courtClass = criminalFileStore.criminalFileInformation.courtClass;
 
         ExtractDocumentInfo();
         isMounted.value = true;

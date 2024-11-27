@@ -219,9 +219,7 @@
               <b> {{ data.label }}</b>
             </template>
 
-            <template
-              v-slot:cell(appearance)="data"
-            >
+            <template v-slot:cell(appearance)="data">
               <span>{{ data.value }}</span>
               <span
                 ><br v-if="data.value.length > 0" />{{

@@ -185,6 +185,10 @@
       const router = useRouter();
       const route = useRoute();
 
+      if (!httpService) {
+        throw new Error('Service is undefined.');
+      }
+
       const criminalList = ref<fileSearchCriminalInfoType[]>([]);
       const isMounted = ref(false);
       const isDataReady = ref(false);
@@ -192,7 +196,7 @@
       const errorCode = ref(0);
       const errorText = ref('');
       const allFilesChecked = ref(false);
-//      const selectedFiles = ref<string[]>([]);
+      //      const selectedFiles = ref<string[]>([]);
 
       const fields = [
         {
@@ -386,6 +390,7 @@
         toggleSelectedFiles,
         OpenCriminalFilePage,
         beautifyDate,
+        route,
       };
     },
   });

@@ -164,7 +164,7 @@
     onMounted,
     ref,
   } from 'vue';
-//  import { useRouter } from 'vue-router';
+  //  import { useRouter } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
 
   enum fieldTab {
@@ -180,7 +180,7 @@
     setup() {
       const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
-//      const router = useRouter();
+      //      const router = useRouter();
       const httpService = inject<HttpService>('httpService');
 
       if (!httpService) {
@@ -191,18 +191,18 @@
       let participantList: participantListInfoType[] = [];
       const categories = ref<string[]>([]);
 
-//      let courtLevel;
-//      let courtClass;
-//      const message = ref('Loading');
+      //      let courtLevel;
+      //      let courtClass;
+      //      const message = ref('Loading');
       const loadingPdf = ref(false);
       const activetab = ref('ALL');
-//      const tabIndex = ref(0);
+      //      const tabIndex = ref(0);
       const sortBy = ref('date');
       const sortDesc = ref(true);
-//      const hoverRow = ref(-1);
-//      const hoverCol = ref(0);
+      //      const hoverRow = ref(-1);
+      //      const hoverCol = ref(0);
       const isMounted = ref(false);
-//      const isDataValid = ref(false);
+      //      const isDataValid = ref(false);
 
       let fieldsTab = fieldTab.Categories;
       const documentPlace = ref([2, 1, 2]);
@@ -343,8 +343,8 @@
       const getDocuments = () => {
         participantList =
           criminalFileStore.criminalFileInformation.participantList;
-//        courtLevel = criminalFileStore.criminalFileInformation.courtLevel;
-//        courtClass = criminalFileStore.criminalFileInformation.courtClass;
+        //        courtLevel = criminalFileStore.criminalFileInformation.courtLevel;
+        //        courtClass = criminalFileStore.criminalFileInformation.courtClass;
 
         ExtractDocumentInfo();
         isMounted.value = true;

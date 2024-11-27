@@ -105,7 +105,7 @@
 
   export default defineComponent({
     setup() {
-//      const commonStore = useCommonStore();
+      //      const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
 
       const participantList = ref<participantListInfoType[]>([]);

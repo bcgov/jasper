@@ -17,23 +17,23 @@
       </b-nav>
     </div>
     <div class="mt-4">
-        <!-- <b-button variant="outline-primary text-dark bg-warning" @click="navigateToHomePage()">
+      <!-- <b-button variant="outline-primary text-dark bg-warning" @click="navigateToHomePage()">
             <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
             Return to Main Page
         </b-button> -->
-    </div> 
+    </div>
   </div>
 </template>
 
 <script lang="ts">
   import { useCriminalFileStore } from '@/stores';
   import { defineComponent } from 'vue';
-//  import { useRouter } from 'vue-router';
+  //  import { useRouter } from 'vue-router';
 
   export default defineComponent({
     setup() {
       const criminalFileStore = useCriminalFileStore();
-//      const router = useRouter();
+      //      const router = useRouter();
 
       const panelItems = [
         'Case Details',

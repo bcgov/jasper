@@ -32,11 +32,11 @@
         </span>
       </b-card>
       <b-card>
-            <!-- <b-button id="backToLandingPage" variant="outline-primary text-dark bg-warning" @click="navigateToLandingPage">
+        <!-- <b-button id="backToLandingPage" variant="outline-primary text-dark bg-warning" @click="navigateToLandingPage">
                 <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
                 Return to Main Page
             </b-button>          -->
-        </b-card>
+      </b-card>
     </b-card>
 
     <b-row cols="2">
@@ -136,7 +136,7 @@
   import { getSingleValue } from '@/utils/utils';
   import CriminalAdjudicatorRestrictions from '@components/criminal/CriminalAdjudicatorRestrictions.vue';
   import CriminalCrownInformation from '@components/criminal/CriminalCrownInformation.vue';
-//  import CriminalCrownNotes from '@components/criminal/CriminalCrownNotes.vue';
+  //  import CriminalCrownNotes from '@components/criminal/CriminalCrownNotes.vue';
   import CriminalDocumentsView from '@components/criminal/CriminalDocumentsView.vue';
   import CriminalFutureAppearances from '@components/criminal/CriminalFutureAppearances.vue';
   import CriminalHeader from '@components/criminal/CriminalHeader.vue';
@@ -191,7 +191,7 @@
       CriminalCrownInformation,
       CriminalPastAppearances,
       CriminalFutureAppearances,
-//      CriminalCrownNotes,
+      //      CriminalCrownNotes,
       CriminalWitnesses,
       CriminalSentence,
       CustomOverlay,
@@ -201,7 +201,7 @@
       const courtFileSearchStore = useCourtFileSearchStore();
       const criminalFileStore = useCriminalFileStore();
       const route = useRoute();
-//      const router = useRouter();
+      //      const router = useRouter();
       const httpService = inject<HttpService>('httpService');
 
       if (!httpService) {

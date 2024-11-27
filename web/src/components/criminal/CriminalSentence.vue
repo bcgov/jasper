@@ -190,7 +190,7 @@
       CriminalSentenceDetails,
     },
     setup() {
-//      const commonStore = useCommonStore();
+      //      const commonStore = useCommonStore();
       const criminalFileStore = useCriminalFileStore();
 
       const participantSentences = ref<participantSentencesInfoType[]>([]);

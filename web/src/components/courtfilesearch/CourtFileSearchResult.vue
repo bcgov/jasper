@@ -168,9 +168,10 @@
 </template>
 <script lang="ts">
   import { beautifyDate } from '@/filters';
-  import { KeyValueInfo } from '@/types/common';
+  import { KeyValueInfo, LookupCode } from '@/types/common';
   import { CourtClassEnum, FileDetail } from '@/types/courtFileSearch';
-  import { defineComponent } from 'vue';
+  import { roomsInfoType } from '@/types/courtlist';
+  import { defineComponent, PropType } from 'vue';
 
   export default defineComponent({
     data() {
@@ -364,12 +365,21 @@
       },
     },
     props: {
-      courtRooms: { type: Array, default: () => [] },
-      searchResults: { type: Array, default: () => [] },
-      classes: { type: Array, default: () => [] },
+      courtRooms: {
+        type: Array as PropType<roomsInfoType[]>,
+        default: () => [],
+      },
+      searchResults: {
+        type: Array as PropType<FileDetail[]>,
+        default: () => [],
+      },
+      classes: { type: Array as PropType<LookupCode[]>, default: () => [] },
       isSearching: { type: Boolean, default: () => false },
       isCriminal: { type: Boolean, default: () => true },
-      selectedFiles: { type: Array, default: () => [] },
+      selectedFiles: {
+        type: Array as PropType<FileDetail[]>,
+        default: () => [],
+      },
       isSearchResultsOver: { type: Boolean, default: () => false },
     },
   });

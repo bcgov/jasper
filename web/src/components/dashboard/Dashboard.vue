@@ -80,12 +80,9 @@
   }
 </style>
 <script lang="ts">
-  import NavigationTopbar from '@components/NavigationTopbar.vue';
   import { defineComponent } from 'vue';
 
   export default defineComponent({
-    components: {
-      NavigationTopbar,
-    },
+    name: 'DashboardView',
   });
 </script>

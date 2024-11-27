@@ -186,6 +186,10 @@
       const httpService = inject<HttpService>('httpService');
       const route = useRoute();
 
+      if (!httpService) {
+        throw new Error('Service undefined.');
+      }
+
       const pastAppearancesList = ref<civilAppearancesListType[]>([]);
 
       const isMounted = ref(false);

@@ -186,12 +186,8 @@
     onMounted,
     ref,
   } from 'vue';
-  import { useRouter } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
   import shared from '../shared';
-  enum fieldTab {
-    Categories = 0,
-  }
 
   export default defineComponent({
     components: {
@@ -201,7 +197,10 @@
       const civilFileStore = useCivilFileStore();
       const commonStore = useCommonStore();
       const httpService = inject<HttpService>('httpService');
-      const router = useRouter();
+
+      if (!httpService) {
+        throw new Error('Service undefined.');
+      }
 
       const documents = ref<referenceDocumentsInfoType[]>([]);
       const loadingPdf = ref(false);
@@ -210,7 +209,6 @@
       const activetab = ref('ALL');
       const sortDesc = ref(false);
       const categories = ref<string[]>([]);
-      const fieldsTab = fieldTab.Categories;
       const fields = ref([]);
       const selectedDocuments = ref({} as ArchiveInfoType);
       const downloadCompleted = ref(true);
@@ -431,10 +429,6 @@
         };
         shared.openDocumentsPdf(CourtDocumentType.ProvidedCivil, documentData);
         loadingPdf.value = false;
-      };
-
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
       };
 
       const FilteredDocuments = computed(() => {

@@ -294,7 +294,7 @@
             </span>
             <span
               :style="field.cellStyle"
-              v-bind:key="index"
+              v-bind:key="`role-${index}`"
               v-else-if="data.field.key == 'role' && data.value.length > 0"
             >
               <span
@@ -306,6 +306,7 @@
             <span
               :style="field.cellStyle"
               v-else-if="data.field.key == 'name' && data.item.info.length == 0"
+              v-bind:key="`name-${index}`"
             >
               {{ data.value }}
             </span>
@@ -314,6 +315,7 @@
               :style="field.cellStyle"
               v-else-if="data.field.key == 'name' && data.item.info.length > 0"
               v-b-tooltip.hover.right.html="data.item.info"
+              v-bind:key="`success-name-${index}`"
             >
               {{ data.value }}
             </span>
@@ -322,6 +324,7 @@
               v-else-if="
                 data.field.key == 'representative' && data.value.length > 0
               "
+              v-bind:key="`representative-${index}`"
             >
               <span v-for="(rep, repIndex) in data.value" v-bind:key="repIndex">
                 <span v-if="rep.info.length == 0">{{ rep.name }}<br /></span>
@@ -337,11 +340,11 @@
               </span>
             </span>
             <span
-              v-bind:key="index"
               :style="field.cellStyle"
               v-else-if="
                 data.field.key == 'legalRepresentative' && data.value.length > 0
               "
+              v-bind:key="`legalRepresentative-${index}`"
             >
               <span
                 v-for="(legalRep, legalRepIndex) in data.value"

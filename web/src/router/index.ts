@@ -20,7 +20,7 @@ async function authGuard(to: any, from: any, next: any) {
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'Home',
+    name: 'HomeView',
     component: Home,
   },
   {
@@ -63,7 +63,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/dashboard',
-    name: 'Dashboard',
+    name: 'DashboardView',
     component: Dashboard,
     props: true,
   },

@@ -175,7 +175,6 @@
       const civilFileStore = useCivilFileStore();
 
       const maximumFullNameLength = 15;
-      const activeParty = 0;
       const fileNumberText = ref('');
       const sheriffComment = ref('');
       let activityClassCode;

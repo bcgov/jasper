@@ -210,8 +210,8 @@
     onMounted,
     reactive,
     ref,
+    watch,
   } from 'vue';
-  import { useRouter } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
   import shared from '../shared';
 
@@ -231,7 +231,10 @@
       const commonStore = useCommonStore();
       const civilFileStore = useCivilFileStore();
       const httpService = inject<HttpService>('httpService');
-      const router = useRouter();
+
+      if (!httpService) {
+        throw new Error('Service is undefined.');
+      }
 
       const documents = ref<documentsInfoType[]>([]);
       const summaryDocuments = ref<summaryDocumentsInfoType[]>([]);
@@ -809,21 +812,8 @@
         });
       };
 
-      const navigateToLandingPage = () => {
-        router.push({ name: 'Home' });
-      };
-
-      const ExtractIssues = (issues) => {
-        let issueString = '';
-        for (const issue of issues) {
-          issueString += issue.issueDsc + '\n';
-        }
-        return issueString;
-      };
-
       const FilteredDocuments = computed(() => {
         if (activetab.value == 'COURT SUMMARY') {
-          fieldsTab.value = fieldTab.Summary;
           return summaryDocuments.value;
         } else {
           return documents.value.filter((doc) => {
@@ -866,16 +856,29 @@
         }
       });
 
+      watch(activetab, (newValue) => {
+        if (newValue == 'COURT SUMMARY') {
+          fieldsTab.value = fieldTab.Summary;
+        }
+      });
+
       const sortBy = computed(() => {
         if (activetab.value == 'COURT SUMMARY') {
-          sortDesc.value = true;
           return 'appearanceDate';
         } else if (activetab.value == 'ORDERS') {
-          sortDesc.value = false;
           return 'seq';
         } else {
-          sortDesc.value = true;
           return 'dateFiled';
+        }
+      });
+
+      watch(activetab, (newValue) => {
+        if (newValue == 'COURT SUMMARY') {
+          sortDesc.value = true;
+        } else if (newValue == 'ORDERS') {
+          sortDesc.value = false;
+        } else {
+          sortDesc.value = true;
         }
       });
 

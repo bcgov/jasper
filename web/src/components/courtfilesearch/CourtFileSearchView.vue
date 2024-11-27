@@ -234,12 +234,11 @@
   </b-card>
 </template>
 <script lang="ts">
+  import { FilesService } from '@/services/FilesService';
+  import { LocationService } from '@/services/LocationService';
+  import { LookupService } from '@/services/LookupService';
   import { useCommonStore, useCourtFileSearchStore } from '@/stores';
-  import {
-    CourtRoomsJsonInfoType,
-    KeyValueInfo,
-    LookupCode,
-  } from '@/types/common';
+  import { KeyValueInfo, LookupCode } from '@/types/common';
   import {
     CourtClassEnum,
     CourtFileSearchCriteria,
@@ -248,78 +247,80 @@
   } from '@/types/courtFileSearch';
   import { roomsInfoType } from '@/types/courtlist';
   import CourtFileSearchResult from '@components/courtfilesearch/CourtFileSearchResult.vue';
-  import { defineComponent } from 'vue';
+  import { defineComponent, inject, onMounted, reactive, ref } from 'vue';
+  import { useRouter } from 'vue-router';
 
   const CRIMINAL_CODE = 'R';
   const SMALL_CLAIMS_CODE = 'I';
   const SEARCH_RESULT_LIMIT = 100;
 
   export default defineComponent({
-    name: 'CourtFileSearchView',
     components: {
       CourtFileSearchResult,
     },
-    data() {
+    setup() {
       const courtFileSearchStore = useCourtFileSearchStore();
       const commonStore = useCommonStore();
-      const searchCriteria: CourtFileSearchCriteria = {
+      const router = useRouter();
+
+      let searchCriteria: CourtFileSearchCriteria = reactive({
         isCriminal: true,
         isFamily: false,
         isSmallClaims: false,
         searchBy: 'fileNumber',
         fileHomeAgencyId: commonStore.userInfo.agencyCode,
-      };
-      const classOptions: LookupCode[] = [];
-      const selectedFiles: FileDetail[] = [];
-      const searchResults: FileDetail[] = [];
-      const classes: LookupCode[] = [];
-      const courtRooms: roomsInfoType[] = [];
+      });
+      const classOptions = ref<LookupCode[]>([]);
+      const selectedFiles = ref<FileDetail[]>([]);
+      const searchResults = ref<FileDetail[]>([]);
+      const classes = ref<LookupCode[]>([]);
+      const courtRooms = ref<roomsInfoType[]>([]);
+      const isLookupDataReady = ref(false);
+      const isLookupDataMounted = ref(false);
+      const isSearching = ref(false);
+      const hasSearched = ref(false);
+      const isSearchResultsOver = ref(false);
+      const defaultLocation = commonStore.userInfo.agencyCode;
 
-      return {
-        errorCode: 0,
-        errorText: '',
-        courtRooms,
-        classes,
-        searchResults,
-        selectedFiles,
-        isLookupDataMounted: false,
-        isLookupDataReady: false,
-        hasSearched: false,
-        isSearching: false,
-        isSearchResultsOver: false,
-        defaultLocation: commonStore.userInfo.agencyCode,
-        classOptions,
-        searchCriteria,
-        errors: {
-          isMissingFileNo: false,
-          isMissingSurname: false,
-          isMissingOrg: false,
-        },
-        courtFileSearchStore,
-      };
-    },
-    async mounted() {
-      this.loadData();
-    },
-    methods: {
-      async loadData(): Promise<void> {
+      const errorCode = ref('');
+      const errorText = ref('');
+      const errors = reactive({
+        isMissingFileNo: false,
+        isMissingSurname: false,
+        isMissingOrg: false,
+      });
+
+      const locationService = inject<LocationService>('locationService');
+      const lookupService = inject<LookupService>('lookupService');
+      const filesService = inject<FilesService>('fileService');
+
+      if (!locationService || !lookupService || !filesService) {
+        throw new Error('Services is undefined.');
+      }
+
+      onMounted(async () => {
+        await loadData();
+      });
+
+      const loadData = async (): Promise<void> => {
         try {
-          const [courtRooms, courtClasses] = await Promise.all([
-            this.$locationService.getCourtRooms(),
-            this.$lookupService.getCourtClasses(),
+          const [courtRoomsResp, courtClassesResp] = await Promise.all([
+            locationService.getCourtRooms(),
+            lookupService.getCourtClasses(),
           ]);
 
-          this.courtRooms = courtRooms;
-          this.classes = courtClasses;
-          this.loadDataFromState();
-          this.loadClasses();
-          this.isLookupDataReady = true;
+          courtRooms.value = courtRoomsResp;
+          classes.value = courtClassesResp;
+          loadDataFromState();
+          loadClasses();
+          isLookupDataReady.value = true;
         } catch (err: unknown) {
-          // this.errorCode = err.status;
-          // this.errorText = err.statusText;
-          // if (this.errorCode != 401) {
-          //   this.$bvToast.toast(
-          //     `Error - ${this.errorCode} - ${this.errorText}`,
+          console.error(err);
+          // errorCode = err.status;
+          // errorText = err.statusText;
+          // if (errorCode != 401) {
+          //   $bvToast.toast(
+          //     `Error - ${errorCode} - ${errorText}`,
           //     {
           //       title: 'An error has occured.',
           //       variant: 'danger',
@@ -327,39 +328,39 @@
           //     }
           //   );
           // }
-          // console.log(this.errorCode);
+          // console.log(errorCode);
         } finally {
-          this.isLookupDataMounted = true;
+          isLookupDataMounted.value = true;
         }
-      },
-      handleDivisionChange(event: Event) {
-        this.searchCriteria.isCriminal = false;
-        this.searchCriteria.isFamily = false;
-        this.searchCriteria.isSmallClaims = false;
+      };
+
+      const handleDivisionChange = (event: Event) => {
+        searchCriteria.isCriminal = false;
+        searchCriteria.isFamily = false;
+        searchCriteria.isSmallClaims = false;
 
         const target = event.target as HTMLInputElement;
-        this.searchCriteria[target.value] = true;
+        searchCriteria[target.value] = true;
 
-        this.handleReset();
-      },
-      async handleSubmit() {
-        this.courtFileSearchStore.clearSelectedFiles();
+        handleReset();
+      };
 
-        this.sanitizeTextInputs();
-        this.resetErrors();
+      const handleSubmit = async () => {
+        courtFileSearchStore.clearSelectedFiles();
 
-        this.errors.isMissingFileNo =
-          this.searchCriteria.searchBy === 'fileNumber' &&
-          !this.searchCriteria.fileNumberTxt;
-        this.errors.isMissingSurname =
-          this.searchCriteria.searchBy === 'lastName' &&
-          !this.searchCriteria.lastName;
-        this.errors.isMissingOrg =
-          this.searchCriteria.searchBy === 'orgName' &&
-          !this.searchCriteria.orgName;
+        sanitizeTextInputs();
+        resetErrors();
+
+        errors.isMissingFileNo =
+          searchCriteria.searchBy === 'fileNumber' &&
+          !searchCriteria.fileNumberTxt;
+        errors.isMissingSurname =
+          searchCriteria.searchBy === 'lastName' && !searchCriteria.lastName;
+        errors.isMissingOrg =
+          searchCriteria.searchBy === 'orgName' && !searchCriteria.orgName;
 
         // Don't proceed if any of the validation flag is set to true
-        const hasNoErrors = Object.values(this.errors).every(
+        const hasNoErrors = Object.values(errors).every(
           (value) => value === false
         );
         if (!hasNoErrors) {
@@ -367,27 +368,24 @@
         }
 
         try {
-          this.isSearching = true;
-          this.searchResults.length = 0;
-          this.isSearchResultsOver = false;
+          isSearching.value = true;
+          searchResults.value.length = 0;
+          isSearchResultsOver.value = false;
 
-          const { recCount, fileDetail } = this.searchCriteria.isCriminal
-            ? await this.$filesService.searchCriminalFiles(
-                this.buildQueryParams()
-              )
-            : await this.$filesService.searchCivilFiles(
-                this.buildQueryParams()
-              );
+          const { recCount, fileDetail } = searchCriteria.isCriminal
+            ? await filesService.searchCriminalFiles(buildQueryParams())
+            : await filesService.searchCivilFiles(buildQueryParams());
 
           // Make sure that to only show up to 100 results
-          this.isSearchResultsOver = recCount > SEARCH_RESULT_LIMIT;
-          this.searchResults = fileDetail.slice(0, SEARCH_RESULT_LIMIT);
+          isSearchResultsOver.value = recCount > SEARCH_RESULT_LIMIT;
+          searchResults.value = fileDetail.slice(0, SEARCH_RESULT_LIMIT);
         } catch (err: unknown) {
-          // this.errorCode = err.status;
-          // this.errorText = err.statusText;
-          // if (this.errorCode != 401) {
-          //   this.$bvToast.toast(
-          //     `Error - ${this.errorCode} - ${this.errorText}`,
+          console.error(err);
+          // errorCode = err.status;
+          // errorText = err.statusText;
+          // if (errorCode != 401) {
+          //   $bvToast.toast(
+          //     `Error - ${errorCode} - ${errorText}`,
           //     {
           //       title: 'An error has occured.',
           //       variant: 'danger',
@@ -395,182 +393,197 @@
           //     }
           //   );
           // }
-          // console.log(this.errorCode);
+          // console.log(errorCode);
         } finally {
-          this.hasSearched = true;
-          this.isSearching = false;
+          hasSearched.value = true;
+          isSearching.value = false;
         }
-      },
-      handleReset(resetDivision = false): void {
-        this.courtFileSearchStore.clearSelectedFiles();
-        this.searchCriteria.isCriminal = resetDivision
+      };
+
+      const handleReset = (resetDivision = false) => {
+        courtFileSearchStore.clearSelectedFiles();
+        searchCriteria.isCriminal = resetDivision
           ? true
-          : this.searchCriteria.isCriminal;
-        this.searchCriteria.isFamily = resetDivision
+          : searchCriteria.isCriminal;
+        searchCriteria.isFamily = resetDivision
           ? false
-          : this.searchCriteria.isFamily;
-        this.searchCriteria.isSmallClaims = resetDivision
+          : searchCriteria.isFamily;
+        searchCriteria.isSmallClaims = resetDivision
           ? false
-          : this.searchCriteria.isSmallClaims;
-        this.searchCriteria.fileHomeAgencyId = this.defaultLocation;
-        this.searchCriteria.searchBy = 'fileNumber';
-        this.searchCriteria.fileNumberTxt = undefined;
-        this.searchCriteria.lastName = undefined;
-        this.searchCriteria.givenName = undefined;
-        this.searchCriteria.orgName = undefined;
-        this.searchCriteria.class = undefined;
+          : searchCriteria.isSmallClaims;
+        searchCriteria.fileHomeAgencyId = defaultLocation;
+        searchCriteria.searchBy = 'fileNumber';
+        searchCriteria.fileNumberTxt = undefined;
+        searchCriteria.lastName = undefined;
+        searchCriteria.givenName = undefined;
+        searchCriteria.orgName = undefined;
+        searchCriteria.class = undefined;
 
-        if (this.searchCriteria.isCriminal) {
-          this.searchCriteria.filePrefixTxt = undefined;
-          this.searchCriteria.fileSuffixNo = undefined;
-          this.searchCriteria.mDocRefTypeCode = undefined;
+        if (searchCriteria.isCriminal) {
+          searchCriteria.filePrefixTxt = undefined;
+          searchCriteria.fileSuffixNo = undefined;
+          searchCriteria.mDocRefTypeCode = undefined;
         }
 
-        this.loadClasses();
-        this.resetErrors();
+        loadClasses();
+        resetErrors();
 
-        this.searchResults.length = 0;
-        this.hasSearched = false;
-      },
-      sanitizeTextInputs(): void {
-        this.searchCriteria.fileNumberTxt =
-          this.searchCriteria.fileNumberTxt?.trim();
-        this.searchCriteria.filePrefixTxt =
-          this.searchCriteria.filePrefixTxt?.trim();
-        this.searchCriteria.fileSuffixNo =
-          this.searchCriteria.fileSuffixNo?.trim();
-        this.searchCriteria.mDocRefTypeCode =
-          this.searchCriteria.mDocRefTypeCode?.trim();
+        searchResults.value.length = 0;
+        hasSearched.value = false;
+      };
 
-        this.searchCriteria.lastName = this.searchCriteria.lastName?.trim();
-        this.searchCriteria.givenName = this.searchCriteria.givenName?.trim();
+      const sanitizeTextInputs = () => {
+        searchCriteria.fileNumberTxt = searchCriteria.fileNumberTxt?.trim();
+        searchCriteria.filePrefixTxt = searchCriteria.filePrefixTxt?.trim();
+        searchCriteria.fileSuffixNo = searchCriteria.fileSuffixNo?.trim();
+        searchCriteria.mDocRefTypeCode = searchCriteria.mDocRefTypeCode?.trim();
 
-        this.searchCriteria.orgName = this.searchCriteria.orgName?.trim();
-      },
-      resetErrors(): void {
-        this.errors.isMissingFileNo = false;
-        this.errors.isMissingSurname = false;
-        this.errors.isMissingOrg = false;
-      },
-      loadCourtRooms(courtRooms: CourtRoomsJsonInfoType[]): void {
-        const sortedCourtRooms = courtRooms.sort((a, b) =>
-          a.name.toLocaleLowerCase().localeCompare(b.name.toLowerCase())
-        );
+        searchCriteria.lastName = searchCriteria.lastName?.trim();
+        searchCriteria.givenName = searchCriteria.givenName?.trim();
 
-        sortedCourtRooms.map((cr) => {
-          this.courtRooms.push({
-            text: cr.name,
-            value: cr.code,
-          });
-        });
-      },
-      loadClasses(): void {
-        if (this.searchCriteria.isCriminal) {
-          this.classOptions = this.classes.filter(
+        searchCriteria.orgName = searchCriteria.orgName?.trim();
+      };
+
+      const resetErrors = () => {
+        errors.isMissingFileNo = false;
+        errors.isMissingSurname = false;
+        errors.isMissingOrg = false;
+      };
+
+      const loadClasses = () => {
+        if (searchCriteria.isCriminal) {
+          classOptions.value = classes.value.filter(
             (c) => c.longDesc === CRIMINAL_CODE
           );
-        } else if (this.searchCriteria.isFamily) {
-          this.classOptions = [];
-        } else if (this.searchCriteria.isSmallClaims) {
-          this.classOptions = this.classes.filter(
+        } else if (searchCriteria.isFamily) {
+          classOptions.value = [];
+        } else if (searchCriteria.isSmallClaims) {
+          classOptions.value = classes.value.filter(
             (c) =>
               c.longDesc === SMALL_CLAIMS_CODE &&
               c.code !== CourtClassEnum[CourtClassEnum.C]
           );
         }
-      },
-      buildQueryParams() {
-        const queryParams = this.buildSearchByQueryParams();
+      };
+
+      const buildQueryParams = () => {
+        const queryParams = buildSearchByQueryParams();
 
         // Class
-        if (this.searchCriteria.isFamily) {
+        if (searchCriteria.isFamily) {
           queryParams['courtClass'] = CourtClassEnum.F;
-        } else if (this.searchCriteria.class) {
-          queryParams['courtClass'] = CourtClassEnum[this.searchCriteria.class];
-        } else if (this.searchCriteria.isSmallClaims) {
+        } else if (searchCriteria.class) {
+          queryParams['courtClass'] = CourtClassEnum[searchCriteria.class];
+        } else if (searchCriteria.isSmallClaims) {
           queryParams['courtClass'] = CourtClassEnum.C;
         }
 
-        if (this.searchCriteria.fileHomeAgencyId) {
-          queryParams['fileHomeAgencyId'] =
-            this.searchCriteria.fileHomeAgencyId;
+        if (searchCriteria.fileHomeAgencyId) {
+          queryParams['fileHomeAgencyId'] = searchCriteria.fileHomeAgencyId;
         }
 
         return queryParams;
-      },
-      buildSearchByQueryParams() {
+      };
+
+      const buildSearchByQueryParams = () => {
         const queryParams = {};
 
-        if (this.searchCriteria.searchBy === 'fileNumber') {
+        if (searchCriteria.searchBy === 'fileNumber') {
           queryParams['searchMode'] = SearchModeEnum.FileNo;
-          queryParams['fileNumberTxt'] = this.searchCriteria.fileNumberTxt;
+          queryParams['fileNumberTxt'] = searchCriteria.fileNumberTxt;
 
-          if (this.searchCriteria.filePrefixTxt) {
-            queryParams['filePrefixTxt'] = this.searchCriteria.filePrefixTxt;
+          if (searchCriteria.filePrefixTxt) {
+            queryParams['filePrefixTxt'] = searchCriteria.filePrefixTxt;
           }
-          if (this.searchCriteria.fileSuffixNo) {
-            queryParams['fileSuffixNo'] = this.searchCriteria.fileSuffixNo;
+          if (searchCriteria.fileSuffixNo) {
+            queryParams['fileSuffixNo'] = searchCriteria.fileSuffixNo;
           }
-          if (this.searchCriteria.mDocRefTypeCode) {
-            queryParams['mDocRefTypeCode'] =
-              this.searchCriteria.mDocRefTypeCode;
+          if (searchCriteria.mDocRefTypeCode) {
+            queryParams['mDocRefTypeCode'] = searchCriteria.mDocRefTypeCode;
           }
-        } else if (this.searchCriteria.searchBy === 'lastName') {
+        } else if (searchCriteria.searchBy === 'lastName') {
           queryParams['searchMode'] = SearchModeEnum.PartName;
-          queryParams['lastName'] = this.searchCriteria.lastName;
+          queryParams['lastName'] = searchCriteria.lastName;
 
-          if (this.searchCriteria.givenName) {
-            queryParams['givenName'] = this.searchCriteria.givenName;
+          if (searchCriteria.givenName) {
+            queryParams['givenName'] = searchCriteria.givenName;
           }
         } else {
           queryParams['searchMode'] = SearchModeEnum.PartName;
-          queryParams['orgName'] = this.searchCriteria.orgName;
+          queryParams['orgName'] = searchCriteria.orgName;
         }
 
         return queryParams;
-      },
-      loadDataFromState(): void {
-        const searchCriteria =
-          this.courtFileSearchStore.currentSearchCriteria();
-        const searchResults = this.courtFileSearchStore.currentSearchResults();
-        const selectedFiles = this.courtFileSearchStore.selectedFiles();
+      };
 
-        if (searchCriteria && searchResults) {
-          this.searchCriteria = searchCriteria;
-          this.searchResults = [...searchResults];
+      const loadDataFromState = () => {
+        const search = courtFileSearchStore.currentSearchCriteria;
+        const results = courtFileSearchStore.currentSearchResults;
+        const selectedFilesFromStore = courtFileSearchStore.selectedFiles;
 
-          const idSelector = this.searchCriteria.isCriminal
+        if (search && results) {
+          searchCriteria = search;
+          searchResults.value = [...results];
+
+          const idSelector = searchCriteria.isCriminal
             ? 'mdocJustinNo'
             : 'physicalFileId';
-          const files = this.searchResults.filter((c) =>
-            selectedFiles.some((f) => f.key === c[idSelector])
+          const files = searchResults.value.filter((c) =>
+            selectedFilesFromStore.some((f) => f.key === c[idSelector])
           );
-          this.selectedFiles = [...files];
+          selectedFiles.value = [...files];
 
-          this.hasSearched = true;
+          hasSearched.value = true;
         }
-      },
-      viewFiles(selectedFiles: KeyValueInfo[]): void {
-        this.courtFileSearchStore.addFilesForViewing({
-          searchCriteria: this.searchCriteria,
-          searchResults: this.searchResults,
+      };
+
+      const viewFiles = (selectedFiles: KeyValueInfo[]) => {
+        courtFileSearchStore.addFilesForViewing({
+          searchCriteria: searchCriteria,
+          searchResults: searchResults,
           files: selectedFiles,
         });
-        const caseDetailUrl = `/${this.searchCriteria.isCriminal ? 'criminal-file' : 'civil-file'}/${selectedFiles[0].key}`;
-        this.$router.push(caseDetailUrl);
-      },
-      addSelectedFile(file: FileDetail): void {
-        this.selectedFiles.push(file);
-      },
-      removeSelectedFile(idSelector: string, fileId: string): void {
-        this.selectedFiles = this.selectedFiles.filter(
+        const caseDetailUrl = `/${searchCriteria.isCriminal ? 'criminal-file' : 'civil-file'}/${selectedFiles[0].key}`;
+        router.push(caseDetailUrl);
+      };
+
+      const addSelectedFile = (file: FileDetail) => {
+        selectedFiles.value.push(file);
+      };
+
+      const removeSelectedFile = (idSelector: string, fileId: string) => {
+        selectedFiles.value = selectedFiles.value.filter(
           (c) => c[idSelector] !== fileId
         );
-      },
-      clearSelectedFiles(): void {
-        this.selectedFiles = [];
-        this.courtFileSearchStore.clearSelectedFiles();
-      },
+      };
+
+      const clearSelectedFiles = () => {
+        selectedFiles.value = [];
+        courtFileSearchStore.clearSelectedFiles();
+      };
+
+      return {
+        errorText,
+        errorCode,
+        courtRooms,
+        classes,
+        searchResults,
+        selectedFiles,
+        isLookupDataMounted,
+        isLookupDataReady,
+        hasSearched,
+        isSearching,
+        isSearchResultsOver,
+        classOptions,
+        searchCriteria,
+        errors,
+        viewFiles,
+        addSelectedFile,
+        clearSelectedFiles,
+        removeSelectedFile,
+        handleDivisionChange,
+        handleSubmit,
+      };
     },
   });
 </script>

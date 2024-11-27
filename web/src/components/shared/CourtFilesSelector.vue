@@ -6,7 +6,11 @@
       class="extra-sm mb-2"
       @change="handleChange"
     >
-      <option v-for="option in files" :key="option.value" :value="option.key">
+      <option
+        v-for="option in selectedFiles"
+        :key="option.value"
+        :value="option.key"
+      >
         {{ option.value }}
       </option>
     </b-form-select>
@@ -78,7 +82,7 @@
       return {
         fileId,
         currentFileId,
-        files: props.files,
+        selectedFiles: props.files,
         handleChange,
         handleRemove,
         handleAdd,

@@ -320,7 +320,7 @@
       };
 
       const getTime = (time) => {
-        commonStore.updateTime;
+        commonStore.updateTime(time);
         return commonStore.time;
       };
 

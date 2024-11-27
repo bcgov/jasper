@@ -19,6 +19,7 @@ using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHea
 using Scv.Api.Infrastructure.Handler;
 using PCSSClient.Clients.JudicialCalendarsServices;
 using PCSSClient.Clients.CourtCalendarsServices;
+using PCSSClient.Clients.PCSSLocationsServices;
 
 
 namespace Scv.Api.Infrastructure
@@ -88,9 +89,11 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
+            services.AddScoped<LocationPCSSService>();
 
             services.AddSingleton<JudicialCalendarsServicesClient>();
             services.AddSingleton<CourtCalendarsServicesClient>();
+            services.AddSingleton<PCSSLocationsServicesClient>();
 
             return services;
         }

@@ -3,6 +3,9 @@ using System;
 
 namespace Scv.Api.Models.Calendar
 {
+    /// <summary>
+    /// List of days ( assignments ) for a given month and year - used for calendar view
+    /// </summary>
     public class CalendarDay : JudicialCalendarDay
     {
         public string RotaInitials { get; set; }
@@ -18,15 +21,19 @@ namespace Scv.Api.Models.Calendar
         {
             get
             {
-                return showPM;
+                if (this.Assignment?.ActivityAm != null && (this.Assignment?.ActivityAm?.ActivityDescription != null || this.Assignment?.ActivityAm?.CourtRoomCode != null))
+                    return true;
+                else
+                    return false;
             }
         }
         public bool showPM
         {
             get
             {
-                if(showPMLocation || (this.Assignment?.ActivityAm?.CourtRoomCode != this.Assignment?.ActivityPm?.CourtRoomCode)
-                    || (this.Assignment?.ActivityAm?.ActivityDescription != this.Assignment?.ActivityPm?.ActivityDescription))
+                if ( this.Assignment?.ActivityPm != null && this.Assignment?.ActivityPm?.ActivityDescription != null && this.Assignment?.ActivityPm?.CourtRoomCode != null &&
+                    (showPMLocation || (this.Assignment?.ActivityAm?.CourtRoomCode != this.Assignment?.ActivityPm?.CourtRoomCode)
+                    || (this.Assignment?.ActivityAm?.ActivityDescription != this.Assignment?.ActivityPm?.ActivityDescription)))
                     return true;
                 else
                     return false;

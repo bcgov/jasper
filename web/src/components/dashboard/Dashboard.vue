@@ -472,7 +472,9 @@ import { Component, Vue } from 'vue-property-decorator';
 export default class Dashboard extends Vue {
     public sizeChange = 0;
     public locationsFilters = [];
+    //all events for the calendar
     public ar: any[] = [];
+    //filtered events for the calendar - based on selected presiders and activities, goes to calendar component
     public arEvents: any[] = [];
     public showLeftMenu = false;
     public showRightMenu = false;
@@ -529,6 +531,7 @@ export default class Dashboard extends Vue {
             });
     }
     showAllLocations() {
+    // locations pupup
         this.showLocationModal = true;
     }
     resetLocations() {
@@ -539,6 +542,7 @@ export default class Dashboard extends Vue {
         this.getMonthlySchedule(this.currentCalendarDate);
     }
     loadPresiders(data) {
+        //load activities and loadPresiders could be merged if needed
         if (this.selectedLocations.length == 0) {
             this.presiders = [];
             this.selectedPresiders = [];
@@ -605,7 +609,7 @@ export default class Dashboard extends Vue {
     }
 
     public getMonthlySchedule(currentMonth): void {
-
+        // could be updated to 'getSchedule'
         this.ar = [];
         this.currentCalendarDate = currentMonth;
         let locations = "";
@@ -663,7 +667,7 @@ export default class Dashboard extends Vue {
         } else {
             this.selectedPresiders = [];
         }
-        this.filterByPresiders();
+        this.filterByActivitiesPresiders();
     }
 
     public onCheckboxPresidersChange(selected) {
@@ -676,21 +680,10 @@ export default class Dashboard extends Vue {
         } else {
             this.selectAllPresiders = false;
         }
-        this.filterByPresiders();
+        this.filterByActivitiesPresiders();
     }
 
-    public filterByPresiders() {
-        if (this.selectedPresiders.length) {
-            this.arEvents = this.ar.filter((event) =>
-                this.selectedPresiders.includes(String(event.assignment.judgeId)) ||
-                this.selectedPresiders.includes(String(event.judgeId))
-            );
-        } else {
-            this.arEvents = [];
-        }
-
-    }
-
+ 
 
     public onCheckboxActivitiesChange(selected) {
         this.selectedActivities = [...selected];
@@ -702,7 +695,7 @@ export default class Dashboard extends Vue {
         } else {
             this.selectAllActivities = false;
         }
-        this.filterByActivities();
+        this.filterByActivitiesPresiders();
     }
 
     public onSelectAllActivitiesChange() {
@@ -711,18 +704,31 @@ export default class Dashboard extends Vue {
         } else {
             this.selectedActivities = [];
         }
-        this.filterByActivities();
+        this.filterByActivitiesPresiders();
     }
 
-    public filterByActivities() {
-        if (this.selectedActivities.length) {
-            this.arEvents = this.ar.filter((event) =>
-                this.selectedActivities.includes(event.assignment.activityCode) ||
-                this.selectedActivities.includes(event.assignment.activityAm.activityCode) ||
-                this.selectedActivities.includes(event.assignment.activityPm.activityCode)
-            );
-        } else {
+    public filterByActivitiesPresiders() {
+        // filters out calendar events  by selected activities and presiders 
+        if (!this.selectedPresiders.length || !this.selectedActivities.length) {
             this.arEvents = [];
+            return;
+        }
+
+        this.arEvents = this.ar;
+
+        if (this.selectedActivities.length) {
+            this.arEvents = this.arEvents.filter((event) =>
+            this.selectedActivities.includes(event.assignment.activityCode) ||
+            this.selectedActivities.includes(event.assignment.activityAm?.activityCode) ||
+            this.selectedActivities.includes(event.assignment.activityPm?.activityCode)
+            );
+        }
+
+        if (this.selectedPresiders.length) {
+            this.arEvents = this.arEvents.filter((event) =>
+            this.selectedPresiders.includes(String(event.assignment.judgeId)) ||
+            this.selectedPresiders.includes(String(event.judgeId))
+            );
         }
     }
 

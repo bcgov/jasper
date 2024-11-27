@@ -1,0 +1,29 @@
+{
+    "runtime": "NetCore31",
+    "defaultVariables": null,
+    "swaggerGenerator": {
+       "fromSwagger": {
+          "url": "<baseURL>/api/swagger/v1/swagger.json",
+          "output": null,
+          "httpClient": {
+            "headers": {
+               "Authorization": "Basic <***_***:*****>"
+            }
+          }
+       }
+    },
+    "codeGenerators": {
+       "csharp": {
+          "clientGenerator": {
+            "className": "ApiClient",
+            "namespace": "JsInterfaceClient",
+            "output": "Models/ApiClient.cs",
+            "generateClientInterfaces": true,
+            "generateDtoTypes": true,
+            "useHttpClientCreationMethod": true,
+            "clientBaseClass": "BaseClient",
+            "configurationClass": "ApiClientConfiguration"
+          }
+       }
+    }
+  }

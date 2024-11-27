@@ -5,7 +5,9 @@ namespace PCSSClient.Clients.CourtCalendarsServices
     using System = global::System;
     using PCSS.Models.REST.CourtCalendar;
 
-
+    /// <summary>
+    /// Do we need this client?
+    /// </summary>
     public partial class CourtCalendarsServicesClient
     {
         private HttpClient _httpClient;
@@ -63,15 +65,6 @@ if(locationIds.Contains("5871"))
                 PcjRequired = 1,
                 PcjMinimum = 2,
                 PcjMaximum = 3,
-            }
-        },
-
-    });
-
-
-
-            return courtCalendarLocations;
-        }
     }
 }
 

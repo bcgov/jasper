@@ -32,7 +32,7 @@
     "regenerator-runtime": "^0.13.5",
     "splunk-logging": "^0.11.1",
     "underscore": "^1.13.1",
-    "vue": "2.7.16",
+    "vue": "3.0.0",
     "vue-class-component": "6.3.2",
     "vue-property-decorator": "^8.4.2",
     "vue-resource": "^1.5.1",

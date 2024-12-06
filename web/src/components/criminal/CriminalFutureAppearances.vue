@@ -151,65 +151,38 @@
         headerStyle: 'text',
       };
 
+      const createField = (key, label, sortable, additionalStyles = {}) => ({
+        ...baseField,
+        key,
+        label,
+        sortable,
+        ...additionalStyles,
+      });
+
       const fields = [
-        {
-          ...baseField,
-          key: 'date',
-          label: 'Date',
-          sortable: true,
+        createField('date', 'Date', true, {
           headerStyle: 'text-primary',
           cellStyle: 'transform: translate(0,-7px); font-size:16px',
           cellClass: 'text-info mt-2 d-inline-flex',
-        },
-        {
-          ...baseField,
-          key: 'reason',
-          label: 'Reason',
-          sortable: true,
+        }),
+        createField('reason', 'Reason', true, {
           headerStyle: 'text-primary',
           cellStyle: 'margin-top: 10px; font-size: 14px;',
-        },
-        {
-          ...baseField,
-          key: 'time',
-          label: 'Time',
-          sortable: false,
-        },
-        {
-          ...baseField,
-          key: 'duration',
-          label: 'Duration',
-          sortable: false,
-        },
-        {
-          ...baseField,
-          key: 'location',
-          label: 'Location',
-          sortable: true,
+        }),
+        createField('time', 'Time', false),
+        createField('duration', 'Duration', false),
+        createField('location', 'Location', true, {
           headerStyle: 'text-primary',
-        },
-        {
-          ...baseField,
-          key: 'room',
-          label: 'Room',
-          sortable: false,
-        },
-        {
-          ...baseField,
-          key: 'accused',
-          label: 'Accused',
-          sortable: true,
+        }),
+        createField('room', 'Room', false),
+        createField('accused', 'Accused', true, {
           headerStyle: 'text-primary',
           cellStyle: 'font-size: 16px;',
-        },
-        {
-          ...baseField,
-          key: 'status',
-          label: 'Status',
-          sortable: true,
+        }),
+        createField('status', 'Status', true, {
           headerStyle: 'text-primary',
           cellStyle: 'font-weight: normal; font-size: 16px; width:110px',
-        },
+        }),
       ];
 
       onMounted(() => {

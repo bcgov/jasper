@@ -162,74 +162,42 @@
         cellStyle: 'font-weight: normal; font-size: 16px; padding-top:12px',
       };
 
+      const createField = (key, label, sortable, additionalStyles = {}) => ({
+        key,
+        label,
+        sortable,
+        ...commonStyles,
+        ...additionalStyles,
+      });
+
       const fields = [
-        {
-          key: 'date',
-          label: 'Date',
-          sortable: true,
-          tdClass: commonStyles.tdClass,
+        createField('date', 'Date', true, {
           headerStyle: 'text-primary',
           cellStyle: 'transform: translate(0,-7px); font-size:16px',
           cellClass: 'text-info mt-2 d-inline-flex',
-        },
-        {
-          key: 'reason',
-          label: 'Reason',
-          sortable: true,
-          tdClass: commonStyles.tdClass,
+        }),
+        createField('reason', 'Reason', true, {
           headerStyle: 'text-primary',
           cellStyle: 'margin-top: 10px; font-size: 14px;',
-        },
-        {
-          key: 'time',
-          label: 'Time',
-          sortable: false,
-          ...commonStyles,
-        },
-        {
-          key: 'duration',
-          label: 'Duration',
-          sortable: false,
-          ...commonStyles,
-        },
-        {
-          key: 'location',
-          label: 'Location',
-          sortable: true,
-          tdClass: commonStyles.tdClass,
+        }),
+        createField('time', 'Time', false),
+        createField('duration', 'Duration', false),
+        createField('location', 'Location', true, {
           headerStyle: 'text-primary',
-          cellStyle: commonStyles.cellStyle,
-        },
-        {
-          key: 'room',
-          label: 'Room',
-          sortable: false,
-          ...commonStyles,
-        },
-        {
-          key: 'presider',
-          label: 'Presider',
-          sortable: true,
-          tdClass: commonStyles.tdClass,
+        }),
+        createField('room', 'Room', false),
+        createField('presider', 'Presider', true, {
           headerStyle: 'text-primary',
           cellStyle: 'margin-top: 10px; font-size: 14px;',
-        },
-        {
-          key: 'accused',
-          label: 'Accused',
-          sortable: true,
-          tdClass: commonStyles.tdClass,
+        }),
+        createField('accused', 'Accused', true, {
           headerStyle: 'text-primary',
           cellStyle: 'font-size: 16px;',
-        },
-        {
-          key: 'status',
-          label: 'Status',
-          sortable: true,
-          tdClass: commonStyles.tdClass,
+        }),
+        createField('status', 'Status', true, {
           headerStyle: 'text-primary',
           cellStyle: 'font-weight: normal; font-size: 16px; width:110px',
-        },
+        }),
       ];
 
       onMounted(() => {

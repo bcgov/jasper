@@ -163,7 +163,7 @@
       const sortBy = ref('date');
       const sortDesc = ref(true);
 
-      const fields = [
+      const getTableFieldSettings = () => [
         {
           key: 'date',
           label: 'Date',
@@ -255,6 +255,8 @@
           cellStyle: 'font-size: 14px;',
         },
       ];
+
+      const fields = ref(getTableFieldSettings());
 
       onMounted(() => {
         getFutureAppearances();

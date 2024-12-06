@@ -62,7 +62,7 @@ USER 104
 ###################################################################################
 # 2. Build web-artifacts
 ###################################################################################
-FROM quay.io/centos7/nodejs-${NODE_VERSION}-centos7:${NODE_VERSION} AS artifacts
+FROM registry.access.redhat.com/ubi9/nodejs-${NODE_VERSION} AS artifacts
 ARG NODE_VERSION
 ARG WEB_SRC
 ARG NPM_INSTALL_ARGS

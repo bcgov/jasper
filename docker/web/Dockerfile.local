@@ -1,0 +1,24 @@
+ARG NODE_VERSION=18
+ARG VITE_PORT=1339
+ARG WEB_SRC=./web
+
+FROM registry.access.redhat.com/ubi9/nodejs-${NODE_VERSION} 
+ARG WEB_SRC
+ARG VITE_PORT
+
+WORKDIR /opt/app-root/src
+
+COPY ${WEB_SRC}/package*.json ./
+
+USER root
+
+RUN npm install
+
+COPY ${WEB_SRC} .
+
+ENV VITE_PORT=${VITE_PORT}
+
+EXPOSE ${VITE_PORT}
+
+# Run the development server
+CMD npm run dev

@@ -1,27 +1,47 @@
 <template>
   <b-card bg-variant="white" no-body>
     <div>
-      <h2 class="mx-4 mt-5 font-weight-normal text-civil ">Civil</h2>
-      <custom-overlay :show="!loadCompleted" style="padding: 0 1rem; margin-left:auto; margin-right:0.5rem;">
+      <h2 class="mx-4 mt-5 font-weight-normal text-civil">Civil</h2>
+      <custom-overlay
+        :show="!loadCompleted"
+        style="padding: 0 1rem; margin-left: auto; margin-right: 0.5rem"
+      >
         <b-button
           @click="openFiles()"
           variant="outline-primary bg-success text-white"
-          style="padding:0.5rem 1.5rem; margin-right:0.0rem; margin-left:auto; right:0; bottom: 1rem;  position: absolute;"
+          style="
+            padding: 0.5rem 1.5rem;
+            margin-right: 0rem;
+            margin-left: auto;
+            right: 0;
+            bottom: 1rem;
+            position: absolute;
+          "
         >
-          <b-icon-box-arrow-up-right class="mx-0" variant="white" scale="1"></b-icon-box-arrow-up-right> Open Selected
+          <b-icon-box-arrow-up-right
+            class="mx-0"
+            variant="white"
+            scale="1"
+          ></b-icon-box-arrow-up-right>
+          Open Selected
         </b-button>
       </custom-overlay>
-      <hr class="mx-3 bg-civil" style="height: 5px;" />
+      <hr class="mx-3 bg-civil" style="height: 5px" />
     </div>
 
     <b-card bg-variant="light" v-if="isMounted && !isDataReady">
-      <b-card style="min-height: 100px;">
+      <b-card style="min-height: 100px">
         <span v-if="errorCode == 404"
-          >This <b>File-Number '{{ this.$route.query.fileNumber }}'</b> at
-          <b> location '{{ this.$route.query.location }}' </b> doesn't exist in the <b>civil</b> records.
+          >This <b>File-Number '{{ $route.query.fileNumber }}'</b> at
+          <b> location '{{ $route.query.location }}' </b> doesn't exist in the
+          <b>civil</b> records.
         </span>
-        <span v-else-if="errorCode == 200 || errorCode == 204"> Bad Data in search results! </span>
-        <span v-else-if="errorCode == 403"> You are not authorized to access this file. </span>
+        <span v-else-if="errorCode == 200 || errorCode == 204">
+          Bad Data in search results!
+        </span>
+        <span v-else-if="errorCode == 403">
+          You are not authorized to access this file.
+        </span>
         <span v-else>
           Server is not responding. <b>({{ errorText }})</b>
         </span>
@@ -36,7 +56,7 @@
 
     <b-card bg-variant="light" v-if="!isMounted && !isDataReady">
       <b-overlay :show="true">
-        <b-card style="min-height: 100px;" />
+        <b-card style="min-height: 100px" />
         <template v-slot:overlay>
           <div>
             <loading-spinner />
@@ -46,18 +66,43 @@
       </b-overlay>
     </b-card>
 
-    <b-card bg-variant="white" v-if="isDataReady" no-body class="mx-3" style="overflow:auto">
-      <b-table :items="SortedList" :fields="fields" borderless striped responsive="sm">
-        <template v-for="(field, index) in fields" v-slot:[`head(${field.key})`]="data">
+    <b-card
+      bg-variant="white"
+      v-if="isDataReady"
+      no-body
+      class="mx-3"
+      style="overflow: auto"
+    >
+      <b-table
+        :items="SortedList"
+        :fields="fields"
+        borderless
+        striped
+        responsive="sm"
+      >
+        <template
+          v-for="(field, index) in fields"
+          v-slot:[`head(${field.key})`]="data"
+        >
           <h3 v-bind:key="index">{{ data.label }}</h3>
         </template>
 
         <template v-slot:head(select)>
-          <b-form-checkbox class="m-0" v-model="allFilesChecked" @change="checkAllFiles" size="sm" />
+          <b-form-checkbox
+            class="m-0"
+            v-model="allFilesChecked"
+            @change="checkAllFiles"
+            size="sm"
+          />
         </template>
 
         <template v-slot:cell(select)="data">
-          <b-form-checkbox size="sm" class="m-0" v-model="data.item.isChecked" @change="toggleSelectedFiles" />
+          <b-form-checkbox
+            size="sm"
+            class="m-0"
+            v-model="data.item.isChecked"
+            @change="toggleSelectedFiles"
+          />
         </template>
 
         <template v-slot:cell(fileNumber)="data">
@@ -72,13 +117,17 @@
           </b-button>
         </template>
         <template v-slot:cell(parties)="data">
-          <span v-for="(party, index) in data.value" v-bind:key="index" :style="data.field.cellStyle">
+          <span
+            v-for="(party, index) in data.value"
+            v-bind:key="index"
+            :style="data.field.cellStyle"
+          >
             {{ party }} <br />
           </span>
         </template>
         <template v-slot:cell(nextAppearance)="data">
           <span :style="data.field.cellStyle">
-            {{ data.value | beautify_date }}
+            {{ beautifyDate(data.value) }}
           </span>
         </template>
       </b-table>
@@ -94,187 +143,236 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
-import * as _ from "underscore";
-import { civilFileInformationType, fileSearchCivilInfoType } from "@/types/civil";
-import { InputNamesType } from "@/types/common";
-import "@store/modules/CommonInformation";
-const commonState = namespace("CommonInformation");
-import "@store/modules/CivilFileInformation";
-const civilState = namespace("CivilFileInformation");
-import CustomOverlay from "../CustomOverlay.vue";
+  import { beautifyDate } from '@/filters';
+  import { HttpService } from '@/services/HttpService';
+  import { useCivilFileStore, useCommonStore } from '@/stores';
+  import { fileSearchCivilInfoType } from '@/types/civil';
+  import * as _ from 'underscore';
+  import {
+    computed,
+    defineComponent,
+    inject,
+    nextTick,
+    onMounted,
+    ref,
+  } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import CustomOverlay from '../CustomOverlay.vue';
 
-enum CourtLevel {
-  "P" = "Provincial",
-  "S" = "Supreme",
-}
+  enum CourtLevel {
+    'P' = 'Provincial',
+    'S' = 'Supreme',
+  }
 
-@Component({
-  components: {
-    CustomOverlay,
-  },
-})
-export default class CivilFileSearchResultsView extends Vue {
-  @civilState.State
-  public civilFileInformation!: civilFileInformationType;
-
-  @civilState.Action
-  public UpdateCivilFile!: (newCivilFileInformation: civilFileInformationType) => void;
-
-  @commonState.State
-  public displayName!: string;
-
-  @commonState.Action
-  public UpdateDisplayName!: (newInputNames: InputNamesType) => void;
-
-  civilList: fileSearchCivilInfoType[] = [];
-  isMounted = false;
-  isDataReady = false;
-  loadCompleted = true;
-  errorCode = 0;
-  errorText = "";
-  allFilesChecked = false;
-  selectedFiles: string[] = [];
-
-  fields = [
-    {
-      key: "select",
-      label: "",
-      tdClass: "border-top",
-      cellStyle: "font-size: 16px;",
-      sortable: false,
-      headerStyle: "text-primary",
-      thClass: "",
+  export default defineComponent({
+    components: {
+      CustomOverlay,
     },
-    {
-      key: "fileNumber",
-      label: "File Number",
-      tdClass: "border-top",
-      cellStyle: "font-size:16px; font-weight: bold; border: none;",
-    },
-    { key: "parties", label: "Parties", tdClass: "border-top", cellStyle: "white-space: pre-line" },
-    { key: "nextAppearance", label: "Next Appearance", tdClass: "border-top", cellStyle: "white-space: pre-line" },
-    { key: "level", label: "Level", tdClass: "border-top" },
-  ];
+    setup() {
+      const commonStore = useCommonStore();
+      const civilFileStore = useCivilFileStore();
+      const httpService = inject<HttpService>('httpService');
+      const router = useRouter();
+      const route = useRoute();
 
-  mounted() {
-    this.getList();
-    this.loadCompleted = true;
-  }
-
-  public getList(): void {
-    this.errorCode = 0;
-    this.$http
-      .get("api/files/civil?location=" + this.$route.query.location + "&fileNumber=" + this.$route.query.fileNumber)
-      .then(
-        (Response) => Response.json(),
-        (err) => {
-          this.errorCode = err.status;
-          this.errorText = err.statusText;
-          this.$bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
-            title: "An error has occured.",
-            variant: "danger",
-            autoHideDelay: 10000,
-          });
-          console.log(err);
-          this.isMounted = true;
-        }
-      )
-      .then((data) => {
-        if (data) {
-          if (data.length > 1) {
-            console.log(data);
-            for (const civilListIndex in data) {
-              const civilListInfo = {} as fileSearchCivilInfoType;
-              const jcivilList = data[civilListIndex];
-              const partyInfo: string[] = [];
-              const leftRole = jcivilList.leftRoleDsc;
-              const rightRole = jcivilList.rightRoleDsc;
-              for (const jParty of jcivilList.party) {
-                const firstName = jParty.givenNm ? jParty.givenNm : "";
-                const lastName = jParty.lastNm ? jParty.lastNm : jParty.orgNm;
-                this.UpdateDisplayName({ lastName: lastName, givenName: firstName });
-                const roleDsc = jParty.leftRightCd == "R" ? rightRole : leftRole;
-                partyInfo.push(this.displayName + " (" + roleDsc + ")");
-              }
-              civilListInfo.parties = partyInfo;
-              civilListInfo.fileId = jcivilList.physicalFileId;
-              civilListInfo.fileNumber = jcivilList.fileNumberTxt;
-              civilListInfo.nextAppearance = jcivilList.NextApprDt;
-              civilListInfo.level = CourtLevel[jcivilList.courtLevelCd];
-              this.civilList.push(civilListInfo);
-            }
-
-            if (this.civilList.length) {
-              this.isDataReady = true;
-            }
-            this.isMounted = true;
-          } else if (data.length == 1) {
-            this.civilFileInformation.fileNumber = data[0].physicalFileId;
-            this.UpdateCivilFile(this.civilFileInformation);
-            this.$router.push({
-              name: "CivilCaseDetails",
-              params: { fileNumber: this.civilFileInformation.fileNumber },
-            });
-          } else {
-            this.errorCode = 200;
-          }
-        } else {
-          if (this.errorCode == 0) this.errorCode = 200;
-        }
-      });
-  }
-
-  public OpenCivilFilePage(fileNumber) {
-    this.civilFileInformation.fileNumber = fileNumber;
-    this.UpdateCivilFile(this.civilFileInformation);
-    const routeData = this.$router.resolve({
-      name: "CivilCaseDetails",
-      params: { fileNumber: this.civilFileInformation.fileNumber },
-    });
-    window.open(routeData.href, "_blank");
-  }
-
-  public openFiles() {
-    this.loadCompleted = false;
-    for (const file of this.SortedList) {
-      if (file.isChecked) {
-        this.OpenCivilFilePage(file.fileId);
+      if (!httpService) {
+        throw new Error('Service is undefined.');
       }
-    }
-    this.loadCompleted = true;
-  }
 
-  public checkAllFiles(checked) {
-    for (const docInx in this.SortedList) {
-      this.SortedList[docInx].isChecked = checked;
-    }
-  }
+      const civilList = ref<fileSearchCivilInfoType[]>([]);
+      const isMounted = ref(false);
+      const isDataReady = ref(false);
+      const loadCompleted = ref(true);
+      const errorCode = ref(0);
+      const errorText = ref('');
+      const allFilesChecked = ref(false);
 
-  public toggleSelectedFiles() {
-    Vue.nextTick(() => {
-      const checkedDocs = this.SortedList.filter((file) => {
-        return file.isChecked;
+      const fields = [
+        {
+          key: 'select',
+          label: '',
+          tdClass: 'border-top',
+          cellStyle: 'font-size: 16px;',
+          sortable: false,
+          headerStyle: 'text-primary',
+          thClass: '',
+        },
+        {
+          key: 'fileNumber',
+          label: 'File Number',
+          tdClass: 'border-top',
+          cellStyle: 'font-size:16px; font-weight: bold; border: none;',
+        },
+        {
+          key: 'parties',
+          label: 'Parties',
+          tdClass: 'border-top',
+          cellStyle: 'white-space: pre-line',
+        },
+        {
+          key: 'nextAppearance',
+          label: 'Next Appearance',
+          tdClass: 'border-top',
+          cellStyle: 'white-space: pre-line',
+        },
+        { key: 'level', label: 'Level', tdClass: 'border-top' },
+      ];
+
+      onMounted(() => {
+        getList();
+        loadCompleted.value = true;
       });
 
-      if (checkedDocs.length == this.SortedList.length) this.allFilesChecked = true;
-      else this.allFilesChecked = false;
-    });
-  }
+      const getList = () => {
+        errorCode.value = 0;
+        httpService
+          .get<any>(
+            'api/files/civil?location=' +
+              route.query.location +
+              '&fileNumber=' +
+              route.query.fileNumber
+          )
+          .then(
+            (Response) => Response,
+            (err) => {
+              errorCode.value = err.status;
+              errorText.value = err.statusText;
+              // $bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
+              //   title: "An error has occured.",
+              //   variant: "danger",
+              //   autoHideDelay: 10000,
+              // });
+              console.log(err);
+              isMounted.value = true;
+            }
+          )
+          .then((data) => {
+            if (data) {
+              if (data.length > 1) {
+                console.log(data);
+                for (const civilListIndex in data) {
+                  const civilListInfo = {} as fileSearchCivilInfoType;
+                  const jcivilList = data[civilListIndex];
+                  const partyInfo: string[] = [];
+                  const leftRole = jcivilList.leftRoleDsc;
+                  const rightRole = jcivilList.rightRoleDsc;
+                  for (const jParty of jcivilList.party) {
+                    const firstName = jParty.givenNm ? jParty.givenNm : '';
+                    const lastName = jParty.lastNm
+                      ? jParty.lastNm
+                      : jParty.orgNm;
+                    commonStore.updateDisplayName({
+                      lastName: lastName,
+                      givenName: firstName,
+                    });
+                    const roleDsc =
+                      jParty.leftRightCd == 'R' ? rightRole : leftRole;
+                    partyInfo.push(
+                      commonStore.displayName + ' (' + roleDsc + ')'
+                    );
+                  }
+                  civilListInfo.parties = partyInfo;
+                  civilListInfo.fileId = jcivilList.physicalFileId;
+                  civilListInfo.fileNumber = jcivilList.fileNumberTxt;
+                  civilListInfo.nextAppearance = jcivilList.NextApprDt;
+                  civilListInfo.level = CourtLevel[jcivilList.courtLevelCd];
+                  civilList.value.push(civilListInfo);
+                }
 
-  get SortedList() {
-    return _.sortBy(this.civilList, "fileId");
-  }
+                if (civilList.value.length) {
+                  isDataReady.value = true;
+                }
+                isMounted.value = true;
+              } else if (data.length == 1) {
+                civilFileStore.civilFileInformation.fileNumber =
+                  data[0].physicalFileId;
+                civilFileStore.updateCivilFile(
+                  civilFileStore.civilFileInformation
+                );
+                router.push({
+                  name: 'CivilCaseDetails',
+                  params: {
+                    fileNumber: civilFileStore.civilFileInformation.fileNumber,
+                  },
+                });
+              } else {
+                errorCode.value = 200;
+              }
+            } else {
+              if (errorCode.value == 0) errorCode.value = 200;
+            }
+          });
+      };
 
-  public navigateToLandingPage() {
-    this.$router.push({ name: "Home" });
-  }
-}
+      const OpenCivilFilePage = (fileNumber) => {
+        civilFileStore.civilFileInformation.fileNumber = fileNumber;
+        civilFileStore.updateCivilFile(civilFileStore.civilFileInformation);
+        const routeData = router.resolve({
+          name: 'CivilCaseDetails',
+          params: {
+            fileNumber: civilFileStore.civilFileInformation.fileNumber,
+          },
+        });
+        window.open(routeData.href, '_blank');
+      };
+
+      const openFiles = () => {
+        loadCompleted.value = false;
+        for (const file of SortedList.value) {
+          if (file.isChecked) {
+            OpenCivilFilePage(file.fileId);
+          }
+        }
+        loadCompleted.value = true;
+      };
+
+      const checkAllFiles = (checked) => {
+        for (const docInx in SortedList) {
+          SortedList[docInx].isChecked = checked;
+        }
+      };
+
+      const toggleSelectedFiles = () => {
+        nextTick(() => {
+          const checkedDocs = SortedList.value.filter((file) => {
+            return file.isChecked;
+          });
+
+          if (checkedDocs.length == SortedList.value.length)
+            allFilesChecked.value = true;
+          else allFilesChecked.value = false;
+        });
+      };
+
+      const SortedList = computed((): fileSearchCivilInfoType[] => {
+        return _.sortBy(civilList, 'fileId');
+      });
+
+      // const navigateToLandingPage = () => {
+      //   router.push({ name: 'Home' });
+      // };
+
+      return {
+        loadCompleted,
+        openFiles,
+        isMounted,
+        isDataReady,
+        errorCode,
+        errorText,
+        fields,
+        allFilesChecked,
+        checkAllFiles,
+        toggleSelectedFiles,
+        OpenCivilFilePage,
+        SortedList,
+        beautifyDate,
+      };
+    },
+  });
 </script>
 
 <style scoped>
-.card {
-  border: white;
-}
+  .card {
+    border: white;
+  }
 </style>

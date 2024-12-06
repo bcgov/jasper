@@ -51,30 +51,38 @@
   </footer>
 </template>
 
-
 <script lang="ts">
-  import { Component, Vue } from 'vue-property-decorator';
+  import { defineComponent } from 'vue';
 
-  @Component
-  export default class NavigationFooter extends Vue {   
+  export default defineComponent({
+    name: 'NavigationFooter',
+    setup() {
+      let footerPosition = '';
 
-  created() {
-    window.addEventListener("resize", this.onResize);
-  }
+      const created = () => {
+        window.addEventListener('resize', onResize);
+      };
 
-  destroyed() {
-    window.removeEventListener("resize", this.onResize);
-  }
+      const destroyed = () => {
+        window.removeEventListener('resize', onResize);
+      };
 
-  public onResize() {
-    if(window.innerWidth > 1100) { this.footerPosition ='fixed-bottom';}
-    else {this.footerPosition = 'flex-bottom';}
-  }
+      const onResize = () => {
+        if (window.innerWidth > 1100) {
+          footerPosition = 'fixed-bottom';
+        } else {
+          footerPosition = 'flex-bottom';
+        }
+      };
 
-  footerPosition = 'fixed-bottom';
-   
-  
-  }
+      footerPosition = 'fixed-bottom';
+
+      return {
+        created,
+        destroyed,
+        onResize,
+        footerPosition,
+      };
+    },
+  });
 </script>
-
-

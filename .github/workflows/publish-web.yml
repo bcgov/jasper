@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        node-major-version: [12]
+        node-major-version: [18]
         node-minor-version: [x]
 
     steps:
@@ -79,7 +79,6 @@ jobs:
             NGINX_RUNTIME_SRC=../../docker/nginx-runtime
             VUE_ON_NGINX_SRC=../../docker/vue-on-nginx
             WEB_SRC=../../web
-            NPM_INSTALL_ARGS=--unsafe-perm
 
   deploy2dev:
     name: Deploy to DEV

@@ -1,5 +1,5 @@
-import { LookupCode } from "../types/common";
-import { HttpService } from "./HttpService";
+import { LookupCode } from '../types/common';
+import { HttpService } from './HttpService';
 
 export class LookupService {
   private httpService: HttpService;
@@ -8,7 +8,7 @@ export class LookupService {
     this.httpService = httpService;
   }
 
-  async getCourtClasses(): Promise<LookupCode[]>{
+  async getCourtClasses(): Promise<LookupCode[]> {
     return await this.httpService.get<LookupCode[]>('api/codes/court/classes');
   }
 }

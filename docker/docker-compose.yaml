@@ -22,9 +22,10 @@ services:
       - DEV_MODE=false
       - NODE_ENV=development
       - NPM_CONFIG_LOGLEVEL=notice
-      - NPM_RUN=serve
+      - VITE_PORT=1339
+      - CHOKIDAR_USEPOLLING=true
     ports:
-      - 8080:1339
+      - "8080:1339"
     volumes:
       - "${LOCAL_WORKSPACE_FOLDER-..}/web/src:/opt/app-root/src/src"
       - "${LOCAL_WORKSPACE_FOLDER-..}/web/package.json:/opt/app-root/src/package.json"

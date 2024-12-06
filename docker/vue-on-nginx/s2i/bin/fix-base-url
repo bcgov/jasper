@@ -5,10 +5,11 @@
 # Perhaps webpack 5 will have some sort of fix for this. 
 echo "---> Replacing public path /S2I_INJECT_PUBLIC_PATH/ -> $WEB_BASE_HREF in Vue artifacts..."
 FILES="/tmp/app/dist/index.html
-/tmp/app/dist/js/*.*"
+/tmp/app/dist/assets/*.*"
 for f in $FILES
 do
-	tmp=$(sed "s|/S2I_INJECT_PUBLIC_PATH/|$WEB_BASE_HREF|g" "$f"); 
+	#tmp=$(sed "s|/S2I_INJECT_PUBLIC_PATH/|$WEB_BASE_HREF|g" "$f");
+	tmp=$(tr -d '\0' < "$f" | sed "s|/S2I_INJECT_PUBLIC_PATH/|$WEB_BASE_HREF|g")
 	printf "%s" "$tmp" > "$f";
 done
 

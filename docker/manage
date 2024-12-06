@@ -95,11 +95,10 @@ build-web() {
   docker build \
     -t "${COMPOSE_PROJECT_NAME}-web" \
     --build-arg IMAGE_PREFIX=${COMPOSE_PROJECT_NAME}- \
-    --build-arg NODE_VERSION=12 \
+    --build-arg NODE_VERSION=18 \
     --build-arg NGINX_RUNTIME_SRC='../docker/nginx-runtime' \
     --build-arg VUE_ON_NGINX_SRC='../docker/vue-on-nginx' \
     --build-arg WEB_SRC='./web' \
-    --build-arg NPM_INSTALL_ARGS='--unsafe-perm' \
     -f './web/Dockerfile.release' '..'
   echo -e "===================================================================================================="
 }
@@ -109,15 +108,14 @@ build-web-dev() {
   # web-dev
   #
   echo -e "\n\n===================================================================================================="
-  echo -e "Building the ${COMPOSE_PROJECT_NAME}-web-dev image using s2i ..."
+  echo -e "Building the ${COMPOSE_PROJECT_NAME}-web-dev image using Docker ..."
   echo -e "----------------------------------------------------------------------------------------------------"
-  ${S2I_EXE} build \
-    --copy \
-    -e "DEV_MODE=true" \
-    -e WEB_BASE_HREF=${WEB_BASE_HREF} \
-    '../web' \
-    'centos/nodejs-12-centos7' \
-    "${COMPOSE_PROJECT_NAME}-web-dev"
+  docker build \
+    -t "${COMPOSE_PROJECT_NAME}-web-dev" \
+    --build-arg NODE_VERSION=18 \
+    --build-arg VITE_PORT=1339 \
+    --build-arg WEB_SRC='./web' \
+    -f './web/Dockerfile.local' '..'
   echo -e "===================================================================================================="
 }
 

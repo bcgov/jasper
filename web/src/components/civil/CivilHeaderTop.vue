@@ -1,43 +1,52 @@
 <template>
-<div>  
-    <b-navbar type="white" variant="white" v-if="isMounted" style="height:30px;">
+  <div>
+    <b-navbar
+      type="white"
+      variant="white"
+      v-if="isMounted"
+      style="height: 30px"
+    >
       <b-navbar-nav>
-            <b-nav-text style="font-size: 14px;" variant="white">
-                <b-badge class="mr-1" variant="primary">{{courtClassDescription}}</b-badge>                                
-                <b-badge class="mr-1" variant="secondary">{{courtLevelDescription}}</b-badge>              
-            </b-nav-text>
+        <b-nav-text style="font-size: 14px" variant="white">
+          <b-badge class="mr-1" variant="primary">{{
+            courtClassDescription
+          }}</b-badge>
+          <b-badge class="mr-1" variant="secondary">{{
+            courtLevelDescription
+          }}</b-badge>
+        </b-nav-text>
       </b-navbar-nav>
     </b-navbar>
-</div>
+  </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import { namespace } from "vuex-class";
-import '@store/modules/CivilFileInformation';
-import {civilFileInformationType} from '@/types/civil';
-const civilState = namespace('CivilFileInformation');
+  import { useCivilFileStore } from '@/stores';
+  import { defineComponent, onMounted, ref } from 'vue';
 
-@Component
-export default class CivilHeaderTop extends Vue {
-  
-  @civilState.State
-  public civilFileInformation!: civilFileInformationType;
-  
-  courtLevelDescription = '';
-  courtClassDescription = '';
-  isMounted = false;
+  export default defineComponent({
+    setup() {
+      const civilFileStore = useCivilFileStore();
+      const courtLevelDescription = ref('');
+      const courtClassDescription = ref('');
+      const isMounted = ref(false);
 
-  mounted() {
-    this.getFileDescription();
-  }
+      onMounted(() => {
+        getFileDescription();
+      });
 
-  public getFileDescription(): void {      
-      const data = this.civilFileInformation.detailsData;
-      this.courtClassDescription = data.courtClassDescription;      
-      this.courtLevelDescription = data.courtLevelDescription;
-      this.isMounted = true;          
-  } 
- 
-}
+      const getFileDescription = () => {
+        const data = civilFileStore.civilFileInformation.detailsData;
+        courtClassDescription.value = data.courtClassDescription;
+        courtLevelDescription.value = data.courtLevelDescription;
+        isMounted.value = true;
+      };
+
+      return {
+        isMounted,
+        courtClassDescription,
+        courtLevelDescription,
+      };
+    },
+  });
 </script>

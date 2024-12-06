@@ -1,0 +1,28 @@
+# Ignore dependencies
+**/node_modules
+bin
+obj
+dist
+build
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.pid
+*.bak
+
+# Ignore IDE/editor files
+.vscode
+.idea
+*.suo
+*.user
+*.sln.docstates
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+__MACOSX
+
+# Ignore Git files
+.git
+.gitignore

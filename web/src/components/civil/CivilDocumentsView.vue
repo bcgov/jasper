@@ -250,319 +250,189 @@
       const downloadCompleted = ref(true);
       const allDocumentsChecked = ref(false);
 
-      const getTableFieldSettings = () => {
-        return [
-          [
-            {
-              key: 'select',
-              label: '',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 16px;',
-              tdClass: 'border-top',
-              thClass: '',
-            },
-            {
-              key: 'seq',
-              label: 'Seq.',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'documentType',
-              label: 'Document Type',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'border:0px; font-size: 14px; text-align:left;',
-            },
-            {
-              key: 'act',
-              label: 'Act',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'display: block; margin-top: 1px; font-size: 14px; max-width : 50px;',
-            },
-            {
-              key: 'dateFiled',
-              label: 'Date Filed',
-              sortable: true,
-              headerStyle: 'text-danger',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'affNo',
-              label: 'Aff No.',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'swornBy',
-              label: 'Sworn By',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px',
-            },
-            {
-              key: 'issues',
-              label: 'Issues',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px;',
-            },
-            {
-              key: 'filedByName',
-              label: 'Filed By Name',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px',
-            },
-            {
-              key: 'comment',
-              label: 'Comment',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle: 'font-size: 12px; max-width:300px;',
-              tdClass: 'max-width-300',
-            },
-          ],
-          [
-            {
-              key: 'select',
-              label: '',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 16px;',
-              tdClass: 'border-top',
-              thClass: '',
-            },
-            {
-              key: 'documentType',
-              label: 'Document Type',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'border:0px; font-size: 14px;',
-            },
-            {
-              key: 'appearanceDate',
-              label: 'Appearance Date',
-              sortable: true,
-              headerStyle: 'text-danger',
-              cellStyle: 'font-size: 14px;',
-            },
-          ],
-          [
-            {
-              key: 'select',
-              label: '',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 16px;',
-              tdClass: 'border-top',
-              thClass: '',
-            },
-            {
-              key: 'seq',
-              label: 'Seq.',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'documentType',
-              label: 'Document Type',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'border:0px; font-size: 14px; text-align:left;',
-            },
-            {
-              key: 'dateFiled',
-              label: 'Date Filed',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'orderMadeDate',
-              label: 'Order Made Date',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'filedByName',
-              label: 'Filed By Name',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px',
-            },
-            {
-              key: 'comment',
-              label: 'Comment',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle: 'font-size: 12px; max-width:300px;',
-              tdClass: 'max-width-300',
-            },
-          ],
-          [
-            {
-              key: 'select',
-              label: '',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 16px;',
-              tdClass: 'border-top',
-              thClass: '',
-            },
-            {
-              key: 'seq',
-              label: 'Seq.',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'documentType',
-              label: 'Document Type',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'border:0px; font-size: 14px; text-align:left;',
-            },
-            {
-              key: 'act',
-              label: 'Act',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'display: block; margin-top: 1px; font-size: 14px; max-width : 50px;',
-            },
-            {
-              key: 'nextAppearanceDate',
-              label: 'Next Appearance Date',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'dateFiled',
-              label: 'Date Filed',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'issues',
-              label: 'Issues',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px;',
-            },
-            {
-              key: 'filedByName',
-              label: 'Filed By Name',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px;',
-            },
-            {
-              key: 'comment',
-              label: 'Comment',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle: 'font-size: 12px; max-width:300px;',
-              tdClass: 'max-width-300',
-            },
-          ],
-          [
-            {
-              key: 'select',
-              label: '',
-              sortable: false,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 16px;',
-              tdClass: 'border-top',
-              thClass: '',
-            },
-            {
-              key: 'seq',
-              label: 'Seq.',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'documentType',
-              label: 'Document Type',
-              sortable: true,
-              headerStyle: 'text-primary',
-              cellStyle: 'border:0px; font-size: 14px; text-align:left;',
-            },
-            {
-              key: 'dateFiled',
-              label: 'Date Filed',
-              sortable: true,
-              headerStyle: 'text-danger',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'affNo',
-              label: 'Aff No.',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle: 'font-size: 14px;',
-            },
-            {
-              key: 'swornBy',
-              label: 'Sworn By',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px',
-            },
-            {
-              key: 'filedByName',
-              label: 'Filed By Name',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px',
-            },
-            {
-              key: 'issues',
-              label: 'Issues',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'white-space: pre-line; font-size: 14px; margin-left: 20px;',
-            },
-            {
-              key: 'act',
-              label: 'Act',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle:
-                'display: block; margin-top: 1px; font-size: 14px; max-width : 50px;',
-            },
-            {
-              key: 'comment',
-              label: 'Comment',
-              sortable: false,
-              headerStyle: 'text',
-              cellStyle: 'font-size: 12px; max-width:300px;',
-              tdClass: 'max-width-300',
-            },
-          ],
-        ];
+      const commonStyles = {
+        cellStyle: 'font-size: 14px;',
+        tdClass: 'border-top',
+        thClass: '',
       };
+
+      const headerStyles = {
+        primary: 'text-primary',
+        danger: 'text-danger',
+        text: 'text',
+      };
+
+      const predefinedFields = {
+        select: {
+          key: 'select',
+          label: '',
+          sortable: false,
+          headerStyle: headerStyles.primary,
+          ...commonStyles,
+          cellStyle: 'font-size: 16px;',
+        },
+        seq: {
+          key: 'seq',
+          label: 'Seq.',
+          sortable: true,
+          headerStyle: headerStyles.primary,
+          cellStyle: commonStyles.cellStyle,
+        },
+        documentType: {
+          key: 'documentType',
+          label: 'Document Type',
+          sortable: true,
+          headerStyle: headerStyles.primary,
+          cellStyle: 'border:0px; font-size: 14px; text-align:left;',
+        },
+        dateFiled: {
+          key: 'dateFiled',
+          label: 'Date Filed',
+          sortable: true,
+          headerStyle: headerStyles.danger,
+          cellStyle: commonStyles.cellStyle,
+        },
+        act: {
+          key: 'act',
+          label: 'Act',
+          sortable: false,
+          headerStyle: headerStyles.text,
+          cellStyle:
+            'display: block; margin-top: 1px; font-size: 14px; max-width : 50px;',
+        },
+        comment: {
+          key: 'comment',
+          label: 'Comment',
+          sortable: false,
+          headerStyle: headerStyles.text,
+          cellStyle: 'font-size: 12px; max-width:300px;',
+          tdClass: 'max-width-300',
+        },
+        filedByName: {
+          key: 'filedByName',
+          label: 'Filed By Name',
+          sortable: false,
+          headerStyle: headerStyles.text,
+          cellStyle:
+            'white-space: pre-line; font-size: 14px; margin-left: 20px;',
+        },
+        swornBy: {
+          key: 'swornBy',
+          label: 'Sworn By',
+          sortable: false,
+          headerStyle: headerStyles.text,
+          cellStyle:
+            'white-space: pre-line; font-size: 14px; margin-left: 20px;',
+        },
+      };
+
+      const getTableFieldSettings = () => [
+        // Section 1
+        [
+          predefinedFields.select,
+          predefinedFields.seq,
+          predefinedFields.documentType,
+          predefinedFields.act,
+          predefinedFields.dateFiled,
+          {
+            key: 'affNo',
+            label: 'Aff No.',
+            sortable: false,
+            headerStyle: headerStyles.text,
+            cellStyle: commonStyles.cellStyle,
+          },
+          predefinedFields.swornBy,
+          {
+            key: 'issues',
+            label: 'Issues',
+            sortable: false,
+            headerStyle: headerStyles.text,
+            cellStyle:
+              'white-space: pre-line; font-size: 14px; margin-left: 20px;',
+          },
+          predefinedFields.filedByName,
+          predefinedFields.comment,
+        ],
+        // Section 2
+        [
+          predefinedFields.select,
+          predefinedFields.documentType,
+          {
+            key: 'appearanceDate',
+            label: 'Appearance Date',
+            sortable: true,
+            headerStyle: headerStyles.danger,
+            cellStyle: commonStyles.cellStyle,
+          },
+        ],
+        // Section 3
+        [
+          predefinedFields.select,
+          predefinedFields.seq,
+          predefinedFields.documentType,
+          predefinedFields.dateFiled,
+          {
+            key: 'orderMadeDate',
+            label: 'Order Made Date',
+            sortable: true,
+            headerStyle: headerStyles.primary,
+            cellStyle: commonStyles.cellStyle,
+          },
+          predefinedFields.filedByName,
+          predefinedFields.comment,
+        ],
+        // Section 4
+        [
+          predefinedFields.select,
+          predefinedFields.seq,
+          predefinedFields.documentType,
+          predefinedFields.act,
+          {
+            key: 'nextAppearanceDate',
+            label: 'Next Appearance Date',
+            sortable: true,
+            headerStyle: headerStyles.primary,
+            cellStyle: commonStyles.cellStyle,
+          },
+          predefinedFields.dateFiled,
+          {
+            key: 'issues',
+            label: 'Issues',
+            sortable: false,
+            headerStyle: headerStyles.text,
+            cellStyle:
+              'white-space: pre-line; font-size: 14px; margin-left: 20px;',
+          },
+          predefinedFields.filedByName,
+          predefinedFields.comment,
+        ],
+        // Section 5
+        [
+          predefinedFields.select,
+          predefinedFields.seq,
+          predefinedFields.documentType,
+          predefinedFields.dateFiled,
+          {
+            key: 'affNo',
+            label: 'Aff No.',
+            sortable: false,
+            headerStyle: headerStyles.text,
+            cellStyle: commonStyles.cellStyle,
+          },
+          predefinedFields.swornBy,
+          predefinedFields.filedByName,
+          {
+            key: 'issues',
+            label: 'Issues',
+            sortable: false,
+            headerStyle: headerStyles.text,
+            cellStyle:
+              'white-space: pre-line; font-size: 14px; margin-left: 20px;',
+          },
+          predefinedFields.act,
+          predefinedFields.comment,
+        ],
+      ];
 
       const fields = ref(getTableFieldSettings());
 

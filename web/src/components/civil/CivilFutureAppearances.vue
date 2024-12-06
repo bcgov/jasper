@@ -163,98 +163,113 @@
       const sortBy = ref('date');
       const sortDesc = ref(true);
 
-      const getTableFieldSettings = () => [
-        {
-          key: 'date',
-          label: 'Date',
-          sortable: true,
+      const getTableFieldSettings = () => {
+        const commonStyles = {
           tdClass: 'border-top',
-          headerStyle: 'text-primary',
-          cellClass: 'text-info mt-2 d-inline-flex',
-          cellStyle: 'display: inline-flex; font-size: 14px;',
-        },
-        {
-          key: 'reason',
-          label: 'Reason',
-          sortable: true,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-          cellClass: 'badge badge-secondary mt-2',
-          cellStyle: 'font-size: 14px; text-align:left;',
-        },
-        {
-          key: 'documentType',
-          label: 'Document Type',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
-          cellClass: 'text',
-          cellStyle: 'font-weight: normal;font-size: 14px; padding-top:12px',
-        },
-        {
-          key: 'result',
-          label: 'Result',
-          sortable: true,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-          cellClass: 'badge badge-secondary mt-2',
           cellStyle: 'font-size: 14px;',
-        },
-        {
-          key: 'time',
-          label: 'Time',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
-          cellClass: 'text',
-          cellStyle: 'font-weight: normal; font-size: 14px; padding-top:12px',
-        },
-        {
-          key: 'duration',
-          label: 'Duration',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
-          cellClass: 'text',
-          cellStyle: 'font-weight: normal; font-size: 14px; padding-top:12px',
-        },
-        {
-          key: 'location',
-          label: 'Location',
-          sortable: true,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-          cellClass: 'text',
-          cellStyle: 'font-weight: normal; font-size: 14px; padding-top:12px',
-        },
-        {
-          key: 'room',
-          label: 'Room',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
-          cellClass: 'text',
-          cellStyle: 'font-weight: normal; font-size: 14px; padding-top:12px',
-        },
-        {
-          key: 'presider',
-          label: 'Presider',
-          sortable: true,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-          cellClass: 'badge badge-secondary mt-2',
-          cellStyle: 'font-size: 14px;',
-        },
-        {
-          key: 'status',
-          label: 'Status',
-          sortable: true,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-          cellClass: 'badge',
-          cellStyle: 'font-size: 14px;',
-        },
-      ];
+        };
+
+        const headerStyles = {
+          textPrimary: 'text-primary',
+          text: 'text',
+        };
+
+        const cellClasses = {
+          badge: 'badge badge-secondary mt-2',
+          text: 'text',
+          inlineText: 'text-info mt-2 d-inline-flex',
+        };
+
+        return [
+          {
+            key: 'date',
+            label: 'Date',
+            sortable: true,
+            ...commonStyles,
+            headerStyle: headerStyles.textPrimary,
+            cellClass: cellClasses.inlineText,
+            cellStyle: `${commonStyles.cellStyle} display: inline-flex;`,
+          },
+          {
+            key: 'reason',
+            label: 'Reason',
+            sortable: true,
+            ...commonStyles,
+            headerStyle: headerStyles.textPrimary,
+            cellClass: cellClasses.badge,
+            cellStyle: `${commonStyles.cellStyle} text-align:left;`,
+          },
+          {
+            key: 'documentType',
+            label: 'Document Type',
+            sortable: false,
+            ...commonStyles,
+            headerStyle: headerStyles.text,
+            cellClass: cellClasses.text,
+            cellStyle: `${commonStyles.cellStyle} font-weight: normal; padding-top:12px;`,
+          },
+          {
+            key: 'result',
+            label: 'Result',
+            sortable: true,
+            ...commonStyles,
+            headerStyle: headerStyles.textPrimary,
+            cellClass: cellClasses.badge,
+          },
+          {
+            key: 'time',
+            label: 'Time',
+            sortable: false,
+            ...commonStyles,
+            headerStyle: headerStyles.text,
+            cellClass: cellClasses.text,
+            cellStyle: `${commonStyles.cellStyle} font-weight: normal; padding-top:12px;`,
+          },
+          {
+            key: 'duration',
+            label: 'Duration',
+            sortable: false,
+            ...commonStyles,
+            headerStyle: headerStyles.text,
+            cellClass: cellClasses.text,
+            cellStyle: `${commonStyles.cellStyle} font-weight: normal; padding-top:12px;`,
+          },
+          {
+            key: 'location',
+            label: 'Location',
+            sortable: true,
+            ...commonStyles,
+            headerStyle: headerStyles.textPrimary,
+            cellClass: cellClasses.text,
+            cellStyle: `${commonStyles.cellStyle} font-weight: normal; padding-top:12px;`,
+          },
+          {
+            key: 'room',
+            label: 'Room',
+            sortable: false,
+            ...commonStyles,
+            headerStyle: headerStyles.text,
+            cellClass: cellClasses.text,
+            cellStyle: `${commonStyles.cellStyle} font-weight: normal; padding-top:12px;`,
+          },
+          {
+            key: 'presider',
+            label: 'Presider',
+            sortable: true,
+            ...commonStyles,
+            headerStyle: headerStyles.textPrimary,
+            cellClass: cellClasses.badge,
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            sortable: true,
+            ...commonStyles,
+            headerStyle: headerStyles.textPrimary,
+            cellClass: cellClasses.badge,
+          },
+        ];
+      };
 
       const fields = ref(getTableFieldSettings());
 

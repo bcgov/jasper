@@ -362,7 +362,7 @@
       //const sortDesc = ref(true);
       const showNotes = ref(false);
       const informationsFileExists = ref(false);
-      let notes = reactive({} as appearanceNotesInfoType);
+      const notes = ref({} as appearanceNotesInfoType);
       const appearanceDetailsInfo = reactive(
         {} as criminalAppearanceDetailsInfoType
       );
@@ -462,7 +462,7 @@
               criminalFileStore.criminalAppearanceInfo.partId
           )
           .then(
-            (Response) => Response.json(),
+            (Response) => Response,
             (err) => {
               // $bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
               //   title: "An error has occured.",
@@ -519,7 +519,7 @@
         const appNote = appearanceDetailsJson.appearanceNote
           ? appearanceDetailsJson.appearanceNote
           : '';
-        notes = { judgeRec: judgeRec, appNote: appNote };
+        notes.value = { judgeRec: judgeRec, appNote: appNote };
         if (
           appearanceDetailsJson.initiatingDocuments &&
           appearanceDetailsJson.initiatingDocuments.length > 0

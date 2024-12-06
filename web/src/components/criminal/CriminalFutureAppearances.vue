@@ -202,48 +202,51 @@
       const ExtractFutureAppearancesInfo = () => {
         const currentDate = new Date();
 
-        for (const appIndex in futureAppearancesJson) {
-          const appInfo = {} as criminalAppearancesListType;
-          const jApp = futureAppearancesJson[appIndex];
+        futureAppearancesJson.forEach(
+          (jApp: criminalApprDetailType, index: number) => {
+            const appearanceDate = jApp.appearanceDt.split(' ')[0];
+            if (new Date(appearanceDate) < currentDate) return;
 
-          appInfo.index = appIndex;
-          appInfo.date = jApp.appearanceDt.split(' ')[0];
-          if (new Date(appInfo.date) < currentDate) continue;
-          appInfo.formattedDate = beautifyDate(appInfo.date);
-          appInfo.time = getTime(jApp.appearanceTm.split(' ')[1].substr(0, 5));
-          appInfo.reason = jApp.appearanceReasonCd;
-          appInfo.reasonDescription = jApp.appearanceReasonDsc
-            ? jApp.appearanceReasonDsc
-            : '';
+            const appInfo: criminalAppearancesListType = {
+              index: index.toString(),
+              date: appearanceDate,
+              formattedDate: beautifyDate(appearanceDate),
+              time: getTime(jApp.appearanceTm.split(' ')[1].substring(0, 5)),
+              reason: jApp.appearanceReasonCd,
+              reasonDescription: jApp.appearanceReasonDsc || '',
+              duration: getDuration(
+                jApp.estimatedTimeHour,
+                jApp.estimatedTimeMin
+              ),
+              location: jApp.courtLocation || '',
+              room: jApp.courtRoomCd,
+              firstName: jApp.givenNm || '',
+              lastName: jApp.lastNm || jApp.orgNm,
+              accused: getNameOfParticipant(
+                jApp.lastNm || jApp.orgNm,
+                jApp.givenNm || ''
+              ),
+              status: jApp.appearanceStatusCd
+                ? appearanceStatus[jApp.appearanceStatusCd]
+                : '',
+              statusStyle: getStatusStyle(
+                jApp.appearanceStatusCd
+                  ? appearanceStatus[jApp.appearanceStatusCd]
+                  : ''
+              ),
+              presider: jApp.judgeInitials || '',
+              judgeFullName: jApp.judgeInitials ? jApp.judgeFullNm : '',
+              appearanceId: jApp.appearanceId,
+              partId: jApp.partId,
+              supplementalEquipment: jApp.supplementalEquipmentTxt,
+              securityRestriction: jApp.securityRestrictionTxt,
+              outOfTownJudge: jApp.outOfTownJudgeTxt,
+              profSeqNo: jApp.profSeqNo,
+            };
 
-          appInfo.duration = getDuration(
-            jApp.estimatedTimeHour,
-            jApp.estimatedTimeMin
-          );
-          appInfo.location = jApp.courtLocation ? jApp.courtLocation : '';
-          appInfo.room = jApp.courtRoomCd;
-
-          appInfo.firstName = jApp.givenNm ? jApp.givenNm : '';
-          appInfo.lastName = jApp.lastNm ? jApp.lastNm : jApp.orgNm;
-          appInfo.accused = getNameOfParticipant(
-            appInfo.lastName,
-            appInfo.firstName
-          );
-          appInfo.status = jApp.appearanceStatusCd
-            ? appearanceStatus[jApp.appearanceStatusCd]
-            : '';
-          appInfo.statusStyle = getStatusStyle(appInfo.status);
-          appInfo.presider = jApp.judgeInitials ? jApp.judgeInitials : '';
-          appInfo.judgeFullName = jApp.judgeInitials ? jApp.judgeFullNm : '';
-
-          appInfo.appearanceId = jApp.appearanceId;
-          appInfo.partId = jApp.partId;
-          appInfo.supplementalEquipment = jApp.supplementalEquipmentTxt;
-          appInfo.securityRestriction = jApp.securityRestrictionTxt;
-          appInfo.outOfTownJudge = jApp.outOfTownJudgeTxt;
-          appInfo.profSeqNo = jApp.profSeqNo;
-          futureAppearancesList.value.push(appInfo);
-        }
+            futureAppearancesList.value.push(appInfo);
+          }
+        );
       };
 
       const getStatusStyle = (status) => {

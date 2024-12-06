@@ -565,7 +565,7 @@
               civilFileStore.civilAppearanceInfo.appearanceId
           )
           .then(
-            (Response) => Response.json(),
+            (Response) => Response,
             (err) => {
               // this.$bvToast.toast(
               //   `Error - ${err.url} - ${err.status} - ${err.statusText}`,

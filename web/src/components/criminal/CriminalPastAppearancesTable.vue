@@ -1,7 +1,7 @@
 <template>
   <b-card bg-variant="white" no-body class="mx-3 mb-5" style="overflow: auto">
     <b-table
-      :items="SortedFutureAppearances"
+      :items="SortedPastAppearances"
       :fields="fields"
       :sort-by.sync="sortBy"
       :sort-desc.sync="sortDesc"
@@ -20,15 +20,12 @@
       </template>
 
       <template v-slot:cell()="data">
-        <b-badge
-          style="font-weight: normal; font-size: 16px; padding-top: 12px"
-          variant="white"
-        >
+        <b-badge :style="data.field.cellStyle" variant="white">
           {{ data.value }}
         </b-badge>
       </template>
 
-      <template v-slot:cell(sate)="data">
+      <template v-slot:cell(date)="data">
         <span :class="data.field.cellClass" style="display: inline-flex">
           <b-button
             :style="data.field.cellStyle"
@@ -67,6 +64,18 @@
         </b-badge>
       </template>
 
+      <template v-slot:cell(presider)="data">
+        <b-badge
+          variant="secondary"
+          v-if="data.value"
+          v-b-tooltip.hover.left
+          :title="data.item.judgeFullName"
+          :style="data.field.cellStyle"
+        >
+          {{ data.value }}
+        </b-badge>
+      </template>
+
       <template v-slot:cell(accused)="data">
         <b-badge variant="white" :style="data.field.cellStyle" class="mt-2">
           {{ data.value }}
@@ -92,85 +101,85 @@
       CriminalAppearanceDetails,
     },
     props: {
-      SortedFutureAppearances: {
+      SortedPastAppearances: {
         type: Array as PropType<criminalAppearancesListType[]>,
         default: () => [],
       },
     },
     setup(props) {
-      const sortBy = ref('date');
-      const sortDesc = ref(true);
       const criminalFileStore = useCriminalFileStore();
+      const sortBy = 'dateref';
+      const sortDesc = ref(true);
 
-      const baseField = {
+      const defaultStyles = {
         tdClass: 'border-top',
+        cellStyle: 'font-weight: normal; font-size: 16px; padding-top:12px',
         headerStyle: 'text',
       };
 
-      const fieldConfigs = [
+      const fields = [
         {
           key: 'date',
           label: 'Date',
           sortable: true,
-          additionalStyles: {
-            headerStyle: 'text-primary',
-            cellStyle: 'transform: translate(0,-7px); font-size:16px',
-            cellClass: 'text-info mt-2 d-inline-flex',
-          },
+          headerStyle: 'text-primary',
+          cellStyle: 'transform: translate(0,-7px); font-size:16px',
+          cellClass: 'text-info mt-2 d-inline-flex',
         },
         {
           key: 'reason',
           label: 'Reason',
           sortable: true,
-          additionalStyles: {
-            headerStyle: 'text-primary',
-            cellStyle: 'margin-top: 10px; font-size: 14px;',
-          },
+          headerStyle: 'text-primary',
+          cellStyle: 'margin-top: 10px; font-size: 14px;',
         },
-        { key: 'time', label: 'Time', sortable: false },
-        { key: 'duration', label: 'Duration', sortable: false },
+        {
+          key: 'time',
+          label: 'Time',
+          sortable: false,
+          ...defaultStyles,
+        },
+        {
+          key: 'duration',
+          label: 'Duration',
+          sortable: false,
+          ...defaultStyles,
+        },
         {
           key: 'location',
           label: 'Location',
           sortable: true,
-          additionalStyles: { headerStyle: 'text-primary' },
+          ...defaultStyles,
+          headerStyle: 'text-primary',
         },
-        { key: 'room', label: 'Room', sortable: false },
+        {
+          key: 'room',
+          label: 'Room',
+          sortable: false,
+          ...defaultStyles,
+        },
+        {
+          key: 'presider',
+          label: 'Presider',
+          sortable: true,
+          headerStyle: 'text-primary',
+          cellStyle: 'margin-top: 10px; font-size: 14px;',
+        },
         {
           key: 'accused',
           label: 'Accused',
           sortable: true,
-          additionalStyles: {
-            headerStyle: 'text-primary',
-            cellStyle: 'font-size: 16px;',
-          },
+          headerStyle: 'text-primary',
+          cellStyle: 'font-size: 16px;',
         },
         {
           key: 'status',
           label: 'Status',
           sortable: true,
-          additionalStyles: {
-            headerStyle: 'text-primary',
-            cellStyle: 'font-weight: normal; font-size: 16px; width:110px',
-          },
+          headerStyle: 'text-primary',
+          cellStyle: 'font-weight: normal; font-size: 16px; width:110px',
         },
       ];
-
-      const fields = fieldConfigs.map(
-        ({ key, label, sortable, additionalStyles = {} }) => ({
-          ...baseField,
-          key,
-          label,
-          sortable,
-          ...additionalStyles,
-        })
-      );
-
-      const sortChanged = () => {
-        props.SortedFutureAppearances.forEach((item) => {
-          item['_showDetails'] = false;
-        });
-      };
 
       const OpenDetails = (data) => {
         if (!data.detailsShowing) {
@@ -201,13 +210,13 @@
         }
       };
 
-      return {
-        fields,
-        sortBy,
-        sortDesc,
-        sortChanged,
-        OpenDetails,
+      const sortChanged = () => {
+        props.SortedPastAppearances.forEach((item) => {
+          item['_showDetails'] = false;
+        });
       };
+
+      return { sortBy, sortDesc, fields, sortChanged, OpenDetails };
     },
   });
 </script>

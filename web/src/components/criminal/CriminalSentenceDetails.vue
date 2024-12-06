@@ -113,69 +113,68 @@
       const selectedParticipant = ref(0);
       const participantSentences = ref<participantSentencesInfoType[]>([]);
 
+      const baseField = {
+        tdClass: 'border-top',
+        headerStyle: 'text',
+      };
+
       const fields = [
         {
+          ...baseField,
           key: 'date',
           label: 'Date',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
         },
         {
+          ...baseField,
           key: 'count',
           label: 'Count',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
         },
         {
+          ...baseField,
           key: 'chargeIssue',
           label: 'Charge/Issue',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'finding',
           label: 'Finding',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-danger',
         },
         {
+          ...baseField,
           key: 'sentenceDispositionType',
           label: 'Sentence/ Disposition Type',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'term',
           label: 'Term',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'amount',
           label: 'Amount',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'dueDateUntil',
           label: 'Due Date/ Until',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'effectiveDate',
           label: 'Effective Date',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
       ];
 

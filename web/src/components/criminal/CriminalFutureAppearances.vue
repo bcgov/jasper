@@ -146,65 +146,67 @@
       const sortBy = ref('date');
       const sortDesc = ref(true);
 
+      const baseField = {
+        tdClass: 'border-top',
+        headerStyle: 'text',
+      };
+
       const fields = [
         {
+          ...baseField,
           key: 'date',
           label: 'Date',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
           cellStyle: 'transform: translate(0,-7px); font-size:16px',
           cellClass: 'text-info mt-2 d-inline-flex',
         },
         {
+          ...baseField,
           key: 'reason',
           label: 'Reason',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
           cellStyle: 'margin-top: 10px; font-size: 14px;',
         },
         {
+          ...baseField,
           key: 'time',
           label: 'Time',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'duration',
           label: 'Duration',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'location',
           label: 'Location',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
         },
         {
+          ...baseField,
           key: 'room',
           label: 'Room',
           sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text',
         },
         {
+          ...baseField,
           key: 'accused',
           label: 'Accused',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
           cellStyle: 'font-size: 16px;',
         },
         {
+          ...baseField,
           key: 'status',
           label: 'Status',
           sortable: true,
-          tdClass: 'border-top',
           headerStyle: 'text-primary',
           cellStyle: 'font-weight: normal; font-size: 16px; width:110px',
         },

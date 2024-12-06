@@ -52,37 +52,37 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, computed, onMounted } from "vue"
+  import { defineComponent } from 'vue';
 
   export default defineComponent({
-    name: "NavigationFooter",
+    name: 'NavigationFooter',
     setup() {
-      let footerPosition = ""
+      let footerPosition = '';
 
       const created = () => {
-        window.addEventListener("resize", this.onResize)
-      }
+        window.addEventListener('resize', onResize);
+      };
 
       const destroyed = () => {
-        window.removeEventListener("resize", this.onResize)
-      }
+        window.removeEventListener('resize', onResize);
+      };
 
       const onResize = () => {
         if (window.innerWidth > 1100) {
-          footerPosition = "fixed-bottom"
+          footerPosition = 'fixed-bottom';
         } else {
-          footerPosition = "flex-bottom"
+          footerPosition = 'flex-bottom';
         }
-      }
+      };
 
-      footerPosition = "fixed-bottom"
+      footerPosition = 'fixed-bottom';
 
       return {
         created,
         destroyed,
         onResize,
-        footerPosition
-      }
-    }
-  })
+        footerPosition,
+      };
+    },
+  });
 </script>

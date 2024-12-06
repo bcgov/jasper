@@ -202,7 +202,7 @@
             <b-card
               v-if="
                 !(appearanceAdditionalInfo.length > 0) ||
-                userInfo.userType == 'vc'
+                userInfo!.userType == 'vc'
               "
               style="border: white"
             >
@@ -359,7 +359,7 @@
     </b-card>
 
     <b-modal
-      v-if="isMounted && userInfo.userType != 'vc'"
+      v-if="isMounted && userInfo!.userType != 'vc'"
       v-model="showAdjudicatorComment"
       id="bv-modal-comment"
       hide-footer
@@ -401,7 +401,7 @@
     props: {
       tagcasename: {
         type: String,
-        required: true,
+        default: '',
       },
     },
     setup(props) {

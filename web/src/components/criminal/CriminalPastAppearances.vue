@@ -128,29 +128,24 @@
         );
       };
 
-      const getStatusStyle = (status) => {
-        commonStore.updateStatusStyle(status);
-        return commonStore.statusStyle;
+      const fetchStoreData = (store, methodName, data) => {
+        store[methodName](data);
+        return store[methodName.replace('update', '').toLowerCase()];
       };
 
-      const getNameOfParticipant = (lastName, givenName) => {
-        commonStore.updateDisplayName({
+      const getStatusStyle = (status) =>
+        fetchStoreData(commonStore, 'updateStatusStyle', status);
+
+      const getNameOfParticipant = (lastName, givenName) =>
+        fetchStoreData(commonStore, 'updateDisplayName', {
           lastName: lastName,
           givenName: givenName,
         });
-        return commonStore.displayName;
-      };
 
-      const getTime = (time) => {
-        commonStore.updateTime(time);
-        return commonStore.time;
-      };
+      const getTime = (time) => fetchStoreData(commonStore, 'updateTime', time);
 
-      const getDuration = (hr, min) => {
-        commonStore.updateDuration({ hr: hr, min: min });
-        return commonStore.duration;
-      };
-
+      const getDuration = (hr, min) =>
+        fetchStoreData(commonStore, 'updateDuration', { hr: hr, min: min });
       const SortedPastAppearances = computed(
         (): criminalAppearancesListType[] => {
           if (criminalFileStore.showSections['Past Appearances']) {

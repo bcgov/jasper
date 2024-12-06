@@ -32,8 +32,8 @@
       <b-card style="min-height: 100px">
         <span v-if="errorCode == 404"
           >This <b>File-Number '{{ route.query.fileNumber }}'</b> at
-          <b> location '{{ this.$route.query.location }}' </b> doesn't exist in
-          the <b>criminal</b> records.
+          <b> location '{{ route.query.location }}' </b> doesn't exist in the
+          <b>criminal</b> records.
         </span>
         <span v-else-if="errorCode == 200 || errorCode == 204">
           Bad Data in search results!
@@ -198,34 +198,33 @@
       const allFilesChecked = ref(false);
       //      const selectedFiles = ref<string[]>([]);
 
+      const commonFieldStyles = {
+        tdClass: 'border-top',
+        cellStyle: 'font-size: 16px;',
+        sortable: false,
+        headerStyle: 'text-primary',
+      };
+
+      const createField = (key, label, additionalStyles = {}) => ({
+        key,
+        label,
+        ...commonFieldStyles,
+        ...additionalStyles,
+      });
+
       const fields = [
-        {
-          key: 'select',
-          label: '',
-          tdClass: 'border-top',
-          cellStyle: 'font-size: 16px;',
-          sortable: false,
-          headerStyle: 'text-primary',
+        createField('select', '', {
           thClass: '',
-        },
-        {
-          key: 'fileNumber',
-          label: 'File Number',
-          tdClass: 'border-top',
+        }),
+        createField('fileNumber', 'File Number', {
           cellStyle: 'font-size:16px; font-weight: bold; border: none;',
-        },
-        {
-          key: 'participants',
-          label: 'Participants',
-          tdClass: 'border-top',
+        }),
+        createField('participants', 'Participants', {
           cellStyle: 'white-space: pre-line',
-        },
-        {
-          key: 'nextAppearance',
-          label: 'Next Appearance',
-          tdClass: 'border-top',
+        }),
+        createField('nextAppearance', 'Next Appearance', {
           cellStyle: 'white-space: pre-line',
-        },
+        }),
       ];
 
       onMounted(() => {

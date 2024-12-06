@@ -286,27 +286,29 @@
 
       const OpenDetails = (data) => {
         if (!data.detailsShowing) {
-          criminalFileStore.criminalAppearanceInfo.fileNo =
-            criminalFileStore.criminalFileInformation.fileNumber;
-          criminalFileStore.criminalAppearanceInfo.courtLevel =
-            criminalFileStore.criminalFileInformation.courtLevel;
-          criminalFileStore.criminalAppearanceInfo.courtClass =
-            criminalFileStore.criminalFileInformation.courtClass;
-          criminalFileStore.criminalAppearanceInfo.date =
-            data.item.formattedDate;
-          criminalFileStore.criminalAppearanceInfo.appearanceId =
-            data.item.appearanceId;
-          criminalFileStore.criminalAppearanceInfo.partId = data.item.partId;
-          criminalFileStore.criminalAppearanceInfo.supplementalEquipmentTxt =
-            data.item.supplementalEquipment;
-          criminalFileStore.criminalAppearanceInfo.securityRestrictionTxt =
-            data.item.securityRestriction;
-          criminalFileStore.criminalAppearanceInfo.outOfTownJudgeTxt =
-            data.item.outOfTownJudge;
-          criminalFileStore.criminalAppearanceInfo.profSeqNo =
-            data.item.profSeqNo;
+          const { criminalFileInformation, criminalAppearanceInfo } =
+            criminalFileStore;
+          const { item } = data;
+
+          const mappings = {
+            fileNo: criminalFileInformation.fileNumber,
+            courtLevel: criminalFileInformation.courtLevel,
+            courtClass: criminalFileInformation.courtClass,
+            date: item.formattedDate,
+            appearanceId: item.appearanceId,
+            partId: item.partId,
+            supplementalEquipmentTxt: item.supplementalEquipment,
+            securityRestrictionTxt: item.securityRestriction,
+            outOfTownJudgeTxt: item.outOfTownJudge,
+            profSeqNo: item.profSeqNo,
+          };
+
+          Object.keys(mappings).forEach((key) => {
+            criminalAppearanceInfo[key] = mappings[key];
+          });
+
           criminalFileStore.updateCriminalAppearanceInfo(
-            criminalFileStore.criminalAppearanceInfo
+            criminalAppearanceInfo
           );
         }
       };

@@ -198,49 +198,28 @@
       const agencyLocation = ref({ name: '', code: '0', region: '' });
       const isMounted = ref(false);
 
+      const commonFieldStyles = {
+        sortable: false,
+        tdClass: 'border-top',
+        headerStyle: 'text-primary',
+      };
+
+      const createField = (key, label, additionalStyles = {}) => ({
+        key,
+        label,
+        ...commonFieldStyles,
+        ...additionalStyles,
+      });
+
       const fields = [
-        {
-          key: 'banParticipant',
-          label: 'Ban Participant',
-          sortable: false,
-          tdClass: 'border-top',
+        createField('banParticipant', 'Ban Participant', {
           headerStyle: 'table-borderless text-primary',
-        },
-        {
-          key: 'banType',
-          label: 'Ban Type',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-        },
-        {
-          key: 'orderDate',
-          label: 'Order Date',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-        },
-        {
-          key: 'act',
-          label: 'Act',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-        },
-        {
-          key: 'sub',
-          label: 'Sub',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-        },
-        {
-          key: 'description',
-          label: 'Description',
-          sortable: false,
-          tdClass: 'border-top',
-          headerStyle: 'text-primary',
-        },
+        }),
+        createField('banType', 'Ban Type'),
+        createField('orderDate', 'Order Date'),
+        createField('act', 'Act'),
+        createField('sub', 'Sub'),
+        createField('description', 'Description'),
       ];
 
       onMounted(() => {

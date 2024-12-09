@@ -19,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-major-version: [8]
+        dotnet-major-version: [9]
         dotnet-minor-version: [0]
 
     steps:

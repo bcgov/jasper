@@ -1,7 +1,7 @@
-version: "3.4"
+version: '3.4'
 services:
   web:
-    image: "${COMPOSE_PROJECT_NAME}-web"
+    image: '${COMPOSE_PROJECT_NAME}-web'
     environment:
       - API_URL=${API_URL}
       - USE_SELF_SIGNED_SSL=${USE_SELF_SIGNED_SSL}
@@ -15,7 +15,7 @@ services:
       - api
 
   web-dev:
-    image: "${COMPOSE_PROJECT_NAME}-web-dev"
+    image: '${COMPOSE_PROJECT_NAME}-web-dev'
     environment:
       - API_URL=${API_URL}
       - WEB_BASE_HREF=${WEB_BASE_HREF}
@@ -25,15 +25,15 @@ services:
       - VITE_PORT=1339
       - CHOKIDAR_USEPOLLING=true
     ports:
-      - "8080:1339"
+      - '8080:1339'
     volumes:
-      - "${LOCAL_WORKSPACE_FOLDER-..}/web/src:/opt/app-root/src/src"
-      - "${LOCAL_WORKSPACE_FOLDER-..}/web/package.json:/opt/app-root/src/package.json"
+      - '${LOCAL_WORKSPACE_FOLDER-..}/web/src:/opt/app-root/src/src'
+      - '${LOCAL_WORKSPACE_FOLDER-..}/web/package.json:/opt/app-root/src/package.json'
     depends_on:
       - api
 
   api:
-    image: "${COMPOSE_PROJECT_NAME}-api"
+    image: '${COMPOSE_PROJECT_NAME}-api'
     environment:
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
       - FileServicesClient__Username=${FileServicesClientUsername}

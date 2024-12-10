@@ -77,6 +77,7 @@ module "iam" {
   iam_user_table_name = var.iam_user_table_name
   secrets_arn_list    = module.secrets_manager.secrets_arn_list
   account_id          = data.aws_caller_identity.current.account_id
+  kms_key_id          = data.aws_kms_key.kms_key.id
 }
 
 # Parse Subnets

@@ -37,3 +37,8 @@ variable "account_id" {
   description = "The current AWS Account Id"
   type        = string
 }
+
+variable "kms_key_id" {
+  description = "The custom KMS Key Id"
+  type        = string
+}

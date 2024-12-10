@@ -2,7 +2,7 @@
 # KMS Key Policy
 #
 resource "aws_kms_key_policy" "kms_key_policy" {
-  key_id = aws_kms_key.kms_key.id
+  key_id = var.kms_key_id
 
   policy = jsonencode({
     Version = "2012-10-17"

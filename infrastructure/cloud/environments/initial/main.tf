@@ -1,5 +1,4 @@
 # This "initial" stack is deployed first to avoid circular dependency to other resources
-data "aws_caller_identity" "current" {}
 
 # Create Openshift User
 module "dynamo_db" {
@@ -16,7 +15,6 @@ module "kms" {
   region             = var.region
   kms_key_name       = var.kms_key_name
   openshift_iam_user = var.openshift_iam_user
-  account_id         = data.aws_caller_identity.current.account_id
   depends_on         = [module.dynamo_db]
 }
 

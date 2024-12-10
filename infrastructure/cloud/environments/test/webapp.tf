@@ -76,6 +76,7 @@ module "iam" {
   openshift_iam_user  = var.openshift_iam_user
   iam_user_table_name = var.iam_user_table_name
   secrets_arn_list    = module.secrets_manager.secrets_arn_list
+  account_id          = data.aws_caller_identity.current.account_id
 }
 
 # Parse Subnets

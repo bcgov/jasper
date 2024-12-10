@@ -1,4 +1,53 @@
 #
+# KMS Key Policy
+#
+resource "aws_kms_key_policy" "kms_key_policy" {
+  key_id = aws_kms_key.kms_key.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # Allow full access to the key for administrators
+      {
+        Sid    = "EnableIAMUserPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = [
+            "arn:aws:iam::${var.account_id}:root",
+            "arn:aws:iam::${var.account_id}:user/${var.openshift_iam_user}"
+          ]
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+
+      # Allow CloudWatch Logs to use the key
+      {
+        Sid    = "AllowCloudWatchLogsUsage"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.amazonaws.com"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+
+      # Allow Lambda Functions to use the key
+      {
+        Sid    = "AllowLambdasUsage"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+
+#
 # ECS
 #
 resource "aws_iam_role" "ecs_execution_role" {

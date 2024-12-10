@@ -6,6 +6,9 @@ on:
       CONTEXT_FOLDER:
         required: true
         type: string
+      TF_VARS_CONFIG_FOLDER:
+        required: true
+        type: string
       ENVIRONMENT_NAME:
         required: true
         type: string
@@ -68,7 +71,7 @@ jobs:
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ inputs.CONTEXT_FOLDER }}
-          tfsec_args: "--tfvars-file=${{ inputs.CONTEXT_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars"
+          tfsec_args: "--tfvars-file=${{ inputs.CONTEXT_FOLDER }}/${{ inputs.TF_VARS_CONFIG_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars"
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -109,14 +112,14 @@ jobs:
         env:
           CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
         run: |
-          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ inputs.ENVIRONMENT_NAME }}.tfvars
+          terraform init -input=false -backend-config=${{ inputs.TF_VARS_CONFIG_FOLDER }}/backend.tfvars -var-file=${{ inputs.TF_VARS_CONFIG_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars
         working-directory: ${{ inputs.CONTEXT_FOLDER }}
       - name: Terraform Plan
         id: plan
         env:
           CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
         run: |
-          terraform plan -no-color -input=false -var-file=${{ inputs.ENVIRONMENT_NAME }}.tfvars
+          terraform plan -no-color -input=false -var-file=${{ inputs.TF_VARS_CONFIG_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars
         continue-on-error: true
         working-directory: ${{ inputs.CONTEXT_FOLDER }}
       - name: Terraform Plan Status
@@ -127,5 +130,5 @@ jobs:
         env:
           CONTEXT_FOLDER: ${{ inputs.CONTEXT_FOLDER }}
         run: |
-          terraform apply --auto-approve -input=false -var-file=${{ inputs.ENVIRONMENT_NAME }}.tfvars
+          terraform apply --auto-approve -input=false -var-file=${{ inputs.TF_VARS_CONFIG_FOLDER }}/${{ inputs.ENVIRONMENT_NAME }}.tfvars
         working-directory: ${{ inputs.CONTEXT_FOLDER }}

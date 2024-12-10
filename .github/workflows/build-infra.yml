@@ -26,6 +26,7 @@ jobs:
     uses: ./.github/workflows/aws-template-terraform.yml
     with:
       CONTEXT_FOLDER: "./infrastructure/cloud/environments/initial"
+      TF_VARS_CONFIG_FOLDER: "../${{ inputs.environment || 'dev' }}"
       CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
       ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
       APPLY_TF_CODE: false
@@ -36,8 +37,8 @@ jobs:
     uses: ./.github/workflows/aws-template-terraform.yml
     with:
       CONTEXT_FOLDER: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
+      TF_VARS_CONFIG_FOLDER: "."
       CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
       ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
       APPLY_TF_CODE: false
     secrets: inherit
-    

@@ -17,6 +17,7 @@ module "kms" {
   kms_key_name       = var.kms_key_name
   openshift_iam_user = var.openshift_iam_user
   account_id         = data.aws_caller_identity.current.account_id
+  depends_on         = [module.dynamo_db]
 }
 
 # UI and API ECR repository

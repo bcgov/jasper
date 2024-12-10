@@ -2,7 +2,7 @@
 # Team is investigating the integration of ArgoCD as a long term solution.
 #   e.g.
 #       # Removes existing components to start from a clean slate
-#       oc delete cronjob,pvc,rolebinding,sa,roles -n $NAMESPACE -l app=update-aws-creds 
+#       oc delete cronjob,pvc,rolebinding,sa,roles -n $NAMESPACE -l app=update-aws-creds
 #
 #       # Dry Run
 #       oc process -f update-aws-creds.dc.yaml --param-file=.env
@@ -19,20 +19,24 @@ labels:
   app: update-aws-creds
   template: update-aws-creds-template
 metadata:
-  name: update-aws-creds
+  # Append the target environment:
+  # - update-aws-creds-dev
+  # - update-aws-creds-test
+  # - update-aws-creds-prod
+  name: update-aws-creds-test
 
 objects:
   - apiVersion: v1
     kind: ServiceAccount
     metadata:
-      name: update-aws-creds
+      name: update-aws-creds-${ENVIRONMENT}
 
   - apiVersion: authorization.openshift.io/v1
     kind: Role
     metadata:
       annotations:
         openshift.io/description: Least-priviledge role for the update-aws-creds job
-      name: update-aws-creds
+      name: update-aws-creds-${ENVIRONMENT}
     rules:
       - apiGroups:
           - ""
@@ -46,18 +50,18 @@ objects:
   - apiVersion: rbac.authorization.k8s.io/v1
     kind: RoleBinding
     metadata:
-      name: update-aws-creds
+      name: update-aws-creds-${ENVIRONMENT}
     subjects:
-    - kind: ServiceAccount
-      name: update-aws-creds
+      - kind: ServiceAccount
+        name: update-aws-creds-${ENVIRONMENT}
     roleRef:
       kind: Role
-      name: update-aws-creds
+      name: update-aws-creds-${ENVIRONMENT}
 
   - apiVersion: batch/v1
     kind: CronJob
     metadata:
-      name: update-aws-creds
+      name: update-aws-creds-${ENVIRONMENT}
     spec:
       concurrencyPolicy: Forbid
       failedJobsHistoryLimit: 3
@@ -78,63 +82,63 @@ objects:
                 DataClass: Medium
                 role: update-aws-creds
             spec:
-              serviceAccountName: update-aws-creds
+              serviceAccountName: update-aws-creds-${ENVIRONMENT}
               containers:
-              - name: update-aws-creds
-                image: "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
-                imagePullPolicy: Always
-                env:
-                  - name: ENVIRONMENT
-                    value: "${ENVIRONMENT}"
-                  - name: AWS_ACCESS_KEY_ID
-                    valueFrom:
-                      secretKeyRef:
-                        name: aws-secret
-                        key: AWS_ACCESS_KEY_ID
-                  - name: AWS_SECRET_ACCESS_KEY
-                    valueFrom:
-                      secretKeyRef:
-                        name: aws-secret
-                        key: AWS_SECRET_ACCESS_KEY
-                  - name: AWS_REGION
-                    valueFrom:
-                      secretKeyRef:
-                        name: aws-secret
-                        key: AWS_REGION
-                  - name: HTTP_PROXY
-                    valueFrom:
-                      secretKeyRef:
-                        name: proxy-config
-                        key: HTTP_PROXY
-                  - name: HTTPS_PROXY
-                    valueFrom:
-                      secretKeyRef:
-                        name: proxy-config
-                        key: HTTPS_PROXY
-                  - name: NO_PROXY
-                    valueFrom:
-                      secretKeyRef:
-                        name: proxy-config
-                        key: NO_PROXY
-                resources:
-                  requests:
-                    cpu: 50m
-                  limits:
-                    cpu: 250m
+                - name: update-aws-creds
+                  image: "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+                  imagePullPolicy: Always
+                  env:
+                    - name: ENVIRONMENT
+                      value: "${ENVIRONMENT}"
+                    - name: AWS_ACCESS_KEY_ID
+                      valueFrom:
+                        secretKeyRef:
+                          name: aws-secret-${ENVIRONMENT}
+                          key: AWS_ACCESS_KEY_ID
+                    - name: AWS_SECRET_ACCESS_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: aws-secret-${ENVIRONMENT}
+                          key: AWS_SECRET_ACCESS_KEY
+                    - name: AWS_REGION
+                      valueFrom:
+                        secretKeyRef:
+                          name: aws-secret-${ENVIRONMENT}
+                          key: AWS_REGION
+                    - name: HTTP_PROXY
+                      valueFrom:
+                        secretKeyRef:
+                          name: proxy-config
+                          key: HTTP_PROXY
+                    - name: HTTPS_PROXY
+                      valueFrom:
+                        secretKeyRef:
+                          name: proxy-config
+                          key: HTTPS_PROXY
+                    - name: NO_PROXY
+                      valueFrom:
+                        secretKeyRef:
+                          name: proxy-config
+                          key: NO_PROXY
+                  resources:
+                    requests:
+                      cpu: 50m
+                    limits:
+                      cpu: 250m
               restartPolicy: Never
       schedule: ${CRON_SCHEDULE}
       suspend: false
 
 parameters:
   - name: ENVIRONMENT
-    description: Current environment (dev, test, prod)
+    description: Target environment (dev, test, prod)
     required: true
-    value: "dev"
+    value: "test"
 
   - name: CRON_SCHEDULE
     description: Cronjob Schedule
     required: true
-    value: "0 0 * * *"  # This runs the job daily at midnight; adjust as needed
+    value: "0 0 * * *" # This runs the job daily at midnight; adjust as needed
 
   - name: IMAGE_REGISTRY
     description: Image Registry

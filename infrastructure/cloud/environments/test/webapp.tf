@@ -6,6 +6,15 @@
 #
 data "aws_caller_identity" "current" {}
 
+data "terraform_remote_state" "initial" {
+  backend = "s3"
+  config = {
+    bucket = var.bucket
+    key    = var.key
+    region = var.region
+  }
+}
+
 # KMS Key
 data "aws_kms_key" "kms_key" {
   key_id = "alias/${var.kms_key_name}-${var.environment}"
@@ -31,12 +40,14 @@ data "aws_security_group" "data_sg" {
 
 # App ECR Repo
 data "aws_ecr_repository" "app_ecr_repo" {
-  name = "${var.app_name}-app-repo-${var.environment}"
+  #name = "${var.app_name}-app-repo-${var.environment}"
+  name = data.terraform_remote_state.initial.outputs.app_ecr_name
 }
 
 # Lambda ECR Repo
 data "aws_ecr_repository" "lambda_ecr_repo" {
-  name = "${var.app_name}-lambda-repo-${var.environment}"
+  #name = "${var.app_name}-lambda-repo-${var.environment}"
+  name = data.terraform_remote_state.initial.outputs.lambda_ecr_name
 }
 
 #

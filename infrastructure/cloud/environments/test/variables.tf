@@ -72,3 +72,13 @@ variable "lambda_memory_size" {
   description = "The Lambda Function default Memory Size"
   type        = number
 }
+
+variable "bucket" {
+  description = "S3 bucket containing the initial stack's state"
+  type        = string
+}
+
+variable "key" {
+  description = "Key to the initial stack's state"
+  type        = string
+}

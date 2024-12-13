@@ -32,3 +32,13 @@ variable "secrets_arn_list" {
   description = "List of Secrets ARN"
   type        = list(string)
 }
+
+variable "account_id" {
+  description = "The current AWS Account Id"
+  type        = string
+}
+
+variable "kms_key_id" {
+  description = "The custom KMS Key Id"
+  type        = string
+}

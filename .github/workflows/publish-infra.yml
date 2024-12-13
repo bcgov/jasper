@@ -20,43 +20,83 @@ on:
           - dev
           - test
           - prod
-      run_initial:
-        description: "Run initial Terraform setup?"
-        required: false
-        default: "No"
-        type: choice
-        options:
-          - "No"      
-          - "Yes"
+
+env:
+  WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment }}"
+  DUMMY_IMAGE_NAME: dummy-image
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+  APP_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-app-repo-${{ inputs.environment }}
+  LAMBDA_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-lambda-repo-${{ inputs.environment }}
 
 jobs:
-  initial:
-    if: ${{ inputs.run_initial == 'Yes' }}
-    uses: ./.github/workflows/aws-template-terraform.yml
-    with:
-      CONTEXT_FOLDER: "./infrastructure/cloud/environments/initial"
-      CHANGE_FOLDER_NAME: environments/${{ inputs.environment }}
-      ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
-      APPLY_TF_CODE: true
-    secrets: inherit
-
-  post-initial:
+  deploy:
     runs-on: ubuntu-latest
-    needs: initial
-    if: ${{ inputs.run_initial == 'Yes' }}
-    environment: ${{ inputs.environment }}
+    environment:
+      name: ${{ inputs.environment }}
+    env:
+      TF_VAR_app_name: ${{ vars.APP_NAME }}
+      TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
+      TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
+      TF_VAR_vpc_id: ${{ vars.VPC_ID }}
+      TF_VAR_lambda_memory_size: ${{ vars.LAMBDA_MEMORY_SIZE }}
     permissions:
       id-token: write
+      actions: read
+      contents: read
+      security-events: write
       packages: write
-    env:
-      DUMMY_IMAGE_NAME: dummy-image
-      GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
-      APP_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-app-repo-${{ inputs.environment }}
-      LAMBDA_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-lambda-repo-${{ inputs.environment }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+  
+      - name: tfsec
+        uses: aquasecurity/tfsec-sarif-action@v0.1.4
+        with:
+          sarif_file: tfsec.sarif
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ inputs.environment }}.tfvars"
+  
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec.sarif
+  
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-skip-session-tagging: true
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-duration-seconds: 1800
+          role-session-name: ci-deployment
+  
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+          
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ inputs.environment }}.tfvars
+        working-directory: ${{ env.WORKING_DIRECTORY }}  
 
+      - name: Terraform Plan (Initial Stack)
+        id: plan-initial
+        run: |
+          terraform plan -target=module.initial -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+        continue-on-error: true
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Terraform Plan (Initial) Status
+        if: steps.plan-initial.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Apply (Initial Stack)
+        run: |
+          terraform apply -target=module.initial --auto-approve -input=false -var-file=${{ inputs.environment }}.tfvars
+        working-directory: ${{ env.WORKING_DIRECTORY }}       
+        
       - name: Log in to the GHCR
         uses: docker/login-action@v3
         with:
@@ -72,7 +112,7 @@ jobs:
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.DUMMY_IMAGE_NAME }}
           tags: |
             type=raw,value=latest
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -87,39 +127,71 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-skip-session-tagging: true
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          role-duration-seconds: 1800
-          role-session-name: ci-deployment
-
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Push dummy images to App ECR
+      - name: Check dummy-image in App ECR exists
+        id: app-ecr-check
+        shell: bash
+        run: |
+          IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
+          REPOSITORY_NAME=${{ vars.APP_NAME }}-app-repo-${{ inputs.environment }}
+          
+          IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+
+          if [ -z "$IMAGE_EXISTS" ]; then
+            echo "Image with tag $IMAGE_TAG does not exist."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "Image with tag $IMAGE_TAG already exists."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Push dummy image to App ECR
+        if: steps.app-ecr-check.outputs.exists == 'false'
         shell: bash
         run: |
           echo 'Deploying ${{ env.DUMMY_IMAGE_NAME }} to App ECR'
           docker tag  ${{ env.GITHUB_IMAGE_REPO }}/${{ env.DUMMY_IMAGE_NAME }}:latest ${{ env.APP_ECR_REPO_URL }}:${{ env.DUMMY_IMAGE_NAME }}
           docker push ${{ env.APP_ECR_REPO_URL }}:${{ env.DUMMY_IMAGE_NAME }}
 
+      - name: Check dummy-image in Lambda ECR exists
+        id: lambda-ecr-check
+        shell: bash
+        run: |
+          IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
+          REPOSITORY_NAME=${{ vars.APP_NAME }}-lambda-repo-${{ inputs.environment }}
+          
+          IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+
+          if [ -z "$IMAGE_EXISTS" ]; then
+            echo "Image with tag $IMAGE_TAG does not exist."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "Image with tag $IMAGE_TAG already exists."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Push dummy images to Lambda ECR
+        if: steps.lambda-ecr-check.outputs.exists == 'false'
         shell: bash
         run: |
           echo 'Deploying ${{ env.env.DUMMY_IMAGE_NAME }} to Lambda ECR'
           docker tag  ${{ env.GITHUB_IMAGE_REPO }}/${{ env.DUMMY_IMAGE_NAME }}:latest ${{ env.LAMBDA_ECR_REPO_URL }}:${{ env.DUMMY_IMAGE_NAME }}
           docker push ${{ env.LAMBDA_ECR_REPO_URL }}:${{ env.DUMMY_IMAGE_NAME }}
 
-  deploy:
-    needs: [initial, post-initial]
-    if: always()
-    uses: ./.github/workflows/aws-template-terraform.yml
-    with:
-      CONTEXT_FOLDER: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
-      CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
-      ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
-      APPLY_TF_CODE: true
-    secrets: inherit
+      - name: Terraform Plan (Main Stack)
+        id: plan-main
+        run: |
+          terraform plan -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+        continue-on-error: true
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+  
+      - name: Terraform Plan (Main) Status
+        if: steps.plan-main.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Apply (Main Stack)
+        run: |
+          terraform apply --auto-approve -input=false -var-file=${{ inputs.environment }}.tfvars
+        working-directory: ${{ env.WORKING_DIRECTORY }}        

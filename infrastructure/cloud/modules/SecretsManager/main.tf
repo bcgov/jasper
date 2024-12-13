@@ -185,7 +185,6 @@ resource "aws_secretsmanager_secret_version" "mtls_cert_secret_value" {
 resource "aws_secretsmanager_secret" "api_authorizer_secret" {
   name       = "${var.app_name}-api-authorizer-secret-${var.environment}"
   kms_key_id = var.kms_key_arn
-
 }
 
 resource "random_uuid" "initial_api_auth_value" {}

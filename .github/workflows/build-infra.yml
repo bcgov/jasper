@@ -21,23 +21,79 @@ on:
           - test
           - prod
 
-jobs:
-  build-initial:
-    uses: ./.github/workflows/aws-template-terraform.yml
-    with:
-      CONTEXT_FOLDER: "./infrastructure/cloud/environments/initial"
-      CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
-      ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
-      APPLY_TF_CODE: false
-    secrets: inherit
+env:
+  WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment }}"
 
+jobs:
   build:
-    needs: [build-initial]
-    uses: ./.github/workflows/aws-template-terraform.yml
-    with:
-      CONTEXT_FOLDER: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
-      CHANGE_FOLDER_NAME: environments/${{ inputs.environment || 'dev' }}
-      ENVIRONMENT_NAME: ${{ inputs.environment || 'dev' }}
-      APPLY_TF_CODE: false
-    secrets: inherit
-    
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    env:
+      TF_VAR_app_name: ${{ vars.APP_NAME }}
+      TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
+      TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
+      TF_VAR_vpc_id: ${{ vars.VPC_ID }}
+      TF_VAR_lambda_memory_size: ${{ vars.LAMBDA_MEMORY_SIZE }}
+    permissions:
+      id-token: write
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      - name: tfsec
+        uses: aquasecurity/tfsec-sarif-action@v0.1.4
+        with:
+          sarif_file: tfsec.sarif
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ inputs.environment }}.tfvars"
+  
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec.sarif
+  
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-skip-session-tagging: true
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-duration-seconds: 1800
+          role-session-name: ci-deployment
+  
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+          
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ inputs.environment }}.tfvars
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+  
+      - name: Terraform Plan (Initial Stack)
+        id: plan-initial
+        run: |
+          terraform plan -target=module.initial -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+        continue-on-error: true
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+  
+      - name: Terraform Plan (Initial) Status
+        if: steps.plan-initial.outcome == 'failure'
+        run: exit 1
+  
+      - name: Terraform Plan (Main Stack)
+        id: plan-main
+        run: |
+          terraform plan -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+        continue-on-error: true
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+  
+      - name: Terraform Plan (Main) Status
+        if: steps.plan-main.outcome == 'failure'
+        run: exit 1

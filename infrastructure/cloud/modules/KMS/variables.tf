@@ -22,8 +22,3 @@ variable "openshift_iam_user" {
   description = "Openshift IAM Username"
   type        = string
 }
-
-variable "account_id" {
-  description = "The current AWS Account Id"
-  type        = string
-}

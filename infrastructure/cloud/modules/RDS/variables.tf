@@ -39,3 +39,8 @@ variable "rds_db_ca_cert" {
   description = "The Certifiate Authority identifier used in RDS"
   type        = string
 }
+
+variable "all_subnet_ids" {
+  description = "List of all provisioned subnet ids"
+  type        = list(string)
+}

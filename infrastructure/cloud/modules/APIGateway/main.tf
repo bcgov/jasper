@@ -77,8 +77,6 @@ resource "aws_api_gateway_rest_api_policy" "apigw_rest_api_policy" {
 
 resource "aws_api_gateway_account" "apigateway_account" {
   cloudwatch_role_arn = var.apigw_logging_role_arn
-
-  depends_on = [aws_api_gateway_stage.apigw_stage]
 }
 
 resource "aws_api_gateway_usage_plan" "apigw_usage_plan" {

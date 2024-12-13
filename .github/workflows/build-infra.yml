@@ -28,7 +28,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.environment }}
+      name: ${{ inputs.environment || 'dev' }}
     env:
       TF_VAR_app_name: ${{ vars.APP_NAME }}
       TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
@@ -41,6 +41,15 @@ jobs:
       contents: read
       security-events: write
     steps:
+      - name: Determine environment
+        id: determine-environment
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          else
+            echo "environment=dev" >> $GITHUB_ENV
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
   
@@ -49,7 +58,7 @@ jobs:
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ inputs.environment }}.tfvars"
+          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars"
   
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
@@ -73,13 +82,13 @@ jobs:
       - name: Terraform Init
         id: init
         run: |
-          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ inputs.environment }}.tfvars
+          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ env.environment }}.tfvars
         working-directory: ${{ env.WORKING_DIRECTORY }}
   
       - name: Terraform Plan (Initial Stack)
         id: plan-initial
         run: |
-          terraform plan -target=module.initial -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+          terraform plan -target=module.initial -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
   
@@ -90,7 +99,7 @@ jobs:
       - name: Terraform Plan (Main Stack)
         id: plan-main
         run: |
-          terraform plan -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+          terraform plan -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
   

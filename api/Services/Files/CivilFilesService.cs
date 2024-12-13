@@ -74,7 +74,7 @@ namespace Scv.Api.Services.Files
                 "[\"A\", \"Y\", \"T\", \"F\", \"C\", \"M\", \"L\", \"R\", \"B\", \"D\", \"E\", \"G\", \"H\", \"N\", \"O\", \"P\", \"S\", \"V\"]"; // for now, use all types - TODO: determine proper list of types?
             return await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId,
                 _applicationCode, fcq.SearchMode, fcq.FileHomeAgencyId, fcq.FileNumber, fcq.FilePrefix,
-                fcq.FilePermissions, fcq.FileSuffixNumber, fcq.MDocReferenceTypeCode, fcq.CourtClass, fcq.CourtLevel,
+                fcq.FilePermissions, fcq.FileSuffixNumber, fcq.MDocReferenceTypeCode, fcq.CourtClass, CourtLevelCd.P,
                 fcq.NameSearchType, fcq.LastName, fcq.OrgName, fcq.GivenName, fcq.Birth?.ToString("yyyy-MM-dd"),
                 fcq.SearchByCrownPartId, fcq.SearchByCrownActiveOnly, fcq.SearchByCrownFileDesignation,
                 fcq.MdocJustinNumberSet, fcq.PhysicalFileIdSet);
@@ -109,7 +109,7 @@ namespace Scv.Api.Services.Files
 
             //Return the basic entry without doing a lookup.
             if (fileIdAndAppearanceDate.Count == 1)
-                return new List<RedactedCivilFileDetailResponse> { new RedactedCivilFileDetailResponse { PhysicalFileId = fileIdAndAppearanceDate.First().PhysicalFileId }} ;
+                return new List<RedactedCivilFileDetailResponse> { new RedactedCivilFileDetailResponse { PhysicalFileId = fileIdAndAppearanceDate.First().PhysicalFileId } };
 
             var fileDetailTasks = new List<Task<CivilFileDetailResponse>>();
             foreach (var fileId in fileIdAndAppearanceDate)
@@ -152,7 +152,7 @@ namespace Scv.Api.Services.Files
             foreach (var document in PopulateDetailCsrsDocuments(fileDetail.Appearance))
                 if (!isVcUser)
                     detail.Document.Add(document);
-   
+
             detail = await PopulateBaseDetail(detail);
             detail.Appearances = appearances;
 
@@ -160,7 +160,8 @@ namespace Scv.Api.Services.Files
             detail.Party = await PopulateDetailParties(detail.Party);
             detail.Document = await PopulateDetailDocuments(detail.Document, fileContentCivilFile, isVcUser, isStaff);
             detail.HearingRestriction = await PopulateDetailHearingRestrictions(fileDetail.HearingRestriction);
-            if (isVcUser) { 
+            if (isVcUser)
+            {
                 //SCV-266 - Disable comments for VC Users.
                 foreach (var document in detail.Document)
                     document.CommentTxt = "";
@@ -427,7 +428,7 @@ namespace Scv.Api.Services.Files
                     party.Representative = _mapper.Map<ICollection<CivilRepresentative>>(courtListParty.Representative);
                     foreach (var representative in party.Representative)
                     {
-                        representative.AttendanceMethodDesc = await _lookupService.GetCivilAssetsDescription(representative.AttendanceMethodCd); 
+                        representative.AttendanceMethodDesc = await _lookupService.GetCivilAssetsDescription(representative.AttendanceMethodCd);
                     }
                     party.LegalRepresentative = courtListParty.LegalRepresentative;
                 }
@@ -449,7 +450,7 @@ namespace Scv.Api.Services.Files
 
                         if (!counsel.AdditionalProperties.ContainsKey("counselName"))
                             continue;
-                  
+
                         var targetCounsel = party.Counsel?.FirstOrDefault(c => c.CounselFullName == counsel.CounselName);
                         if (targetCounsel == null)
                             continue;
@@ -473,7 +474,7 @@ namespace Scv.Api.Services.Files
             {
                 document.Category = _lookupService.GetDocumentCategory(document.DocumentTypeCd);
                 document.DocumentTypeDescription = await _lookupService.GetDocumentDescriptionAsync(document.DocumentTypeCd);
-				document.ImageId = document.SealedYN != "N" ? null : document.ImageId;
+                document.ImageId = document.SealedYN != "N" ? null : document.ImageId;
                 foreach (var issue in document.Issue)
                 {
                     issue.IssueTypeDesc = await _lookupService.GetCivilDocumentIssueType(issue.IssueTypeCd);

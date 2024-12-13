@@ -101,7 +101,7 @@ namespace Scv.Api.Controllers
             if (User.IsVcUser() && civilFileDetailResponse.SealedYN != "N")
                 return Forbid();
 
-            if (User.IsSupremeUser() && civilFileDetailResponse.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.S)
+            if (User.IsSupremeUser() && civilFileDetailResponse.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
             return Ok(civilFileDetailResponse);
@@ -133,7 +133,7 @@ namespace Scv.Api.Controllers
             if (civilAppearanceDetail == null)
                 throw new NotFoundException("Couldn't find appearance detail with the provided file id and appearance id.");
 
-            if (User.IsSupremeUser() && civilAppearanceDetail.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.S)
+            if (User.IsSupremeUser() && civilAppearanceDetail.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
             return Ok(civilAppearanceDetail);
@@ -223,7 +223,7 @@ namespace Scv.Api.Controllers
             if (redactedCriminalFileDetailResponse?.JustinNo == null)
                 throw new NotFoundException("Couldn't find criminal file with this id.");
 
-            if (User.IsSupremeUser() && redactedCriminalFileDetailResponse.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.S)
+            if (User.IsSupremeUser() && redactedCriminalFileDetailResponse.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
             return Ok(redactedCriminalFileDetailResponse);
@@ -244,7 +244,7 @@ namespace Scv.Api.Controllers
             if (appearanceDetail == null)
                 throw new NotFoundException("Couldn't find appearance details with the provided parameters.");
 
-            if (User.IsSupremeUser() && appearanceDetail.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.S)
+            if (User.IsSupremeUser() && appearanceDetail.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
 

@@ -65,7 +65,7 @@ namespace Scv.Api.Services.Files
             return await _filesClient.FilesCriminalGetAsync(_requestAgencyIdentifierId,
                 _requestPartId, _applicationCode, fcq.SearchMode, fcq.FileHomeAgencyId, fcq.FileNumberTxt,
                 fcq.FilePrefixTxt, fcq.FilePermissions, fcq.FileSuffixNo, fcq.MdocRefTypeCode, fcq.CourtClass,
-                fcq.CourtLevel, fcq.NameSearchTypeCd, fcq.LastName, fcq.OrgName, fcq.GivenName,
+                CourtLevelCd.P, fcq.NameSearchTypeCd, fcq.LastName, fcq.OrgName, fcq.GivenName,
                 fcq.Birth?.ToString("yyyy-MM-dd"), fcq.SearchByCrownPartId, fcq.SearchByCrownActiveOnly,
                 fcq.SearchByCrownFileDesignation, fcq.MdocJustinNoSet, fcq.PhysicalFileIdSet);
         }
@@ -86,14 +86,14 @@ namespace Scv.Api.Services.Files
             });
 
             var fileIdAndAppearanceDate = fileSearchResponse?.FileDetail?.Where(fd => mdocSequenceNumber == null || fd.MdocSeqNo == mdocSequenceNumber)
-                .SelectToList(fd => new { fd.MdocJustinNo , fd.NextApprDt });
+                .SelectToList(fd => new { fd.MdocJustinNo, fd.NextApprDt });
 
             if (fileIdAndAppearanceDate == null || fileIdAndAppearanceDate.Count == 0)
                 return fileDetails;
 
             //Return the basic entry without doing a lookup.
             if (fileIdAndAppearanceDate.Count == 1)
-                return new List<RedactedCriminalFileDetailResponse> {new RedactedCriminalFileDetailResponse {JustinNo = fileIdAndAppearanceDate.First().MdocJustinNo}};
+                return new List<RedactedCriminalFileDetailResponse> { new RedactedCriminalFileDetailResponse { JustinNo = fileIdAndAppearanceDate.First().MdocJustinNo } };
 
             //It seems the fileSearch and the FileDetails/FileContent bring up two different participant lists
             //The fileSearch seems to include have extra participants.
@@ -220,7 +220,7 @@ namespace Scv.Api.Services.Files
         private List<CriminalDocument> GetInitiatingDocuments(ICollection<CfcDocument> documents)
         {
             return documents?.Where(doc => doc?.DocmClassification == "Initiating" && !string.IsNullOrEmpty(doc.ImageId))
-                .Select(a => new CriminalDocument {IssueDate = a.IssueDate, ImageId = a.ImageId}).ToList();
+                .Select(a => new CriminalDocument { IssueDate = a.IssueDate, ImageId = a.ImageId }).ToList();
         }
 
         private async Task<CriminalFileAppearances> PopulateDetailsAppearancesAsync(string fileId, FutureYN? future, HistoryYN? history)
@@ -379,12 +379,12 @@ namespace Scv.Api.Services.Files
                 FullName = fullName,
                 PartId = partId, //partyAppearanceMethod, doesn't always have a partId on DEV at least.
                 PartyAppearanceMethod = partyAppearanceMethod?.PartyAppearanceMethod,
-                PartyAppearanceMethodDesc = await _lookupService.GetCriminalAccusedAttend(partyAppearanceMethod?.PartyAppearanceMethod), 
+                PartyAppearanceMethodDesc = await _lookupService.GetCriminalAccusedAttend(partyAppearanceMethod?.PartyAppearanceMethod),
                 AttendanceMethodCd = attendanceMethod?.AttendanceMethodCd,
                 AttendanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(attendanceMethod?.AttendanceMethodCd),
                 AppearanceMethodCd = appearanceMethod?.AppearanceMethodCd,
                 AppearanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(appearanceMethod?.AppearanceMethodCd)
-        };
+            };
         }
 
         private async Task<CriminalAdjudicator> PopulateAppearanceDetailAdjudicator(CfcAppearance appearanceFromAccused, ICollection<ClAttendanceMethod> attendanceMethods, ICollection<JCCommon.Clients.FileServices.CriminalAppearanceMethod> appearanceMethods)

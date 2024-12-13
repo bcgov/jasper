@@ -48,6 +48,7 @@ jobs:
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
             echo "environment=dev" >> $GITHUB_ENV
+            echo "WORKING_DIRECTORY=${{ env.WORKING_DIRECTORY }}/dev" >> $GITHUB_ENV
           fi
 
       - name: Checkout repository

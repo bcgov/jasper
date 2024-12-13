@@ -101,6 +101,8 @@ namespace Scv.Api.Controllers
             if (User.IsVcUser() && civilFileDetailResponse.SealedYN != "N")
                 return Forbid();
 
+            // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
+            // Only Provincial files can be accessed in JASPER
             if (User.IsSupremeUser() && civilFileDetailResponse.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
@@ -133,6 +135,8 @@ namespace Scv.Api.Controllers
             if (civilAppearanceDetail == null)
                 throw new NotFoundException("Couldn't find appearance detail with the provided file id and appearance id.");
 
+            // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
+            // Only Provincial files can be accessed in JASPER
             if (User.IsSupremeUser() && civilAppearanceDetail.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
@@ -223,6 +227,8 @@ namespace Scv.Api.Controllers
             if (redactedCriminalFileDetailResponse?.JustinNo == null)
                 throw new NotFoundException("Couldn't find criminal file with this id.");
 
+            // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
+            // Only Provincial files can be accessed in JASPER
             if (User.IsSupremeUser() && redactedCriminalFileDetailResponse.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
@@ -244,6 +250,8 @@ namespace Scv.Api.Controllers
             if (appearanceDetail == null)
                 throw new NotFoundException("Couldn't find appearance details with the provided parameters.");
 
+            // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
+            // Only Provincial files can be accessed in JASPER
             if (User.IsSupremeUser() && appearanceDetail.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 

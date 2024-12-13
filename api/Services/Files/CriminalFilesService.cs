@@ -61,7 +61,8 @@ namespace Scv.Api.Services.Files
             fcq.FilePermissions =
                 "[\"A\", \"Y\", \"T\", \"F\", \"C\", \"M\", \"L\", \"R\", \"B\", \"D\", \"E\", \"G\", \"H\", \"N\", \"O\", \"P\", \"S\", \"V\"]"; // for now, use all types - TODO: determine proper list of types?
 
-            //CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
+            // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
+            // Only Provincial files can be accessed in JASPER
             return await _filesClient.FilesCriminalGetAsync(_requestAgencyIdentifierId,
                 _requestPartId, _applicationCode, fcq.SearchMode, fcq.FileHomeAgencyId, fcq.FileNumberTxt,
                 fcq.FilePrefixTxt, fcq.FilePermissions, fcq.FileSuffixNo, fcq.MdocRefTypeCode, fcq.CourtClass,

@@ -199,7 +199,7 @@ resource "aws_iam_policy" "openshift_role_policy" {
         ],
         "Effect" : "Allow",
         "Resource" : [
-          "arn:aws:ssm:*:*:parameter/iam_users/${var.openshift_iam_user}_keys",
+          "arn:aws:ssm:${var.region}:${var.account_id}:parameter/iam_users/${var.openshift_iam_user}_keys",
           var.kms_key_arn
         ]
       },

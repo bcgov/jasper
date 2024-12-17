@@ -23,7 +23,8 @@
         "ms-dotnettools.csharp",
         "ms-dotnettools.vscode-dotnet-runtime",
         "amazonwebservices.aws-toolkit-vscode",
-        "hashicorp.terraform"
+        "hashicorp.terraform",
+        "sonarsource.sonarlint-vscode"
       ],
       "settings": {
         "editor.codeActionsOnSave": {

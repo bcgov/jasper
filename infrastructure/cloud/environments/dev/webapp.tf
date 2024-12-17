@@ -75,6 +75,7 @@ module "iam" {
   secrets_arn_list    = module.secrets_manager.secrets_arn_list
   account_id          = data.aws_caller_identity.current.account_id
   kms_key_id          = module.initial.kms_key_arn
+  region              = var.region
 }
 
 # Parse Subnets
@@ -267,4 +268,14 @@ module "ecs_api_service" {
   sg_id          = data.aws_security_group.app_sg.id
   subnet_ids     = module.subnets.app_subnets_ids
   port           = module.ecs_api_td.port
+}
+
+# WAF
+module "waf" {
+  source            = "../../modules/WAF"
+  environment       = var.environment
+  app_name          = var.app_name
+  region            = var.region
+  allowed_ip_ranges = module.secrets_manager.allowed_ip_ranges
+  default_lb_arn    = module.alb.default_lb_arn
 }

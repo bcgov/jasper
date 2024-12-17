@@ -84,3 +84,8 @@ output "mtls_secret_name" {
 output "api_authorizer_secret" {
   value = aws_secretsmanager_secret.api_authorizer_secret
 }
+
+output "allowed_ip_ranges" {
+  value     = jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).allowedIpRanges
+  sensitive = true
+}

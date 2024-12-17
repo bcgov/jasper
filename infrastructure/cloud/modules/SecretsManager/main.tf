@@ -149,8 +149,13 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     apiUrl                         = ""
     siteMinderLogoutUrl            = "",
     includeSiteMinderHeaders       = "",
-    mtlsCert                       = ""
+    mtlsCert                       = "",
+    allowedIpRanges                = ""
   })
+}
+
+data "aws_secretsmanager_secret_version" "current_misc_secret_value" {
+  secret_id = aws_secretsmanager_secret.misc_secret.id
 }
 
 resource "aws_secretsmanager_secret" "auth_secret" {

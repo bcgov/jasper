@@ -51,9 +51,11 @@ resource "aws_api_gateway_method_settings" "apgw_method_settings" {
   method_path = "*/*"
 
   settings {
-    data_trace_enabled = true
-    metrics_enabled    = true
-    logging_level      = "INFO"
+    data_trace_enabled   = true
+    metrics_enabled      = true
+    logging_level        = "INFO"
+    cache_data_encrypted = true
+    caching_enabled      = true
   }
 }
 

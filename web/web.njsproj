@@ -95,8 +95,6 @@
     <Content Include="src\components\criminal\CriminalWitnesses.vue" />
     <Content Include="src\components\Home.vue" />
     <Content Include="src\components\LoadingSpinner.vue" />
-    <Content Include="src\components\NavigationFooter.vue" />
-    <Content Include="src\components\NavigationTopbar.vue" />
     <Content Include="tsconfig.json" />
     <Content Include="package.json" />
     <Content Include="README.md" />

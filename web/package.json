@@ -7,7 +7,8 @@
     "build": "vite build",
     "dev": "vite",
     "clean": "",
-    "lint": "eslint --ext .ts,.vue --ignore-path .gitignore --fix src"
+    "lint": "eslint --ext .ts,.vue --ignore-path .gitignore --fix src",
+    "test": "vitest"
   },
   "resolutions": {
     "glob-parent": "^5.1.2",
@@ -54,16 +55,19 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/compiler-sfc": "^3.5.13",
     "@vue/eslint-config-typescript": "^14.1.4",
+    "@vue/test-utils": "^2.4.6",
     "buffer": "^6.0.3",
     "eslint": "^9.16.0",
     "eslint-plugin-vue": "^9.32.0",
+    "happy-dom": "^15.11.7",
     "prettier": "^3.4.2",
     "process": "^0.11.10",
     "ts-loader": "^9.5.1",
     "tslib": "^2.8.1",
     "typescript": "^5.7.2",
     "unplugin-vue-components": "^0.27.5",
-    "vite": "^6.0.2"
+    "vite": "^6.0.2",
+    "vitest": "^2.1.8"
   },
   "eslintConfig": {
     "root": true,

@@ -108,7 +108,7 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         ],
         Effect = "Allow",
         Resource = [
-          "arn:aws:logs:*:*:log-group:/aws/ecs/*:*"
+          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/ecs/*:*"
         ]
       },
       {
@@ -132,7 +132,7 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "rds:Connect",
           "rds:DescribeDBSecurityGroups"
         ],
-        "Resource" : "arn:aws:rds:*:*:db:${var.app_name}-postgres-db-${var.environment}"
+        "Resource" : "arn:aws:rds:${var.region}:${var.account_id}:db:${var.app_name}-postgres-db-${var.environment}"
       }
     ]
   })
@@ -277,7 +277,7 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/${var.app_name}-*-lambda-${var.environment}:*"
+        Resource = "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/lambda/${var.app_name}-*-lambda-${var.environment}:*"
       },
       {
         "Effect" : "Allow",
@@ -287,8 +287,8 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "ecs:ListServices"
         ],
         "Resource" : [
-          "arn:aws:ecs:*:*:cluster/${var.app_name}-app-cluster-${var.environment}",
-          "arn:aws:ecs:*:*:service/${var.app_name}-app-cluster-${var.environment}/${var.app_name}-*-ecs-service-${var.environment}"
+          "arn:aws:ecs:${var.region}:${var.account_id}:cluster/${var.app_name}-app-cluster-${var.environment}",
+          "arn:aws:ecs:${var.region}:${var.account_id}:service/${var.app_name}-app-cluster-${var.environment}/${var.app_name}-*-ecs-service-${var.environment}"
         ]
       },
       {
@@ -299,7 +299,7 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "ecr:BatchCheckLayerAvailability"
         ],
         "Resource" : [
-          "arn:aws:ecr:*:*:repository/${var.app_name}-*-repo-${var.environment}"
+          "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.app_name}-*-repo-${var.environment}"
         ]
       }
     ]

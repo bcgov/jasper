@@ -1,16 +1,14 @@
-﻿using JCCommon.Clients.LocationServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using PCSSClient.Clients.JudicialCalendarsServices;
+using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using PCSS.Models.REST.JudicialCalendar;
-using System.Collections.Generic;
-using System.Threading;
+using PCSSConstants = PCSSCommon.Common.Constants;
 
 namespace Scv.Api.Services
 {
@@ -23,7 +21,7 @@ namespace Scv.Api.Services
 
         private readonly IAppCache _cache;
         private readonly IConfiguration _configuration;
-        private JudicialCalendarsServicesClient _judicialCalendarsClient { get; }
+        private JudicialCalendarServicesClient _judicialCalendarsClient { get; }
 
         #endregion Variables
 
@@ -33,13 +31,13 @@ namespace Scv.Api.Services
 
         #region Constructor
 
-        public JudicialCalendarService(IConfiguration configuration, JudicialCalendarsServicesClient judicialCalendarsClient,
+        public JudicialCalendarService(IConfiguration configuration, JudicialCalendarServicesClient judicialCalendarClient,
             IAppCache cache)
         {
             _configuration = configuration;
-            _judicialCalendarsClient = judicialCalendarsClient;
+            _judicialCalendarsClient = judicialCalendarClient;
             _cache = cache;
-            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:LocationExpiryMinutes")) * 60;
+            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(_configuration.GetNonEmptyValue("Caching:LocationExpiryMinutes")) * 60;
             SetupLocationServicesClient();
         }
 
@@ -47,11 +45,28 @@ namespace Scv.Api.Services
 
         #region Collection Methods
 
-        public async Task<ICollection<JudicialCalendar>> JudicialCalendarsGetAsync(string locationId, DateTime startDate, DateTime endDate)
+        public async Task<ICollection<JudicialCalendar>> JudicialCalendarsGetAsync(string locationIds, DateTime startDate, DateTime endDate)
         {
-            var judicialCalendars = await _judicialCalendarsClient.JudicialCalendarsGetAsync(locationId, startDate, endDate, CancellationToken.None);
+            var judicialCalendars = await _judicialCalendarsClient.ReadCalendarsV2Async(
+               locationIds,
+               startDate.ToString(PCSSConstants.DATE_FORMAT),
+               endDate.ToString(PCSSConstants.DATE_FORMAT),
+               string.Empty
+            );
 
-            return judicialCalendars;
+            return judicialCalendars.Calendars;
+        }
+
+        /// <summary>
+        /// Retrieves the Judge's calendar based from start and end date.
+        /// </summary>
+        /// <param name="judgeId">The Judge's id</param>
+        /// <param name="startDate">The start date</param>
+        /// <param name="endDate">The end date</param>
+        /// <returns>Judge's calendar based from start and end date</returns>
+        public async Task<JudicialCalendar> GetJudgeCalendarAsync(int judgeId, DateTime startDate, DateTime endDate)
+        {
+            return await _judicialCalendarsClient.ReadCalendarAsync(judgeId, startDate.ToString(PCSSConstants.DATE_FORMAT), endDate.ToString(PCSSConstants.DATE_FORMAT));
         }
 
 

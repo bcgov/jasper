@@ -1,9 +1,10 @@
+import { Location } from '@/types';
 import { CourtRoomsJsonInfoType } from '../types/common';
 import { roomsInfoType } from '../types/courtlist';
 import { HttpService } from './HttpService';
 
 export class LocationService {
-  private httpService: HttpService;
+  private readonly httpService: HttpService;
 
   constructor(httpService: HttpService) {
     this.httpService = httpService;
@@ -27,5 +28,9 @@ export class LocationService {
     });
 
     return courtRooms;
+  }
+
+  async getDashboardLocations(): Promise<Location[]> {
+    return await this.httpService.get<Location[]>('api/location/pcss');
   }
 }

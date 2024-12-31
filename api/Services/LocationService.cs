@@ -1,13 +1,15 @@
-﻿using JCCommon.Clients.LocationServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using JCCommon.Clients.LocationServices;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using CodeValue = System.Collections.Generic.ICollection<JCCommon.Clients.LocationServices.CodeValue>;
+using Scv.Api.Models.Location;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 
 namespace Scv.Api.Services
 {
@@ -21,6 +23,7 @@ namespace Scv.Api.Services
         private readonly IAppCache _cache;
         private readonly IConfiguration _configuration;
         private readonly LocationServicesClient _locationClient;
+        private readonly PCSSLocationServices.LocationServicesClient _pcssLocationServiceClient;
 
         #endregion Variables
 
@@ -30,13 +33,18 @@ namespace Scv.Api.Services
 
         #region Constructor
 
-        public LocationService(IConfiguration configuration, LocationServicesClient locationServicesClient,
-            IAppCache cache)
+        public LocationService(
+            IConfiguration configuration,
+            LocationServicesClient locationServicesClient,
+            PCSSLocationServices.LocationServicesClient pcssLocationServiceClient,
+            IAppCache cache
+        )
         {
             _configuration = configuration;
             _locationClient = locationServicesClient;
+            _pcssLocationServiceClient = pcssLocationServiceClient;
             _cache = cache;
-            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:LocationExpiryMinutes")) * 60;
+            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(_configuration.GetNonEmptyValue("Caching:LocationExpiryMinutes")) * 60;
             SetupLocationServicesClient();
         }
 
@@ -44,12 +52,31 @@ namespace Scv.Api.Services
 
         #region Collection Methods
 
-        public async Task<CodeValue> GetLocations() => await GetDataFromCache("Locations", async () => await _locationClient.LocationsGetAsync(null, true, true));
+        public async Task<ICollection<Location>> GetPCSSLocations() => await GetDataFromCache("PCSSLocations", async () =>
+        {
+            var locations = await _pcssLocationServiceClient.GetLocationsAsync();
 
-        public async Task<CodeValue> GetCourtRooms()
+            var mappedLocations = locations
+                .Where(l => l.ActiveYn == "Y")
+                .Select(l => new Location
+                {
+                    LocationId = l.LocationId.ToString(),
+                    Name = l.LocationNm,
+                    Code = l.LocationSNm
+                })
+                .OrderBy(l => l.Name)
+                .ToList();
+
+            return mappedLocations;
+        });
+
+        public async Task<ICollection<CodeValue>> GetLocations() => await GetDataFromCache("Locations", async () => await _locationClient.LocationsGetAsync(null, true, true));
+
+        public async Task<ICollection<CodeValue>> GetCourtRooms()
         {
             return await GetDataFromCache($"Locations-Rooms", async () => await _locationClient.LocationsRoomsGetAsync());
         }
+
         #endregion Collection Methods
 
         #region Lookup Methods
@@ -76,9 +103,9 @@ namespace Scv.Api.Services
             return await _cache.GetOrAddAsync(key, async () => await fetchFunction.Invoke());
         }
 
-        private string FindLongDescriptionFromCode(CodeValue lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.LongDesc;
+        private string FindLongDescriptionFromCode(ICollection<CodeValue> lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.LongDesc;
 
-        private string FindShortDescriptionFromCode(CodeValue lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.ShortDesc;
+        private string FindShortDescriptionFromCode(ICollection<CodeValue> lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.ShortDesc;
 
         private void SetupLocationServicesClient()
         {

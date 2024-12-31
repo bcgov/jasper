@@ -67,6 +67,9 @@ services:
       - SplunkCollectorUrl=${SplunkCollectorUrl}
       - SplunkCollectorId=${SplunkCollectorId}
       - SplunkToken=${SplunkToken}
+      - PCSS__Url=${PCSS_URL}
+      - PCSS__Username=${PCSS_USERNAME}
+      - PCSS__Password=${PCSS_PASSWORD}
       # - AWS_API_GATEWAY_URL=${AWS_API_GATEWAY_URL}
       # - AWS_API_GATEWAY_API_KEY=${AWS_API_GATEWAY_API_KEY}
       # - AuthorizerKey=${AuthorizerKey}

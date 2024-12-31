@@ -4,17 +4,17 @@ using System.Security.Claims;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
-using Microsoft.Extensions.Logging;
 using LazyCache;
 using MapsterMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Services;
 using tests.api.Helpers;
 using Xunit;
-using System.Threading;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 
 namespace tests.api.Controllers
 {
@@ -35,11 +35,17 @@ namespace tests.api.Controllers
             var fileServices = new EnvironmentBuilder("FileServicesClient:Username", "FileServicesClient:Password", "FileServicesClient:Url");
             var lookupServices = new EnvironmentBuilder("LookupServicesClient:Username", "LookupServicesClient:Password", "LookupServicesClient:Url");
             var locationServices = new EnvironmentBuilder("LocationServicesClient:Username", "LocationServicesClient:Password", "LocationServicesClient:Url");
+            var pcssServices = new EnvironmentBuilder("PCSS:Username", "PCSS:Password", "PCSS:Url");
             var lookupServiceClient = new LookupCodeServicesClient(lookupServices.HttpClient);
             var locationServiceClient = new LocationServicesClient(locationServices.HttpClient);
             var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
-            var locationService = new LocationService(locationServices.Configuration, locationServiceClient, new CachingService());
+            var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
+            var locationService = new LocationService(
+                locationServices.Configuration,
+                locationServiceClient,
+                pcssLocationServicesClient,
+                new CachingService());
 
             var claims = new[] {
                 new Claim(CustomClaimTypes.ApplicationCode, "SCV"),

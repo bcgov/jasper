@@ -1,31 +1,31 @@
-﻿using JCCommon.Clients.FileServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
+using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Services;
-using Scv.Api.Services.Files;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using Scv.Api.Helpers.Exceptions;
-using tests.api.Helpers;
-using Xunit;
-using System.Text;
-using System.Threading.Tasks;
-using JCCommon.Clients.LookupCodeServices;
-using Microsoft.AspNetCore.WebUtilities;
-using Newtonsoft.Json;
 using Scv.Api.Helpers;
+using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.archive;
-using Scv.Db.Models;
 using Scv.Api.Models.Search;
+using Scv.Api.Services;
+using Scv.Api.Services.Files;
+using Scv.Db.Models;
+using tests.api.Helpers;
+using Xunit;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 
 namespace tests.api.Controllers
 {
@@ -54,12 +54,18 @@ namespace tests.api.Controllers
             var fileServices = new EnvironmentBuilder("FileServicesClient:Username", "FileServicesClient:Password", "FileServicesClient:Url");
             var lookupServices = new EnvironmentBuilder("LookupServicesClient:Username", "LookupServicesClient:Password", "LookupServicesClient:Url");
             var locationServices = new EnvironmentBuilder("LocationServicesClient:Username", "LocationServicesClient:Password", "LocationServicesClient:Url");
+            var pcssServices = new EnvironmentBuilder("PCSS:Username", "PCSS:Password", "PCSS:Url");
             var lookupServiceClient = new LookupCodeServicesClient(lookupServices.HttpClient);
             var locationServiceClient = new LocationServicesClient(locationServices.HttpClient);
             var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
             _fileServicesClient = fileServicesClient;
+            var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
-            var locationService = new LocationService(locationServices.Configuration, locationServiceClient, new CachingService());
+            var locationService = new LocationService(
+                locationServices.Configuration,
+                locationServiceClient,
+                pcssLocationServicesClient,
+                new CachingService());
             var contextAccessor = new TestHttpContextAccessor();
 
             _agencyIdentifierId = fileServices.Configuration.GetNonEmptyValue("Request:AgencyIdentifierId");

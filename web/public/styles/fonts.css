@@ -1,9 +1,9 @@
 @font-face {
-  font-family: 'WorkSans-Regular';
+  font-family: 'WorkSans-Medium';
   font-style: normal;
-  src: url('WorkSans-Regular.ttf') format('truetype');
+  src: url('WorkSans-Medium.ttf') format('truetype');
 }
 
-html {
-  font-family: 'WorkSans-Regular', 'Work Sans', sans-serif;
+* {
+  font-family: 'WorkSans-Medium', 'Work Sans', sans-serif;
 }

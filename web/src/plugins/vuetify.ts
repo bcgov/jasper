@@ -2,11 +2,19 @@ import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import { VBtn } from 'vuetify/components';
 import * as directives from 'vuetify/directives';
+import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
 import 'vuetify/styles';
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 
 export default createVuetify({
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: {
+      mdi,
+    },
+  },
   components,
   directives,
   aliases: {
@@ -14,6 +22,9 @@ export default createVuetify({
     VBtnTertiary: VBtn,
   },
   defaults: {
+    VContainer: {
+      fluid: true,
+    },
     VBtn: {
       rounded: true,
       variant: 'flat',
@@ -26,8 +37,20 @@ export default createVuetify({
     },
     VBtnTertiary: {
       rounded: true,
-      variant: 'outlined',
       class: 'text-none',
+      baseColor: '#183a4a',
+    },
+    VSelect: {
+      bgColor: '#dae5f5',
+      rounded: true,
+      variant: 'solo',
+      clearable: true,
+      density: 'comfortable',
+    },
+    VTextField: {
+      rounded: true,
+      dense: true,
+      variant: 'outlined',
     },
   },
 });

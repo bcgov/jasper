@@ -1,5 +1,4 @@
 import LoadingSpinner from '@components/LoadingSpinner.vue';
-import '@mdi/font/css/materialdesignicons.css';
 import { createBootstrap } from 'bootstrap-vue-next';
 import 'bootstrap-vue-next/dist/bootstrap-vue-next.css';
 import 'bootstrap/dist/css/bootstrap.css';

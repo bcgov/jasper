@@ -551,11 +551,9 @@
   import { Activity, CalendarDay, Location, Presider } from '@/types';
   import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
   import Calendar from '../calendar/Calendar.vue';
-  import NavigationTopbar from '../NavigationTopbar.vue';
 
   export default defineComponent({
     components: {
-      NavigationTopbar,
       Calendar,
     },
     setup() {

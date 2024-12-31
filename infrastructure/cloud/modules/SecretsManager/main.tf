@@ -209,3 +209,17 @@ resource "aws_secretsmanager_secret_version" "api_authorizer_secret_value" {
     "verifyKey" = random_uuid.initial_api_auth_value.result
   })
 }
+
+resource "aws_secretsmanager_secret" "pcss_secret" {
+  name       = "external/${var.app_name}-pcss-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "pcss_secret_value" {
+  secret_id = aws_secretsmanager_secret.pcss_secret.id
+  secret_string = jsonencode({
+    username = "",
+    password = "",
+    baseUrl  = ""
+  })
+}

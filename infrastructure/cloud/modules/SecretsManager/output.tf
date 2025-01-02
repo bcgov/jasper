@@ -93,3 +93,11 @@ output "allowed_ip_ranges" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).allowedIpRanges
   sensitive = true
 }
+
+output "file_services_client_secret_name" {
+  value = aws_secretsmanager_secret.file_services_client_secret.name
+}
+
+output "pcss_secret_name" {
+  value = aws_secretsmanager_secret.pcss_secret.name
+}

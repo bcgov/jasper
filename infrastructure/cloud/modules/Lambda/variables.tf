@@ -53,3 +53,13 @@ variable "lambda_timeout" {
   type        = number
   default     = 30
 }
+
+variable "file_services_client_secret_name" {
+  description = "The File Service Client Secret Name"
+  type        = string
+}
+
+variable "pcss_secret_name" {
+  description = "The PCSS Secret Name"
+  type        = string
+}

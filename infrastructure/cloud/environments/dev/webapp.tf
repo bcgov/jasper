@@ -123,14 +123,16 @@ module "alb" {
 
 # Create Lambda Functions
 module "lambda" {
-  source              = "../../modules/Lambda"
-  environment         = var.environment
-  app_name            = var.app_name
-  lambda_role_arn     = module.iam.lambda_role_arn
-  apigw_execution_arn = module.apigw.apigw_execution_arn
-  lambda_ecr_repo_url = module.initial.lambda_ecr.ecr_repo_url
-  mtls_secret_name    = module.secrets_manager.mtls_secret_name
-  lambda_memory_size  = var.lambda_memory_size
+  source                           = "../../modules/Lambda"
+  environment                      = var.environment
+  app_name                         = var.app_name
+  lambda_role_arn                  = module.iam.lambda_role_arn
+  apigw_execution_arn              = module.apigw.apigw_execution_arn
+  lambda_ecr_repo_url              = module.initial.lambda_ecr.ecr_repo_url
+  mtls_secret_name                 = module.secrets_manager.mtls_secret_name
+  lambda_memory_size               = var.lambda_memory_size
+  file_services_client_secret_name = module.secrets_manager.file_services_client_secret_name
+  pcss_secret_name                 = module.secrets_manager.pcss_secret_name
   functions = {
     "authorizer" = {
       http_method   = "*"

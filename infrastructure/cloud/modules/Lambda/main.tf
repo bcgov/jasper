@@ -29,8 +29,11 @@ locals {
       source_arn          = lookup(v, "source_arn", "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
       statement_id_prefix = coalesce(lookup(v, "statement_id_prefix", null), "AllowAPIGatewayInvoke")
       principal           = coalesce(lookup(v, "principal", null), "apigateway.amazonaws.com")
-      env_variables       = coalesce(lookup(v, "env_variables", null), {})
-      source_arn          = coalesce(lookup(v, "source_arn", null), "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
+      env_variables = coalesce(lookup(v, "env_variables", null), {
+        FILE_SERVICES_CLIENT_SECRET_NAME = var.file_services_client_secret_name,
+        PCSS_SECRET_NAME                 = var.pcss_secret_name
+      })
+      source_arn = coalesce(lookup(v, "source_arn", null), "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
     }
   }
 

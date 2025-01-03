@@ -1,5 +1,6 @@
 import { APIGatewayEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { HttpService } from "../../../services/httpService";
+import { LookupService } from "../../../services/lookupService";
 import SecretsManagerService from "../../../services/secretsManagerService";
 
 export const handler = async (
@@ -10,16 +11,14 @@ export const handler = async (
 
   try {
     const smService = new SecretsManagerService();
-    const secretStringJson = await smService.getSecret(
-      process.env.FILE_SERVICES_CLIENT_SECRET_NAME!
-    );
-    const { baseUrl, username, password } = JSON.parse(secretStringJson);
     const httpService = new HttpService();
+    const lookupService = new LookupService(httpService, smService);
 
-    await httpService.init(baseUrl, username, password);
+    lookupService.init();
+
     const queryParams = event.queryStringParameters || {};
 
-    const data = await httpService.get(event.path, queryParams);
+    const data = await lookupService.get(event.path, queryParams);
 
     return {
       statusCode: 200,

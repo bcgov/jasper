@@ -14,7 +14,7 @@ export const handler = async (
     const httpService = new HttpService();
     const lookupService = new LookupService(httpService, smService);
 
-    lookupService.init();
+    await lookupService.init();
 
     const queryParams = event.queryStringParameters || {};
 

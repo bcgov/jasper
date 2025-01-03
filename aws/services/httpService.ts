@@ -11,43 +11,20 @@ export class HttpService implements IHttpService {
   private axios: AxiosInstance;
 
   async init(
-    baseUrl: string,
+    baseURL: string,
     username: string,
     password: string
   ): Promise<void> {
     this.axios = axios.create({
-      url: baseUrl,
+      baseURL,
       timeout: 5000,
       auth: { username, password },
-    });
-
-    this.axios.interceptors.request.use((config) => {
-      console.log(`${config.baseURL}${config.url}`);
-      console.log(JSON.stringify(config));
-      return config;
     });
 
     // This is where the PEM file will be pulled and attached to every axios request
   }
 
   async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-    //async get<T>(url: string, username, password): Promise<T> {
-    // try {
-    //   const testUrl = `${this.axios.defaults.url}${url}`;
-    //   console.log(testUrl);
-    //   const up = `${username}:${password}`;
-    //   const response = await axios.get(testUrl, {
-    //     headers: {
-    //       Authorization: `Basic ${btoa(up)}`,
-    //     },
-    //   });
-
-    //   console.log(response.data);
-    //   return response.data;
-    // } catch (error) {
-    //   this.handleError(error);
-    // }
-
     try {
       const response: AxiosResponse<T> = await this.axios.get(url, {
         params,

@@ -12,9 +12,13 @@ export default defineConfig({
     },
     test: {
         alias: [
+            { find: '@', replacement: resolve(basePath, './src') },
             { find: 'SRC', replacement: resolve(basePath, './src') },
             { find: 'CMP', replacement: resolve(basePath, './src/components') }
         ],
+        deps: {
+            inline: ['vuetify']
+        },
         css: true,
         environment: 'happy-dom',
         globals: true,

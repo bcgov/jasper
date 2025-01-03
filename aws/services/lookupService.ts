@@ -36,6 +36,8 @@ export class LookupService {
   async get(url: string, queryParams?: Record<string, unknown>) {
     console.log(`Sending GET request for ${url}...`);
 
+    console.log(queryParams);
+
     return await this.httpService.get(url, this.u, this.p);
   }
 }

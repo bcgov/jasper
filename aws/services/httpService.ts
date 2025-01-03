@@ -21,6 +21,11 @@ export class HttpService implements IHttpService {
       auth: { username, password },
     });
 
+    this.axios.interceptors.request.use((config) => {
+      console.log({config});
+      return config;
+    });
+
     // This is where the PEM file will be pulled and attached to every axios request
   }
 

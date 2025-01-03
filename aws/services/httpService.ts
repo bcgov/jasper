@@ -22,7 +22,8 @@ export class HttpService implements IHttpService {
     });
 
     this.axios.interceptors.request.use((config) => {
-      console.log({config});
+      console.log(`${config.baseURL}${config.url}`);
+      console.log(JSON.stringify(config));
       return config;
     });
 

@@ -2,6 +2,9 @@ import { IHttpService } from "./httpService";
 import SecretsManagerService from "./secretsManagerService";
 
 export class LookupService {
+  u: string;
+  p: string;
+
   constructor(
     private httpService: IHttpService,
     private smService: SecretsManagerService
@@ -22,6 +25,9 @@ export class LookupService {
 
     const { baseUrl, username, password } = JSON.parse(secretStringJson);
 
+    this.u = username;
+    this.p = password;
+
     await this.httpService.init(baseUrl, username, password);
 
     console.log("httpService initialized.");
@@ -30,6 +36,6 @@ export class LookupService {
   async get(url: string, queryParams?: Record<string, unknown>) {
     console.log(`Sending GET request for ${url}...`);
 
-    return await this.httpService.get(url, queryParams);
+    return await this.httpService.get(url, this.u, this.p);
   }
 }

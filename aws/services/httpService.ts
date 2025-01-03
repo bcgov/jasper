@@ -2,7 +2,8 @@ import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 export interface IHttpService {
   init(baseURL: string, username: string, password: string): Promise<void>;
-  get<T>(url: string, params?: Record<string, unknown>): Promise<T>;
+  //get<T>(url: string, params?: Record<string, unknown>): Promise<T>;
+  get<T>(url: string, username, password): Promise<T>;
   post<T>(url: string, data?: Record<string, unknown>): Promise<T>;
 }
 
@@ -23,18 +24,35 @@ export class HttpService implements IHttpService {
     // This is where the PEM file will be pulled and attached to every axios request
   }
 
-  async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+  //async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+  async get<T>(url: string, username, password): Promise<T> {
     try {
-      console.log(this.axios.defaults.url);
-      console.log(url);
-
-      const response: AxiosResponse<T> = await this.axios.get(url, {
-        params,
+      const testUrl = `${this.axios.defaults.url}${url}`;
+      console.log(testUrl);
+      const up = `${username}:${password}`;
+      const response = await axios.get(testUrl, {
+        headers: {
+          Authorization: `Basic ${btoa(up)}`,
+        },
       });
+
+      console.log(response.data);
       return response.data;
     } catch (error) {
       this.handleError(error);
     }
+
+    // try {
+    //   console.log(this.axios.defaults.url);
+    //   console.log(url);
+
+    //   const response: AxiosResponse<T> = await this.axios.get(url, {
+    //     params,
+    //   });
+    //   return response.data;
+    // } catch (error) {
+    //   this.handleError(error);
+    // }
   }
 
   async post<T>(url: string, data?: Record<string, unknown>): Promise<T> {

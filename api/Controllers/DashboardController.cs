@@ -4,13 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Services;
-using Scv.Api.Models.Lookup;
-using PCSS.Models.REST.JudicialCalendar;
+using Microsoft.VisualBasic;
 using Scv.Api.Helpers;
+using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.Calendar;
+using Scv.Api.Models.Lookup;
+using Scv.Api.Services;
 
 namespace Scv.Api.Controllers
 {
@@ -20,67 +19,117 @@ namespace Scv.Api.Controllers
     public class DashboardController : ControllerBase
     {
         #region Variables
-        private readonly LocationService _locationService;
+
         private readonly JudicialCalendarService _judicialCalendarService;
 
         #endregion Variables
 
         #region Constructor
-        public DashboardController(LocationService locationService, JudicialCalendarService judicialCalendarService)
+
+        public DashboardController(JudicialCalendarService judicialCalendarService)
         {
-            _locationService = locationService;
             _judicialCalendarService = judicialCalendarService;
         }
+
         #endregion Constructor
 
         /// <summary>
-        /// Returns list of assignemnts for a given month and year for current user.
+        /// Retrieves the events for the specified month.
         /// </summary>
         /// <param name="year">selected year</param>
         /// <param name="month">selected month</param>
-        /// <param name="locationId">selected month</param>
+        /// <param name="locationIds">List of location ids</param>
         /// <returns></returns>
-       // [HttpGet("monthly-schedule/{year}/{month}")]
         [HttpGet]
-        [Route("monthly-schedule/{year}/{month}")]
-        public async Task<ActionResult<CalendarSchedule>> GetMonthlySchedule(int year, int month, [FromQuery] string locationId = "")
+        [Route("monthly-schedule")]
+        public async Task<ActionResult<CalendarSchedule>> GetMonthlySchedule([FromQuery] int year, [FromQuery] int month, [FromQuery] string locationIds = "")
         {
             try
             {
+                #region Calculate Start and End Dates of the calendar month
+
+                // could be replaced if found on a front end in calendar properties
+                var startMonthDifference = GetWeekFirstDayDifference(month, year);
+                var endMonthDifference = GetLastDayOfMonthWeekDifference(month, year);
                 //  first day of the month and a week before the first day of the month
-                var startDate = new DateTime(year, month, 1).AddDays(-7);
+                var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Local).AddDays(-startMonthDifference);
                 // last day of the month and a week after the last day of the month
-                var endDate = startDate.AddMonths(1).AddDays(-1).AddDays(7);
-                var calendars = await _judicialCalendarService.JudicialCalendarsGetAsync(locationId, startDate, endDate);
+                var endDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Local).AddMonths(1).AddDays(6).AddDays(endMonthDifference);
+                #endregion Calculate Start and End Dates
+
                 CalendarSchedule calendarSchedule = new CalendarSchedule();
+                var isMySchedule = string.IsNullOrWhiteSpace(locationIds);
+
+                // Test Judge Id
+                var judgeId = 190;
+
+                // Get "Judge's Calendar" when no LocationIds provided. Otherwise, get all judge's calendar for the provided LocationIds.
+                var calendars = isMySchedule
+                    ? [await _judicialCalendarService.GetJudgeCalendarAsync(judgeId, startDate, endDate)]
+                    : await _judicialCalendarService.JudicialCalendarsGetAsync(locationIds, startDate, endDate);
+
+                // check if the calendar is empty and return empty schedule - do we need it at all?
+                if (calendars == null)
+                {
+                    return Ok(calendarSchedule);
+                }
 
                 var calendarDays = MapperHelper.CalendarToDays(calendars.ToList());
                 if (calendarDays == null)
                 {
-                    calendarSchedule.Schedule = new List<CalendarDay>();    
+                    calendarSchedule.Schedule = new List<CalendarDay>();
                 }
-                else 
-                    calendarSchedule.Schedule = calendarDays;
-
-                calendarSchedule.Presiders = calendars.Where(t => t.IsPresider).Select(presider => new FilterCode
+                else
                 {
-                    Text = $"{presider.RotaInitials} - {presider.Name}",
-                    Value = $"{presider.ParticipantId}",
-                }).DistinctBy(t => t.Value).OrderBy(x => x.Value).ToList();
+                    if (isMySchedule)
+                        calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
+                    calendarSchedule.Schedule = calendarDays;
+                }
 
-            var assignmentsList = calendars.Where(t => t.IsPresider)
-                                    .Where(t => t.Days?.Count > 0)
-                                    .SelectMany(t => t.Days).Where(day => day.Assignment != null && (day.Assignment.ActivityAm !=null ||  day.Assignment.ActivityPm != null))
-                                    .Select(day => day.Assignment)
-                                    .ToList();
-            var activitiesList = assignmentsList
-                .SelectMany(t => new[] { t.ActivityAm, t.ActivityPm })
-                .Where(activity => activity != null)
+                calendarSchedule.Presiders = calendars
+                    .Where(t => t.IsPresider && t.Days.Any())
+                    .Select(presider => new FilterCode
+                    {
+                        Text = $"{presider.RotaInitials} - {presider.Name}",
+                        Value = $"{presider.Days[0].JudgeId}",
+                    })
+                    .DistinctBy(t => t.Value)
+                    .OrderBy(x => x.Value)
+                    .ToList();
+
+                // check if it should isJudge or IsPresider
+                var assignmentsListFull = calendars.Where(t => t.IsPresider)
+                                        .Where(t => t.Days?.Count > 0)
+                                        .SelectMany(t => t.Days).Where(day => day.Assignment != null)
+                                        .Select(day => day.Assignment)
+                                        .ToList();
+
+                var activitiesList = assignmentsListFull
+                .Where(activity => activity != null && activity.ActivityCode != null && activity.ActivityDescription != null)
                 .Select(activity => new FilterCode
                 {
                     Text = activity.ActivityDescription,
                     Value = activity.ActivityCode
-                })
+                }).ToList();
+
+
+                // merging activities information form activityAm and activityPm, and assignmentsListFull
+                var assignmentsList = calendars.Where(t => t.IsPresider)
+                                        .Where(t => t.Days?.Count > 0)
+                                        .SelectMany(t => t.Days).Where(day => day.Assignment != null && (day.Assignment.ActivityAm != null || day.Assignment.ActivityPm != null))
+                                        .Select(day => day.Assignment)
+                                        .ToList();
+
+                activitiesList.AddRange(assignmentsList
+                   .SelectMany(t => new[] { t.ActivityAm, t.ActivityPm })
+                   .Where(activity => activity != null && activity.ActivityCode != null && activity.ActivityDescription != null)
+                   .Select(activity => new FilterCode
+                   {
+                       Text = activity.ActivityDescription,
+                       Value = activity.ActivityCode
+                   }));
+
+                activitiesList = activitiesList
                 .DistinctBy(t => t.Value)
                 .OrderBy(x => x.Text)
                 .ToList();
@@ -90,38 +139,45 @@ namespace Scv.Api.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.ToString());
+
                 // Log the exception
                 return StatusCode(500, "Internal server error");
             }
         }
 
-        //public async Task<ActionResult<List<FilterCode>>> LocationList(int a)
-        /// <summary>
-        /// Provides locations. 
-        /// </summary>
-        /// <returns>IEnumerable{FilterCode}</returns>
-        [HttpGet]
-        [Route("locations")]
-        public async Task<ActionResult<IEnumerable<FilterCode>>> LocationList()
+        #region Helpers
+
+        //calcluate the difference between the first day of the month and the first day of the week for the calendar
+
+        private static int GetWeekFirstDayDifference(int month, int year)
         {
-            try
-            {
-                var locations = await _locationService.GetLocations();
-                var locationList = locations.Where(t => t.Flex?.Equals("Y") == true).Select(location => new FilterCode
-                {
-                    Text = location.LongDesc,
-                    Value = location.ShortDesc
-                }).OrderBy(x => x.Text);
-
-                return Ok(locationList);
-            }
-            catch (Exception ex)
-            {
-                // Log the exception
-                return StatusCode(500, "Internal server error" + ex.Message);
-            }
+            var firstDayOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Local);
+            return (int)firstDayOfMonth.DayOfWeek - (int)FirstDayOfWeek.Sunday + 1;
         }
+
+        private static int GetLastDayOfMonthWeekDifference(int month, int year)
+        {
+            var lastDayOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Local).AddMonths(1).AddDays(-1);
+            int difference = (int)FirstDayOfWeek.Saturday - (int)lastDayOfMonth.DayOfWeek;
+            // calendar seems to add a week if the difference is 0
+            if (difference <= 0)
+                difference = 7 + difference;
+            // if calendar is 5 weeks we need to add a week
+            var firstDayOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Local);
+            var totalDays = (lastDayOfMonth - firstDayOfMonth).Days + 1;
+            var fullWeeks = totalDays / 7;
+            if (totalDays % 7 > 0)
+            {
+                fullWeeks++;
+            }
+            if (fullWeeks == 5)
+                _ = difference + 7;
+
+
+            return difference;
+        }
+
+        #endregion Helpers
     }
-
-
 }

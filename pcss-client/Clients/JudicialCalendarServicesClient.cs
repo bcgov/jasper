@@ -4,21 +4,25 @@
 // </auto-generated>
 //----------------------
 
-#pragma warning disable 649 // Disable "CS0649 Field is never assigned to, and will always have its default value null"
-
+using Newtonsoft.Json.Serialization;
 using PCSSCommon.Models;
 
-namespace PCSSCommon.Clients.CourtCalendarServices
+#pragma warning disable 472 // Disable "CS0472 The result of the expression is always 'false' since a value of type 'Int32' is never equal to 'null' of type 'Int32?'
+#pragma warning disable 649 // Disable "CS0649 Field is never assigned to, and will always have its default value null"
+#pragma warning disable 8604 // Disable "CS8604 Possible null reference argument for parameter"
+#pragma warning disable 8625 // Disable "CS8625 Cannot convert null literal to non-nullable reference type"
+
+namespace PCSSCommon.Clients.JudicialCalendarServices
 {
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class CourtCalendarClientServicesClient
+    public partial class JudicialCalendarServicesClient
     {
         private System.Net.Http.HttpClient _httpClient;
         private static System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(CreateSerializerSettings, true);
         private Newtonsoft.Json.JsonSerializerSettings _instanceSettings;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-        public CourtCalendarClientServicesClient(System.Net.Http.HttpClient httpClient)
+        public JudicialCalendarServicesClient(System.Net.Http.HttpClient httpClient)
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             _httpClient = httpClient;
@@ -32,7 +36,7 @@ namespace PCSSCommon.Clients.CourtCalendarServices
             return settings;
         }
 
-        protected Newtonsoft.Json.JsonSerializerSettings JsonSerializerSettings { get { return _instanceSettings ?? _settings.Value; } }
+        public Newtonsoft.Json.JsonSerializerSettings JsonSerializerSettings { get { return _instanceSettings ?? _settings.Value; } }
 
         static partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings);
 
@@ -44,15 +48,15 @@ namespace PCSSCommon.Clients.CourtCalendarServices
 
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<CourtCalendarLocation>> GetCourtCalendarsForLocationsV2Async(string locationIds, string startDate, string endDate, string judiciaryTypes)
+        public virtual System.Threading.Tasks.Task<ReadJudicialCalendarsResponse> ReadCalendarsV2Async(string locationIds, string startDate, string endDate, string judiciaryTypes)
         {
-            return GetCourtCalendarsForLocationsV2Async(locationIds, startDate, endDate, judiciaryTypes, System.Threading.CancellationToken.None);
+            return ReadCalendarsV2Async(locationIds, startDate, endDate, judiciaryTypes, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<CourtCalendarLocation>> GetCourtCalendarsForLocationsV2Async(string locationIds, string startDate, string endDate, string judiciaryTypes, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ReadJudicialCalendarsResponse> ReadCalendarsV2Async(string locationIds, string startDate, string endDate, string judiciaryTypes, System.Threading.CancellationToken cancellationToken)
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -65,8 +69,8 @@ namespace PCSSCommon.Clients.CourtCalendarServices
 
                     var urlBuilder_ = new System.Text.StringBuilder();
 
-                    // Operation Path: "api/v2/calendar/locations"
-                    urlBuilder_.Append("api/v2/calendar/locations");
+                    // Operation Path: "api/v2/calendar/judges"
+                    urlBuilder_.Append("api/v2/calendar/judges");
                     urlBuilder_.Append('?');
                     if (locationIds != null)
                     {
@@ -111,7 +115,99 @@ namespace PCSSCommon.Clients.CourtCalendarServices
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<CourtCalendarLocation>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<ReadJudicialCalendarsResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <returns>OK</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<JudicialCalendar> ReadCalendarAsync(int judgeId, string startDate, string endDate)
+        {
+            return ReadCalendarAsync(judgeId, startDate, endDate, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns>OK</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<JudicialCalendar> ReadCalendarAsync(int judgeId, string startDate, string endDate, System.Threading.CancellationToken cancellationToken)
+        {
+            if (judgeId == null)
+                throw new System.ArgumentNullException("judgeId");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+
+                    // Operation Path: "api/calendar/judges/{judgeId}"
+                    urlBuilder_.Append("api/calendar/judges/");
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(judgeId, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append('?');
+                    if (startDate != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("startDate")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(startDate, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (endDate != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("endDate")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(endDate, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<JudicialCalendar>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -249,6 +345,7 @@ namespace PCSSCommon.Clients.CourtCalendarServices
             return result == null ? "" : result;
         }
 
+
         [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
         public partial class ApiException : System.Exception
         {
@@ -285,3 +382,8 @@ namespace PCSSCommon.Clients.CourtCalendarServices
         }
     }
 }
+
+#pragma warning restore 472
+#pragma warning restore 649
+#pragma warning restore 8604
+#pragma warning restore 8625

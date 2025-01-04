@@ -12,7 +12,8 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.request_secret.arn,
     aws_secretsmanager_secret.splunk_secret.arn,
     aws_secretsmanager_secret.user_services_client_secret.arn,
-    aws_secretsmanager_secret.api_authorizer_secret.arn
+    aws_secretsmanager_secret.api_authorizer_secret.arn,
+    aws_secretsmanager_secret.pcss_secret.arn
   ]
 }
 
@@ -42,6 +43,9 @@ output "api_secrets" {
     ["LookupServicesClient__Username", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:username::"],
     ["LookupServicesClient__Password", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:password::"],
     ["LookupServicesClient__Url", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:baseUrl::"],
+    ["PCSS__Username", "${aws_secretsmanager_secret.pcss_secret.arn}:username::"],
+    ["PCSS__Password", "${aws_secretsmanager_secret.pcss_secret.arn}:password::"],
+    ["PCSS__Url", "${aws_secretsmanager_secret.pcss_secret.arn}:baseUrl::"],
     ["Request__ApplicationCd", "${aws_secretsmanager_secret.request_secret.arn}:applicationCd::"],
     ["Request__AgencyIdentifierId", "${aws_secretsmanager_secret.request_secret.arn}:agencyIdentifierId::"],
     ["Request__GetUserLoginDefaultAgencyId", "${aws_secretsmanager_secret.request_secret.arn}:getUserLoginDefaultAgencyId::"],
@@ -88,4 +92,12 @@ output "api_authorizer_secret" {
 output "allowed_ip_ranges" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).allowedIpRanges
   sensitive = true
+}
+
+output "file_services_client_secret_name" {
+  value = aws_secretsmanager_secret.file_services_client_secret.name
+}
+
+output "pcss_secret_name" {
+  value = aws_secretsmanager_secret.pcss_secret.name
 }

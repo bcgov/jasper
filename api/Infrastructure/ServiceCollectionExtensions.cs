@@ -1,25 +1,26 @@
 ﻿using System;
+using System.Net.Http;
+using System.Reflection;
+using JCCommon.Clients.FileServices;
+using JCCommon.Clients.LocationServices;
+using JCCommon.Clients.LookupCodeServices;
+using JCCommon.Clients.UserService;
+using Mapster;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
-using Mapster;
-using MapsterMapper;
-using System.Reflection;
-using JCCommon.Clients.FileServices;
-using JCCommon.Clients.LocationServices;
-using JCCommon.Clients.LookupCodeServices;
-using JCCommon.Clients.UserService;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
-using Scv.Api.Infrastructure.Handler;
-using PCSSClient.Clients.JudicialCalendarsServices;
-using PCSSClient.Clients.CourtCalendarsServices;
-
+using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
+using PCSSJudicialCalendarServices = PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 
 namespace Scv.Api.Infrastructure
 {
@@ -44,39 +45,33 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();
-            services.AddHttpClient<FileServicesClient>(client =>
-            {
-                client.Timeout = TimeSpan.FromMinutes(5);
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                    configuration.GetNonEmptyValue("FileServicesClient:Username"),
-                    configuration.GetNonEmptyValue("FileServicesClient:Password"));
-                client.BaseAddress = new Uri(configuration.GetNonEmptyValue("FileServicesClient:Url").EnsureEndingForwardSlash());
-            }).AddHttpMessageHandler<TimingHandler>();
 
-            services.AddHttpClient<LookupCodeServicesClient>(client =>
-            {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                    configuration.GetNonEmptyValue("LookupServicesClient:Username"),
-                    configuration.GetNonEmptyValue("LookupServicesClient:Password"));
-                client.BaseAddress = new Uri(configuration.GetNonEmptyValue("LookupServicesClient:Url").EnsureEndingForwardSlash());
-            }).AddHttpMessageHandler<TimingHandler>();
+            // JC Interface
+            services
+                .AddHttpClient<FileServicesClient>(client => { ConfigureHttpClient(client, configuration, "FileServicesClient", 300); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<LookupCodeServicesClient>(client => { ConfigureHttpClient(client, configuration, "LookupServicesClient"); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<LocationServicesClient>(client => { ConfigureHttpClient(client, configuration, "LocationServicesClient"); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<UserServiceClient>(client => { ConfigureHttpClient(client, configuration, "UserServicesClient"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
-            services.AddHttpClient<LocationServicesClient>(client =>
-            {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                    configuration.GetNonEmptyValue("LocationServicesClient:Username"),
-                    configuration.GetNonEmptyValue("LocationServicesClient:Password"));
-                client.BaseAddress = new Uri(configuration.GetNonEmptyValue("LocationServicesClient:Url").EnsureEndingForwardSlash());
-            }).AddHttpMessageHandler<TimingHandler>();
-
-            services.AddHttpClient<UserServiceClient>(client =>
-            {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                    configuration.GetNonEmptyValue("UserServicesClient:Username"),
-                    configuration.GetNonEmptyValue("UserServicesClient:Password"));
-                client.BaseAddress = new Uri(configuration.GetNonEmptyValue("UserServicesClient:Url")
-                    .EnsureEndingForwardSlash());
-            }).AddHttpMessageHandler<TimingHandler>();
+            // PCSS
+            services
+                .AddHttpClient<PCSSLocationServices.LocationServicesClient>(
+                    typeof(PCSSLocationServices.LocationServicesClient).FullName,
+                    (client) => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSCourtCalendarServices.CourtCalendarClientServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSJudicialCalendarServices.JudicialCalendarServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
@@ -89,10 +84,35 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
 
-            services.AddSingleton<JudicialCalendarsServicesClient>();
-            services.AddSingleton<CourtCalendarsServicesClient>();
-
             return services;
+        }
+
+        private static void ConfigureHttpClient(HttpClient client, IConfiguration configuration, string prefix, int timeoutInSecs = 100)
+        {
+            // Comment out for now until the pattern for creating handlers has been finalized so that it would be easier 
+            // to redirect network traffic between WSGW (local) and AWS API Gateway (dev, test and prod).
+
+            // var apigwUrl = configuration.GetValue<string>("AWS_API_GATEWAY_URL");
+            // var apigwKey = configuration.GetValue<string>("AWS_API_GATEWAY_API_KEY");
+            // var authorizerKey = configuration.GetValue<string>("AuthorizerKey");
+
+            client.Timeout = TimeSpan.FromSeconds(timeoutInSecs);
+
+            // Defaults to BC Gov API if any config setting is missing
+            // if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
+            // {
+            client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
+                configuration.GetNonEmptyValue($"{prefix}:Username"),
+                configuration.GetNonEmptyValue($"{prefix}:Password"));
+            client.BaseAddress = new Uri(configuration.GetNonEmptyValue($"{prefix}:Url").EnsureEndingForwardSlash());
+            //}
+            // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.
+            // else
+            // {
+            //     client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
+            //     client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
+            //     client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);
+            // }
         }
     }
 }

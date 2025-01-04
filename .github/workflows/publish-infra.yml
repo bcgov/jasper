@@ -87,13 +87,13 @@ jobs:
       - name: Terraform Init
         id: init
         run: |
-          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ inputs.environment }}.tfvars
+          terraform init -input=false -backend-config=backend.tfvars -var-file=${{ env.environment }}.tfvars
         working-directory: ${{ env.WORKING_DIRECTORY }}  
 
       - name: Terraform Plan (Initial Stack)
         id: plan-initial
         run: |
-          terraform plan -target=module.initial -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+          terraform plan -target=module.initial -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
@@ -103,7 +103,7 @@ jobs:
 
       - name: Terraform Apply (Initial Stack)
         run: |
-          terraform apply -target=module.initial --auto-approve -input=false -var-file=${{ inputs.environment }}.tfvars
+          terraform apply -target=module.initial --auto-approve -input=false -var-file=${{ env.environment }}.tfvars
         working-directory: ${{ env.WORKING_DIRECTORY }}       
         
       - name: Log in to the GHCR
@@ -144,7 +144,7 @@ jobs:
         shell: bash
         run: |
           IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
-          REPOSITORY_NAME=${{ vars.APP_NAME }}-app-repo-${{ inputs.environment }}
+          REPOSITORY_NAME=${{ vars.APP_NAME }}-app-repo-${{ env.environment }}
           
           IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
 
@@ -169,7 +169,7 @@ jobs:
         shell: bash
         run: |
           IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
-          REPOSITORY_NAME=${{ vars.APP_NAME }}-lambda-repo-${{ inputs.environment }}
+          REPOSITORY_NAME=${{ vars.APP_NAME }}-lambda-repo-${{ env.environment }}
           
           IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
 
@@ -192,7 +192,7 @@ jobs:
       - name: Terraform Plan (Main Stack)
         id: plan-main
         run: |
-          terraform plan -no-color -input=false -var-file=${{ inputs.environment }}.tfvars
+          terraform plan -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
   
@@ -202,5 +202,5 @@ jobs:
 
       - name: Terraform Apply (Main Stack)
         run: |
-          terraform apply --auto-approve -input=false -var-file=${{ inputs.environment }}.tfvars
+          terraform apply --auto-approve -input=false -var-file=${{ env.environment }}.tfvars
         working-directory: ${{ env.WORKING_DIRECTORY }}        

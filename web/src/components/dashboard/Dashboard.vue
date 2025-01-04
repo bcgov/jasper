@@ -42,11 +42,11 @@
                 <b-form-checkbox-group
                   id="locations-filter-box"
                   v-model="selectedLocations"
-                  :options="
-                    locations.length > 7 ? locations.slice(0, 7) : locations
-                  "
+                  :options="getLocations"
                   name="locations-filter"
-                  @change="onCheckboxChange"
+                  :value-field="'locationId'"
+                  :text-field="'code'"
+                  @change="onLocationChecked"
                 ></b-form-checkbox-group>
               </b-card>
               <button
@@ -74,19 +74,19 @@
               <b-card>
                 <b-form-checkbox
                   id="select-all-presiders"
-                  v-model="selectAllPresiders"
-                  @change="onSelectAllPresidersChange"
+                  v-model="areAllPresidersChecked"
+                  @change="onSelectAllPresiders"
                 >
                   All Persiders
                 </b-form-checkbox>
                 <b-form-checkbox-group
                   id="presiders-filter-box"
                   v-model="selectedPresiders"
-                  :options="
-                    presiders.length > 7 ? presiders.slice(0, 7) : presiders
-                  "
+                  :options="getPresiders"
                   name="presiders-filter"
-                  @change="onCheckboxPresidersChange"
+                  :value-field="'value'"
+                  :text-field="'text'"
+                  @change="onPreciderChecked"
                 ></b-form-checkbox-group>
               </b-card>
               <button
@@ -113,19 +113,19 @@
               <b-card>
                 <b-form-checkbox
                   id="select-all-activities"
-                  v-model="selectAllActivities"
-                  @change="onSelectAllActivitiesChange"
+                  v-model="areAllActivitiesChecked"
+                  @change="onSelectAllActivities"
                 >
                   All Activities
                 </b-form-checkbox>
                 <b-form-checkbox-group
                   id="activities-filter-box"
                   v-model="selectedActivities"
-                  :options="
-                    activities.length > 7 ? activities.slice(0, 7) : activities
-                  "
+                  :options="getActivities"
                   name="activities-filter"
-                  @change="onCheckboxActivitiesChange"
+                  :value-field="'value'"
+                  :text-field="'text'"
+                  @change="onActivityChecked"
                 ></b-form-checkbox-group>
               </b-card>
               <button class="moreItems" @click="showAllActivities()">
@@ -206,13 +206,16 @@
               v-model="selectedLocations"
               :options="locations"
               name="locations-filter"
-              @change="onCheckboxChange"
+              :value-field="'locationId'"
+              :text-field="'code'"
             ></b-form-checkbox-group>
           </div>
         </div>
         <div class="modal-buttons">
-          <button class="moreItems" @click="resetLocations()">Reset</button>
-          <button class="modal-button-right">Save</button>
+          <button class="moreItems" @click="onResetLocations">Reset</button>
+          <button class="modal-button-right" @click="onFilterLocations">
+            Save
+          </button>
         </div>
       </div>
     </b-modal>
@@ -223,7 +226,7 @@
       size="lg"
       hide-backdrop
       ref="presidersModal"
-      v-model="showPresiderModal"
+      v-model="isPresiderModalVisible"
     >
       <div>
         <div class="modal-header-title">Presiders</div>
@@ -234,7 +237,7 @@
               v-model="selectedPresiders"
               :options="presiders"
               name="presiders-filter"
-              @change="onCheckboxPresidersChange"
+              @change="onPreciderChecked"
             ></b-form-checkbox-group>
           </div>
         </div>
@@ -252,7 +255,7 @@
       size="lg"
       hide-backdrop
       ref="activitiesModal"
-      v-model="showActivitiesModal"
+      v-model="isActivitiesModalVisible"
     >
       <div>
         <div class="modal-header-title">Activities</div>
@@ -263,7 +266,7 @@
               v-model="selectedActivities"
               :options="activities"
               name="activities-filter"
-              @change="onCheckboxActivitiesChange"
+              @change="onActivityChecked"
             ></b-form-checkbox-group>
           </div>
         </div>
@@ -544,273 +547,245 @@
   }
 </style>
 <script lang="ts">
-  import { HttpService } from '@/services/HttpService';
-import Calendar from '@components/calendar/Calendar.vue';
-import { defineComponent, inject, onMounted, reactive, ref } from 'vue';
+  import { DashboardService, LocationService } from '@/services';
+  import { Activity, CalendarDay, Location, Presider } from '@/types';
+  import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
+  import Calendar from '../calendar/Calendar.vue';
 
   export default defineComponent({
     components: {
       Calendar,
     },
     setup() {
-      const httpService = inject<HttpService>('httpService');
+      const locationsService = inject<LocationService>('locationService');
+      const dashboardService = inject<DashboardService>('dashboardService');
 
-      if (!httpService) {
-        throw new Error('HttpService is not available!');
+      if (!locationsService || !dashboardService) {
+        throw new Error('Service is not available!');
       }
 
+      const isMySchedule = ref(true);
+
+      const locations = ref<Location[]>([]);
+      const selectedLocations = ref<string[]>([]);
+      const isLocationModalVisible = ref(false);
+
+      const presiders = ref<Presider[]>([]);
+      const selectedPresiders = ref<string[]>([]);
+      const isPresiderModalVisible = ref(false);
+      const areAllPresidersChecked = ref(true);
+
+      const activities = ref<Activity[]>([]);
+      const selectedActivities = ref<string[]>([]);
+      const areAllActivitiesChecked = ref(true);
+      const isActivitiesModalVisible = ref(false);
+
+      const filteredEvents = ref<CalendarDay[]>([]);
+
+      let allEvents: CalendarDay[] = [];
+
       let sizeChange = 0;
-      const locationsFilters = [];
-      let ar: any[] = [];
-      let arEvents = reactive<any[]>([]);
-      let showLeftMenu = ref(false);
-      let showRightMenu = ref(false);
-      let menuActive = ref(false);
 
-      let locations = reactive<any[]>([]);
-      let selectedLocations = reactive<any[]>([]);
-      let showLocationModal = ref(false);
-
-      let presiders = reactive<any[]>([]);
-      let selectedPresiders = reactive<any[]>([]);
-      let selectAllPresiders = ref(true);
-      let showPresiderModal = false;
-
-      let activities = reactive<any[]>([]);
-      let selectedActivities = reactive<any[]>([]);
-      let selectAllActivities = ref(true);
-      let showActivitiesModal = ref(false);
+      const showLeftMenu = ref(false);
+      const showRightMenu = ref(false);
+      const menuActive = ref(false);
 
       const sittingActivities = ref(false);
       const nonSittingActivities = ref(false);
 
-      let isMySchedule = ref(true);
       let currentCalendarDate = new Date('dd-mm-yyyy');
 
-      onMounted(() => {
-        loadLocations();
+      onMounted(async () => {
+        await loadLocations();
       });
 
-      const loadLocations = () => {
-        ar = [];
-        httpService
-          .get<{ text: string; value: string }[]>('api/dashboard/locations')
-          .then(
-            (Response) => Response,
-            (err) => {
-              // $bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
-              //     title: "An error has occured.",
-              //     variant: "danger",
-              //     autoHideDelay: 10000,
-              // });
-              console.log(err);
-            }
-          )
-          .then((data) => {
-            if (data) {
-              //   ar = JSON.parse(JSON.stringify(data, null, 2));
-              locations = [...data];
-            }
-          });
+      const loadLocations = async () => {
+        const data = await locationsService.getDashboardLocations();
+        locations.value = [...data];
       };
 
       const showAllLocations = () => {
-        showLocationModal.value = true;
+        isLocationModalVisible.value = true;
       };
 
-      const resetLocations = () => {
-        selectedLocations = [];
-        arEvents = [...ar];
-
-        //($refs.locationsModal as any).hide();
-
-        getMonthlySchedule(currentCalendarDate);
-      };
-
-      const loadPresiders = (data) => {
-        if (selectedLocations.length == 0) {
-          presiders = [];
-          selectedPresiders = [];
-          selectAllPresiders.value = false;
+      const onFilterLocations = async () => {
+        if (selectedLocations.value.length === 0) {
           return;
-        } else {
-          selectAllPresiders.value = true;
         }
 
-        presiders = [...data];
-        selectedPresiders = presiders.map((x) => {
-          return x.value;
-        });
-        //calendarStartDate, calendarEndDate
+        isLocationModalVisible.value = false;
+        await getMonthlySchedule(currentCalendarDate);
+      };
+
+      const onResetLocations = async () => {
+        selectedLocations.value.length = 0;
+        isLocationModalVisible.value = false;
+        await getMonthlySchedule(currentCalendarDate);
+      };
+
+      const loadPresiders = (data: Presider[]) => {
+        if (selectedLocations.value.length === 0) {
+          presiders.value.length = 0;
+          selectedPresiders.value.length = 0;
+          areAllPresidersChecked.value = false;
+          return;
+        }
+
+        areAllPresidersChecked.value = true;
+        selectedPresiders.value = data.map((p) => p.value);
+        presiders.value = [...data];
       };
 
       const showAllPresiders = () => {
-        showPresiderModal = true;
+        isPresiderModalVisible.value = true;
       };
 
       const resetPresiders = () => {
-        selectedPresiders = [];
+        areAllPresidersChecked.value = true;
+        selectedPresiders.value = presiders.value.map((p) => p.value);
+        isPresiderModalVisible.value = false;
+        filterByPresiders();
       };
 
-      const loadActivities = (data) => {
-        if (selectedLocations.length == 0) {
-          activities = [];
-          selectedActivities = [];
-          selectAllActivities.value = false;
+      const loadActivities = (data: Activity[]) => {
+        if (selectedLocations.value.length == 0) {
+          activities.value.length = 0;
+          selectedActivities.value.length = 0;
+          areAllActivitiesChecked.value = false;
           return;
-        } else {
-          selectAllActivities.value = true;
         }
 
-        activities = [...data];
-
-        selectedActivities = activities.map((x) => {
-          return x.value;
-        });
+        areAllActivitiesChecked.value = true;
+        selectedActivities.value = data.map((a) => a.value);
+        activities.value = [...data];
       };
 
       const showAllActivities = () => {
-        showActivitiesModal.value = true;
+        isActivitiesModalVisible.value = true;
       };
 
       const resetActivities = () => {
-        selectedActivities = [];
+        areAllActivitiesChecked.value = true;
+        selectedActivities.value = activities.value.map((a) => a.value);
+        isActivitiesModalVisible.value = false;
+        filterByActivities();
       };
 
       const toggleRight = () => {
-        arEvents = [...arEvents];
-        showRightMenu.value = !showRightMenu;
+        showRightMenu.value = !showRightMenu.value;
         showLeftMenu.value = false;
-        menuActive = showRightMenu;
-        sizeChange = sizeChange++;
+        menuActive.value = showRightMenu.value;
+        sizeChange++;
       };
 
       const toggleLeft = () => {
-        arEvents = [...arEvents];
-        showLeftMenu.value = !showLeftMenu;
+        showLeftMenu.value = !showLeftMenu.value;
         showRightMenu.value = false;
-        menuActive = showLeftMenu;
-        sizeChange = sizeChange++;
+        menuActive.value = showLeftMenu.value;
+        sizeChange++;
       };
 
-      const getMonthlySchedule = (currentMonth) => {
-        ar = [];
+      const getMonthlySchedule = async (currentMonth) => {
         currentCalendarDate = currentMonth;
-        let locations = '';
-        if (selectedLocations.length > 0) {
-          const locationIds = selectedLocations.join(',');
-          locations = `?locationId=${locationIds}`;
-        }
 
-        httpService
-          .get(
-            'api/dashboard/monthly-schedule/' +
-              `${currentMonth.getFullYear()}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}` +
-              locations
-          )
-          .then(
-            (Response) => Response,
-            (err) => {
-              //   $bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
-              //       title: "An error has occured.",
-              //       variant: "danger",
-              //       autoHideDelay: 10000,
-              //   });
-              console.log(err);
-            }
-          )
-          .then((data) => {
-            if (data) {
-              //   ar = [...data.schedule];
-              //   arEvents = [...ar];
-              //   loadActivities(data.activities);
-              //   loadPresiders(data.presiders);
-            }
-          });
+        const locationIds =
+          selectedLocations.value.length > 0
+            ? selectedLocations.value.join(',')
+            : '';
+        const year = currentMonth.getFullYear();
+        const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+
+        const { schedule, presiders, activities } =
+          await dashboardService.getMonthlySchedule(year, +month, locationIds);
+
+        allEvents = [...schedule];
+        filteredEvents.value = [...schedule];
+
+        loadPresiders(presiders);
+        loadActivities(activities);
       };
 
-      const onCheckboxChange = (selected) => {
-        selectedLocations = [...selected];
-        if (selectedLocations.length) {
-          isMySchedule.value = false;
-        } else {
-          isMySchedule.value = true;
-        }
+      const onLocationChecked = () => {
+        isMySchedule.value = selectedLocations.value.length === 0;
         getMonthlySchedule(currentCalendarDate);
       };
 
-      const onSelectAllPresidersChange = () => {
-        if (selectAllPresiders) {
-          selectedPresiders = presiders.map((presider) => presider.value);
+      const onSelectAllPresiders = () => {
+        if (areAllPresidersChecked.value) {
+          selectedPresiders.value = presiders.value.map((p) => p.value);
         } else {
-          selectedPresiders = [];
+          selectedPresiders.value.splice(0);
         }
         filterByPresiders();
       };
 
-      const onCheckboxPresidersChange = (selected) => {
-        selectedPresiders = [...selected];
-        const options = presiders.map((x) => {
-          return x.value;
-        });
-        if (options.length === selected.length) {
-          selectAllPresiders.value = true;
-        } else {
-          selectAllPresiders.value = false;
-        }
+      const onPreciderChecked = () => {
+        areAllPresidersChecked.value =
+          selectedPresiders.value.length === presiders.value.length;
         filterByPresiders();
       };
 
       const filterByPresiders = () => {
-        if (selectedPresiders.length) {
-          arEvents = ar.filter(
+        if (selectedPresiders.value.length) {
+          filteredEvents.value = allEvents.filter(
             (event) =>
-              selectedPresiders.includes(String(event.assignment.judgeId)) ||
-              selectedPresiders.includes(String(event.judgeId))
+              selectedPresiders.value.includes(
+                String(event.assignment.judgeId)
+              ) || selectedPresiders.value.includes(String(event.judgeId))
           );
         } else {
-          arEvents = [];
+          filteredEvents.value = [];
         }
       };
 
-      const onCheckboxActivitiesChange = (selected) => {
-        selectedActivities = [...selected];
-        const options = activities.map((x) => {
-          return x.value;
-        });
-        if (options.length === selected.length) {
-          selectAllActivities.value = true;
-        } else {
-          selectAllActivities.value = false;
-        }
+      const onActivityChecked = () => {
+        areAllActivitiesChecked.value =
+          selectedActivities.value.length === activities.value.length;
         filterByActivities();
       };
 
-      const onSelectAllActivitiesChange = () => {
-        if (selectAllActivities) {
-          selectedActivities = activities.map((activity) => activity.value);
+      const onSelectAllActivities = () => {
+        if (areAllActivitiesChecked.value) {
+          selectedActivities.value = activities.value.map((p) => p.value);
         } else {
-          selectedActivities = [];
+          selectedActivities.value.splice(0);
         }
         filterByActivities();
       };
 
       const filterByActivities = () => {
-        if (selectedActivities.length) {
-          arEvents = ar.filter(
+        if (selectedActivities.value.length > 0) {
+          filteredEvents.value = allEvents.filter(
             (event) =>
-              selectedActivities.includes(event.assignment.activityCode) ||
-              selectedActivities.includes(
-                event.assignment.activityAm.activityCode
+              selectedActivities.value.includes(
+                event.assignment.activityCode
               ) ||
-              selectedActivities.includes(
-                event.assignment.activityPm.activityCode
+              selectedActivities.value.includes(
+                event.assignment.activityAm?.activityCode
+              ) ||
+              selectedActivities.value.includes(
+                event.assignment.activityPm?.activityCode
               )
           );
         } else {
-          arEvents = [];
+          filteredEvents.value = [];
         }
       };
+
+      const getFirstNItemsFromList = <T,>(
+        items: Ref<T[]>,
+        limit = 7
+      ): Ref<T[]> => {
+        return computed(() => {
+          return items.value.length > limit
+            ? items.value.slice(0, limit)
+            : items.value;
+        });
+      };
+
+      const getLocations = getFirstNItemsFromList(locations);
+      const getPresiders = getFirstNItemsFromList(presiders);
+      const getActivities = getFirstNItemsFromList(activities);
 
       return {
         toggleLeft,
@@ -819,33 +794,37 @@ import { defineComponent, inject, onMounted, reactive, ref } from 'vue';
         showRightMenu,
         selectedLocations,
         locations,
-        onCheckboxChange,
+        onLocationChecked,
         showAllLocations,
-        selectAllPresiders,
-        onSelectAllPresidersChange,
+        areAllPresidersChecked,
+        onSelectAllPresiders,
         selectedPresiders,
         presiders,
-        onCheckboxPresidersChange,
+        onPreciderChecked,
         showAllPresiders,
-        selectAllActivities,
-        onSelectAllActivitiesChange,
+        areAllActivitiesChecked,
+        onSelectAllActivities,
         selectedActivities,
         activities,
-        onCheckboxActivitiesChange,
+        onActivityChecked,
         showAllActivities,
         sittingActivities,
         nonSittingActivities,
         menuActive,
-        arEvents,
+        arEvents: filteredEvents,
         getMonthlySchedule,
         sizeChange,
         isMySchedule,
-        showLocationModal,
-        resetLocations,
-        showPresiderModal,
+        showLocationModal: isLocationModalVisible,
+        onResetLocations,
+        isPresiderModalVisible,
         resetPresiders,
-        showActivitiesModal,
+        isActivitiesModalVisible,
         resetActivities,
+        getLocations,
+        getPresiders,
+        getActivities,
+        onFilterLocations,
       };
     },
   });

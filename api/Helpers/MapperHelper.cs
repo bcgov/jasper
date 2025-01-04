@@ -1,9 +1,9 @@
-﻿using AutoMapper;
-using System.Collections.Generic;
-using Scv.Api.Models.Calendar;
-using Scv.Api.Mappers;
-using PCSS.Models.REST.JudicialCalendar;
+﻿using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
+using PCSSCommon.Models;
+using Scv.Api.Mappers;
+using Scv.Api.Models.Calendar;
 
 namespace Scv.Api.Helpers
 {

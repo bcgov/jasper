@@ -38,26 +38,94 @@
         }
       },
       customEventContent(arg) {
+        // function to load the content of the event, could be simplified and divided into 3 pieces - am,pm and assignemnt.
+        // check if this could be simplified and divided into 3 pieces - am,pm and assignemnt.
+        // video icon could be attached to any of the pieces
         if (arg.event.extendedProps.assignment) {
+          let amLocation = '';
+          let pmLocation = '';
+          let pmDescription = '';
+          let amDescription = '';
+          let amCourtRoomCode = '';
+          let pmCourtRoomCode = '';
+          if (arg.event.extendedProps.assignment.activityAm) {
+            if (arg.event.extendedProps.assignment.activityAm.locationName) {
+              amLocation =
+                arg.event.extendedProps.assignment.activityAm.locationName;
+            }
+            if (
+              arg.event.extendedProps.assignment.activityAm.activityDescription
+            ) {
+              amDescription =
+                arg.event.extendedProps.assignment.activityAm
+                  .activityDescription;
+            }
+            if (arg.event.extendedProps.assignment.activityAm.courtRoomCode) {
+              amCourtRoomCode =
+                '(' +
+                arg.event.extendedProps.assignment.activityAm.courtRoomCode +
+                ')';
+            }
+          } else if (!arg.event.extendedProps.assignment.activityPm) {
+            if (arg.event.extendedProps.assignment.locationName) {
+              amLocation = arg.event.extendedProps.assignment.locationName;
+            }
+            if (arg.event.extendedProps.assignment.activityDescription) {
+              amDescription =
+                arg.event.extendedProps.assignment.activityDescription;
+            }
+            // if(arg.event.extendedProps.assignment.activityPm.courtRoomCode){
+            //     pmCourtRoomCode = "(" + arg.event.extendedProps.assignment.activityPm.courtRoomCode + ")";
+            // }
+          }
+
+          if (
+            arg.event.extendedProps.showPM &&
+            arg.event.extendedProps.assignment.activityPm
+          ) {
+            if (
+              arg.event.extendedProps.assignment.activityPm.locationName &&
+              arg.event.extendedProps.showPMLocation
+            ) {
+              pmLocation =
+                arg.event.extendedProps.assignment.activityPm.locationName;
+            }
+            if (
+              arg.event.extendedProps.assignment.activityPm.activityDescription
+            ) {
+              pmDescription =
+                arg.event.extendedProps.assignment.activityPm
+                  .activityDescription;
+            }
+            if (arg.event.extendedProps.assignment.activityPm.courtRoomCode) {
+              pmCourtRoomCode =
+                '(' +
+                arg.event.extendedProps.assignment.activityPm.courtRoomCode +
+                ')';
+            }
+          }
           if (this.isMySchedule) {
+            // less compact schedule because loads only my events
+            // check if camera could be for both am and pm and assignment
             return {
               html: `
                         <div class="custom-events-container">
-                        ${"<div class='city'>" + arg.event.extendedProps.assignment.locationName + (arg.event.extendedProps.assignment.isVideo ? "<span class='camera'></span>" : '') + '</div>'}
-                        <div class="eventTitle" style="margin-top: 10px;">${arg.event.extendedProps.showAM ? "<span class='daytime'>AM</span>" : ''}${arg.event.extendedProps.assignment.activityAm.activityDescription}<span  class="loc">${arg.event.extendedProps.assignment.activityAm.courtRoomCode ? '(' + arg.event.extendedProps.assignment.activityAm.courtRoomCode + ')' : ''}</span></div>
-                        ${arg.event.extendedProps.showPMLocation ? "<div class='city' style='margin-top: 20px;'>" + arg.event.extendedProps.assignment.activityPm.locationName + (arg.event.extendedProps.assignment.isVideo ? "<span class='camera'></span>" : '') + '</div>' : ''}
-                        ${arg.event.extendedProps.showPM ? "<div class='eventTitle' style='margin-top: 10px;'><span class='daytime'>PM</span>" + arg.event.extendedProps.assignment.activityPm.activityDescription + "<span  class='loc'>" + (arg.event.extendedProps.assignment.activityPm.courtRoomCode ? '(' + arg.event.extendedProps.assignment.activityPm.courtRoomCode + ')' : '') + '</span></div>' : ''}
+                        ${"<div class='city'>" + amLocation + (arg.event.extendedProps.assignment.isVideo ? "<span class='camera'></span>" : '') + '</div>'}
+                        <div class="eventTitle" style="margin-top: 10px;">${arg.event.extendedProps.showAM ? "<span class='daytime'>AM</span>" : ''}${amDescription}<span  class="loc">${amCourtRoomCode}</span></div>
+                        ${arg.event.extendedProps.showPMLocation ? "<div class='city' style='margin-top: 20px;'>" + pmLocation + (arg.event.extendedProps.assignment.isVideo ? "<span class='camera'></span>" : '') + '</div>' : ''}
+                        ${arg.event.extendedProps.showPM ? "<div class='eventTitle' style='margin-top: 10px;'><span class='daytime'>PM</span>" + pmDescription + "<span  class='loc'>" + pmCourtRoomCode + '</span></div>' : ''}
                         </div>
                         `,
             };
           }
           return {
+            // compact schedule because loads all assignemnts ( adds judge initials)
             html: `
                         <div class="custom-events-container">
                         ${"<div class='city'>" + arg.event.extendedProps.rotaInitials + ' - ' + arg.event.extendedProps.assignment.locationName + '</div>'}
-                        <div class="eventTitle">${arg.event.extendedProps.showAM ? "<span class='daytime'>AM</span>" : ''}${arg.event.extendedProps.assignment.activityAm.activityDescription}<span  class="loc">${arg.event.extendedProps.assignment.activityAm.courtRoomCode ? '(' + arg.event.extendedProps.assignment.activityAm.courtRoomCode + ')' : ''}</span></div>
-                        ${arg.event.extendedProps.showPMLocation ? "<div class='city'>" + arg.event.extendedProps.assignment.activityPm.locationName + '</div>' : ''}
-                        ${arg.event.extendedProps.showPM ? "<div class='eventTitle'><span class='daytime'>PM</span>" + arg.event.extendedProps.assignment.activityPm.activityDescription + "<span  class='loc'>" + (arg.event.extendedProps.assignment.activityPm.courtRoomCode ? '(' + arg.event.extendedProps.assignment.activityPm.courtRoomCode + ')' : '') + '</span></div>' : ''}
+                        <div class="eventTitle">${arg.event.extendedProps.showAM ? "<span class='daytime'>AM</span>" : ''}${amDescription}<span  class="loc">${amCourtRoomCode}</span></div>
+                        ${arg.event.extendedProps.showPMLocation ? "<div class='city'>" + pmLocation + '</div>' : ''}
+                        ${arg.event.extendedProps.showPM ? "<div class='eventTitle'><span class='daytime'>PM</span>" + pmDescription + "<span  class='loc'>" + pmCourtRoomCode + '</span></div>' : ''}
                         </div>
                         `,
           };
@@ -115,10 +183,6 @@
     },
     data: function () {
       return {
-        calendarConfig: {
-          year: new Date().getFullYear(),
-          month: new Date().getMonth() + 1,
-        },
         date: {
           from: null,
           to: null,

@@ -1,14 +1,14 @@
-﻿using PCSS.Models.REST.JudicialCalendar;
-using System;
+﻿using System;
+using PCSSCommon.Models;
 
 namespace Scv.Api.Models.Calendar
 {
     public class CalendarDay : JudicialCalendarDay
     {
         public string RotaInitials { get; set; }
-        public DateTime Start 
-        { 
-            get 
+        public DateTime Start
+        {
+            get
             {
                 return DateTime.ParseExact(base.Date, "dd-MMM-yyyy", null).AddHours(8);
             }
@@ -25,7 +25,7 @@ namespace Scv.Api.Models.Calendar
         {
             get
             {
-                if(showPMLocation || (this.Assignment?.ActivityAm?.CourtRoomCode != this.Assignment?.ActivityPm?.CourtRoomCode)
+                if (showPMLocation || (this.Assignment?.ActivityAm?.CourtRoomCode != this.Assignment?.ActivityPm?.CourtRoomCode)
                     || (this.Assignment?.ActivityAm?.ActivityDescription != this.Assignment?.ActivityPm?.ActivityDescription))
                     return true;
                 else
@@ -38,7 +38,7 @@ namespace Scv.Api.Models.Calendar
             {
                 if (this.Assignment?.ActivityPm != null && this.Assignment?.ActivityAm?.LocationName != this.Assignment?.ActivityPm?.LocationName)
                     return true;
-                else 
+                else
                     return false;
             }
         }

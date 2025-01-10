@@ -3,6 +3,7 @@ import * as components from 'vuetify/components';
 import { VBtn } from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
+import { VDateInput } from 'vuetify/labs/VDateInput';
 import 'vuetify/styles';
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
@@ -15,7 +16,10 @@ export default createVuetify({
       mdi,
     },
   },
-  components,
+  components: {
+    ...components,
+    VDateInput,
+  },
   directives,
   aliases: {
     VBtnSecondary: VBtn,
@@ -51,6 +55,13 @@ export default createVuetify({
       rounded: true,
       dense: true,
       variant: 'outlined',
+    },
+    VDateInput: {
+      density: 'comfortable',
+      bgColor: '#dae5f5',
+      variant: 'solo',
+      label: 'Date',
+      clearable: false,
     },
   },
 });

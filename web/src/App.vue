@@ -26,6 +26,7 @@
       <v-main>
         <router-view />
       </v-main>
+      <snackbar></snackbar>
     </v-app>
   </v-theme-provider>
 </template>
@@ -34,6 +35,7 @@
   import { mdiAccountCircle } from '@mdi/js';
   import { ref } from 'vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
+  import Snackbar from './components/shared/Snackbar.vue';
   import { useThemeStore } from './stores/ThemeStore';
 
   const themeStore = useThemeStore();

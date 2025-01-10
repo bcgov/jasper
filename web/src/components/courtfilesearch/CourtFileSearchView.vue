@@ -1,23 +1,9 @@
 <template>
   <!-- todo: Extract this out to more generic location -->
   <v-overlay :opacity="0.333" v-model="isLoading" />
-  <b-card
-    body-class="px-0"
-    bg-variant="light"
-    v-if="isLookupDataMounted && !isLookupDataReady"
-  >
-    <b-card style="min-height: 40px">
-      <span v-if="errorCode != '0'">
-        <span v-if="errorCode === '403'">
-          You are not authorized to access this page.
-        </span>
-        <span v-else>
-          Server is not responding.
-          <b>({{ errorText }} "{{ errorCode }}")</b></span
-        >
-      </span>
-      <span v-else> No Court File Search Found. </span>
-    </b-card>
+
+  <b-card style="min-height: 40px" v-if="errorCode > 0 && errorCode == '403'">
+    <span> You are not authorized to access this page. </span>
   </b-card>
   <!------------------------------------------------------->
   <v-banner style="background-color: #62d3a4; color: #183a4a">

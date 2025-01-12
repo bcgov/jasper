@@ -7,11 +7,11 @@ resource "aws_ecs_task_definition" "ecs_td" {
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
 
-  lifecycle {
+  #lifecycle {
     # Since the dummy-image will be replaced when the GHA pipeline runs,
     # the whole container_definition edits has been ignored.
-    ignore_changes = [container_definitions.image]
-  }
+    #ignore_changes = [container_definitions.image]
+  #}
 
   container_definitions = jsonencode([
     {

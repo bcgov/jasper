@@ -10,7 +10,7 @@ resource "aws_ecs_task_definition" "ecs_td" {
   lifecycle {
     # Since the dummy-image will be replaced when the GHA pipeline runs,
     # the whole container_definition edits has been ignored.
-    ignore_changes = [container_definitions]
+    ignore_changes = [container_definitions[0].image]
   }
 
   container_definitions = jsonencode([

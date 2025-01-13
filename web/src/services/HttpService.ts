@@ -57,7 +57,7 @@ export class HttpService implements IHttpService {
       // Unhandled server exceptions should alert the user
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',
-        'error',
+        '#b84157',
         'Error'
       );
     }

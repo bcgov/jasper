@@ -26,7 +26,7 @@
       <v-main>
         <router-view />
       </v-main>
-      <snackbar></snackbar>
+      <snackbar />
     </v-app>
   </v-theme-provider>
 </template>

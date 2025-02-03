@@ -52,7 +52,7 @@
     "@mdi/font": "^7.4.47",
     "@mdi/js": "^7.4.47",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
-    "@typescript-eslint/parser": "^8.20.0",
+    "@typescript-eslint/parser": "^8.23.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/compiler-sfc": "^3.5.13",
     "@vue/eslint-config-typescript": "^14.3.0",

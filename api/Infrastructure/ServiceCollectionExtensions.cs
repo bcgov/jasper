@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Buffers.Text;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -10,6 +12,7 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
@@ -89,30 +92,29 @@ namespace Scv.Api.Infrastructure
 
         private static void ConfigureHttpClient(HttpClient client, IConfiguration configuration, string prefix, int timeoutInSecs = 100)
         {
-            // Comment out for now until the pattern for creating handlers has been finalized so that it would be easier 
-            // to redirect network traffic between WSGW (local) and AWS API Gateway (dev, test and prod).
-
-            // var apigwUrl = configuration.GetValue<string>("AWS_API_GATEWAY_URL");
-            // var apigwKey = configuration.GetValue<string>("AWS_API_GATEWAY_API_KEY");
-            // var authorizerKey = configuration.GetValue<string>("AuthorizerKey");
+            var apigwUrl = configuration.GetValue<string>("AWS_API_GATEWAY_URL");
+            var apigwKey = configuration.GetValue<string>("AWS_API_GATEWAY_API_KEY");
+            var authorizerKey = configuration.GetValue<string>("AuthorizerKey");
 
             client.Timeout = TimeSpan.FromSeconds(timeoutInSecs);
 
             // Defaults to BC Gov API if any config setting is missing
-            // if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
-            // {
-            client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
-                configuration.GetNonEmptyValue($"{prefix}:Username"),
-                configuration.GetNonEmptyValue($"{prefix}:Password"));
-            client.BaseAddress = new Uri(configuration.GetNonEmptyValue($"{prefix}:Url").EnsureEndingForwardSlash());
-            //}
+            if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
+            {
+                Console.WriteLine($"Redirecting traffic to: {configuration.GetNonEmptyValue($"{prefix}:Url")}");
+                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
+                    configuration.GetNonEmptyValue($"{prefix}:Username"),
+                    configuration.GetNonEmptyValue($"{prefix}:Password"));
+                client.BaseAddress = new Uri(configuration.GetNonEmptyValue($"{prefix}:Url").EnsureEndingForwardSlash());
+            }
             // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.
-            // else
-            // {
-            //     client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
-            //     client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
-            //     client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);
-            // }
+            else
+            {
+                Console.WriteLine($"Redirecting traffic to: {apigwUrl}");
+                client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
+                client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
+                client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);
+            }
         }
     }
 }

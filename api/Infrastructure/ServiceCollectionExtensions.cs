@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Buffers.Text;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -12,7 +10,6 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
@@ -31,6 +28,7 @@ namespace Scv.Api.Infrastructure
     {
         const string X_APIGW_KEY_HEADER = "x-api-key";
         const string X_ORIGIN_VERIFY_HEADER = "x-origin-verify";
+        const string X_TARGET_APP = "x-target-app";
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
         {
@@ -114,6 +112,8 @@ namespace Scv.Api.Infrastructure
                 client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
                 client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
                 client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);
+                // The prefix will help determine where will the request is routed (e.g. lookup, CatsAPI or DARS)
+                client.DefaultRequestHeaders.Add(X_TARGET_APP, prefix);
             }
         }
     }

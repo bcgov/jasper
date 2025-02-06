@@ -15,6 +15,8 @@ export class HttpService implements IHttpService {
     const { baseUrl, username, password } = JSON.parse(credentialsSecret);
     const { cert, key } = JSON.parse(mtlsSecret);
 
+    console.log(`Base URL: ${baseUrl}`);
+
     const httpsAgent = new https.Agent({
       cert,
       key,

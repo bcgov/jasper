@@ -8,11 +8,6 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   const targetApp = event.headers[X_TARGET_APP_HEADER];
 
-  console.log(
-    `Received "${event.httpMethod}" request for "${targetApp}" with route "${event.path}"`
-  );
-  console.log(event);
-
   let credentialsSecret: string;
 
   switch (targetApp) {

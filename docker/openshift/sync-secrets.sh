@@ -8,6 +8,7 @@ aws_secret_format="external/jasper-X-secret-$VAULT_SECRET_ENV"
 secret_keys="\
   aspnet_core \
   auth \
+  dars \
   database \
   file_services_client \
   keycloak \

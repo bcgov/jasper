@@ -29,6 +29,8 @@ export class ApiService {
     try {
       await this.initialize();
 
+      console.log(event);
+
       const method = event.httpMethod.toUpperCase();
       const queryParams = event.queryStringParameters || {};
       const body = event.body ? JSON.parse(event.body) : {};
@@ -36,6 +38,7 @@ export class ApiService {
       let data;
 
       console.log(`Sending ${method} request to ${event.path}`);
+      console.log(`Query Params: ${queryParams}`);
 
       switch (method) {
         case "GET":

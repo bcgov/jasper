@@ -6,7 +6,6 @@ import {
   PolicyDocument,
   StatementEffect,
 } from "aws-lambda";
-import { v4 as uuidv4 } from "uuid";
 import SecretsManagerService from "../../../services/secretsManagerService";
 
 const X_ORIGIN_VERIFY_HEADER = "x-origin-verify";
@@ -18,7 +17,6 @@ export const handler = async (
   console.log(`Event: ${JSON.stringify(event, null, 2)}`);
   console.log(`Context: ${JSON.stringify(context, null, 2)}`);
 
-  const correlationId: string = event.requestContext.requestId || uuidv4();
   const logger = new Logger({
     serviceName: "auth.authorizer",
   });
@@ -60,7 +58,6 @@ export const handler = async (
     }
 
     const policy = generatePolicy(
-      correlationId,
       "user",
       "Allow",
       event.methodArn
@@ -77,8 +74,6 @@ export const handler = async (
 };
 
 const generatePolicy = (
-  correlationId: string,
-  principalId: string,
   effect: StatementEffect,
   resource: string
 ): APIGatewayAuthorizerResult => {
@@ -94,9 +89,9 @@ const generatePolicy = (
   };
 
   const authResponse: APIGatewayAuthorizerResult = {
-    principalId,
+    principalId: "user",
     context: {
-      correlation_id: correlationId,
+      correlation_id: "generic",
     },
     policyDocument,
   };

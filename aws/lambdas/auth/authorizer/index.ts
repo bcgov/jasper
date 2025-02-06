@@ -57,12 +57,9 @@ export const handler = async (
       throw new Error("Error: invalid token");
     }
 
-    const policy = generatePolicy(
-      "user",
-      "Allow",
-      event.methodArn
-    );
+    const policy = generatePolicy("Allow", event.methodArn);
 
+    logger.info("Authorized");
     logger.info(JSON.stringify(policy));
 
     return policy;

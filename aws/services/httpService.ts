@@ -38,6 +38,14 @@ export class HttpService implements IHttpService {
 
   async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
     try {
+      const config = {
+        url,
+        params,
+      };
+
+      const finalUrl = this.axios.getUri(config);
+      console.log("Final request URL:", finalUrl);
+
       const response: AxiosResponse<T> = await this.axios.get(url, {
         params,
       });

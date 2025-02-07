@@ -80,8 +80,8 @@ const generatePolicy = (
       {
         Action: "execute-api:Invoke",
         Effect: effect,
-        // Replaces resource (Http Method and path) with wildcard to take advantage of caching
-        Resource: resource.replace(/\/[^/]+$/, "/*"),
+        // Replace everything after stage with wildcard
+        Resource: resource.replace(/(.*?\/\w+)\/.*/, "$1/*"),
       },
     ],
   };

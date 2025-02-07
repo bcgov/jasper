@@ -13,7 +13,8 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.splunk_secret.arn,
     aws_secretsmanager_secret.user_services_client_secret.arn,
     aws_secretsmanager_secret.api_authorizer_secret.arn,
-    aws_secretsmanager_secret.pcss_secret.arn
+    aws_secretsmanager_secret.pcss_secret.arn,
+    aws_secretsmanager_secret.dars_secret.arn
   ]
 }
 
@@ -26,6 +27,9 @@ output "api_secrets" {
     ["Auth__UserPassword", "${aws_secretsmanager_secret.auth_secret.arn}:userPassword::"],
     ["Auth__AllowSiteMinderUserType", "${aws_secretsmanager_secret.auth_secret.arn}:allowSiteMinderUserType::"],
     ["AuthorizerKey", "${aws_secretsmanager_secret.api_authorizer_secret.arn}:verifyKey::"],
+    ["DARS__Username", "${aws_secretsmanager_secret.dars_secret.arn}:username::"],
+    ["DARS__Password", "${aws_secretsmanager_secret.dars_secret.arn}:password::"],
+    ["DARS__Url", "${aws_secretsmanager_secret.dars_secret.arn}:baseUrl::"],
     ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString::"],
     ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey::"],
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
@@ -81,23 +85,18 @@ output "db_password" {
   sensitive = true
 }
 
-output "mtls_secret_name" {
-  value = aws_secretsmanager_secret.mtls_cert_secret.name
-}
-
-output "api_authorizer_secret" {
-  value = aws_secretsmanager_secret.api_authorizer_secret
-}
-
 output "allowed_ip_ranges" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).allowedIpRanges
   sensitive = true
 }
 
-output "file_services_client_secret_name" {
-  value = aws_secretsmanager_secret.file_services_client_secret.name
-}
-
-output "pcss_secret_name" {
-  value = aws_secretsmanager_secret.pcss_secret.name
+output "lambda_secrets" {
+  value = {
+    mtls                 = aws_secretsmanager_secret.mtls_cert_secret.name
+    authorizer           = aws_secretsmanager_secret.api_authorizer_secret.name
+    authorizer_arn       = aws_secretsmanager_secret.api_authorizer_secret.arn
+    file_services_client = aws_secretsmanager_secret.file_services_client_secret.name
+    pcss                 = aws_secretsmanager_secret.pcss_secret.name
+    dars                 = aws_secretsmanager_secret.dars_secret.name
+  }
 }

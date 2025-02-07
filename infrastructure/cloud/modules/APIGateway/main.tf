@@ -5,11 +5,7 @@ resource "aws_api_gateway_rest_api" "apigw" {
 
 resource "aws_api_gateway_deployment" "apigw_deployment" {
   depends_on = [
-    # Add new integration here so that it registers in API Gateway
-    aws_api_gateway_integration.get_locations_integration,
-    aws_api_gateway_integration.get_locations_rooms_integration,
-    aws_api_gateway_integration.get_files_civil_integration,
-    aws_api_gateway_integration.get_files_criminal_integration,
+    aws_api_gateway_integration.lambda_integration,
   ]
   rest_api_id = aws_api_gateway_rest_api.apigw.id
 
@@ -111,20 +107,17 @@ resource "aws_api_gateway_authorizer" "authorizer" {
   identity_source = "method.request.header.x-origin-verify"
 }
 
-#
-# /locations Resource
-#
-resource "aws_api_gateway_resource" "locations_resource" {
+# Root Resource /
+resource "aws_api_gateway_resource" "root_resource" {
   rest_api_id = aws_api_gateway_rest_api.apigw.id
   parent_id   = aws_api_gateway_rest_api.apigw.root_resource_id
-  path_part   = "locations"
+  path_part   = "{proxy+}"
 }
 
-# GET /locations
-resource "aws_api_gateway_method" "get_locations_method" {
+resource "aws_api_gateway_method" "root_method" {
   rest_api_id      = aws_api_gateway_rest_api.apigw.id
-  resource_id      = aws_api_gateway_resource.locations_resource.id
-  http_method      = var.lambda_functions["get-locations"].http_method
+  resource_id      = aws_api_gateway_resource.root_resource.id
+  http_method      = "ANY"
   authorization    = "CUSTOM"
   authorizer_id    = aws_api_gateway_authorizer.authorizer.id
   api_key_required = true
@@ -134,110 +127,11 @@ resource "aws_api_gateway_method" "get_locations_method" {
   }
 }
 
-resource "aws_api_gateway_integration" "get_locations_integration" {
+resource "aws_api_gateway_integration" "lambda_integration" {
   rest_api_id             = aws_api_gateway_rest_api.apigw.id
-  resource_id             = aws_api_gateway_resource.locations_resource.id
-  http_method             = aws_api_gateway_method.get_locations_method.http_method
-  type                    = "AWS_PROXY"
+  resource_id             = aws_api_gateway_resource.root_resource.id
+  http_method             = aws_api_gateway_method.root_method.http_method
   integration_http_method = "POST"
-  uri                     = var.lambda_functions["get-locations"].invoke_arn
-}
-
-# /locations/rooms Resource
-resource "aws_api_gateway_resource" "rooms_resource" {
-  rest_api_id = aws_api_gateway_rest_api.apigw.id
-  parent_id   = aws_api_gateway_resource.locations_resource.id
-  path_part   = "rooms"
-}
-
-# GET /locations/rooms
-resource "aws_api_gateway_method" "get_locations_rooms_method" {
-  rest_api_id      = aws_api_gateway_rest_api.apigw.id
-  resource_id      = aws_api_gateway_resource.rooms_resource.id
-  http_method      = var.lambda_functions["get-rooms"].http_method
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
-  api_key_required = true
-
-  request_parameters = {
-    "method.request.header.x-origin-verify" = true
-  }
-}
-
-resource "aws_api_gateway_integration" "get_locations_rooms_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.apigw.id
-  resource_id             = aws_api_gateway_resource.rooms_resource.id
-  http_method             = aws_api_gateway_method.get_locations_rooms_method.http_method
   type                    = "AWS_PROXY"
-  integration_http_method = "POST"
-  uri                     = var.lambda_functions["get-rooms"].invoke_arn
-}
-
-#
-# /files Resource
-#
-resource "aws_api_gateway_resource" "files_resource" {
-  rest_api_id = aws_api_gateway_rest_api.apigw.id
-  parent_id   = aws_api_gateway_rest_api.apigw.root_resource_id
-  path_part   = "files"
-}
-
-# /files/civil Resource
-resource "aws_api_gateway_resource" "civil_resource" {
-  rest_api_id = aws_api_gateway_rest_api.apigw.id
-  parent_id   = aws_api_gateway_resource.files_resource.id
-  path_part   = "civil"
-}
-
-# GET /files/civil
-resource "aws_api_gateway_method" "get_files_civil_method" {
-  rest_api_id      = aws_api_gateway_rest_api.apigw.id
-  resource_id      = aws_api_gateway_resource.civil_resource.id
-  http_method      = var.lambda_functions["search-civil-files"].http_method
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
-  api_key_required = true
-
-  request_parameters = {
-    "method.request.header.x-origin-verify" = true
-  }
-}
-
-resource "aws_api_gateway_integration" "get_files_civil_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.apigw.id
-  resource_id             = aws_api_gateway_resource.civil_resource.id
-  http_method             = aws_api_gateway_method.get_files_civil_method.http_method
-  type                    = "AWS_PROXY"
-  integration_http_method = "POST"
-  uri                     = var.lambda_functions["search-civil-files"].invoke_arn
-}
-
-# /files/criminal Resource
-resource "aws_api_gateway_resource" "criminal_resource" {
-  rest_api_id = aws_api_gateway_rest_api.apigw.id
-  parent_id   = aws_api_gateway_resource.files_resource.id
-  path_part   = "criminal"
-}
-
-# GET /files/criminal
-resource "aws_api_gateway_method" "get_files_criminal_method" {
-  rest_api_id      = aws_api_gateway_rest_api.apigw.id
-  resource_id      = aws_api_gateway_resource.criminal_resource.id
-  http_method      = var.lambda_functions["search-criminal-files"].http_method
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.authorizer.id
-  api_key_required = true
-
-  request_parameters = {
-    "method.request.header.x-origin-verify" = true
-  }
-}
-
-resource "aws_api_gateway_integration" "get_files_criminal_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.apigw.id
-  resource_id             = aws_api_gateway_resource.criminal_resource.id
-  http_method             = aws_api_gateway_method.get_files_criminal_method.http_method
-  type                    = "AWS_PROXY"
-  integration_http_method = "POST"
-  uri                     = var.lambda_functions["search-criminal-files"].invoke_arn
+  uri                     = var.lambda_functions["proxy-request"].invoke_arn
 }

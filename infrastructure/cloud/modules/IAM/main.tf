@@ -287,8 +287,7 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "ecs:ListServices"
         ],
         "Resource" : [
-          "arn:aws:ecs:${var.region}:${var.account_id}:cluster/${var.app_name}-app-cluster-${var.environment}",
-          "arn:aws:ecs:${var.region}:${var.account_id}:service/${var.app_name}-app-cluster-${var.environment}/${var.app_name}-*-ecs-service-${var.environment}"
+          "arn:aws:ecs:${var.region}:${var.account_id}:service/${var.app_name}-app-cluster-${var.environment}/*"
         ]
       },
       {
@@ -301,6 +300,22 @@ resource "aws_iam_policy" "lambda_role_policy" {
         "Resource" : [
           "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.app_name}-*-repo-${var.environment}"
         ]
+      },
+      {
+        "Action" : [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface"
+        ],
+        "Effect" : "Allow",
+        "Resource" : "*",
+        "Condition" : {
+          "ArnLikeIfExists" : {
+            "ec2:Vpc" : "arn:aws:ec2:${var.region}:*:vpc/${var.vpc_id}"
+          }
+        }
       }
     ]
   })

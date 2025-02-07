@@ -13,20 +13,21 @@ variable "lambda_role_arn" {
   type        = string
 }
 
-variable "functions" {
-  description = "Lambda functions config"
-  type = map(object({
-    http_method         = string
-    resource_path       = string
-    env_variables       = optional(map(string), {})
-    timeout             = optional(number, null)
-    memory_size         = optional(number, null)
-    statement_id_prefix = optional(string, "AllowAPIGatewayInvoke")
-    principal           = optional(string, "apigateway.amazonaws.com")
-    source_arn          = optional(string, null)
-  }))
-  default = {}
-}
+# variable "functions" {
+#   description = "Lambda functions config"
+#   type = map(object({
+#     http_method         = string
+#     resource_path       = string
+#     env_variables       = optional(map(string), {})
+#     timeout             = optional(number, null)
+#     memory_size         = optional(number, null)
+#     statement_id_prefix = optional(string, "AllowAPIGatewayInvoke")
+#     principal           = optional(string, "apigateway.amazonaws.com")
+#     source_arn          = optional(string, null)
+#     enable_vpc_config   = optional(bool, true)
+#   }))
+#   default = {}
+# }
 
 variable "apigw_execution_arn" {
   description = "The API Gateway Execution ARN"
@@ -35,11 +36,6 @@ variable "apigw_execution_arn" {
 
 variable "lambda_ecr_repo_url" {
   description = "The Lambda ECR Repository URL"
-  type        = string
-}
-
-variable "mtls_secret_name" {
-  description = "The secret name of mTLS Cert in Secrets Manager"
   type        = string
 }
 
@@ -52,4 +48,24 @@ variable "lambda_timeout" {
   description = "The Lambda Fucntion default timeout"
   type        = number
   default     = 30
+}
+
+variable "subnet_ids" {
+  description = "The Subnet IDs"
+  type        = list(string)
+}
+
+variable "sg_ids" {
+  description = "The Security Group IDs"
+  type        = list(string)
+}
+
+variable "lambda_secrets" {
+  description = "List of secrets used by Lambda functions"
+  type        = map(string)
+}
+
+variable "ecs_cluster_name" {
+  description = "ECS Cluster Name"
+  type        = string
 }

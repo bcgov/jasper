@@ -1,26 +1,38 @@
 locals {
-  # Keys should match the folder name in lambda code
-  default_functions = {
-    "get-locations" = {
-      http_method   = "GET"
-      resource_path = "/locations"
-    },
-    "get-rooms" = {
-      http_method   = "GET"
-      resource_path = "/locations/rooms"
-    },
-    "search-criminal-files" = {
-      http_method   = "GET"
-      resource_path = "/files/criminal"
-    },
-    "search-civil-files" = {
-      http_method   = "GET"
-      resource_path = "/files/civil"
+  functions = {
+    "authorizer" = {
+      http_method       = "*"
+      resource_path     = ""
+      enable_vpc_config = false
+      env_variables = {
+        VERIFY_SECRET_NAME = var.lambda_secrets["authorizer"]
+      }
+    }
+    "rotate-key" = {
+      http_method         = "POST"
+      resource_path       = "/*"
+      statement_id_prefix = "AllowSecretsManagerInvoke"
+      source_arn          = var.lambda_secrets["authorizer_arn"]
+      principal           = "secretsmanager.amazonaws.com"
+      enable_vpc_config   = false
+      env_variables = {
+        VERIFY_SECRET_NAME = var.lambda_secrets["authorizer"]
+        CLUSTER_NAME       = var.ecs_cluster_name
+      }
+    }
+    "proxy-request" = {
+      http_method   = "*"
+      resource_path = ""
+      env_variables = {
+        FILE_SERVICES_CLIENT_SECRET_NAME = var.lambda_secrets["file_services_client"]
+        PCSS_SECRET_NAME                 = var.lambda_secrets["pcss"]
+        DARS_SECRET_NAME                 = var.lambda_secrets["dars"]
+      }
     }
   }
 
   lambda_functions = {
-    for k, v in merge(local.default_functions, var.functions) : k => {
+    for k, v in local.functions : k => {
       name                = k
       memory_size         = coalesce(lookup(v, "memory_size", null), var.lambda_memory_size)
       timeout             = coalesce(lookup(v, "timeout", null), var.lambda_timeout)
@@ -29,13 +41,14 @@ locals {
       source_arn          = lookup(v, "source_arn", "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
       statement_id_prefix = coalesce(lookup(v, "statement_id_prefix", null), "AllowAPIGatewayInvoke")
       principal           = coalesce(lookup(v, "principal", null), "apigateway.amazonaws.com")
-      env_variables       = coalesce(lookup(v, "env_variables", null), {})
+      env_variables       = v.env_variables
       source_arn          = coalesce(lookup(v, "source_arn", null), "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
+      enable_vpc_config   = coalesce(lookup(v, "enable_vpc_config", null), true)
     }
   }
 
   default_env_variables = {
-    MTLS_SECRET_NAME = var.mtls_secret_name
+    MTLS_SECRET_NAME = var.lambda_secrets["mtls"]
   }
 }
 
@@ -56,6 +69,14 @@ resource "aws_lambda_function" "lambda" {
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [image_uri]
+  }
+
+  dynamic "vpc_config" {
+    for_each = each.value.enable_vpc_config ? [1] : []
+    content {
+      subnet_ids         = var.subnet_ids
+      security_group_ids = var.sg_ids
+    }
   }
 
   tracing_config {

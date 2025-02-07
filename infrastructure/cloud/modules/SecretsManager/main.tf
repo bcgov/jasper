@@ -223,3 +223,17 @@ resource "aws_secretsmanager_secret_version" "pcss_secret_value" {
     baseUrl  = ""
   })
 }
+
+resource "aws_secretsmanager_secret" "dars_secret" {
+  name       = "external/${var.app_name}-dars-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "dars_secret_value" {
+  secret_id = aws_secretsmanager_secret.dars_secret.id
+  secret_string = jsonencode({
+    username = "",
+    password = "",
+    baseUrl  = ""
+  })
+}

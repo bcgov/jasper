@@ -76,6 +76,7 @@ module "iam" {
   account_id          = data.aws_caller_identity.current.account_id
   kms_key_id          = module.initial.kms_key_arn
   region              = var.region
+  vpc_id              = data.aws_vpc.vpc.id
 }
 
 # Parse Subnets
@@ -129,28 +130,11 @@ module "lambda" {
   lambda_role_arn     = module.iam.lambda_role_arn
   apigw_execution_arn = module.apigw.apigw_execution_arn
   lambda_ecr_repo_url = module.initial.lambda_ecr.ecr_repo_url
-  mtls_secret_name    = module.secrets_manager.mtls_secret_name
   lambda_memory_size  = var.lambda_memory_size
-  functions = {
-    "authorizer" = {
-      http_method   = "*"
-      resource_path = ""
-      env_variables = {
-        VERIFY_SECRET_NAME = module.secrets_manager.api_authorizer_secret.name
-      }
-    },
-    "rotate-key" = {
-      http_method         = "POST"
-      resource_path       = "/*"
-      statement_id_prefix = "AllowSecretsManagerInvoke"
-      source_arn          = module.secrets_manager.api_authorizer_secret.arn
-      principal           = "secretsmanager.amazonaws.com"
-      env_variables = {
-        VERIFY_SECRET_NAME = module.secrets_manager.api_authorizer_secret.name
-        CLUSTER_NAME       = module.ecs_cluster.ecs_cluster.name
-      }
-    }
-  }
+  subnet_ids          = module.subnets.all_subnet_ids
+  sg_ids              = [data.aws_security_group.web_sg.id, data.aws_security_group.data_sg.id, data.aws_security_group.app_sg.id]
+  lambda_secrets      = module.secrets_manager.lambda_secrets
+  ecs_cluster_name    = module.ecs_cluster.ecs_cluster.name
 }
 
 # Create Cloudwatch LogGroups
@@ -234,7 +218,7 @@ module "ecs_api_td" {
     },
     {
       name  = "AWS_API_GATEWAY_URL"
-      value = module.apigw.apigw_invoke_url
+      value = "${module.apigw.apigw_invoke_url}${var.environment}"
     }
   ]
   secret_env_variables = module.secrets_manager.api_secrets

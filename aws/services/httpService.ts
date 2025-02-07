@@ -3,7 +3,7 @@ import https from "https";
 
 export interface IHttpService {
   init(credentialsSecret: string, mtlsSecret: string): Promise<void>;
-  get<T>(url: string, params?: Record<string, unknown>): Promise<T>;
+  get<T>(url: string): Promise<T>;
   post<T>(url: string, data?: Record<string, unknown>): Promise<T>;
   put<T>(url: string, data?: Record<string, unknown>): Promise<T>;
 }
@@ -36,19 +36,9 @@ export class HttpService implements IHttpService {
     });
   }
 
-  async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+  async get<T>(url: string): Promise<T> {
     try {
-      const config = {
-        url,
-        params,
-      };
-
-      const finalUrl = this.axios.getUri(config);
-      console.log("Final request URL:", finalUrl);
-
-      const response: AxiosResponse<T> = await this.axios.get(url, {
-        params,
-      });
+      const response: AxiosResponse<T> = await this.axios.get(url);
       return response.data;
     } catch (error) {
       this.handleError(error);

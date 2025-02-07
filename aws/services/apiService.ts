@@ -1,4 +1,5 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
+import qs from "qs";
 import { HttpService, IHttpService } from "./httpService";
 import SecretsManagerService from "./secretsManagerService";
 
@@ -23,6 +24,35 @@ export class ApiService {
     console.log("httpService initialized...");
   }
 
+  private sanitizeQueryStringParams(params: Record<string, unknown>) {
+    Object.keys(params).forEach((key) => {
+      const value = params[key];
+
+      // Check if the value JSON array
+      if (
+        typeof value === "string" &&
+        value.startsWith("[") &&
+        value.endsWith("]")
+      ) {
+        try {
+          const parsedValue = JSON.parse(value);
+
+          if (Array.isArray(parsedValue)) {
+            params[key] = JSON.stringify(parsedValue);
+          }
+        } catch (error) {
+          console.warn(`Failed to parse ${key}: ${value}`, error);
+        }
+      }
+    });
+
+    const queryString = qs.stringify(params, { encode: true });
+
+    console.log(`Sanitized encoded qs: ${queryString}`);
+
+    return queryString;
+  }
+
   public async handleRequest(
     event: APIGatewayEvent
   ): Promise<APIGatewayProxyResult> {
@@ -32,23 +62,27 @@ export class ApiService {
       console.log(event);
 
       const method = event.httpMethod.toUpperCase();
-      const queryParams = event.queryStringParameters || {};
       const body = event.body ? JSON.parse(event.body) : {};
+
+      const queryString = this.sanitizeQueryStringParams(
+        event.queryStringParameters || {}
+      );
+
+      const url = `${event.path}?${queryString}`;
+
+      console.log(`Sending ${method} request to ${url}`);
 
       let data;
 
-      console.log(`Sending ${method} request to ${event.path}`);
-      console.log(`Query Params: ${queryParams}`);
-
       switch (method) {
         case "GET":
-          data = await this.httpService.get(event.path, queryParams);
+          data = await this.httpService.get(url);
           break;
         case "POST":
-          data = await this.httpService.post(event.path, queryParams);
+          data = await this.httpService.post(url, body);
           break;
         case "PUT":
-          data = await this.httpService.put(event.path, body);
+          data = await this.httpService.put(url, body);
           break;
         default:
           return {

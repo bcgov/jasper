@@ -1,6 +1,12 @@
 <template>
-  <v-btn-tertiary v-if="showSearch" type="submit" size="large" class="mr-2" text="Search" />
-  <v-btn v-if="showReset" size="large" text="Reset" @click="() => emit('reset')" />
+  <v-btn-tertiary
+    v-if="showSearch"
+    type="submit"
+    class="mr-2"
+    text="Search"
+    :size
+  />
+  <v-btn v-if="showReset" text="Reset" @click="() => emit('reset')" :size />
 </template>
 
 <script setup>
@@ -14,6 +20,10 @@
     showReset: {
       type: Boolean,
       default: true,
+    },
+    size: {
+      type: String,
+      default: 'x-large',
     },
   });
 </script>

@@ -6,13 +6,7 @@
     <span> You are not authorized to access this page. </span>
   </v-card>
   <!------------------------------------------------------->
-  <v-banner style="background-color: #b4e6ff; color: #183a4a">
-    <v-row class="my-3">
-      <v-col>
-        <h3>Court list</h3>
-      </v-col>
-    </v-row>
-  </v-banner>
+  <banner title="Court list" color="#183a4a" bgColor="#b4e6ff" />
 
   <v-container>
     <v-form @submit.prevent="searchForCourtList">
@@ -112,6 +106,7 @@
 </template>
 
 <script setup lang="ts">
+  import Banner from '@/components/shared/Banner.vue';
   import ActionButtons from '@/components/shared/Form/ActionButtons.vue';
   import { HttpService } from '@/services/HttpService';
   import { useCommonStore, useCourtListStore } from '@/stores';

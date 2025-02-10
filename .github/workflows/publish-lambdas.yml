@@ -6,6 +6,17 @@ on:
       - master
     paths:
       - "aws/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
 
 env:
   WORKING_DIRECTORY: ./aws

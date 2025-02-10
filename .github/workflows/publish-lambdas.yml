@@ -7,17 +7,6 @@ on:
     paths:
       - "aws/**"
 
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Select target environment"
-        required: true
-        default: "dev"
-        type: choice
-        options:
-          - dev
-          - test
-          - prod
 env:
   WORKING_DIRECTORY: ./aws
   NODE_VERSION: 20
@@ -51,15 +40,13 @@ jobs:
 
   deploy2gchr:
     needs: get-lambdas
-    environment: ${{ inputs.environment }}
+    environment: dev
     outputs:
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    env:
-      LAMBDA_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-lambda-repo-${{ vars.ENVIRONMENT_NAME }}
 
     strategy:
       matrix:
@@ -132,6 +119,48 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     environment: dev
+
+    strategy:
+      matrix:
+        lambda: ${{ fromJSON(needs.get-lambdas.outputs.lambda_dir_list) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse Resource and Lambda Name
+        id: parse
+        run: |
+          echo "Lambda: ${{ matrix.lambda }}"
+          RESOURCE=$(echo "${{ matrix.lambda }}" | cut -d'/' -f1)
+          LAMBDA=$(echo "${{ matrix.lambda }}" | cut -d'/' -f2)
+          echo "RESOURCE=$RESOURCE" >> $GITHUB_ENV
+          echo "LAMBDA=$LAMBDA" >> $GITHUB_ENV
+
+      - name: Deploy to ${{ env.ENVIRONMENT }}
+        uses: ./.github/workflows/actions/deploy-lambda
+        with:
+          environment: ${{ env.ENVIRONMENT }}
+          aws_account: ${{ vars.AWS_ACCOUNT }}
+          region: ${{ vars.AWS_REGION }}
+          app_name: ${{ vars.APP_NAME }}
+          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+          lambda_name: ${{ env.LAMBDA }}
+          image_name: ${{ env.RESOURCE }}.${{ env.LAMBDA }}
+          short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
+
+  deploy2test:
+    name: Deploy to TEST
+    needs: [get-lambdas, deploy2gchr, deploy2dev]
+    env:
+      ENVIRONMENT: test
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: test
 
     strategy:
       matrix:

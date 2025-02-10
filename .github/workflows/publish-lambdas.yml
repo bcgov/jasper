@@ -203,3 +203,45 @@ jobs:
           lambda_name: ${{ env.LAMBDA }}
           image_name: ${{ env.RESOURCE }}.${{ env.LAMBDA }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
+
+  deploy2prod:
+    name: Deploy to PROD
+    needs: [get-lambdas, deploy2gchr, deploy2dev, deploy2test]
+    env:
+      ENVIRONMENT: prod
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: prod
+
+    strategy:
+      matrix:
+        lambda: ${{ fromJSON(needs.get-lambdas.outputs.lambda_dir_list) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse Resource and Lambda Name
+        id: parse
+        run: |
+          echo "Lambda: ${{ matrix.lambda }}"
+          RESOURCE=$(echo "${{ matrix.lambda }}" | cut -d'/' -f1)
+          LAMBDA=$(echo "${{ matrix.lambda }}" | cut -d'/' -f2)
+          echo "RESOURCE=$RESOURCE" >> $GITHUB_ENV
+          echo "LAMBDA=$LAMBDA" >> $GITHUB_ENV
+
+      - name: Deploy to ${{ env.ENVIRONMENT }}
+        uses: ./.github/workflows/actions/deploy-lambda
+        with:
+          environment: ${{ env.ENVIRONMENT }}
+          aws_account: ${{ vars.AWS_ACCOUNT }}
+          region: ${{ vars.AWS_REGION }}
+          app_name: ${{ vars.APP_NAME }}
+          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+          lambda_name: ${{ env.LAMBDA }}
+          image_name: ${{ env.RESOURCE }}.${{ env.LAMBDA }}
+          short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}

@@ -21,7 +21,7 @@ namespace Scv.Api.Services.Files
         #region Variables
 
         public readonly CivilFilesService Civil;
-        public readonly CriminalFilesService Criminal; 
+        public readonly CriminalFilesService Criminal;
         private readonly FileServicesClient _filesClient;
         private readonly IAppCache _cache;
         private readonly string _applicationCode;
@@ -57,17 +57,17 @@ namespace Scv.Api.Services.Files
         #endregion Constructor
 
         #region Methods
-        
+
         #region Courtlist & Document     
 
-        public async Task<FileResponse> DocumentAsync(string documentId, bool isCriminal, string physicalFileId, string correlationId = null)
-        {   
+        public async Task<FileResponse> DocumentAsync(string documentId, bool isCriminal, string physicalFileId, string correlationId = null, bool flatten = true)
+        {
             if (correlationId == null)
             {
                 correlationId = Guid.NewGuid().ToString();
             }
 
-            return await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten: false, correlationId);
+            return await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten, correlationId);
         }
 
         #endregion Courtlist & Document

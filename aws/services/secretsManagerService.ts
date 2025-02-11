@@ -4,7 +4,7 @@ import {
   UpdateSecretCommand,
 } from "@aws-sdk/client-secrets-manager";
 
-export default class SecretsManagerService {
+export class SecretsManagerService {
   private client = new SecretsManagerClient();
 
   async getSecret(secretName: string): Promise<string> {
@@ -29,3 +29,5 @@ export default class SecretsManagerService {
     await this.client.send(command);
   }
 }
+
+export default SecretsManagerService;

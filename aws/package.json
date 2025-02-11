@@ -5,28 +5,31 @@
   "main": "index.js",
   "scripts": {
     "build": "node esbuild.config.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
   },
   "author": "JASPER team",
   "license": "ISC",
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.145",
-    "@types/axios": "^0.9.36",
-    "@types/node": "^22.9.0",
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.13.1",
     "@types/qs": "^6.9.18",
-    "@typescript-eslint/eslint-plugin": "^8.14.0",
-    "@typescript-eslint/parser": "^8.14.0",
-    "esbuild": "^0.24.0",
-    "eslint": "^9.14.0",
-    "eslint-define-config": "^2.1.0"
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "@vitest/coverage-v8": "^3.0.5",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.20.1",
+    "eslint-define-config": "^2.1.0",
+    "vitest": "^3.0.5"
   },
   "dependencies": {
-    "@aws-lambda-powertools/logger": "^2.10.0",
-    "@aws-sdk/client-ecs": "^3.692.0",
-    "@aws-sdk/client-secrets-manager": "^3.686.0",
-    "axios": "^1.7.7",
-    "glob": "^11.0.0",
+    "@aws-lambda-powertools/logger": "^2.14.0",
+    "@aws-sdk/client-ecs": "^3.744.0",
+    "@aws-sdk/client-secrets-manager": "^3.744.0",
+    "axios": "^1.7.9",
+    "glob": "^11.0.1",
     "qs": "^6.14.0",
-    "uuid": "^11.0.3"
+    "uuid": "^11.0.5"
   }
 }

@@ -6,7 +6,7 @@ import {
   UpdateServiceCommand,
 } from "@aws-sdk/client-ecs";
 
-export default class ECSService {
+export class ECSService {
   private client = new ECSClient();
   private readonly clusterName: string;
 
@@ -65,3 +65,5 @@ export default class ECSService {
     }
   }
 }
+
+export default ECSService;

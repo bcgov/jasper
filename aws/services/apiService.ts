@@ -1,24 +1,7 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
-import qs from "qs";
+import { sanitizeHeaders, sanitizeQueryStringParams } from "../util";
 import { HttpService, IHttpService } from "./httpService";
-import SecretsManagerService from "./secretsManagerService";
-
-// These are the list of Headers imported from SCV
-// Only include headers from the original request when present.
-const allowedHeaders = new Set([
-  "applicationCd",
-  "correlationId",
-  "deviceNm",
-  "domainNm",
-  "domainUserGuid",
-  "domainUserId",
-  "guid",
-  "ipAddressTxt",
-  "reloadPassword",
-  "requestAgencyIdentifierId",
-  "requestPartId",
-  "temporaryAccessGuid",
-]);
+import { SecretsManagerService } from "./secretsManagerService";
 
 export class ApiService {
   protected httpService: IHttpService;
@@ -29,7 +12,7 @@ export class ApiService {
     this.httpService = new HttpService();
   }
 
-  private async initialize(): Promise<void> {
+  public async initialize(): Promise<void> {
     const credentialsSecret = await this.smService.getSecret(
       this.credentialsSecret
     );
@@ -41,63 +24,18 @@ export class ApiService {
     console.log("httpService initialized...");
   }
 
-  private sanitizeQueryStringParams(params: Record<string, unknown>) {
-    Object.keys(params).forEach((key) => {
-      const value = params[key];
-
-      // Check if the value JSON array
-      if (
-        typeof value === "string" &&
-        value.startsWith("[") &&
-        value.endsWith("]")
-      ) {
-        try {
-          const parsedValue = JSON.parse(value);
-
-          if (Array.isArray(parsedValue)) {
-            params[key] = JSON.stringify(parsedValue);
-          }
-        } catch (error) {
-          console.warn(`Failed to parse ${key}: ${value}`, error);
-        }
-      }
-    });
-
-    const queryString = qs.stringify(params, { encode: true });
-
-    console.log(`Sanitized encoded qs: ${queryString}`);
-
-    return queryString;
-  }
-
-  private sanitizeHeaders(
-    headers: Record<string, string | undefined>
-  ): Record<string, string> {
-    const filteredHeaders: Record<string, string> = {};
-
-    for (const [key, value] of Object.entries(headers || {})) {
-      if (allowedHeaders.has(key)) {
-        filteredHeaders[key] = value as string;
-      }
-    }
-
-    return filteredHeaders;
-  }
-
   public async handleRequest(
     event: APIGatewayEvent
   ): Promise<APIGatewayProxyResult> {
     try {
-      await this.initialize();
-
       console.log(event);
 
       const method = event.httpMethod.toUpperCase();
       const body = event.body ? JSON.parse(event.body) : {};
-      const queryString = this.sanitizeQueryStringParams(
+      const queryString = sanitizeQueryStringParams(
         event.queryStringParameters || {}
       );
-      const headers = this.sanitizeHeaders(event.headers);
+      const headers = sanitizeHeaders(event.headers);
 
       const url = `${event.path}?${queryString}`;
 

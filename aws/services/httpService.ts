@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import https from "https";
+import * as https from "https";
 
 export interface IHttpService {
   init(credentialsSecret: string, mtlsSecret: string): Promise<void>;

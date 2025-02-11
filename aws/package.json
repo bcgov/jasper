@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node esbuild.config.js",
     "lint": "eslint .",
-    "test": "vitest",
+    "test": "vitest --run",
     "test:coverage": "vitest --coverage"
   },
   "author": "JASPER team",

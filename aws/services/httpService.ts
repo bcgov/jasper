@@ -3,9 +3,17 @@ import https from "https";
 
 export interface IHttpService {
   init(credentialsSecret: string, mtlsSecret: string): Promise<void>;
-  get<T>(url: string): Promise<T>;
-  post<T>(url: string, data?: Record<string, unknown>): Promise<T>;
-  put<T>(url: string, data?: Record<string, unknown>): Promise<T>;
+  get<T>(url: string, headers?: Record<string, string>): Promise<T>;
+  post<T>(
+    url: string,
+    data?: Record<string, unknown>,
+    headers?: Record<string, string>
+  ): Promise<T>;
+  put<T>(
+    url: string,
+    data?: Record<string, unknown>,
+    headers?: Record<string, string>
+  ): Promise<T>;
 }
 
 export class HttpService implements IHttpService {
@@ -36,27 +44,39 @@ export class HttpService implements IHttpService {
     });
   }
 
-  async get<T>(url: string): Promise<T> {
+  async get<T>(url: string, headers?: Record<string, string>): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await this.axios.get(url);
+      const response: AxiosResponse<T> = await this.axios.get(url, { headers });
       return response.data;
     } catch (error) {
       this.handleError(error);
     }
   }
 
-  async post<T>(url: string, data?: Record<string, unknown>): Promise<T> {
+  async post<T>(
+    url: string,
+    data?: Record<string, unknown>,
+    headers?: Record<string, string>
+  ): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await this.axios.post(url, data);
+      const response: AxiosResponse<T> = await this.axios.post(url, data, {
+        headers,
+      });
       return response.data;
     } catch (error) {
       this.handleError(error);
     }
   }
 
-  async put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
+  async put<T>(
+    url: string,
+    data?: Record<string, unknown>,
+    headers?: Record<string, string>
+  ): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await this.axios.put(url, data);
+      const response: AxiosResponse<T> = await this.axios.put(url, data, {
+        headers,
+      });
       return response.data;
     } catch (error) {
       this.handleError(error);

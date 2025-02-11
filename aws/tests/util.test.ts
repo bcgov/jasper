@@ -1,10 +1,10 @@
-import qs = require("qs");
+import * as qs from "qs";
 import { describe, expect, it, vi } from "vitest";
 import { sanitizeHeaders, sanitizeQueryStringParams } from "../util";
 
-vi.spyOn(qs, "stringify").mockImplementation((params) =>
-  JSON.stringify(params)
-);
+vi.mock("qs", () => ({
+  stringify: vi.fn((params) => JSON.stringify(params)),
+}));
 
 describe("sanitizeHeaders", () => {
   it("should filter allowed headers", () => {

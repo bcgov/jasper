@@ -15,7 +15,6 @@ vi.mock("../../services/apiService", () => ({
 
 describe("Lambda Handler", () => {
   let mockEvent: Partial<APIGatewayEvent>;
-  let envBackup: NodeJS.ProcessEnv;
 
   const darsSecret = "dars-secret";
   const pcssSecret = "pcss-secret";

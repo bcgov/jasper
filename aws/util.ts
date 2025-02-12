@@ -29,6 +29,12 @@ export const sanitizeHeaders = (
     }
   }
 
+  // Specify Content-Type as application/json unless specified in Accept
+  filteredHeaders["Content-Type"] =
+    filteredHeaders["Accept"] === "application/octet-stream"
+      ? "application/octet-stream"
+      : "application/json";
+
   return filteredHeaders;
 };
 

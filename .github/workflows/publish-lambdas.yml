@@ -80,8 +80,10 @@ jobs:
         id: parse
         run: |
           echo "Lambda: ${{ matrix.lambda }}"
-          echo "RESOURCE=${{ matrix.lambda }%%/*}" >> $GITHUB_ENV
-          echo "LAMBDA=${{ matrix.lambda }##*/}" >> $GITHUB_ENV
+          RESOURCE="${{ matrix.lambda }}"
+          LAMBDA="${{ matrix.lambda }}"
+          echo "RESOURCE=${RESOURCE%%/*}" >> $GITHUB_ENV
+          echo "LAMBDA=${LAMBDA##*/}" >> $GITHUB_ENV
 
       - name: Setup Image Metadata
         id: meta

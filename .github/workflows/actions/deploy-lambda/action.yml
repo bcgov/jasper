@@ -14,8 +14,8 @@ inputs:
   app_name:
     description: The application name.
     required: true
-  lambda_name:
-    description: The lambda function name name.
+  lambda:
+    description: The lambda function info.
     required: true
   aws_role_arn:
     description: The AWS Role ARN to assume.
@@ -26,9 +26,6 @@ inputs:
   github_image_repo:
     description: The GCHR repo where images are stored.
     required: true
-  image_name:
-    description: The name of the image to be deployed.
-    required: true
   short_sha:
     description: The short SHA used to tag image in GCHR.
     required: true
@@ -37,13 +34,22 @@ runs:
   using: composite
 
   steps:
+    - name: Parse Resource and Lambda Name
+      shell: bash
+      run: |
+        echo "Lambda: ${{ inputs.lambda }}"
+        RESOURCE=$(echo "${{ inputs.lambda }}" | cut -d'/' -f1)
+        LAMBDA=$(echo "${{ inputs.lambda }}" | cut -d'/' -f2)
+        echo "RESOURCE=$RESOURCE" >> $GITHUB_ENV
+        echo "LAMBDA=$LAMBDA" >> $GITHUB_ENV
+        echo "IMAGE_NAME=$RESOURCE.$LAMBDA" >> $GITHUB_ENV
+
     - name: Set reusable variables
       id: vars
       shell: bash
       run: |
         echo "full_ecr_repo_url=${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-lambda-repo-${{ inputs.environment }}" >> $GITHUB_OUTPUT
         echo "container_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-container-${{ inputs.environment }}" >> $GITHUB_OUTPUT
-
 
     - name: Log in to the GHCR
       uses: docker/login-action@v2
@@ -68,7 +74,7 @@ runs:
       id: ecr-check
       shell: bash
       run: |
-        IMAGE_TAG=${{ inputs.image_name }}-${{ inputs.short_sha }}
+        IMAGE_TAG=${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
         REPOSITORY_NAME=${{ inputs.app_name }}-lambda-repo-${{ inputs.environment }}
         
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
@@ -85,13 +91,13 @@ runs:
       if: steps.ecr-check.outputs.exists == 'false'
       shell: bash
       run: |
-        docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}
-        docker tag ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
-        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
+        docker pull ${{ inputs.github_image_repo }}/${{ env.IMAGE_NAME }}:${{ inputs.short_sha}}
+        docker tag ${{ inputs.github_image_repo }}/${{ env.IMAGE_NAME }}:${{ inputs.short_sha}} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
+        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
 
     - name: Update Lambda Function
       shell: bash
       run: |
         aws lambda update-function-code \
-          --function-name ${{ inputs.app_name }}-${{ inputs.lambda_name }}-lambda-${{ inputs.environment }} \
-          --image-uri ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
+          --function-name ${{ inputs.app_name }}-${{ env.LAMBDA }}-lambda-${{ inputs.environment }} \
+          --image-uri ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}

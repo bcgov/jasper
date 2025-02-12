@@ -38,9 +38,6 @@ export class HttpService implements IHttpService {
         password,
       },
       httpsAgent,
-      headers: {
-        "Content-Type": "application/json",
-      },
     });
   }
 

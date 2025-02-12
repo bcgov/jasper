@@ -38,10 +38,8 @@ runs:
       shell: bash
       run: |
         echo "Lambda: ${{ inputs.lambda }}"
-        RESOURCE=$(echo "${{ inputs.lambda }}" | cut -d'/' -f1)
-        LAMBDA=$(echo "${{ inputs.lambda }}" | cut -d'/' -f2)
-        echo "RESOURCE=$RESOURCE" >> $GITHUB_ENV
-        echo "LAMBDA=$LAMBDA" >> $GITHUB_ENV
+        echo "RESOURCE=${{ matrix.lambda }%%/*}" >> $GITHUB_ENV
+        echo "LAMBDA=${{ matrix.lambda }##*/}" >> $GITHUB_ENV
         echo "IMAGE_NAME=$RESOURCE.$LAMBDA" >> $GITHUB_ENV
 
     - name: Set reusable variables

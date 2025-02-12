@@ -39,9 +39,6 @@ describe("HttpService", () => {
           password,
         },
         httpsAgent: expect.anything(),
-        headers: {
-          "Content-Type": "application/json",
-        },
       })
     );
   });

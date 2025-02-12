@@ -140,7 +140,7 @@ jobs:
           aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          lambda_name: ${{ matrix.lambda }}
+          lambda: ${{ matrix.lambda }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
 
   deploy2test:
@@ -172,7 +172,7 @@ jobs:
           aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          lambda_name: ${{ matrix.lambda }}
+          lambda: ${{ matrix.lambda }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
 
   deploy2prod:
@@ -204,5 +204,5 @@ jobs:
           aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          lambda_name: ${{ matrix.lambda }}
+          lambda: ${{ matrix.lambda }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}

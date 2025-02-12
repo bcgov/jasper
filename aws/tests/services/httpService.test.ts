@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { default as axiosMock } from "../../mocks/axios";
 import HttpService from "../../services/httpService";
 
@@ -11,7 +11,7 @@ describe("HttpService", () => {
 
   const baseUrl = "https://api.example.com";
   const username = "user";
-  const password = "pass";
+  const password = process.env.TEST_PASSWORD;
   const cert = "mock-cert";
   const key = "mock-key";
 

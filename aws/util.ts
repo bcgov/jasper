@@ -23,7 +23,7 @@ export const sanitizeHeaders = (
   const filteredHeaders: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(headers || {})) {
-    if (allowedHeaders.has(key)) {
+    if (allowedHeaders.has(key) && value !== undefined) {
       filteredHeaders[key] = value;
     }
   }
@@ -60,4 +60,10 @@ export const sanitizeQueryStringParams = (
   console.log(`Sanitized encoded qs: ${queryString}`);
 
   return queryString;
+};
+
+export const replaceWithWildcard = (value: string): string => {
+  // Replaces everything after the API Gateway stage in the ARN with a wildcard (`/*`)
+  // to take advantage of authorizer's caching capability
+  return value.replace(/^([^/]+\/\w+)(?:\/.*)?$/, "$1/*");
 };

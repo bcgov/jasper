@@ -7,6 +7,7 @@ import {
   StatementEffect,
 } from "aws-lambda";
 import SecretsManagerService from "../../../services/secretsManagerService";
+import { replaceWithWildcard } from "../../../util";
 
 const X_ORIGIN_VERIFY_HEADER = "x-origin-verify";
 
@@ -80,8 +81,7 @@ const generatePolicy = (
       {
         Action: "execute-api:Invoke",
         Effect: effect,
-        // Replace everything after stage with wildcard
-        Resource: resource.replace(/(.*?\/\w+)\/.*/, "$1/*"),
+        Resource: replaceWithWildcard(resource),
       },
     ],
   };

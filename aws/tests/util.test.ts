@@ -1,6 +1,10 @@
 import * as qs from "qs";
 import { describe, expect, it, vi } from "vitest";
-import { sanitizeHeaders, sanitizeQueryStringParams } from "../util";
+import {
+  replaceWithWildcard,
+  sanitizeHeaders,
+  sanitizeQueryStringParams,
+} from "../util";
 
 vi.mock("qs", () => ({
   stringify: vi.fn((params) => JSON.stringify(params)),
@@ -45,5 +49,38 @@ describe("sanitizeQueryStringParams", () => {
     const params = { key1: "['1','2','3',]", key2: "valid" };
     sanitizeQueryStringParams(params);
     expect(console.warn).toHaveBeenCalled();
+  });
+});
+
+describe("replaceWithWildcard", () => {
+  const testCases: [string, string][][] = [
+    [
+      [
+        "arn:aws:execute-api:us-east-1:123456789012:abcd1234/prod/GET/users/123",
+        "arn:aws:execute-api:us-east-1:123456789012:abcd1234/prod/*",
+      ],
+      [
+        "arn:aws:execute-api:us-west-2:987654321098:wxyz5678/dev/POST/orders",
+        "arn:aws:execute-api:us-west-2:987654321098:wxyz5678/dev/*",
+      ],
+    ],
+    [
+      [
+        "arn:aws:execute-api:eu-central-1:111122223333:xyz123/test/DELETE/items/42",
+        "arn:aws:execute-api:eu-central-1:111122223333:xyz123/test/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/stage/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/stage/*",
+      ],
+    ],
+  ];
+
+  testCases.forEach((row) => {
+    row.forEach(([input, expected]) => {
+      it(`should convert '${input}' to '${expected}'`, () => {
+        expect(replaceWithWildcard(input)).toBe(expected);
+      });
+    });
   });
 });

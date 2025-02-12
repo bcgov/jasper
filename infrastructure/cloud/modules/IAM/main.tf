@@ -310,7 +310,7 @@ resource "aws_iam_policy" "lambda_role_policy" {
           "ec2:DetachNetworkInterface"
         ],
         "Effect" : "Allow",
-        "Resource" : "*",
+        "Resource" : "arn:aws:ec2:${var.region}:*:network-interface/*",
         "Condition" : {
           "ArnLikeIfExists" : {
             "ec2:Vpc" : "arn:aws:ec2:${var.region}:*:vpc/${var.vpc_id}"

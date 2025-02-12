@@ -16,11 +16,13 @@ describe("sanitizeHeaders", () => {
       applicationCd: "app123",
       correlationId: "12345",
       unauthorizedHeader: "shouldBeRemoved",
+      Accept: "application/octet-stream",
     };
     const result = sanitizeHeaders(headers);
     expect(result).toEqual({
       applicationCd: "app123",
       correlationId: "12345",
+      Accept: "application/octet-stream",
     });
   });
 

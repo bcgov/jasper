@@ -40,8 +40,8 @@ export class ApiService {
       const url = `${event.path}?${queryString}`;
 
       console.log(`Sending ${method} request to ${url}`);
-      console.log(`Headers: ${{ headers }}`);
-      console.log(`Body: ${{ body }}`);
+      console.log(`Headers: ${JSON.stringify(headers, null, 2)}`);
+      console.log(`Body: ${JSON.stringify(body, null, 2)}`);
 
       let data;
 

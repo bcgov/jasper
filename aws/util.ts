@@ -3,6 +3,7 @@ import * as qs from "qs";
 // These are the list of Headers imported from SCV
 // Only include headers from the original request when present.
 const allowedHeaders = new Set([
+  "Accept",
   "applicationCd",
   "correlationId",
   "deviceNm",

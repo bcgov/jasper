@@ -42,7 +42,7 @@ runs:
         LAMBDA="${{ inputs.lambda }}"
         echo "RESOURCE=${RESOURCE%%/*}" >> $GITHUB_ENV
         echo "LAMBDA=${LAMBDA##*/}" >> $GITHUB_ENV
-        echo "IMAGE_NAME=$RESOURCE.$LAMBDA" >> $GITHUB_ENV
+        echo "IMAGE_NAME=${RESOURCE}.${LAMBDA}" >> $GITHUB_ENV
 
     - name: Set reusable variables
       id: vars

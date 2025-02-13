@@ -63,12 +63,6 @@ variable "kms_key_arn" {
   type        = string
 }
 
-variable "image_name" {
-  description = "Image name that will be attached to the Task Definition"
-  type        = string
-  default     = "dummy-image"
-}
-
 variable "log_group_name" {
   description = "The Cloudwatch Log Group Name"
   type        = string

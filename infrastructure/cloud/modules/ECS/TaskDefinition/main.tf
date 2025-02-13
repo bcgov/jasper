@@ -1,3 +1,10 @@
+// Retrieves the latest deployed image name (web or api) from SSM Parameter Store.
+// Initial value is 'dummy-image' but gets replaced by Web and API GHA. It was agreed
+// that the parameter is created manually via Console for DEV, TEST and PROD.
+data "aws_ssm_parameter" "image_param" {
+  name = "/images/${var.app_name}-${var.name}-image-param-${var.environment}"
+}
+
 resource "aws_ecs_task_definition" "ecs_td" {
   family                   = "${var.app_name}-${var.name}-td-${var.environment}"
   network_mode             = "awsvpc"
@@ -7,17 +14,11 @@ resource "aws_ecs_task_definition" "ecs_td" {
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
 
-  # This will be uncommented out when the long term solution is implemented (JASPER-291)
-  # lifecycle {
-  #   # Since the dummy-image will be replaced when the GHA pipeline runs,
-  #   # the whole container_definition edits has been ignored.
-  #   ignore_changes = [container_definitions]
-  # }
 
   container_definitions = jsonencode([
     {
       name      = "${var.app_name}-${var.name}-container-${var.environment}"
-      image     = "${var.ecr_repository_url}:${var.image_name}" # This is a placeholder image and will be replaced every deployment of GHA.
+      image     = "${var.ecr_repository_url}:${data.aws_ssm_parameter.image_param.value}"
       essential = true
       portMappings = [
         {

@@ -104,6 +104,11 @@ runs:
         container-name: ${{ steps.vars.outputs.container_name }}
         image: "${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}"
 
+    - name: Update SSM Param Store
+      shell: bash
+      run: |
+        aws ssm put-parameter --name "/images/${{ inputs.app_name }}-${{ inputs.tier_name }}-image-param-${{ inputs.environment }}" --value "${{ inputs.image_name }}-${{ inputs.short_sha }}" --type "String" --overwrite
+
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v2
       with:

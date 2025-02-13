@@ -1,19 +1,19 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import * as https from "https";
 
 export interface IHttpService {
   init(credentialsSecret: string, mtlsSecret: string): Promise<void>;
-  get<T>(url: string, headers?: Record<string, string>): Promise<T>;
+  get<T>(url: string, config: AxiosRequestConfig): Promise<AxiosResponse<T>>;
   post<T>(
     url: string,
-    data?: Record<string, unknown>,
-    headers?: Record<string, string>
-  ): Promise<T>;
+    data: Record<string, unknown>,
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>>;
   put<T>(
     url: string,
-    data?: Record<string, unknown>,
-    headers?: Record<string, string>
-  ): Promise<T>;
+    data: Record<string, unknown>,
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>>;
 }
 
 export class HttpService implements IHttpService {
@@ -41,10 +41,13 @@ export class HttpService implements IHttpService {
     });
   }
 
-  async get<T>(url: string, headers?: Record<string, string>): Promise<T> {
+  async get<T>(
+    url: string,
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> {
     try {
-      const response: AxiosResponse<T> = await this.axios.get(url, { headers });
-      return response.data;
+      const response: AxiosResponse<T> = await this.axios.get(url, config);
+      return response;
     } catch (error) {
       this.handleError(error);
     }
@@ -52,14 +55,16 @@ export class HttpService implements IHttpService {
 
   async post<T>(
     url: string,
-    data?: Record<string, unknown>,
-    headers?: Record<string, string>
-  ): Promise<T> {
+    data: Record<string, unknown>,
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> {
     try {
-      const response: AxiosResponse<T> = await this.axios.post(url, data, {
-        headers,
-      });
-      return response.data;
+      const response: AxiosResponse<T> = await this.axios.post(
+        url,
+        data,
+        config
+      );
+      return response;
     } catch (error) {
       this.handleError(error);
     }
@@ -67,14 +72,16 @@ export class HttpService implements IHttpService {
 
   async put<T>(
     url: string,
-    data?: Record<string, unknown>,
-    headers?: Record<string, string>
-  ): Promise<T> {
+    data: Record<string, unknown>,
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> {
     try {
-      const response: AxiosResponse<T> = await this.axios.put(url, data, {
-        headers,
-      });
-      return response.data;
+      const response: AxiosResponse<T> = await this.axios.put(
+        url,
+        data,
+        config
+      );
+      return response;
     } catch (error) {
       this.handleError(error);
     }

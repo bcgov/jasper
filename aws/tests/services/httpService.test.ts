@@ -1,3 +1,4 @@
+import { AxiosRequestConfig } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { default as axiosMock } from "../../mocks/axios";
 import HttpService from "../../services/httpService";
@@ -14,6 +15,12 @@ describe("HttpService", () => {
   const password = process.env.TEST_PASSWORD;
   const cert = "mock-cert";
   const key = "mock-key";
+
+  const mockAxiosConfig: AxiosRequestConfig = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
 
   beforeEach(() => {
     httpService = new HttpService();
@@ -47,23 +54,27 @@ describe("HttpService", () => {
     axiosMock.get.mockResolvedValue({ data: { message: "success" } });
 
     await httpService.init(credentialsSecret, mtlsSecret);
-    const result = await httpService.get("/test");
+    const response = await httpService.get("/test", mockAxiosConfig);
 
-    expect(result).toEqual({ message: "success" });
-    expect(axiosMock.get).toHaveBeenCalledWith("/test", { headers: undefined });
+    expect(response.data).toEqual({ message: "success" });
+    expect(axiosMock.get).toHaveBeenCalledWith("/test", mockAxiosConfig);
   });
 
   it("should perform POST request", async () => {
     axiosMock.post.mockResolvedValue({ data: { id: 1 } });
 
     await httpService.init(credentialsSecret, mtlsSecret);
-    const result = await httpService.post("/test", { name: "example" });
+    const response = await httpService.post(
+      "/test",
+      { name: "example" },
+      mockAxiosConfig
+    );
 
-    expect(result).toEqual({ id: 1 });
+    expect(response.data).toEqual({ id: 1 });
     expect(axiosMock.post).toHaveBeenCalledWith(
       "/test",
       { name: "example" },
-      { headers: undefined }
+      mockAxiosConfig
     );
   });
 
@@ -71,13 +82,17 @@ describe("HttpService", () => {
     axiosMock.put.mockResolvedValue({ data: { updated: true } });
 
     await httpService.init(credentialsSecret, mtlsSecret);
-    const result = await httpService.put("/test", { name: "updated" });
+    const response = await httpService.put(
+      "/test",
+      { name: "updated" },
+      mockAxiosConfig
+    );
 
-    expect(result).toEqual({ updated: true });
+    expect(response.data).toEqual({ updated: true });
     expect(axiosMock.put).toHaveBeenCalledWith(
       "/test",
       { name: "updated" },
-      { headers: undefined }
+      mockAxiosConfig
     );
   });
 
@@ -86,8 +101,8 @@ describe("HttpService", () => {
     axiosMock.isAxiosError.mockReturnValue(true);
 
     await httpService.init(credentialsSecret, mtlsSecret);
-    await expect(httpService.get("/not-found")).rejects.toThrow(
-      "HTTP Error: 404"
-    );
+    await expect(
+      httpService.get("/not-found", mockAxiosConfig)
+    ).rejects.toThrow("HTTP Error: 404");
   });
 });

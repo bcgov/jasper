@@ -23,15 +23,17 @@ describe("sanitizeHeaders", () => {
       applicationCd: "app123",
       correlationId: "12345",
       Accept: "application/octet-stream",
-      "Content-Type": "application/octet-stream",
     });
   });
 
   it("should return an empty object if no allowed headers are present", () => {
     const headers = { unauthorizedHeader: "shouldBeRemoved" };
-    expect(sanitizeHeaders(headers)).toEqual({
-      "Content-Type": "application/json",
-    });
+    expect(sanitizeHeaders(headers)).toEqual({});
+  });
+
+  it("should return an empty object when Authorization header is present", () => {
+    const headers = { Authorization: "Bearer 123" };
+    expect(sanitizeHeaders(headers)).toEqual({});
   });
 });
 

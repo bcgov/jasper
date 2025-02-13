@@ -1,6 +1,7 @@
 resource "aws_api_gateway_rest_api" "apigw" {
   name = "${var.app_name}-api-gateway-${var.environment}"
 
+  binary_media_types = ["application/octet-stream"]
 }
 
 resource "aws_api_gateway_deployment" "apigw_deployment" {
@@ -10,9 +11,11 @@ resource "aws_api_gateway_deployment" "apigw_deployment" {
   rest_api_id = aws_api_gateway_rest_api.apigw.id
 
   triggers = {
-    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.apigw))
+    redeployment = sha1(jsonencode({
+      binary_media_types = aws_api_gateway_rest_api.apigw.binary_media_types
+      body               = aws_api_gateway_rest_api.apigw.body
+    }))
   }
-
   lifecycle {
     create_before_destroy = true
   }

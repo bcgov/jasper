@@ -68,11 +68,16 @@ describe("ApiService", () => {
     const response = await apiService.handleRequest(event as APIGatewayEvent);
 
     expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
-      Authorization: "Bearer token",
+      headers: {
+        Authorization: "Bearer token",
+        "Content-Type": "application/json",
+      },
+      responseType: "json",
     });
     expect(response).toEqual({
       statusCode: 200,
-      body: JSON.stringify({ data: "get response" }),
+      body: JSON.stringify("get response"),
+      isBase64Encoded: false,
     });
   });
 
@@ -90,11 +95,12 @@ describe("ApiService", () => {
     expect(mockHttpService.post).toHaveBeenCalledWith(
       "/test?",
       { name: "test" },
-      { "Content-Type": "application/json" }
+      { headers: { "Content-Type": "application/json" }, responseType: "json" }
     );
     expect(response).toEqual({
       statusCode: 200,
-      body: JSON.stringify({ data: "post response" }),
+      body: JSON.stringify("post response"),
+      isBase64Encoded: false,
     });
   });
 
@@ -120,6 +126,33 @@ describe("ApiService", () => {
     expect(response).toEqual({
       statusCode: 500,
       body: JSON.stringify({ message: "Internal Server Error" }),
+    });
+  });
+
+  it("should handle a GET binary request", async () => {
+    const event: Partial<APIGatewayEvent> = {
+      httpMethod: "GET",
+      path: "/test",
+      queryStringParameters: { key: "value" },
+      headers: { Accept: "application/octet-stream" },
+      body: null,
+    };
+
+    const response = await apiService.handleRequest(event as APIGatewayEvent);
+
+    expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
+      headers: {
+        Accept: "application/octet-stream",
+        "Content-Type": "application/octet-stream",
+      },
+      responseType: "arraybuffer",
+    });
+    expect(response).toEqual({
+      statusCode: 200,
+      body: Buffer.from(
+        new Uint8Array("get response" as unknown as ArrayBuffer)
+      ).toString("base64"),
+      isBase64Encoded: true,
     });
   });
 });

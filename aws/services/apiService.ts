@@ -1,4 +1,5 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
+import { AxiosRequestConfig, AxiosResponse } from "axios";
 import { sanitizeHeaders, sanitizeQueryStringParams } from "../util";
 import { HttpService, IHttpService } from "./httpService";
 import { SecretsManagerService } from "./secretsManagerService";
@@ -39,21 +40,35 @@ export class ApiService {
 
       const url = `${event.path}?${queryString}`;
 
-      console.log(`Sending ${method} request to ${url}`);
       console.log(`Headers: ${JSON.stringify(headers, null, 2)}`);
+
       console.log(`Body: ${JSON.stringify(body, null, 2)}`);
 
-      let data;
+      // Determine if request expects a binary response
+      const isBinary =
+        headers && headers["Accept"]?.startsWith("application/octet-stream");
+
+      const axiosConfig: AxiosRequestConfig = {
+        headers: {
+          ...headers,
+          "Content-Type": isBinary
+            ? "application/octet-stream"
+            : "application/json",
+        },
+        responseType: isBinary ? "arraybuffer" : "json",
+      };
+
+      let response: AxiosResponse<unknown>;
 
       switch (method) {
         case "GET":
-          data = await this.httpService.get(url, headers);
+          response = await this.httpService.get(url, axiosConfig);
           break;
         case "POST":
-          data = await this.httpService.post(url, body, headers);
+          response = await this.httpService.post(url, body, axiosConfig);
           break;
         case "PUT":
-          data = await this.httpService.put(url, body, headers);
+          response = await this.httpService.put(url, body, axiosConfig);
           break;
         default:
           return {
@@ -62,9 +77,16 @@ export class ApiService {
           };
       }
 
+      console.log("Response:", response);
+
       return {
         statusCode: 200,
-        body: JSON.stringify(data),
+        body: isBinary
+          ? Buffer.from(new Uint8Array(response.data as ArrayBuffer)).toString(
+              "base64"
+            )
+          : JSON.stringify(response.data),
+        isBase64Encoded: !!isBinary,
       };
     } catch (error) {
       console.error("Error:", error);

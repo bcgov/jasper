@@ -22,3 +22,9 @@ variable "name" {
   description = "Log Group Name"
   type        = string
 }
+
+variable "log_group_name_override" {
+  description = "Use this variable to override default naming convention for log groups"
+  type        = string
+  default     = null
+}

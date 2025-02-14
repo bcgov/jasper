@@ -165,6 +165,16 @@ module "apigw_api_log_group" {
   name          = "api"
 }
 
+module "waf_log_group" {
+  source                  = "../../modules/Cloudwatch/LogGroup"
+  environment             = var.environment
+  app_name                = var.app_name
+  kms_key_arn             = module.initial.kms_key_arn
+  resource_name           = "waf"
+  name                    = "web"
+  log_group_name_override = "aws-waf-logs-${var.app_name}-${var.environment}"
+}
+
 # Create API Gateway
 module "apigw" {
   source                 = "../../modules/APIGateway"
@@ -262,4 +272,5 @@ module "waf" {
   region            = var.region
   allowed_ip_ranges = module.secrets_manager.allowed_ip_ranges
   default_lb_arn    = module.alb.default_lb_arn
+  log_group_arn     = module.waf_log_group.log_group.arn
 }

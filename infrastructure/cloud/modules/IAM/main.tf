@@ -351,3 +351,44 @@ resource "aws_iam_role_policy_attachment" "apigw_logging_role_policy" {
   role       = aws_iam_role.apigw_logging_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
+
+#
+# WAF
+#
+resource "aws_iam_role" "waf_logging_role" {
+  name = "${var.app_name}-waf-logging-role-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "waf.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_policy" "waf_logging_policy" {
+  name = "${var.app_name}-waf-logging-role-policy-${var.environment}"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/waf/${var.app_name}-waf-web-log-group-${var.environment}:*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "waf_logging_attach" {
+  role       = aws_iam_role.waf_logging_role.name
+  policy_arn = aws_iam_policy.waf_logging_policy.arn
+}

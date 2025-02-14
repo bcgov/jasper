@@ -23,3 +23,8 @@ variable "default_lb_arn" {
   description = "The default Load Balancer ARN"
   type        = string
 }
+
+variable "log_group_arn" {
+  description = "The WAF Log Group ARN"
+  type        = string
+}

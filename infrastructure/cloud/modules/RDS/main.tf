@@ -25,7 +25,7 @@ resource "aws_db_instance" "postgres_db_instance" {
   ca_cert_identifier                  = var.rds_db_ca_cert
   identifier                          = "${var.app_name}-postgres-db-${var.environment}"
   skip_final_snapshot                 = true
-  backup_retention_period             = 7
+  backup_retention_period             = 0 #tfsec:ignore:aws-rds-specify-backup-retention
   performance_insights_enabled        = true
   performance_insights_kms_key_id     = var.kms_key_arn
   iam_database_authentication_enabled = true

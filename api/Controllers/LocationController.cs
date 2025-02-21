@@ -63,5 +63,18 @@ namespace Scv.Api.Controllers
 
             return Ok(locations);
         }
+
+        /// <summary>
+        /// Returns the list of locations and court rooms used in PCSS
+        /// </summary>
+        /// <returns>PCSS Locations and Court Rooms</returns>
+        [HttpGet]
+        [Route("pcss/court-rooms")]
+        public async Task<ActionResult<List<Location>>> GetPCSSLocationsAndCourtRooms()
+        {
+            var locations = await _locationService.GetPCSSLocationsAndCourtRooms();
+
+            return Ok(locations);
+        }
     }
 }

@@ -10,6 +10,7 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Models.Location;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
+using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace Scv.Api.Services
 {
@@ -23,6 +24,7 @@ namespace Scv.Api.Services
         private readonly IAppCache _cache;
         private readonly LocationServicesClient _locationClient;
         private readonly PCSSLocationServices.LocationServicesClient _pcssLocationServiceClient;
+        private readonly PCSSLookupServices.LookupServicesClient _pcssLookupServiceClient;
 
         #endregion Variables
 
@@ -36,11 +38,13 @@ namespace Scv.Api.Services
             IConfiguration configuration,
             LocationServicesClient locationServicesClient,
             PCSSLocationServices.LocationServicesClient pcssLocationServiceClient,
+            PCSSLookupServices.LookupServicesClient pcssLookupServiceClient,
             IAppCache cache
         )
         {
             _locationClient = locationServicesClient;
             _pcssLocationServiceClient = pcssLocationServiceClient;
+            _pcssLookupServiceClient = pcssLookupServiceClient;
             _cache = cache;
             _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:LocationExpiryMinutes")) * 60;
             SetupLocationServicesClient();
@@ -49,6 +53,24 @@ namespace Scv.Api.Services
         #endregion Constructor
 
         #region Collection Methods
+
+        public async Task<ICollection<Location>> GetPCSSLocationsAndCourtRooms() => await GetDataFromCache("PCSSLocationsAndCourtRooms", async () =>
+        {
+            var locations = await _pcssLookupServiceClient.GetCourtRoomsAsync();
+
+            var mappedLocations = locations
+                .Select(l => new Location
+                {
+                    LocationId = l.LocationId.ToString(),
+                    Name = l.LocationNm,
+                    Code = l.LocationSNm,
+                    CourtRooms = l.CourtRooms?.Select(cr => new CourtRoom { Room = cr.CourtRoomCd }).ToList() ?? new List<CourtRoom>()
+                })
+                .OrderBy(l => l.Name)
+                .ToList();
+
+            return mappedLocations;
+        });
 
         public async Task<ICollection<Location>> GetPCSSLocations() => await GetDataFromCache("PCSSLocations", async () =>
         {

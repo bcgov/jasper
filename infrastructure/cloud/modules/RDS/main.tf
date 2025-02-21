@@ -30,4 +30,5 @@ resource "aws_db_instance" "postgres_db_instance" {
   performance_insights_kms_key_id     = var.kms_key_arn
   iam_database_authentication_enabled = true
   deletion_protection                 = true
+  apply_immediately                   = true
 }

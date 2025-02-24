@@ -45,6 +45,13 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
+        public static IServiceCollection AddAutoMapper(this IServiceCollection services)
+        {
+            services.AddAutoMapper(typeof(Startup));
+
+            return services;
+        }
+
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();

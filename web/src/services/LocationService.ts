@@ -30,7 +30,7 @@ export class LocationService {
     return courtRooms;
   }
 
-  async getDashboardLocations(): Promise<Location[]> {
-    return await this.httpService.get<Location[]>('api/location/pcss');
+  async getLocations(): Promise<Location[]> {
+    return await this.httpService.get<Location[]>('api/location');
   }
 }

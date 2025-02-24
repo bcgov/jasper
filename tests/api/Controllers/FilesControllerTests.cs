@@ -18,6 +18,7 @@ using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Mappers;
 using Scv.Api.Models.archive;
 using Scv.Api.Models.Search;
 using Scv.Api.Services;
@@ -26,6 +27,7 @@ using Scv.Db.Models;
 using tests.api.Helpers;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
+using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Controllers
 {
@@ -60,12 +62,19 @@ namespace tests.api.Controllers
             var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
             _fileServicesClient = fileServicesClient;
             var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
+            var pcssLookupServicesClient = new PCSSLookupServices.LookupServicesClient(pcssServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
+            
+            var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<LocationProfile>());
+            var mapper = config.CreateMapper();
+
             var locationService = new LocationService(
                 locationServices.Configuration,
                 locationServiceClient,
                 pcssLocationServicesClient,
-                new CachingService());
+                pcssLookupServicesClient,
+                new CachingService(),
+                mapper);
             var contextAccessor = new TestHttpContextAccessor();
 
             _agencyIdentifierId = fileServices.Configuration.GetNonEmptyValue("Request:AgencyIdentifierId");

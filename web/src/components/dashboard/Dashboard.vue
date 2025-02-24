@@ -45,7 +45,7 @@
                   :options="getLocations"
                   name="locations-filter"
                   :value-field="'locationId'"
-                  :text-field="'code'"
+                  :text-field="'name'"
                   @change="onLocationChecked"
                 ></b-form-checkbox-group>
               </b-card>
@@ -207,7 +207,7 @@
               :options="locations"
               name="locations-filter"
               :value-field="'locationId'"
-              :text-field="'code'"
+              :text-field="'name'"
             ></b-form-checkbox-group>
           </div>
         </div>
@@ -548,9 +548,9 @@
 </style>
 <script lang="ts">
   import { DashboardService, LocationService } from '@/services';
-  import { Activity, CalendarDay, Location, Presider } from '@/types';
-  import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
-  import Calendar from '../calendar/Calendar.vue';
+import { Activity, CalendarDay, Location, Presider } from '@/types';
+import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
+import Calendar from '../calendar/Calendar.vue';
 
   export default defineComponent({
     components: {
@@ -600,8 +600,9 @@
       });
 
       const loadLocations = async () => {
-        const data = await locationsService.getDashboardLocations();
-        locations.value = [...data];
+        const data = await locationsService.getLocations();
+        // Location with locationId comes from PCSS. Exclude data from JC for now
+        locations.value = [...data.filter(l => "locationId" in l)];
       };
 
       const showAllLocations = () => {

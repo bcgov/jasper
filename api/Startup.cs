@@ -79,6 +79,7 @@ namespace Scv.Api
             );
             
             services.AddMapster();
+            services.AddAutoMapper();
 
             #region Cors
 

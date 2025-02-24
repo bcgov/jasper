@@ -11,10 +11,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
+using Scv.Api.Mappers;
 using Scv.Api.Services;
 using tests.api.Helpers;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
+using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
+using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 
 namespace tests.api.Controllers
 {
@@ -41,11 +44,19 @@ namespace tests.api.Controllers
             var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
             var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
+            var pcssLookupServicesClient = new PCSSLookupServices.LookupServicesClient(pcssServices.HttpClient);
+            var pcssSearchDateClient = new PCSSSearchDateServices.SearchDateClient(pcssServices.HttpClient);
+            
+            var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<LocationProfile>());
+            var mapper = config.CreateMapper();
+
             var locationService = new LocationService(
                 locationServices.Configuration,
                 locationServiceClient,
                 pcssLocationServicesClient,
-                new CachingService());
+                pcssLookupServicesClient,
+                new CachingService(),
+                mapper);
 
             var claims = new[] {
                 new Claim(CustomClaimTypes.ApplicationCode, "SCV"),
@@ -56,7 +67,16 @@ namespace tests.api.Controllers
             _identity = new ClaimsIdentity(claims, "Cookies");
             var principal = new ClaimsPrincipal(_identity);
 
-            var courtListService = new CourtListService(fileServices.Configuration, fileServices.LogFactory.CreateLogger<CourtListService>(), fileServicesClient, new Mapper(), lookupService, locationService, new CachingService(), principal);
+            var courtListService = new CourtListService(
+                fileServices.Configuration,
+                fileServices.LogFactory.CreateLogger<CourtListService>(),
+                fileServicesClient,
+                new Mapper(),
+                lookupService,
+                locationService,
+                pcssSearchDateClient,
+                new CachingService(),
+                principal);
             _controller = new CourtListController(courtListService)
             {
                 ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration)

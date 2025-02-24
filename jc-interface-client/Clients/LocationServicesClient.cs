@@ -825,7 +825,7 @@ namespace JCCommon.Clients.LocationServices
         /// <param name="returnActive">Instructs the API to return active records.  The default is true.</param>
         /// <param name="returnInactive">Instructs the API to return inactive records.  The default is false.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<CodeValue>> LocationsGetAsync(string justinAgencyId, bool returnActive, bool returnInactive)
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<CodeValue>> LocationsGetAsync(string justinAgencyId, bool returnActive, bool returnInactive)
         {
             return LocationsGetAsync(justinAgencyId, returnActive, returnInactive, System.Threading.CancellationToken.None);
         }
@@ -921,7 +921,7 @@ namespace JCCommon.Clients.LocationServices
         }
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<CodeValue>> LocationsRoomsGetAsync()
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<CodeValue>> LocationsRoomsGetAsync()
         {
             return LocationsRoomsGetAsync(System.Threading.CancellationToken.None);
         }

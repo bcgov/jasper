@@ -75,7 +75,8 @@
           <v-select
             v-model="searchCriteria.fileHomeAgencyId"
             :items="courtRooms"
-            item-title="text"
+            item-title="name"
+            item-value="justinLocationId"
             label="Location"
             :required="true"
             :error-messages="
@@ -132,19 +133,19 @@
 
 <script setup lang="ts">
   import CourtFileSearchResult from '@/components/courtfilesearch/CourtFileSearchResult.vue';
-  import { FilesService } from '@/services/FilesService';
-  import { LocationService } from '@/services/LocationService';
-  import { LookupService } from '@/services/LookupService';
-  import { useCourtFileSearchStore } from '@/stores';
-  import { KeyValueInfo, LookupCode } from '@/types/common';
-  import {
-    CourtClassEnum,
-    CourtFileSearchCriteria,
-    FileDetail,
-    SearchModeEnum,
-  } from '@/types/courtFileSearch';
-  import { roomsInfoType } from '@/types/courtlist';
-  import { computed, inject, onMounted, reactive, ref } from 'vue';
+import { FilesService } from '@/services/FilesService';
+import { LocationService } from '@/services/LocationService';
+import { LookupService } from '@/services/LookupService';
+import { useCourtFileSearchStore } from '@/stores';
+import { KeyValueInfo, LookupCode } from '@/types/common';
+import {
+  CourtClassEnum,
+  CourtFileSearchCriteria,
+  FileDetail,
+  SearchModeEnum,
+} from '@/types/courtFileSearch';
+import { roomsInfoType } from '@/types/courtlist';
+import { computed, inject, onMounted, reactive, ref } from 'vue';
 
   const CRIMINAL_CODE = 'R';
   const SMALL_CLAIMS_CODE = 'I';
@@ -248,7 +249,7 @@
   const loadData = async (): Promise<void> => {
     try {
       const [courtRoomsResp, courtClassesResp] = await Promise.all([
-        locationService.getCourtRooms(),
+        locationService.getLocations(),
         lookupService.getCourtClasses(),
       ]);
 

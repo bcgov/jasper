@@ -62,12 +62,12 @@
 
 <script setup lang="ts">
   import ActionBar from '@/components/shared/table/ActionBar.vue';
-  import { beautifyDate } from '@/filters';
-  import { KeyValueInfo, LookupCode } from '@/types/common';
-  import { FileDetail } from '@/types/courtFileSearch';
-  import { roomsInfoType } from '@/types/courtlist';
-  import { mdiFileDocumentOutline } from '@mdi/js';
-  import { computed, defineProps, ref } from 'vue';
+import { beautifyDate } from '@/filters';
+import { KeyValueInfo, LookupCode } from '@/types/common';
+import { FileDetail } from '@/types/courtFileSearch';
+import { roomsInfoType } from '@/types/courtlist';
+import { mdiFileDocumentOutline } from '@mdi/js';
+import { computed, defineProps, ref } from 'vue';
 
   const props = defineProps<{
     courtRooms: roomsInfoType[];
@@ -163,7 +163,7 @@
   }
 
   const getLocation = (fileHomeAgencyId: string) =>
-    props.courtRooms.find((room) => room.value === fileHomeAgencyId)?.text ||
+    props.courtRooms.find((room) => room.code === fileHomeAgencyId)?.name ||
     '';
 
   const getClass = (courtClassCd: string) =>

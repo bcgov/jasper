@@ -143,7 +143,7 @@
 
   const getListOfAvailableCourts = async () => {
     locationsAndCourtRooms.value =
-      await locationsService?.getLocations();
+      await locationsService?.getLocations(true);
     commonStore.updateCourtRoomsAndLocations(locationsAndCourtRooms.value);
     isLocationDataMounted.value = true;
   };

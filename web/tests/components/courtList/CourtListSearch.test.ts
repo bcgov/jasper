@@ -1,8 +1,8 @@
-import CourtListSearch from 'CMP/courtlist/CourtListSearch.vue';
 import { LocationService } from '@/services';
 import { HttpService } from '@/services/HttpService';
 import { useCommonStore, useCourtListStore } from '@/stores';
 import { mount } from '@vue/test-utils';
+import CourtListSearch from 'CMP/courtlist/CourtListSearch.vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
@@ -27,11 +27,13 @@ describe('CourtListSearch.vue', () => {
       },
     };
     locationService = {
-      getLocationsAndCourtRooms: vi
-        .fn()
-        .mockResolvedValue([
-          { locationId: 1, locationNm: 'Location 1', courtRooms: ['Room 1'] },
-        ]),
+      getLocations: vi.fn().mockResolvedValue([
+        {
+          locationId: 1,
+          name: 'Location 1',
+          courtRooms: [{ room: 'Room 1' }],
+        },
+      ]),
     };
     httpService = {
       get: vi.fn().mockResolvedValue({}),
@@ -57,17 +59,17 @@ describe('CourtListSearch.vue', () => {
   });
 
   it('fetches court locations on mount', async () => {
-    expect(locationService.getLocationsAndCourtRooms).toHaveBeenCalled();
+    expect(locationService.getLocations).toHaveBeenCalled();
     expect(commonStore.updateCourtRoomsAndLocations).toHaveBeenCalledWith([
-      { locationId: 1, locationNm: 'Location 1', courtRooms: ['Room 1'] },
+      { locationId: 1, name: 'Location 1', courtRooms: [{ room: 'Room 1' }] },
     ]);
   });
 
   it('should pass form validation', async () => {
     wrapper.vm.selectedCourtLocation = {
       locationId: 1,
-      locationNm: 'Location 1',
-      courtRooms: ['Room 1'],
+      name: 'Location 1',
+      courtRooms: [{ room: 'Room 1' }],
     };
     wrapper.vm.selectedCourtRoom = 'Room 1';
     expect(wrapper.vm.validateForm()).toBe(true);
@@ -92,8 +94,8 @@ describe('CourtListSearch.vue', () => {
   it('searches for court list', async () => {
     wrapper.vm.selectedCourtLocation = {
       locationId: 1,
-      locationNm: 'Location 1',
-      courtRooms: ['Room 1'],
+      name: 'Location 1',
+      courtRooms: [{ room: 'Room 1' }],
     };
     wrapper.vm.selectedCourtRoom = 'Room 1';
     wrapper.vm.date = new Date('2023-01-01');
@@ -104,15 +106,15 @@ describe('CourtListSearch.vue', () => {
       'api/courtlist/court-list?agencyId=1&roomCode=Room 1&proceeding=2023-01-01'
     );
     await nextTick();
-    
+
     expect(courtListStore.courtListInformation.detailsData).toEqual({});
   });
 
   it('emits courtListSearched event', async () => {
     wrapper.vm.selectedCourtLocation = {
       locationId: 1,
-      locationNm: 'Location 1',
-      courtRooms: ['Room 1'],
+      name: 'Location 1',
+      courtRooms: [{ room: 'Room 1' }],
     };
     wrapper.vm.selectedCourtRoom = 'Room 1';
     wrapper.vm.date = new Date('2023-01-01');
@@ -120,7 +122,7 @@ describe('CourtListSearch.vue', () => {
 
     await wrapper.vm.searchForCourtList();
     await nextTick();
-    
+
     expect(wrapper.emitted().courtListSearched).toBeTruthy();
   });
 });

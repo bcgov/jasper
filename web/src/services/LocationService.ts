@@ -1,4 +1,4 @@
-import { Location } from '@/types';
+import { LocationInfo } from '../types/courtlist';
 import { HttpService } from './HttpService';
 
 export class LocationService {
@@ -8,7 +8,7 @@ export class LocationService {
     this.httpService = httpService;
   }
 
-  async getLocations(includeChildRecords = false): Promise<Location[]> {
-    return await this.httpService.get<Location[]>(`api/location?includeChildRecords=${includeChildRecords}`);
+  async getLocations(includeChildRecords = false): Promise<LocationInfo[]> {
+    return await this.httpService.get<LocationInfo[]>(`api/location?includeChildRecords=${includeChildRecords}`);
   }
 }

@@ -22,26 +22,14 @@ namespace Scv.Api.Controllers
         }
 
         /// <summary>
-        /// Provides Locations from all source systems (JC and PCSS).
+        /// Provides Locations from all source systems (JC and PCSS)
         /// </summary>
-        /// <returns></returns>
+        /// <param name="includeChildRecords">Flag whether court rooms will be included or not</param>
+        /// <returns>List of combined locations from JC and PCSS</returns>
         [HttpGet]
-        public async Task<ActionResult<List<Location>>> GetLocations()
+        public async Task<ActionResult<List<Location>>> GetLocations(bool includeChildRecords = false)
         {
-            var locations = await _locationService.GetLocations();
-
-            return Ok(locations);
-        }
-
-        /// <summary>
-        /// Provides Locations and court rooms from all source systems (JC and PCSS).
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("court-rooms")]
-        public async Task<ActionResult<List<Location>>> GetLocationsAndCourtRooms()
-        {
-            var locations = await _locationService.GetLocationsAndCourtRooms();
+            var locations = await _locationService.GetLocations(includeChildRecords);
 
             return Ok(locations);
         }

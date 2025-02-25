@@ -76,7 +76,7 @@
             v-model="searchCriteria.fileHomeAgencyId"
             :items="courtRooms"
             item-title="name"
-            item-value="justinLocationId"
+            item-value="code"
             label="Location"
             :required="true"
             :error-messages="

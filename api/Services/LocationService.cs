@@ -58,20 +58,10 @@ namespace Scv.Api.Services
 
         #region Collection Methods
 
-        public async Task<ICollection<Location>> GetLocationsAndCourtRooms() => await GetDataFromCache("GetLocationsAndCourtRooms", async () =>
+        public async Task<ICollection<Location>> GetLocations(bool includeChildRecords = false) => await GetDataFromCache($"Locations{includeChildRecords}", async () =>
         {
-            var getJCLocationsTask = this.GetJCLocationsAndCourtRooms();
-            var getPCSSLocationsTask = this.GetPCSSLocationsWithCourtRooms();
-
-            await Task.WhenAll(getJCLocationsTask, getPCSSLocationsTask);
-
-            return MergeJCandPCSSLocations(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
-        });
-
-        public async Task<ICollection<Location>> GetLocations() => await GetDataFromCache("Locations", async () =>
-        {
-            var getJCLocationsTask = this.GetJCLocations();
-            var getPCSSLocationsTask = this.GetPCSSLocations();
+            var getJCLocationsTask = this.GetJCLocations(includeChildRecords);
+            var getPCSSLocationsTask = this.GetPCSSLocations(includeChildRecords);
 
             await Task.WhenAll(getJCLocationsTask, getPCSSLocationsTask);
 
@@ -97,68 +87,58 @@ namespace Scv.Api.Services
 
         #endregion Lookup Methods
 
-
         #region JC Methods
 
-        private async Task<ICollection<Location>> GetJCLocations()
+        private async Task<ICollection<Location>> GetJCLocations(bool includeChildRecords)
         {
             var jcLocations = await _locationClient.LocationsGetAsync(null, true, true);
-
             var locations = _mapper.Map<List<Location>>(jcLocations);
 
-            return locations;
-        }
-
-        private async Task<ICollection<Location>> GetJCLocationsAndCourtRooms()
-        {
-            var getLocationsTask = this.GetJCLocations();
-            var getCourtRoomsTask = _locationClient.LocationsRoomsGetAsync();
-
-            await Task.WhenAll(getLocationsTask, getCourtRoomsTask);
-
-            var jcLocations = _mapper.Map<List<Location>>(getLocationsTask.Result);
-            var jcCourtRooms = _mapper.Map<List<CourtRoom>>(getCourtRoomsTask.Result);
-
-            foreach (var location in jcLocations)
+            if (!includeChildRecords)
             {
-                location.CourtRooms = jcCourtRooms
-                    .Where(cr => cr.LocationId == location.LocationId && (cr.Type == "CRT" || cr.Type == "HGR"))
-                    .ToList();
+                return locations;
             }
 
-            return jcLocations;
+            var jcCourtRooms = await _locationClient.LocationsRoomsGetAsync();
+            var courtRooms = _mapper.Map<List<CourtRoom>>(jcCourtRooms);
+
+            foreach (var location in locations)
+            {
+                location.CourtRooms = [.. courtRooms
+                    .Where(cr => cr.LocationId == location.LocationId && (cr.Type == "CRT" || cr.Type == "HGR"))
+                    .OrderBy(cr => cr.Room)];
+            }
+
+            return locations;
         }
 
         #endregion JC Methods
 
         #region PCSS Methods
 
-        private async Task<ICollection<Location>> GetPCSSLocations()
+        private async Task<ICollection<Location>> GetPCSSLocations(bool includeChildRecords)
         {
             var pcssLocations = await _pcssLocationServiceClient.GetLocationsAsync();
-
             var locations = _mapper.Map<List<Location>>(pcssLocations);
 
-            return locations;
-        }
-
-        private async Task<ICollection<Location>> GetPCSSLocationsWithCourtRooms()
-        {
-            // Both methods are of type PCSSCommon.Models.Location. The data coming from Location API has the "justAgenId"
-            // and "locationSNm" field which is used to determine the equivalent location in JC while the Lookup API has the court rooms.
-            var getLocationsTask = this.GetPCSSLocations();
-            var getCourtRoomsTask = _pcssLookupServiceClient.GetCourtRoomsAsync();
-
-            await Task.WhenAll(getLocationsTask, getCourtRoomsTask);
-
-            var courtRooms = _mapper.Map<List<Location>>(getCourtRoomsTask.Result);
-
-            foreach (var location in getLocationsTask.Result)
+            if (!includeChildRecords)
             {
-                location.CourtRooms = courtRooms.Single(cr => cr.LocationId == location.LocationId).CourtRooms;
+                return locations;
             }
 
-            return getLocationsTask.Result;
+            var pcssCourtRooms = await _pcssLookupServiceClient.GetCourtRoomsAsync();
+            var courtRooms = _mapper.Map<List<Location>>(pcssCourtRooms);
+
+            foreach (var location in locations)
+            {
+                location.CourtRooms = [.. courtRooms
+                    .Single(cr => cr.LocationId == location.LocationId)
+                    .CourtRooms
+                    .OrderBy(cr => cr.Room)
+                ];
+            }
+
+            return locations;
         }
 
         #endregion PCSS Methods
@@ -170,18 +150,13 @@ namespace Scv.Api.Services
             var locations = jcLocations
                 .Select(jc =>
                 {
-                    var match = pcssLocations.SingleOrDefault(pcss => pcss.JustinLocationId == jc.Code || pcss.Code == jc.LocationId);
+                    var match = pcssLocations.SingleOrDefault(pcss => pcss.Code == jc.LocationId || pcss.Name == jc.Code);
                     return new Location
                     {
-                        // JC
                         Name = jc.Name,
-                        Code = jc.Code,
+                        Code = jc.LocationId,
                         Active = jc.Active,
-
-                        // PCSS
                         LocationId = match?.LocationId,
-                        JustinLocationName = match?.JustinLocationName,
-                        JustinLocationId = match?.JustinLocationId,
                         CourtRooms = match != null ? match.CourtRooms : jc.CourtRooms
                     };
                 })

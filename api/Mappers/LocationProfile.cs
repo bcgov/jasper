@@ -11,9 +11,9 @@ namespace Scv.Api.Mappers
         {
             // JC mappings
             CreateMap<JC.CodeValue, Location>()
-                .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.ShortDesc))
+                .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.Code))
+                .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.ShortDesc))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.LongDesc))
-                .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.Code))
                 .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.Flex == "Y"));
 
             CreateMap<JC.CodeValue, CourtRoom>()
@@ -27,12 +27,9 @@ namespace Scv.Api.Mappers
 
             CreateMap<PCSS.Location, Location>()
                 .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.LocationId))
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.LocationNm))
-                .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.LocationSNm))
-                .ForMember(dest => dest.JustinLocationId, opt => opt.MapFrom(src => src.JustinAgenId))
-                .ForMember(dest => dest.JustinLocationName, opt => opt.MapFrom(src => src.JustinLocationNm))
-                .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.ActiveYn == "Y"))
-                .ForMember(dest => dest.CourtRooms, opt => opt.MapFrom(src => src.CourtRooms));
+                .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.JustinAgenId))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.LocationSNm))
+                .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.ActiveYn == "Y"));
         }
     }
 }

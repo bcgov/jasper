@@ -199,8 +199,7 @@ public class LocationServiceTests : ServiceTestBase
                     LocationSNm = _faker.Lorem.Text()
                 }
             ]);
-
-        var (locationService, mockJCLocationClient, mockPCSSLocationClient, _) = this.SetupLocationService(mockJCLocations, mockPCSSLocations);
+        var (locationService, _, _, _) = this.SetupLocationService(mockJCLocations, mockPCSSLocations);
 
         var result = await locationService.GetLocations();
 
@@ -209,13 +208,11 @@ public class LocationServiceTests : ServiceTestBase
 
         var location = result.Single();
         Assert.Null(location.LocationId);
-        Assert.Null(location.JustinLocationName);
-        Assert.Null(location.JustinLocationId);
         Assert.Null(location.CourtRooms);
     }
 
     [Fact]
-    public async Task GetLocationsAndCourtRooms_ShouldMergeJCandPCSSLocationsWithCourtRooms()
+    public async Task GetLocations_ShouldIncludeCourtRooms()
     {
         var mockCode = _faker.Random.Double(0, 100);
         var mockShortDescCode = _faker.Random.AlphaNumeric(5);
@@ -256,7 +253,7 @@ public class LocationServiceTests : ServiceTestBase
             mockPCSSLocationClient,
             mockPCSSLookupClient
         ) = this.SetupLocationService(mockJCLocations, mockPCSSLocations, mockJCCourtRooms);
-        var result = await locationService.GetLocationsAndCourtRooms();
+        var result = await locationService.GetLocations(true);
 
         Assert.NotNull(result);
         Assert.Single(result);

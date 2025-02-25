@@ -1,4 +1,4 @@
-import { LocationInfo } from '../types/courtlist';
+import { LocationInfo } from '@/types/courtlist';
 import { HttpService } from './HttpService';
 
 export class LocationService {

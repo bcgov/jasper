@@ -174,7 +174,7 @@
   const getListOfAvailableCourts = () => {
     errorCode.value = 0;
     httpService
-      .get<CourtRoomsJsonInfoType[]>('api/location/court-rooms')
+      .get<CourtRoomsJsonInfoType[]>('api/location?includeChildRecords=true')
       .then(
         (Response) => Response,
         (err) => {

@@ -5,8 +5,6 @@ export interface LocationInfo {
   name: string;
   code: string;
   locationId: string;
-  justinLocationName: string;
-  justinLocationId: string;
   active?: boolean;
   courtRooms: CourtRoomsInfo[];
 }

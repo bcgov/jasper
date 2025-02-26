@@ -1,8 +1,14 @@
 <template>
   <v-banner :style="{ backgroundColor: bgColor, color: color }">
     <v-row class="my-1">
+      <v-col cols="9">
+        <h3>
+          {{ title }}
+          <slot name="left" />
+        </h3>
+      </v-col>
       <v-col>
-        <h3>{{ title }}</h3>
+        <slot name="right" />
       </v-col>
     </v-row>
   </v-banner>

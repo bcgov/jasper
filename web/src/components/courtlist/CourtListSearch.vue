@@ -170,14 +170,14 @@
       .then((data) => {
         if (data) {
           courtListStore.courtListInformation.detailsData = data;
-          isDataReady.value = true;
-          isSearching.value = false;
-
-          emit('courtListSearched', data);
         }
+        emit('courtListSearched', data);
+      })
+      .finally(() => {
         isMounted.value = true;
         searchAllowed.value = true;
         isDataReady.value = true;
+        isSearching.value = false;
       });
   };
 
@@ -197,8 +197,9 @@
     }
     showDropdown.value = false;
     searchAllowed.value = false;
-    bannerDate.value = date.value;
-
+    if (!bannerDate.value) {
+      bannerDate.value = date.value;
+    }
     getCourtListDetails();
   };
 </script>

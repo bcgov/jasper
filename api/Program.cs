@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -5,15 +6,15 @@ using Scv.Api.Services.EF;
 
 namespace Scv.Api
 {
-    public class Program
+    public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var host = CreateHostBuilder(args).Build();
             //This needs to run before our host, because it may have essential migrations for AddDataProtection to work. 
             var migrationService = host.Services.GetRequiredService<MigrationAndSeedService>();
-            migrationService.ExecuteMigrationsAndSeeds();
-            host.Run();
+            await migrationService.ExecuteMigrationsAndSeeds();
+            await host.RunAsync();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

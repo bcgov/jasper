@@ -17,12 +17,14 @@ using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Db.Contexts;
+using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
 using PCSSJudicialCalendarServices = PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
-using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
+using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 
 namespace Scv.Api.Infrastructure
 {
@@ -48,6 +50,20 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddAutoMapper(this IServiceCollection services)
         {
             services.AddAutoMapper(typeof(Startup));
+
+            return services;
+        }
+
+        public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddScoped<JasperDbContext>(options =>
+            {
+                var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+                var dbName = configuration.GetValue<string>("MONGODB_NAME");
+                return new JasperDbContext(connectionString, dbName);
+            });
+
+            services.AddTransient<SeederFactory<JasperDbContext>>();
 
             return services;
         }

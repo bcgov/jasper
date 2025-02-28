@@ -1,22 +1,24 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers.ContractResolver;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using ColeSoft.Extensions.Logging.Splunk;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.OpenApi.Models;
-using Scv.Api.Helpers;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+using Scv.Api.Helpers;
+using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
@@ -24,14 +26,6 @@ using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
-using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
-using ColeSoft.Extensions.Logging.Splunk;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
-using Swashbuckle.AspNetCore;
-using Swashbuckle.AspNetCore.Annotations;
-using LazyCache;
 
 namespace Scv.Api
 {
@@ -57,7 +51,8 @@ namespace Scv.Api
                     c.TimestampFormat = "[yyyy-MM-dd HH:mm:ss.fff] ";
                 });
 
-                options.AddSplunk(c => {
+                options.AddSplunk(c =>
+                {
                     c.SplunkCollectorUrl = Configuration.GetNonEmptyValue("SplunkCollectorUrl");
                     c.AuthenticationToken = Configuration.GetNonEmptyValue("SplunkToken");
                 });
@@ -67,7 +62,7 @@ namespace Scv.Api
 
             services.AddDbContext<ScvDbContext>(options =>
                 {
-                    options.UseNpgsql(Configuration.GetNonEmptyValue("DatabaseConnectionString"), npg => 
+                    options.UseNpgsql(Configuration.GetNonEmptyValue("DatabaseConnectionString"), npg =>
                     {
                         npg.MigrationsAssembly("db");
                         npg.EnableRetryOnFailure(5, TimeSpan.FromSeconds(1), null);
@@ -77,9 +72,10 @@ namespace Scv.Api
                         options.EnableSensitiveDataLogging();
                 }
             );
-            
+
             services.AddMapster();
             services.AddAutoMapper();
+            services.AddJasperDb(Configuration);
 
             #region Cors
 
@@ -161,7 +157,7 @@ namespace Scv.Api
             {
                 context.Request.EnableBuffering();
                 context.Request.Scheme = "https";
-                if (context.Request.Headers.ContainsKey("X-Forwarded-Host") && !env.IsDevelopment()) 
+                if (context.Request.Headers.ContainsKey("X-Forwarded-Host") && !env.IsDevelopment())
                 {
                     var baseUrl = context.Request.Headers["X-Base-Href"].ToString();
                     context.Request.PathBase = new PathString(baseUrl.Remove(baseUrl.Length - 1));

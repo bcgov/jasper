@@ -1,18 +1,27 @@
-﻿using MongoDB.Driver;
+﻿using Microsoft.EntityFrameworkCore;
 using Scv.Db.Models;
 
 namespace Scv.Db.Contexts
 {
-    public class JasperDbContext
+    public class JasperDbContext(DbContextOptions options) : DbContext(options)
     {
-        private readonly IMongoDatabase _database;
+        public DbSet<Permission> Permissions { get; init; }
 
-        public IMongoCollection<Permission> Permissions => _database.GetCollection<Permission>("permissions");
-
-        public JasperDbContext(string connectionString, string dbName)
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var client = new MongoClient(connectionString);
-            _database = client.GetDatabase(dbName);
+            base.OnConfiguring(optionsBuilder);
+
+            if (this.Database != null)
+            {
+                this.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
+            }
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Permission>();
         }
     }
 }

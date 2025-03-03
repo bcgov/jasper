@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
 
@@ -18,52 +19,45 @@ namespace Scv.Db.Seeders
         {
             var permissions = Permission.ALL_PERMISIONS;
 
-            this.Logger.LogInformation("Updating permissions...");
+            this.Logger.LogInformation("\tUpdating permissions...");
             foreach (var permission in permissions)
             {
-                this.Logger.LogInformation($"Looking up {permission.Code}...");
+                this.Logger.LogInformation("\tLooking up {code}...", permission.Code);
 
-                var filter = Builders<Permission>.Filter.Eq(p => p.Code, permission.Code);
-
-                var p = await context.Permissions.Find(filter).FirstOrDefaultAsync();
+                var p = context.Permissions.FirstOrDefault(p => p.Code == permission.Code);
                 if (p == null)
                 {
-                    this.Logger.LogInformation($"{permission.Code} does not exist, adding it...");
-                    await context.Permissions.InsertOneAsync(permission);
-                    this.Logger.LogInformation("Inserted");
+                    this.Logger.LogInformation("\t{code} does not exist, adding it...", permission.Code);
+                    await context.Permissions.AddAsync(permission);
                 }
                 else
                 {
-                    this.Logger.LogInformation($"Updating fields for {permission.Code}...");
+                    this.Logger.LogInformation("\tUpdating fields for {code}...", permission.Code);
                     p.Name = permission.Name;
                     p.Description = permission.Description;
                     p.IsActive = permission.IsActive;
-
-                    await context.Permissions.ReplaceOneAsync(filter, p);
                 }
             }
 
-            this.Logger.LogInformation("Removing permissions that don't exist anymore...");
-            var findByCodeToDeleteFilter = Builders<Permission>.Filter.Nin(p => p.Code, permissions.Select(pp => pp.Code));
-
-            var obsoletePermissions = await context.Permissions
-                .Find(findByCodeToDeleteFilter)
-                .ToListAsync();
+            this.Logger.LogInformation("\tRemoving permissions that don't exist anymore...");
+            var obsoletePermissions = context.Permissions
+                .Where(p => !permissions.Select(pp => pp.Code).Contains(p.Code))
+                .ToList();
 
             foreach (var permission in obsoletePermissions)
             {
-                this.Logger.LogInformation($"Removing {permission.Code}...");
-                var findByCodeFilter = Builders<Permission>.Filter.Eq(p => p.Code, permission.Code);
-                await context.Permissions.DeleteOneAsync(findByCodeFilter);
+                this.Logger.LogInformation("\tRemoving {code}...", permission.Code);
+                context.Permissions.Remove(permission);
             }
 
-            this.Logger.LogInformation("Listing permissions...");
-            var savedPermissions = await context.Permissions.Find(p => true).ToListAsync();
+            this.Logger.LogInformation("\tListing permissions...");
+            var savedPermissions = context.Permissions.ToList();
             foreach (var permission in savedPermissions)
             {
-                this.Logger.LogInformation(permission.Code);
+                this.Logger.LogInformation("\t{code}", permission.Code);
             }
 
+            await context.SaveChangesAsync();
         }
     }
 }

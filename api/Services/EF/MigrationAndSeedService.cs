@@ -35,17 +35,25 @@ namespace Scv.Api.Services.EF
 
         private async Task ExecuteJasperMigrationsAndSeeds()
         {
-            Logger.LogInformation("Starting JASPER Migrations and Seeding...");
+            try
+            {
+                Logger.LogInformation("Starting JASPER database migrations and seeding...");
 
-            // Migration needs to be handled manually
+                // Migration needs to be handled manually
 
-            // Seed
-            using var scope = this.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<JasperDbContext>();
-            var seederFactory = scope.ServiceProvider.GetRequiredService<SeederFactory<JasperDbContext>>();
-            await seederFactory.SeedAsync(context);
+                // Seed
+                using var scope = this.Services.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<JasperDbContext>();
+                var seederFactory = scope.ServiceProvider.GetRequiredService<SeederFactory<JasperDbContext>>();
+                await seederFactory.SeedAsync(context);
 
-            Logger.LogInformation("JASPER Migration(s) and seeding completed.");
+                Logger.LogInformation("JASPER migrations and seeding completed.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogCritical(ex, "JASPER migrations and seeding failed.");
+            }
+
         }
 
         #endregion JASPER Migrations and Seeds

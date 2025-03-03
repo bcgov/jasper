@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.EntityFrameworkCore;
 
 namespace Scv.Db.Models
 {
+    [Collection("permissions")]
     public class Permission
     {
         public const string UPDATE_PERMISSIONS_GROUPS = "UPDATE_PERMISSIONS_GROUPS";
@@ -53,19 +54,14 @@ namespace Scv.Db.Models
             // }
         ];
 
-        [BsonId]
         public ObjectId Id { get; set; }
 
-        [BsonElement("name")]
         public required string Name { get; set; }
 
-        [BsonElement("code")]
         public required string Code { get; set; }
 
-        [BsonElement("description")]
         public required string Description { get; set; }
 
-        [BsonElement("isActive")]
         public bool IsActive { get; set; }
     }
 }

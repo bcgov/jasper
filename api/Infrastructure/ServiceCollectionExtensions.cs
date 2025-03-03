@@ -8,6 +8,7 @@ using JCCommon.Clients.UserService;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Scv.Api.Helpers;
@@ -56,11 +57,12 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<JasperDbContext>(options =>
+            services.AddDbContext<JasperDbContext>(options =>
             {
                 var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
                 var dbName = configuration.GetValue<string>("MONGODB_NAME");
-                return new JasperDbContext(connectionString, dbName);
+
+                options.UseMongoDB(connectionString, dbName);
             });
 
             services.AddTransient<SeederFactory<JasperDbContext>>();

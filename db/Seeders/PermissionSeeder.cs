@@ -8,12 +8,9 @@ using Scv.Db.Models;
 
 namespace Scv.Db.Seeders
 {
-    internal class PermissionSeeder : SeederBase<JasperDbContext>
+    internal class PermissionSeeder(ILogger logger) : SeederBase<JasperDbContext>(logger)
     {
-        public PermissionSeeder(ILogger logger) : base(logger)
-        {
-            this.Order = 1;
-        }
+        public override int Order => 1;
 
         protected override async Task ExecuteAsync(JasperDbContext context)
         {

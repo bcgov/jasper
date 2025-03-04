@@ -31,11 +31,11 @@ namespace Scv.Db.Seeders
 
             foreach (var type in types)
             {
-                _logger.LogInformation($"Creating instance of {type.Name}", type.Name);
+                _logger.LogInformation("Creating instance of {name}", type.Name);
                 _seeders.Add((SeederBase<T>)Activator.CreateInstance(type, this._logger));
             }
 
-            _logger.LogInformation($"{types.Count} seeders loaded...");
+            _logger.LogInformation("{count} seeders loaded...", types.Count);
         }
 
         public async Task SeedAsync(T context)

@@ -1,14 +1,14 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Scv.Db.Contexts;
 
 namespace Scv.Db.Seeders
 {
-    internal abstract class SeederBase<T>(ILogger logger) where T : JasperDbContext
+    internal abstract class SeederBase<T>(ILogger logger) where T : DbContext
     {
         public ILogger Logger { get; } = logger;
 
-        public int Order { get; protected set; }
+        public abstract int Order { get; }
 
         protected abstract Task ExecuteAsync(T context);
 

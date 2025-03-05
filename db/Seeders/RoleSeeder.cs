@@ -14,45 +14,7 @@ namespace Scv.Db.Seeders
 
         protected override async Task ExecuteAsync(JasperDbContext context)
         {
-            var permissions = context.Permissions.ToList();
-
-            var adminPermissions = new List<string>
-            {
-                Permission.UPDATE_PERMISSIONS_GROUPS,
-                Permission.UPDATE_POSITIONS,
-                Permission.UPDATE_POSITIONS_PCSS_MAPPINGS,
-                Permission.LOCK_UNLOCK_USERS,
-                Permission.VIEW_DASHBOARD,
-                Permission.VIEW_OWN_SCHEDULE,
-                Permission.VIEW_OTHER_JUDGE_SCHEDULE,
-                Permission.VIEW_OTHER_CALENDARS,
-                Permission.VIEW_RESERVED_JUDGMENTS,
-                Permission.VIEW_COURT_LIST,
-                Permission.RETRIEVE_OWN_COURT_LIST,
-                Permission.SEARCH_WITHIN_COURT_LIST,
-                Permission.FILTER_WITHIN_COURT_LIST,
-                Permission.SEARCH_FOR_COURT_LISTS_BY_COURTROOM_AND_DATE,
-                Permission.SEARCH_FOR_COURT_FILES,
-                Permission.ADVANCED_SEARCH_FOR_COURT_FILES,
-                Permission.SORT_SEARCH_RESULTS,
-                Permission.VIEW_COURT_FILE,
-                Permission.VIEW_YOUTH_CRIMINAL_FILE,
-                Permission.VIEW_SUMMARY,
-                Permission.VIEW_ADJUDICATOR_RESTRICTIONS,
-                Permission.VIEW_ACCUSED,
-                Permission.VIEW_PARTIES,
-                Permission.VIEW_CHILDREN,
-                Permission.VIEW_CASE_DETAILS,
-                Permission.VIEW_APPEARANCES,
-                Permission.VIEW_SENTENCE_ORDER_DETAILS,
-                Permission.VIEW_SINGLE_DOCUMENT,
-                Permission.VIEW_MULTIPLE_DOCUMENTS,
-                Permission.VIEW_SIDE_BY_SIDE_DOCUMENTS,
-                Permission.ADD_EDIT_OWN_DOCUMENT_ANNOTATIONS_ONLY,
-                Permission.VIEW_QUICK_LINKS,
-                Permission.SET_DEFAULT_HOME_SCREEN,
-                Permission.ADD_EDIT_OWN_NOTES_ONLY
-            };
+            var permissions = await context.Permissions.ToListAsync();
 
             var judgePermissions = new List<string>
             {
@@ -87,39 +49,17 @@ namespace Scv.Db.Seeders
                 Permission.ADD_EDIT_OWN_NOTES_ONLY
             };
 
-            var trainorPermissions = new List<string>
-            {
-                Permission.VIEW_DASHBOARD,
-                Permission.VIEW_OWN_SCHEDULE,
-                Permission.VIEW_OTHER_JUDGE_SCHEDULE,
-                Permission.VIEW_OTHER_CALENDARS,
-                Permission.VIEW_RESERVED_JUDGMENTS,
-                Permission.VIEW_COURT_LIST,
-                Permission.RETRIEVE_OWN_COURT_LIST,
-                Permission.SEARCH_WITHIN_COURT_LIST,
-                Permission.FILTER_WITHIN_COURT_LIST,
-                Permission.SEARCH_FOR_COURT_LISTS_BY_COURTROOM_AND_DATE,
-                Permission.SEARCH_FOR_COURT_FILES,
-                Permission.ADVANCED_SEARCH_FOR_COURT_FILES,
-                Permission.SORT_SEARCH_RESULTS,
-                Permission.VIEW_COURT_FILE,
-                Permission.VIEW_YOUTH_CRIMINAL_FILE,
-                Permission.VIEW_SUMMARY,
-                Permission.VIEW_ADJUDICATOR_RESTRICTIONS,
-                Permission.VIEW_ACCUSED,
-                Permission.VIEW_PARTIES,
-                Permission.VIEW_CHILDREN,
-                Permission.VIEW_CASE_DETAILS,
-                Permission.VIEW_APPEARANCES,
-                Permission.VIEW_SENTENCE_ORDER_DETAILS,
-                Permission.VIEW_SINGLE_DOCUMENT,
-                Permission.VIEW_MULTIPLE_DOCUMENTS,
-                Permission.VIEW_SIDE_BY_SIDE_DOCUMENTS,
-                Permission.ADD_EDIT_OWN_DOCUMENT_ANNOTATIONS_ONLY,
-                Permission.VIEW_QUICK_LINKS,
-                Permission.SET_DEFAULT_HOME_SCREEN,
-                Permission.ADD_EDIT_OWN_NOTES_ONLY
-            };
+            // Add Trainer specific permission(s)
+            var trainerPermissions = judgePermissions.Concat([Permission.VIEW_OTHER_JUDGE_SCHEDULE]);
+
+            // Add Admin specific permission(s)
+            var adminPermissions = judgePermissions.Concat([
+                Permission.UPDATE_PERMISSIONS_GROUPS,
+                Permission.UPDATE_POSITIONS,
+                Permission.UPDATE_POSITIONS_PCSS_MAPPINGS,
+                Permission.LOCK_UNLOCK_USERS,
+                Permission.VIEW_OTHER_JUDGE_SCHEDULE
+            ]);
 
             var roles = new List<Role>
             {
@@ -137,7 +77,7 @@ namespace Scv.Db.Seeders
                     Description = "Role for JASPER trainers",
                     PermissionIds = [..
                         permissions
-                            .Where(p => trainorPermissions.Contains(p.Code))
+                            .Where(p => trainerPermissions.Contains(p.Code))
                             .Select(p => p.Id)
                     ]
                 },

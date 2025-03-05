@@ -14,7 +14,7 @@ namespace Scv.Db.Seeders
 
         protected override async Task ExecuteAsync(JasperDbContext context)
         {
-            var groups = context.Groups.ToList();
+            var groups = await context.Groups.ToListAsync();
 
             var users = new List<User>
             {

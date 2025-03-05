@@ -17,7 +17,7 @@ namespace Scv.Db.Seeders
 
         protected override async Task ExecuteAsync(JasperDbContext context)
         {
-            var roles = context.Roles.ToList();
+            var roles = await context.Roles.ToListAsync();
 
             var groups = new List<Group>
             {

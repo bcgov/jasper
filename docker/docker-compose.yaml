@@ -73,6 +73,12 @@ services:
       - AWS_API_GATEWAY_URL=${AWS_API_GATEWAY_URL}
       - AWS_API_GATEWAY_API_KEY=${AWS_API_GATEWAY_API_KEY}
       - AuthorizerKey=${AuthorizerKey}
+      - MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}
+      - MONGODB_SERVER=${MONGODB_SERVER}
+      - MONGODB_NAME=${MONGODB_NAME}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - MONGODB_PORT=${MONGODB_PORT}
     ports:
       - 5000:5000
     volumes:
@@ -84,14 +90,16 @@ services:
       - api-dev-obj:/opt/app-root/src/api/obj
       - ${LOCAL_WORKSPACE_FOLDER-.}/seed:/opt/app-root/data
     depends_on:
-      - db
+      - db-pg
+      - db-mongo
+
     command: >
       /bin/bash -c "
         echo Waiting for the database service to start up ...;
         sleep 10;
         dotnet watch run --project /opt/app-root/src/api/api.csproj --urls='http://+:5000';"
 
-  db:
+  db-pg:
     image: centos/postgresql-12-centos8
     environment:
       - POSTGRESQL_USER=${POSTGRESQL_USER}
@@ -102,6 +110,16 @@ services:
       - 5432:5432
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER-.}/tmp:/tmp2
+
+  db-mongo:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    volumes:
+      - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/tmp-mongo
 
 volumes:
   api-dev-bin:

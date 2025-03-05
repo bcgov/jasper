@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -10,25 +11,55 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Scv.Db.Contexts;
 using Scv.Db.Models;
+using Scv.Db.Seeders;
 
 namespace Scv.Api.Services.EF
 {
     /// <summary>
     /// This is a utility service, to load up our Migrations before any code execution. 
     /// </summary>
-    public class MigrationAndSeedService
+    public class MigrationAndSeedService(IServiceProvider services, ILogger<MigrationAndSeedService> logger)
     {
-        public IServiceProvider Services { get; }
-        private ILogger<MigrationAndSeedService> Logger { get; }
+        public IServiceProvider Services { get; } = services;
+        private ILogger<MigrationAndSeedService> Logger { get; } = logger;
 
-        public MigrationAndSeedService(IServiceProvider services, ILogger<MigrationAndSeedService> logger)
+        public async Task ExecuteMigrationsAndSeeds()
         {
-            Services = services;
-            Logger = logger;
+            this.ExecuteSCVMigrationsAndSeeds();
+            await this.ExecuteJasperMigrationsAndSeeds();
         }
 
-        public void ExecuteMigrationsAndSeeds()
+        #region JASPER Migrations and Seeds
+
+        private async Task ExecuteJasperMigrationsAndSeeds()
+        {
+            try
+            {
+                Logger.LogInformation("Starting JASPER database migrations and seeding...");
+
+                // Migration needs to be handled manually
+
+                // Seed
+                using var scope = this.Services.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<JasperDbContext>();
+                var seederFactory = scope.ServiceProvider.GetRequiredService<SeederFactory<JasperDbContext>>();
+                await seederFactory.SeedAsync(context);
+
+                Logger.LogInformation("JASPER migrations and seeding completed.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogCritical(ex, "JASPER migrations and seeding failed.");
+            }
+        }
+
+        #endregion JASPER Migrations and Seeds
+
+        #region SCV Migrations and Seeds
+
+        private void ExecuteSCVMigrationsAndSeeds()
         {
             try
             {
@@ -49,7 +80,7 @@ namespace Scv.Api.Services.EF
                 Logger.LogInformation("Migration(s) complete.");
 
                 if (applied.Count != 0) return;
-                
+
                 ExecuteSeedScripts(db, environment);
             }
             catch (Exception ex)
@@ -97,5 +128,7 @@ namespace Scv.Api.Services.EF
             Logger.LogWarning($"{path} does not exist.");
             return new List<string>();
         }
+
+        #endregion SCV Migrations and Seeds
     }
 }

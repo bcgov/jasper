@@ -29,15 +29,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="7.1.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
-    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+    <PackageReference Include="EFCore.NamingConventions" Version="8.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\db\db.csproj" />
     <ProjectReference Include="..\jc-interface-client\jc-interface-client.csproj" />
     <ProjectReference Include="..\pcss-client\pcss-client.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\EF\" />
   </ItemGroup>
 </Project>

@@ -116,10 +116,10 @@ services:
     ports:
       - 27017:27017
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/data:/opt/app-root/mydata
+      - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/tmp-mongo
 
 volumes:
   api-dev-bin:

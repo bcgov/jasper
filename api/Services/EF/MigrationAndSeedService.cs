@@ -53,7 +53,6 @@ namespace Scv.Api.Services.EF
             {
                 Logger.LogCritical(ex, "JASPER migrations and seeding failed.");
             }
-
         }
 
         #endregion JASPER Migrations and Seeds

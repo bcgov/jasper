@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
@@ -22,7 +23,7 @@ namespace Scv.Db.Seeders
                     LastName = "Macapobre",
                     Email = "ronaldo.macapobre@gov.bc.ca",
                     IsActive = true,
-                    GroupId = groups.FirstOrDefault(g => g.Name == GroupSeeder.TRAINING_AND_ADMIN).Id
+                    GroupId = groups.First(g => g.Name == GroupSeeder.TRAINING_AND_ADMIN).Id
                 }
             };
 
@@ -30,7 +31,7 @@ namespace Scv.Db.Seeders
 
             foreach (var user in users)
             {
-                var u = context.Users.FirstOrDefault(u => u.Email == user.Email);
+                var u = await context.Users.AsQueryable().FirstOrDefaultAsync(u => u.Email == user.Email);
                 if (u == null)
                 {
                     this.Logger.LogInformation("\t{email} does not exist, adding it...", user.Email);

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
@@ -42,7 +43,7 @@ namespace Scv.Db.Seeders
 
             foreach (var group in groups)
             {
-                var g = context.Groups.FirstOrDefault(g => g.Name == group.Name);
+                var g = await context.Groups.AsQueryable().FirstOrDefaultAsync(g => g.Name == group.Name);
                 if (g == null)
                 {
                     this.Logger.LogInformation("\t{name} does not exist, adding it...", group.Name);

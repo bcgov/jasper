@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
@@ -136,7 +137,7 @@ namespace Scv.Db.Seeders
                     Description = "Role for JASPER trainers",
                     PermissionIds = [..
                         permissions
-                            .Where(p => adminPermissions.Contains(p.Code))
+                            .Where(p => trainorPermissions.Contains(p.Code))
                             .Select(p => p.Id)
                     ]
                 },
@@ -145,7 +146,7 @@ namespace Scv.Db.Seeders
                     Description = "Role for provincial judge",
                     PermissionIds = [..
                         permissions
-                            .Where(p => adminPermissions.Contains(p.Code))
+                            .Where(p => judgePermissions.Contains(p.Code))
                             .Select(p => p.Id)
                     ]
                 }
@@ -155,7 +156,7 @@ namespace Scv.Db.Seeders
 
             foreach (var role in roles)
             {
-                var r = context.Roles.FirstOrDefault(r => r.Name == role.Name);
+                var r = await context.Roles.AsQueryable().FirstOrDefaultAsync(r => r.Name == role.Name);
                 if (r == null)
                 {
                     this.Logger.LogInformation("\t{name} does not exist, adding it...", role.Name);

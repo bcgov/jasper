@@ -8,14 +8,14 @@ namespace Scv.Db.Models
     public abstract class AuditableObject
     {
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
-        public DateTime CreatedDate { get; set; }
+        public DateTime Ent_Dtm { get; set; }
 
-        public string CreatedById { get; set; }
+        public string Ent_UserId { get; set; }
 
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
-        public DateTime UpdatedDate { get; set; }
+        public DateTime Upd_Dtm { get; set; }
 
-        public string UpdatedById { get; set; }
+        public string Upd_UserId { get; set; }
     }
 
     public abstract class EntityBase : AuditableObject

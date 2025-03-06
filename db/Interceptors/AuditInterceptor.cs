@@ -27,9 +27,9 @@ namespace Scv.Db.Interceptors
 
                 if (entry.State == EntityState.Added)
                 {
-                    entity.CreatedDate = now;
+                    entity.Ent_Dtm = now;
                 }
-                entity.UpdatedDate = now;
+                entity.Upd_Dtm = now;
             }
 
             return base.SavingChangesAsync(eventData, result, cancellationToken);

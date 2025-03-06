@@ -8,7 +8,7 @@ using Scv.Db.Models;
 
 namespace Scv.Db.Seeders
 {
-    internal class UserSeeder(ILogger logger) : SeederBase<JasperDbContext>(logger)
+    public class UserSeeder(ILogger<UserSeeder> logger) : SeederBase<JasperDbContext>(logger)
     {
         public override int Order => 4;
 

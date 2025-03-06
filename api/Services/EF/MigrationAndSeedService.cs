@@ -39,7 +39,10 @@ namespace Scv.Api.Services.EF
             {
                 Logger.LogInformation("Starting JASPER database migrations and seeding...");
 
-                // Migration needs to be handled manually
+                /* Migration needs to be handled manually. Will have to come up with a strategy
+                 * to support adding, editing or deleting of fields, etc. This would require
+                 * more dev work but would give us greater flexibility. 
+                */
 
                 // Seed
                 using var scope = this.Services.CreateScope();

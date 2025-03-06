@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 
@@ -10,13 +11,15 @@ namespace Scv.Db.Seeders
 {
     public class SeederFactory<T> where T : JasperDbContext
     {
-        private readonly ILogger<SeederFactory<T>> _logger;
         private readonly List<SeederBase<T>> _seeders;
+        private readonly ILogger<SeederFactory<T>> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
-        public SeederFactory(ILogger<SeederFactory<T>> logger)
+        public SeederFactory(ILogger<SeederFactory<T>> logger, IServiceProvider serviceProvider)
         {
-            _logger = logger;
             _seeders = [];
+            _logger = logger;
+            _serviceProvider = serviceProvider;
             this.LoadSeeders();
         }
 
@@ -31,8 +34,8 @@ namespace Scv.Db.Seeders
 
             foreach (var type in types)
             {
-                _logger.LogInformation("Creating instance of {name}", type.Name);
-                _seeders.Add((SeederBase<T>)Activator.CreateInstance(type, this._logger));
+                var seeder = (SeederBase<T>)_serviceProvider.GetRequiredService(type);
+                _seeders.Add(seeder);
             }
 
             _logger.LogInformation("{count} seeders loaded...", types.Count);

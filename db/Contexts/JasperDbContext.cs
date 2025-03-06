@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Scv.Db.Interceptors;
 using Scv.Db.Models;
 
 namespace Scv.Db.Contexts
@@ -19,6 +20,8 @@ namespace Scv.Db.Contexts
             {
                 this.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
             }
+
+            optionsBuilder.AddInterceptors(new AuditInterceptor());
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

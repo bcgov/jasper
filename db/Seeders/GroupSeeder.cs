@@ -8,7 +8,7 @@ using Scv.Db.Models;
 
 namespace Scv.Db.Seeders
 {
-    internal class GroupSeeder(ILogger logger) : SeederBase<JasperDbContext>(logger)
+    public class GroupSeeder(ILogger<GroupSeeder> logger) : SeederBase<JasperDbContext>(logger)
     {
         public const string TRAINING_AND_ADMIN = "Training and Administration";
         public const string JUDICIARY = "Judiciary";

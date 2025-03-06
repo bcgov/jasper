@@ -1,5 +1,4 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
 
 namespace Scv.Db.Models
@@ -15,6 +14,6 @@ namespace Scv.Db.Models
 
         public bool IsActive { get; set; }
 
-        public required string GroupId { get; set; }
+        public List<string> GroupIds { get; set; } = [];
     }
 }

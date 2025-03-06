@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Scv.Db.Seeders
 {
-    internal abstract class SeederBase<T>(ILogger logger) where T : DbContext
+    public abstract class SeederBase<T>(ILogger logger) where T : DbContext
     {
         public ILogger Logger { get; } = logger;
 

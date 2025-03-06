@@ -57,6 +57,11 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddScoped<PermissionSeeder>();
+            services.AddScoped<RoleSeeder>();
+            services.AddScoped<GroupSeeder>();
+            services.AddScoped<UserSeeder>();
+
             services.AddDbContext<JasperDbContext>(options =>
             {
                 var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");

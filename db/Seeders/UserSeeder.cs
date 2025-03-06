@@ -23,7 +23,7 @@ namespace Scv.Db.Seeders
                     LastName = "Macapobre",
                     Email = "ronaldo.macapobre@gov.bc.ca",
                     IsActive = true,
-                    GroupId = groups.First(g => g.Name == GroupSeeder.TRAINING_AND_ADMIN).Id
+                    GroupIds = [groups.First(g => g.Name == GroupSeeder.TRAINING_AND_ADMIN).Id]
                 }
             };
 
@@ -42,7 +42,7 @@ namespace Scv.Db.Seeders
                     this.Logger.LogInformation("\tUpdating fields for {email}...", user.Email);
                     u.FirstName = user.FirstName;
                     u.LastName = user.LastName;
-                    u.GroupId = user.GroupId;
+                    u.GroupIds = user.GroupIds;
                     u.IsActive = user.IsActive;
                 }
             }

@@ -5,18 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
 
-namespace Scv.Db.Repositories
-{
-    public interface IPermissionRepository : IRepositoryBase<Permission>
-    {
-        Task<IEnumerable<Permission>> GetActivePermissionsAsync();
-    }
+namespace Scv.Db.Repositories;
 
-    public class PermissionRepository(JasperDbContext context) : RepositoryBase<Permission>(context), IPermissionRepository
+public interface IPermissionRepository : IRepositoryBase<Permission>
+{
+    Task<IEnumerable<Permission>> GetActivePermissionsAsync();
+}
+
+public class PermissionRepository(JasperDbContext context) : RepositoryBase<Permission>(context), IPermissionRepository
+{
+    public async Task<IEnumerable<Permission>> GetActivePermissionsAsync()
     {
-        public async Task<IEnumerable<Permission>> GetActivePermissionsAsync()
-        {
-            return await _dbSet.Where(p => p.IsActive).ToListAsync();
-        }
+        return await _dbSet.Where(p => p.IsActive).ToListAsync();
     }
 }

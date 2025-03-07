@@ -2,13 +2,12 @@
 using Scv.Api.Models.UserManagement;
 using Scv.Db.Models;
 
-namespace Scv.Api.Mappers
+namespace Scv.Api.Mappers;
+
+public class UserManagementProfile : Profile
 {
-    public class UserManagementProfile : Profile
+    public UserManagementProfile()
     {
-        public UserManagementProfile()
-        {
-            CreateMap<Permission, PermissionDto>().ReverseMap();
-        }
+        CreateMap<Permission, PermissionDto>().ReverseMap();
     }
 }

@@ -15,26 +15,30 @@ namespace Scv.Db.Seeders
         protected override async Task ExecuteAsync(JasperDbContext context)
         {
             var roles = await context.Roles.ToListAsync();
+            var trainingAdminRoles = new List<string> { Role.ADMIN, Role.TRAINER };
+            var judiciaryRoles = new List<string> { Role.JUDGE };
+            var groups = Group.ALL_GROUPS;
 
-            var groups = new List<Group>
+            var groupRoles = new Dictionary<string, IEnumerable<string>>
             {
-                new() {
-                    Name = Group.TRAINING_AND_ADMIN,
-                    Description = "Training and Admin group",
-                    RoleIds = [..roles
-                        .Where(r => r.Name == "Admin" || r.Name == "Trainer")
-                        .Select(r => r.Id)
-                    ]
-                },
-                new() {
-                    Name = Group.JUDICIARY,
-                    Description = "Judiciary group",
-                    RoleIds = [..roles
-                        .Where(r => r.Name == "Judge")
-                        .Select(r => r.Id)
-                    ]
-                }
+                [Group.TRAINING_AND_ADMIN] = trainingAdminRoles,
+                [Group.JUDICIARY] = judiciaryRoles,
             };
+
+            foreach (var group in groups)
+            {
+                if (groupRoles.TryGetValue(group.Name, out var roleNames))
+                {
+                    group.RoleIds = roles
+                        .Where(r => roleNames.Contains(r.Name))
+                        .Select(r => r.Id)
+                        .ToList();
+                }
+                else
+                {
+                    this.Logger.LogInformation("\tRoles for {name} Group is missing...", group.Name);
+                }
+            }
 
             this.Logger.LogInformation("\tUpdating groups...");
 

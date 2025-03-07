@@ -121,36 +121,29 @@ namespace Scv.Db.Seeders
                 Permission.ADD_EDIT_OWN_NOTES_ONLY
             };
 
-            var roles = new List<Role>
+            var roles = Role.ALL_ROLES;
+
+            var rolePermissions = new Dictionary<string, IEnumerable<string>>
             {
-                new() {
-                    Name = "Admin",
-                    Description = "Role for JASPER system administrators",
-                    PermissionIds = [..
-                        permissions
-                            .Where(p => adminPermissions.Contains(p.Code))
-                            .Select(p => p.Id)
-                    ]
-                },
-                new() {
-                    Name = "Trainer",
-                    Description = "Role for JASPER trainers",
-                    PermissionIds = [..
-                        permissions
-                            .Where(p => trainerPermissions.Contains(p.Code))
-                            .Select(p => p.Id)
-                    ]
-                },
-                new() {
-                    Name = "Judge",
-                    Description = "Role for provincial judge",
-                    PermissionIds = [..
-                        permissions
-                            .Where(p => judgePermissions.Contains(p.Code))
-                            .Select(p => p.Id)
-                    ]
-                }
+                [Role.ADMIN] = adminPermissions,
+                [Role.TRAINER] = trainerPermissions,
+                [Role.JUDGE] = judgePermissions
             };
+
+            foreach (var role in roles)
+            {
+                if (rolePermissions.TryGetValue(role.Name, out var permissionCodes))
+                {
+                    role.PermissionIds = permissions
+                        .Where(p => permissionCodes.Contains(p.Code))
+                        .Select(p => p.Id)
+                        .ToList();
+                }
+                else
+                {
+                    this.Logger.LogInformation("\tPermissions for Role {name} is missing...", role.Name);
+                }
+            }
 
             this.Logger.LogInformation("\tUpdating roles...");
 

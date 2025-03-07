@@ -10,9 +10,6 @@ namespace Scv.Db.Seeders
 {
     public class GroupSeeder(ILogger<GroupSeeder> logger) : SeederBase<JasperDbContext>(logger)
     {
-        public const string TRAINING_AND_ADMIN = "Training and Administration";
-        public const string JUDICIARY = "Judiciary";
-
         public override int Order => 3;
 
         protected override async Task ExecuteAsync(JasperDbContext context)
@@ -22,7 +19,7 @@ namespace Scv.Db.Seeders
             var groups = new List<Group>
             {
                 new() {
-                    Name = TRAINING_AND_ADMIN,
+                    Name = Group.TRAINING_AND_ADMIN,
                     Description = "Training and Admin group",
                     RoleIds = [..roles
                         .Where(r => r.Name == "Admin" || r.Name == "Trainer")
@@ -30,7 +27,7 @@ namespace Scv.Db.Seeders
                     ]
                 },
                 new() {
-                    Name = JUDICIARY,
+                    Name = Group.JUDICIARY,
                     Description = "Judiciary group",
                     RoleIds = [..roles
                         .Where(r => r.Name == "Judge")

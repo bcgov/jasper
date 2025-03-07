@@ -45,7 +45,7 @@ public class PermissionService(
         var permission = await _permissionRepo.GetByIdAsync(id);
 
         permission.Description = permissionDto.Description;
-        permission.IsActive = permissionDto.IsActive;
+        permission.IsActive = permissionDto.IsActive.GetValueOrDefault();
 
         await _permissionRepo.UpdateAsync(permission);
 

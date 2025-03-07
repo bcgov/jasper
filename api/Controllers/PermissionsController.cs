@@ -48,8 +48,13 @@ public class PermissionsController(IPermissionService permissionService) : Contr
     /// <param name="permission">Payload to update permission (description and isActive) only</param>
     /// <returns>Updated permission</returns>
     [HttpPut]
-    public async Task<IActionResult> UpdatePermission(string id, PermissionUpdateDto permission)
+    public async Task<IActionResult> UpdatePermission(string id, [FromBody] PermissionUpdateDto permission)
     {
+        if (!this.ModelState.IsValid)
+        {
+            return BadRequest(this.ModelState);
+        }
+
         var existingPermission = await _permissionService.GetPermissionByIdAsync(id);
         if (existingPermission == null)
         {

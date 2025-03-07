@@ -19,6 +19,7 @@ using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
+using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
@@ -72,6 +73,9 @@ namespace Scv.Api.Infrastructure
 
             services.AddTransient<SeederFactory<JasperDbContext>>();
 
+            services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
+            services.AddScoped<IPermissionRepository, PermissionRepository>();
+
             return services;
         }
 
@@ -122,6 +126,8 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
+
+            services.AddScoped<IPermissionService, PermissionService>();
 
             return services;
         }

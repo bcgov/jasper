@@ -1,8 +1,8 @@
 <template>
   <v-expand-transition>
-    <v-card v-show="showDropdown" class="mx-auto" height="100" elevation="15">
+    <v-card v-show="showDropdown" class="mx-auto" height="100">
       <v-container>
-        <v-form @submit.prevent="searchForCourtList">
+        <v-form @submit.prevent="searchForCourtList(true)">
           <v-row class="py-1">
             <v-col cols="3">
               <v-select
@@ -93,22 +93,26 @@
   import { LocationService } from '@/services';
   import { HttpService } from '@/services/HttpService';
   import { useCommonStore, useCourtListStore } from '@/stores';
+  import { useSnackbarStore } from '@/stores/SnackbarStore';
   import { LocationInfo } from '@/types/courtlist';
   import { courtListType } from '@/types/courtlist/jsonTypes';
   import { mdiClose } from '@mdi/js';
-  import { computed, inject, onMounted, reactive, ref, watch } from 'vue';
+  import {
+    computed,
+    inject,
+    onMounted,
+    onUnmounted,
+    reactive,
+    ref,
+    watch,
+  } from 'vue';
 
   // Component v-models
   const showDropdown = defineModel<boolean>('showDropdown');
   const isSearching = defineModel<boolean>('isSearching');
   const date = defineModel<Date>('date');
-  const bannerDate = defineModel<Date | null>('bannerDate');
+  const appliedDate = defineModel<Date | null>('appliedDate');
 
-  watch(bannerDate, (newValue, oldValue) => {
-    if (oldValue != null && newValue !== oldValue) {
-      searchForCourtList();
-    }
-  });
   const emit = defineEmits(['courtListSearched']);
   const GREEN = '#62d3a4';
   const commonStore = useCommonStore();
@@ -119,6 +123,13 @@
   const isLocationDataMounted = ref(false);
   const searchAllowed = ref(true);
   const selectedCourtRoom = ref();
+  const formSubmit = ref(false);
+  const TEN_MINUTES = 600000;
+  const NINE_MINUTES = 540000;
+  const ONE_MINUTE = 60000;
+  const courtRefreshInterval = TEN_MINUTES;
+  const warningRefreshInterval = NINE_MINUTES;
+  const warningTime = ONE_MINUTE;
   const schedule = ref('room_schedule');
   const shortHandDate = computed(() =>
     date.value ? date.value.toISOString().substring(0, 10) : ''
@@ -131,6 +142,24 @@
   const httpService = inject<HttpService>('httpService');
   const locationsAndCourtRooms = ref<LocationInfo[]>();
   const locationsService = inject<LocationService>('locationService');
+  const snackBarStore = useSnackbarStore();
+  let searchInterval: NodeJS.Timeout;
+  let warningInterval: NodeJS.Timeout;
+
+  watch(
+    appliedDate,
+    (newValue, oldValue) => {
+      if (oldValue != null && newValue !== oldValue && !formSubmit.value) {
+        searchForCourtList();
+      }
+      formSubmit.value = false;
+    },
+    { immediate: true }
+  );
+
+  watch([selectedCourtRoom, schedule, selectedCourtLocation, date], () =>
+    setupAutoRefresh()
+  );
 
   if (!httpService) {
     throw new Error('Service is undefined.');
@@ -141,9 +170,10 @@
     isLoading.value = false;
   });
 
+  onUnmounted(() => clearTimers());
+
   const getListOfAvailableCourts = async () => {
-    locationsAndCourtRooms.value =
-      await locationsService?.getLocations(true);
+    locationsAndCourtRooms.value = await locationsService?.getLocations(true);
     commonStore.updateCourtRoomsAndLocations(locationsAndCourtRooms.value);
     isLocationDataMounted.value = true;
   };
@@ -178,6 +208,8 @@
         searchAllowed.value = true;
         isDataReady.value = true;
         isSearching.value = false;
+        formSubmit.value = false;
+        setupAutoRefresh();
       });
   };
 
@@ -191,15 +223,43 @@
     return !errors.isMissingRoom && !errors.isMissingLocation;
   };
 
-  const searchForCourtList = () => {
+  const searchForCourtList = (submittedFromForm = false) => {
     if (!validateForm()) {
       return;
     }
+    formSubmit.value = submittedFromForm;
     showDropdown.value = false;
     searchAllowed.value = false;
-    if (!bannerDate.value) {
-      bannerDate.value = date.value;
-    }
+    appliedDate.value = date.value ?? null;
     getCourtListDetails();
+  };
+
+  const setupAutoRefresh = () => {
+    clearTimers();
+    searchInterval = setInterval(() => {
+      if (appliedDate.value) {
+        searchForCourtList(true);
+      }
+    }, courtRefreshInterval);
+    warningInterval = setInterval(() => {
+      if (appliedDate.value && !isSearching.value) {
+        showWarning();
+      }
+    }, warningRefreshInterval);
+  };
+
+  const showWarning = () => {
+    snackBarStore.showSnackbar(
+      'This page will refresh in 1 minute to ensure you see the latest updates.',
+      '#b4e6ff',
+      '🔄 Heads-up!',
+      warningTime
+    );
+  };
+
+  const clearTimers = () => {
+    clearInterval(searchInterval);
+    clearInterval(warningInterval);
+    snackBarStore.hideSnackbar();
   };
 </script>

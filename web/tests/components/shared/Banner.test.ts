@@ -23,7 +23,8 @@ describe('Banner.vue', () => {
             },
         });
         const banner = wrapper.find('v-banner');
+        const header = wrapper.find('h3');
         expect(banner.attributes('style')).toContain('background-color: red;');
-        expect(banner.attributes('style')).toContain('color: orange;');
+        expect(header.attributes('style')).toContain('color: orange;');
     });
 });

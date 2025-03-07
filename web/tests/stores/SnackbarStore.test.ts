@@ -15,14 +15,16 @@ describe('SnackBarStore', () => {
     expect(store.message).toBe('');
     expect(store.color).toBe('success');
     expect(store.title).toBe('');
+    expect(store.timeout).toBe(undefined);
   });
 
-  it('shows snackbar with given message, color, and title', () => {
-    store.showSnackbar('Test message', 'error', 'Test title');
+  it('shows snackbar with given arguments', () => {
+    store.showSnackbar('Test message', 'error', 'Test title', 20000);
     expect(store.isVisible).toBe(true);
     expect(store.message).toBe('Test message');
     expect(store.color).toBe('error');
     expect(store.title).toBe('Test title');
+    expect(store.timeout).toBe(20000);
   });
 
   it('shows snackbar with default values when no arguments are passed', () => {
@@ -31,5 +33,6 @@ describe('SnackBarStore', () => {
     expect(store.message).toBe('');
     expect(store.color).toBe('success');
     expect(store.title).toBe('');
+    expect(store.timeout).toBe(15000);
   });
 });

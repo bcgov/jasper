@@ -169,3 +169,22 @@ export interface courtNotesInfoType {
   remarks?: trialRemarkInfoType[];
   text?: string;
 }
+
+export interface CourtListCardInfo {
+  shortHandDate: string;
+  courtListLocation: string;
+  courtListLocationID: number;
+  courtListRoom: string;
+  totalCases: number;
+  totalTime: string;
+  totalTimeUnit: string;
+  criminalCases: number;
+  familyCases: number;
+  civilCases: number;
+  amPM: string;
+  fileCount: number;
+  presider: string;
+  activity: string;
+  courtClerk: string;
+  email?: string;
+}

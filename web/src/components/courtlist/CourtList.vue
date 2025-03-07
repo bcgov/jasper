@@ -7,11 +7,11 @@
   </v-card>
   <!------------------------------------------------------->
   <banner title="Court list" color="#183a4a" bgColor="#b4e6ff">
-    <template #left v-if="bannerDate"
+    <template #left v-if="appliedDate"
       >:
-      <v-icon :icon="mdiChevronLeft" @click="AddDay(-1)" />
+      <v-icon :icon="mdiChevronLeft" @click="addDay(-1)" />
       <b>{{ shortHandDate }}</b>
-      <v-icon :icon="mdiChevronRight" @click="AddDay(1)" />
+      <v-icon :icon="mdiChevronRight" @click="addDay(1)" />
     </template>
     <template #right>
       <v-btn @click="showDropdown = !showDropdown">
@@ -21,36 +21,88 @@
   </banner>
 
   <v-expand-transition>
-    <v-card v-show="showDropdown" height="100" elevation="16">
+    <v-card v-show="showDropdown" height="100" elevation="7">
       <court-list-search
         v-model:date="selectedDate"
         v-model:isSearching="searchingRequest"
         v-model:showDropdown="showDropdown"
-        v-model:bannerDate="bannerDate"
-        @courtListSearch="PopulateCards"
+        v-model:appliedDate="appliedDate"
+        @courtListSearched="populateCardTablePairings"
       />
     </v-card>
   </v-expand-transition>
-  <v-skeleton-loader type="table" :loading="searchingRequest">
-    <div />
-  </v-skeleton-loader>
+  <v-container>
+    <v-skeleton-loader class="my-1" type="table" :loading="searchingRequest">
+      <court-list-table-search
+        v-if="cardTablePairings.length"
+        v-model:filesFilter="selectedFilesFilter"
+        v-model:AMPMFilter="selectedAMPMFilter"
+        v-model:search="search"
+      />
+      <template
+        v-for="pairing in filteredTablePairings"
+        :key="pairing.card.courtListLocationID"
+        class="w-100"
+      >
+        <court-list-card :cardInfo="pairing.card" />
+        <!-- Wait until we can get real data back before enabling data-table -->
+        <!-- <v-data-table
+          v-model="selectedItems"
+          :items="pairing.table"
+          :headers
+          :search="search"
+          item-value="courtFileNumber"
+          class="pb-5"
+        >
+          <template v-slot:bottom />
+        </v-data-table> -->
+      </template>
+    </v-skeleton-loader>
+  </v-container>
 </template>
 
 <script setup lang="ts">
   import { HttpService } from '@/services/HttpService';
+  import { CourtListCardInfo } from '@/types/courtlist';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
   import { computed, inject, ref } from 'vue';
+  import CourtListTableSearch from './CourtListTableSearch.vue';
 
   const errorCode = ref(0);
   const searchingRequest = ref(false);
   const isLoading = ref(false);
   const selectedDate = ref(new Date());
-  const bannerDate = ref<Date | null>(null);
+  const appliedDate = ref<Date | null>(null);
   const showDropdown = ref(false);
+  const search = ref();
+  const selectedFilesFilter = ref();
+  const selectedAMPMFilter = ref();
+  const cardTablePairings = ref<{ card: CourtListCardInfo; table: any }[]>([]);
+  const filesFilterMap: { [key: string]: (appearance: any) => boolean } = {
+    Complete: (appearance: any) => appearance.isComplete,
+    Cancelled: (appearance: any) => appearance.appearanceStatusCd === 'CNCL',
+    'To be called': (appearance: any) =>
+      appearance.appearanceStatusCd === 'SCHD',
+  };
+
+  const filterByAMPM = (pairing: any) =>
+    !selectedAMPMFilter.value || pairing.card.amPM === selectedAMPMFilter.value;
+
+  const filterByFiles = (table: any) => {
+    return selectedFilesFilter.value
+      ? table.filter(filesFilterMap[selectedFilesFilter.value])
+      : table;
+  };
+
+  const filteredTablePairings = computed(() => {
+    return cardTablePairings.value
+      .filter(filterByAMPM)
+      .map((pairing) => ({ ...pairing, table: filterByFiles(pairing.table) }));
+  });
 
   const shortHandDate = computed(() =>
-    bannerDate.value
-      ? bannerDate.value.toLocaleDateString('en-US', {
+    appliedDate.value
+      ? appliedDate.value.toLocaleDateString('en-US', {
           weekday: 'long',
           day: '2-digit',
           month: 'long',
@@ -64,19 +116,35 @@
     throw new Error('Service is undefined.');
   }
 
-  const PopulateCards = (data: any) => {
-    if (!data) {
+  const populateCardTablePairings = (data: any) => {
+    cardTablePairings.value = [];
+    if (!data?.items?.length) {
       return;
     }
-    // todo: map cards from retrieved data
+    // As of right now the cards will only ever have 1 location/room pairing.
+    // If there are multiple `items` then that means there is more than 1 judge
+    // in this location/room pairing on this given day.
+    data.items.forEach((courtList: any) => {
+      const courtRoomDetails = courtList.courtRoomDetails[0];
+      const adjudicatorDetails = courtRoomDetails.adjudicatorDetails[0];
+      const card = {} as CourtListCardInfo;
+      card.fileCount = courtList.casesTarget;
+      card.activity = courtList.activityDsc;
+      card.presider = adjudicatorDetails?.adjudicatorNm;
+      card.courtListRoom = courtRoomDetails.courtRoomCd;
+      card.courtListLocationID = courtList.locationId;
+      card.courtListLocation = courtList.locationNm;
+      card.amPM = adjudicatorDetails?.amPm;
+      cardTablePairings.value.push({ card, table: courtList.appearances });
+    });
   };
 
-  const AddDay = (days: number) => {
-    if (bannerDate.value) {
-      bannerDate.value = new Date(
-        bannerDate.value.setDate(bannerDate.value.getDate() + days)
+  const addDay = (days: number) => {
+    if (appliedDate.value) {
+      appliedDate.value = new Date(
+        appliedDate.value.setDate(appliedDate.value.getDate() + days)
       );
-      selectedDate.value = bannerDate.value;
+      selectedDate.value = appliedDate.value;
     }
   };
 </script>

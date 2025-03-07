@@ -1,8 +1,8 @@
 <template>
-  <v-banner :style="{ backgroundColor: bgColor, color: color }">
+  <v-banner :style="{ backgroundColor: bgColor}">
     <v-row class="my-1">
       <v-col cols="9">
-        <h3>
+        <h3 :style="{ color: color }">
           {{ title }}
           <slot name="left" />
         </h3>

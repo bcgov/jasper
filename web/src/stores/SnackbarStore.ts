@@ -6,13 +6,27 @@ export const useSnackbarStore = defineStore('snackbar', () => {
   const message = ref('');
   const color = ref('success');
   const title = ref('');
+  const timeout = ref<number>();
 
-  const showSnackbar = (msg = '', col = 'success', ti = '') => {
+  const showSnackbar = (msg = '', col = 'success', ti = '', time = 15000) => {
     message.value = msg;
     color.value = col;
     title.value = ti;
     isVisible.value = true;
+    timeout.value = time;
   };
 
-  return { isVisible, message, color, showSnackbar, title };
+  const hideSnackbar = () => {
+    isVisible.value = false;
+  };
+
+  return {
+    isVisible,
+    message,
+    color,
+    showSnackbar,
+    hideSnackbar,
+    title,
+    timeout,
+  };
 });

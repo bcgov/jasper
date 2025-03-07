@@ -3,14 +3,21 @@ import { HttpService } from '@/services/HttpService';
 import { useCommonStore, useCourtListStore } from '@/stores';
 import { mount } from '@vue/test-utils';
 import CourtListSearch from 'CMP/courtlist/CourtListSearch.vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { nextTick } from 'vue';
+import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/stores');
 vi.mock('@/services/HttpService');
 vi.mock('@/services');
 
 describe('CourtListSearch.vue', () => {
+  const TEN_MINUTES = 600000;
+  const NINE_MINUTES = 540000;
+  const ONE_MINUTE = 60000;
+
+  let snackbarStore: ReturnType<typeof useSnackbarStore>;
   let wrapper: any;
   let commonStore: any;
   let courtListStore: any;
@@ -18,6 +25,9 @@ describe('CourtListSearch.vue', () => {
   let httpService: any;
 
   beforeEach(() => {
+    vi.useFakeTimers()
+    setActivePinia(createPinia());
+    snackbarStore = useSnackbarStore();
     commonStore = {
       updateCourtRoomsAndLocations: vi.fn(),
     };
@@ -36,7 +46,7 @@ describe('CourtListSearch.vue', () => {
       ]),
     };
     httpService = {
-      get: vi.fn().mockResolvedValue({}),
+      get: vi.fn().mockResolvedValue(Promise.resolve({}))
     };
 
     (useCommonStore as any).mockReturnValue(commonStore);
@@ -53,6 +63,10 @@ describe('CourtListSearch.vue', () => {
       },
     });
   });
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   it('renders correctly', () => {
     expect(wrapper.exists()).toBe(true);
@@ -124,5 +138,53 @@ describe('CourtListSearch.vue', () => {
     await nextTick();
 
     expect(wrapper.emitted().courtListSearched).toBeTruthy();
+  });
+
+  it('shows warning before auto-refresh', async () => {
+    wrapper.vm.selectedCourtLocation = {
+      locationId: 1,
+      name: 'Location 1',
+      courtRooms: [{ room: 'Room 1' }],
+    };
+    wrapper.vm.schedule = 'my_schedule';
+    wrapper.vm.appliedDate = new Date();
+
+    await vi.advanceTimersByTimeAsync(NINE_MINUTES);
+
+    expect(snackbarStore.isVisible).toBe(true);
+  });
+
+  it('hides warning after auto-refresh', async () => {
+    wrapper.vm.selectedCourtLocation = {
+      locationId: 1,
+      name: 'Location 1',
+      courtRooms: [{ room: 'Room 1' }],
+    };
+    wrapper.vm.schedule = 'my_schedule';
+    wrapper.vm.appliedDate = new Date();
+
+    await vi.advanceTimersByTimeAsync(NINE_MINUTES);
+    expect(snackbarStore.isVisible).toBe(true);
+    await vi.advanceTimersByTimeAsync(ONE_MINUTE);
+    expect(snackbarStore.isVisible).toBe(false);
+  });
+
+
+  it(`searches for new court-list data after ${TEN_MINUTES} ms`, async () => {
+    wrapper.vm.selectedCourtLocation = {
+      locationId: 1,
+      name: 'Location 1',
+      courtRooms: [{ room: 'Room 1' }],
+    };
+    wrapper.vm.schedule = 'my_schedule';
+    wrapper.vm.appliedDate = new Date('2023-01-01');
+    wrapper.vm.date = new Date('2023-01-01');
+    wrapper.vm.selectedCourtRoom = 'Room 1';
+
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES);
+
+    expect(httpService.get).toHaveBeenCalledWith(
+      'api/courtlist/court-list?agencyId=1&roomCode=Room 1&proceeding=2023-01-01'
+    );
   });
 });

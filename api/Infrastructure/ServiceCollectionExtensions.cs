@@ -75,6 +75,8 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
             services.AddScoped<IPermissionRepository, PermissionRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IGroupRepository, GroupRepository>();
 
             return services;
         }
@@ -128,6 +130,7 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JudicialCalendarService>();
 
             services.AddScoped<IPermissionService, PermissionService>();
+            services.AddScoped<IRoleService, RoleService>();
 
             return services;
         }

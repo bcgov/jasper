@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
+using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -94,6 +95,8 @@ namespace Scv.Api
             #region Setup Services
 
             services.AddHttpClientsAndScvServices(Configuration);
+
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
             #endregion Setup Services
 

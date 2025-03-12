@@ -1,14 +1,16 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.UserManagement;
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
 
-//[Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
+[Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
 [Route("api/[controller]")]
 [ApiController]
 public class RolesController(

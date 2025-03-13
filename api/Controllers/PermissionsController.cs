@@ -8,7 +8,7 @@ using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
 
-[Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
+//[Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
 [Route("api/[controller]")]
 [ApiController]
 public class PermissionsController(

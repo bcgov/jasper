@@ -34,7 +34,7 @@ public class PermissionServiceTests
         var config = new MapperConfiguration(cfg =>
         {
             cfg.CreateMap<Permission, PermissionDto>();
-            cfg.CreateMap<PermissionUpdateDto, Permission>();
+            cfg.CreateMap<PermissionDto, Permission>();
         });
         var mapper = config.CreateMapper();
 
@@ -53,7 +53,7 @@ public class PermissionServiceTests
 
         _mockPermissionRepo.Setup(r => r.GetActivePermissionsAsync()).ReturnsAsync(permissions);
 
-        var result = await _permissionService.GetPermissionsAsync();
+        var result = await _permissionService.GetAllAsync();
 
         Assert.NotNull(result);
         Assert.Equal(count, result.Count);
@@ -73,7 +73,7 @@ public class PermissionServiceTests
         var permission = Permission.ALL_PERMISIONS[randomIndex];
         _mockPermissionRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(permission);
 
-        var result = await _permissionService.GetPermissionByIdAsync(fakeId);
+        var result = await _permissionService.GetByIdAsync(fakeId);
 
         Assert.NotNull(result);
         Assert.Equal(permission.Id, result.Id);
@@ -86,15 +86,16 @@ public class PermissionServiceTests
         var fakeId = _faker.Random.AlphaNumeric(10);
         var randomIndex = _faker.Random.Number(0, Permission.ALL_PERMISIONS.Count - 1);
         var permission = Permission.ALL_PERMISIONS[randomIndex];
-        var updateDto = new PermissionUpdateDto
+        var updateDto = new PermissionDto
         {
+            Id = fakeId,
             Description = _faker.Lorem.Paragraph(),
             IsActive = _faker.Random.Bool()
         };
         _mockPermissionRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(permission);
         _mockPermissionRepo.Setup(r => r.UpdateAsync(It.IsAny<Permission>())).Returns(Task.CompletedTask);
 
-        var result = await _permissionService.UpdatePermissionAsync(fakeId, updateDto);
+        var result = await _permissionService.UpdateAsync(updateDto);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -105,7 +106,7 @@ public class PermissionServiceTests
     }
 
     [Fact]
-    public async Task ValidatePermissionUpdateDtoAsync_ShouldReturnFailedResult_WhenPermissionIdIsNull()
+    public async Task ValidatePermissionDtoAsync_ShouldReturnFailedResult_WhenPermissionIdIsNull()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
 
@@ -113,7 +114,7 @@ public class PermissionServiceTests
             .Setup(p => p.GetByIdAsync(fakeId))
             .ReturnsAsync((Permission)null);
 
-        var result = await _permissionService.ValidatePermissionUpdateDtoAsync(new PermissionUpdateDto
+        var result = await _permissionService.ValidateAsync(new PermissionDto
         {
             Id = fakeId,
         });
@@ -126,7 +127,7 @@ public class PermissionServiceTests
     }
 
     [Fact]
-    public async Task ValidatePermissionUpdateDtoAsync_ShouldReturnSuccessResult_WhenPermissionIdIsValid()
+    public async Task ValidatePermissionDtoAsync_ShouldReturnSuccessResult_WhenPermissionIdIsValid()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
 
@@ -139,7 +140,7 @@ public class PermissionServiceTests
                 Description = _faker.Lorem.Paragraph()
             });
 
-        var result = await _permissionService.ValidatePermissionUpdateDtoAsync(new PermissionUpdateDto
+        var result = await _permissionService.ValidateAsync(new PermissionDto
         {
             Id = fakeId,
         });

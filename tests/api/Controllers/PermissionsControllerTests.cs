@@ -17,14 +17,14 @@ namespace tests.api.Controllers;
 public class PermissionsControllerTests
 {
     private readonly Mock<IPermissionService> _mockPermissionService;
-    private readonly Mock<IValidator<PermissionUpdateDto>> _mockValidator;
+    private readonly Mock<IValidator<PermissionDto>> _mockValidator;
     private readonly PermissionsController _controller;
     private readonly Faker _faker;
 
     public PermissionsControllerTests()
     {
         _mockPermissionService = new Mock<IPermissionService>();
-        _mockValidator = new Mock<IValidator<PermissionUpdateDto>>();
+        _mockValidator = new Mock<IValidator<PermissionDto>>();
         _controller = new PermissionsController(_mockPermissionService.Object, _mockValidator.Object);
         _faker = new Faker();
     }
@@ -32,36 +32,36 @@ public class PermissionsControllerTests
     [Fact]
     public async Task GetPermissions_ReturnsOkResult_WhenPermissionsExist()
     {
-        _mockPermissionService.Setup(s => s.GetPermissionsAsync()).ReturnsAsync([]);
+        _mockPermissionService.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
 
-        var result = await _controller.GetPermissions();
+        var result = await _controller.GetAll();
 
         Assert.IsType<OkObjectResult>(result);
-        _mockPermissionService.Verify(p => p.GetPermissionsAsync(), Times.Once());
+        _mockPermissionService.Verify(p => p.GetAllAsync(), Times.Once());
     }
 
     [Fact]
     public async Task GetPermissionById_ReturnsNotFoundResult_WhenPermissionDoesNotExist()
     {
         var fakeId = ObjectId.GenerateNewId().ToString();
-        _mockPermissionService.Setup(s => s.GetPermissionByIdAsync(fakeId)).ReturnsAsync((PermissionDto)null);
+        _mockPermissionService.Setup(s => s.GetByIdAsync(fakeId)).ReturnsAsync((PermissionDto)null);
 
-        var result = await _controller.GetPermissionById(fakeId);
+        var result = await _controller.GetById(fakeId);
 
         Assert.IsType<NotFoundResult>(result);
-        _mockPermissionService.Verify(p => p.GetPermissionByIdAsync(fakeId), Times.Once());
+        _mockPermissionService.Verify(p => p.GetByIdAsync(fakeId), Times.Once());
     }
 
     [Fact]
     public async Task GetPermissionById_ReturnsBadRequest_WhenIdIsInvalid()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
-        _mockPermissionService.Setup(s => s.GetPermissionByIdAsync(fakeId)).ReturnsAsync((PermissionDto)null);
+        _mockPermissionService.Setup(s => s.GetByIdAsync(fakeId)).ReturnsAsync((PermissionDto)null);
 
-        var result = await _controller.GetPermissionById(fakeId);
+        var result = await _controller.GetById(fakeId);
 
         Assert.IsType<BadRequestObjectResult>(result);
-        _mockPermissionService.Verify(p => p.GetPermissionByIdAsync(fakeId), Times.Never);
+        _mockPermissionService.Verify(p => p.GetByIdAsync(fakeId), Times.Never);
     }
 
     [Fact]
@@ -69,14 +69,14 @@ public class PermissionsControllerTests
     {
         var fakeId = ObjectId.GenerateNewId().ToString();
         var permission = new PermissionDto();
-        _mockPermissionService.Setup(s => s.GetPermissionByIdAsync(fakeId)).ReturnsAsync(permission);
+        _mockPermissionService.Setup(s => s.GetByIdAsync(fakeId)).ReturnsAsync(permission);
 
-        var result = await _controller.GetPermissionById(fakeId);
+        var result = await _controller.GetById(fakeId);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnValue = Assert.IsType<PermissionDto>(okResult.Value);
         Assert.Equal(permission, returnValue);
-        _mockPermissionService.Verify(p => p.GetPermissionByIdAsync(fakeId), Times.Once());
+        _mockPermissionService.Verify(p => p.GetByIdAsync(fakeId), Times.Once());
     }
 
     [Fact]
@@ -87,21 +87,21 @@ public class PermissionsControllerTests
                 new ValidationFailure(_faker.Random.Word(), _faker.Lorem.Paragraph())
             ]);
         _mockValidator
-            .Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<PermissionUpdateDto>>(), It.IsAny<CancellationToken>()))
+            .Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<PermissionDto>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockValidationResult);
 
-        var payload = new PermissionUpdateDto
+        var payload = new PermissionDto
         {
             Description = _faker.Lorem.Paragraph(),
             IsActive = _faker.Random.Bool()
         };
 
-        var result = await _controller.UpdatePermission(_faker.Random.AlphaNumeric(10), payload);
+        var result = await _controller.Update(_faker.Random.AlphaNumeric(10), payload);
 
         Assert.IsType<BadRequestObjectResult>(result);
         _mockValidator.Verify(v =>
             v.ValidateAsync(
-                It.IsAny<ValidationContext<PermissionUpdateDto>>(),
+                It.IsAny<ValidationContext<PermissionDto>>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -109,31 +109,31 @@ public class PermissionsControllerTests
     [Fact]
     public async Task UpdatePermission_ReturnsBadRequest_WhenBusinessRulesValidationFails()
     {
-        var mockPayload = new PermissionUpdateDto
+        var mockPayload = new PermissionDto
         {
             Description = _faker.Lorem.Paragraph(),
             IsActive = _faker.Random.Bool()
         };
         _mockValidator
             .Setup(v =>
-                v.ValidateAsync(It.IsAny<ValidationContext<PermissionUpdateDto>>(),
+                v.ValidateAsync(It.IsAny<ValidationContext<PermissionDto>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
         _mockPermissionService
-            .Setup(p => p.ValidatePermissionUpdateDtoAsync(It.IsAny<PermissionUpdateDto>()))
-            .ReturnsAsync(OperationResult<PermissionUpdateDto>.Failure([_faker.Lorem.Paragraph()]));
+            .Setup(p => p.ValidateAsync(It.IsAny<PermissionDto>(), It.IsAny<bool>()))
+            .ReturnsAsync(OperationResult<PermissionDto>.Failure([_faker.Lorem.Paragraph()]));
 
 
-        var result = await _controller.UpdatePermission(_faker.Random.AlphaNumeric(10), mockPayload);
+        var result = await _controller.Update(_faker.Random.AlphaNumeric(10), mockPayload);
 
         Assert.IsType<BadRequestObjectResult>(result);
         _mockValidator.Verify(v =>
             v.ValidateAsync(
-                It.IsAny<ValidationContext<PermissionUpdateDto>>(),
+                It.IsAny<ValidationContext<PermissionDto>>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
         _mockPermissionService.Verify(p =>
-            p.ValidatePermissionUpdateDtoAsync(It.IsAny<PermissionUpdateDto>()),
+            p.ValidateAsync(It.IsAny<PermissionDto>(), It.IsAny<bool>()),
             Times.Once);
     }
 
@@ -141,7 +141,7 @@ public class PermissionsControllerTests
     public async Task UpdatePermission_ReturnsOkResult_WhenPermissionIsUpdated()
     {
         var fakeId = ObjectId.GenerateNewId().ToString();
-        var mockPayload = new PermissionUpdateDto
+        var mockPayload = new PermissionDto
         {
             Id = fakeId,
             Description = _faker.Lorem.Paragraph(),
@@ -149,29 +149,29 @@ public class PermissionsControllerTests
         };
         _mockValidator
             .Setup(v =>
-                v.ValidateAsync(It.IsAny<ValidationContext<PermissionUpdateDto>>(),
+                v.ValidateAsync(It.IsAny<ValidationContext<PermissionDto>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
         _mockPermissionService
-            .Setup(p => p.ValidatePermissionUpdateDtoAsync(It.IsAny<PermissionUpdateDto>()))
-            .ReturnsAsync(OperationResult<PermissionUpdateDto>.Success(mockPayload));
+            .Setup(p => p.ValidateAsync(It.IsAny<PermissionDto>(), It.IsAny<bool>()))
+            .ReturnsAsync(OperationResult<PermissionDto>.Success(mockPayload));
         _mockPermissionService
-            .Setup(s => s.UpdatePermissionAsync(fakeId, mockPayload))
+            .Setup(s => s.UpdateAsync(mockPayload))
             .ReturnsAsync(OperationResult<PermissionDto>.Success(new PermissionDto()));
 
-        var result = await _controller.UpdatePermission(fakeId, mockPayload);
+        var result = await _controller.Update(fakeId, mockPayload);
 
         Assert.IsType<OkObjectResult>(result);
         _mockValidator.Verify(v =>
             v.ValidateAsync(
-                It.IsAny<ValidationContext<PermissionUpdateDto>>(),
+                It.IsAny<ValidationContext<PermissionDto>>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
         _mockPermissionService.Verify(p =>
-            p.ValidatePermissionUpdateDtoAsync(It.IsAny<PermissionUpdateDto>()),
+            p.ValidateAsync(It.IsAny<PermissionDto>(), It.IsAny<bool>()),
             Times.Once);
         _mockPermissionService.Verify(p =>
-            p.UpdatePermissionAsync(fakeId, It.IsAny<PermissionUpdateDto>()),
+            p.UpdateAsync(It.IsAny<PermissionDto>()),
             Times.Once);
     }
 }

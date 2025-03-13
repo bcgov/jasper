@@ -12,17 +12,12 @@ public class UserManagementProfile : Profile
         // Permision
         CreateMap<Permission, PermissionDto>();
         CreateMap<PermissionDto, Permission>()
+            .ForMember(dest => dest.Code, opt => opt.Ignore())
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
         // Role
         CreateMap<Role, RoleDto>();
-        CreateMap<Role, RoleUpdateDto>();
         CreateMap<RoleDto, Role>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<RoleCreateDto, Role>()
-            .ForMember(dest => dest.PermissionIds, opt => opt.MapFrom(src => src.PermissionIds.Distinct().ToList()))
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<RoleUpdateDto, Role>()
             .ForMember(dest => dest.PermissionIds, opt => opt.MapFrom(src => src.PermissionIds.Distinct().ToList()))
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
     }

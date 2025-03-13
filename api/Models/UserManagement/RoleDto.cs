@@ -2,9 +2,8 @@
 
 namespace Scv.Api.Models.UserManagement;
 
-public class RoleDto
+public class RoleDto : UserManagementDto
 {
-    public string Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
     public List<string> PermissionIds { get; set; } = [];

@@ -33,8 +33,7 @@ public class RoleServiceTests
         var config = new MapperConfiguration(cfg =>
         {
             cfg.CreateMap<Role, RoleDto>();
-            cfg.CreateMap<RoleCreateDto, Role>();
-            cfg.CreateMap<RoleUpdateDto, Role>();
+            cfg.CreateMap<RoleDto, Role>();
         });
         var mapper = config.CreateMapper();
 
@@ -63,7 +62,7 @@ public class RoleServiceTests
 
         _mockRoleRepo.Setup(r => r.GetAllAsync()).ReturnsAsync([mockRole]);
 
-        var result = await _roleService.GetRolesAsync();
+        var result = await _roleService.GetAllAsync();
 
         Assert.NotNull(result);
         Assert.Single(result);
@@ -87,7 +86,7 @@ public class RoleServiceTests
 
         _mockRoleRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(mockRole);
 
-        var result = await _roleService.GetRoleByIdAsync(fakeId);
+        var result = await _roleService.GetByIdAsync(fakeId);
 
         Assert.NotNull(result);
         Assert.Equal(mockRole.Id, result.Id);
@@ -97,10 +96,10 @@ public class RoleServiceTests
     [Fact]
     public async Task CreateRoleAsync_ShouldReturnSuccess()
     {
-        var mockRole = new RoleCreateDto();
+        var mockRole = new RoleDto();
         _mockRoleRepo.Setup(r => r.AddAsync(It.IsAny<Role>())).Returns(Task.CompletedTask);
 
-        var result = await _roleService.CreateRoleAsync(mockRole);
+        var result = await _roleService.AddAsync(mockRole);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -110,24 +109,24 @@ public class RoleServiceTests
     [Fact]
     public async Task CreateRoleAsync_ShouldReturnFailure_WhenExceptionOccurs()
     {
-        var mockRole = new RoleCreateDto();
+        var mockRole = new RoleDto();
         _mockRoleRepo.Setup(r => r.AddAsync(It.IsAny<Role>())).Throws<InvalidOperationException>();
 
-        var result = await _roleService.CreateRoleAsync(mockRole);
+        var result = await _roleService.AddAsync(mockRole);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Error when creating role.", result.Errors.First());
+        Assert.Equal("Error when adding data.", result.Errors.First());
         _mockRoleRepo.Verify(r => r.AddAsync(It.IsAny<Role>()), Times.Once);
     }
 
 
     [Fact]
-    public async Task ValidateRoleCreateDtoAsync_ShouldReturnFailure_WhenPermissionIdIsInvalid()
+    public async Task ValidateRoleDtoAsync_ShouldReturnFailure_WhenPermissionIdIsInvalid()
     {
         var fakeInvalidId = _faker.Random.AlphaNumeric(10);
-        var mockRole = new RoleCreateDto
+        var mockRole = new RoleDto
         {
             PermissionIds = [fakeInvalidId]
         };
@@ -142,7 +141,7 @@ public class RoleServiceTests
                 Description = _faker.Lorem.Paragraph()
             }]);
 
-        var result = await _roleService.ValidateRoleCreateDtoAsync(mockRole);
+        var result = await _roleService.ValidateAsync(mockRole);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
@@ -152,10 +151,10 @@ public class RoleServiceTests
     }
 
     [Fact]
-    public async Task ValidateRoleCreateDtoAsync_ShouldReturnSuccess_WhenPermissionIdIsValid()
+    public async Task ValidateRoleDtoAsync_ShouldReturnSuccess_WhenPermissionIdIsValidOnCreate()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
-        var mockRole = new RoleCreateDto
+        var mockRole = new RoleDto
         {
             PermissionIds = [fakeId]
         };
@@ -170,7 +169,7 @@ public class RoleServiceTests
                 Description = _faker.Lorem.Paragraph()
             }]);
 
-        var result = await _roleService.ValidateRoleCreateDtoAsync(mockRole);
+        var result = await _roleService.ValidateAsync(mockRole);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -182,10 +181,10 @@ public class RoleServiceTests
     public async Task UpdateRoleAsync_ShouldReturnSuccess()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
-        var mockRole = new RoleUpdateDto();
+        var mockRole = new RoleDto();
         _mockRoleRepo.Setup(r => r.UpdateAsync(It.IsAny<Role>())).Returns(Task.CompletedTask);
 
-        var result = await _roleService.UpdateRoleAsync(fakeId, mockRole);
+        var result = await _roleService.UpdateAsync(mockRole);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -196,23 +195,23 @@ public class RoleServiceTests
     public async Task UpdateRoleAsync_ShouldReturnFailure_WhenExceptionOccurs()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
-        var mockRole = new RoleUpdateDto();
+        var mockRole = new RoleDto();
         _mockRoleRepo.Setup(r => r.UpdateAsync(It.IsAny<Role>())).Throws<InvalidOperationException>();
 
-        var result = await _roleService.UpdateRoleAsync(fakeId, mockRole);
+        var result = await _roleService.UpdateAsync(mockRole);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Error when updating role.", result.Errors.First());
+        Assert.Equal("Error when updating data.", result.Errors.First());
         _mockRoleRepo.Verify(r => r.UpdateAsync(It.IsAny<Role>()), Times.Once);
     }
 
     [Fact]
-    public async Task ValidateRoleUpdateDtoAsync_ShouldReturnFailure_WhenRoleIdIsNotFoundAndPermissionIdIsValid()
+    public async Task ValidateRoleDtoAsync_ShouldReturnFailure_WhenRoleIdIsNotFoundAndPermissionIdIsValidAndEdit()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
-        var mockRole = new RoleUpdateDto
+        var mockRole = new RoleDto
         {
             Id = fakeId,
             PermissionIds = [fakeId]
@@ -229,7 +228,7 @@ public class RoleServiceTests
                 Description = _faker.Lorem.Paragraph()
             }]);
 
-        var result = await _roleService.ValidateRoleUpdateDtoAsync(mockRole);
+        var result = await _roleService.ValidateAsync(mockRole, true);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
@@ -241,10 +240,10 @@ public class RoleServiceTests
     }
 
     [Fact]
-    public async Task ValidateRoleUpdateDtoAsync_ShouldReturnSuccess_WhenPermissionIdIsValid()
+    public async Task ValidateUpdateRoleDtoAsync_ShouldReturnSuccess_WhenPermissionIdIsValid()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
-        var mockRole = new RoleUpdateDto
+        var mockRole = new RoleDto
         {
             Id = _faker.Random.AlphaNumeric(10),
             PermissionIds = [fakeId]
@@ -265,7 +264,7 @@ public class RoleServiceTests
                 Description = _faker.Lorem.Paragraph()
             }]);
 
-        var result = await _roleService.ValidateRoleUpdateDtoAsync(mockRole);
+        var result = await _roleService.ValidateAsync(mockRole, true);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -286,7 +285,7 @@ public class RoleServiceTests
         });
         _mockRoleRepo.Setup(r => r.DeleteAsync(It.IsAny<Role>())).Returns(Task.CompletedTask);
 
-        var result = await _roleService.DeleteRoleAsync(fakeId);
+        var result = await _roleService.DeleteAsync(fakeId);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -302,12 +301,12 @@ public class RoleServiceTests
         _mockRoleRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((Role)null);
         _mockRoleRepo.Setup(r => r.DeleteAsync(It.IsAny<Role>())).Returns(Task.CompletedTask);
 
-        var result = await _roleService.DeleteRoleAsync(fakeId);
+        var result = await _roleService.DeleteAsync(fakeId);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Role ID not found.", result.Errors.First());
+        Assert.Equal("Entity not found.", result.Errors.First());
         _mockRoleRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
         _mockRoleRepo.Verify(r => r.DeleteAsync(It.IsAny<Role>()), Times.Never);
     }
@@ -320,12 +319,12 @@ public class RoleServiceTests
         _mockRoleRepo.Setup(r => r.GetByIdAsync(fakeId)).Throws<InvalidOperationException>();
         _mockRoleRepo.Setup(r => r.DeleteAsync(It.IsAny<Role>())).Returns(Task.CompletedTask);
 
-        var result = await _roleService.DeleteRoleAsync(fakeId);
+        var result = await _roleService.DeleteAsync(fakeId);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Error when deleting role.", result.Errors.First());
+        Assert.Equal("Error when deleting data.", result.Errors.First());
         _mockRoleRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
         _mockRoleRepo.Verify(r => r.DeleteAsync(It.IsAny<Role>()), Times.Never);
     }

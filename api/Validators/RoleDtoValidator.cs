@@ -4,9 +4,9 @@ using Scv.Api.Models.UserManagement;
 
 namespace Scv.Api.Validators;
 
-public class RoleCreateDtoValidator : AbstractValidator<RoleCreateDto>
+public class RoleDtoValidator : UserManagementDtoValidator<RoleDto>
 {
-    public RoleCreateDtoValidator()
+    public RoleDtoValidator() : base()
     {
         RuleFor(r => r.Name)
             .NotEmpty().WithMessage("Role name is required.");

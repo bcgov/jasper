@@ -20,7 +20,6 @@ using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
-using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
@@ -77,8 +76,6 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
             services.AddScoped<IPermissionRepository, PermissionRepository>();
-            services.AddScoped<IRepositoryBase<Role>, RoleRepository>();
-            services.AddScoped<IRepositoryBase<Group>, GroupRepository>();
 
             return services;
         }

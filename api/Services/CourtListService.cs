@@ -1,22 +1,22 @@
-﻿using JCCommon.Clients.FileServices;
-using LazyCache;
-using MapsterMapper;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Civil.CourtList;
-using Scv.Api.Models.Criminal.CourtList;
-using Scv.Api.Models.Criminal.Detail;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
+using LazyCache;
+using MapsterMapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Exceptions;
+using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Helpers;
+using Scv.Api.Helpers.ContractResolver;
+using Scv.Api.Helpers.Exceptions;
+using Scv.Api.Helpers.Extensions;
+using Scv.Api.Models.Civil.CourtList;
+using Scv.Api.Models.Criminal.CourtList;
+using Scv.Api.Models.Criminal.Detail;
 
 namespace Scv.Api.Services
 {
@@ -373,7 +373,7 @@ namespace Scv.Api.Services
             return courtList;
         }
 
-        public async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetCourtListAppearances(string locationId, int judgeId, string roomCode, DateTime date)
+        public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetCourtListAppearances(string locationId, int judgeId, string roomCode, DateTime date)
         {
             var results = await _searchDateClient.GetCourtListAppearancesAsync(int.Parse(locationId), date.ToString("dd-MMM-yyyy"), judgeId, roomCode, null);
             return results;

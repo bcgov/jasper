@@ -2,53 +2,47 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using LazyCache;
-using Scv.Api.Models.UserManagement;
+using Microsoft.Extensions.Logging;
+using Scv.Api.Infrastructure;
+using Scv.Api.Models.AccessControlManagement;
+using Scv.Db.Models;
 using Scv.Db.Repositories;
-
 
 namespace Scv.Api.Services;
 
-public interface IPermissionService
-{
-    Task<List<PermissionDto>> GetPermissionsAsync();
-    Task<PermissionDto> GetPermissionByIdAsync(string id);
-    Task<PermissionDto> UpdatePermissionAsync(string id, PermissionUpdateDto permissionDto);
-}
 
 public class PermissionService(
     IAppCache cache,
     IMapper mapper,
+    ILogger<PermissionService> logger,
     IPermissionRepository permissionRepo
-    ) : ServiceBase(cache), IPermissionService
+) : AccessControlManagementServiceBase<IPermissionRepository, Permission, PermissionDto>(
+        cache,
+        mapper,
+        logger,
+        permissionRepo)
 {
-    private readonly IMapper _mapper = mapper;
-    private readonly IPermissionRepository _permissionRepo = permissionRepo;
+    public override string CacheName => "GetPermissionsAsync";
 
-    public async Task<List<PermissionDto>> GetPermissionsAsync() =>
+    public override async Task<List<PermissionDto>> GetAllAsync() =>
         await this.GetDataFromCache(
-            "GetPermissionsAsync",
+            this.CacheName,
             async () =>
             {
-                var permissions = await _permissionRepo.GetActivePermissionsAsync();
-                return _mapper.Map<List<PermissionDto>>(permissions);
+                var permissions = await this.Repo.GetActivePermissionsAsync();
+                return this.Mapper.Map<List<PermissionDto>>(permissions);
             });
-
-    public async Task<PermissionDto> GetPermissionByIdAsync(string id)
+    public override async Task<OperationResult<PermissionDto>> ValidateAsync(PermissionDto dto, bool isEdit = false)
     {
-        var permission = await _permissionRepo.GetByIdAsync(id);
+        var errors = new List<string>();
 
-        return _mapper.Map<PermissionDto>(permission);
-    }
+        if (await this.Repo.GetByIdAsync(dto.Id) == null)
+        {
+            errors.Add("Permission ID is not found.");
+        }
 
-    public async Task<PermissionDto> UpdatePermissionAsync(string id, PermissionUpdateDto permissionDto)
-    {
-        var permission = await _permissionRepo.GetByIdAsync(id);
-
-        permission.Description = permissionDto.Description;
-        permission.IsActive = permissionDto.IsActive.GetValueOrDefault();
-
-        await _permissionRepo.UpdateAsync(permission);
-
-        return _mapper.Map<PermissionDto>(permission);
+        return errors.Count != 0
+            ? OperationResult<PermissionDto>.Failure([.. errors])
+            : OperationResult<PermissionDto>.Success(dto);
     }
 }

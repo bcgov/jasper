@@ -1,8 +1,11 @@
 ﻿using System.Threading.Tasks;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
+
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
@@ -10,57 +13,30 @@ namespace Scv.Api.Controllers;
 [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
 [Route("api/[controller]")]
 [ApiController]
-public class PermissionsController(IPermissionService permissionService) : ControllerBase
+public class PermissionsController(
+    IAccessControlManagementService<PermissionDto> permissionService,
+    IValidator<PermissionDto> validator
+) : AccessControlManagementControllerBase<IAccessControlManagementService<PermissionDto>, PermissionDto>(permissionService, validator)
 {
-    private readonly IPermissionService _permissionService = permissionService;
-
     /// <summary>
-    /// Gets the active permissions
+    /// Creating permission is not allowed
     /// </summary>
-    /// <returns>Active permissions</returns>
-    [HttpGet]
-    public async Task<IActionResult> GetPermissions()
+    /// <param name="dto"></param>
+    /// <returns>Status405MethodNotAllowed</returns>
+    [NonAction]
+    public override Task<IActionResult> Create(PermissionDto dto)
     {
-        return Ok(await _permissionService.GetPermissionsAsync());
+        return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status405MethodNotAllowed));
     }
 
     /// <summary>
-    /// Gets permission by id
+    /// Deleting permission is not allowed
     /// </summary>
-    /// <returns>Active permission</returns>
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetPermissionById(string id)
+    /// <param name="id"></param>
+    /// <returns>Status405MethodNotAllowed</returns>
+    [NonAction]
+    public override Task<IActionResult> Delete(string id)
     {
-        var permission = await _permissionService.GetPermissionByIdAsync(id);
-
-        if (permission == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(permission);
-    }
-
-    /// <summary>
-    /// Updates the permission details
-    /// </summary>
-    /// <param name="id">Permission Id</param>
-    /// <param name="permission">Payload to update permission (description and isActive) only</param>
-    /// <returns>Updated permission</returns>
-    [HttpPut]
-    public async Task<IActionResult> UpdatePermission(string id, [FromBody] PermissionUpdateDto permission)
-    {
-        if (!this.ModelState.IsValid)
-        {
-            return BadRequest(this.ModelState);
-        }
-
-        var existingPermission = await _permissionService.GetPermissionByIdAsync(id);
-        if (existingPermission == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(await _permissionService.UpdatePermissionAsync(id, permission));
+        return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status405MethodNotAllowed));
     }
 }

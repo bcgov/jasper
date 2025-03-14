@@ -16,6 +16,7 @@ using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
@@ -127,7 +128,8 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
 
-            services.AddScoped<IPermissionService, PermissionService>();
+            services.AddScoped<IAccessControlManagementService<PermissionDto>, PermissionService>();
+            services.AddScoped<IAccessControlManagementService<RoleDto>, RoleService>();
 
             return services;
         }

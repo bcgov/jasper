@@ -8,7 +8,7 @@ using LazyCache.Providers;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -18,7 +18,7 @@ namespace tests.api.Services;
 public class RoleServiceTests
 {
     private readonly Faker _faker;
-    private readonly Mock<IRoleRepository> _mockRoleRepo;
+    private readonly Mock<IRepositoryBase<Role>> _mockRoleRepo;
     private readonly Mock<IPermissionRepository> _mockPermissionRepo;
     private readonly RoleService _roleService;
     public RoleServiceTests()
@@ -40,7 +40,7 @@ public class RoleServiceTests
         // ILogger setup
         var logger = new Mock<ILogger<RoleService>>();
 
-        _mockRoleRepo = new Mock<IRoleRepository>();
+        _mockRoleRepo = new Mock<IRepositoryBase<Role>>();
         _mockPermissionRepo = new Mock<IPermissionRepository>();
 
         _roleService = new RoleService(

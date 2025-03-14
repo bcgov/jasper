@@ -8,7 +8,7 @@ using MongoDB.Bson;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Xunit;
 
@@ -16,14 +16,14 @@ namespace tests.api.Controllers;
 
 public class PermissionsControllerTests
 {
-    private readonly Mock<IPermissionService> _mockPermissionService;
+    private readonly Mock<IAccessControlManagementService<PermissionDto>> _mockPermissionService;
     private readonly Mock<IValidator<PermissionDto>> _mockValidator;
     private readonly PermissionsController _controller;
     private readonly Faker _faker;
 
     public PermissionsControllerTests()
     {
-        _mockPermissionService = new Mock<IPermissionService>();
+        _mockPermissionService = new Mock<IAccessControlManagementService<PermissionDto>>();
         _mockValidator = new Mock<IValidator<PermissionDto>>();
         _controller = new PermissionsController(_mockPermissionService.Object, _mockValidator.Object);
         _faker = new Faker();

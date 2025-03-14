@@ -1,9 +1,11 @@
 ﻿using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
+
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
@@ -12,40 +14,29 @@ namespace Scv.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class PermissionsController(
-    IPermissionService permissionService,
+    IAccessControlManagementService<PermissionDto> permissionService,
     IValidator<PermissionDto> validator
-) : UserManagementControllerBase<IPermissionService, PermissionDto>(permissionService, validator)
+) : AccessControlManagementControllerBase<IAccessControlManagementService<PermissionDto>, PermissionDto>(permissionService, validator)
 {
     /// <summary>
-    /// Get all permissions.
+    /// Creating permission is not allowed
     /// </summary>
-    /// <returns>List of permissions.</returns>
-    [HttpGet]
-    public new async Task<IActionResult> GetAll()
+    /// <param name="dto"></param>
+    /// <returns>Status405MethodNotAllowed</returns>
+    [NonAction]
+    public override Task<IActionResult> Create(PermissionDto dto)
     {
-        return await base.GetAll();
+        return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status405MethodNotAllowed));
     }
 
     /// <summary>
-    /// Get permission by id
+    /// Deleting permission is not allowed
     /// </summary>
-    /// <param name="id">The permission id.</param>
-    /// <returns>permission instance</returns>
-    [HttpGet("{id}")]
-    public new async Task<IActionResult> GetById(string id)
+    /// <param name="id"></param>
+    /// <returns>Status405MethodNotAllowed</returns>
+    [NonAction]
+    public override Task<IActionResult> Delete(string id)
     {
-        return await base.GetById(id);
-    }
-
-    /// <summary>
-    /// Updates an existing permission
-    /// </summary>
-    /// <param name="id">The permission id.</param>
-    /// <param name="permission">The permission payload</param>
-    /// <returns>Updated permission</returns>
-    [HttpPut("{id}")]
-    public new async Task<IActionResult> Update(string id, [FromBody] PermissionDto permission)
-    {
-        return await base.Update(id, permission);
+        return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status405MethodNotAllowed));
     }
 }

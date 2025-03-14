@@ -4,27 +4,23 @@ using AutoMapper;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 
-
 namespace Scv.Api.Services;
 
-public interface IPermissionService : IUserManagementService<PermissionDto>
-{
-}
 
 public class PermissionService(
     IAppCache cache,
     IMapper mapper,
     ILogger<PermissionService> logger,
     IPermissionRepository permissionRepo
-) : UserManagementServiceBase<IPermissionRepository, Permission, PermissionDto>(
+) : AccessControlManagementServiceBase<IPermissionRepository, Permission, PermissionDto>(
         cache,
         mapper,
         logger,
-        permissionRepo), IPermissionService
+        permissionRepo)
 {
     public override string CacheName => "GetPermissionsAsync";
 

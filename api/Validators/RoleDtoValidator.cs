@@ -1,10 +1,10 @@
 ﻿using FluentValidation;
 using MongoDB.Bson;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 
-public class RoleDtoValidator : UserManagementDtoValidator<RoleDto>
+public class RoleDtoValidator : AccessControlManagementDtoValidator<RoleDto>
 {
     public RoleDtoValidator() : base()
     {

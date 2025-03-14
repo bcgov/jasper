@@ -1,12 +1,12 @@
 ﻿using FluentValidation;
 using MongoDB.Bson;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 
-public class UserManagementDtoValidator<TDto> : AbstractValidator<TDto> where TDto : UserManagementDto
+public class AccessControlManagementDtoValidator<TDto> : AbstractValidator<TDto> where TDto : AccessControlManagementDto
 {
-    public UserManagementDtoValidator()
+    public AccessControlManagementDtoValidator()
     {
         RuleFor(r => r.Id)
             .Cascade(CascadeMode.Stop)

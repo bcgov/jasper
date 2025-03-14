@@ -8,7 +8,7 @@ using LazyCache.Providers;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;

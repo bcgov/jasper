@@ -1,13 +1,13 @@
 ﻿using System.Linq;
 using AutoMapper;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 
 namespace Scv.Api.Mappers;
 
-public class UserManagementProfile : Profile
+public class AccessControlManagementProfile : Profile
 {
-    public UserManagementProfile()
+    public AccessControlManagementProfile()
     {
         // Permision
         CreateMap<Permission, PermissionDto>();

@@ -6,28 +6,23 @@ using AutoMapper;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 
-
 namespace Scv.Api.Services;
-
-public interface IRoleService : IUserManagementService<RoleDto>
-{
-}
 
 public class RoleService(
     IAppCache cache,
     IMapper mapper,
     ILogger<RoleService> logger,
-    IRoleRepository roleRepo,
+    IRepositoryBase<Role> roleRepo,
     IPermissionRepository permissionRepo
-    ) : UserManagementServiceBase<IRoleRepository, Role, RoleDto>(
+    ) : AccessControlManagementServiceBase<IRepositoryBase<Role>, Role, RoleDto>(
         cache,
         mapper,
         logger,
-        roleRepo), IRoleService
+        roleRepo)
 {
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
 

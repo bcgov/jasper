@@ -5,13 +5,13 @@ using AutoMapper;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 
 namespace Scv.Api.Services;
 
-public interface IUserManagementService<TDto> where TDto : UserManagementDto
+public interface IAccessControlManagementService<TDto> where TDto : AccessControlManagementDto
 {
     Task<List<TDto>> GetAllAsync();
     Task<TDto> GetByIdAsync(string id);
@@ -21,14 +21,14 @@ public interface IUserManagementService<TDto> where TDto : UserManagementDto
     Task<OperationResult> DeleteAsync(string id);
 }
 
-public abstract class UserManagementServiceBase<TRepo, TEntity, TDto>(
+public abstract class AccessControlManagementServiceBase<TRepo, TEntity, TDto>(
     IAppCache cache,
     IMapper mapper,
     ILogger logger,
-    TRepo repo) : ServiceBase(cache), IUserManagementService<TDto>
+    TRepo repo) : ServiceBase(cache), IAccessControlManagementService<TDto>
     where TRepo : IRepositoryBase<TEntity>
     where TEntity : EntityBase
-    where TDto : UserManagementDto
+    where TDto : AccessControlManagementDto
 {
     public IMapper Mapper { get; } = mapper;
     public ILogger Logger { get; } = logger;

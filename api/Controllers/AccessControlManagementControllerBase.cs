@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using Scv.Api.Models.UserManagement;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
@@ -15,21 +15,32 @@ namespace Scv.Api.Controllers;
 /// <typeparam name="TDto">The DTO type used in this class.</typeparam>
 /// <param name="service">Instance of TService</param>
 /// <param name="validator">Validator for DTO type</param>
-public abstract class UserManagementControllerBase<TService, TDto>(
+public abstract class AccessControlManagementControllerBase<TService, TDto>(
     TService service,
     IValidator<TDto> validator) : ControllerBase
-    where TService : IUserManagementService<TDto>
-    where TDto : UserManagementDto
+    where TService : IAccessControlManagementService<TDto>
+    where TDto : AccessControlManagementDto
 {
     public TService Service { get; } = service;
     public IValidator<TDto> Validator { get; } = validator;
 
-    protected virtual async Task<IActionResult> GetAll()
+    /// <summary>
+    /// Get all data
+    /// </summary>
+    /// <returns>List of data.</returns>
+    [HttpGet]
+    public virtual async Task<IActionResult> GetAll()
     {
         return Ok(await this.Service.GetAllAsync());
     }
 
-    protected virtual async Task<IActionResult> GetById(string id)
+    /// <summary>
+    /// Get by id
+    /// </summary>
+    /// <param name="id">The id used to query the specific data.</param>
+    /// <returns>Data based from id.</returns>
+    [HttpGet("{id}")]
+    public virtual async Task<IActionResult> GetById(string id)
     {
         if (!ObjectId.TryParse(id.ToString(), out _))
         {
@@ -45,21 +56,27 @@ public abstract class UserManagementControllerBase<TService, TDto>(
         return Ok(dto);
     }
 
-    protected virtual async Task<IActionResult> Create(TDto role)
+    /// <summary>
+    /// Creates a new data
+    /// </summary>
+    /// <param name="dto">The payload for creating new data.</param>
+    /// <returns>Created data.</returns>
+    [HttpPost]
+    public virtual async Task<IActionResult> Create(TDto dto)
     {
-        var basicValidation = await this.Validator.ValidateAsync(role);
+        var basicValidation = await this.Validator.ValidateAsync(dto);
         if (!basicValidation.IsValid)
         {
             return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
         }
 
-        var businessRulesValidation = await this.Service.ValidateAsync(role);
+        var businessRulesValidation = await this.Service.ValidateAsync(dto);
         if (!businessRulesValidation.Succeeded)
         {
             return BadRequest(new { error = businessRulesValidation.Errors });
         }
 
-        var result = await this.Service.AddAsync(role);
+        var result = await this.Service.AddAsync(dto);
         if (!result.Succeeded)
         {
             return BadRequest(new { error = result.Errors });
@@ -68,7 +85,14 @@ public abstract class UserManagementControllerBase<TService, TDto>(
         return CreatedAtAction(nameof(GetById), new { id = result.Payload.Id }, result.Payload);
     }
 
-    protected async Task<IActionResult> Update(string id, TDto dto)
+    /// <summary>
+    /// Updates existing data
+    /// </summary>
+    /// <param name="id">The id used to query the specific data.</param>
+    /// <param name="dto">The payload for updating new data.</param>
+    /// <returns>Updated data.</returns>
+    [HttpPut("{id}")]
+    public virtual async Task<IActionResult> Update(string id, TDto dto)
     {
         var context = new ValidationContext<TDto>(dto)
         {
@@ -100,7 +124,13 @@ public abstract class UserManagementControllerBase<TService, TDto>(
         return Ok(result.Payload);
     }
 
-    protected async Task<IActionResult> Delete(string id)
+    /// <summary>
+    /// Deletes the existing data.
+    /// </summary>
+    /// <param name="id">The id used to query the specific data.</param>
+    /// <returns>Status204NoContent</returns>
+    [HttpDelete("{id}")]
+    public virtual async Task<IActionResult> Delete(string id)
     {
         if (!ObjectId.TryParse(id, out _))
         {

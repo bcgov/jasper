@@ -63,11 +63,13 @@ public class GroupService(
 
             // Update users that uses the deleted group
             var usersWithRef = await _userRepo.FindAsync(g => g.GroupIds.Contains(id));
-            foreach (var user in usersWithRef)
+            var updateTasks = usersWithRef.Select(u =>
             {
-                user.GroupIds = user.GroupIds.Where(roleId => roleId != id).ToList();
-                await _userRepo.UpdateAsync(user);
-            }
+                u.GroupIds = u.GroupIds.Where(roleId => roleId != id).ToList();
+                return _userRepo.UpdateAsync(u);
+            });
+
+            await Task.WhenAll(updateTasks);
 
             this.InvalidateCache(this.CacheName);
 

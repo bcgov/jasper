@@ -69,11 +69,13 @@ public class RoleService(
 
             // Update groups that uses the deleted role
             var groupsWithRef = await _groupRepo.FindAsync(g => g.RoleIds.Contains(id));
-            foreach (var group in groupsWithRef)
+            var updateTasks = groupsWithRef.Select(g =>
             {
-                group.RoleIds = group.RoleIds.Where(roleId => roleId != id).ToList();
-                await _groupRepo.UpdateAsync(group);
-            }
+                g.RoleIds = g.RoleIds.Where(roleId => roleId != id).ToList();
+                return _groupRepo.UpdateAsync(g);
+            });
+
+            await Task.WhenAll(updateTasks);
 
             this.InvalidateCache(this.CacheName);
 

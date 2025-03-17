@@ -27,7 +27,7 @@ public class AccessControlManagementProfile : Profile
             .ForMember(dest => dest.RoleIds, opt => opt.MapFrom(src => src.RoleIds.Distinct().ToList()))
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-        // Group
+        // User
         CreateMap<User, UserDto>();
         CreateMap<UserDto, User>()
             .ForMember(dest => dest.GroupIds, opt => opt.MapFrom(src => src.GroupIds.Distinct().ToList()))

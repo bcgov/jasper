@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoMapper;
 using Bogus;
@@ -20,6 +21,7 @@ public class RoleServiceTests
     private readonly Faker _faker;
     private readonly Mock<IRepositoryBase<Role>> _mockRoleRepo;
     private readonly Mock<IPermissionRepository> _mockPermissionRepo;
+    private readonly Mock<IRepositoryBase<Group>> _mockGroupRepo;
     private readonly RoleService _roleService;
     public RoleServiceTests()
     {
@@ -42,13 +44,15 @@ public class RoleServiceTests
 
         _mockRoleRepo = new Mock<IRepositoryBase<Role>>();
         _mockPermissionRepo = new Mock<IPermissionRepository>();
+        _mockGroupRepo = new Mock<IRepositoryBase<Group>>();
 
         _roleService = new RoleService(
             cachingService,
             mapper,
             logger.Object,
             _mockRoleRepo.Object,
-            _mockPermissionRepo.Object);
+            _mockPermissionRepo.Object,
+            _mockGroupRepo.Object);
     }
 
     [Fact]
@@ -240,7 +244,7 @@ public class RoleServiceTests
     }
 
     [Fact]
-    public async Task ValidateUpdateRoleDtoAsync_ShouldReturnSuccess_WhenPermissionIdIsValid()
+    public async Task ValidateRoleDtoAsync_ShouldReturnSuccess_WhenPermissionIdIsValid()
     {
         var fakeId = _faker.Random.AlphaNumeric(10);
         var mockRole = new RoleDto
@@ -327,5 +331,39 @@ public class RoleServiceTests
         Assert.Equal("Error when deleting data.", result.Errors.First());
         _mockRoleRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
         _mockRoleRepo.Verify(r => r.DeleteAsync(It.IsAny<Role>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteRoleAsync_ShouldUpdateAffectedGroups()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        _mockRoleRepo
+            .Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(new Role
+            {
+                Name = _faker.Random.AlphaNumeric(10),
+                Description = _faker.Lorem.Paragraph(),
+            });
+        _mockRoleRepo.Setup(r => r.DeleteAsync(It.IsAny<Role>())).Returns(Task.CompletedTask);
+        _mockGroupRepo
+            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            .ReturnsAsync([
+                new()
+                {
+                    Name = _faker.Lorem.Word(),
+                    Description = _faker.Lorem.Paragraph(),
+                    RoleIds = [fakeId]
+                }
+            ]);
+        _mockGroupRepo.Setup(g => g.UpdateAsync(It.IsAny<Group>())).Returns(Task.CompletedTask);
+
+        var result = await _roleService.DeleteAsync(fakeId);
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Empty(result.Errors);
+        _mockRoleRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockRoleRepo.Verify(r => r.DeleteAsync(It.IsAny<Role>()), Times.Once);
+        _mockGroupRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Once);
+        _mockGroupRepo.Verify(g => g.UpdateAsync(It.IsAny<Group>()), Times.Once);
     }
 }

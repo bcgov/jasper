@@ -7,7 +7,7 @@ public class PermissionDtoValidator : AccessControlManagementDtoValidator<Permis
 {
     public PermissionDtoValidator() : base()
     {
-        // "Code" is not validated intentionally.Changes to it are explicitly ignored in AccessControlManagement;Profile.
+        // "Code" is not validated intentionally. Changes to it are explicitly ignored in AccessControlManagement Profile.
         RuleFor(r => r.Name)
             .NotEmpty().WithMessage("Permission name is required.");
         RuleFor(r => r.Description)

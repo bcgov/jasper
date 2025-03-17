@@ -10,6 +10,7 @@ public class AccessControlManagementDtoValidator<TDto> : AbstractValidator<TDto>
     {
         RuleFor(r => r.Id)
             .Cascade(CascadeMode.Stop)
+            .Must((dto, id, context) => IsEdit(context) || string.IsNullOrWhiteSpace(id)).WithMessage("ID must be null when creating new data.")
             .Must((dto, id, context) => !IsEdit(context) || !string.IsNullOrWhiteSpace(id)).WithMessage("ID is required.")
             .Must((dto, id, context) => !IsEdit(context) || ObjectId.TryParse(id.ToString(), out _)).WithMessage("Invalid ID.")
             .Must((dto, id, context) =>

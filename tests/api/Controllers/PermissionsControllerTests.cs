@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Bogus;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Moq;
@@ -173,5 +174,23 @@ public class PermissionsControllerTests
         _mockPermissionService.Verify(p =>
             p.UpdateAsync(It.IsAny<PermissionDto>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatePermission_ShouldReturnStatus405MethodNotAllowed()
+    {
+        var result = await _controller.Create(new PermissionDto());
+
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status405MethodNotAllowed, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeletePermission_ShouldReturnStatus405MethodNotAllowed()
+    {
+        var result = await _controller.Delete(string.Empty);
+
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status405MethodNotAllowed, statusCodeResult.StatusCode);
     }
 }

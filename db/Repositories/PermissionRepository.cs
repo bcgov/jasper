@@ -16,6 +16,9 @@ public class PermissionRepository(JasperDbContext context) : RepositoryBase<Perm
 {
     public async Task<IEnumerable<Permission>> GetActivePermissionsAsync()
     {
-        return await _dbSet.Where(p => p.IsActive).ToListAsync();
+        return await _dbSet
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Name)
+            .ToListAsync();
     }
 }

@@ -17,7 +17,8 @@ public class RoleService(
     IMapper mapper,
     ILogger<RoleService> logger,
     IRepositoryBase<Role> roleRepo,
-    IPermissionRepository permissionRepo
+    IPermissionRepository permissionRepo,
+    IRepositoryBase<Group> groupRepo
     ) : AccessControlManagementServiceBase<IRepositoryBase<Role>, Role, RoleDto>(
         cache,
         mapper,
@@ -25,6 +26,7 @@ public class RoleService(
         roleRepo)
 {
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
+    private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
 
     public override string CacheName => "GetRolesAsync";
 
@@ -53,5 +55,34 @@ public class RoleService(
         return errors.Count != 0
             ? OperationResult<RoleDto>.Failure([.. errors])
             : OperationResult<RoleDto>.Success(role);
+    }
+
+    public override async Task<OperationResult> DeleteAsync(string id)
+    {
+        try
+        {
+            var result = await base.DeleteAsync(id);
+            if (!result.Succeeded)
+            {
+                return result;
+            }
+
+            // Update groups that uses the deleted role
+            var groupsWithRef = await _groupRepo.FindAsync(g => g.RoleIds.Contains(id));
+            foreach (var group in groupsWithRef)
+            {
+                group.RoleIds = group.RoleIds.Where(roleId => roleId != id).ToList();
+                await _groupRepo.UpdateAsync(group);
+            }
+
+            this.InvalidateCache(this.CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error deleting data: {message}", ex.Message);
+            return OperationResult.Failure("Error when deleting data.");
+        }
     }
 }

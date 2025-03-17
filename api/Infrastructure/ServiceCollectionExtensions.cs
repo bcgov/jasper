@@ -130,6 +130,8 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped<IAccessControlManagementService<PermissionDto>, PermissionService>();
             services.AddScoped<IAccessControlManagementService<RoleDto>, RoleService>();
+            services.AddScoped<IAccessControlManagementService<GroupDto>, GroupService>();
+            services.AddScoped<IAccessControlManagementService<UserDto>, UserService>();
 
             return services;
         }

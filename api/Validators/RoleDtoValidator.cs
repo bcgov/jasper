@@ -13,6 +13,6 @@ public class RoleDtoValidator : AccessControlManagementDtoValidator<RoleDto>
         RuleFor(r => r.Description)
             .NotEmpty().WithMessage("Description is required.");
         RuleForEach(r => r.PermissionIds)
-            .Must(id => ObjectId.TryParse(id.ToString(), out _)).WithMessage("Found one or more invalid permission IDs.");
+            .Must(id => id != null && ObjectId.TryParse(id.ToString(), out _)).WithMessage("Found one or more invalid permission IDs.");
     }
 }

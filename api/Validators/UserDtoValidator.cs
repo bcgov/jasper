@@ -6,6 +6,8 @@ namespace Scv.Api.Validators;
 
 public class UserDtoValidator : AccessControlManagementDtoValidator<UserDto>
 {
+    private readonly string VALID_EMAIL_ADDRESS_PATTERN = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+
     public UserDtoValidator() : base()
     {
         RuleFor(r => r.FirstName)
@@ -13,8 +15,10 @@ public class UserDtoValidator : AccessControlManagementDtoValidator<UserDto>
         RuleFor(r => r.LastName)
             .NotEmpty().WithMessage("Last name is required.");
         RuleFor(r => r.Email)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email format.");
+            .EmailAddress().WithMessage("Invalid email format.")
+            .Matches(VALID_EMAIL_ADDRESS_PATTERN).WithMessage("Invalid email format.");
         RuleFor(r => r.IsActive)
             .NotNull().WithMessage("IsActive is required.");
         RuleForEach(r => r.GroupIds)

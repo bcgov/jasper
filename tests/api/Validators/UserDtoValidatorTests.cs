@@ -37,7 +37,7 @@ public class UserDtoValidatorTests
         var result = _validator.TestValidate(dto);
 
         Assert.False(result.IsValid);
-        Assert.Equal(5, result.Errors.Count);
+        Assert.Equal(4, result.Errors.Count);
     }
 
     [Fact]
@@ -110,6 +110,20 @@ public class UserDtoValidatorTests
         var dto = GetMockDto();
         dto.Id = null;
         dto.Email = "invalidemail";
+
+        var result = _validator.TestValidate(dto);
+
+        Assert.False(result.IsValid);
+        Assert.Single(result.Errors);
+        Assert.Equal("Invalid email format.", result.Errors.Single().ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_WhenEmailHasNoTopLevelDomain_ShouldFail()
+    {
+        var dto = GetMockDto();
+        dto.Id = null;
+        dto.Email = "sample@email";
 
         var result = _validator.TestValidate(dto);
 

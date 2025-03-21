@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scv.Api.Infrastructure.Authorization
 {
@@ -10,6 +11,9 @@ namespace Scv.Api.Infrastructure.Authorization
             {
                 options.AddPolicy(nameof(ProviderAuthorizationHandler), policy => policy.Requirements.Add(new ProviderAuthorizationHandler()));
             });
+
+            services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
             return services;
         }
     }

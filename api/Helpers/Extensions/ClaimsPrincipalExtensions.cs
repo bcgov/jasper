@@ -64,5 +64,8 @@ namespace Scv.Api.Helpers.Extensions
                claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.SubRole) &&
                claimsPrincipal.FindFirstValue(CustomClaimTypes.Role).Equals("EME") &&
                claimsPrincipal.FindFirstValue(CustomClaimTypes.SubRole).Equals("SCV");
+
+        public static string Email(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue(CustomClaimTypes.Email);
     }
 }

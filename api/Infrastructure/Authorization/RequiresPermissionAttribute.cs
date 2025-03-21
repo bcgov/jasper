@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Scv.Api.Infrastructure.Authorization;
 
+
+[AttributeUsage(AttributeTargets.Class)]
 public class RequiresPermissionAttribute : TypeFilterAttribute
 {
     /// <summary>

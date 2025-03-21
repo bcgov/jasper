@@ -113,8 +113,9 @@ resource "aws_secretsmanager_secret_version" "database_secret_value" {
     password                = "",
     database                = "",
     adminPassword           = "",
-    mongoDbConnectionString = ""
-    mongoDbName             = ""
+    mongoDbConnectionString = "",
+    mongoDbName             = "",
+    defaultUsers            = ""
   })
 }
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MongoDB.EntityFrameworkCore.Extensions;
 using Scv.Db.Interceptors;
 using Scv.Db.Models;
 
@@ -30,7 +31,13 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Permission>();
             modelBuilder.Entity<Role>();
             modelBuilder.Entity<Group>();
-            modelBuilder.Entity<User>();
+
+            modelBuilder.Entity<User>(u =>
+            {
+                u.HasKey(u => u.Id);
+                u.HasIndex(u => u.Email).IsUnique();
+                u.ToCollection("users");
+            });
         }
     }
 }

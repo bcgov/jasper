@@ -5,32 +5,34 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Models.auth;
+using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Models.Auth;
 
 namespace Scv.Api.Controllers
 {
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController(
+        ScvDbContext db,
+        IConfiguration configuration,
+        AesGcmEncryption aesGcmEncryption,
+        IUserService userService
+        ) : ControllerBase
     {
-        public ScvDbContext Db { get; }
-        public IConfiguration Configuration { get; }
-        private AesGcmEncryption AesGcmEncryption { get; }
+        private readonly IUserService _userService = userService;
 
-        public AuthController(ScvDbContext db, IConfiguration configuration, AesGcmEncryption aesGcmEncryption)
-        {
-            Db = db;
-            Configuration = configuration;
-            AesGcmEncryption = aesGcmEncryption;
-        }
+        public ScvDbContext Db { get; } = db;
+        public IConfiguration Configuration { get; } = configuration;
+        private AesGcmEncryption AesGcmEncryption { get; } = aesGcmEncryption;
+
         /// <summary>
         /// This cannot be called from AJAX or SWAGGER. It must be loaded in the browser location, because it brings the user to the SSO page. 
         /// </summary>
@@ -116,7 +118,7 @@ namespace Scv.Api.Controllers
         [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
         [HttpGet]
         [Route("info")]
-        public ActionResult UserInfo()
+        public async Task<ActionResult> UserInfo()
         {
             string userType;
             if (HttpContext.User.IsIdirUser())
@@ -126,8 +128,18 @@ namespace Scv.Api.Controllers
             else
                 userType = "judiciary";
 
+            UserDto user = null;
+            var email = this.HttpContext.User.Email();
+            if (email != null)
+            {
+                user = await _userService.GetWithPermissionsAsync(email);
+            }
+
             return Ok(new
             {
+                user?.FirstName,
+                user?.LastName,
+                user?.Permissions,
                 UserType = userType,
                 EnableArchive = false,
                 Role = HttpContext.User.Role(),

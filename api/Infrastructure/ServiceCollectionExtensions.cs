@@ -103,54 +103,19 @@ namespace Scv.Api.Infrastructure
                 .AddHttpClient<PCSSLocationServices.LocationServicesClient>(
                     typeof(PCSSLocationServices.LocationServicesClient).FullName,
                     (client) => { ConfigureHttpClient(client, configuration, "PCSS"); })
-                .AddHttpMessageHandler<TimingHandler>()
-                .ConfigurePrimaryHttpMessageHandler(() =>
-                {
-                    return new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-                    };
-                });
+                .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSCourtCalendarServices.CourtCalendarClientServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
-                .AddHttpMessageHandler<TimingHandler>()
-                .ConfigurePrimaryHttpMessageHandler(() =>
-                {
-                    return new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-                    };
-                });
+                .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSJudicialCalendarServices.JudicialCalendarServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
-                .AddHttpMessageHandler<TimingHandler>()
-                .ConfigurePrimaryHttpMessageHandler(() =>
-                {
-                    return new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-                    };
-                });
+                .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSSearchDateServices.SearchDateClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
-                .AddHttpMessageHandler<TimingHandler>()
-                .ConfigurePrimaryHttpMessageHandler(() =>
-                {
-                    return new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-                    };
-                });
+                .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSLookupServices.LookupServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
-                .AddHttpMessageHandler<TimingHandler>()
-                .ConfigurePrimaryHttpMessageHandler(() =>
-                {
-                    return new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-                    };
-                });
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>().HttpContext.User);

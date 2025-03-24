@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +23,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Services;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Authentication
@@ -169,8 +169,19 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.ApplicationCode, applicationCode),
                             new Claim(CustomClaimTypes.JcParticipantId, partId),
                             new Claim(CustomClaimTypes.JcAgencyCode, agencyId),
-                            new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString())
+                            new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         });
+
+                        // Add user's permissions as claims
+                        var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                        var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
+                        if (userDto != null)
+                        {
+                            var permissionsClaims = userDto.Permissions
+                                .Select(p => new Claim(CustomClaimTypes.PermissionClaim, p))
+                                .ToList();
+                            claims.AddRange(permissionsClaims);
+                        }
 
                         identity.AddClaims(claims);
                     },

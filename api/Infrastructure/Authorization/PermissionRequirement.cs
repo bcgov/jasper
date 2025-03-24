@@ -6,5 +6,5 @@ namespace Scv.Api.Infrastructure.Authorization;
 public class PermissionRequirement(bool applyOrCondition = false, params string[] permissions) : IAuthorizationRequirement
 {
     public bool ApplyOrCondition { get; } = applyOrCondition;
-    public IEnumerable<string> RequiredPermissions { get; } = permissions;
+    public List<string> RequiredPermissions { get; } = [.. permissions];
 }

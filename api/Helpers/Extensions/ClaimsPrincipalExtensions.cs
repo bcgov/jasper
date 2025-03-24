@@ -66,6 +66,22 @@ namespace Scv.Api.Helpers.Extensions
                claimsPrincipal.FindFirstValue(CustomClaimTypes.SubRole).Equals("SCV");
 
         public static string Email(this ClaimsPrincipal claimsPrincipal) =>
-            claimsPrincipal.FindFirstValue(CustomClaimTypes.Email);
+            claimsPrincipal.FindFirstValue(ClaimTypes.Email);
+
+        public static bool HasPermissions(
+            this ClaimsPrincipal claimsPrincipal,
+            List<string> requiredPermissions,
+            bool applyOrCondition = false)
+        {
+            return applyOrCondition
+                // At least one permission is present
+                ? requiredPermissions
+                    .Any(code => claimsPrincipal.HasClaim(CustomClaimTypes.PermissionClaim, code))
+                // All permissions must be present
+                : requiredPermissions.All(code => claimsPrincipal.HasClaim(CustomClaimTypes.PermissionClaim, code));
+        }
+
+        public static List<string> Permissions(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindAll(CustomClaimTypes.PermissionClaim)?.Select(c => c.Value).ToList() ?? [];
     }
 }

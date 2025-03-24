@@ -11,24 +11,15 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Models.auth;
-using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Models.Auth;
 
 namespace Scv.Api.Controllers
 {
     [Route("api/[controller]")]
-    public class AuthController(
-        ScvDbContext db,
-        IConfiguration configuration,
-        AesGcmEncryption aesGcmEncryption,
-        IUserService userService
-        ) : ControllerBase
+    public class AuthController(ScvDbContext db, IConfiguration configuration, AesGcmEncryption aesGcmEncryption) : ControllerBase
     {
-        private readonly IUserService _userService = userService;
-
         public ScvDbContext Db { get; } = db;
         public IConfiguration Configuration { get; } = configuration;
         private AesGcmEncryption AesGcmEncryption { get; } = aesGcmEncryption;
@@ -118,7 +109,7 @@ namespace Scv.Api.Controllers
         [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
         [HttpGet]
         [Route("info")]
-        public async Task<ActionResult> UserInfo()
+        public Task<ActionResult> UserInfo()
         {
             string userType;
             if (HttpContext.User.IsIdirUser())
@@ -128,18 +119,9 @@ namespace Scv.Api.Controllers
             else
                 userType = "judiciary";
 
-            UserDto user = null;
-            var email = this.HttpContext.User.Email();
-            if (email != null)
+            return Task.FromResult<ActionResult>(Ok(new
             {
-                user = await _userService.GetWithPermissionsAsync(email);
-            }
-
-            return Ok(new
-            {
-                user?.FirstName,
-                user?.LastName,
-                user?.Permissions,
+                Permissions = HttpContext.User.Permissions(),
                 UserType = userType,
                 EnableArchive = false,
                 Role = HttpContext.User.Role(),
@@ -147,7 +129,7 @@ namespace Scv.Api.Controllers
                 IsSupremeUser = HttpContext.User.IsSupremeUser(),
                 AgencyCode = HttpContext.User.AgencyCode(),
                 DateTime.UtcNow
-            });
+            }));
         }
     }
 }

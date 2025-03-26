@@ -147,8 +147,8 @@ namespace Scv.Api.Services
         {
             return await _reportServiceClient.GetCourtListReportAsync(
                 request.CourtDivision,
-                request.Date,
-                request.LocationId,
+                request.Date.GetValueOrDefault(),
+                request.LocationId.GetValueOrDefault(),
                 request.CourtClass,
                 request.RoomCode,
                 request.AdditionsList,

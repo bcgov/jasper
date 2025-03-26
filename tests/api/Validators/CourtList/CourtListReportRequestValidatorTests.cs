@@ -38,10 +38,23 @@ public class CourtListReportRequestValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenLocationIdIsZero_ShouldFail()
+    public void Validate_WhenLocationIdIsNull_ShouldFail()
     {
         var data = GetMockData();
-        data.LocationId = default;
+        data.LocationId = null;
+
+        var result = _validator.TestValidate(data);
+
+        Assert.False(result.IsValid);
+        Assert.Single(result.Errors);
+        Assert.Equal("Location ID is required.", result.Errors.First().ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_WhenLocationIdIsZeroOrBelow_ShouldFail()
+    {
+        var data = GetMockData();
+        data.LocationId = _faker.Random.Int(max: 0);
 
         var result = _validator.TestValidate(data);
 
@@ -61,5 +74,18 @@ public class CourtListReportRequestValidatorTests
         Assert.False(result.IsValid);
         Assert.Single(result.Errors);
         Assert.Equal("Class is required.", result.Errors.First().ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_WhenDateIsNull_ShouldFail()
+    {
+        var data = GetMockData();
+        data.Date = null;
+
+        var result = _validator.TestValidate(data);
+
+        Assert.False(result.IsValid);
+        Assert.Single(result.Errors);
+        Assert.Equal("Date is required.", result.Errors.First().ErrorMessage);
     }
 }

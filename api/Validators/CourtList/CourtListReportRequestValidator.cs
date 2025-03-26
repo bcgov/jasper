@@ -11,9 +11,10 @@ public class CourtListReportRequestValidator : AbstractValidator<CourtListReport
            .NotEmpty().WithMessage("Division is required.");
 
         RuleFor(x => x.Date)
-            .NotEmpty().WithMessage("Date is required.");
+            .NotNull().WithMessage("Date is required.");
 
         RuleFor(x => x.LocationId)
+            .NotNull().WithMessage("Location ID is required.")
             .GreaterThan(0).WithMessage("Location ID is invalid.");
 
         RuleFor(x => x.CourtClass)

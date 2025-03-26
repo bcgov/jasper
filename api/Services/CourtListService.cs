@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -9,12 +10,14 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Civil.CourtList;
+using Scv.Api.Models.CourtList;
 using Scv.Api.Models.Criminal.CourtList;
 using Scv.Api.Models.Criminal.Detail;
 
@@ -29,6 +32,7 @@ namespace Scv.Api.Services
         private readonly LookupService _lookupService;
         private readonly LocationService _locationService;
         private readonly SearchDateClient _searchDateClient;
+        private readonly ReportServicesClient _reportServiceClient;
         private readonly IAppCache _cache;
         private readonly IMapper _mapper;
         private readonly string _applicationCode;
@@ -39,7 +43,17 @@ namespace Scv.Api.Services
 
         #region Constructor
 
-        public CourtListService(IConfiguration configuration, ILogger<CourtListService> logger, FileServicesClient filesClient, IMapper mapper, LookupService lookupService, LocationService locationService, SearchDateClient searchDateClient, IAppCache cache, ClaimsPrincipal user)
+        public CourtListService(
+            IConfiguration configuration,
+            ILogger<CourtListService> logger,
+            FileServicesClient filesClient,
+            IMapper mapper,
+            LookupService lookupService,
+            LocationService locationService,
+            SearchDateClient searchDateClient,
+            ReportServicesClient reportServiceClient,
+            IAppCache cache,
+            ClaimsPrincipal user)
         {
             _logger = logger;
             _filesClient = filesClient;
@@ -51,6 +65,7 @@ namespace Scv.Api.Services
             _lookupService = lookupService;
             _locationService = locationService;
             _searchDateClient = searchDateClient;
+            _reportServiceClient = reportServiceClient;
             _applicationCode = user.ApplicationCode();
             _requestAgencyIdentifierId = user.AgencyCode();
             _requestPartId = user.ParticipantId();
@@ -63,7 +78,7 @@ namespace Scv.Api.Services
             var proceedingDateString = proceeding.ToString("yyyy-MM-dd");
             var agencyCode = await _locationService.GetLocationCodeFromId(agencyId);
 
-            async Task<CourtList> CourtList() => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, roomCode, proceedingDateString, divisionCode, fileNumber);
+            async Task<JCCommon.Clients.FileServices.CourtList> CourtList() => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, roomCode, proceedingDateString, divisionCode, fileNumber);
             async Task<CourtCalendarDetailByDay> CourtCalendarDetailByDay() =>
                 await _filesClient.FilesCourtCalendarDetailsByDayAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyCode,
                     proceeding.ToString("yyyy-MM-dd HH:mm:ss.f"), roomCode);
@@ -126,6 +141,18 @@ namespace Scv.Api.Services
             courtList.CriminalCourtList = PopulateCriminalCourtListFromCourtCalendarDetails(courtList.CriminalCourtList, criminalCourtCalendarAppearances);
 
             return courtList;
+        }
+
+        public async virtual Task<Stream> GenerateReportAsync(CourtListReportRequest request)
+        {
+            return await _reportServiceClient.GetCourtListReportAsync(
+                request.CourtDivision,
+                request.Date,
+                request.LocationId,
+                request.CourtClass,
+                request.RoomCode,
+                request.AdditionsList,
+                request.ReportType);
         }
 
         #region Helpers

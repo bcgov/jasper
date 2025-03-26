@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
@@ -14,21 +14,15 @@ namespace Scv.Api.Controllers
     [Route("api/[controller]")]
 
     [ApiController]
-    public class CourtListController : ControllerBase
+    public class CourtListController(CourtListService courtListService, IValidator<CourtListReportRequest> reportValidator) : ControllerBase
     {
         #region Variables
 
-        private readonly CourtListService _courtListService;
+        private readonly CourtListService _courtListService = courtListService;
+        private readonly IValidator<CourtListReportRequest> _reportValidator = reportValidator;
 
         #endregion Variables
-
-
         #region Constructor
-
-        public CourtListController(CourtListService courtListService)
-        {
-            _courtListService = courtListService;
-        }
 
         #endregion Constructor
 
@@ -48,6 +42,27 @@ namespace Scv.Api.Controllers
             var courtList = await _courtListService.GetCourtListAppearances(agencyId, TEST_JUDGE_ID, roomCode, proceeding);
 
             return Ok(courtList);
+        }
+
+        /// <summary>
+        /// Generates a Court List PDF report.
+        /// </summary>
+        /// <param name="request">Criteria to generate the pdf report</param>
+        /// <returns>PDF</returns>
+        [HttpGet]
+        [Route("generate-report")]
+        public async Task<IActionResult> GenerateReport([FromQuery] CourtListReportRequest request)
+        {
+            var validationResult = await _reportValidator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+            }
+
+            var pdfStream = await _courtListService.GenerateReportAsync(request);
+
+            return new FileStreamResult(pdfStream, "application/pdf");
         }
     }
 }

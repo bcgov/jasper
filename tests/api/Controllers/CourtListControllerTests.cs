@@ -1,14 +1,19 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using Bogus;
+using FluentValidation;
+using FluentValidation.Results;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
 using LazyCache.Providers;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -17,10 +22,12 @@ using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Mappers;
+using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
+using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 
 
 namespace tests.api.Controllers
@@ -31,6 +38,7 @@ namespace tests.api.Controllers
         #region Variables
 
         private readonly Faker _faker;
+        private readonly Mock<IValidator<CourtListReportRequest>> _mockReportValidator;
 
         #endregion Variables
 
@@ -40,6 +48,7 @@ namespace tests.api.Controllers
         {
 
             _faker = new Faker();
+            _mockReportValidator = new Mock<IValidator<CourtListReportRequest>>();
         }
 
         #endregion Constructor
@@ -78,12 +87,11 @@ namespace tests.api.Controllers
             var mockPCSSLocationServicesClient = new Mock<PCSSLocationServices.LocationServicesClient>(MockBehavior.Strict, httpClient);
             var mockLookupCodeServicesClient = new Mock<LookupCodeServicesClient>(MockBehavior.Strict, httpClient);
             var mockPCSSLookupServicesClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, httpClient);
-
+            var mockPCSSReportServicesClient = new Mock<PCSSReportServices.ReportServicesClient>(MockBehavior.Strict, httpClient);
 
             // Cache setup
             var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
-
 
             // AutoMapper setup
             var mapperConfig = new MapperConfiguration(config =>
@@ -127,6 +135,7 @@ namespace tests.api.Controllers
                 mockLookupService.Object,
                 mockLocationService.Object,
                 mockPCSSSearchDateClient.Object,
+                mockPCSSReportServicesClient.Object,
                 cachingService,
                 principal);
 
@@ -147,7 +156,7 @@ namespace tests.api.Controllers
                     DateTime.Parse("2016-04-04")))
                 .ReturnsAsync(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection());
 
-            var controller = new CourtListController(mockCourtListService.Object);
+            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
             var actionResult = await controller.GetCourtList("4801", "101", DateTime.Parse("2016-04-04"));
 
             mockCourtListService
@@ -156,6 +165,58 @@ namespace tests.api.Controllers
                     190,
                     It.IsAny<string>(),
                     It.IsAny<DateTime>()),
+                    Times.Once);
+        }
+
+        [Fact]
+        public async Task GenerateReport_ShoulReturnBadRequest_WhenQueryParamsIsInvalid()
+        {
+            var mockValidationResult = new FluentValidation.Results.ValidationResult(
+            [
+                new ValidationFailure(_faker.Random.Word(), _faker.Lorem.Paragraph())
+            ]);
+            var mockCourtListService = this.SetupCourtListService();
+            _mockReportValidator
+                .Setup(v => v.ValidateAsync(
+                    It.IsAny<CourtListReportRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockValidationResult);
+
+            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
+            var result = await controller.GenerateReport(new CourtListReportRequest());
+
+            Assert.IsType<BadRequestObjectResult>(result);
+            _mockReportValidator
+                .Verify(v =>
+                    v.ValidateAsync(
+                        It.IsAny<CourtListReportRequest>(),
+                        It.IsAny<CancellationToken>()),
+                    Times.Once);
+        }
+
+        [Fact]
+        public async Task GenerateReport_ShoulReturnFileStreamResult()
+        {
+            var mockValidationResult = new FluentValidation.Results.ValidationResult();
+            var mockCourtListService = this.SetupCourtListService();
+            _mockReportValidator
+                .Setup(v => v.ValidateAsync(
+                    It.IsAny<CourtListReportRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockValidationResult);
+            mockCourtListService
+                .Setup(c => c.GenerateReportAsync(It.IsAny<CourtListReportRequest>()))
+                .ReturnsAsync(new MemoryStream());
+
+            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
+            var result = await controller.GenerateReport(new CourtListReportRequest());
+
+            Assert.IsType<FileStreamResult>(result);
+            _mockReportValidator
+                .Verify(v =>
+                    v.ValidateAsync(
+                        It.IsAny<CourtListReportRequest>(),
+                        It.IsAny<CancellationToken>()),
                     Times.Once);
         }
     }

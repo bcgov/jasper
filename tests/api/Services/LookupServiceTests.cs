@@ -17,7 +17,7 @@ namespace tests.api.Services
         }
 
         [Fact]
-        public async void Lookup_Document_Description_With_Caching()
+        public async Task Lookup_Document_Description_With_Caching()
         {
             //Call this again, so it gives us a fresh cache, because tests aren't always ran in a particular order. 
             SetupLookupServiceTests();

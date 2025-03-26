@@ -88,16 +88,16 @@ public class UserService(
         }
 
         // Get all role ids from groups
-        var roleIds = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id))).SelectMany(g => g.RoleIds).ToList();
-        if (roleIds.Count == 0)
+        var roleIds = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id))).SelectMany(g => g.RoleIds);
+        if (!roleIds.Any())
         {
             this.Logger.LogInformation("User's group(s) does not have any Roles.");
             return user;
         }
 
         // Get all permission codes
-        var permissionIds = (await _roleRepo.FindAsync(r => roleIds.Contains(r.Id))).SelectMany(r => r.PermissionIds).ToList();
-        if (permissionIds.Count == 0)
+        var permissionIds = (await _roleRepo.FindAsync(r => roleIds.Contains(r.Id))).SelectMany(r => r.PermissionIds);
+        if (!permissionIds.Any())
         {
             this.Logger.LogInformation("Role does not have any Permissions.");
             return user;

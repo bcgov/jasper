@@ -50,7 +50,7 @@ namespace tests.api.Controllers
                 expectedJcAgencyCode);
             var mockUserService = new Mock<IUserService>();
 
-            var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null, mockUserService.Object)
+            var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
                 ControllerContext = new ControllerContext
                 {
@@ -101,7 +101,7 @@ namespace tests.api.Controllers
                 _faker.Random.Word());
             var mockUserService = new Mock<IUserService>();
 
-            var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null, mockUserService.Object)
+            var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
                 ControllerContext = new ControllerContext
                 {
@@ -134,7 +134,7 @@ namespace tests.api.Controllers
                 _faker.Random.Word());
             var mockUserService = new Mock<IUserService>();
 
-            var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null, mockUserService.Object)
+            var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
                 ControllerContext = new ControllerContext
                 {

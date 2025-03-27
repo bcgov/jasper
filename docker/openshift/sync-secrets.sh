@@ -29,8 +29,7 @@ for key in $secret_keys; do
 
   sanitizedKey=$(echo "$key" | sed "s/_/-/g")
   secret_name=$(echo "$aws_secret_format" | sed "s/X/$sanitizedKey/")
-  echo "$value"
-  secret_string=$(echo "$value" | jq -c 'if type == "string" then try fromjson catch . else . end')
+  secret_string=$(echo "$value" | jq -c '.')
 
   echo "Uploading $secret_name"
   aws secretsmanager put-secret-value \

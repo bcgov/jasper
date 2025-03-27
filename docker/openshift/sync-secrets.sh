@@ -22,6 +22,7 @@ secret_keys="\
   user_services_client"
 
 echo "Syncing secrets..."
+cat "$LOCAL_SECRET_PATH"
 
 # Iterate on each key to get the value from Vault and save to AWS secrets manager
 for key in $secret_keys; do

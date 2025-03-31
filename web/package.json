@@ -27,7 +27,7 @@
     "@fullcalendar/timegrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
     "@types/underscore": "^1.13.0",
-    "@vitejs/plugin-basic-ssl": "^1.2.0",
+    "@vitejs/plugin-basic-ssl": "^2.0.0",
     "axios": "^1.8.4",
     "base64url": "^3.0.1",
     "bootstrap": "^4.3.1",

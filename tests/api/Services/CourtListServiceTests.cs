@@ -81,6 +81,8 @@ public class CourtListServiceTests : ServiceTestBase
     public async Task GenerateReport_ShouldReturnStream()
     {
         var (courtListService, mockReportClient) = SetupCourtListService();
+        var fakeContentDisposition = $"inline; filename={Path.GetRandomFileName()}";
+
         mockReportClient
             .Setup(r => r.GetCourtListReportAsync(
                 It.IsAny<string>(),
@@ -90,11 +92,12 @@ public class CourtListServiceTests : ServiceTestBase
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>()))
-            .ReturnsAsync(new MemoryStream());
+            .ReturnsAsync((new MemoryStream(), fakeContentDisposition));
 
-        var result = await courtListService.GenerateReportAsync(new CourtListReportRequest());
+        var (stream, contentDisposition) = await courtListService.GenerateReportAsync(new CourtListReportRequest());
 
-        Assert.NotNull(result);
+        Assert.NotNull(stream);
+        Assert.Equal(fakeContentDisposition, contentDisposition);
         mockReportClient
             .Verify(r => r
                 .GetCourtListReportAsync(

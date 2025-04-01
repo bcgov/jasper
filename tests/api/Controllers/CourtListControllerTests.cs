@@ -13,6 +13,7 @@ using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
 using LazyCache.Providers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -198,6 +199,14 @@ namespace tests.api.Controllers
         public async Task GenerateReport_ShoulReturnFileStreamResult()
         {
             var mockValidationResult = new FluentValidation.Results.ValidationResult();
+            var fakeContentDisposition = $"inline; filename={Path.GetRandomFileName()}";
+            var mockResponse = new Mock<HttpResponse>();
+            var headers = new HeaderDictionary();
+            mockResponse.SetupGet(r => r.Headers).Returns(headers);
+
+            var mockHttpContext = new Mock<HttpContext>();
+            mockHttpContext.SetupGet(c => c.Response).Returns(mockResponse.Object);
+
             var mockCourtListService = this.SetupCourtListService();
             _mockReportValidator
                 .Setup(v => v.ValidateAsync(
@@ -206,9 +215,15 @@ namespace tests.api.Controllers
                 .ReturnsAsync(mockValidationResult);
             mockCourtListService
                 .Setup(c => c.GenerateReportAsync(It.IsAny<CourtListReportRequest>()))
-                .ReturnsAsync(new MemoryStream());
+                .ReturnsAsync((new MemoryStream(), fakeContentDisposition));
 
-            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
+            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = mockHttpContext.Object
+                }
+            };
             var result = await controller.GenerateReport(new CourtListReportRequest());
 
             Assert.IsType<FileStreamResult>(result);

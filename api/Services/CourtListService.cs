@@ -143,7 +143,7 @@ namespace Scv.Api.Services
             return courtList;
         }
 
-        public async virtual Task<Stream> GenerateReportAsync(CourtListReportRequest request)
+        public async virtual Task<(Stream, string)> GenerateReportAsync(CourtListReportRequest request)
         {
             return await _reportServiceClient.GetCourtListReportAsync(
                 request.CourtDivision,

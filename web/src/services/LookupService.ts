@@ -2,7 +2,7 @@ import { LookupCode } from '../types/common';
 import { HttpService } from './HttpService';
 
 export class LookupService {
-  private httpService: HttpService;
+  private readonly httpService: HttpService;
 
   constructor(httpService: HttpService) {
     this.httpService = httpService;

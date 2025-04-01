@@ -47,7 +47,7 @@ public partial class ReportServicesClient
 
     /// <returns>OK</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual System.Threading.Tasks.Task<Stream> GetCourtListReportAsync(string courtDivision, System.DateTimeOffset date, int location, string courtClass, string room, string additionsList, string reportType)
+    public virtual System.Threading.Tasks.Task<(Stream, string)> GetCourtListReportAsync(string courtDivision, System.DateTimeOffset date, int location, string courtClass, string room, string additionsList, string reportType)
     {
         return GetCourtListReportAsync(courtDivision, date, location, courtClass, room, additionsList, reportType, System.Threading.CancellationToken.None);
     }
@@ -55,7 +55,7 @@ public partial class ReportServicesClient
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
     /// <returns>OK</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async System.Threading.Tasks.Task<Stream> GetCourtListReportAsync(string courtDivision, System.DateTimeOffset date, int location, string courtClass, string room, string additionsList, string reportType, System.Threading.CancellationToken cancellationToken)
+    public virtual async System.Threading.Tasks.Task<(Stream, string)> GetCourtListReportAsync(string courtDivision, System.DateTimeOffset date, int location, string courtClass, string room, string additionsList, string reportType, System.Threading.CancellationToken cancellationToken)
     {
         if (courtDivision == null)
             throw new System.ArgumentNullException("courtDivision");
@@ -129,7 +129,11 @@ public partial class ReportServicesClient
                         var memoryStream = new MemoryStream();
                         await response_.Content.CopyToAsync(memoryStream).ConfigureAwait(false);
                         memoryStream.Position = 0;
-                        return memoryStream;
+
+                        // Get the filename
+                        var contentDisposition = response_.Content.Headers.GetValues("Content-Disposition").FirstOrDefault() ?? "";
+
+                        return (memoryStream, contentDisposition);
                     }
                     else
                     {

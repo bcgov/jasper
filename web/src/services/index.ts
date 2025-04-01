@@ -1,5 +1,6 @@
 import { App } from 'vue';
 import { AuthService } from './AuthService';
+import { CourtListService } from './CourtListService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
@@ -13,6 +14,7 @@ export function registerRouter(app: App) {
   const locationService = new LocationService(httpService);
   const filesService = new FilesService(httpService);
   const dashboardService = new DashboardService(httpService);
+  const courtListService = new CourtListService(httpService);
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -20,9 +22,11 @@ export function registerRouter(app: App) {
   app.provide('locationService', locationService);
   app.provide('filesService', filesService);
   app.provide('dashboardService', dashboardService);
+  app.provide('courtListService', courtListService);
 }
 
 export * from './AuthService';
+export * from './CourtListService';
 export * from './DashboardService';
 export * from './FilesService';
 export * from './LocationService';

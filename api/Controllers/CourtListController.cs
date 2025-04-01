@@ -60,7 +60,9 @@ namespace Scv.Api.Controllers
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
             }
 
-            var pdfStream = await _courtListService.GenerateReportAsync(request);
+            var (pdfStream, contentDisposition) = await _courtListService.GenerateReportAsync(request);
+
+            Response.Headers.ContentDisposition = contentDisposition;
 
             return new FileStreamResult(pdfStream, "application/pdf");
         }

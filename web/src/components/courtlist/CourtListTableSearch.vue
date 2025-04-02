@@ -56,11 +56,9 @@
   </v-row>
 </template>
 <script setup lang="ts">
-  import { mdiMagnify } from '@mdi/js';
-  import ActionButtons from '../shared/Form/ActionButtons.vue';
-  import { mdiMenu } from '@mdi/js';
+  import { mdiMagnify, mdiMenu } from '@mdi/js';
   import { inject } from 'vue';
-
+  import ActionButtons from '../shared/Form/ActionButtons.vue';
   const selectedFiles = defineModel<string>('filesFilter');
   const selectedAMPM = defineModel<string>('AMPMFilter');
   const search = defineModel<string>('search');

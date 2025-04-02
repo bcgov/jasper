@@ -104,9 +104,7 @@
     const data = await lookupService?.getCourtClasses();
     classes.value =
       data?.filter(
-        (c) =>
-          c.longDesc === DivisionEnum.CRIMINAL ||
-          c.longDesc === DivisionEnum.CIVIL
+        (c) => c.longDesc === DivisionEnum.R || c.longDesc === DivisionEnum.I
       ) || [];
   };
 
@@ -201,7 +199,7 @@
       roomCode: selectedCourtRoom,
     };
 
-    if (selectedClass!.longDesc === DivisionEnum.CRIMINAL) {
+    if (selectedClass!.longDesc === DivisionEnum.R) {
       queryParams.reportType = reportType;
     } else {
       queryParams.additionsList = additions;

@@ -87,6 +87,6 @@ export interface KeyValueInfo {
 }
 
 export enum DivisionEnum {
-  CRIMINAL = 'R',
-  CIVIL = 'I'
+  R = 'R',
+  I = 'I',
 }

@@ -102,12 +102,12 @@
 
   const showReportTypeComputed = computed(() => {
     const c = props.types.find((c) => c.code === selectedType.value);
-    return selectedType.value !== null && c!.longDesc == DivisionEnum.CRIMINAL;
+    return selectedType.value !== null && c!.longDesc == DivisionEnum.R;
   });
 
   const showAdditionsComputed = computed(() => {
     const c = props.types.find((c) => c.code === selectedType.value);
-    return selectedType.value !== null && c!.longDesc == DivisionEnum.CIVIL;
+    return selectedType.value !== null && c!.longDesc == DivisionEnum.I;
   });
 
   const closeDialog = () => {

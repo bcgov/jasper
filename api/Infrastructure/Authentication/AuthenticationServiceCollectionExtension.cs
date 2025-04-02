@@ -172,15 +172,20 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         });
 
-                        // Add user's permissions as claims
-                        var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                        var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
-                        if (userDto != null)
+                        // Remove checking when the "real" mongo db has been configured
+                        var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+                        if (!string.IsNullOrEmpty(connectionString))
                         {
-                            var permissionsClaims = userDto.Permissions
-                                .Select(p => new Claim(CustomClaimTypes.PermissionClaim, p))
-                                .ToList();
-                            claims.AddRange(permissionsClaims);
+                            // Add user's permissions as claims
+                            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                            var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
+                            if (userDto != null)
+                            {
+                                var permissionsClaims = userDto.Permissions
+                                    .Select(p => new Claim(CustomClaimTypes.PermissionClaim, p))
+                                    .ToList();
+                                claims.AddRange(permissionsClaims);
+                            }
                         }
 
                         identity.AddClaims(claims);

@@ -60,6 +60,13 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
         {
+            // Remove checking when the "real" mongo db has been configured
+            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return services;
+            }
+
             services.AddScoped<PermissionSeeder>();
             services.AddScoped<RoleSeeder>();
             services.AddScoped<GroupSeeder>();
@@ -67,9 +74,7 @@ namespace Scv.Api.Infrastructure
 
             services.AddDbContext<JasperDbContext>(options =>
             {
-                var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
                 var dbName = configuration.GetValue<string>("MONGODB_NAME");
-
                 options.UseMongoDB(connectionString, dbName);
             });
 
@@ -132,10 +137,15 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
 
-            services.AddScoped<IAccessControlManagementService<PermissionDto>, PermissionService>();
-            services.AddScoped<IAccessControlManagementService<RoleDto>, RoleService>();
-            services.AddScoped<IAccessControlManagementService<GroupDto>, GroupService>();
-            services.AddScoped<IUserService, UserService>();
+
+            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                services.AddScoped<IAccessControlManagementService<PermissionDto>, PermissionService>();
+                services.AddScoped<IAccessControlManagementService<RoleDto>, RoleService>();
+                services.AddScoped<IAccessControlManagementService<GroupDto>, GroupService>();
+                services.AddScoped<IUserService, UserService>();
+            }
 
             return services;
         }

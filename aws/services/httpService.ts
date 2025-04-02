@@ -26,8 +26,9 @@ export class HttpService implements IHttpService {
     console.log(`Base URL: ${baseUrl}`);
 
     const httpsAgent = new https.Agent({
-      cert,
-      key,
+      // Replace escaped `\n` with real newlines
+      cert: cert.replace(/\\n/g, "\n"),
+      key: key.replace(/\\n/g, "\n"),
       rejectUnauthorized: true,
     });
 

@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using Bogus;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Bogus;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
+using Scv.Api.Services;
 using Scv.Db.Models;
 using Xunit;
 
@@ -29,7 +31,7 @@ namespace tests.api.Controllers
         #region Unit Tests
 
         [Fact]
-        public void UserInfo_ReturnsOK_And_UserTypeIDIR()
+        public async Task UserInfo_ReturnsOK_And_UserTypeIDIR()
         {
             var expectedUsername = _faker.Internet.UserName();
             var expectedUserType = "idir";
@@ -46,6 +48,7 @@ namespace tests.api.Controllers
                 expectedRole,
                 expectedSubRole,
                 expectedJcAgencyCode);
+            var mockUserService = new Mock<IUserService>();
 
             var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
@@ -55,7 +58,7 @@ namespace tests.api.Controllers
                 }
             };
 
-            var response = controller.UserInfo() as OkObjectResult;
+            var response = await controller.UserInfo() as OkObjectResult;
             dynamic responseObj = response.Value;
 
             var actualUserType = responseObj.GetType().GetProperty("UserType").GetValue(responseObj).ToString();
@@ -84,7 +87,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public void UserInfo_ReturnsOK_And_UserTypeVC()
+        public async Task UserInfo_ReturnsOK_And_UserTypeVC()
         {
             var expectedUserType = "vc";
 
@@ -96,6 +99,7 @@ namespace tests.api.Controllers
                 _faker.Random.Word(),
                 _faker.Random.Word(),
                 _faker.Random.Word());
+            var mockUserService = new Mock<IUserService>();
 
             var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
@@ -105,7 +109,7 @@ namespace tests.api.Controllers
                 }
             };
 
-            var response = controller.UserInfo() as OkObjectResult;
+            var response = await controller.UserInfo() as OkObjectResult;
             dynamic responseObj = response.Value;
 
             var actualUserType = responseObj.GetType().GetProperty("UserType").GetValue(responseObj).ToString();
@@ -116,7 +120,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public void UserInfo_ReturnsOK_And_UserTypeJudiciary()
+        public async Task UserInfo_ReturnsOK_And_UserTypeJudiciary()
         {
             var expectedUserType = "judiciary";
 
@@ -128,6 +132,7 @@ namespace tests.api.Controllers
                 _faker.Random.Word(),
                 _faker.Random.Word(),
                 _faker.Random.Word());
+            var mockUserService = new Mock<IUserService>();
 
             var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
@@ -137,7 +142,7 @@ namespace tests.api.Controllers
                 }
             };
 
-            var response = controller.UserInfo() as OkObjectResult;
+            var response = await controller.UserInfo() as OkObjectResult;
             dynamic responseObj = response.Value;
 
             var actualUserType = responseObj.GetType().GetProperty("UserType").GetValue(responseObj).ToString();

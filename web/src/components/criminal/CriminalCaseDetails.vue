@@ -38,7 +38,7 @@
         :loading="loading || !isMounted"
       >
         <v-row style="display: flex; flex-wrap: nowrap">
-          <v-col cols="2" style="overflow-y: auto">
+          <v-col cols="3" style="overflow-y: auto">
             <criminal-side-panel-v2
               v-if="isDataReady && details"
               :details="details"

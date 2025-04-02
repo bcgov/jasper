@@ -36,6 +36,7 @@ services:
     image: '${COMPOSE_PROJECT_NAME}-api'
     environment:
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
+      - DEFAULT_USERS=${DEFAULT_USERS}
       - FileServicesClient__Username=${FileServicesClientUsername}
       - FileServicesClient__Password=${FileServicesClientPassword}
       - FileServicesClient__Url=${FileServicesClientUrl}

@@ -30,6 +30,7 @@ public class AccessControlManagementProfile : Profile
         // User
         CreateMap<User, UserDto>();
         CreateMap<UserDto, User>()
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email.ToLower()))
             .ForMember(dest => dest.GroupIds, opt => opt.MapFrom(src => src.GroupIds.Distinct().ToList()))
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
     }

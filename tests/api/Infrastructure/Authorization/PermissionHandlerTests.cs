@@ -1,0 +1,117 @@
+﻿using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Bogus;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Scv.Api.Helpers;
+using Scv.Api.Infrastructure.Authorization;
+using Scv.Db.Models;
+using Xunit;
+
+namespace tests.api.Infrastructure.Authorization;
+public class PermissionHandlerTests
+{
+    private readonly Mock<ILogger<PermissionHandler>> _mockLogger;
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
+    private readonly PermissionHandler _handler;
+    private readonly Faker _faker = new();
+
+    public PermissionHandlerTests()
+    {
+        _mockLogger = new Mock<ILogger<PermissionHandler>>();
+        _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        _handler = new PermissionHandler(_mockLogger.Object, _mockHttpContextAccessor.Object);
+    }
+
+    [Fact]
+    public async Task UnauthenticatedUser_ShouldBeUnauthorized()
+    {
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
+        var identity = new ClaimsIdentity();  // No authentication type = unauthenticated
+        var user = new ClaimsPrincipal(identity);
+        var context = new AuthorizationHandlerContext(
+            [],
+            user,
+            null);
+
+        await _handler.HandleAsync(context);
+
+        Assert.False(context.HasSucceeded);
+    }
+
+    [Fact]
+    public async Task UserWithNoPermissionClaims_ShouldBeUnauthorized()
+    {
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
+
+        var identity = new ClaimsIdentity([], "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var context = new AuthorizationHandlerContext(
+            [],
+            user,
+            null);
+
+        await _handler.HandleAsync(context);
+
+        Assert.False(context.HasSucceeded);
+    }
+
+    [Fact]
+    public async Task UserWithExactPermissionClaims_ShouldBeAuthorized()
+    {
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
+        var requirement = new PermissionRequirement(permissions: [
+            Permission.LOCK_UNLOCK_USERS,
+            Permission.ACCESS_DARS
+        ]);
+
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS)
+        };
+
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var context = new AuthorizationHandlerContext(
+            [requirement],
+            user,
+            null);
+
+        await _handler.HandleAsync(context);
+
+        Assert.True(context.HasSucceeded);
+    }
+
+    [Fact]
+    public async Task UserWithAnyPermission_ShouldBeAuthorized()
+    {
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
+        var requirement = new PermissionRequirement(true, [
+            Permission.VIEW_CASE_DETAILS,
+            Permission.VIEW_ADJUDICATOR_RESTRICTIONS
+       ]);
+
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.PermissionClaim, Permission.VIEW_CASE_DETAILS)
+        };
+
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var context = new AuthorizationHandlerContext(
+            [requirement],
+            user,
+            null);
+
+        await _handler.HandleAsync(context);
+
+        Assert.True(context.HasSucceeded);
+    }
+}

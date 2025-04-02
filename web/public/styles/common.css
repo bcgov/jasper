@@ -7,3 +7,7 @@ select {
   appearance: auto !important;
   border-style: solid !important;
 }
+
+.data-label {
+  color: gray;
+}

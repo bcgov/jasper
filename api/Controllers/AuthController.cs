@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Scv.Api.Helpers;
@@ -19,18 +18,12 @@ using Scv.Db.Models.Auth;
 namespace Scv.Api.Controllers
 {
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController(ScvDbContext db, IConfiguration configuration, AesGcmEncryption aesGcmEncryption) : ControllerBase
     {
-        public ScvDbContext Db { get; }
-        public IConfiguration Configuration { get; }
-        private AesGcmEncryption AesGcmEncryption { get; }
+        public ScvDbContext Db { get; } = db;
+        public IConfiguration Configuration { get; } = configuration;
+        private AesGcmEncryption AesGcmEncryption { get; } = aesGcmEncryption;
 
-        public AuthController(ScvDbContext db, IConfiguration configuration, AesGcmEncryption aesGcmEncryption)
-        {
-            Db = db;
-            Configuration = configuration;
-            AesGcmEncryption = aesGcmEncryption;
-        }
         /// <summary>
         /// This cannot be called from AJAX or SWAGGER. It must be loaded in the browser location, because it brings the user to the SSO page. 
         /// </summary>
@@ -116,7 +109,7 @@ namespace Scv.Api.Controllers
         [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
         [HttpGet]
         [Route("info")]
-        public ActionResult UserInfo()
+        public Task<ActionResult> UserInfo()
         {
             string userType;
             if (HttpContext.User.IsIdirUser())
@@ -126,8 +119,9 @@ namespace Scv.Api.Controllers
             else
                 userType = "judiciary";
 
-            return Ok(new
+            return Task.FromResult<ActionResult>(Ok(new
             {
+                Permissions = HttpContext.User.Permissions(),
                 UserType = userType,
                 EnableArchive = false,
                 Role = HttpContext.User.Role(),
@@ -135,7 +129,7 @@ namespace Scv.Api.Controllers
                 IsSupremeUser = HttpContext.User.IsSupremeUser(),
                 AgencyCode = HttpContext.User.AgencyCode(),
                 DateTime.UtcNow
-            });
+            }));
         }
     }
 }

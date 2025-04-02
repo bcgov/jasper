@@ -12,15 +12,15 @@
       class="mx-3 mt-2"
     />
     <v-row class="mx-1 mt-2">
-      <v-col cols="6">Elections</v-col>
+      <v-col cols="6" class="data-label">Elections</v-col>
       <v-col></v-col>
     </v-row>
     <v-row class="mx-1">
-      <v-col cols="6">Crown</v-col>
+      <v-col cols="6" class="data-label">Crown</v-col>
       <v-col>{{ crownName }}</v-col>
     </v-row>
     <v-row class="mx-1 mb-1">
-      <v-col cols="6">Case Age</v-col>
+      <v-col cols="6" class="data-label">Case Age</v-col>
       <v-col>{{ details.caseAgeDays }} days</v-col>
     </v-row>
   </v-card>
@@ -40,7 +40,8 @@
   const appearances = ref(details.value.appearances?.apprDetail);
   const names = computed(() => {
     return (
-      participants.value[0].lastNm.toUpperCase() + ', ' +
+      participants.value[0].lastNm.toUpperCase() +
+      ', ' +
       participants.value[0].givenNm +
       (participants.value.length > 1
         ? ` and ${participants.value.length - 1} other(s)`

@@ -14,6 +14,7 @@ namespace Scv.Api.Helpers
         public const string SubRole = nameof(CustomClaimTypes) + nameof(SubRole);
         public const string Groups = "groups";
         public const string PreferredUsername = "preferred_username";
+        public const string PermissionClaim = "permission_claim";
 
         public static List<string> UsedKeycloakClaimTypes = new List<string>
         {
@@ -21,7 +22,8 @@ namespace Scv.Api.Helpers
             "idir_userid",
             "name",
             "preferred_username",
-            "groups"
+            "groups",
+            ClaimTypes.Email
         };
     }
 }

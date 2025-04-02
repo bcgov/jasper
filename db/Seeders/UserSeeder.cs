@@ -1,53 +1,65 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
 
 namespace Scv.Db.Seeders
 {
-    public class UserSeeder(ILogger<UserSeeder> logger) : SeederBase<JasperDbContext>(logger)
+    public class UserSeeder(ILogger<UserSeeder> logger, IConfiguration config) : SeederBase<JasperDbContext>(logger)
     {
+        private readonly IConfiguration _config = config;
+
         public override int Order => 4;
+
 
         protected override async Task ExecuteAsync(JasperDbContext context)
         {
-            var groups = await context.Groups.ToListAsync();
-
-            var users = new List<User>
+            try
             {
-                new() {
-                    FirstName = "Ronaldo",
-                    LastName = "Macapobre",
-                    Email = "ronaldo.macapobre@gov.bc.ca",
-                    IsActive = true,
-                    GroupIds = [groups.First(g => g.Name == Group.TRAINING_AND_ADMIN).Id]
-                }
-            };
+                var groups = await context.Groups.ToListAsync();
 
-            this.Logger.LogInformation("\tUpdating users...");
+                // Get default users from env variable
+                var defaultUsersJson = _config["DEFAULT_USERS"];
+                Console.WriteLine(defaultUsersJson);
+                var usersObj = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(defaultUsersJson);
+                var users = new List<User>();
+                foreach (var userObj in usersObj)
+                {
+                    var newUser = new User
+                    {
+                        FirstName = userObj["FirstName"],
+                        LastName = userObj["LastName"],
+                        Email = userObj["Email"],
+                        IsActive = true,
+                        GroupIds = [groups.First(g => g.Name == userObj["Group"]).Id]
+                    };
+                    users.Add(newUser);
+                }
 
-            foreach (var user in users)
-            {
-                var u = await context.Users.AsQueryable().FirstOrDefaultAsync(u => u.Email == user.Email);
-                if (u == null)
+                this.Logger.LogInformation("\tUpdating users...");
+
+                foreach (var user in users)
                 {
-                    this.Logger.LogInformation("\t{email} does not exist, adding it...", user.Email);
-                    await context.Users.AddAsync(user);
+                    var u = await context.Users.AsQueryable().FirstOrDefaultAsync(u => u.Email == user.Email);
+                    if (u == null)
+                    {
+                        this.Logger.LogInformation("\t{email} does not exist, adding it...", user.Email);
+                        await context.Users.AddAsync(user);
+                    }
                 }
-                else
-                {
-                    this.Logger.LogInformation("\tUpdating fields for {email}...", user.Email);
-                    u.FirstName = user.FirstName;
-                    u.LastName = user.LastName;
-                    u.GroupIds = user.GroupIds;
-                    u.IsActive = user.IsActive;
-                }
+
+                await context.SaveChangesAsync();
             }
-
-            await context.SaveChangesAsync();
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "Error when seeding User data: {message}", ex.Message);
+            }
         }
     }
 }

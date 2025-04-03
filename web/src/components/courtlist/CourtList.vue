@@ -60,7 +60,7 @@
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"
         v-model:types="classes"
-        v-model:onGenerateClicked="onGenerateClicked"
+        :on-generate="onGenerateClick"
       />
     </v-skeleton-loader>
   </v-container>
@@ -184,7 +184,7 @@
     showDialog.value = true;
   });
 
-  const onGenerateClicked = (
+  const onGenerateClick = (
     type: string,
     reportType: string,
     additions: string

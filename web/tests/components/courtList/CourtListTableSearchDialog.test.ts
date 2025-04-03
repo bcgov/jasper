@@ -1,6 +1,7 @@
 import CourtListTableSearchDialog from '@/components/courtlist/CourtListTableSearchDialog.vue';
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 import { createVuetify } from 'vuetify';
 import { VForm } from 'vuetify/components';
 
@@ -60,7 +61,7 @@ describe('CourtListTableSearchDialog', () => {
 
     (wrapper.vm as unknown as { selectedType: string }).selectedType = 'A';
 
-    await wrapper.vm.$nextTick();
+    await nextTick();
 
     const allSelect = wrapper.findAll('v-select');
 
@@ -73,7 +74,7 @@ describe('CourtListTableSearchDialog', () => {
 
     (wrapper.vm as unknown as { selectedType: string }).selectedType = 'L';
 
-    await wrapper.vm.$nextTick();
+    await nextTick();
 
     const allSelect = wrapper.findAll('v-select');
 
@@ -96,7 +97,7 @@ describe('CourtListTableSearchDialog', () => {
 
     vm.generateReport();
 
-    await wrapper.vm.$nextTick();
+    await nextTick();
 
     const emittedEvent =
       wrapper.emitted<'update:showDialog'>()['update:showDialog'];

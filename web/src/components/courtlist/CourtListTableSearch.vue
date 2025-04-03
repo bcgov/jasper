@@ -19,7 +19,7 @@
         label="Files"
         placeholder="All files"
         :items="['To be called', 'Complete', 'Cancelled']"
-        :hide-details="true"
+        hide-details
       >
       </v-select>
     </v-col>
@@ -29,7 +29,7 @@
         label="Time"
         placeholder="AM and PM"
         :items="['AM', 'PM']"
-        :hide-details="true"
+        hide-details
       >
       </v-select>
     </v-col>

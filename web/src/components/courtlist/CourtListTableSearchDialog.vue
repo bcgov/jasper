@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="showDialogComputed">
+  <v-dialog v-model="showDialog" @update:modelValue="closeDialog">
     <v-card rounded="md" class="pa-3">
       <v-card-title
         ><div class="d-flex justify-space-between align-center w-100">
@@ -57,20 +57,14 @@
     </v-card>
   </v-dialog>
 </template>
-<style scoped>
-  .v-dialog {
-    max-width: 500px;
-  }
-
-  .v-dialog .v-card {
-    border-radius: 1rem;
-  }
-</style>
 <script setup lang="ts">
   import { DivisionEnum, LookupCode } from '@/types/common';
   import { mdiClose } from '@mdi/js';
   import { computed, ref } from 'vue';
-  import { VForm } from 'vuetify/lib/components/index.mjs';
+  import { VForm } from 'vuetify/components';
+
+  const showDialog = defineModel<boolean>('showDialog');
+  const types = defineModel<LookupCode>('types');
 
   const isFormValid = ref(false);
   const selectedType = ref(null);
@@ -83,38 +77,25 @@
     { text: 'No', value: 'N' },
   ];
 
-  const props = defineProps<{
-    showDialog: boolean;
-    types: LookupCode[];
-    onGenerateClicked: (
-      type: string,
-      reportType: string,
-      additions: string
-    ) => void;
-  }>();
-
-  const emit = defineEmits<(e: 'update:showDialog', value: boolean) => void>();
-
-  const showDialogComputed = computed({
-    get: () => props.showDialog,
-    set: (value) => emit('update:showDialog', value),
+  const props = defineProps({
+    onGenerate: Function,
   });
 
   const showReportTypeComputed = computed(() => {
-    const c = props.types.find((c) => c.code === selectedType.value);
-    return selectedType.value !== null && c!.longDesc == DivisionEnum.R;
+    const type = types.value.find((c) => c.code === selectedType.value);
+    return selectedType.value !== null && type!.longDesc == DivisionEnum.R;
   });
 
   const showAdditionsComputed = computed(() => {
-    const c = props.types.find((c) => c.code === selectedType.value);
-    return selectedType.value !== null && c!.longDesc == DivisionEnum.I;
+    const type = types.value.find((c) => c.code === selectedType.value);
+    return selectedType.value !== null && type!.longDesc == DivisionEnum.I;
   });
 
   const closeDialog = () => {
     selectedReportType.value = 'Daily';
     selectedAdditions.value = null;
     selectedType.value = null;
-    emit('update:showDialog', false);
+    showDialog.value = false;
   };
 
   const generateReport = async () => {
@@ -128,7 +109,7 @@
       return;
     }
 
-    props.onGenerateClicked(
+    props.onGenerate(
       selectedType.value!,
       selectedReportType.value,
       selectedAdditions.value!
@@ -136,3 +117,12 @@
     closeDialog();
   };
 </script>
+<style scoped>
+  .v-dialog {
+    max-width: 500px;
+  }
+
+  .v-dialog .v-card {
+    border-radius: 1rem;
+  }
+</style>

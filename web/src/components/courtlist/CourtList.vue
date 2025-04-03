@@ -68,10 +68,9 @@
 <script setup lang="ts">
   import { CourtListService } from '@/services';
   import { HttpService } from '@/services/HttpService';
-  import { DivisionEnum, LookupCode } from '@/types/common';
   import { CourtListCardInfo } from '@/types/courtlist';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
-  import { computed, inject, onMounted, provide, ref } from 'vue';
+  import { computed, inject, provide, ref } from 'vue';
   import CourtListTableSearch from './CourtListTableSearch.vue';
 
   const errorCode = ref(0);

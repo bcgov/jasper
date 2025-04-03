@@ -79,8 +79,16 @@ export class ApiService {
 
       console.log("Response:", response);
 
+      // Ensure headers are properly typed
+      const responseHeaders = Object.fromEntries(
+        Object.entries(response.headers)
+          .filter(([, value]) => value !== undefined) // Use `[, value]` to ignore unused key
+          .map(([key, value]) => [key, String(value)]) // Ensure all values are strings
+      ) as { [header: string]: string | number | boolean };
+
       return {
         statusCode: 200,
+        headers: responseHeaders,
         body: isBinary
           ? Buffer.from(new Uint8Array(response.data as ArrayBuffer)).toString(
               "base64"

@@ -20,9 +20,15 @@ describe("ApiService", () => {
 
   beforeEach(() => {
     mockHttpService = new HttpService() as MockedObject<HttpService>;
-    mockHttpService.get = vi.fn().mockResolvedValue({ data: "get response" });
-    mockHttpService.post = vi.fn().mockResolvedValue({ data: "post response" });
-    mockHttpService.put = vi.fn().mockResolvedValue({ data: "put response" });
+    mockHttpService.get = vi
+      .fn()
+      .mockResolvedValue({ data: "get response", headers: {} });
+    mockHttpService.post = vi
+      .fn()
+      .mockResolvedValue({ data: "post response", headers: {} });
+    mockHttpService.put = vi
+      .fn()
+      .mockResolvedValue({ data: "put response", headers: {} });
     mockHttpService.init = vi.fn();
 
     mockSecretsManagerService =
@@ -78,6 +84,7 @@ describe("ApiService", () => {
       statusCode: 200,
       body: JSON.stringify("get response"),
       isBase64Encoded: false,
+      headers: {},
     });
   });
 
@@ -101,6 +108,7 @@ describe("ApiService", () => {
       statusCode: 200,
       body: JSON.stringify("post response"),
       isBase64Encoded: false,
+      headers: {},
     });
   });
 
@@ -153,6 +161,7 @@ describe("ApiService", () => {
         new Uint8Array("get response" as unknown as ArrayBuffer)
       ).toString("base64"),
       isBase64Encoded: true,
+      headers: {},
     });
   });
 });

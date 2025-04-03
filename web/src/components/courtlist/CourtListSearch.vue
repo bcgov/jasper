@@ -113,15 +113,7 @@
   const date = defineModel<Date>('date');
   const appliedDate = defineModel<Date | null>('appliedDate');
 
-  const emit =
-    defineEmits<
-      (
-        e: 'courtListSearched',
-        data: any,
-        selectedLocationId: string,
-        selectedCourtRoom: string
-      ) => void
-    >();
+  const emit = defineEmits<(e: 'courtListSearched', data: any) => void>();
   const GREEN = '#62d3a4';
   const commonStore = useCommonStore();
   const courtListStore = useCourtListStore();
@@ -209,12 +201,7 @@
         if (data) {
           courtListStore.courtListInformation.detailsData = data;
         }
-        emit(
-          'courtListSearched',
-          data,
-          selectedCourtLocation.value!.locationId,
-          selectedCourtRoom.value
-        );
+        emit('courtListSearched', data);
       })
       .finally(() => {
         isMounted.value = true;

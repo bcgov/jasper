@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { createVuetify } from 'vuetify';
-import { VForm } from 'vuetify/lib/components/index.mjs';
 
 const vuetify = createVuetify();
 
@@ -19,7 +18,7 @@ describe('CourtListTableSearchDialog', () => {
   };
 
   it('modelValue is set to true when dialog is shown', async () => {
-    const wrapper = mount(CourtListTableSearchDialog, mountOptions);
+    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
 
     (wrapper.vm as unknown as { showDialog: boolean }).showDialog = true;
 
@@ -30,6 +29,7 @@ describe('CourtListTableSearchDialog', () => {
 
     expect(dialog.exists()).toBe(true);
     expect(isShown).toBe(true);
+    expect(wrapper.vm.selectedReportType).toBe('Daily');
   });
 
   it(`modelValue is set to false when dialog not shown`, async () => {
@@ -44,76 +44,27 @@ describe('CourtListTableSearchDialog', () => {
     expect(isHidden).toBe(true);
   });
 
-  it(`should show report type when selected class is of type 'criminal'`, async () => {
-    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
-    wrapper.vm.types = [
-      {
-        shortDesc: 'Adult',
-        code: 'A',
-        codeType: '',
-        longDesc: 'R',
-      },
-      {
-        code: 'L',
-        shortDesc: 'Enforcement/Legislated Statute',
-        longDesc: 'I',
-        codeType: '',
-      },
-    ];
-    wrapper.vm.selectedType = 'A';
-
-    await nextTick();
-
-    const allSelect = wrapper.findAll('v-select');
-
-    expect(allSelect.length).toBe(2);
-    expect(allSelect[1].element.id).toBe('reportType');
-  });
-
-  it(`should show additions when selected class is of type 'civil'`, async () => {
-    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
-
-    wrapper.vm.types = [
-      {
-        shortDesc: 'Adult',
-        code: 'A',
-        codeType: '',
-        longDesc: 'R',
-      },
-      {
-        code: 'L',
-        shortDesc: 'Enforcement/Legislated Statute',
-        longDesc: 'I',
-        codeType: '',
-      },
-    ];
-    wrapper.vm.selectedType = 'L';
-
-    await nextTick();
-
-    const allSelect = wrapper.findAll('v-select');
-
-    expect(allSelect.length).toBe(2);
-    expect(allSelect[1].element.id).toBe('additions');
-  });
-
-  it(`clicking Print should validate and emit 'update:showDialog'`, async () => {
+  it(`generateReport should validate and call onGenerate`, async () => {
     const wrapper = mount(CourtListTableSearchDialog, mountOptions);
 
-    const vm = wrapper.vm as unknown as {
-      selectedType: string;
-      selectedReportType: string;
-      generateReport: () => void;
-      form: VForm;
-    };
+    const button = wrapper.find('v-btn-tertiary');
 
-    vm.selectedType = 'A';
-    vm.selectedReportType = 'Daily';
-
-    vm.generateReport();
+    console.log(button.html());
+    button.trigger('click');
 
     await nextTick();
 
     expect(mockOnGenerate).toHaveBeenCalled();
+  });
+
+  it(`clicking Print with no selectedReportType should not call onGenerate`, async () => {
+    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
+
+    wrapper.vm.selectedReportType = null;
+    nextTick();
+
+    const button = wrapper.find('v-btn-tertiary');
+    button.trigger('click');
+    expect(mockOnGenerate).not.toHaveBeenCalled();
   });
 });

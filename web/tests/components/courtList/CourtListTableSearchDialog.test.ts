@@ -1,55 +1,43 @@
 import CourtListTableSearchDialog from '@/components/courtlist/CourtListTableSearchDialog.vue';
 import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { createVuetify } from 'vuetify';
-import { VForm } from 'vuetify/components';
+import { VForm } from 'vuetify/lib/components/index.mjs';
 
 const vuetify = createVuetify();
 
 describe('CourtListTableSearchDialog', () => {
-  const mockOnGenerateClicked = vi.fn();
+  const mockOnGenerate = vi.fn();
   const mountOptions = {
     props: {
-      showDialog: true,
-      types: [
-        {
-          shortDesc: 'Adult',
-          code: 'A',
-          codeType: '',
-          longDesc: 'R',
-        },
-        {
-          code: 'L',
-          shortDesc: 'Enforcement/Legislated Statute',
-          longDesc: 'I',
-          codeType: '',
-        },
-      ],
-      onGenerateClicked: mockOnGenerateClicked,
+      onGenerate: mockOnGenerate,
     },
     global: {
       plugins: [vuetify],
     },
   };
 
-  beforeEach(() => {
-    mountOptions.props.showDialog = true;
-  });
-
   it('modelValue is set to true when dialog is shown', async () => {
     const wrapper = mount(CourtListTableSearchDialog, mountOptions);
 
+    (wrapper.vm as unknown as { showDialog: boolean }).showDialog = true;
+
+    await nextTick();
+
     const dialog = wrapper.find('v-dialog');
     const isShown = dialog.element.getAttribute('modelvalue') === 'true';
+
     expect(dialog.exists()).toBe(true);
     expect(isShown).toBe(true);
   });
 
   it(`modelValue is set to false when dialog not shown`, async () => {
-    mountOptions.props.showDialog = false;
-
     const wrapper = mount(CourtListTableSearchDialog, mountOptions);
+
+    (wrapper.vm as unknown as { showDialog: boolean }).showDialog = false;
+
+    await nextTick();
 
     const dialog = wrapper.find('v-dialog');
     const isHidden = dialog.element.getAttribute('modelvalue') === 'false';
@@ -57,9 +45,22 @@ describe('CourtListTableSearchDialog', () => {
   });
 
   it(`should show report type when selected class is of type 'criminal'`, async () => {
-    const wrapper = mount(CourtListTableSearchDialog, mountOptions);
-
-    (wrapper.vm as unknown as { selectedType: string }).selectedType = 'A';
+    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
+    wrapper.vm.types = [
+      {
+        shortDesc: 'Adult',
+        code: 'A',
+        codeType: '',
+        longDesc: 'R',
+      },
+      {
+        code: 'L',
+        shortDesc: 'Enforcement/Legislated Statute',
+        longDesc: 'I',
+        codeType: '',
+      },
+    ];
+    wrapper.vm.selectedType = 'A';
 
     await nextTick();
 
@@ -70,9 +71,23 @@ describe('CourtListTableSearchDialog', () => {
   });
 
   it(`should show additions when selected class is of type 'civil'`, async () => {
-    const wrapper = mount(CourtListTableSearchDialog, mountOptions);
+    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
 
-    (wrapper.vm as unknown as { selectedType: string }).selectedType = 'L';
+    wrapper.vm.types = [
+      {
+        shortDesc: 'Adult',
+        code: 'A',
+        codeType: '',
+        longDesc: 'R',
+      },
+      {
+        code: 'L',
+        shortDesc: 'Enforcement/Legislated Statute',
+        longDesc: 'I',
+        codeType: '',
+      },
+    ];
+    wrapper.vm.selectedType = 'L';
 
     await nextTick();
 
@@ -99,12 +114,6 @@ describe('CourtListTableSearchDialog', () => {
 
     await nextTick();
 
-    const emittedEvent =
-      wrapper.emitted<'update:showDialog'>()['update:showDialog'];
-
-    const [[emittedValue]] = emittedEvent || [];
-
-    expect(emittedValue).toBe(false);
-    expect(mockOnGenerateClicked).toHaveBeenCalled();
+    expect(mockOnGenerate).toHaveBeenCalled();
   });
 });

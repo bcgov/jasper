@@ -64,8 +64,7 @@
   import { VForm } from 'vuetify/components';
 
   const showDialog = defineModel<boolean>('showDialog');
-  const types = defineModel<LookupCode>('types');
-
+  const types = defineModel<LookupCode[]>('types', { default: () => [] });
   const isFormValid = ref(false);
   const selectedType = ref(null);
   const selectedReportType = ref('Daily');
@@ -78,17 +77,21 @@
   ];
 
   const props = defineProps({
-    onGenerate: Function,
+    onGenerate: { type: Function, default: () => {} },
   });
 
   const showReportTypeComputed = computed(() => {
     const type = types.value.find((c) => c.code === selectedType.value);
-    return selectedType.value !== null && type!.longDesc == DivisionEnum.R;
+    return (
+      selectedType.value !== null && type && type.longDesc == DivisionEnum.R
+    );
   });
 
   const showAdditionsComputed = computed(() => {
     const type = types.value.find((c) => c.code === selectedType.value);
-    return selectedType.value !== null && type!.longDesc == DivisionEnum.I;
+    return (
+      selectedType.value !== null && type && type.longDesc == DivisionEnum.I
+    );
   });
 
   const closeDialog = () => {

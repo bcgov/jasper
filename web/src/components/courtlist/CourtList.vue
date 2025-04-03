@@ -183,7 +183,6 @@
         };
 
         const key = `${obj.locationId}|${obj.date}|${obj.division}|${obj.class}|${obj.courtRoom}`;
-        console.log(key);
         uniqueMap.set(key, obj);
       });
     });
@@ -200,7 +199,6 @@
       };
 
       const url = courtListService.generateReportUrl(queryParams);
-
       window.open(url, '_blank');
     });
   };

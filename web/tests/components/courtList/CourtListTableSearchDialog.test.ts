@@ -46,12 +46,8 @@ describe('CourtListTableSearchDialog', () => {
 
   it(`generateReport should validate and call onGenerate`, async () => {
     const wrapper = mount(CourtListTableSearchDialog, mountOptions);
-
     const button = wrapper.find('v-btn-tertiary');
-
-    console.log(button.html());
     button.trigger('click');
-
     await nextTick();
 
     expect(mockOnGenerate).toHaveBeenCalled();
@@ -59,12 +55,13 @@ describe('CourtListTableSearchDialog', () => {
 
   it(`clicking Print with no selectedReportType should not call onGenerate`, async () => {
     const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
-
     wrapper.vm.selectedReportType = null;
-    nextTick();
+
+    await nextTick();
 
     const button = wrapper.find('v-btn-tertiary');
     button.trigger('click');
+
     expect(mockOnGenerate).not.toHaveBeenCalled();
   });
 });

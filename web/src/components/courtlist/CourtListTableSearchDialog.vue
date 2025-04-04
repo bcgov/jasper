@@ -55,15 +55,11 @@
   };
 
   const generateReport = async () => {
-    console.log('RONNIE');
-
     if (!form.value) {
       return;
     }
 
     const { valid: isValid } = await form.value.validate();
-    console.log('RONNIE', isValid);
-
     if (!isValid) {
       return;
     }

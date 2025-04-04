@@ -74,7 +74,17 @@ const details: criminalFileDetailsType = {
     witness: [],
     crown: [],
     hearingRestriction: [],
-    appearances: { } as criminalAppearancesType
+    appearances: { 
+      responseCd: '200',
+      responseMessageTxt: 'Success',
+      futureRecCount: '0',
+      historyRecCount: '0',
+      apprDetail: [],
+      additionalProperties: {} as AdditionalProperties,
+      additionalProp1: {},
+      additionalProp2: {},
+      additionalProp3: {}
+    } as criminalAppearancesType
 };
 
   describe('Summary.vue', () => {
@@ -126,5 +136,18 @@ const details: criminalFileDetailsType = {
       });
       
       expect(wrapper.findAll('v-row')?.at(1)?.findAll('v-col')?.at(1)?.text()).toBe(output);
+    });
+
+    it.each([
+      ['Y', "By Indictment"],
+      ['N', "Summarily"],
+    ])('renders proceeded correctly', (indictableYN, output) => {
+      details.indictableYN = indictableYN;
+      
+      const wrapper = mount(Summary, {
+        props: { details }
+      });
+      
+      expect(wrapper.findAll('v-row')?.at(0)?.findAll('v-col')?.at(1)?.text()).toBe(output);
     });
   });

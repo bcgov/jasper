@@ -12,8 +12,8 @@
       class="mx-3 mt-2"
     />
     <v-row class="mx-1 mt-2">
-      <v-col cols="6" class="data-label">Elections</v-col>
-      <v-col></v-col>
+      <v-col cols="6" class="data-label">Proceeded</v-col>
+      <v-col> {{ proceeded }}</v-col>
     </v-row>
     <v-row class="mx-1">
       <v-col cols="6" class="data-label">Crown</v-col>
@@ -38,6 +38,9 @@
   const participants = ref(details.value.participant);
   const bansExist = participants.value.some((p) => p.ban.length > 0);
   const appearances = ref(details.value.appearances?.apprDetail);
+  const proceeded = computed(() =>
+    details.value.indictableYN === 'Y' ? 'By Indictment' : 'Summarily'
+  );
   const names = computed(() => {
     return (
       participants.value[0].lastNm.toUpperCase() +

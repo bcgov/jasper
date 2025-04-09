@@ -26,8 +26,6 @@ describe('CriminalSidePanel.vue', () => {
       props: { details: {}, adjudicatorRestrictions: [{}] },
     });
 
-    console.log(wrapper.html());
-
     const arComponent = wrapper.findComponent({
       name: 'AdjudicatorRestrictionsPanel',
     });

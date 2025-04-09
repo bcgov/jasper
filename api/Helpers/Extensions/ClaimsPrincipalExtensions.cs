@@ -76,12 +76,29 @@ namespace Scv.Api.Helpers.Extensions
             return applyOrCondition
                 // At least one permission is present
                 ? requiredPermissions
-                    .Any(code => claimsPrincipal.HasClaim(CustomClaimTypes.PermissionClaim, code))
+                    .Any(code => claimsPrincipal.HasClaim(CustomClaimTypes.JasperPermission, code))
                 // All permissions must be present
-                : requiredPermissions.All(code => claimsPrincipal.HasClaim(CustomClaimTypes.PermissionClaim, code));
+                : requiredPermissions.All(code => claimsPrincipal.HasClaim(CustomClaimTypes.JasperPermission, code));
+        }
+
+        public static bool HasRoles(
+            this ClaimsPrincipal claimsPrincipal,
+            List<string> requiredRoles,
+            bool applyOrCondition = false)
+        {
+            return applyOrCondition
+                // At least one role is present
+                ? requiredRoles
+                    .Any(name => claimsPrincipal.HasClaim(CustomClaimTypes.JasperRole, name))
+                // All roles must be present
+                : requiredRoles.All(name => claimsPrincipal.HasClaim(CustomClaimTypes.JasperRole, name));
         }
 
         public static List<string> Permissions(this ClaimsPrincipal claimsPrincipal) =>
-            claimsPrincipal.FindAll(CustomClaimTypes.PermissionClaim)?.Select(c => c.Value).ToList() ?? [];
+            claimsPrincipal.FindAll(CustomClaimTypes.JasperPermission)?.Select(c => c.Value).ToList() ?? [];
+
+        public static List<string> Roles(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindAll(CustomClaimTypes.JasperRole)?.Select(c => c.Value).ToList() ?? [];
+
     }
 }

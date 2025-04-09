@@ -122,6 +122,7 @@ namespace Scv.Api.Controllers
             return Task.FromResult<ActionResult>(Ok(new
             {
                 Permissions = HttpContext.User.Permissions(),
+                Roles = HttpContext.User.Roles(),
                 UserType = userType,
                 EnableArchive = false,
                 Role = HttpContext.User.Role(),

@@ -176,15 +176,16 @@ namespace Scv.Api.Infrastructure.Authentication
                         var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
                         if (!string.IsNullOrEmpty(connectionString))
                         {
-                            // Add user's permissions as claims
+                            // Add user's permissions and roles as claims
                             var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
                             var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
                             if (userDto != null)
                             {
-                                var permissionsClaims = userDto.Permissions
-                                    .Select(p => new Claim(CustomClaimTypes.PermissionClaim, p))
-                                    .ToList();
+                                var permissionsClaims = userDto.Permissions.Select(p => new Claim(CustomClaimTypes.JasperPermission, p));
                                 claims.AddRange(permissionsClaims);
+
+                                var rolesClaims = userDto.Roles.Select(r => new Claim(CustomClaimTypes.JasperRole, r));
+                                claims.AddRange(rolesClaims);
                             }
                         }
 

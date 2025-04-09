@@ -10,14 +10,13 @@ namespace tests.api.Helpers.Extensions;
 
 public class ClaimsPrincipalExtensionsTests
 {
-
     [Fact]
     public void HasPermissions_ShouldReturnTrue_WhenClaimsHasAtleastOneMatchedPermission()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.PermissionClaim, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.JasperPermission, Permission.VIEW_CASE_DETAILS)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
@@ -31,11 +30,11 @@ public class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public async Task HasPermissions_ShouldReturnTrue_WhenClaimsHaveExactPermissions()
+    public void HasPermissions_ShouldReturnTrue_WhenClaimsHaveExactPermissions()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -53,9 +52,9 @@ public class ClaimsPrincipalExtensionsTests
     public void HasPermissions_ShouldReturnFalse_WhenClaimsHasNoMatchedPermission()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.PermissionClaim, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.JasperPermission, Permission.VIEW_CASE_DETAILS)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
@@ -69,11 +68,11 @@ public class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public async Task HasPermissions_ShouldReturnFalse_WhenClaimsAreNotExactPermissions()
+    public void HasPermissions_ShouldReturnFalse_WhenClaimsAreNotExactPermissions()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -82,6 +81,79 @@ public class ClaimsPrincipalExtensionsTests
         var result = user.HasPermissions([
             Permission.LOCK_UNLOCK_USERS,
             Permission.VIEW_SENTENCE_ORDER_DETAILS
+        ], false);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void HasRoles_ShouldReturnTrue_WhenClaimsHasAtleastOneMatchedRole()
+    {
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.JasperRole, Role.ADMIN),
+            new(CustomClaimTypes.JasperRole, Role.JUDGE)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var result = user.HasRoles([Role.ADMIN], true);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void HasRoles_ShouldReturnTrue_WhenClaimsHaveExactRoles()
+    {
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.JasperRole, Role.ADMIN)
+        };
+
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var result = user.HasRoles([
+            Role.ACJ_CHIEF_JUDGE,
+            Role.ADMIN
+        ], false);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void HasRoles_ShouldReturnFalse_WhenClaimsHasNoMatchedRole()
+    {
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.JasperRole, Role.ADMIN),
+            new(CustomClaimTypes.JasperRole, Role.OCJ_SERVICE_DESK)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var result = user.HasRoles([
+            Role.JUDGE,
+            Role.RAJ
+       ], true);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void HasRoles_ShouldReturnFalse_WhenClaimsAreNotExactRoles()
+    {
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.JasperRole, Role.ADMIN)
+        };
+
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var result = user.HasRoles([
+            Role.TRAINER,
+            Role.OCJ_SERVICE_DESK
         ], false);
 
         Assert.False(result);

@@ -13,4 +13,5 @@ public class UserDto : AccessControlManagementDto
     public string ADUsername { get; set; }
     public List<string> GroupIds { get; set; } = [];
     public List<string> Permissions { get; set; } = [];
+    public List<string> Roles { get; set; } = [];
 }

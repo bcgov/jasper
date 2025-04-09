@@ -422,7 +422,7 @@ public class UserServiceTests
         Assert.NotNull(result);
         _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
         _mockGroupRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Once());
-        _mockRoleRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once());
+        _mockRoleRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Exactly(2));
         _mockPermissionRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Permission, bool>>>()), Times.Once());
     }
 }

@@ -1,20 +1,20 @@
-﻿using JCCommon.Clients.FileServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Api.Models.Criminal.Appearances;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Models.Search;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
+using Scv.Db.Models;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 using CriminalAppearanceMethod = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
 using CriminalParticipant = Scv.Api.Models.Criminal.Detail.CriminalParticipant;
@@ -34,6 +34,7 @@ namespace Scv.Api.Services.Files
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
         private readonly string _requestPartId;
+        private readonly ClaimsPrincipal _currentUser;
 
         #endregion
 
@@ -51,6 +52,7 @@ namespace Scv.Api.Services.Files
             _requestAgencyIdentifierId = user.AgencyCode();
             _requestPartId = user.ParticipantId();
             _cache = cache;
+            _currentUser = user;
         }
 
         #endregion Constructor
@@ -351,9 +353,36 @@ namespace Scv.Api.Services.Files
 
         private async Task<ICollection<CriminalHearingRestriction>> PopulateDetailHearingRestrictions(RedactedCriminalFileDetailResponse detail)
         {
-            foreach (var hearingRestriction in detail.HearingRestriction)
+            // Assigned restriction is only included if current user is assigned to any of the role
+            var includeAssigned = _currentUser
+                .HasRoles(
+                [
+                    Role.ADMIN,
+                    Role.ACJ_CHIEF_JUDGE,
+                    Role.RAJ,
+                    Role.PO_MANAGER
+                ], true);
+            var restrictionTypeOrder = new List<HearingRestriction2HearingRestrictionTypeCd>
+            {
+                HearingRestriction2HearingRestrictionTypeCd.S,
+                HearingRestriction2HearingRestrictionTypeCd.G,
+                HearingRestriction2HearingRestrictionTypeCd.A,
+                HearingRestriction2HearingRestrictionTypeCd.D,
+            };
+            var restrictions = detail.HearingRestriction
+                .Where(r => includeAssigned
+                    || r.HearingRestrictionTypeCd != HearingRestriction2HearingRestrictionTypeCd.G)
+                .OrderBy(r => restrictionTypeOrder.IndexOf(r.HearingRestrictionTypeCd))
+                .ThenBy(r => r.AdjFullNm);
+
+            foreach (var hearingRestriction in restrictions)
+            {
                 hearingRestriction.HearingRestrictionTypeDsc = await _lookupService.GetHearingRestrictionDescription(hearingRestriction.HearingRestrictionTypeCd.ToString());
-            return detail.HearingRestriction.Where(hr => hr.HearingRestrictionTypeCd == HearingRestriction2HearingRestrictionTypeCd.S).ToList(); //TODO conditional permission. MY_CALENDAR_SEIZED_AARS)
+            }
+
+            detail.HearingRestriction = [.. restrictions];
+
+            return detail.HearingRestriction; //TODO conditional permission. MY_CALENDAR_SEIZED_AARS)
         }
 
         private ICollection<CrownWitness> PopulateDetailCrown(RedactedCriminalFileDetailResponse detail)

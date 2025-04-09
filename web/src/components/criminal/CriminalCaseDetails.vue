@@ -42,6 +42,7 @@
             <criminal-side-panel-v2
               v-if="isDataReady && details"
               :details="details"
+              :adjudicatorRestrictions="adjudicatorRestrictions"
             />
             <criminal-side-panel-v1 v-if="isDataReady" />
           </v-col>
@@ -76,7 +77,6 @@
             </h2>
 
             <criminal-participants v-if="showCaseDetails" />
-            <criminal-adjudicator-restrictions v-if="showCaseDetails" />
             <criminal-crown-information v-if="showCaseDetails" />
             <!--<criminal-crown-notes v-if="showCaseDetails"/> Asked to be hidden by Kevin SCV-140.-->
             <criminal-past-appearances v-if="showPastAppearances" />
@@ -144,7 +144,7 @@
   import { useRoute } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
   import shared from '../shared';
-  
+
   enum DecodeCourtLevel {
     'P' = 0,
     'S' = 1,
@@ -620,6 +620,7 @@
         fileNumber,
         loading,
         details,
+        adjudicatorRestrictions: adjudicatorRestrictionsInfo,
       };
     },
   });

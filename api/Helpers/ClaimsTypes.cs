@@ -14,16 +14,17 @@ namespace Scv.Api.Helpers
         public const string SubRole = nameof(CustomClaimTypes) + nameof(SubRole);
         public const string Groups = "groups";
         public const string PreferredUsername = "preferred_username";
-        public const string PermissionClaim = "permission_claim";
+        public const string JasperPermission = "jasper_permission";
+        public const string JasperRole = "jasper_role";
 
-        public static List<string> UsedKeycloakClaimTypes = new List<string>
-        {
+        public static List<string> UsedKeycloakClaimTypes =
+        [
             ClaimTypes.NameIdentifier,
             "idir_userid",
             "name",
             "preferred_username",
             "groups",
             ClaimTypes.Email
-        };
+        ];
     }
 }

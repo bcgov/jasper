@@ -69,7 +69,7 @@ public class UserService(
 
     public async Task<UserDto> GetWithPermissionsAsync(string email)
     {
-        var result = (await this.Repo.FindAsync(u => u.Email == email));
+        var result = await this.Repo.FindAsync(u => u.Email == email);
 
         // Check if user exists
         if (result == null || !result.Any())
@@ -104,7 +104,9 @@ public class UserService(
         }
 
         var permissions = (await _permissionRepo.FindAsync(p => permissionIds.Contains(p.Id))).Select(p => p.Code).ToList();
+        var roles = (await _roleRepo.FindAsync(r => roleIds.Contains(r.Id))).Select(r => r.Name).ToList();
         user.Permissions = permissions;
+        user.Roles = roles;
 
         return user;
     }

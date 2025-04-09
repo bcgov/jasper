@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Bogus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -17,7 +16,6 @@ public class PermissionHandlerTests
     private readonly Mock<ILogger<PermissionHandler>> _mockLogger;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly PermissionHandler _handler;
-    private readonly Faker _faker = new();
 
     public PermissionHandlerTests()
     {
@@ -64,14 +62,11 @@ public class PermissionHandlerTests
     public async Task UserWithExactPermissionClaims_ShouldBeAuthorized()
     {
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
-        var requirement = new PermissionRequirement(permissions: [
-            Permission.LOCK_UNLOCK_USERS,
-            Permission.ACCESS_DARS
-        ]);
+        var requirement = new PermissionRequirement(false, Permission.LOCK_UNLOCK_USERS, Permission.ACCESS_DARS);
 
         var claims = new List<Claim>{
-            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -91,15 +86,15 @@ public class PermissionHandlerTests
     public async Task UserWithAnyPermission_ShouldBeAuthorized()
     {
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
-        var requirement = new PermissionRequirement(true, [
+        var requirement = new PermissionRequirement(
+            true,
             Permission.VIEW_CASE_DETAILS,
-            Permission.VIEW_ADJUDICATOR_RESTRICTIONS
-       ]);
+            Permission.VIEW_ADJUDICATOR_RESTRICTIONS);
 
         var claims = new List<Claim>{
-            new(CustomClaimTypes.PermissionClaim, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.PermissionClaim, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.PermissionClaim, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.JasperPermission, Permission.VIEW_CASE_DETAILS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");

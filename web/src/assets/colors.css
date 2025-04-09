@@ -1,0 +1,14 @@
+:root {
+  /* Background colors */
+  --bg-gray: ##efedf5;
+  --bg-light-gray: #f8f7fa;
+  --bg-blue: #4092c1;
+
+  /* Border colors */
+  --border-blue: #4092c1;
+
+  /* Text colors */
+  --text-blue: #4092c1;
+  --text-red: #db1e05;
+  --text-light-gray: #8c8c8c;
+}

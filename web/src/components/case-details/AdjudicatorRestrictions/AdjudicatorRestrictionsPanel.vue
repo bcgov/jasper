@@ -16,6 +16,7 @@
 <script setup lang="ts">
   import { AdjudicatorRestrictionsInfoType } from '@/types/common';
   import { computed } from 'vue';
+  import AdjudicatorRestriction from './AdjudicatorRestriction.vue';
 
   const props = defineProps<{
     adjudicatorRestrictions: AdjudicatorRestrictionsInfoType[];

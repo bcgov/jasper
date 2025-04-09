@@ -18,6 +18,7 @@
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
   import { ref } from 'vue';
   import AccusedPanel from './Accused/AccusedPanel.vue';
+  import AdjudicatorRestrictionsPanel from './AdjudicatorRestrictions/AdjudicatorRestrictionsPanel.vue';
   import Summary from './Summary.vue';
 
   const props = defineProps<{

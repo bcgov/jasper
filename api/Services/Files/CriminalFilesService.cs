@@ -382,7 +382,7 @@ namespace Scv.Api.Services.Files
 
             detail.HearingRestriction = [.. restrictions];
 
-            return detail.HearingRestriction; //TODO conditional permission. MY_CALENDAR_SEIZED_AARS)
+            return detail.HearingRestriction;
         }
 
         private ICollection<CrownWitness> PopulateDetailCrown(RedactedCriminalFileDetailResponse detail)

@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
   import { criminalParticipantType } from '@/types/criminal/jsonTypes';
-  import { formatDateToDDMMMYYYY } from '@/utils/utils';
+  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { mdiInformationSlabCircleOutline } from '@mdi/js';
   import { computed, defineProps, ref } from 'vue';
   import Bans from './Bans.vue';

@@ -67,6 +67,7 @@
   import { computed, inject, provide, ref } from 'vue';
   import CourtListTable from './CourtListTable.vue';
   import CourtListTableSearch from './CourtListTableSearch.vue';
+  import { DivisionEnum } from '@/types/common';
 
   const errorCode = ref(0);
   const searchingRequest = ref(false);
@@ -205,8 +206,13 @@
         date: value.date,
         locationId: value.locationId,
         roomCode: value.courtRoom,
-        ...(reportType === 'Daily' ? { reportType } : { additionsList: 'Y' }),
       };
+
+      if (value.division === DivisionEnum.R) {
+        queryParams.reportType = reportType;
+      } else if (value.division === DivisionEnum.I) {
+        queryParams.additionsList = reportType === 'Additions' ? 'Y' : 'N';
+      }
 
       const url = courtListService.generateReportUrl(queryParams);
       window.open(url, '_blank');

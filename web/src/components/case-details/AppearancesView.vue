@@ -1,0 +1,132 @@
+<template>
+  <div
+    v-for="(appearances, type) in {
+      past: pastAppearances,
+      future: futureAppearances,
+    }"
+    :key="type"
+  >
+    <v-card
+      class="my-6"
+      color="#efedf5"
+      elevation="0"
+      v-if="appearances?.length"
+    >
+      <v-card-text>
+        <v-row align="center" no-gutters>
+          <v-col class="text-h5" cols="6">
+            {{ type === 'future' ? 'Future Appearances' : 'Past Appearances' }}
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+    <v-data-table-virtual
+      v-if="appearances?.length"
+      :headers="type === 'future' ? futureHeaders : pastHeaders"
+      :items="appearances"
+      :sort-by="sortBy"
+      class="my-3"
+      height="400"
+      item-value="appearanceId"
+      fixed-header
+    >
+      <template v-slot:item.appearanceReasonCd="{ value, item }">
+        <v-tooltip :text="item.appearanceReasonDsc" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props" class="has-tooltip">{{ value }}</span>
+          </template>
+        </v-tooltip>
+      </template>
+      <template v-slot:item.appearanceTm="{ value, item }">
+        {{ value ? extractTime(value) : '' }} <br />
+        <span style="color: gray">
+          {{
+            hoursMinsFormatter(item.estimatedTimeHour, item.estimatedTimeMin)
+          }}
+        </span>
+      </template>
+      <template v-slot:item.courtLocation="{ value, item }">
+        {{ value }} <br />
+        <span style="color: gray">Room {{ item.courtRoomCd }}</span>
+      </template>
+      <template v-slot:item.appearanceStatusCd="{ value }">
+        <AppearanceStatusChip :status="value" />
+      </template>
+    </v-data-table-virtual>
+  </div>
+</template>
+
+<script setup lang="ts">
+  import AppearanceStatusChip from '@/components/shared/AppearanceStatusChip.vue';
+  import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
+  import {
+    extractTime,
+    formatDateToDDMMMYYYY,
+    hoursMinsFormatter,
+  } from '@/utils/dateUtils';
+  import { computed, ref } from 'vue';
+
+  const props = defineProps<{ appearances: criminalApprDetailType[] }>();
+  const pastHeaders = [
+    {
+      title: 'DATE',
+      key: 'appearanceDt',
+      value: (item) => formatDateToDDMMMYYYY(item.appearanceDt),
+    },
+    { title: '', key: 'DARS' },
+    { title: 'REASON', key: 'appearanceReasonCd' },
+    {
+      title: 'TIME DURATION',
+      key: 'appearanceTm',
+    },
+    { title: 'LOCATION ROOM', key: 'courtLocation' },
+    {
+      title: 'PRESIDER',
+      key: 'judgeFullNm',
+      value: (item) =>
+        // Check for empty string with comma, this seems to be very common
+        item.judgeFullNm && item.judgeFullNm !== ', ' ? item.judgeFullNm : '',
+    },
+    {
+      title: 'ACCUSED',
+      key: 'name',
+      value: (item) =>
+        item.lastNm && item.givenNm ? item.lastNm + ', ' + item.givenNm : '',
+    },
+    { title: 'STATUS', key: 'appearanceStatusCd' },
+  ];
+  const futureHeaders = [
+    {
+      title: 'DATE',
+      key: 'appearanceDt',
+      value: (item) => formatDateToDDMMMYYYY(item.appearanceDt),
+    },
+    { title: 'REASON', key: 'appearanceReasonCd' },
+    {
+      title: 'TIME DURATION',
+      key: 'appearanceTm',
+    },
+    { title: 'LOCATION ROOM', key: 'courtLocation' },
+    { title: 'ACTIVITY', key: 'activity' },
+    {
+      title: 'ACCUSED',
+      key: 'name',
+      value: (item) =>
+        item.lastNm && item.givenNm ? item.lastNm + ', ' + item.givenNm : '',
+    },
+    { title: 'STATUS', key: 'appearanceStatusCd' },
+  ];
+
+  const sortBy = ref([{ key: 'appearanceDt', order: 'asc' }] as const);
+  const now = new Date();
+  const futureAppearances = computed(() =>
+    props.appearances?.filter(
+      (app: criminalApprDetailType) => new Date(app?.appearanceDt) > now
+    )
+  );
+  const pastAppearances = computed(() =>
+    props.appearances?.filter(
+      (app: criminalApprDetailType) => new Date(app?.appearanceDt) <= now
+    )
+  );
+</script>

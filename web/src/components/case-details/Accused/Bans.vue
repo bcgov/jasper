@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-  import { formatDateToDDMMMYYYY } from '@/utils/utils';
+  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
   defineProps<{ bans: any }>();
 

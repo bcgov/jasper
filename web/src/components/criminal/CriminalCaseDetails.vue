@@ -1,31 +1,10 @@
 <template>
   <div class="main-container" style="overflow: hidden">
-    <b-card bg-variant="light" v-if="isMounted && !isDataReady">
-      <b-card style="min-height: 100px">
-        <span v-if="errorCode == 404"
-          >This
-          <b>File-Number '{{ criminalFileInformation.fileNumber }}'</b>
-          doesn't exist in the <b>criminal</b> records.
-        </span>
-        <span v-else-if="errorCode == 200 || errorCode == 204">
-          Bad Data in
-          <b>File-Number '{{ criminalFileInformation.fileNumber }}'</b>
-          !
-        </span>
-        <span v-else-if="errorCode == 403">
-          You are not authorized to access this file.
-        </span>
-        <span v-else>
-          Server is not responding. <b>({{ errorText }})</b>
-        </span>
-      </b-card>
-      <b-card>
-        <!-- <b-button id="backToLandingPage" variant="outline-primary text-dark bg-warning" @click="navigateToLandingPage">
-                <b-icon-house-door class="mr-1 ml-0" variant="dark" scale="1" ></b-icon-house-door>
-                Return to Main Page
-            </b-button>          -->
-      </b-card>
-    </b-card>
+    <!-- todo: Extract this out to more generic location -->
+    <v-card style="min-height: 40px" v-if="errorCode > 0 && errorCode == 403">
+      <span> You are not authorized to access this page. </span>
+    </v-card>
+    <!------------------------------------------------------->
     <v-row>
       <v-col>
         <court-files-selector v-model="fileNumber" :files="selectedFiles" />
@@ -47,10 +26,10 @@
             <criminal-side-panel-v1 v-if="isDataReady" />
           </v-col>
 
-          <v-col col md="9" cols="9" class="px-0" style="overflow: auto">
-            <criminal-header-top v-if="isDataReady" />
-            <criminal-header v-if="isDataReady" />
-
+          <v-col class="px-0" style="overflow: auto">
+            <case-header :details="details" />
+            <!-- Comment this out for now as we continue to deprecate it -->
+            <!-- 
             <b-row class="ml-0" v-if="showDocuments">
               <h2 style="white-space: pre" v-if="isDataReady">
                 {{ selectedSideBar }}
@@ -78,13 +57,13 @@
 
             <criminal-participants v-if="showCaseDetails" />
             <criminal-crown-information v-if="showCaseDetails" />
-            <!--<criminal-crown-notes v-if="showCaseDetails"/> Asked to be hidden by Kevin SCV-140.-->
+            <criminal-crown-notes v-if="showCaseDetails"/> Asked to be hidden by Kevin SCV-140.
             <criminal-past-appearances v-if="showPastAppearances" />
             <criminal-future-appearances v-if="showFutureAppearances" />
             <criminal-documents-view v-if="showDocuments" />
             <criminal-witnesses v-if="showWitnesses" />
             <criminal-sentence v-if="showSentenceOrder" />
-            <b-card><br /></b-card>
+            <b-card><br /></b-card> -->
           </v-col>
         </v-row>
       </v-skeleton-loader>
@@ -93,20 +72,11 @@
 </template>
 
 <script lang="ts">
+  import CaseHeader from '@/components/case-details/CaseHeader.vue';
   import CourtFilesSelector from '@/components/case-details/CourtFilesSelector.vue';
   import CriminalSidePanelV2 from '@/components/case-details/CriminalSidePanel.vue';
-  import CriminalAdjudicatorRestrictions from '@/components/criminal/CriminalAdjudicatorRestrictions.vue';
-  import CriminalCrownInformation from '@/components/criminal/CriminalCrownInformation.vue';
-  import CriminalDocumentsView from '@/components/criminal/CriminalDocumentsView.vue';
-  import CriminalFutureAppearances from '@/components/criminal/CriminalFutureAppearances.vue';
-  import CriminalHeader from '@/components/criminal/CriminalHeader.vue';
-  import CriminalHeaderTop from '@/components/criminal/CriminalHeaderTop.vue';
-  import CriminalParticipants from '@/components/criminal/CriminalParticipants.vue';
-  import CriminalPastAppearances from '@/components/criminal/CriminalPastAppearances.vue';
-  import CriminalSentence from '@/components/criminal/CriminalSentence.vue';
   // In the process of deprecating in favor of @/components/case-details/CriminalSidePanel.vue
   import CriminalSidePanelV1 from '@/components/criminal/CriminalSidePanel.vue';
-  import CriminalWitnesses from '@/components/criminal/CriminalWitnesses.vue';
   import { beautifyDate } from '@/filters';
   import { HttpService } from '@/services/HttpService';
   import {
@@ -174,20 +144,10 @@
   export default defineComponent({
     components: {
       CourtFilesSelector,
-      CriminalDocumentsView,
       CriminalSidePanelV1,
-      CriminalHeaderTop,
-      CriminalHeader,
-      CriminalParticipants,
-      CriminalAdjudicatorRestrictions,
-      CriminalCrownInformation,
-      CriminalPastAppearances,
-      CriminalFutureAppearances,
-      //      CriminalCrownNotes,
-      CriminalWitnesses,
-      CriminalSentence,
       CustomOverlay,
       CriminalSidePanelV2,
+      CaseHeader,
     },
     setup() {
       const commonStore = useCommonStore();
@@ -206,7 +166,9 @@
         AdjudicatorRestrictionsInfoType[]
       >([]);
       const bans = ref<bansInfoType[]>([]);
-      const details = ref<criminalFileDetailsType>();
+      const details = ref<criminalFileDetailsType>(
+        {} as criminalFileDetailsType
+      );
       const isDataReady = ref(false);
       const isMounted = ref(false);
       const downloadCompleted = ref(true);

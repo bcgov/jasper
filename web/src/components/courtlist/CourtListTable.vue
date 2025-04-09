@@ -71,6 +71,7 @@
 <script setup lang="ts">
   import { CourtListAppearance } from '@/types/courtlist';
   import { PcssCounsel } from '@/types/criminal';
+  import { hoursMinsFormatter } from '@/utils/dateUtils';
   import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
   import { mdiFileDocumentEditOutline, mdiNotebookEditOutline } from '@mdi/js';
   import { ref } from 'vue';
@@ -146,16 +147,4 @@
     return `${lastName}, ${firstName}`;
   };
 
-  const hoursMinsFormatter = (hours: string, minutes: string) => {
-    const hrs = parseInt(hours, 10);
-    const mins = parseInt(minutes, 10);
-    let result = '';
-    if (hrs) {
-      result += `${hrs} Hr(s)`;
-    }
-    if (mins) {
-      result += `${result ? ' ' : ''}${mins} Min(s)`;
-    }
-    return result || '0 Mins';
-  };
 </script>

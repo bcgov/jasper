@@ -1,5 +1,5 @@
 <template>
-  <div class="py-3">
+  <div class="pt-4">
     <h5>{{ titleText }}</h5>
     <Accused
       v-for="accused in props.accused"

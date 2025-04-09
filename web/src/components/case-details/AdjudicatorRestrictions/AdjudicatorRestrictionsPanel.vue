@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-3">
+  <div class="pt-4">
     <h5>{{ titleText }}</h5>
     <v-card class="ar-card p-3" elevation="0">
       <adjudicator-restriction

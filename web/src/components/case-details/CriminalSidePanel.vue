@@ -9,7 +9,6 @@
     :accused="details.participant"
     :activityClass="details.activityClassDesc"
     :appearances
-    class="pt-5"
   />
 </template>
 

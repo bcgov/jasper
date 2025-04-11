@@ -25,9 +25,9 @@
           v-slot:group-header="{ item, columns, isGroupOpen, toggleGroup }"
         >
           <tr>
-            <td class="pa-0" :colspan="columns.length">
+            <td class="pa-0" style="height: 1rem" :colspan="columns.length">
               <v-banner
-                class="courtRowBanner"
+                class="table-banner"
                 :ref="
                   () => {
                     if (!isGroupOpen(item)) toggleGroup(item);
@@ -62,12 +62,12 @@
 
 <script setup lang="ts">
   import ActionBar from '@/components/shared/table/ActionBar.vue';
-import { beautifyDate } from '@/filters';
-import { KeyValueInfo, LookupCode } from '@/types/common';
-import { FileDetail } from '@/types/courtFileSearch';
-import { roomsInfoType } from '@/types/courtlist';
-import { mdiFileDocumentOutline } from '@mdi/js';
-import { computed, defineProps, ref } from 'vue';
+  import { beautifyDate } from '@/filters';
+  import { KeyValueInfo, LookupCode } from '@/types/common';
+  import { FileDetail } from '@/types/courtFileSearch';
+  import { roomsInfoType } from '@/types/courtlist';
+  import { mdiFileDocumentOutline } from '@mdi/js';
+  import { computed, defineProps, ref } from 'vue';
 
   const props = defineProps<{
     courtRooms: roomsInfoType[];
@@ -163,8 +163,7 @@ import { computed, defineProps, ref } from 'vue';
   }
 
   const getLocation = (fileHomeAgencyId: string) =>
-    props.courtRooms.find((room) => room.code === fileHomeAgencyId)?.name ||
-    '';
+    props.courtRooms.find((room) => room.code === fileHomeAgencyId)?.name || '';
 
   const getClass = (courtClassCd: string) =>
     props.classes.find((lookup) => lookup.code === courtClassCd)?.shortDesc ||
@@ -182,11 +181,3 @@ import { computed, defineProps, ref } from 'vue';
     emit('files-viewed', files);
   }
 </script>
-
-<style scoped>
-  .courtRowBanner {
-    background-color: #3095b0;
-    color: white;
-    text-transform: uppercase;
-  }
-</style>

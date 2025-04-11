@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { mount, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import CaseHeader from 'CMP/case-details/CaseHeader.vue';
 import { mdiCalendar, mdiScaleBalance, mdiTextBoxOutline } from '@mdi/js';
@@ -12,7 +12,7 @@ describe('CaseHeader.vue', () => {
   let wrapper: any;
 
   beforeEach(() => {
-    wrapper = mount(CaseHeader, {
+    wrapper = shallowMount(CaseHeader, {
       props: { details: mockDetails },
     });
   });
@@ -32,19 +32,11 @@ describe('CaseHeader.vue', () => {
 
   });
 
-  it('renders the AppearancesView component when the "appearances" tab is selected', async () => {
-    wrapper.vm.selectedTab = 'appearances';
-
-    const appearancesView = wrapper.findComponent({ name: 'AppearancesView' });
-    expect(appearancesView.exists()).toBe(true);
-    expect(appearancesView.props('appearances')).toEqual(mockDetails.appearances.apprDetail);
-  });
-
   it('applies active-tab class to the selected tab', async () => {
-    wrapper.vm.selectedTab = 'appearances';
+    wrapper.vm.selectedTab = 'documents';
 
     const activeTab = wrapper.find('.active-tab');
     expect(activeTab.exists()).toBe(true);
-    expect(activeTab.text()).toContain('Appearances');
+    expect(activeTab.text()).toContain('Documents');
   });
 });

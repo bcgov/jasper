@@ -21,7 +21,7 @@
         border="md"
         rounded="lg"
         value="appearances"
-        class="mx-5"
+        class="mx-3"
       >
         Appearances
       </v-tab>
@@ -31,6 +31,7 @@
         value="sentence"
         border="md"
         rounded="lg"
+        disabled
       >
         Sentence/order details
       </v-tab>
@@ -38,7 +39,7 @@
 
     <v-window mandatory continuous v-model="selectedTab">
       <v-window-item value="documents">
-        <!-- <DocumentsView /> -->
+        <DocumentsView :participants="details.participant" />
       </v-window-item>
       <v-window-item value="appearances">
         <AppearancesView :appearances="details.appearances?.apprDetail" />
@@ -55,10 +56,10 @@
   import { mdiCalendar, mdiScaleBalance, mdiTextBoxOutline } from '@mdi/js';
   import { ref } from 'vue';
   import AppearancesView from './AppearancesView.vue';
+  import DocumentsView from './DocumentsView.vue';
 
   defineProps<{ details: criminalFileDetailsType }>();
-
-  const selectedTab = ref('appearances');
+  const selectedTab = ref('documents');
 </script>
 
 <style scoped>

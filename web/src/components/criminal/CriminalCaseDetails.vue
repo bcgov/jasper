@@ -7,7 +7,11 @@
     <!------------------------------------------------------->
     <v-row>
       <v-col>
-        <court-files-selector v-model="fileNumber" :files="selectedFiles" />
+        <court-files-selector
+          v-model="fileNumber"
+          :files="selectedFiles"
+          :courtClass="details.courtClassCd"
+        />
       </v-col>
     </v-row>
     <v-container>

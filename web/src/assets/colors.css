@@ -1,8 +1,12 @@
 :root {
   /* Background colors */
-  --bg-gray: ##efedf5;
+  --bg-gray: #efedf5;
   --bg-light-gray: #f8f7fa;
   --bg-blue: #4092c1;
+  --bg-white: #ffffff;
+  --bg-green: #86b28a;
+  --bg-purple: #ae81be;
+  --bg-blue: #72acca;
 
   /* Border colors */
   --border-blue: #4092c1;
@@ -11,4 +15,6 @@
   --text-blue: #4092c1;
   --text-red: #db1e05;
   --text-light-gray: #8c8c8c;
+  --text-black: #000000;
+  --text-white: #ffffff;
 }

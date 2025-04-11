@@ -1,5 +1,5 @@
 <template>
-  <v-card color="#72acca" variant="flat">
+  <v-card :class="getBannerColor" variant="flat">
     <v-container class="pb-0">
       <v-row class="pb-3">
         <v-col cols="10" />
@@ -29,31 +29,60 @@
 </template>
 <script setup lang="ts">
   import { KeyValueInfo } from '@/types/common';
-  import { defineProps, PropType, ref } from 'vue';
+  import { CourtClassEnum } from '@/types/courtFileSearch';
+  import { PropType, ref, computed } from 'vue';
 
   const fileNumber = defineModel<string>();
   const props = defineProps({
     files: { type: Array as PropType<KeyValueInfo[]>, default: () => [] },
+    courtClass: { type: String, default: null },
   });
   const activeTab = ref(() => fileNumber.value);
+
+  const getBannerColor = computed(() => {
+    switch (props.courtClass) {
+      case CourtClassEnum[CourtClassEnum.A]:
+      case CourtClassEnum[CourtClassEnum.Y]:
+      case CourtClassEnum[CourtClassEnum.T]:
+        return 'criminal';
+      case CourtClassEnum[CourtClassEnum.C]:
+        return 'small-claims';
+      case CourtClassEnum[CourtClassEnum.F]:
+        return 'family';
+      default:
+        return 'criminal';
+    }
+  });
 </script>
 
 <style scoped>
   .active-tab {
-    background-color: white !important;
+    background-color: var(--bg-white) !important;
   }
   .active-tab:hover {
-    color: black !important;
+    color: var(--text-black) !important;
   }
   .v-tab {
     text-decoration: none !important;
   }
   /* Dark mode styling overrides */
   .v-theme--dark .active-tab {
-    background-color: #212121 !important;
-    color: white !important;
+    background-color: var(--bg-black) !important;
+    color: var(--text-white) !important;
   }
   .v-theme--dark .active-tab:hover {
-    color: white !important;
+    color: var(--text-white) !important;
+  }
+
+  .criminal {
+    background-color: var(--bg-blue);
+  }
+
+  .small-claims {
+    background-color: var(--bg-purple);
+  }
+
+  .family {
+    background-color: var(--bg-green);
   }
 </style>

@@ -1,6 +1,5 @@
 <template>
   <div class="main-container" style="overflow: hidden">
-
     <b-card bg-variant="light" v-if="isMounted && !isDataReady">
       <b-card style="min-height: 100px">
         <span v-if="errorCode == 404"
@@ -36,7 +35,11 @@
     </b-card>
     <v-row>
       <v-col>
-        <court-files-selector v-model="fileNumber" :files="selectedFiles" />
+        <court-files-selector
+          v-model="fileNumber"
+          :files="selectedFiles"
+          :courtClass="details.courtClassCd"
+        />
       </v-col>
     </v-row>
     <v-skeleton-loader
@@ -44,52 +47,55 @@
       type="table"
       :loading="loading || !isMounted"
     >
-    <b-card no-body>
-      <b-row cols="2">
-        <b-col md="3" cols="3" style="overflow: auto">
-          <civil-side-panel v-if="isDataReady" />
-        </b-col>
-        <b-col col md="9" cols="9" class="px-0" style="overflow: auto">
-          <civil-header-top v-if="isDataReady" />
-          <civil-header v-if="isDataReady" />
+      <b-card no-body>
+        <b-row cols="2">
+          <b-col md="3" cols="3" style="overflow: auto">
+            <civil-side-panel v-if="isDataReady" />
+          </b-col>
+          <b-col col md="9" cols="9" class="px-0" style="overflow: auto">
+            <civil-header-top v-if="isDataReady" />
+            <civil-header v-if="isDataReady" />
 
-          <b-row class="ml-0" v-if="showAllDocuments">
-            <h2 style="white-space: pre" v-if="isDataReady">
-              {{ selectedSideBar }}
-            </h2>
-            <custom-overlay
-              v-if="isDataReady"
-              :show="!downloadCompleted"
-              style="padding: 0 1rem; margin-left: auto; margin-right: 2rem"
-            >
-              <b-button
-                v-if="enableArchive"
-                @click="downloadAllDocuments()"
-                size="md"
-                variant="info"
+            <b-row class="ml-0" v-if="showAllDocuments">
+              <h2 style="white-space: pre" v-if="isDataReady">
+                {{ selectedSideBar }}
+              </h2>
+              <custom-overlay
+                v-if="isDataReady"
+                :show="!downloadCompleted"
                 style="padding: 0 1rem; margin-left: auto; margin-right: 2rem"
               >
-                Download All Documents
-              </b-button>
-            </custom-overlay>
-          </b-row>
+                <b-button
+                  v-if="enableArchive"
+                  @click="downloadAllDocuments()"
+                  size="md"
+                  variant="info"
+                  style="padding: 0 1rem; margin-left: auto; margin-right: 2rem"
+                >
+                  Download All Documents
+                </b-button>
+              </custom-overlay>
+            </b-row>
 
-          <h2 v-if="!showAllDocuments && isDataReady" style="white-space: pre">
-            {{ selectedSideBar }}
-          </h2>
+            <h2
+              v-if="!showAllDocuments && isDataReady"
+              style="white-space: pre"
+            >
+              {{ selectedSideBar }}
+            </h2>
 
-          <civil-parties v-if="showCaseDetails" />
-          <civil-comment-notes v-if="showCaseDetails" />
-          <civil-documents-view v-if="showDocuments || showAllDocuments" />
-          <civil-provided-documents-view
-            v-if="showProvidedDocuments || showAllDocuments"
-          />
-          <civil-past-appearances v-if="showPastAppearances" />
-          <civil-future-appearances v-if="showFutureAppearances" />
-          <b-card><br /></b-card>
-        </b-col>
-      </b-row>
-    </b-card>
+            <civil-parties v-if="showCaseDetails" />
+            <civil-comment-notes v-if="showCaseDetails" />
+            <civil-documents-view v-if="showDocuments || showAllDocuments" />
+            <civil-provided-documents-view
+              v-if="showProvidedDocuments || showAllDocuments"
+            />
+            <civil-past-appearances v-if="showPastAppearances" />
+            <civil-future-appearances v-if="showFutureAppearances" />
+            <b-card><br /></b-card>
+          </b-col>
+        </b-row>
+      </b-card>
     </v-skeleton-loader>
     <b-modal
       v-if="isMounted"
@@ -153,7 +159,14 @@
   import { getSingleValue } from '@/utils/utils';
   import base64url from 'base64url';
   import _ from 'underscore';
-  import { computed, defineComponent, inject, onMounted, ref, watch } from 'vue';
+  import {
+    computed,
+    defineComponent,
+    inject,
+    onMounted,
+    ref,
+    watch,
+  } from 'vue';
   import { useRoute } from 'vue-router';
   import CustomOverlay from '../CustomOverlay.vue';
   import shared from '../shared';
@@ -192,6 +205,7 @@
       const documentsInfo = ref<documentsInfoType[]>([]);
       const providedDocumentsInfo = ref<referenceDocumentsInfoType[]>([]);
       const summaryDocumentsInfo = ref<summaryDocumentsInfoType[]>([]);
+      const details = ref<civilFileDetailsType>({} as civilFileDetailsType);
 
       const isDataReady = ref(false);
       const isMounted = ref(false);
@@ -307,6 +321,7 @@
                 if (isSealed.value || docIsSealed.value) {
                   showSealedWarning.value = true;
                 }
+                details.value = data;
                 isDataReady.value = true;
               } else errorCode.value = 200;
             } else if (errorCode.value == 0) errorCode.value = 200;
@@ -750,7 +765,8 @@
         isSealed,
         docIsSealed,
         fileNumber,
-        loading
+        loading,
+        details,
       };
     },
   });

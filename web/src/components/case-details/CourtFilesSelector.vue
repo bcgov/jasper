@@ -1,5 +1,5 @@
 <template>
-  <v-card :class="getBannerColor" variant="flat">
+  <v-card :class="getBannerStyle" variant="flat">
     <v-container class="pb-0">
       <v-row class="pb-3">
         <v-col cols="10" />
@@ -39,7 +39,7 @@
   });
   const activeTab = ref(() => fileNumber.value);
 
-  const getBannerColor = computed(() => {
+  const getBannerStyle = computed(() => {
     switch (props.courtClass) {
       case CourtClassEnum[CourtClassEnum.A]:
       case CourtClassEnum[CourtClassEnum.Y]:

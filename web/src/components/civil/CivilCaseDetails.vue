@@ -50,7 +50,12 @@
       <b-card no-body>
         <b-row cols="2">
           <b-col md="3" cols="3" style="overflow: auto">
-            <civil-side-panel v-if="isDataReady" />
+            <civil-side-panel-v2
+              v-if="isDataReady && details"
+              :details="details"
+              :adjudicatorRestrictions="adjudicatorRestrictions"
+            />
+            <civil-side-panel-v1 v-if="isDataReady" />
           </b-col>
           <b-col col md="9" cols="9" class="px-0" style="overflow: auto">
             <civil-header-top v-if="isDataReady" />
@@ -127,7 +132,9 @@
   import CivilParties from '@/components/civil/CivilParties.vue';
   import CivilPastAppearances from '@/components/civil/CivilPastAppearances.vue';
   import CivilProvidedDocumentsView from '@/components/civil/CivilProvidedDocumentsView.vue';
-  import CivilSidePanel from '@/components/civil/CivilSidePanel.vue';
+  import CivilSidePanelV2 from '@/components/case-details/CivilSidePanel.vue';
+  // In the process of deprecating in favor of @/components/case-details/CriminalSidePanel.vue
+  import CivilSidePanelV1 from '@/components/civil/CivilSidePanel.vue';
   import CourtFilesSelector from '@/components/case-details/CourtFilesSelector.vue';
   import { beautifyDate } from '@/filters';
   import { HttpService } from '@/services/HttpService';
@@ -179,7 +186,8 @@
       CivilPastAppearances,
       CivilFutureAppearances,
       CivilParties,
-      CivilSidePanel,
+      CivilSidePanelV1,
+      CivilSidePanelV2,
       CivilHeaderTop,
       CivilHeader,
       CourtFilesSelector,
@@ -767,6 +775,7 @@
         fileNumber,
         loading,
         details,
+        adjudicatorRestrictions: adjudicatorRestrictionsInfo.value,
       };
     },
   });

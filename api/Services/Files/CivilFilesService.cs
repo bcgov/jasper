@@ -11,13 +11,13 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Civil.AppearanceDetail;
 using Scv.Api.Models.Civil.Appearances;
 using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Search;
+using Scv.Db.Models;
 using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
 
@@ -36,7 +36,8 @@ namespace Scv.Api.Services.Files
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
         private readonly string _requestPartId;
-        private List<string> _filterOutDocumentTypes;
+        private readonly List<string> _filterOutDocumentTypes;
+        private readonly ClaimsPrincipal _currentUser;
 
         #endregion Variables
 
@@ -62,6 +63,7 @@ namespace Scv.Api.Services.Files
             _requestPartId = user.ParticipantId();
             _logger = logger;
             _filterOutDocumentTypes = configuration.GetNonEmptyValue("ExcludeDocumentTypeCodesForCounsel").Split(",").ToList();
+            _currentUser = user;
         }
 
         #endregion Constructor
@@ -350,10 +352,29 @@ namespace Scv.Api.Services.Files
 
         private async Task<ICollection<CivilHearingRestriction>> PopulateDetailHearingRestrictions(ICollection<CvfcHearingRestriction2> hearingRestrictions)
         {
-            //TODO need permission for this filter.
-            var civilHearingRestrictions = _mapper.Map<ICollection<CivilHearingRestriction>>(hearingRestrictions.Where(hr =>
-                    hr.HearingRestrictionTypeCd == CvfcHearingRestriction2HearingRestrictionTypeCd.S)
-                .ToList());
+            // Assigned restriction is only included if current user is assigned to any of the role
+            var includeAssigned = _currentUser
+                .HasRoles(
+                [
+                    Role.ADMIN,
+                    Role.ACJ_CHIEF_JUDGE,
+                    Role.RAJ,
+                    Role.PO_MANAGER
+                ], true);
+
+            var restrictionTypeOrder = new List<CvfcHearingRestriction2HearingRestrictionTypeCd>
+            {
+                CvfcHearingRestriction2HearingRestrictionTypeCd.S,
+                CvfcHearingRestriction2HearingRestrictionTypeCd.G,
+                CvfcHearingRestriction2HearingRestrictionTypeCd.A,
+                CvfcHearingRestriction2HearingRestrictionTypeCd.D,
+            };
+
+            var civilHearingRestrictions = _mapper.Map<ICollection<CivilHearingRestriction>>(
+                hearingRestrictions.Where(r => includeAssigned
+                    || r.HearingRestrictionTypeCd != CvfcHearingRestriction2HearingRestrictionTypeCd.G)
+                .OrderBy(r => restrictionTypeOrder.IndexOf(r.HearingRestrictionTypeCd))
+                .ThenBy(r => r.AdjFullNm));
 
             foreach (var hearing in civilHearingRestrictions)
             {

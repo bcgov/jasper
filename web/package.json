@@ -25,7 +25,7 @@
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.17",
-    "@fullcalendar/vue3": "^6.1.15",
+    "@fullcalendar/vue3": "^6.1.17",
     "@types/underscore": "^1.13.0",
     "@vitejs/plugin-basic-ssl": "^2.0.0",
     "axios": "^1.8.4",

@@ -11,6 +11,6 @@ describe('CivilSidePanel.vue', () => {
     const arComponent = wrapper.findComponent({
       name: 'AdjudicatorRestrictionsPanel',
     });
-    expect(arComponent.exists()).toBe(false);
+    expect(arComponent.exists()).toBe(true);
   });
 });

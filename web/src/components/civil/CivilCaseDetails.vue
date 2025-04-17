@@ -132,10 +132,10 @@
   import CivilParties from '@/components/civil/CivilParties.vue';
   import CivilPastAppearances from '@/components/civil/CivilPastAppearances.vue';
   import CivilProvidedDocumentsView from '@/components/civil/CivilProvidedDocumentsView.vue';
-  import CivilSidePanelV2 from '@/components/case-details/CivilSidePanel.vue';
+  import CivilSidePanelV2 from '@/components/case-details/civil/CivilSidePanel.vue';
   // In the process of deprecating in favor of @/components/case-details/CriminalSidePanel.vue
   import CivilSidePanelV1 from '@/components/civil/CivilSidePanel.vue';
-  import CourtFilesSelector from '@/components/case-details/CourtFilesSelector.vue';
+  import CourtFilesSelector from '@/components/case-details/common/CourtFilesSelector.vue';
   import { beautifyDate } from '@/filters';
   import { HttpService } from '@/services/HttpService';
   import {

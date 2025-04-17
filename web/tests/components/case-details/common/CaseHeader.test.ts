@@ -1,12 +1,14 @@
-import { mount, shallowMount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
-import CaseHeader from 'CMP/case-details/CaseHeader.vue';
 import { mdiCalendar, mdiScaleBalance, mdiTextBoxOutline } from '@mdi/js';
+import { shallowMount } from '@vue/test-utils';
+import CaseHeader from 'CMP/case-details/common/CaseHeader.vue';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('CaseHeader.vue', () => {
   const mockDetails = {
     appearances: {
-      apprDetail: [{ id: 1, date: '2023-01-01', description: 'Test Appearance' }],
+      apprDetail: [
+        { id: 1, date: '2023-01-01', description: 'Test Appearance' },
+      ],
     },
   };
   let wrapper: any;
@@ -29,7 +31,6 @@ describe('CaseHeader.vue', () => {
 
     expect(tabs[2].text()).toContain('Sentence/order details');
     expect(tabs[2].attributes('prepend-icon')).toBe(mdiScaleBalance);
-
   });
 
   it('applies active-tab class to the selected tab', async () => {

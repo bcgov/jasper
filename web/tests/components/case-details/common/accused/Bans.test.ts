@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import Bans from '@/components/case-details/common/accused/Bans.vue';
 import { mount } from '@vue/test-utils';
-import Bans from 'CMP/case-details/Accused/Bans.vue';
+import { describe, expect, it } from 'vitest';
 
 describe('Bans.vue', () => {
   const bansMock = [
@@ -23,7 +23,6 @@ describe('Bans.vue', () => {
       banTypeSubSection: 'Sub2',
       banTypeDescription: 'Description2',
       banCommentText: 'Comment2',
-
     },
   ];
 

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import Accused from '@/components/case-details/common/accused/Accused.vue';
 import { mount } from '@vue/test-utils';
-import Accused from 'CMP/case-details/Accused/Accused.vue';
+import { describe, expect, it } from 'vitest';
 
 describe('Accused.vue', () => {
   const accusedMock = {
@@ -65,7 +65,10 @@ describe('Accused.vue', () => {
       props: { accused: accusedMock, appearances: appearancesMock },
     });
 
-    const counselText = wrapper.findAll('v-row')[3].find('v-col:last-child').text();
+    const counselText = wrapper
+      .findAll('v-row')[3]
+      .find('v-col:last-child')
+      .text();
     expect(counselText).toBe('SMITH, Jane');
   });
 
@@ -74,7 +77,10 @@ describe('Accused.vue', () => {
       props: { accused: accusedMock, appearances: appearancesMock },
     });
 
-    const counselStatus = wrapper.findAll('v-row')[4].find('v-col:last-child').text();
+    const counselStatus = wrapper
+      .findAll('v-row')[4]
+      .find('v-col:last-child')
+      .text();
     expect(counselStatus).toBe('Yes');
   });
 
@@ -83,7 +89,10 @@ describe('Accused.vue', () => {
       props: { accused: accusedMock, appearances: appearancesMock },
     });
 
-    const appearancesCount = wrapper.findAll('v-row')[5].find('v-col:last-child').text();
+    const appearancesCount = wrapper
+      .findAll('v-row')[5]
+      .find('v-col:last-child')
+      .text();
     expect(appearancesCount).toBe('3');
   });
 });

@@ -1,4 +1,4 @@
-import Bans from '@/components/case-details/common/Accused/Bans.vue';
+import Bans from '@/components/case-details/common/accused/Bans.vue';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 

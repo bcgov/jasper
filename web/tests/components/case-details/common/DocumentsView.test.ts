@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { mount, shallowMount } from '@vue/test-utils';
-import { setActivePinia, createPinia } from 'pinia'
-import shared from '@/components/shared';
-import DocumentsView from 'CMP/case-details/DocumentsView.vue';
+import { shallowMount } from '@vue/test-utils';
+import DocumentsView from 'CMP/case-details/common/DocumentsView.vue';
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('DocumentsView.vue', () => {
   let wrapper: any;
@@ -41,10 +40,7 @@ describe('DocumentsView.vue', () => {
         },
       ],
     };
-    mockParticipants = [
-      mockParticipantOne,
-      mockParticipantTwo
-    ];
+    mockParticipants = [mockParticipantOne, mockParticipantTwo];
     setActivePinia(createPinia());
     wrapper = shallowMount(DocumentsView, {
       props: {
@@ -66,7 +62,7 @@ describe('DocumentsView.vue', () => {
     mockParticipants.push(mockParticipantOne);
     const wrapper = shallowMount(DocumentsView, {
       props: {
-        participants: mockParticipants
+        participants: mockParticipants,
       },
     });
     const sections = wrapper.findAll('v-card-text .text-h5');
@@ -81,7 +77,7 @@ describe('DocumentsView.vue', () => {
 
     const wrapper = shallowMount(DocumentsView, {
       props: {
-        participants: mockParticipants
+        participants: mockParticipants,
       },
     });
     const sections = wrapper.findAll('v-card-text .text-h5');
@@ -99,7 +95,7 @@ describe('DocumentsView.vue', () => {
 
   it('filters documents by category', async () => {
     wrapper.vm.selectedCategory = 'ROP';
-    
+
     const documents = wrapper.vm.documents;
     expect(documents).toHaveLength(1);
     expect(documents[0].category).toBe('rop');
@@ -107,7 +103,7 @@ describe('DocumentsView.vue', () => {
 
   it.each([
     ['rop', 'ROP'],
-    ['other', 'other']
+    ['other', 'other'],
   ])('formats category correctly', (input, expected) => {
     const formattedCategory = wrapper.vm.formatCategory({
       category: input,
@@ -117,7 +113,7 @@ describe('DocumentsView.vue', () => {
 
   it.each([
     [{ category: 'rop', documentTypeDescription: '' }, 'Record of Proceedings'],
-    [{ category: 'other', documentTypeDescription: 'Other' }, 'Other']
+    [{ category: 'other', documentTypeDescription: 'Other' }, 'Other'],
   ])('formats document type correctly for %o', (input, expected) => {
     const formattedType = wrapper.vm.formatType(input);
     expect(formattedType).toBe(expected);

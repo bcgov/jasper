@@ -1,4 +1,4 @@
-import AdjudicatorRestriction from '@/components/case-details/AdjudicatorRestrictions/AdjudicatorRestriction.vue';
+import AdjudicatorRestriction from '@/components/case-details/common/adjudicator-restrictions/AdjudicatorRestriction.vue';
 import { AdjudicatorRestrictionsInfoType } from '@/types/common';
 import { faker } from '@faker-js/faker';
 import { shallowMount } from '@vue/test-utils';

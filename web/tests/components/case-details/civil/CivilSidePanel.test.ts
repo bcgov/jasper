@@ -1,5 +1,5 @@
 import { shallowMount } from '@vue/test-utils';
-import CivilSidePanel from 'CMP/case-details/CivilSidePanel.vue';
+import CivilSidePanel from 'CMP/case-details/civil/CivilSidePanel.vue';
 import { describe, expect, it } from 'vitest';
 
 describe('CivilSidePanel.vue', () => {

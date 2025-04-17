@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import AppearancesView from 'CMP/case-details/AppearancesView.vue';
+import AppearancesView from 'CMP/case-details/common/AppearancesView.vue';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('AppearancesView.vue', () => {
@@ -56,7 +56,9 @@ describe('AppearancesView.vue', () => {
     const wrapper = mount(AppearancesView, { props });
 
     expect(wrapper.findAll('v-card').length).toBe(1);
-    expect(wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()).toBe("Past Appearances");
+    expect(
+      wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
+    ).toBe('Past Appearances');
   });
 
   it('renders only future appearances', () => {
@@ -64,21 +66,29 @@ describe('AppearancesView.vue', () => {
     const wrapper = mount(AppearancesView, { props });
 
     expect(wrapper.findAll('v-card').length).toBe(1);
-    expect(wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()).toBe("Future Appearances");
+    expect(
+      wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
+    ).toBe('Future Appearances');
   });
 
   it('renders both past and future appearances', () => {
     const wrapper = mount(AppearancesView, { props });
 
-    expect(wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()).toBe("Past Appearances");
-    expect(wrapper.findAll('v-card')?.at(1)?.findAll('v-col')?.at(0)?.text()).toBe("Future Appearances");
+    expect(
+      wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
+    ).toBe('Past Appearances');
+    expect(
+      wrapper.findAll('v-card')?.at(1)?.findAll('v-col')?.at(0)?.text()
+    ).toBe('Future Appearances');
   });
 
   it('filters appearances by selected accused', () => {
-    const wrapper: any = mount(AppearancesView,  {props });
+    const wrapper: any = mount(AppearancesView, { props });
 
     wrapper.vm.selectedAccused = 'Doe, John';
-    const appearances = wrapper.vm.pastAppearances.concat(wrapper.vm.futureAppearances);
+    const appearances = wrapper.vm.pastAppearances.concat(
+      wrapper.vm.futureAppearances
+    );
     expect(appearances.length).toBe(1);
   });
 });

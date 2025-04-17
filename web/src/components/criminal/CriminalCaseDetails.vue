@@ -76,9 +76,9 @@
 </template>
 
 <script lang="ts">
-  import CaseHeader from '@/components/case-details/CaseHeader.vue';
-  import CourtFilesSelector from '@/components/case-details/CourtFilesSelector.vue';
-  import CriminalSidePanelV2 from '@/components/case-details/CriminalSidePanel.vue';
+  import CaseHeader from '@/components/case-details/common/CaseHeader.vue';
+  import CourtFilesSelector from '@/components/case-details/common/CourtFilesSelector.vue';
+  import CriminalSidePanelV2 from '@/components/case-details/criminal/CriminalSidePanel.vue';
   // In the process of deprecating in favor of @/components/case-details/CriminalSidePanel.vue
   import CriminalSidePanelV1 from '@/components/criminal/CriminalSidePanel.vue';
   import { beautifyDate } from '@/filters';

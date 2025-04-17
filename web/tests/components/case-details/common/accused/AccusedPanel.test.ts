@@ -1,6 +1,6 @@
+import AccusedPanel from '@/components/case-details/common/accused/AccusedPanel.vue';
 import { shallowMount } from '@vue/test-utils';
-import { describe, it, expect } from 'vitest';
-import AccusedPanel from 'CMP/case-details/Accused/AccusedPanel.vue';
+import { describe, expect, it } from 'vitest';
 
 describe('AccusedPanel.vue', () => {
   const accusedMock = [
@@ -13,19 +13,22 @@ describe('AccusedPanel.vue', () => {
     { lastNm: 'Smith', details: 'Appearance 3' },
   ];
 
-it.each([
+  it.each([
     ['Adult', 'Accused'],
     ['Youth', 'Youth'],
-    ])('renders the correct title for Adult activity class', (activityClass, output) => {
-    const wrapper = shallowMount(AccusedPanel, {
+  ])(
+    'renders the correct title for Adult activity class',
+    (activityClass, output) => {
+      const wrapper = shallowMount(AccusedPanel, {
         props: {
-            accused: accusedMock,
-            activityClass: activityClass,
-            appearances: appearancesMock,
+          accused: accusedMock,
+          activityClass: activityClass,
+          appearances: appearancesMock,
         },
-        });
-        expect(wrapper.find('h5').text()).toBe(`${output} (2)`);
-    });
+      });
+      expect(wrapper.find('h5').text()).toBe(`${output} (2)`);
+    }
+  );
 
   it('renders the correct title for Youth activity class', () => {
     const wrapper = shallowMount(AccusedPanel, {

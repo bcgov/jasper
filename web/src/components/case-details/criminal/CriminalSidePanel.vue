@@ -16,9 +16,9 @@
   import { AdjudicatorRestrictionsInfoType } from '@/types/common';
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
   import { ref } from 'vue';
-  import AccusedPanel from './Accused/AccusedPanel.vue';
-  import AdjudicatorRestrictionsPanel from './AdjudicatorRestrictions/AdjudicatorRestrictionsPanel.vue';
-  import Summary from './Summary.vue';
+  import AccusedPanel from '@/components/case-details/common/accused/AccusedPanel.vue';
+  import AdjudicatorRestrictionsPanel from '@/components/case-details/common/adjudicator-restrictions/AdjudicatorRestrictionsPanel.vue';
+  import Summary from '@/components/case-details/common/Summary.vue';
 
   const props = defineProps<{
     details: criminalFileDetailsType;

@@ -1,4 +1,4 @@
-import AdjudicatorRestrictionsPanel from '@/components/case-details/AdjudicatorRestrictions/AdjudicatorRestrictionsPanel.vue';
+import AdjudicatorRestrictionsPanel from '@/components/case-details/common/adjudicator-restrictions/AdjudicatorRestrictionsPanel.vue';
 import { AdjudicatorRestrictionsInfoType } from '@/types/common';
 import { faker } from '@faker-js/faker';
 import { shallowMount } from '@vue/test-utils';

@@ -6,7 +6,7 @@ import {
   crownType,
 } from '@/types/criminal/jsonTypes';
 import { mount } from '@vue/test-utils';
-import Summary from 'CMP/case-details/common/Summary.vue';
+import CriminalSummary from 'CMP/case-details/criminal/CriminalSummary.vue';
 import { describe, expect, it } from 'vitest';
 
 const createParticipant = (givenNm: string, lastNm: string) => ({
@@ -90,9 +90,9 @@ const details: criminalFileDetailsType = {
   } as criminalAppearancesType,
 };
 
-describe('Summary.vue', () => {
+describe('CriminalSummary.vue', () => {
   it('renders case details correctly', () => {
-    const wrapper = mount(Summary, {
+    const wrapper = mount(CriminalSummary, {
       props: { details },
     });
 
@@ -115,7 +115,7 @@ describe('Summary.vue', () => {
       createParticipant('Charlie', 'Brown'),
     ];
 
-    const wrapper = mount(Summary, {
+    const wrapper = mount(CriminalSummary, {
       props: { details },
     });
 
@@ -127,7 +127,7 @@ describe('Summary.vue', () => {
   it('renders bans text when bans present', () => {
     details.participant[0].ban = [{} as banType];
 
-    const wrapper = mount(Summary, {
+    const wrapper = mount(CriminalSummary, {
       props: { details },
     });
 
@@ -144,7 +144,7 @@ describe('Summary.vue', () => {
         { givenNm: 'David', lastNm: 'Byrne', assigned: assigned } as crownType,
       ];
 
-      const wrapper = mount(Summary, {
+      const wrapper = mount(CriminalSummary, {
         props: { details },
       });
 
@@ -160,7 +160,7 @@ describe('Summary.vue', () => {
   ])('renders proceeded correctly', (indictableYN, output) => {
     details.indictableYN = indictableYN;
 
-    const wrapper = mount(Summary, {
+    const wrapper = mount(CriminalSummary, {
       props: { details },
     });
 

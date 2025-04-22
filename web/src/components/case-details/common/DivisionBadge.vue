@@ -1,9 +1,10 @@
 <template>
-  <v-chip rounded="lg" :color variant="flat" size="small">
-    {{
-      props.division.toUpperCase() +
-      (activityClassDesc ? ' - ' + activityClassDesc : '')
-    }}
+  <v-chip
+    :class="['text-uppercase', 'mr-2', getBadgeStyle]"
+    variant="flat"
+    size="small"
+  >
+    {{ getBadgeText }}
   </v-chip>
 </template>
 
@@ -11,24 +12,27 @@
   import { computed } from 'vue';
 
   const props = defineProps<{ division: string; activityClassDesc: string }>();
-
-  const colors: { [key: string]: string } = {
-    Criminal: '#4092c1',
-    Family: '#2e8540',
-  };
-
-  const activityClassDesc = computed(() => {
-    if (props.division !== 'Criminal') {
-      return '';
+  const getBadgeText = computed(() => {
+    if (props.division?.toLowerCase() === 'criminal') {
+      return `${props.division} - ${props.activityClassDesc}`;
     }
-    if (props.activityClassDesc === 'Adult') {
-      return 'ADULT';
-    } else if (props.activityClassDesc === 'Youth Justice') {
-      return 'YOUTH';
-    } else {
-      return '';
-    }
+    return props.division;
   });
 
-  const color = computed(() => colors[props.division] || '#79368f');
+  const getBadgeStyle = computed(() => {
+    return props.division?.toLowerCase().replace(' ', '-');
+  });
 </script>
+<style scoped>
+  .criminal {
+    background-color: var(--bg-blue);
+  }
+
+  .family {
+    background-color: var(--bg-green);
+  }
+
+  .small-claims {
+    background-color: var(--bg-purple);
+  }
+</style>

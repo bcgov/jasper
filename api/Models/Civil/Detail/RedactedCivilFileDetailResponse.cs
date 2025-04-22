@@ -1,6 +1,6 @@
-﻿using JCCommon.Clients.FileServices;
+﻿using System.Collections.Generic;
+using JCCommon.Clients.FileServices;
 using Scv.Api.Models.Civil.Appearances;
-using System.Collections.Generic;
 
 namespace Scv.Api.Models.Civil.Detail
 {
@@ -27,6 +27,7 @@ namespace Scv.Api.Models.Civil.Detail
         public string HomeLocationAgencyName { get; set; }
         public string HomeLocationAgencyCode { get; set; }
         public string HomeLocationRegionName { get; set; }
+        public string SheriffCommentText { get; set; }
 
         /// <summary>
         /// Extended party object. Hides fields.

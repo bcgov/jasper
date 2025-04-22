@@ -1,11 +1,13 @@
 <template>
   <h5 class="my-1">Case Details</h5>
-  <v-card color="#efedf5">
-    <division-badge :activityClassDesc division="Criminal" class="mx-3 my-3" />
-    <span v-if="bansExist"><b style="color: #e30e0e">BAN</b></span>
+  <v-card color="var(--bg-gray)" flat>
+    <div class="m-3 d-flex align-center">
+      <DivisionBadge division="Criminal" :activityClassDesc />
+      <span v-if="bansExist"><b style="color: var(--text-red)">BAN</b></span>
+    </div>
     <v-card-title style="text-wrap: wrap">{{ names }}</v-card-title>
     <v-card-subtitle>{{ location }}</v-card-subtitle>
-    <file-markers
+    <FileMarkers
       :participants
       :appearances
       division="Criminal"
@@ -25,12 +27,11 @@
     </v-row>
   </v-card>
 </template>
-
 <script setup lang="ts">
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
   import { computed, ref } from 'vue';
-  import DivisionBadge from './DivisionBadge.vue';
+  import DivisionBadge from '../common/DivisionBadge.vue';
 
   const props = defineProps<{ details: criminalFileDetailsType }>();
 
@@ -58,3 +59,8 @@
     ? crownAssigned.lastNm + ', ' + crownAssigned.givenNm
     : '';
 </script>
+<style scoped>
+  .v-card {
+    border-radius: 0.5rem !important;
+  }
+</style>

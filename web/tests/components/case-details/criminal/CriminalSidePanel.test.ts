@@ -8,7 +8,7 @@ describe('CriminalSidePanel.vue', () => {
       props: { details: {} },
     });
 
-    const summaryComponent = wrapper.findComponent({ name: 'Summary' });
+    const summaryComponent = wrapper.findComponent({ name: 'CriminalSummary' });
     expect(summaryComponent.exists()).toBe(true);
   });
 

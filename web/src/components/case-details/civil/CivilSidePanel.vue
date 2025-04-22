@@ -1,5 +1,6 @@
 <template>
-  <adjudicator-restrictions-panel
+  <CivilSummary :details />
+  <AdjudicatorRestrictionsPanel
     v-if="adjudicatorRestrictions?.length > 0"
     :adjudicatorRestrictions
   />
@@ -8,6 +9,7 @@
   import { civilFileDetailsType } from '@/types/civil/jsonTypes';
   import { AdjudicatorRestrictionsInfoType } from '@/types/common';
   import AdjudicatorRestrictionsPanel from '../common/adjudicator-restrictions/AdjudicatorRestrictionsPanel.vue';
+  import CivilSummary from './CivilSummary.vue';
 
   const props = defineProps<{
     details: civilFileDetailsType;

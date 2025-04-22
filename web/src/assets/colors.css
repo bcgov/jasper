@@ -1,12 +1,15 @@
 :root {
   /* Background colors */
-  --bg-gray: #efedf5;
+  --bg-light-blue: #72acca;
   --bg-light-gray: #f8f7fa;
+  --bg-light-green: #86b28a;
+  --bg-light-purple: #ae81be;
+
   --bg-blue: #4092c1;
+  --bg-gray: #efedf5;
+  --bg-green: #2e8540;
+  --bg-purple: #79368f;
   --bg-white: #ffffff;
-  --bg-green: #86b28a;
-  --bg-purple: #ae81be;
-  --bg-blue: #72acca;
 
   /* Border colors */
   --border-blue: #4092c1;

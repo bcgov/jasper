@@ -75,14 +75,14 @@
   }
 
   .criminal {
-    background-color: var(--bg-blue);
+    background-color: var(--bg-light-blue);
   }
 
   .small-claims {
-    background-color: var(--bg-purple);
+    background-color: var(--bg-light-purple);
   }
 
   .family {
-    background-color: var(--bg-green);
+    background-color: var(--bg-light-green);
   }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <Summary v-if="details" :details />
+  <CriminalSummary v-if="details" :details />
   <adjudicator-restrictions-panel
     v-if="adjudicatorRestrictions?.length > 0"
     :adjudicatorRestrictions
@@ -18,7 +18,7 @@
   import { ref } from 'vue';
   import AccusedPanel from '../common/accused/AccusedPanel.vue';
   import AdjudicatorRestrictionsPanel from '../common/adjudicator-restrictions/AdjudicatorRestrictionsPanel.vue';
-  import Summary from '../common/Summary.vue';
+  import CriminalSummary from './CriminalSummary.vue';
 
   const props = defineProps<{
     details: criminalFileDetailsType;

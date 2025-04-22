@@ -13,4 +13,15 @@ describe('CivilSidePanel.vue', () => {
     });
     expect(arComponent.exists()).toBe(true);
   });
+
+  it('renders CivilSummary component', () => {
+    const wrapper = shallowMount(CivilSidePanel, {
+      props: { details: {}, adjudicatorRestrictions: [{}] },
+    });
+
+    const summaryComponent = wrapper.findComponent({
+      name: 'CivilSummary',
+    });
+    expect(summaryComponent.exists()).toBe(true);
+  });
 });

@@ -1,4 +1,5 @@
 <template>
+  <h5 class="my-1">Case Details</h5>
   <v-card class="py-3" color="var(--bg-gray)" flat>
     <div class="ml-3 d-flex align-center">
       <DivisionBadge :division :activityClassDesc />

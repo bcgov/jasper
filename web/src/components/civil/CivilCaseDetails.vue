@@ -42,20 +42,12 @@
         />
       </v-col>
     </v-row>
-    <v-skeleton-loader
-      class="my-0"
-      type="table"
-      :loading="loading || !isMounted"
-    >
-      <v-container>
-        <v-row>
-          <v-col cols="3" class="d-flex align-end">
-            <h5 class="my-1">Case Details</h5>
-          </v-col>
-          <v-col>
-            <!-- Case Detail Buttons -->
-          </v-col>
-        </v-row>
+    <v-container>
+      <v-skeleton-loader
+        class="my-0"
+        type="table"
+        :loading="loading || !isMounted"
+      >
         <v-row style="display: flex; flex-wrap: nowrap">
           <v-col cols="3" style="overflow-y: auto">
             <civil-side-panel-v2
@@ -108,8 +100,9 @@
             <b-card><br /></b-card>
           </v-col>
         </v-row>
-      </v-container>
-    </v-skeleton-loader>
+      </v-skeleton-loader>
+    </v-container>
+
     <b-modal
       v-if="isMounted"
       v-model="showSealedWarning"

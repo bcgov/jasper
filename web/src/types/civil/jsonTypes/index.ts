@@ -2,6 +2,16 @@ import { civilFiledByType } from '@/types/courtlist/jsonTypes';
 import { fileDetailsType } from '@/types/shared';
 import { AdditionalProperties } from '../../common';
 
+export interface partyAliasType {
+  nameTypeCd: string;
+  nameTypeDsc: string;
+  surnameNm: string;
+  firstGivenNm: string;
+  secondGivenNm: string;
+  thirdGivenNm: string;
+  organizationNm: string;
+}
+
 export interface partyCounselType {
   counselId: string;
   fullNm: string;
@@ -23,6 +33,7 @@ export interface partyType {
   leftRightCd: string;
   selfRepresentedYN: string;
   counsel: partyCounselType[];
+  aliases: partyAliasType[];
   additionalProperties: AdditionalProperties;
   additionalProp1: {};
   additionalProp2: {};

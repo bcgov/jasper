@@ -152,7 +152,7 @@ namespace Scv.Api.Services
 
         private static string FindLongDescriptionFromCode(ICollection<Location> lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.Name;
 
-        private static string FindShortDescriptionFromCode(ICollection<Location> lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.Name;
+        private static string FindShortDescriptionFromCode(ICollection<Location> lookupCodes, string code) => lookupCodes.FirstOrDefault(lookupCode => lookupCode.Code == code)?.AgencyIdentifierCd;
 
         private void SetupLocationServicesClient()
         {

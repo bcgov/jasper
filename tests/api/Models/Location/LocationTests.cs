@@ -68,6 +68,7 @@ public class LocationTest
         Assert.Equal("Vancouver Law Courts", result.Name);
         Assert.Equal("456", result.Code);
         Assert.Equal("789", result.LocationId);
+        Assert.Equal(jcLocation.Code, result.AgencyIdentifierCd);
         Assert.True(result.Active);
         Assert.Equal(pcssLocation.CourtRooms, result.CourtRooms);
     }

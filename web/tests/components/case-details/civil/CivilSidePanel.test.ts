@@ -24,4 +24,15 @@ describe('CivilSidePanel.vue', () => {
     });
     expect(summaryComponent.exists()).toBe(true);
   });
+
+  it('renders PartiesPanel component', () => {
+    const wrapper = shallowMount(CivilSidePanel, {
+      props: { details: { parties: [] }, adjudicatorRestrictions: [{}] },
+    });
+
+    const partiesComponent = wrapper.findComponent({
+      name: 'PartiesPanel',
+    });
+    expect(partiesComponent.exists()).toBe(true);
+  });
 });

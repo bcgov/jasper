@@ -161,8 +161,32 @@ namespace Scv.Api.Services.Files
             detail = await PopulateBaseDetail(detail);
             detail.Appearances = appearances;
 
+            ICollection<ClParty> courtListParties = [];
+            if (detail.Appearances != null && detail.Appearances.ApprDetail.Count != 0)
+            {
+                // Call CourtList to get Party alias when case detail has an appearance.
+                // Division Code, File Number and CourtLevel params appears to be not working and may introduce performance issues
+                // because the endpoint returns all court list data.
+                var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
+                var agencyId = await _locationService.GetLocationAgencyIdentifier(detail.HomeLocationAgenId);
+                var courtList = await _filesClient.FilesCourtlistAsync(
+                    _requestAgencyIdentifierId,
+                    _requestPartId,
+                    _applicationCode,
+                    agencyId,
+                    latestApprearance.CourtRoomCd,
+                    latestApprearance.AppearanceDt,
+                    "CV",
+                    detail.FileNumberTxt);
+                var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
+                if (civilCourtListFileDetail != null)
+                {
+                    courtListParties = civilCourtListFileDetail?.Parties;
+                }
+            }
+
             var fileContentCivilFile = fileContent?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
-            detail.Party = await PopulateDetailParties(detail.Party);
+            detail.Party = await PopulateDetailParties(detail.Party, courtListParties);
             detail.Document = await PopulateDetailDocuments(detail.Document, fileContentCivilFile, isVcUser, isStaff);
             detail.HearingRestriction = await PopulateDetailHearingRestrictions(fileDetail.HearingRestriction);
             if (isVcUser)
@@ -342,11 +366,18 @@ namespace Scv.Api.Services.Files
             return documents;
         }
 
-        private async Task<ICollection<CivilParty>> PopulateDetailParties(ICollection<CivilParty> parties)
+        private async Task<ICollection<CivilParty>> PopulateDetailParties(ICollection<CivilParty> parties, ICollection<ClParty> courtListParties)
         {
             //Populate extra fields for party.
             foreach (var party in parties)
+            {
+                var courtListParty = courtListParties.FirstOrDefault(clp => clp.PartyId == party.PartyId);
+                if (courtListParty != null)
+                {
+                    party.Aliases = [.. courtListParty.PartyName.Where(p => p.NameTypeCd != "CUR")];
+                }
                 party.RoleTypeDescription = await _lookupService.GetCivilRoleTypeDescription(party.RoleTypeCd);
+            }
             return parties;
         }
 

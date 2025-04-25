@@ -1,4 +1,5 @@
-﻿using JCCommon.Clients.FileServices;
+﻿using System.Collections.Generic;
+using JCCommon.Clients.FileServices;
 
 namespace Scv.Api.Models.Civil.Detail
 {
@@ -11,5 +12,6 @@ namespace Scv.Api.Models.Civil.Detail
             ? $"{GivenNm?.Trim()} {LastNm?.Trim()}"
             : OrgNm;
         public string RoleTypeDescription { get; set; }
+        public ICollection<ClPartyName> Aliases { get; set; }
     }
 }

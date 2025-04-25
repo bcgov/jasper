@@ -5,6 +5,8 @@
   --bg-light-green: #86b28a;
   --bg-light-purple: #ae81be;
 
+  --bg-pale-blue: #d9e5f4;
+
   --bg-blue: #4092c1;
   --bg-gray: #efedf5;
   --bg-green: #2e8540;
@@ -15,9 +17,12 @@
   --border-blue: #4092c1;
 
   /* Text colors */
+  --text-deep-blue: #183a4a; /* base font color*/
+
+  --text-light-gray: #8c8c8c;
+
+  --text-black: #000000;
   --text-blue: #4092c1;
   --text-red: #db1e05;
-  --text-light-gray: #8c8c8c;
-  --text-black: #000000;
   --text-white: #ffffff;
 }

@@ -168,19 +168,19 @@ namespace Scv.Api.Services.Files
                 // Division Code, File Number and CourtLevel params appears to be not working and may introduce performance issues
                 // because the endpoint returns all court list data.
                 var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
-                var agencyId = await _locationService.GetLocationAgencyIdentifier(detail.HomeLocationAgenId);
-                var courtList = await _filesClient.FilesCourtlistAsync(
-                    _requestAgencyIdentifierId,
-                    _requestPartId,
-                    _applicationCode,
-                    agencyId,
-                    latestApprearance.CourtRoomCd,
-                    latestApprearance.AppearanceDt,
-                    "CV",
-                    detail.FileNumberTxt);
-                var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
-                if (civilCourtListFileDetail != null)
+                if (latestApprearance != null)
                 {
+                    var agencyId = await _locationService.GetLocationAgencyIdentifier(detail.HomeLocationAgenId);
+                    var courtList = await _filesClient.FilesCourtlistAsync(
+                        _requestAgencyIdentifierId,
+                        _requestPartId,
+                        _applicationCode,
+                        agencyId,
+                        latestApprearance.CourtRoomCd,
+                        latestApprearance.AppearanceDt,
+                        "CV",
+                        detail.FileNumberTxt);
+                    var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
                     courtListParties = civilCourtListFileDetail?.Parties;
                 }
             }

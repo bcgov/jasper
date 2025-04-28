@@ -23,8 +23,6 @@ describe('PartiesPanel.vue', () => {
       },
     });
 
-    console.log(wrapper.html());
-
     const partyComponents = wrapper.findAllComponents({
       name: 'party',
     });

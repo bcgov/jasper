@@ -8,7 +8,7 @@
   import { partyType } from '@/types/civil/jsonTypes';
   import Party from './Party.vue';
 
-  const props = defineProps<{
+  defineProps<{
     parties: partyType[];
   }>();
 </script>

@@ -33,6 +33,7 @@
 <script setup lang="ts">
   import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import { partyType } from '@/types/civil/jsonTypes';
+  import { formatToFullName } from '@/utils/utils';
   import { computed } from 'vue';
 
   const props = defineProps<{
@@ -43,14 +44,14 @@
   const aliases =
     props.party.aliases?.map((a) =>
       a.surnameNm && a.firstGivenNm
-        ? `${a.surnameNm?.toUpperCase()}, ${a.firstGivenNm} ${a.firstGivenNm ?? ''} ${a.thirdGivenNm ?? ''}`
+        ? `${a.surnameNm?.toUpperCase()}, ${a.firstGivenNm} ${a.secondGivenNm ?? ''} ${a.thirdGivenNm ?? ''}`
         : a.organizationNm
     ) ?? [];
 
   const getName = computed(() => {
     const { lastNm, givenNm, orgNm } = props.party;
     if (lastNm && givenNm) {
-      return `${lastNm}, ${givenNm}`;
+      return formatToFullName(lastNm, givenNm);
     }
     return orgNm;
   });

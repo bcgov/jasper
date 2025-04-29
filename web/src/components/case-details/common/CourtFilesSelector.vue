@@ -28,8 +28,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-  import { KeyValueInfo } from '@/types/common';
-  import { CourtClassEnum } from '@/types/courtFileSearch';
+  import { KeyValueInfo, CourtClassEnum } from '@/types/common';
   import { PropType, ref, computed } from 'vue';
 
   const fileNumber = defineModel<string>();

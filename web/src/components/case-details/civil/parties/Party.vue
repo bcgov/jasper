@@ -1,5 +1,5 @@
 <template>
-  <v-card variant="text" class="mb-3">
+  <v-card variant="text" class="mb-4">
     <v-row>
       <v-col class="pb-0">
         <v-chip
@@ -12,7 +12,7 @@
         </v-chip>
       </v-col>
     </v-row>
-    <v-row>
+    <v-row v-if="showAlias">
       <v-col cols="6" class="data-label">Alias</v-col>
       <v-col>
         <LabelWithTooltip :values="aliases" />
@@ -33,14 +33,21 @@
 <script setup lang="ts">
   import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import { partyType } from '@/types/civil/jsonTypes';
+  import { CourtClassEnum } from '@/types/common';
   import { formatToFullName } from '@/utils/utils';
   import { computed } from 'vue';
 
   const props = defineProps<{
     party: partyType;
+    courtClassCd: string;
   }>();
 
-  const counselNames = props.party.counsel?.map((c) => c.fullNm) ?? [];
+  // Alias is only visible for Small Claims
+  const showAlias = props.courtClassCd === CourtClassEnum[CourtClassEnum.C];
+  const counselNames =
+    props.party.selfRepresentedYN === 'Y'
+      ? ['Self-Represented']
+      : (props.party.counsel?.map((c) => c.fullNm) ?? []);
   const aliases =
     props.party.aliases?.map((a) =>
       a.surnameNm && a.firstGivenNm

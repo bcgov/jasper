@@ -47,17 +47,6 @@ export interface Participant {
   charge: chargeType[];
 }
 
-// Enums
-export enum CourtClassEnum {
-  A = 0, // Adult
-  Y = 1, // Youth
-  T = 2, // Trafic
-  F = 3, // Family
-  C = 4, // Small Claims
-  M = 5, // Motor Vehicle
-  L = 6  // Enforcement/Legistated Statute
-}
-
 export enum SearchModeEnum {
   FileNo = 0,
   PartName = 1,

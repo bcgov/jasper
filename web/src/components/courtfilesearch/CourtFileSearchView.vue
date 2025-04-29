@@ -133,19 +133,18 @@
 
 <script setup lang="ts">
   import CourtFileSearchResult from '@/components/courtfilesearch/CourtFileSearchResult.vue';
-import { FilesService } from '@/services/FilesService';
-import { LocationService } from '@/services/LocationService';
-import { LookupService } from '@/services/LookupService';
-import { useCourtFileSearchStore } from '@/stores';
-import { KeyValueInfo, LookupCode } from '@/types/common';
-import {
-  CourtClassEnum,
-  CourtFileSearchCriteria,
-  FileDetail,
-  SearchModeEnum,
-} from '@/types/courtFileSearch';
-import { roomsInfoType } from '@/types/courtlist';
-import { computed, inject, onMounted, reactive, ref } from 'vue';
+  import { FilesService } from '@/services/FilesService';
+  import { LocationService } from '@/services/LocationService';
+  import { LookupService } from '@/services/LookupService';
+  import { useCourtFileSearchStore } from '@/stores';
+  import { KeyValueInfo, LookupCode, CourtClassEnum } from '@/types/common';
+  import {
+    CourtFileSearchCriteria,
+    FileDetail,
+    SearchModeEnum,
+  } from '@/types/courtFileSearch';
+  import { roomsInfoType } from '@/types/courtlist';
+  import { computed, inject, onMounted, reactive, ref } from 'vue';
 
   const CRIMINAL_CODE = 'R';
   const SMALL_CLAIMS_CODE = 'I';

@@ -162,9 +162,11 @@ namespace Scv.Api.Services.Files
             detail.Appearances = appearances;
 
             ICollection<ClParty> courtListParties = [];
-            if (detail.Appearances != null && detail.Appearances.ApprDetail.Count != 0)
+            if (detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.C
+                && detail.Appearances != null
+                && detail.Appearances.ApprDetail.Count != 0)
             {
-                // Call CourtList to get Party alias when case detail has an appearance.
+                // Call CourtList to get Party alias for Small Claims when case detail has an appearance.
                 // Division Code, File Number and CourtLevel params appears to be not working and may introduce performance issues
                 // because the endpoint returns all court list data.
                 var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
@@ -181,7 +183,7 @@ namespace Scv.Api.Services.Files
                         "CV",
                         detail.FileNumberTxt);
                     var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
-                    courtListParties = civilCourtListFileDetail?.Parties;
+                    courtListParties = civilCourtListFileDetail?.Parties ?? [];
                 }
             }
 

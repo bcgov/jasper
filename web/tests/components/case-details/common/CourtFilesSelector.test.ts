@@ -1,5 +1,5 @@
 import CourtFilesSelector from '@/components/case-details/common/CourtFilesSelector.vue';
-import { CourtClassEnum } from '@/types/courtFileSearch';
+import { CourtClassEnum } from '@/types/common';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { ref } from 'vue';

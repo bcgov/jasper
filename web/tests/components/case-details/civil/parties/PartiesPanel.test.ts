@@ -10,6 +10,7 @@ describe('PartiesPanel.vue', () => {
     const wrapper = shallowMount(PartiesPanel, {
       props: {
         parties: partiesMock,
+        courtClassCd: '',
       },
     });
 
@@ -20,6 +21,7 @@ describe('PartiesPanel.vue', () => {
     const wrapper = shallowMount(PartiesPanel, {
       props: {
         parties: partiesMock,
+        courtClassCd: '',
       },
     });
 

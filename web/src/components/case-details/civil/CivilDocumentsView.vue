@@ -146,10 +146,10 @@
   ];
   const documentTypes = ref<any[]>([
     ...new Map(
-      props.documents.map((doc) => [
+      props.documents?.map((doc) => [
         doc.documentTypeCd,
         { title: doc.documentTypeDescription, value: doc.documentTypeCd },
-      ])
+      ]) ?? []
     ).values(),
   ]);
   const filterByType = (item: any) =>

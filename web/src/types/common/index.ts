@@ -90,10 +90,24 @@ export enum DivisionEnum {
   R = 'R',
   I = 'I',
 }
-  // Can't seem to import this type from Vuetify yet, so defining it here until they're made available
+// Can't seem to import this type from Vuetify yet, so defining it here until they're made available
 export enum Anchor {
   Start = 'start',
   End = 'end',
   Top = 'top',
   Bottom = 'bottom',
+}
+
+export enum RoleTypeEnum {
+  CHD = 'CHD',
+}
+
+export enum CourtClassEnum {
+  A = 0,
+  Y = 1,
+  T = 2,
+  F = 3,
+  C = 4,
+  M = 5,
+  L = 6,
 }

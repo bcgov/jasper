@@ -57,10 +57,7 @@
 
   const getName = computed(() => {
     const { lastNm, givenNm, orgNm } = props.party;
-    if (lastNm && givenNm) {
-      return formatToFullName(lastNm, givenNm);
-    }
-    return orgNm;
+    return lastNm ? formatToFullName(lastNm, givenNm) : orgNm;
   });
 </script>
 <style scoped>

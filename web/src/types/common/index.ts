@@ -100,6 +100,7 @@ export enum Anchor {
 
 export enum RoleTypeEnum {
   CHD = 'CHD',
+  COF = 'COF',
 }
 
 export enum CourtClassEnum {

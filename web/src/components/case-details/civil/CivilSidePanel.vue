@@ -23,8 +23,13 @@
     adjudicatorRestrictions: AdjudicatorRestrictionsInfoType[];
   }>();
 
+  const childRoleTypes = [RoleTypeEnum.CHD, RoleTypeEnum.COF];
+
   const parties =
-    props.details.party?.filter((p) => p.roleTypeCd !== RoleTypeEnum.CHD) ?? [];
+    props.details.party?.filter(
+      (p) => !childRoleTypes.includes(p.roleTypeCd)
+    ) ?? [];
   const children =
-    props.details.party?.filter((p) => p.roleTypeCd === RoleTypeEnum.CHD) ?? [];
+    props.details.party?.filter((p) => childRoleTypes.includes(p.roleTypeCd)) ??
+    [];
 </script>

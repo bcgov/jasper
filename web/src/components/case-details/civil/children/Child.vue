@@ -33,10 +33,7 @@
   const counselNames = props.child.counsel?.map((c) => c.fullNm) ?? [];
   const getName = computed(() => {
     const { lastNm, givenNm, orgNm } = props.child;
-    if (lastNm && givenNm) {
-      return formatToFullName(lastNm, givenNm);
-    }
-    return orgNm;
+    return lastNm ? formatToFullName(lastNm, givenNm) : orgNm;
   });
 </script>
 <style scoped>

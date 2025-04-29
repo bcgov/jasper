@@ -80,16 +80,15 @@
           :location="Anchor.Top"
         />
       </template>
-      <template v-slot:item.binderMenu>
+      <!-- <template v-slot:item.binderMenu>
         <EllipsesMenu :menuItems="menuItems" />
-      </template>
+      </template> -->
     </v-data-table-virtual>
   </div>
 </template>
 
 <script setup lang="ts">
   import shared from '@/components/shared';
-  import EllipsesMenu from '@/components/shared/EllipsesMenu.vue';
   import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import { beautifyDate } from '@/filters';
   import { useCivilFileStore } from '@/stores';
@@ -138,11 +137,11 @@
       title: 'ISSUES',
       key: 'issue',
     },
-    {
-      title: 'JUDICIAL BINDER',
-      key: 'binderMenu',
-      width: '2%',
-    },
+    // {
+    //   title: 'JUDICIAL BINDER',
+    //   key: 'binderMenu',
+    //   width: '2%',
+    // },
   ];
   const documentTypes = ref<any[]>([
     ...new Map(

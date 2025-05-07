@@ -4,7 +4,7 @@
       <v-card-title
         ><div class="d-flex justify-space-between align-center w-100">
           <span>{{ title }}</span>
-          <v-btn icon @click="show = false">
+          <v-btn icon @click="closeClick">
             <v-icon :icon="mdiClose" size="32" />
           </v-btn>
         </div>
@@ -25,7 +25,7 @@
         </ul>
       </v-card-text>
       <v-card-actions class="justify-start">
-        <v-btn-secondary text="Close" @click="show = false" />
+        <v-btn-secondary text="Close" @click="closeClick" />
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -66,6 +66,11 @@
     !selectedAccused.value ||
     (item.fullName &&
       formatFromFullname(item.fullName) === selectedAccused.value);
+
+  const closeClick = () => {
+    selectedAccused.value = '';
+    show.value = false;
+  }
 </script>
 <style scoped>
   .v-dialog {

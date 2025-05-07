@@ -7,6 +7,7 @@ import {
 import { faker } from '@faker-js/faker';
 import { shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
 
 describe('SentenceOrderDetailsDialog', () => {
   let mockProps;
@@ -68,5 +69,17 @@ describe('SentenceOrderDetailsDialog', () => {
 
     expect(title.text()).toBe(fakeTitle);
     expect(Object.getPrototypeOf(subtitle)).toBe(null);
+  });
+
+  it('sets selectedAccused as blank when dialog is closed', async () => {
+    const wrapper = shallowMount(SentenceOrderDetailsDialog, {
+      props: mockProps,
+    });
+
+    const closeButton = wrapper.find('v-btn-secondary');
+    closeButton.trigger('click');
+    await nextTick();
+
+    expect(wrapper.vm.selectedAccused).toBe('');
   });
 });

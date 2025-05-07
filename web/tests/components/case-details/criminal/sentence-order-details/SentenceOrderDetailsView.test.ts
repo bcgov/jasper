@@ -59,8 +59,6 @@ describe('SentenceOrderDetailsView.vue', () => {
       name: 'sentence-order-details-dialog',
     });
 
-    console.log(wrapper.html());
-
     expect(dialog.attributes('title')).toBe('Order Made Details');
     expect(dialog.attributes('subtitle')).toBe('Conditions of Probation:');
     expect(dialog.attributes('targetproperty')).toBe('sentDetailTxt');

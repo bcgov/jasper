@@ -45,11 +45,11 @@
     (item.fullName &&
       formatFromFullname(item.fullName) === selectedAccused.value);
 
-  const filteredParticipants = computed(() =>
-    props.participants.filter(filterByAccused)
+  const filteredParticipants = computed(
+    () => props.participants?.filter(filterByAccused) ?? []
   );
   const count = computed(() =>
-    filteredParticipants.value.reduce((total, p) => total + p.count.length, 0)
+    filteredParticipants.value?.reduce((total, p) => total + p.count?.length, 0)
   );
   const dialogTitle = ref('');
   const dialogSubtitle = ref('');

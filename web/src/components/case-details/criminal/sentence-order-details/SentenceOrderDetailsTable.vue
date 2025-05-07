@@ -7,6 +7,7 @@
     :show-select="false"
     hide-default-footer
     hide-pagination
+    :sort-by="sortBy"
   >
     <template v-slot:group-header="{ item, columns, isGroupOpen, toggleGroup }">
       <tr>
@@ -47,7 +48,7 @@
             }}</span>
           </div>
         </td>
-        <td>
+        <td class="text-no-wrap">
           <div class="d-flex flex-column mt-2">
             <span
               v-for="{ sentTermPeriodQty, sentTermCd } in item.sentence"
@@ -107,17 +108,18 @@
     })
   );
 
+  const sortBy = ref([{ key: 'countNumber', order: 'asc' }] as const);
   const groupBy = ref([{ key: 'fullName', order: 'asc' as const }]);
   const headers = [
     { title: 'DATE', key: 'appearanceDate' },
     { title: 'COUNT', key: 'countNumber' },
     { title: 'CHARGE/ISSUE', key: 'sectionTxt' },
     { title: 'FINDING', key: 'finding' },
-    { title: 'SENTENCE/DISPOSITION TYPE', key: 'sentences' },
-    { title: 'TERM', key: 'terms' },
-    { title: 'AMOUNT', key: 'amount' },
-    { title: 'DUE DATE', key: 'dueDate' },
-    { title: 'EFFECTIVE DATE', key: 'effectiveDate' },
+    { title: 'SENTENCE/DISPOSITION TYPE', key: 'sentences', sortable: false },
+    { title: 'TERM', key: 'terms', sortable: false },
+    { title: 'AMOUNT', key: 'amount', sortable: false },
+    { title: 'DUE DATE', key: 'dueDate', sortable: false },
+    { title: 'EFFECTIVE DATE', key: 'effectiveDate', sortable: false },
   ];
 </script>
 <style scoped>

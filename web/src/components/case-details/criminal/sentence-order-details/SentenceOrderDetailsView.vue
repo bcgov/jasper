@@ -72,12 +72,6 @@
     dialogTargetProperty.value = targetProperty;
     showDialog.value = true;
   };
-
-  const judgeRecoClick = () => {
-    dialogTitle.value = `Judge's Recommendations`;
-    dialogSubtitle.value = '';
-    showDialog.value = true;
-  };
 </script>
 <style scope>
   .accused {

@@ -34,7 +34,6 @@
             value="sentence"
             border="md"
             rounded="lg"
-            disabled
           >
             Sentence/order details
           </v-tab>
@@ -63,7 +62,10 @@
         />
       </v-window-item>
       <v-window-item value="sentence">
-        <!-- <SentenceOrderDetailsView /> -->
+        <SentenceOrderDetailsView
+          v-if="isCriminal"
+          :participants="criminalDetails.participant"
+        />
       </v-window-item>
     </v-window>
   </v-container>
@@ -78,6 +80,7 @@
   import { FileDetailsType } from '@/types/shared';
   import { mdiCalendar, mdiScaleBalance, mdiTextBoxOutline } from '@mdi/js';
   import { computed, ref } from 'vue';
+  import SentenceOrderDetailsView from '../criminal/sentence-order-details/SentenceOrderDetailsView.vue';
   import AppearancesView from './AppearancesView.vue';
 
   const props = defineProps<{

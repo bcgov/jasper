@@ -100,7 +100,6 @@ describe('CriminalSummary.vue', () => {
     expect(wrapper.findComponent({ name: 'DivisionBadge' }).exists()).toBe(
       true
     );
-    expect(wrapper.findComponent({ name: 'FileMarkers' }).exists()).toBe(true);
     expect(wrapper.find('v-card-title').text()).toBe('DOE, John');
     expect(wrapper.find('v-card-subtitle').text()).toBe('LocationA');
     expect(wrapper.findAll('v-row')?.at(1)?.find('v-col').text()).toBe('Crown');

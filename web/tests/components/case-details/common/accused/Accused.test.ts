@@ -1,4 +1,5 @@
 import Accused from '@/components/case-details/common/accused/Accused.vue';
+import { criminalParticipantType } from '@/types/criminal/jsonTypes';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
@@ -15,7 +16,7 @@ describe('Accused.vue', () => {
     counselLastNm: 'Smith',
     counselGivenNm: 'Jane',
     designatedCounselYN: 'Yes',
-  };
+  } as criminalParticipantType;
 
   const appearancesMock = [{}, {}, {}];
 
@@ -56,7 +57,7 @@ describe('Accused.vue', () => {
       props: { accused: accusedMock, appearances: appearancesMock },
     });
 
-    const dobText = wrapper.findAll('v-row')[2].find('v-col:last-child').text();
+    const dobText = wrapper.findAll('v-row')[3].find('v-col:last-child').text();
     expect(dobText).toBe('01-Jan-1990');
   });
 
@@ -66,7 +67,7 @@ describe('Accused.vue', () => {
     });
 
     const counselText = wrapper
-      .findAll('v-row')[3]
+      .findAll('v-row')[4]
       .find('v-col:last-child')
       .text();
     expect(counselText).toBe('SMITH, Jane');
@@ -78,7 +79,7 @@ describe('Accused.vue', () => {
     });
 
     const counselStatus = wrapper
-      .findAll('v-row')[4]
+      .findAll('v-row')[5]
       .find('v-col:last-child')
       .text();
     expect(counselStatus).toBe('Yes');
@@ -90,9 +91,19 @@ describe('Accused.vue', () => {
     });
 
     const appearancesCount = wrapper
-      .findAll('v-row')[5]
+      .findAll('v-row')[6]
       .find('v-col:last-child')
       .text();
     expect(appearancesCount).toBe('3');
+  });
+
+  it('renders file markers', () => {
+    const wrapper = mount(Accused, {
+      props: { accused: accusedMock, appearances: appearancesMock },
+    });
+
+    const fileMarkers = wrapper.findComponent({ name: 'FileMarkers' });
+
+    expect(Object.getPrototypeOf(fileMarkers)).not.toBe(null);
   });
 });

@@ -1,30 +1,35 @@
-import { nextTick } from 'vue';
+import { FileMarkerEnum } from '@/types/common';
 import { mount } from '@vue/test-utils';
-import { describe, it, expect } from 'vitest';
 import FileMarkers from 'CMP/shared/FileMarkers.vue';
+import { describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
 
 describe('FileMarkers.vue', () => {
   const props = {
-    restrictions: [],
-    division: 'Criminal',
-    participants: [{ inCustodyYN: 'Y', detainedYN: 'N', interpreterYN: 'N' }],
-    appearances: [{ continuationYn: 'Y' }],
+    classOverride: 'pt-1',
+    markers: [
+      { marker: FileMarkerEnum.W, value: 'Y' },
+      { marker: FileMarkerEnum.IC, value: 'N' },
+      { marker: FileMarkerEnum.DO, value: 'Y' },
+      { marker: FileMarkerEnum.INT, value: 'N' },
+    ],
   };
 
-  it('renders markers based on division and props', async () => {
-    const wrapper = mount(FileMarkers, {props});
+  it('renders markers', async () => {
+    const wrapper = mount(FileMarkers, { props });
 
     await nextTick();
 
     const chips = wrapper.findAll('v-chip');
     const selectedChips = wrapper.findAll('v-chip.selected');
 
-    expect(chips.length).toBe(4); // IC, DO, CNT, INT
-    expect(selectedChips.length).toBe(2); // IC, CNT
+    expect(chips.length).toBe(4); // W, IC, DO, INT
+    expect(selectedChips.length).toBe(2); // W, INT
+    expect(chips[0].classes()).toContain('pt-1');
   });
 
   it('renders correct marker descriptions in tooltips', async () => {
-    const wrapper = mount(FileMarkers, {props});
+    const wrapper = mount(FileMarkers, { props });
 
     await nextTick();
 
@@ -32,9 +37,9 @@ describe('FileMarkers.vue', () => {
     const descriptions = tooltips.map((tooltip) => tooltip.text());
 
     expect(tooltips.length).toBe(4);
+    expect(descriptions).toContain('Warrant');
     expect(descriptions).toContain('In Custody');
     expect(descriptions).toContain('Detained Order');
-    expect(descriptions).toContain('Continuation');
     expect(descriptions).toContain('Interpreter Required');
   });
 });

@@ -112,3 +112,13 @@ export enum CourtClassEnum {
   M = 5,
   L = 6,
 }
+
+export enum FileMarkerEnum {
+  CNT = 0,
+  CPA,
+  DO,
+  IC,
+  INT,
+  LOCT,
+  W,
+}

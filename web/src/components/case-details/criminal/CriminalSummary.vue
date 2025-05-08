@@ -7,12 +7,6 @@
     </div>
     <v-card-title style="text-wrap: wrap">{{ names }}</v-card-title>
     <v-card-subtitle>{{ location }}</v-card-subtitle>
-    <FileMarkers
-      :participants
-      :appearances
-      division="Criminal"
-      class="mx-3 mt-2"
-    />
     <v-row class="mx-1 mt-2">
       <v-col cols="6" class="data-label">Proceeded</v-col>
       <v-col> {{ proceeded }}</v-col>
@@ -28,7 +22,6 @@
   </v-card>
 </template>
 <script setup lang="ts">
-  import FileMarkers from '@/components/shared/FileMarkers.vue';
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
   import { computed, ref } from 'vue';
   import DivisionBadge from '../common/DivisionBadge.vue';

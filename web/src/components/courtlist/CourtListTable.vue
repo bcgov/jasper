@@ -14,11 +14,7 @@
       {{ hoursMinsFormatter(item.estimatedTimeHour, item.estimatedTimeMin) }}
     </template>
     <template v-slot:item.fileMarkers="{ item }">
-      <file-markers
-        :appearances="[item as unknown as criminalApprDetailType]"
-        :participants="[]"
-        division="Criminal"
-      />
+      <FileMarkers class-override="ml-1 mt-1" :markers="getFileMarkers(item)" />
     </template>
     <template v-slot:item.appearanceReasonCd="{ value, item }">
       <v-tooltip :text="item.appearanceReasonDsc" location="top">
@@ -69,9 +65,10 @@
 </template>
 
 <script setup lang="ts">
+  import FileMarkers from '@/components/shared/FileMarkers.vue';
+  import { FileMarkerEnum } from '@/types/common';
   import { CourtListAppearance } from '@/types/courtlist';
   import { PcssCounsel } from '@/types/criminal';
-  import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
   import { mdiFileDocumentEditOutline, mdiNotebookEditOutline } from '@mdi/js';
   import { ref } from 'vue';
@@ -144,5 +141,15 @@
   const splitNames = (name: string) => {
     const [firstName, lastName] = name.split(' ');
     return `${lastName}, ${firstName}`;
+  };
+
+  const getFileMarkers = (item: CourtListAppearance) => {
+    const { continuationYn, inCustodyYn, detainedYn } = item;
+    return [
+      { marker: FileMarkerEnum.CNT, value: continuationYn },
+      { marker: FileMarkerEnum.IC, value: inCustodyYn },
+      { marker: FileMarkerEnum.DO, value: detainedYn },
+      { marker: FileMarkerEnum.INT, value: '' },
+    ];
   };
 </script>

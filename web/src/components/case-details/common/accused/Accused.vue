@@ -13,7 +13,11 @@
         </v-chip>
       </v-col>
     </v-row>
-
+    <v-row class="mx-1 mt-2">
+      <v-col cols="12">
+        <FileMarkers class-override="mr-2" :markers="fileMarkers" />
+      </v-col>
+    </v-row>
     <v-row class="mx-1 mt-2">
       <v-col cols="6" class="data-label">Ban</v-col>
       <v-col>
@@ -61,6 +65,8 @@
 </template>
 
 <script setup lang="ts">
+  import FileMarkers from '@/components/shared/FileMarkers.vue';
+  import { FileMarkerEnum } from '@/types/common';
   import { criminalParticipantType } from '@/types/criminal/jsonTypes';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { mdiInformationSlabCircleOutline } from '@mdi/js';
@@ -88,4 +94,12 @@
       {} as Record<string, typeof props.accused.ban>
     )
   );
+
+  const { warrantYN, inCustodyYN, detainedYN, interpreterYN } = props.accused;
+  const fileMarkers = [
+    { marker: FileMarkerEnum.W, value: warrantYN },
+    { marker: FileMarkerEnum.IC, value: inCustodyYN },
+    { marker: FileMarkerEnum.DO, value: detainedYN },
+    { marker: FileMarkerEnum.INT, value: interpreterYN },
+  ];
 </script>

@@ -1,86 +1,52 @@
 <template>
   <div>
     <v-chip
-      v-for="marker in markers"
-      :key="marker.name"
-      selected-class="selected"
+      v-for="{ key, description, value } in data"
+      :key
       rounded="lg"
       variant="outlined"
       size="small"
-      class="ml-1 mt-1"
-      :class="{ selected: marker.selected }"
+      :class="[classOverride, { selected: value }]"
+      selected-class="selected"
     >
-      {{ marker.name }}
+      {{ key }}
       <v-tooltip activator="parent" location="bottom">
-        {{ marker.description }}
+        {{ description }}
       </v-tooltip>
     </v-chip>
   </div>
 </template>
 
 <script setup lang="ts">
-  import {
-    criminalApprDetailType,
-    criminalParticipantType,
-  } from '@/types/criminal/jsonTypes';
-  import { defineProps, onMounted, ref } from 'vue';
+  import { FileMarkerEnum } from '@/types/common';
 
   const props = defineProps<{
-    division: string;
-    participants: criminalParticipantType[];
-    appearances: criminalApprDetailType[];
+    classOverride: string;
+    markers: { marker: FileMarkerEnum; value: string }[];
   }>();
 
-  const markers = ref<any>([]);
-  const selection = ref<string[]>([]);
-  const markerData = ref([{ name: 'CNT', description: 'Continuation' }]);
-  const criminalMarkers = [
-    { name: 'IC', description: 'In Custody' },
-    { name: 'DO', description: 'Detained Order' },
-    { name: 'INT', description: 'Interpreter Required' },
-  ];
-  const familyMarkers = [
-    {
-      name: 'CFCSA',
-      description: 'Child Matters',
-    },
+  const allMarkers = [
+    { marker: FileMarkerEnum.CNT, description: 'Continuation' },
+    { marker: FileMarkerEnum.CPA, description: 'Child Protection Act' },
+    { marker: FileMarkerEnum.DO, description: 'Detained Order' },
+    { marker: FileMarkerEnum.IC, description: 'In Custody' },
+    { marker: FileMarkerEnum.INT, description: 'Interpreter Required' },
+    { marker: FileMarkerEnum.LOCT, description: 'Lack of Court Time' },
+    { marker: FileMarkerEnum.W, description: 'Warrant' },
   ];
 
-  if (props.division === 'Criminal') {
-    markerData.value = [...markerData.value, ...criminalMarkers];
-  } else if (props.division === 'Family') {
-    markerData.value = [...markerData.value, ...familyMarkers];
-  }
-
-  onMounted(() => {
-    const participantFlags = {
-      W: 'warrantYN',
-      DO: 'detainedYN',
-      IC: 'inCustodyYN',
-      INT: 'interpreterYN',
+  const data = props.markers.map((m) => {
+    const match = allMarkers.find((am) => am.marker === m.marker);
+    return {
+      ...m,
+      ...match,
+      key: Object.entries(FileMarkerEnum).find(
+        ([, val]) => val === m.marker
+      )?.[0],
+      value: m.value === 'Y',
     };
-    const appearanceFlags = {
-      CNT: 'continuationYn',
-    };
-    // Match participant flags
-    selection.value = Object.keys(participantFlags)
-      .filter((key) =>
-        props.participants?.some((p) => p[participantFlags[key]] === 'Y')
-      )
-      // Match appearance flags
-      .concat(
-        Object.keys(appearanceFlags).filter((key) =>
-          props.appearances?.some((app) => app[appearanceFlags[key]] === 'Y')
-        )
-      );
-
-    markers.value = markerData.value.map((marker) => ({
-      ...marker,
-      selected: selection.value.includes(marker.name),
-    }));
   });
 </script>
-
 <style scoped>
   .v-chip {
     cursor: default;

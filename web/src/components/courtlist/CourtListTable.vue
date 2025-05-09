@@ -149,7 +149,6 @@
       { marker: FileMarkerEnum.CNT, value: continuationYn },
       { marker: FileMarkerEnum.IC, value: inCustodyYn },
       { marker: FileMarkerEnum.DO, value: detainedYn },
-      { marker: FileMarkerEnum.INT, value: '' },
     ];
   };
 </script>

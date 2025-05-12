@@ -7,7 +7,7 @@
   <accused-panel
     v-if="details"
     :accused="details.participant"
-    :activityClass="details.activityClassDesc"
+    :courtClassCd="details.courtClassCd"
     :appearances
   />
 </template>

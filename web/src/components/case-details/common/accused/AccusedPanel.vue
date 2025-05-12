@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+  import { CourtClassEnum } from '@/types/common';
   import {
     criminalApprDetailType,
     criminalParticipantType,
@@ -24,11 +25,24 @@
 
   const props = defineProps<{
     accused: criminalParticipantType[];
-    activityClass: string;
+    courtClassCd: string;
     appearances: criminalApprDetailType[];
   }>();
   const count = props.accused.length;
-  const titleText = computed(() =>
-    props.activityClass === 'Adult' ? `Accused (${count})` : `Youth (${count})`
-  );
+
+  const titleText = computed(() => {
+    let title = '';
+    switch (props.courtClassCd) {
+      case CourtClassEnum[CourtClassEnum.A]:
+        title = 'Accused';
+        break;
+      case CourtClassEnum[CourtClassEnum.Y]:
+        title = 'Youth';
+        break;
+      default:
+        title = 'Participants';
+        break;
+    }
+    return `${title} (${count})`;
+  });
 </script>

@@ -1,55 +1,61 @@
 import AccusedPanel from '@/components/case-details/common/accused/AccusedPanel.vue';
+import { CourtClassEnum } from '@/types/common';
+import {
+  criminalApprDetailType,
+  criminalParticipantType,
+} from '@/types/criminal/jsonTypes';
 import { shallowMount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 describe('AccusedPanel.vue', () => {
   const accusedMock = [
-    { partId: 1, lastNm: 'Smith' },
-    { partId: 2, lastNm: 'Johnson' },
+    { partId: 1, lastNm: 'Smith' } as unknown as criminalParticipantType,
+    { partId: 2, lastNm: 'Johnson' } as unknown as criminalParticipantType,
   ];
   const appearancesMock = [
-    { lastNm: 'Smith', details: 'Appearance 1' },
-    { lastNm: 'Johnson', details: 'Appearance 2' },
-    { lastNm: 'Smith', details: 'Appearance 3' },
+    {
+      lastNm: 'Smith',
+      details: 'Appearance 1',
+    } as unknown as criminalApprDetailType,
+    {
+      lastNm: 'Johnson',
+      details: 'Appearance 2',
+    } as unknown as criminalApprDetailType,
+    {
+      lastNm: 'Smith',
+      details: 'Appearance 3',
+    } as unknown as criminalApprDetailType,
   ];
 
   it.each([
-    ['Adult', 'Accused'],
-    ['Youth', 'Youth'],
+    [CourtClassEnum[CourtClassEnum.A], 'Accused'],
+    [CourtClassEnum[CourtClassEnum.Y], 'Youth'],
+    [CourtClassEnum[CourtClassEnum.T], 'Participants'],
   ])(
-    'renders the correct title for Adult activity class',
-    (activityClass, output) => {
+    'renders the correct title for the current court class',
+    (courtClassCd, output) => {
       const wrapper = shallowMount(AccusedPanel, {
         props: {
           accused: accusedMock,
-          activityClass: activityClass,
+          courtClassCd: courtClassCd,
           appearances: appearancesMock,
         },
       });
-      expect(wrapper.find('h5').text()).toBe(`${output} (2)`);
+      expect(wrapper.find('h5').text()).toBe(
+        `${output} (${accusedMock.length})`
+      );
     }
   );
-
-  it('renders the correct title for Youth activity class', () => {
-    const wrapper = shallowMount(AccusedPanel, {
-      props: {
-        accused: accusedMock,
-        activityClass: 'Youth',
-        appearances: appearancesMock,
-      },
-    });
-    expect(wrapper.find('h5').text()).toBe('Youth (2)');
-  });
 
   it('renders the correct number of Accused components', () => {
     const wrapper = shallowMount(AccusedPanel, {
       props: {
         accused: accusedMock,
-        activityClass: 'Adult',
+        courtClassCd: CourtClassEnum[CourtClassEnum.A],
         appearances: appearancesMock,
       },
     });
     const accusedComponents = wrapper.findAllComponents({ name: 'Accused' });
-    expect(accusedComponents).toHaveLength(2);
+    expect(accusedComponents).toHaveLength(accusedMock.length);
   });
 });

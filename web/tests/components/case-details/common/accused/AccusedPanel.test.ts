@@ -4,6 +4,7 @@ import {
   criminalApprDetailType,
   criminalParticipantType,
 } from '@/types/criminal/jsonTypes';
+import { getEnumName } from '@/utils/utils';
 import { shallowMount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
@@ -28,9 +29,9 @@ describe('AccusedPanel.vue', () => {
   ];
 
   it.each([
-    [CourtClassEnum[CourtClassEnum.A], 'Accused'],
-    [CourtClassEnum[CourtClassEnum.Y], 'Youth'],
-    [CourtClassEnum[CourtClassEnum.T], 'Participants'],
+    [getEnumName(CourtClassEnum, CourtClassEnum.A), 'Accused'],
+    [getEnumName(CourtClassEnum, CourtClassEnum.Y), 'Youth'],
+    [getEnumName(CourtClassEnum, CourtClassEnum.T), 'Participants'],
   ])(
     'renders the correct title for the current court class',
     (courtClassCd, output) => {
@@ -51,7 +52,7 @@ describe('AccusedPanel.vue', () => {
     const wrapper = shallowMount(AccusedPanel, {
       props: {
         accused: accusedMock,
-        courtClassCd: CourtClassEnum[CourtClassEnum.A],
+        courtClassCd: getEnumName(CourtClassEnum, CourtClassEnum.A),
         appearances: appearancesMock,
       },
     });

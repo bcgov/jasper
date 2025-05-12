@@ -20,6 +20,7 @@
     criminalApprDetailType,
     criminalParticipantType,
   } from '@/types/criminal/jsonTypes';
+  import { getEnumName } from '@/utils/utils';
   import { computed, defineProps } from 'vue';
   import Accused from './Accused.vue';
 
@@ -33,10 +34,10 @@
   const titleText = computed(() => {
     let title = '';
     switch (props.courtClassCd) {
-      case CourtClassEnum[CourtClassEnum.A]:
+      case getEnumName(CourtClassEnum, CourtClassEnum.A): // Adult
         title = 'Accused';
         break;
-      case CourtClassEnum[CourtClassEnum.Y]:
+      case getEnumName(CourtClassEnum, CourtClassEnum.Y): // Youth
         title = 'Youth';
         break;
       default:

@@ -239,3 +239,14 @@ export const getLookupShortDescription = (
   code: string,
   lookupCodes: LookupCode[]
 ) => lookupCodes?.find((role) => role.code === code)?.shortDesc;
+
+/**
+ * Retrieves the name of an enum based from its value.
+ * @param enumObj The enum
+ * @param value Value of the enum member
+ * @returns Name of enum member
+ */
+export const getEnumName = <T extends Record<string | number, string | number>>(
+  enumObj: T,
+  value: string | number
+): string => enumObj[value] as string;

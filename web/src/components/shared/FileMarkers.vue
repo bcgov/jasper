@@ -28,11 +28,11 @@
   const allMarkers = [
     { marker: FileMarkerEnum.CNT, description: 'Continuation' },
     { marker: FileMarkerEnum.CPA, description: 'Child Protection Act' },
-    { marker: FileMarkerEnum.DO, description: 'Detained Order' },
+    { marker: FileMarkerEnum.DO, description: 'Detention Order' },
     { marker: FileMarkerEnum.IC, description: 'In Custody' },
     { marker: FileMarkerEnum.INT, description: 'Interpreter Required' },
     { marker: FileMarkerEnum.LOCT, description: 'Lack of Court Time' },
-    { marker: FileMarkerEnum.W, description: 'Warrant' },
+    { marker: FileMarkerEnum.W, description: 'Warrant Issued' },
   ];
 
   const data = props.markers.map((m) => {

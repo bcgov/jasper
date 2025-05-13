@@ -37,9 +37,9 @@ describe('FileMarkers.vue', () => {
     const descriptions = tooltips.map((tooltip) => tooltip.text());
 
     expect(tooltips.length).toBe(4);
-    expect(descriptions).toContain('Warrant');
+    expect(descriptions).toContain('Warrant Issued');
     expect(descriptions).toContain('In Custody');
-    expect(descriptions).toContain('Detained Order');
+    expect(descriptions).toContain('Detention Order');
     expect(descriptions).toContain('Interpreter Required');
   });
 });

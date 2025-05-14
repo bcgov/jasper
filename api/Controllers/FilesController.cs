@@ -1,29 +1,29 @@
-﻿using JCCommon.Clients.FileServices;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Scv.Api.Constants;
-using Scv.Api.Helpers.Exceptions;
-using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Criminal.Detail;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Scv.Api.Constants;
+using Scv.Api.Helpers;
+using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Models.archive;
+using Scv.Api.Models.Civil.Detail;
+using Scv.Api.Models.Criminal.Detail;
+using Scv.Api.Models.Search;
 using Scv.Api.Services.Files;
 using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
-using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.archive;
-using Scv.Api.Models.Search;
 
 namespace Scv.Api.Controllers
 {
@@ -187,7 +187,9 @@ namespace Scv.Api.Controllers
         [Route("civil/search")]
         public async Task<ActionResult> SearchCivilFiles([FromQuery] FilesCivilQuery query)
         {
-            var civilFiles = await _civilFilesService.SearchAsync(query);
+            var civilFiles = query.CourtClass == CourtClassCd.C
+                ? await _civilFilesService.SearchSmallClaimsAsync(query)
+                : await _civilFilesService.SearchAsync(query);
 
             return Ok(civilFiles);
         }

@@ -9,9 +9,14 @@
 </template>
 
 <script setup lang="ts">
+  import { getCourtClassStyle } from '@/utils/utils';
   import { computed } from 'vue';
 
-  const props = defineProps<{ division: string; activityClassDesc: string }>();
+  const props = defineProps<{
+    division: string;
+    activityClassDesc: string;
+    courtClassCd: string;
+  }>();
   const getBadgeText = computed(() => {
     if (props.division?.toLowerCase() === 'criminal') {
       return `${props.division} - ${props.activityClassDesc}`;
@@ -19,9 +24,7 @@
     return props.division;
   });
 
-  const getBadgeStyle = computed(() => {
-    return props.division?.toLowerCase().replace(' ', '-');
-  });
+  const getBadgeStyle = computed(() => getCourtClassStyle(props.courtClassCd));
 </script>
 <style scoped>
   .criminal {

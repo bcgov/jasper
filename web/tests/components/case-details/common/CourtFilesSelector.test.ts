@@ -1,5 +1,6 @@
 import CourtFilesSelector from '@/components/case-details/common/CourtFilesSelector.vue';
 import { CourtClassEnum } from '@/types/common';
+import { getEnumName } from '@/utils/utils';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { ref } from 'vue';
@@ -45,51 +46,59 @@ describe('CourtFilesSelector.vue', async () => {
     expect(button.text()).toBe('View all documents');
   });
 
-  it('sets correct class name when court class division is under "criminal"', () => {
-    const wrapper = mount(CourtFilesSelector, {
-      props: {
-        files: files.value,
-        fileNumber,
-        courtClass: CourtClassEnum[CourtClassEnum.A],
-      },
-    });
-    const card = wrapper.find('v-card');
-    expect(card.classes()).toContain('criminal');
-  });
+  it.each([
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.A),
+      expectedStyle: 'criminal',
+    },
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.Y),
+      expectedStyle: 'criminal',
+    },
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.T),
+      expectedStyle: 'criminal',
+    },
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.C),
+      expectedStyle: 'small-claims',
+    },
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.L),
+      expectedStyle: 'small-claims',
+    },
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.M),
+      expectedStyle: 'small-claims',
+    },
+    {
+      courtClass: getEnumName(CourtClassEnum, CourtClassEnum.F),
+      expectedStyle: 'family',
+    },
+  ])(
+    'sets the correct court class style based on courtClassCd',
+    ({ courtClass, expectedStyle }) => {
+      const wrapper = mount(CourtFilesSelector, {
+        props: {
+          files: files.value,
+          fileNumber,
+          courtClass,
+        },
+      });
+      const card = wrapper.find('v-card');
+      expect(card.classes()).toContain(expectedStyle);
+    }
+  );
 
-  it('sets correct class name when court class division is under "small-claim"', () => {
+  it('defaults to unknown when court class is under not "criminal", "small-claim" or "family', () => {
     const wrapper = mount(CourtFilesSelector, {
       props: {
         files: files.value,
         fileNumber,
-        courtClass: CourtClassEnum[CourtClassEnum.C],
+        courtClass: '',
       },
     });
     const card = wrapper.find('v-card');
-    expect(card.classes()).toContain('small-claims');
-  });
-
-  it('sets correct class name when court class is under "family"', () => {
-    const wrapper = mount(CourtFilesSelector, {
-      props: {
-        files: files.value,
-        fileNumber,
-        courtClass: CourtClassEnum[CourtClassEnum.F],
-      },
-    });
-    const card = wrapper.find('v-card');
-    expect(card.classes()).toContain('family');
-  });
-
-  it('defaults the correct class name when court class is under not "criminal", "small-claim" or "family', () => {
-    const wrapper = mount(CourtFilesSelector, {
-      props: {
-        files: files.value,
-        fileNumber,
-        courtClass: CourtClassEnum[CourtClassEnum.M],
-      },
-    });
-    const card = wrapper.find('v-card');
-    expect(card.classes()).toContain('criminal');
+    expect(card.classes()).toContain('unknown');
   });
 });

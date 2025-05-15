@@ -2,7 +2,7 @@
   <h5 class="my-1">Case Details</h5>
   <v-card class="py-3" color="var(--bg-gray)" flat>
     <div class="ml-3 d-flex align-center">
-      <DivisionBadge :division :activityClassDesc />
+      <DivisionBadge :division :activityClassDesc :courtClassCd />
       <v-icon
         v-if="sheriffComments"
         :icon="mdiPoliceBadgeOutline"
@@ -31,6 +31,7 @@
 
   const division = props.details.courtClassDescription;
   const activityClassDesc = props.details.activityClassDesc;
+  const courtClassCd = props.details.courtClassCd;
   const sheriffComments = props.details.sheriffCommentText;
   const names = props.details.socTxt;
   const location = props.details.homeLocationAgencyName;

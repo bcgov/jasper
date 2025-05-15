@@ -28,8 +28,9 @@
   </v-card>
 </template>
 <script setup lang="ts">
-  import { KeyValueInfo, CourtClassEnum } from '@/types/common';
-  import { PropType, ref, computed } from 'vue';
+  import { KeyValueInfo } from '@/types/common';
+  import { getCourtClassStyle } from '@/utils/utils';
+  import { computed, PropType, ref } from 'vue';
 
   const fileNumber = defineModel<string>();
   const props = defineProps({
@@ -38,20 +39,7 @@
   });
   const activeTab = ref(() => fileNumber.value);
 
-  const getBannerStyle = computed(() => {
-    switch (props.courtClass) {
-      case CourtClassEnum[CourtClassEnum.A]:
-      case CourtClassEnum[CourtClassEnum.Y]:
-      case CourtClassEnum[CourtClassEnum.T]:
-        return 'criminal';
-      case CourtClassEnum[CourtClassEnum.C]:
-        return 'small-claims';
-      case CourtClassEnum[CourtClassEnum.F]:
-        return 'family';
-      default:
-        return 'criminal';
-    }
-  });
+  const getBannerStyle = computed(() => getCourtClassStyle(props.courtClass));
 </script>
 
 <style scoped>

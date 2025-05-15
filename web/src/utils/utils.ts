@@ -5,7 +5,7 @@ import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
 import { civilAppearancesListType } from '@/types/civil';
 import { civilApprDetailType } from '@/types/civil/jsonTypes';
-import { LookupCode } from '@/types/common';
+import { CourtClassEnum, LookupCode } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
 import { inject } from 'vue';
@@ -250,3 +250,25 @@ export const getEnumName = <T extends Record<string | number, string | number>>(
   enumObj: T,
   value: string | number
 ): string => enumObj[value] as string;
+
+/**
+ * Retrieves the CSS class name to represent a CourtClass
+ * @param courtClassCd The court class code
+ * @returns class name
+ */
+export const getCourtClassStyle = (courtClassCd: string): string => {
+  switch (courtClassCd) {
+    case getEnumName(CourtClassEnum, CourtClassEnum.A):
+    case getEnumName(CourtClassEnum, CourtClassEnum.Y):
+    case getEnumName(CourtClassEnum, CourtClassEnum.T):
+      return 'criminal';
+    case getEnumName(CourtClassEnum, CourtClassEnum.C):
+    case getEnumName(CourtClassEnum, CourtClassEnum.L):
+    case getEnumName(CourtClassEnum, CourtClassEnum.M):
+      return 'small-claims';
+    case getEnumName(CourtClassEnum, CourtClassEnum.F):
+      return 'family';
+    default:
+      return 'unknown';
+  }
+};

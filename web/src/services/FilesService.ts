@@ -1,6 +1,7 @@
 import { CourtFileSearchResponse } from '@/types/courtFileSearch';
 import { HttpService } from './HttpService';
 import { CivilAppearanceDetails } from '@/types/civil/jsonTypes/index';
+import { CriminalAppearanceDetails } from '@/types/criminal/jsonTypes/index'
 
 export class FilesService {
   private httpService: HttpService;
@@ -29,6 +30,12 @@ export class FilesService {
   async civilAppearanceDetails(fileId: string, appearanceId: string): Promise<CivilAppearanceDetails> {
     return this.httpService.get<any>(
       `${this.baseUrl}/civil/${fileId}/appearance-detail/${appearanceId}`
+    );
+  }
+
+  async criminalAppearanceDetails(fileId: string, appearanceId: string, partId: string): Promise<CriminalAppearanceDetails> {
+    return this.httpService.get<any>(
+      `${this.baseUrl}/criminal/${fileId}/appearance-detail/${appearanceId}/${partId}`
     );
   }
 }

@@ -45,11 +45,13 @@ describe('AppearancesView.vue', () => {
     };
   });
 
-  it('does not render cards or tables if no appearances are provided', () => {
+  it('renders default card and table if no appearances are provided', () => {
     const wrapper = mount(AppearancesView, { props: { appearances: [] } });
 
-    expect(wrapper.find('v-card').exists()).toBe(false);
-    expect(wrapper.find('v-data-table-virtual').exists()).toBe(false);
+    const card = wrapper.find('v-card');
+    expect(card.exists()).toBe(true);
+    expect(card.text()).toContain('Appearances');
+    expect(wrapper.find('v-data-table-virtual').exists()).toBe(true);
   });
 
   it('renders only past appearances', () => {

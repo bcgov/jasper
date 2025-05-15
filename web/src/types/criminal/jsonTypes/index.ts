@@ -221,3 +221,126 @@ export interface criminalFileDetailsType extends FileDetailsType {
   hearingRestriction: criminalHearingRestrictionType[];
   appearances: criminalAppearancesType;
 }
+
+export interface JustinCounsel {
+  fullName: string;
+  counselLastNm: string;
+  counselGivenNm: string;
+  counselEnteredDt: string;
+  counselPartId: string;
+  counselRelatedRepTypeCd: string;
+  counselRrepId: string;
+  partyAppearanceMethod: string;
+  partyAppearanceMethodDesc: string;
+  attendanceMethodCd: string;
+  attendanceMethodDesc: string;
+  appearanceMethodCd: string;
+  appearanceMethodDesc: string;
+}
+
+export interface CriminalAccused {
+  fullName: string;
+  partId: string;
+  partyAppearanceMethod: string;
+  partyAppearanceMethodDesc: string;
+  attendanceMethodCd: string;
+  attendanceMethodDesc: string;
+  appearanceMethodCd: string;
+  appearanceMethodDesc: string;
+}
+
+export interface Prosecutor {
+  fullName: string;
+  partId: string;
+  partyAppearanceMethod: string;
+  partyAppearanceMethodDesc: string;
+  attendanceMethodCd: string;
+  attendanceMethodDesc: string;
+  appearanceMethodCd: string;
+  appearanceMethodDesc: string;
+}
+
+export interface CriminalAdjudicator {
+  fullName: string;
+  partId: string;
+  partyAppearanceMethod: string;
+  partyAppearanceMethodDesc: string;
+  attendanceMethodCd: string;
+  attendanceMethodDesc: string;
+  appearanceMethodCd: string;
+  appearanceMethodDesc: string;
+}
+
+export interface CriminalAppearanceCount {
+  printSeqNo: string;
+  statuteSectionDsc: string;
+  statuteDsc: string;
+  appearanceReasonCd: string;
+  appearanceResultCd: string;
+  findingCd: string;
+  additionalProperties: { [key: string]: any };
+}
+
+export interface CriminalCharges extends CriminalAppearanceCount {
+  appearanceReasonDsc: string;
+  appearanceResultDesc: string;
+  findingDsc: string;
+}
+
+export interface CfcDocument {
+  docmClassification: string;
+  docmId: string;
+  issueDate: string;
+  docmFormId: string;
+  docmFormDsc: string;
+  docmDispositionDsc: string;
+  docmDispositionDate: string;
+  imageId: string;
+  documentPageCount: string;
+  additionalProperties: { [key: string]: any };
+}
+
+export interface CriminalDocument extends CfcDocument {
+  partId: string;
+  category: string;
+  documentTypeDescription: string;
+  hasFutureAppearance: boolean | null;
+}
+
+export enum CriminalFileDetailResponseCourtLevelCd {
+  P = 0,
+  S = 1,
+  A = 2,
+}
+
+export interface CriminalAppearanceMethod {
+  roleTypeDsc: string;
+  appearanceMethodDesc: string;
+  assetUsageSeqNo: string;
+  roleTypeCd: string;
+  appearanceMethodCd: string;
+  apprMethodCcn: string;
+}
+
+export interface CriminalAppearanceDetails {
+  justinNo: string;
+  appearanceId: string;
+  partId: string;
+  agencyId: string;
+  profSeqNo: string;
+  courtRoomCd: string;
+  fileNumberTxt: string;
+  appearanceDt: string;
+  justinCounsel: JustinCounsel;
+  accused: CriminalAccused;
+  prosecutor: Prosecutor;
+  adjudicator: CriminalAdjudicator;
+  judgesRecommendation: string;
+  appearanceNote: string;
+  charges: CriminalCharges[];
+  appearanceMethods: CriminalAppearanceMethod[];
+  estimatedTimeHour: string;
+  estimatedTimeMin: string;
+  initiatingDocuments: CriminalDocument[];
+  courtLevelCd: CriminalFileDetailResponseCourtLevelCd;
+}

@@ -34,6 +34,7 @@
             <CaseHeader
               :details="details"
               :activityClassCd="details.activityClassCd"
+              :fileId="fileId"
             />
             <!-- Comment this out for now as we continue to deprecate it -->
             <!-- 
@@ -183,6 +184,7 @@
       const errorText = ref('');
       const loading = ref(false);
       const fileNumber = ref('');
+      const fileId = ref('');
 
       watch(fileNumber, () => {
         reloadCaseDetails();
@@ -270,6 +272,7 @@
                 criminalFileStore.criminalFileInformation
               );
               details.value = data;
+              fileId.value = data.justinNo;
               isDataReady.value = true;
               loading.value = false;
             } else if (errorCode.value == 0) errorCode.value = 200;
@@ -587,6 +590,7 @@
         showFutureAppearances,
         showWitnesses,
         fileNumber,
+        fileId,
         loading,
         details,
         adjudicatorRestrictions: adjudicatorRestrictionsInfo,

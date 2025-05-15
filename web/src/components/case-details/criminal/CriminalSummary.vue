@@ -2,7 +2,7 @@
   <h5 class="my-1">Case Details</h5>
   <v-card color="var(--bg-gray)" flat>
     <div class="m-3 d-flex align-center">
-      <DivisionBadge division="Criminal" :activityClassDesc />
+      <DivisionBadge division="Criminal" :activityClassDesc :courtClassCd />
       <span v-if="bansExist"><b style="color: var(--text-red)">BAN</b></span>
     </div>
     <v-card-title style="text-wrap: wrap">{{ names }}</v-card-title>
@@ -31,7 +31,7 @@
   const details = ref(props.details);
   const participants = ref(details.value.participant);
   const bansExist = participants.value.some((p) => p.ban.length > 0);
-  const appearances = ref(details.value.appearances?.apprDetail);
+  const courtClassCd = props.details.courtClassCd;
   const proceeded = computed(() =>
     details.value.indictableYN === 'Y' ? 'By Indictment' : 'Summarily'
   );

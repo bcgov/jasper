@@ -14,7 +14,10 @@
       {{ hoursMinsFormatter(item.estimatedTimeHour, item.estimatedTimeMin) }}
     </template>
     <template v-slot:item.fileMarkers="{ item }">
-      <FileMarkers class-override="ml-1 mt-1" :markers="getFileMarkers(item)" />
+      <FileMarkers
+        class-override="ml-1 mt-1"
+        :markers="getFileMarkers(item) ?? []"
+      />
     </template>
     <template v-slot:item.appearanceReasonCd="{ value, item }">
       <v-tooltip :text="item.appearanceReasonDsc" location="top">
@@ -66,10 +69,10 @@
 
 <script setup lang="ts">
   import FileMarkers from '@/components/shared/FileMarkers.vue';
-  import { FileMarkerEnum } from '@/types/common';
-  import { CourtListAppearance } from '@/types/courtlist';
-  import { PcssCounsel } from '@/types/criminal';
+  import { CourtClassEnum, DivisionEnum, FileMarkerEnum } from '@/types/common';
+  import { CourtListAppearance, PcssCounsel } from '@/types/courtlist';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
+  import { getEnumName } from '@/utils/utils';
   import { mdiFileDocumentEditOutline, mdiNotebookEditOutline } from '@mdi/js';
   import { ref } from 'vue';
 
@@ -144,11 +147,78 @@
   };
 
   const getFileMarkers = (item: CourtListAppearance) => {
-    const { continuationYn, inCustodyYn, detainedYn } = item;
-    return [
+    const {
+      continuationYn,
+      lackCourtTimeYn,
+      otherFactorsYn,
+      otherFactorsComment,
+      appearanceAdjudicatorRestriction,
+    } = item;
+
+    let fileMarkers: {
+      marker: FileMarkerEnum;
+      value: string;
+      notes?: string[];
+    }[] = [
       { marker: FileMarkerEnum.CNT, value: continuationYn },
-      { marker: FileMarkerEnum.IC, value: inCustodyYn },
-      { marker: FileMarkerEnum.DO, value: detainedYn },
+      { marker: FileMarkerEnum.LOCT, value: lackCourtTimeYn },
+      {
+        marker: FileMarkerEnum.OTH,
+        value: otherFactorsYn,
+        notes:
+          otherFactorsYn === 'Y' && otherFactorsComment
+            ? [otherFactorsComment]
+            : [],
+      },
     ];
+
+    const restrictions = appearanceAdjudicatorRestriction
+      ?.sort((a, b) =>
+        a.hearingRestrictionTxt.localeCompare(b.hearingRestrictionTxt)
+      )
+      .map((ar) => ar.hearingRestrictionTxt);
+
+    // Include AR if any
+    if (restrictions && restrictions.length > 0) {
+      fileMarkers.push({
+        marker: FileMarkerEnum.ADJ,
+        value: 'Y',
+        notes: restrictions,
+      });
+    }
+
+    // Criminal
+    if (item.courtDivisionCd === DivisionEnum.R) {
+      const [continuation, ...rest] = fileMarkers;
+      const criminalFileMarkers = getCriminalFileMarkers(item);
+      fileMarkers = [continuation, ...criminalFileMarkers, ...rest];
+    }
+    // Civil
+    else if (item.courtDivisionCd === DivisionEnum.I) {
+      const civilFileMarkers = getCivilFileMarkers(item);
+      fileMarkers = [...civilFileMarkers, ...fileMarkers];
+    }
+    return fileMarkers;
+  };
+
+  const getCriminalFileMarkers = (item: CourtListAppearance) => {
+    const { condSentenceOrderYn, detainedYn, inCustodyYn } = item;
+
+    return [
+      { marker: FileMarkerEnum.CSO, value: condSentenceOrderYn },
+      { marker: FileMarkerEnum.DO, value: detainedYn },
+      { marker: FileMarkerEnum.IC, value: inCustodyYn },
+    ];
+  };
+
+  const getCivilFileMarkers = (item: CourtListAppearance) => {
+    // Family
+    if (item.courtClassCd === getEnumName(CourtClassEnum, CourtClassEnum.F)) {
+      const { cfcsaYn } = item;
+
+      return [{ marker: FileMarkerEnum.CPA, value: cfcsaYn }];
+    }
+
+    return [];
   };
 </script>

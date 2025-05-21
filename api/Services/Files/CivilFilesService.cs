@@ -162,7 +162,7 @@ namespace Scv.Api.Services.Files
             detail.Appearances = appearances;
 
             ICollection<ClParty> courtListParties = [];
-            if (detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.C
+            if ((detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.C || detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.F)
                 && detail.Appearances != null
                 && detail.Appearances.ApprDetail.Count != 0)
             {
@@ -376,6 +376,7 @@ namespace Scv.Api.Services.Files
                 var courtListParty = courtListParties.FirstOrDefault(clp => clp.PartyId == party.PartyId);
                 if (courtListParty != null)
                 {
+                    party.BirthDate = courtListParty.BirthDate;
                     party.Aliases = [.. courtListParty.PartyName.Where(p => p.NameTypeCd != "CUR")];
                 }
                 party.RoleTypeDescription = await _lookupService.GetCivilRoleTypeDescription(party.RoleTypeCd);

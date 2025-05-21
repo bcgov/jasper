@@ -28,6 +28,7 @@ export interface partyType {
   roleTypeCd: string;
   leftRightCd: string;
   selfRepresentedYN: string;
+  birthDate: string;
   counsel: partyCounselType[];
   aliases: partyAliasType[];
   additionalProperties: AdditionalProperties;

@@ -12,7 +12,7 @@ resource "aws_wafv2_ip_set" "waf_ip_set" {
 
 resource "aws_wafv2_web_acl" "waf_web_acl" {
   name        = "${var.app_name}-waf-web-acl-${var.environment}"
-  description = "Load Balancer Web Application Firewall"
+  description = "Enforces strict access control by permitting only requests from the BC Gov CIDRs ranges and health check. Other requests are blocked."
   scope       = "REGIONAL"
 
   default_action {
@@ -26,8 +26,40 @@ resource "aws_wafv2_web_acl" "waf_web_acl" {
   }
 
   rule {
-    name     = "${var.app_name}-allow-bcgov-ips-rule-${var.environment}"
+    name     = "${var.app_name}-allow-healthcheck-rule-${var.environment}"
     priority = 1
+
+    statement {
+      byte_match_statement {
+        field_to_match {
+          uri_path {
+          }
+        }
+
+        positional_constraint = "EXACTLY"
+        search_string         = "/healthcheck"
+
+        text_transformation {
+          priority = 0
+          type     = "NONE"
+        }
+      }
+    }
+
+    action {
+      allow {}
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "allow-healtcheck-rule-metric"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "${var.app_name}-allow-bcgov-ips-rule-${var.environment}"
+    priority = 2
 
     statement {
       ip_set_reference_statement {

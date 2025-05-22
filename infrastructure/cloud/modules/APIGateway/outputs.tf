@@ -3,7 +3,7 @@ output "apigw_id" {
 }
 
 output "apigw_invoke_url" {
-  value = aws_api_gateway_deployment.apigw_deployment.invoke_url
+  value = aws_api_gateway_stage.apigw_stage.invoke_url
 }
 
 output "apigw_execution_arn" {

@@ -144,6 +144,7 @@ export interface criminalParticipantType extends PersonType {
   counselEnteredDt: string;
   designatedCounselYN: string;
   charge: chargeType[];
+  ageNotice: ClAgeNotice[];
   additionalProperties: AdditionalProperties;
   additionalProp1: {};
   additionalProp2: {};
@@ -343,4 +344,14 @@ export interface CriminalAppearanceDetails {
   estimatedTimeMin: string;
   initiatingDocuments: CriminalDocument[];
   courtLevelCd: CriminalFileDetailResponseCourtLevelCd;
+}
+
+export interface ClAgeNotice {
+  eventDate: string;
+  eventTypeDsc: string;
+  detailText: string;
+  DOB: string;
+  relationship: string;
+  provenBy: string;
+  noticeTo: string;
 }

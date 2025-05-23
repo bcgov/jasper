@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using JCCommon.Clients.FileServices;
 
 namespace Scv.Api.Models.Criminal.Detail
 {
@@ -52,6 +53,8 @@ namespace Scv.Api.Models.Criminal.Detail
         /// Extended, with PartId.
         /// </summary>
         public List<CriminalBan> Ban { get; set; }
+        
+        public ICollection<ClAgeNotice> AgeNotice { get; set; }
 
         private bool? _hideJustinCounsel;
     }

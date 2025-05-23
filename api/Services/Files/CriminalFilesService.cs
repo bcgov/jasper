@@ -14,6 +14,7 @@ using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Api.Models.Criminal.Appearances;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Models.Search;
+using Scv.Api.Helpers;
 using Scv.Db.Models;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 using CriminalAppearanceMethod = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
@@ -124,6 +125,7 @@ namespace Scv.Api.Services.Files
             async Task<CriminalFileDetailResponse> FileDetails() => await _filesClient.FilesCriminalGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
             async Task<CriminalFileContent> FileContent() => await _filesClient.FilesCriminalFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
             async Task<CriminalFileAppearances> FileAppearances() => await PopulateDetailsAppearancesAsync(fileId, FutureYN.Y, HistoryYN.Y);
+            async Task<CourtList> CourtList(string agencyId, string courtRoomCd, string appearanceDt, string fileNumber) => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, courtRoomCd, appearanceDt, "CR", fileNumber);
 
             var fileDetailTask = _cache.GetOrAddAsync($"CriminalFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
             var fileContentTask = _cache.GetOrAddAsync($"CriminalFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
@@ -132,6 +134,20 @@ namespace Scv.Api.Services.Files
             var fileDetail = await fileDetailTask;
             var fileContent = await fileContentTask;
             var appearances = await appearancesTask;
+
+            IEnumerable<ClCriminalCourtList> criminalCourtLists = default;
+
+            if (appearances != null && appearances.ApprDetail.Count != 0)
+            {
+                var latestAppearance = appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
+                if (latestAppearance != null)
+                {
+                    var agencyId = await _locationService.GetLocationAgencyIdentifier(fileDetail.HomeLocationAgenId);
+                    var courtList = await _cache.GetOrAddAsync($"CriminalCourtList-{agencyId}-{latestAppearance.CourtRoomCd}-{latestAppearance.AppearanceDt}-{fileDetail.FileNumberTxt}-{_requestAgencyIdentifierId}",
+                        () => CourtList(agencyId, latestAppearance.CourtRoomCd, latestAppearance.AppearanceDt, fileDetail.FileNumberTxt));
+                    criminalCourtLists = courtList.CriminalCourtList;
+                }
+            }
 
             //CriminalFileContent can return null when an invalid fileId is inserted.
             if (fileDetail == null || fileContent == null)
@@ -142,7 +158,7 @@ namespace Scv.Api.Services.Files
             detail = await PopulateBaseDetail(detail);
             detail.Appearances = appearances;
             detail.Witness = await PopulateDetailWitnesses(detail);
-            detail.Participant = await PopulateDetailParticipants(detail, documents, fileContent.AccusedFile);
+            detail.Participant = await PopulateDetailParticipants(detail, documents, fileContent.AccusedFile, criminalCourtLists);
             detail.HearingRestriction = await PopulateDetailHearingRestrictions(detail);
             detail.Crown = PopulateDetailCrown(detail);
             return detail;
@@ -318,10 +334,13 @@ namespace Scv.Api.Services.Files
             return detail.Witness;
         }
 
-        private async Task<ICollection<CriminalParticipant>> PopulateDetailParticipants(RedactedCriminalFileDetailResponse detail, ICollection<CriminalDocument> documents, ICollection<CfcAccusedFile> accusedFiles)
+        private async Task<ICollection<CriminalParticipant>> PopulateDetailParticipants(RedactedCriminalFileDetailResponse detail, ICollection<CriminalDocument> documents, ICollection<CfcAccusedFile> accusedFiles, IEnumerable<ClCriminalCourtList> courtLists)
         {
             foreach (var participant in detail.Participant)
             {
+                participant.AgeNotice = courtLists?.Where(cl => cl.FileInformation.PartId == participant.PartId)
+                    .SelectMany(cl => cl.AgeNotice)
+                    .ToList();
                 participant.Document = documents.Where(doc => doc.PartId == participant.PartId).ToList();
                 participant.HideJustinCounsel = false;   //TODO tie this to a permission. View Witness List permission
                 //TODO COUNSEL? This would have to come from law society data, which is stored in a CSV file. 

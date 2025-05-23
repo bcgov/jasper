@@ -5,6 +5,7 @@
       v-for="accused in props.accused"
       :key="accused.partId"
       :accused="accused"
+      :courtClassCd="props.courtClassCd"
       :appearances="
         props.appearances.filter(
           (appearance) => appearance.lastNm === accused.lastNm

@@ -37,5 +37,18 @@ describe('CivilSummary.vue', () => {
 
     expect(wrapper.find('v-icon').exists()).toBe(true);
     expect(wrapper.find('v-dialog').exists()).toBe(true);
+    expect(wrapper.findAll('v-chip')).toHaveLength(1);
+  });
+
+  it('renders 2 chips to represent Division/CourtClass and CPA', async () => {
+    const wrapper = mount(CivilSummary, {
+      props: {
+        details: {
+          cfcsaFileYN: 'Y',
+        } as civilFileDetailsType,
+      },
+    });
+
+    expect(wrapper.findAll('v-chip')).toHaveLength(2);
   });
 });

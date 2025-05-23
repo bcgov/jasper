@@ -208,6 +208,7 @@ export interface civilFileDetailsType extends FileDetailsType {
   commentToJudgeTxt: string;
   sheriffCommentText: string;
   fileCommentText: string;
+  cfcsaFileYN: string;
   party: partyType[];
   document: civilDocumentType[];
   referenceDocument: civilReferenceDocumentJsonType[];

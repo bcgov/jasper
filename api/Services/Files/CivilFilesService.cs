@@ -107,14 +107,9 @@ namespace Scv.Api.Services.Files
             var message = totalCount > 100
                 ? "More than 100 records matched the search criteria, only the first 100 are returned"
                 : null;
-            var combinedFileDetails = result.SelectMany(r =>
-                r.FileDetail.Select(file =>
-                {
-                    // Group everything under Small Claims
-                    file.CourtClassCd = CourtClassCd.C;
-                    return file;
-                })
-           ).Take(totalCount > 100 ? 100 : totalCount);
+            var combinedFileDetails = result
+                .SelectMany(r => r.FileDetail)
+                .Take(totalCount > 100 ? 100 : totalCount);
 
             var finalResult = new FileSearchResponse
             {

@@ -3,6 +3,12 @@
   <v-card class="py-3" color="var(--bg-gray)" flat>
     <div class="ml-3 d-flex align-center">
       <DivisionBadge :division :activityClassDesc :courtClassCd />
+      <DivisionBadge
+        v-if="isCPA"
+        division="CPA"
+        :activityClassDesc
+        :courtClassCd
+      />
       <v-icon
         v-if="sheriffComments"
         :icon="mdiPoliceBadgeOutline"
@@ -35,6 +41,7 @@
   const sheriffComments = props.details.sheriffCommentText;
   const names = props.details.socTxt;
   const location = props.details.homeLocationAgencyName;
+  const isCPA = props.details.cfcsaFileYN === 'Y';
 </script>
 <style scoped>
   .v-card {

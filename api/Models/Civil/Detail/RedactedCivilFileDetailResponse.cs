@@ -28,6 +28,7 @@ namespace Scv.Api.Models.Civil.Detail
         public string HomeLocationAgencyCode { get; set; }
         public string HomeLocationRegionName { get; set; }
         public string SheriffCommentText { get; set; }
+        public string CfcsaFileYN { get; set; }
 
         /// <summary>
         /// Extended party object. Hides fields.

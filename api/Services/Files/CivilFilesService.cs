@@ -70,6 +70,57 @@ namespace Scv.Api.Services.Files
 
         #region Methods
 
+        /// <summary>
+        /// Search for Civil Small Claims, Motor Vehicle Accidents and Enforcement/Legislated Statute civil files. This is necessary because the class applied is inconsistent as per JASPER-394.
+        /// </summary>
+        /// <param name="fcq">Civil File Search Parameters</param>
+        /// <returns>Combined FileSearchResponse of all 3 classes</returns>
+        public async Task<FileSearchResponse> SearchSmallClaimsAsync(FilesCivilQuery fcq)
+        {
+            // Pass correct CourtClass
+            async Task<FileSearchResponse> GetSmallClaimsTask() => await this.SearchAsync(fcq);
+
+            var mvaQuery = _mapper.Map<FilesCivilQuery>(fcq);
+            var enforcementQuery = _mapper.Map<FilesCivilQuery>(fcq);
+
+            mvaQuery.CourtClass = CourtClassCd.M;
+            enforcementQuery.CourtClass = CourtClassCd.L;
+
+            async Task<FileSearchResponse> GetMVATask() =>
+                await this.SearchAsync(mvaQuery);
+            async Task<FileSearchResponse> GetEnforcementTask() =>
+                await this.SearchAsync(enforcementQuery);
+
+            // Query all 3 in parallel
+            var searchFilesTasks = new List<Task<FileSearchResponse>>
+            {
+                GetSmallClaimsTask(),
+                GetMVATask(),
+                GetEnforcementTask()
+            };
+            var result = await searchFilesTasks.WhenAll();
+
+            // Consolidate result
+            var totalCount = result
+                .Select(r => int.TryParse(r.RecCount, out var val) ? val : 0)
+                .Sum();
+            var message = totalCount > 100
+                ? "More than 100 records matched the search criteria, only the first 100 are returned"
+                : null;
+            var combinedFileDetails = result
+                .SelectMany(r => r.FileDetail)
+                .Take(totalCount > 100 ? 100 : totalCount);
+
+            var finalResult = new FileSearchResponse
+            {
+                RecCount = totalCount.ToString(),
+                FileDetail = combinedFileDetails.ToList(),
+                ResponseMessageTxt = message
+            };
+
+            return finalResult;
+        }
+
         public async Task<FileSearchResponse> SearchAsync(FilesCivilQuery fcq)
         {
             fcq.FilePermissions =

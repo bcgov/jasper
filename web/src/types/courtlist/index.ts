@@ -262,7 +262,7 @@ export interface CourtListAppearance {
   justinApprId: string;
   ceisAppearanceId: string;
   jcmComments?: JcmComment2[];
-  appearanceAdjudicatorRestriction?: any[];
+  appearanceAdjudicatorRestriction?: AppearanceAdjudicatorRestriction[];
   stoodDownJCMYn: string;
   courtClassCd: string;
   appearanceSequenceNumber: string;
@@ -339,4 +339,15 @@ export interface JcmComment2 {
   updDtm: string;
   rotaInitialsCd: string;
   fullName: string;
+}
+
+export interface AppearanceAdjudicatorRestriction {
+  appearanceAdjudicatorRestrictionId: number;
+  hearingRestrictionId: number;
+  hearingRestrictionCd: string;
+  judgeId: number;
+  judgesInitials: string;
+  fileNoTxt: string;
+  hearingRestrictionTxt: string;
+  hasIssue: boolean;
 }

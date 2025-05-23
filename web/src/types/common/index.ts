@@ -114,11 +114,14 @@ export enum CourtClassEnum {
 }
 
 export enum FileMarkerEnum {
-  CNT = 0,
+  ADJ = 0,
+  CNT,
   CPA,
+  CSO,
   DO,
   IC,
   INT,
   LOCT,
+  OTH,
   W,
 }

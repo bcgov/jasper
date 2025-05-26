@@ -228,7 +228,7 @@ module "ecs_api_td" {
     },
     {
       name  = "AWS_API_GATEWAY_URL"
-      value = "${module.apigw.apigw_invoke_url}${var.environment}"
+      value = "${module.apigw.apigw_invoke_url}"
     }
   ]
   secret_env_variables = module.secrets_manager.api_secrets

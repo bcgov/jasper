@@ -44,10 +44,10 @@
 
 <style scoped>
   .active-tab {
-    background-color: var(--bg-white) !important;
+    background-color: var(--bg-white-500) !important;
   }
   .active-tab:hover {
-    color: var(--text-black) !important;
+    color: var(--text-black-500) !important;
   }
   .v-tab {
     text-decoration: none !important;
@@ -55,21 +55,21 @@
   /* Dark mode styling overrides */
   .v-theme--dark .active-tab {
     background-color: var(--bg-black) !important;
-    color: var(--text-white) !important;
+    color: var(--text-white-500) !important;
   }
   .v-theme--dark .active-tab:hover {
-    color: var(--text-white) !important;
+    color: var(--text-white-500) !important;
   }
 
   .criminal {
-    background-color: var(--bg-light-blue);
+    background-color: var(--bg-blue-300);
   }
 
   .small-claims {
-    background-color: var(--bg-light-purple);
+    background-color: var(--bg-purple-300);
   }
 
   .family {
-    background-color: var(--bg-light-green);
+    background-color: var(--bg-green-300);
   }
 </style>

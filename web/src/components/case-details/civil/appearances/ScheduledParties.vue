@@ -43,7 +43,7 @@
 
 <style scoped>
   .party-table {
-    background-color: var(--bg-very-light-gray) !important;
+    background-color: var(--bg-gray-200) !important;
     padding-bottom: 2rem !important;
   }
 </style>

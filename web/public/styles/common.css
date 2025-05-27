@@ -18,7 +18,7 @@ select {
 }
 
 .table-banner {
-  background-color: var(--bg-blue) !important;
+  background-color: var(--bg-blue-500) !important;
   color: white !important;
   text-transform: uppercase !important;
   height: 1rem !important;
@@ -27,11 +27,11 @@ select {
 }
 
 tbody tr:nth-of-type(odd) {
-  background-color: var(--bg-translucent-black);
+  background-color: var(--bg-black-50);
 }
 
 .expanded {
-  background-color: var(--bg-off-white) !important;
+  background-color: var(--bg-white-600) !important;
   border: thin solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
   border-top: 0 !important;
 }

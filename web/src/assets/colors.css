@@ -1,31 +1,32 @@
 :root {
   /* Background colors */
-  --bg-light-blue: #72acca;
-  --bg-light-gray: #f8f7fa;
-  --bg-light-green: #86b28a;
-  --bg-light-purple: #ae81be;
+  --bg-black-50: rgba(0, 0, 0, 0.05);
 
-  --bg-pale-blue: #d9e5f4;
+  --bg-blue-100: #d9e5f4;
+  --bg-blue-300: #72acca;
+  --bg-blue-500: #4092c1;
 
-  --bg-blue: #4092c1;
-  --bg-gray: #efedf5;
-  --bg-very-light-gray: #f5f5f5;
-  --bg-green: #2e8540;
-  --bg-purple: #79368f;
-  --bg-white: #ffffff;
-  --bg-off-white: #f9f9f9;
-  --bg-translucent-black: rgba(0, 0, 0, 0.05);
+  --bg-gray-200: #f5f5f5;
+  --bg-gray-300: #f8f7fa;
+  --bg-gray-500: #efedf5;
+
+  --bg-green-300: #86b28a;
+  --bg-green-500: #2e8540;
+
+  --bg-purple-300: #ae81be;
+  --bg-purple-500: #79368f;
+
+  --bg-white-500: #ffffff;
+  --bg-white-600: #f9f9f9;
 
   /* Border colors */
-  --border-blue: #4092c1;
+  --border-blue-500: #4092c1;
 
   /* Text colors */
-  --text-deep-blue: #183a4a; /* base font color*/
-
-  --text-light-gray: #8c8c8c;
-
-  --text-black: #000000;
-  --text-blue: #4092c1;
-  --text-red: #db1e05;
-  --text-white: #ffffff;
+  --text-blue-800: #183a4a; /* base font color*/
+  --text-gray-300: #8c8c8c;
+  --text-black-500: #000000;
+  --text-blue-500: #4092c1;
+  --text-red-500: #db1e05;
+  --text-white-500: #ffffff;
 }

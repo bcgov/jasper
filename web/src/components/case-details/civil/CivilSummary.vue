@@ -1,6 +1,6 @@
 <template>
   <h5 class="my-1">Case Details</h5>
-  <v-card class="py-3" color="var(--bg-gray)" flat>
+  <v-card class="py-3" color="var(--bg-gray-500)" flat>
     <div class="ml-3 d-flex align-center">
       <DivisionBadge :division :activityClassDesc :courtClassCd />
       <DivisionBadge
@@ -12,7 +12,7 @@
       <v-icon
         v-if="sheriffComments"
         :icon="mdiPoliceBadgeOutline"
-        color="var(--text-red)"
+        color="var(--text-red-500)"
         @click="showSheriffCommentsModal = true"
       />
     </div>

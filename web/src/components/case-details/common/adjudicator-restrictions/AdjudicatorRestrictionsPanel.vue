@@ -28,8 +28,8 @@
 </script>
 <style scoped>
   .ar-card {
-    background-color: var(--bg-light-gray);
-    border: 2px solid var(--border-blue);
+    background-color: var(--bg-gray-300);
+    border: 2px solid var(--border-blue-500);
     border-radius: 0.5rem;
   }
 </style>

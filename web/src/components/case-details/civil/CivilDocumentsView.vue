@@ -27,7 +27,7 @@
   >
     <v-card
       class="my-6"
-      color="var(--bg-gray)"
+      color="var(--bg-gray-500)"
       elevation="0"
       v-if="documents?.length > 0"
     >
@@ -166,7 +166,7 @@
     props.documents.filter(filterByType)
   );
 
-  const typeCount = (type: any): number => 
+  const typeCount = (type: any): number =>
     props.documents.filter((doc) => doc.documentTypeCd === type.value).length;
 
   onMounted(async () => {

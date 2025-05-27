@@ -44,7 +44,7 @@
       <v-col>{{ counselName }}</v-col>
     </v-row>
     <v-row
-      class="mx-1 mt-2"
+      class="mx-1 mt-0"
       v-if="courtClassCd == getEnumName(CourtClassEnum, CourtClassEnum.Y)"
     >
       <v-col cols="6" class="data-label">Age/Notice</v-col>
@@ -89,7 +89,7 @@
     appearances: any;
     courtClassCd: string;
   }>();
-  
+
   // How we consider AgeNotice to be 'Yes' or 'No' could possibly be subject to change,
   // we are just pending more information on the requirements.
   const ageNotice = computed(() => {

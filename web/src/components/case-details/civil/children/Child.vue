@@ -12,15 +12,15 @@
         </v-chip>
       </v-col>
     </v-row>
-    <v-row>
+    <v-row class="mx-1">
       <v-col cols="6" class="data-label">Age</v-col>
       <v-col>{{ age }}</v-col>
     </v-row>
-    <v-row>
+    <v-row class="mx-1 mt-0">
       <v-col cols="6" class="data-label">DOB</v-col>
       <v-col>{{ formatDateToDDMMMYYYY(child.birthDate) }}</v-col>
     </v-row>
-    <v-row>
+    <v-row class="mx-1 mt-0">
       <v-col cols="6" class="data-label">Counsel</v-col>
       <v-col>
         <LabelWithTooltip :values="counselNames" />

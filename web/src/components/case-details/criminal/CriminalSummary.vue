@@ -1,6 +1,6 @@
 <template>
   <h5 class="my-1">Case Details</h5>
-  <v-card color="var(--bg-gray)" flat>
+  <v-card color="var(--bg-gray-500)" flat>
     <div class="mx-2 d-flex align-center pt-2">
       <DivisionBadge
         division="Criminal"
@@ -8,7 +8,9 @@
         :courtClassCd
         class="my-0"
       />
-      <span v-if="bansExist"><b style="color: var(--text-red)">BAN</b></span>
+      <span v-if="bansExist"
+        ><b style="color: var(--text-red-500)">BAN</b></span
+      >
     </div>
     <v-card-item>
       <v-card-title class="my-0" style="text-wrap: wrap">

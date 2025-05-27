@@ -11,7 +11,7 @@
         class="my-0"
         type="table"
         :height="200"
-        color="var(--bg-very-light-gray)"
+        color="var(--bg-gray-200)"
         :loading="loading"
       >
         <v-tabs-window-item value="charges">

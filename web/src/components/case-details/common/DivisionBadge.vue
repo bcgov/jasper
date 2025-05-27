@@ -28,14 +28,14 @@
 </script>
 <style scoped>
   .criminal {
-    background-color: var(--bg-blue);
+    background-color: var(--bg-blue-500);
   }
 
   .family {
-    background-color: var(--bg-green);
+    background-color: var(--bg-green-500);
   }
 
   .small-claims {
-    background-color: var(--bg-purple);
+    background-color: var(--bg-purple-500);
   }
 </style>

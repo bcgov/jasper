@@ -5,7 +5,7 @@
         <v-chip
           variant="flat"
           rounded="lg"
-          color="var(--bg-pale-blue)"
+          color="var(--bg-blue-100)"
           class="w-100 justify-center align-center text-uppercase"
         >
           {{ getName }}
@@ -62,6 +62,6 @@
 </script>
 <style scoped>
   .v-chip {
-    color: var(--text-deep-blue);
+    color: var(--text-blue-800);
   }
 </style>

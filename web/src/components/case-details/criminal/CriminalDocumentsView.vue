@@ -30,7 +30,7 @@
   >
     <v-card
       class="my-6"
-      color="var(--bg-gray)"
+      color="var(--bg-gray-500)"
       elevation="0"
       v-if="unfilteredDocuments?.length > 0"
     >
@@ -122,7 +122,8 @@
     item.category?.toLowerCase() === selectedCategory.value?.toLowerCase();
   const filterByAccused = (item: any) =>
     !selectedAccused.value ||
-    (item.fullName && formatFromFullname(item.fullName) === selectedAccused.value);
+    (item.fullName &&
+      formatFromFullname(item.fullName) === selectedAccused.value);
 
   const unfilteredDocuments = computed(
     () =>
@@ -149,9 +150,9 @@
   const documentCategories = ref<string[]>([
     ...new Set(
       unfilteredDocuments.value
-      ?.filter((doc) => doc.category)
-      .map((doc) => formatCategory(doc)) || []
-    )
+        ?.filter((doc) => doc.category)
+        .map((doc) => formatCategory(doc)) || []
+    ),
   ]);
 
   const groupBy = ref([

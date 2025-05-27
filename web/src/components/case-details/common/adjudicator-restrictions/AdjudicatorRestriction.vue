@@ -21,15 +21,15 @@
 <style scoped>
   .seized,
   .assigned {
-    color: var(--text-blue);
+    color: var(--text-blue-500);
   }
 
   .disqualified,
   .appealed {
-    color: var(--text-red);
+    color: var(--text-red-500);
   }
 
   p {
-    color: var(--text-light-gray);
+    color: var(--text-gray-300);
   }
 </style>

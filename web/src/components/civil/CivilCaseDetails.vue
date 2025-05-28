@@ -67,24 +67,22 @@
       </v-skeleton-loader>
     </v-container>
 
-    <b-modal
-      v-if="isMounted"
-      v-model="showSealedWarning"
-      id="bv-modal-ban"
-      hide-header
-      hide-footer
-    >
-      <b-card v-if="isSealed">
-        This file has been sealed. Only authorized users are permitted access to
-        sealed files.
-      </b-card>
-      <b-card v-else-if="docIsSealed">
-        This File contains one or more Sealed Documents.
-      </b-card>
-      <!-- <b-button class="mt-3 bg-primary" @click="$bvModal.hide('bv-modal-ban')"
-        >Continue</b-button
-      > -->
-    </b-modal>
+    <v-dialog v-model="showSealedWarning">
+      <v-card class="pa-3">
+        <v-card-text class="pa-3">
+          <p class="m-0" v-if="isSealed">
+            This file has been sealed. Only authorized users are permitted
+            access to sealed files.
+          </p>
+          <p class="m-0" v-else-if="docIsSealed">
+            This File contains one or more Sealed Documents.
+          </p>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn-tertiary text="Continue" @click="showSealedWarning = false" />
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -244,10 +242,10 @@
               adjudicatorRestrictionsJson.value = data.hearingRestriction;
               documentsDetailsJson = [...data.document];
               providedDocumentsDetailsJson = [...data.referenceDocument];
-              if (data.sealedYN == 'Y') {
-                isSealed.value = true;
-              }
+              isSealed.value = data.sealedYN === 'Y';
+
               ExtractCaseInfo();
+
               if (
                 adjudicatorRestrictionsInfo.value.length > 0 ||
                 leftPartiesInfo.length > 0 ||
@@ -275,9 +273,7 @@
                 civilFileStore.updateCivilFile(
                   civilFileStore.civilFileInformation
                 );
-                if (isSealed.value || docIsSealed.value) {
-                  showSealedWarning.value = true;
-                }
+                showSealedWarning.value = isSealed.value || docIsSealed.value;
                 details.value = data;
                 fileId.value = data.physicalFileId;
                 isDataReady.value = true;
@@ -571,12 +567,9 @@
                 docInfo.act.push({ code: act.actCd, description: act.actDsc });
               }
             }
-            if (jDoc.sealedYN == 'Y') {
-              docIsSealed.value = true;
-              docInfo.sealed = true;
-            } else {
-              docInfo.sealed = false;
-            }
+
+            docIsSealed.value = jDoc.sealedYN === 'Y';
+            docInfo.sealed = jDoc.sealedYN === 'Y';
             docInfo.documentId = jDoc.civilDocumentId;
             docInfo.pdfAvail = jDoc.imageId ? true : false;
             if (docInfo.documentType.toUpperCase() == 'ORDER') {
@@ -697,6 +690,9 @@
         documentsInfo.value.length = 0;
         providedDocumentsInfo.value.length = 0;
         summaryDocumentsInfo.value.length = 0;
+        showSealedWarning.value = false;
+        isSealed.value = false;
+        docIsSealed.value = false;
 
         getFileDetails();
       };
@@ -739,5 +735,13 @@
 
   body {
     overflow-x: hidden;
+  }
+
+  .v-dialog {
+    max-width: 500px;
+  }
+
+  .v-dialog .v-card {
+    border-radius: 1rem;
   }
 </style>

@@ -67,6 +67,11 @@ const routes: RouteRecordRaw[] = [
     component: () =>
       import('@/components/courtfilesearch/CourtFileSearchView.vue'),
   },
+  {
+    path: '/pdf-viewer',
+    name: 'NutrientContainer',
+    component: () => import('@/components/pdf/NutrientContainer.vue'),
+  },
 ];
 
 const router = createRouter({

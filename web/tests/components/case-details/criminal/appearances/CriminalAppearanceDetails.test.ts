@@ -44,7 +44,7 @@ describe('CriminalAppearanceDetails.vue', () => {
     expect(tabs.length).toBe(3);
     expect(tabs[0].text()).toBe('Charges');
     expect(tabs[1].text()).toBe('Appearance Methods');
-    expect(tabs[2].text()).toBe('Current Counsel');
+    expect(tabs[2].text()).toBe('Counsel');
   });
 
   it('calls appearance details api with correct parameters', async () => {

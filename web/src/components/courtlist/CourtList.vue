@@ -62,12 +62,13 @@
 <script setup lang="ts">
   import { CourtListService } from '@/services';
   import { HttpService } from '@/services/HttpService';
+  import { usePDFViewerStore } from '@/stores';
+  import { DivisionEnum } from '@/types/common';
   import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
   import { computed, inject, provide, ref } from 'vue';
   import CourtListTable from './CourtListTable.vue';
   import CourtListTableSearch from './CourtListTableSearch.vue';
-  import { DivisionEnum } from '@/types/common';
 
   const errorCode = ref(0);
   const searchingRequest = ref(false);
@@ -78,7 +79,9 @@
   const search = ref('');
   const selectedFilesFilter = ref();
   const selectedAMPMFilter = ref();
+  const documentUrls = ref<string[]>([]);
   const selectedItems = ref([]);
+  const pdfStore = usePDFViewerStore();
   const cardTablePairings = ref<
     {
       card: CourtListCardInfo;
@@ -198,7 +201,6 @@
       });
     });
 
-    // Open tab(s)
     uniqueMap.forEach((value, key) => {
       let queryParams: Record<string, any> = {
         courtDivision: value.division,
@@ -214,8 +216,12 @@
         queryParams.additionsList = reportType === 'Additions' ? 'Y' : 'N';
       }
 
-      const url = courtListService.generateReportUrl(queryParams);
-      window.open(url, '_blank');
+      documentUrls.value.push(courtListService.generateReportUrl(queryParams));
     });
+    pdfStore.addUrls({
+      urls: documentUrls.value,
+    });
+
+    window.open('/pdf-viewer', 'pdf-viewer');
   };
 </script>

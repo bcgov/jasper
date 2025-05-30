@@ -2,7 +2,7 @@
   <v-tabs v-model="tab" align-tabs="start" slider-color="primary">
     <v-tab value="charges">Charges</v-tab>
     <v-tab value="methods">Appearance Methods</v-tab>
-    <v-tab value="counsel" v-if="isPast">Current Counsel</v-tab>
+    <v-tab value="counsel" v-if="isPast">Counsel</v-tab>
   </v-tabs>
 
   <v-card-text>

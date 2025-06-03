@@ -4,7 +4,7 @@ using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 
-public class GroupDtoValidator : AccessControlManagementDtoValidator<GroupDto>
+public class GroupDtoValidator : BaseDtoValidator<GroupDto>
 {
     public GroupDtoValidator() : base()
     {

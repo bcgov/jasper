@@ -4,7 +4,7 @@ using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 
-public class RoleDtoValidator : AccessControlManagementDtoValidator<RoleDto>
+public class RoleDtoValidator : BaseDtoValidator<RoleDto>
 {
     public RoleDtoValidator() : base()
     {

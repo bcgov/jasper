@@ -4,7 +4,7 @@ using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 
-public class UserDtoValidator : AccessControlManagementDtoValidator<UserDto>
+public class UserDtoValidator : BaseDtoValidator<UserDto>
 {
     private readonly string VALID_EMAIL_ADDRESS_PATTERN = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
 

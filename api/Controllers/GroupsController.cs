@@ -11,8 +11,8 @@ namespace Scv.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class GroupsController(
-    IAccessControlManagementService<GroupDto> groupService,
+    ICrudService<GroupDto> groupService,
     IValidator<GroupDto> validator
-) : AccessControlManagementControllerBase<IAccessControlManagementService<GroupDto>, GroupDto>(groupService, validator)
+) : CrudControllerBase<ICrudService<GroupDto>, GroupDto>(groupService, validator)
 {
 }

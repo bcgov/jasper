@@ -146,9 +146,9 @@ namespace Scv.Api.Infrastructure
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
             {
-                services.AddScoped<IAccessControlManagementService<PermissionDto>, PermissionService>();
-                services.AddScoped<IAccessControlManagementService<RoleDto>, RoleService>();
-                services.AddScoped<IAccessControlManagementService<GroupDto>, GroupService>();
+                services.AddScoped<ICrudService<PermissionDto>, PermissionService>();
+                services.AddScoped<ICrudService<RoleDto>, RoleService>();
+                services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<IUserService, UserService>();
             }
 

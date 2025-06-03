@@ -15,14 +15,14 @@ using Xunit;
 namespace tests.api.Controllers;
 public class RolesControllerTests
 {
-    private readonly Mock<IAccessControlManagementService<RoleDto>> _mockRoleService;
+    private readonly Mock<ICrudService<RoleDto>> _mockRoleService;
     private readonly Mock<IValidator<RoleDto>> _mockValidator;
     private readonly RolesController _controller;
     private readonly Faker _faker;
 
     public RolesControllerTests()
     {
-        _mockRoleService = new Mock<IAccessControlManagementService<RoleDto>>();
+        _mockRoleService = new Mock<ICrudService<RoleDto>>();
         _mockValidator = new Mock<IValidator<RoleDto>>();
         _controller = new RolesController(
             _mockRoleService.Object,

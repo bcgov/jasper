@@ -3,23 +3,23 @@ using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Models;
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
 
 /// <summary>
-/// Base Controller class for handling requests related to User Management (Permission, Role, Group and User)
+/// Base Controller class for handling requests CRUD operations
 /// </summary>
 /// <typeparam name="TService">The main service class used in this class.</typeparam>
 /// <typeparam name="TDto">The DTO type used in this class.</typeparam>
 /// <param name="service">Instance of TService</param>
 /// <param name="validator">Validator for DTO type</param>
-public abstract class AccessControlManagementControllerBase<TService, TDto>(
+public abstract class CrudControllerBase<TService, TDto>(
     TService service,
     IValidator<TDto> validator) : ControllerBase
-    where TService : IAccessControlManagementService<TDto>
-    where TDto : AccessControlManagementDto
+    where TService : ICrudService<TDto>
+    where TDto : BaseDto
 {
     public TService Service { get; } = service;
     public IValidator<TDto> Validator { get; } = validator;

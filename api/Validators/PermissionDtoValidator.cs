@@ -3,7 +3,7 @@ using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 
-public class PermissionDtoValidator : AccessControlManagementDtoValidator<PermissionDto>
+public class PermissionDtoValidator : BaseDtoValidator<PermissionDto>
 {
     public PermissionDtoValidator() : base()
     {

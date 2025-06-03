@@ -153,6 +153,7 @@
       otherFactorsYn,
       otherFactorsComment,
       appearanceAdjudicatorRestriction,
+      interpreterYN,
     } = item;
 
     let fileMarkers: {
@@ -162,6 +163,7 @@
     }[] = [
       { marker: FileMarkerEnum.CNT, value: continuationYn },
       { marker: FileMarkerEnum.LOCT, value: lackCourtTimeYn },
+      { marker: FileMarkerEnum.INT, value: interpreterYN },
       {
         marker: FileMarkerEnum.OTH,
         value: otherFactorsYn,

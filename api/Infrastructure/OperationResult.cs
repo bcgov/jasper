@@ -20,9 +20,9 @@ public class OperationResult
 
 public class OperationResult<T> : OperationResult
 {
-    public T? Payload { get; }
+    public T Payload { get; }
 
-    private OperationResult(bool succeeded, T? payload, IEnumerable<string> errors)
+    private OperationResult(bool succeeded, T payload, IEnumerable<string> errors)
         : base(succeeded, errors)
     {
         Payload = payload;

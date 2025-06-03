@@ -16,6 +16,7 @@ namespace Scv.Api.Helpers
         public const string PreferredUsername = "preferred_username";
         public const string JasperPermission = "jasper_permission";
         public const string JasperRole = "jasper_role";
+        public const string JasperUserId = "jasper_user_id";
 
         public static readonly List<string> UsedKeycloakClaimTypes =
         [

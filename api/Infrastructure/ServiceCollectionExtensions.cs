@@ -24,12 +24,12 @@ using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
+using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 using PCSSJudicialCalendarServices = PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
-using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 
 namespace Scv.Api.Infrastructure
 {
@@ -83,6 +83,7 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
             services.AddScoped<IPermissionRepository, PermissionRepository>();
+            services.AddScoped<IJudicialBinderRepository, JudicialBinderRepository>();
 
             return services;
         }

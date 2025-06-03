@@ -153,7 +153,6 @@
       otherFactorsYn,
       otherFactorsComment,
       appearanceAdjudicatorRestriction,
-      interpreterYN,
     } = item;
 
     let fileMarkers: {
@@ -163,7 +162,6 @@
     }[] = [
       { marker: FileMarkerEnum.CNT, value: continuationYn },
       { marker: FileMarkerEnum.LOCT, value: lackCourtTimeYn },
-      { marker: FileMarkerEnum.INT, value: interpreterYN },
       {
         marker: FileMarkerEnum.OTH,
         value: otherFactorsYn,
@@ -187,6 +185,10 @@
         value: 'Y',
         notes: restrictions,
       });
+    }
+    // Include INT if any
+    if(item.courtDivisionCd === DivisionEnum.R && item.interpreterYN === 'Y') {
+      fileMarkers.push({ marker: FileMarkerEnum.INT, value: 'Y' });
     }
 
     // Criminal

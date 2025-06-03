@@ -83,7 +83,6 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
             services.AddScoped<IPermissionRepository, PermissionRepository>();
-            services.AddScoped<IJudicialBinderRepository, JudicialBinderRepository>();
 
             return services;
         }

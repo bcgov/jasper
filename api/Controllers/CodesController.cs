@@ -42,9 +42,9 @@ namespace Scv.Api.Controllers
         }
 
         /// <summary>
-        /// Gets Role information
+        /// Gets External Role information
         /// </summary>
-        /// <returns>Role Lookups</returns>
+        /// <returns>External Role Lookups</returns>
         [HttpGet]
         [Route("roles")]
         public async Task<ActionResult<List<LookupCode>>> GetRoles()
@@ -57,7 +57,7 @@ namespace Scv.Api.Controllers
                 ShortDesc = level.ShortDesc,
                 Code = level.Code
             });
-            
+
             return Ok(rolesList);
         }
     }

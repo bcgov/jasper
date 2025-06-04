@@ -10,13 +10,13 @@ namespace Scv.Api.Helpers
         public const string JcAgencyCode = nameof(CustomClaimTypes) + nameof(JcAgencyCode);
         public const string IsSupremeUser = nameof(CustomClaimTypes) + nameof(IsSupremeUser);
         public const string CivilFileAccess = nameof(CustomClaimTypes) + nameof(CivilFileAccess);
-        public const string Role = nameof(CustomClaimTypes) + nameof(Role);
+        public const string ExternalRole = nameof(CustomClaimTypes) + nameof(ExternalRole);
         public const string SubRole = nameof(CustomClaimTypes) + nameof(SubRole);
         public const string Groups = "groups";
         public const string PreferredUsername = "preferred_username";
-        public const string JasperPermission = "jasper_permission";
-        public const string JasperRole = "jasper_role";
-        public const string UserId = "jasper_user_id";
+        public const string Permission = nameof(CustomClaimTypes) + nameof(Permission);
+        public const string Role = nameof(CustomClaimTypes) + nameof(Role);
+        public const string UserId = nameof(CustomClaimTypes) + nameof(UserId);
 
         public static readonly List<string> UsedKeycloakClaimTypes =
         [

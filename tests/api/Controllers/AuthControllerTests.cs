@@ -63,7 +63,7 @@ namespace tests.api.Controllers
 
             var actualUserType = responseObj.GetType().GetProperty("UserType").GetValue(responseObj).ToString();
             var actualEnableArchive = Convert.ToBoolean(responseObj.GetType().GetProperty("EnableArchive").GetValue(responseObj).ToString());
-            var actualRole = responseObj.GetType().GetProperty("Role").GetValue(responseObj).ToString();
+            var actualRole = responseObj.GetType().GetProperty("ExternalRole").GetValue(responseObj).ToString();
             var actualSubRole = responseObj.GetType().GetProperty("SubRole").GetValue(responseObj).ToString();
             var actualIsSupremeUser = Convert.ToBoolean(responseObj.GetType().GetProperty("IsSupremeUser").GetValue(responseObj).ToString());
             var actualAgencyCode = responseObj.GetType().GetProperty("AgencyCode").GetValue(responseObj).ToString();
@@ -176,7 +176,7 @@ namespace tests.api.Controllers
             {
                 new(CustomClaimTypes.PreferredUsername, $"{expectedUsername}@{expectedUserType}"),
                 new(CustomClaimTypes.IsSupremeUser, expectedIsSupremeUser.ToString()),
-                new(CustomClaimTypes.Role, expectedRole),
+                new(CustomClaimTypes.ExternalRole, expectedRole),
                 new(CustomClaimTypes.SubRole, expectedSubRole),
                 new(CustomClaimTypes.JcAgencyCode, expectedJcAgencyCode)
             };

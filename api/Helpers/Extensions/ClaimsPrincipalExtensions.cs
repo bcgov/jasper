@@ -54,15 +54,15 @@ namespace Scv.Api.Helpers.Extensions
            claimsPrincipal.FindFirstValue(CustomClaimTypes.IsSupremeUser).Equals("true", StringComparison.OrdinalIgnoreCase);
 
         public static string Role(this ClaimsPrincipal claimsPrincipal) =>
-           claimsPrincipal.FindFirstValue(CustomClaimTypes.Role);
+           claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalRole);
 
         public static string SubRole(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(CustomClaimTypes.SubRole);
 
         public static bool IsStaff(this ClaimsPrincipal claimsPrincipal)
-            => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.Role) &&
+            => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.ExternalRole) &&
                claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.SubRole) &&
-               claimsPrincipal.FindFirstValue(CustomClaimTypes.Role).Equals("EME") &&
+               claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalRole).Equals("EME") &&
                claimsPrincipal.FindFirstValue(CustomClaimTypes.SubRole).Equals("SCV");
 
         public static string Email(this ClaimsPrincipal claimsPrincipal) =>
@@ -76,9 +76,9 @@ namespace Scv.Api.Helpers.Extensions
             return applyOrCondition
                 // At least one permission is present
                 ? requiredPermissions
-                    .Any(code => claimsPrincipal.HasClaim(CustomClaimTypes.JasperPermission, code))
+                    .Any(code => claimsPrincipal.HasClaim(CustomClaimTypes.Permission, code))
                 // All permissions must be present
-                : requiredPermissions.All(code => claimsPrincipal.HasClaim(CustomClaimTypes.JasperPermission, code));
+                : requiredPermissions.All(code => claimsPrincipal.HasClaim(CustomClaimTypes.Permission, code));
         }
 
         public static bool HasRoles(
@@ -89,16 +89,16 @@ namespace Scv.Api.Helpers.Extensions
             return applyOrCondition
                 // At least one role is present
                 ? requiredRoles
-                    .Any(name => claimsPrincipal.HasClaim(CustomClaimTypes.JasperRole, name))
+                    .Any(name => claimsPrincipal.HasClaim(CustomClaimTypes.Role, name))
                 // All roles must be present
-                : requiredRoles.All(name => claimsPrincipal.HasClaim(CustomClaimTypes.JasperRole, name));
+                : requiredRoles.All(name => claimsPrincipal.HasClaim(CustomClaimTypes.Role, name));
         }
 
         public static List<string> Permissions(this ClaimsPrincipal claimsPrincipal) =>
-            claimsPrincipal.FindAll(CustomClaimTypes.JasperPermission)?.Select(c => c.Value).ToList() ?? [];
+            claimsPrincipal.FindAll(CustomClaimTypes.Permission)?.Select(c => c.Value).ToList() ?? [];
 
         public static List<string> Roles(this ClaimsPrincipal claimsPrincipal) =>
-            claimsPrincipal.FindAll(CustomClaimTypes.JasperRole)?.Select(c => c.Value).ToList() ?? [];
+            claimsPrincipal.FindAll(CustomClaimTypes.Role)?.Select(c => c.Value).ToList() ?? [];
 
         public static string JasperUserId(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(CustomClaimTypes.UserId);

@@ -56,7 +56,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 Logger.LogDebug("USERTYPE does not match ValidSiteMinderUserType: {0} vs {1}", siteMinderUserTypeHeader, ValidSiteMinderUserType);
                 return AuthenticateResult.Fail("Invalid SiteMinder UserType Header.");
             }
-            else 
+            else
             {
                 Logger.LogDebug("SiteMinder user type is valid");
             }
@@ -123,7 +123,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 new Claim(CustomClaimTypes.ApplicationCode, applicationCode),
                 new Claim(CustomClaimTypes.JcParticipantId, participantId),
                 new Claim(CustomClaimTypes.JcAgencyCode, agencyCode),
-                new Claim(CustomClaimTypes.Role, role),
+                new Claim(CustomClaimTypes.ExternalRole, role),
                 new Claim(CustomClaimTypes.SubRole, subRole),
                 new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
             };
@@ -140,7 +140,7 @@ namespace Scv.Api.Infrastructure.Authentication
             {
                 Logger.LogDebug("Authenticated by SiteMinder previously");
             }
-                
+
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
             Logger.LogInformation("Scheme.Name: {0}", Scheme.Name);
             Logger.LogInformation("Successfully logged in");

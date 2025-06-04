@@ -14,9 +14,9 @@ public class ClaimsPrincipalExtensionsTests
     public void HasPermissions_ShouldReturnTrue_WhenClaimsHasAtleastOneMatchedPermission()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.JasperPermission, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.Permission, Permission.VIEW_CASE_DETAILS)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
@@ -33,8 +33,8 @@ public class ClaimsPrincipalExtensionsTests
     public void HasPermissions_ShouldReturnTrue_WhenClaimsHaveExactPermissions()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -52,9 +52,9 @@ public class ClaimsPrincipalExtensionsTests
     public void HasPermissions_ShouldReturnFalse_WhenClaimsHasNoMatchedPermission()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.JasperPermission, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.Permission, Permission.VIEW_CASE_DETAILS)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
@@ -71,8 +71,8 @@ public class ClaimsPrincipalExtensionsTests
     public void HasPermissions_ShouldReturnFalse_WhenClaimsAreNotExactPermissions()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -90,9 +90,9 @@ public class ClaimsPrincipalExtensionsTests
     public void HasRoles_ShouldReturnTrue_WhenClaimsHasAtleastOneMatchedRole()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
-            new(CustomClaimTypes.JasperRole, Role.ADMIN),
-            new(CustomClaimTypes.JasperRole, Role.JUDGE)
+            new(CustomClaimTypes.Role, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.Role, Role.ADMIN),
+            new(CustomClaimTypes.Role, Role.JUDGE)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
@@ -106,8 +106,8 @@ public class ClaimsPrincipalExtensionsTests
     public void HasRoles_ShouldReturnTrue_WhenClaimsHaveExactRoles()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
-            new(CustomClaimTypes.JasperRole, Role.ADMIN)
+            new(CustomClaimTypes.Role, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.Role, Role.ADMIN)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -125,9 +125,9 @@ public class ClaimsPrincipalExtensionsTests
     public void HasRoles_ShouldReturnFalse_WhenClaimsHasNoMatchedRole()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
-            new(CustomClaimTypes.JasperRole, Role.ADMIN),
-            new(CustomClaimTypes.JasperRole, Role.OCJ_SERVICE_DESK)
+            new(CustomClaimTypes.Role, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.Role, Role.ADMIN),
+            new(CustomClaimTypes.Role, Role.OCJ_SERVICE_DESK)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
@@ -144,8 +144,8 @@ public class ClaimsPrincipalExtensionsTests
     public void HasRoles_ShouldReturnFalse_WhenClaimsAreNotExactRoles()
     {
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperRole, Role.ACJ_CHIEF_JUDGE),
-            new(CustomClaimTypes.JasperRole, Role.ADMIN)
+            new(CustomClaimTypes.Role, Role.ACJ_CHIEF_JUDGE),
+            new(CustomClaimTypes.Role, Role.ADMIN)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");

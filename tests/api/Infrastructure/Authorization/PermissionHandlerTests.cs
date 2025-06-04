@@ -65,8 +65,8 @@ public class PermissionHandlerTests
         var requirement = new PermissionRequirement(false, Permission.LOCK_UNLOCK_USERS, Permission.ACCESS_DARS);
 
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -92,9 +92,9 @@ public class PermissionHandlerTests
             Permission.VIEW_ADJUDICATOR_RESTRICTIONS);
 
         var claims = new List<Claim>{
-            new(CustomClaimTypes.JasperPermission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.JasperPermission, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.JasperPermission, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.Permission, Permission.VIEW_CASE_DETAILS)
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");

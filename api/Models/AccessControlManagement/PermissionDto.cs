@@ -1,6 +1,6 @@
 ﻿namespace Scv.Api.Models.AccessControlManagement;
 
-public class PermissionDto : AccessControlManagementDto
+public class PermissionDto : BaseDto
 {
     public string Name { get; set; }
     public string Code { get; set; }

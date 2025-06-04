@@ -100,5 +100,7 @@ namespace Scv.Api.Helpers.Extensions
         public static List<string> Roles(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindAll(CustomClaimTypes.JasperRole)?.Select(c => c.Value).ToList() ?? [];
 
+        public static string JasperUserId(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue(CustomClaimTypes.JasperUserId);
     }
 }

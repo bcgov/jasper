@@ -1,20 +1,20 @@
 ﻿using Bogus;
 using FluentValidation;
 using MongoDB.Bson;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Models;
 using Scv.Api.Validators;
 using Xunit;
 
 namespace tests.api.Validators;
 
-public class AccessControlManagementValidatorTests
+public class BaseDtoValidatorTests
 {
-    private readonly AccessControlManagementDtoValidator<AccessControlManagementDto> _validator = new();
+    private readonly BaseDtoValidator<BaseDto> _validator = new();
     private readonly static Faker _faker = new();
 
-    private static AccessControlManagementDto GetMockDto()
+    private static BaseDto GetMockDto()
     {
-        return new AccessControlManagementDto
+        return new BaseDto
         {
             Id = ObjectId.GenerateNewId().ToString(),
         };
@@ -26,7 +26,7 @@ public class AccessControlManagementValidatorTests
         var dto = GetMockDto();
         dto.Id = "";
 
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
         context.RootContextData["IsEdit"] = true;
 
         var result = _validator.Validate(context);
@@ -42,7 +42,7 @@ public class AccessControlManagementValidatorTests
         var dto = GetMockDto();
         dto.Id = null;
 
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
         context.RootContextData["IsEdit"] = true;
 
         var result = _validator.Validate(context);
@@ -58,7 +58,7 @@ public class AccessControlManagementValidatorTests
         var dto = GetMockDto();
         dto.Id = _faker.Random.AlphaNumeric(10);
 
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
         context.RootContextData["IsEdit"] = true;
 
         var result = _validator.Validate(context);
@@ -72,7 +72,7 @@ public class AccessControlManagementValidatorTests
     public void ValidateIsEdit_WhenIdDoesNotMatchRouteId_ShouldHaveAnError()
     {
         var dto = GetMockDto();
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
         context.RootContextData["IsEdit"] = true;
         context.RootContextData["RouteId"] = ObjectId.GenerateNewId().ToString();
 
@@ -90,7 +90,7 @@ public class AccessControlManagementValidatorTests
         var dto = GetMockDto();
         dto.Id = validId;
 
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
         context.RootContextData["RouteId"] = validId;
         context.RootContextData["IsEdit"] = true;
 
@@ -104,7 +104,7 @@ public class AccessControlManagementValidatorTests
     {
         var dto = GetMockDto();
         dto.Id = "";
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
 
         var result = _validator.Validate(context);
 
@@ -117,7 +117,7 @@ public class AccessControlManagementValidatorTests
     {
         var dto = GetMockDto();
         dto.Id = null;
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
 
         var result = _validator.Validate(context);
 
@@ -130,7 +130,7 @@ public class AccessControlManagementValidatorTests
     {
         var dto = GetMockDto();
         dto.Id = _faker.Random.AlphaNumeric(5);
-        var context = new ValidationContext<AccessControlManagementDto>(dto);
+        var context = new ValidationContext<BaseDto>(dto);
 
         var result = _validator.Validate(context);
 

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Models;
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
@@ -19,7 +19,7 @@ public abstract class AccessControlManagementControllerBase<TService, TDto>(
     TService service,
     IValidator<TDto> validator) : ControllerBase
     where TService : IAccessControlManagementService<TDto>
-    where TDto : AccessControlManagementDto
+    where TDto : BaseDto
 {
     public TService Service { get; } = service;
     public IValidator<TDto> Validator { get; } = validator;

@@ -16,7 +16,7 @@ public class PermissionService(
     IMapper mapper,
     ILogger<PermissionService> logger,
     IPermissionRepository permissionRepo
-) : CrudServiceBase<IPermissionRepository, Permission, PermissionDto>(
+) : AccessControlManagementServiceBase<IPermissionRepository, Permission, PermissionDto>(
         cache,
         mapper,
         logger,

@@ -13,7 +13,7 @@ using Scv.Db.Repositories;
 namespace Scv.Api.Services;
 
 
-public interface IUserService : ICrudService<UserDto>
+public interface IUserService : IAccessControlManagementService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
 }
@@ -26,7 +26,7 @@ public class UserService(
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
     IPermissionRepository permissionRepo
-) : CrudServiceBase<IRepositoryBase<User>, User, UserDto>(
+) : AccessControlManagementServiceBase<IRepositoryBase<User>, User, UserDto>(
         cache,
         mapper,
         logger,

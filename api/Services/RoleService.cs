@@ -19,7 +19,7 @@ public class RoleService(
     IRepositoryBase<Role> roleRepo,
     IPermissionRepository permissionRepo,
     IRepositoryBase<Group> groupRepo
-    ) : CrudServiceBase<IRepositoryBase<Role>, Role, RoleDto>(
+    ) : AccessControlManagementServiceBase<IRepositoryBase<Role>, Role, RoleDto>(
         cache,
         mapper,
         logger,

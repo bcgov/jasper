@@ -14,9 +14,9 @@ namespace Scv.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class PermissionsController(
-    ICrudService<PermissionDto> permissionService,
+    IAccessControlManagementService<PermissionDto> permissionService,
     IValidator<PermissionDto> validator
-) : CrudControllerBase<ICrudService<PermissionDto>, PermissionDto>(permissionService, validator)
+) : AccessControlManagementControllerBase<IAccessControlManagementService<PermissionDto>, PermissionDto>(permissionService, validator)
 {
     /// <summary>
     /// Creating permission is not allowed

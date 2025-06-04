@@ -15,7 +15,7 @@ namespace Scv.Api.Controllers;
 public class UsersController(
     IUserService userService,
     IValidator<UserDto> validator
-) : CrudControllerBase<IUserService, UserDto>(userService, validator)
+) : AccessControlManagementControllerBase<IUserService, UserDto>(userService, validator)
 {
     /// <summary>
     /// Get all active users

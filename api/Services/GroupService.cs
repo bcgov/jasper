@@ -19,7 +19,7 @@ public class GroupService(
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
     IRepositoryBase<User> userRepo
-    ) : CrudServiceBase<IRepositoryBase<Group>, Group, GroupDto>(
+    ) : AccessControlManagementServiceBase<IRepositoryBase<Group>, Group, GroupDto>(
         cache,
         mapper,
         logger,

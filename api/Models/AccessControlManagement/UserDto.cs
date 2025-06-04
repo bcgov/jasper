@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Scv.Api.Models.AccessControlManagement;
 
-public class UserDto : BaseDto
+public class UserDto : AccessControlManagementDto
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }

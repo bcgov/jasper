@@ -2,7 +2,7 @@
 
 namespace Scv.Api.Models.AccessControlManagement;
 
-public class GroupDto : BaseDto
+public class GroupDto : AccessControlManagementDto
 {
     public string Name { get; set; }
     public string Description { get; set; }

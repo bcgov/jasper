@@ -11,7 +11,7 @@ namespace Scv.Db.Contexts
         public DbSet<Role> Roles { get; init; }
         public DbSet<Group> Groups { get; init; }
         public DbSet<User> Users { get; init; }
-        public DbSet<JudicialBinder> JudicialBinders { get; set; }
+        public DbSet<Binder> JudicialBinders { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -38,7 +38,9 @@ namespace Scv.Db.Contexts
                 u.HasIndex(u => u.Email).IsUnique();
                 u.ToCollection("users");
             });
-            modelBuilder.Entity<JudicialBinder>(jb => jb.HasKey(jb => jb.Id));
+            modelBuilder.Entity<Label>(l => l.HasKey(jb => jb.Id));
+            modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
+            modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
         }
     }
 }

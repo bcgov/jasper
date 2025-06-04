@@ -181,7 +181,7 @@ namespace Scv.Api.Infrastructure.Authentication
                             var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
                             if (userDto != null)
                             {
-                                claims.Add(new Claim(CustomClaimTypes.JasperUserId, userDto.Id));
+                                claims.Add(new Claim(CustomClaimTypes.UserId, userDto.Id));
 
                                 var permissionsClaims = userDto.Permissions.Select(p => new Claim(CustomClaimTypes.JasperPermission, p));
                                 claims.AddRange(permissionsClaims);

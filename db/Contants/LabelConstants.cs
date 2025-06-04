@@ -3,7 +3,7 @@
 /// <summary>
 /// Labels to help relate objects (e.g. binder) to a given context such as case detail, court-list, etc.
 /// </summary>
-public class LabelConstants
+public static class LabelConstants
 {
     /// <summary>
     /// Id that uniquely identify a case.

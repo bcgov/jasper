@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using Bogus;
 using FluentValidation;
 using FluentValidation.Results;
@@ -13,6 +12,8 @@ using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
 using LazyCache.Providers;
+using Mapster;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -22,7 +23,7 @@ using Moq;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
-using Scv.Api.Mappers;
+using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
@@ -94,13 +95,11 @@ namespace tests.api.Controllers
             var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
-            // AutoMapper setup
-            var mapperConfig = new MapperConfiguration(config =>
-            {
-                config.AddProfile<MappingProfile>();
-                config.AddProfile<LocationProfile>();
-            });
-            var autoMapper = mapperConfig.CreateMapper();
+            // IMapper setup
+            var config = new TypeAdapterConfig();
+            config.Apply(new CalendarMapping());
+            config.Apply(new LocationMapping());
+            var mapper = new Mapper(config);
 
             // Services setup
             var mockLookupService = new Mock<LookupService>(
@@ -115,7 +114,7 @@ namespace tests.api.Controllers
                 mockPCSSLocationServicesClient.Object,
                 mockPCSSLookupServicesClient.Object,
                 cachingService,
-                autoMapper);
+                mapper);
 
             // Setup ClaimsPrincipal
             var claims = new[] {

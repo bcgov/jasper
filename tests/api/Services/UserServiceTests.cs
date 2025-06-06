@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using AutoMapper;
 using Bogus;
 using LazyCache;
 using LazyCache.Providers;
+using Mapster;
+using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
+using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
@@ -36,12 +38,9 @@ public class UserServiceTests
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
         // IMapper setup
-        var config = new MapperConfiguration(cfg =>
-        {
-            cfg.CreateMap<User, UserDto>();
-            cfg.CreateMap<UserDto, User>();
-        });
-        var mapper = config.CreateMapper();
+        var config = new TypeAdapterConfig();
+        config.Apply(new AccessControlManagementMapping());
+        var mapper = new Mapper(config);
 
         // ILogger setup
         var logger = new Mock<ILogger<UserService>>();

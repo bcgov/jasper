@@ -2,16 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using Bogus;
 using JCCommon.Clients.LocationServices;
 using LazyCache;
 using LazyCache.Providers;
+using Mapster;
+using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using PCSSCommon.Models;
-using Scv.Api.Mappers;
+using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -36,8 +37,9 @@ public class LocationServiceTests : ServiceTestBase
         _mockConfig.Setup(c => c.GetSection("Caching:LocationExpiryMinutes")).Returns(mockSection.Object);
 
         // IMapper setup
-        var config = new MapperConfiguration(config => config.AddProfile<LocationProfile>());
-        _mapper = config.CreateMapper();
+        var config = new TypeAdapterConfig();
+        config.Apply(new LocationMapping());
+        _mapper = new Mapper(config);
     }
 
     private (LocationService locationService,

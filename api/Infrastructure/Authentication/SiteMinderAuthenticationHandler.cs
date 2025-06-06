@@ -72,7 +72,7 @@ namespace Scv.Api.Infrastructure.Authentication
             var participantId = Context.User.ParticipantId();
             var agencyCode = Context.User.AgencyCode();
             var isSupremeUser = Context.User.IsSupremeUser();
-            var role = Context.User.Role();
+            var role = Context.User.ExternalRole();
             var subRole = Context.User.SubRole();
 
             Logger.LogDebug("SiteMinder: {0}", SiteMinder);

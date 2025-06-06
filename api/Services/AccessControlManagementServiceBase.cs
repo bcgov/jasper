@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AutoMapper;
 using LazyCache;
+using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models;

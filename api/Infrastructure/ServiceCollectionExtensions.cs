@@ -52,13 +52,6 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
-        public static IServiceCollection AddAutoMapper(this IServiceCollection services)
-        {
-            services.AddAutoMapper(typeof(Startup));
-
-            return services;
-        }
-
         public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
         {
             // Remove checking when the "real" mongo db has been configured

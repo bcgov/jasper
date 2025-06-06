@@ -125,7 +125,7 @@ namespace Scv.Api.Controllers
                 Roles = HttpContext.User.Roles(),
                 UserType = userType,
                 EnableArchive = false,
-                Role = HttpContext.User.Role(),
+                ExternalRole = HttpContext.User.ExternalRole(),
                 SubRole = HttpContext.User.SubRole(),
                 IsSupremeUser = HttpContext.User.IsSupremeUser(),
                 AgencyCode = HttpContext.User.AgencyCode(),

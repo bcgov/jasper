@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.Calendar;
 using Scv.Api.Models.Lookup;
@@ -21,14 +21,16 @@ namespace Scv.Api.Controllers
         #region Variables
 
         private readonly JudicialCalendarService _judicialCalendarService;
+        private readonly IMapper _mapper;
 
         #endregion Variables
 
         #region Constructor
 
-        public DashboardController(JudicialCalendarService judicialCalendarService)
+        public DashboardController(JudicialCalendarService judicialCalendarService, IMapper mapper)
         {
             _judicialCalendarService = judicialCalendarService;
+            _mapper = mapper;
         }
 
         #endregion Constructor
@@ -74,17 +76,12 @@ namespace Scv.Api.Controllers
                     return Ok(calendarSchedule);
                 }
 
-                var calendarDays = MapperHelper.CalendarToDays(calendars.ToList());
-                if (calendarDays == null)
+                var calendarDays = calendars.SelectMany(cd => _mapper.Map<List<CalendarDay>>(cd)).ToList();
+                if (isMySchedule)
                 {
-                    calendarSchedule.Schedule = new List<CalendarDay>();
+                    calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
                 }
-                else
-                {
-                    if (isMySchedule)
-                        calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
-                    calendarSchedule.Schedule = calendarDays;
-                }
+                calendarSchedule.Schedule = calendarDays;
 
                 calendarSchedule.Presiders = calendars
                     .Where(t => t.IsPresider && t.Days.Any())

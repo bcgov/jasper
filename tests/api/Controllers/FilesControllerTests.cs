@@ -8,6 +8,7 @@ using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
+using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Mappers;
+using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.archive;
 using Scv.Api.Models.Search;
 using Scv.Api.Services;
@@ -42,7 +43,7 @@ namespace tests.api.Controllers
         #region Variables
 
         private readonly FilesController _controller;
-        private readonly FilesService _service; 
+        private readonly FilesService _service;
         private readonly FileServicesClient _fileServicesClient;
         private readonly string _agencyIdentifierId;
         private readonly string _partId;
@@ -64,9 +65,11 @@ namespace tests.api.Controllers
             var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
             var pcssLookupServicesClient = new PCSSLookupServices.LookupServicesClient(pcssServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
-            
-            var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<LocationProfile>());
-            var mapper = config.CreateMapper();
+
+            // IMapper setup
+            var config = new TypeAdapterConfig();
+            config.Apply(new LocationMapping());
+            var mapper = new Mapper(config);
 
             var locationService = new LocationService(
                 locationServices.Configuration,
@@ -111,7 +114,7 @@ namespace tests.api.Controllers
             var document = await _controller.GetDocument(documentId, "hello.txt", false, "3822", "abc123");
         }
 
-        [Fact(Skip="TEST")]
+        [Fact(Skip = "TEST")]
         public async Task Civil_Document_Reference_Document_In_TEST()
         {
             //Set application Code to PCSS, SCV doesn't seem to include these. 
@@ -158,7 +161,7 @@ namespace tests.api.Controllers
 
             Assert.NotNull(referenceDocuments);
             //Was 4, might need pcss cred to get 4 docs back.
-            Assert.Equal(4,referenceDocuments.Count);
+            Assert.Equal(4, referenceDocuments.Count);
 
             Assert.Contains(referenceDocuments, rd => rd.AppearanceId == "13915");
             Assert.Contains(referenceDocuments, rd => rd.DescriptionText == "Affidavit #2 of Joan Smith sworn Jul 4 2020");
@@ -284,7 +287,7 @@ namespace tests.api.Controllers
             Assert.Contains("3059", fileSearchResponse.First().PhysicalFileId);
         }
 
-        
+
         [Fact]
         public async void Criminal_File_Search_By_LastName()
         {
@@ -526,7 +529,7 @@ namespace tests.api.Controllers
         [Fact]
         public async void Civil_File_Content_By_FileId()
         {
-            var civilFileContent = await _service.Civil.FileContentAsync(null,null,null,null,physicalFileId: "2506");
+            var civilFileContent = await _service.Civil.FileContentAsync(null, null, null, null, physicalFileId: "2506");
 
             Assert.Null(civilFileContent.CourtLocaCd);
             Assert.Null(civilFileContent.CourtRoomCd);
@@ -560,7 +563,7 @@ namespace tests.api.Controllers
         [Fact]
         public async void Criminal_File_Content_By_JustinNumber()
         {
-            var criminalFileContent = await _service.Criminal.FileContentAsync(null,null,null,null,justinNumber: "3179.0000");
+            var criminalFileContent = await _service.Criminal.FileContentAsync(null, null, null, null, justinNumber: "3179.0000");
 
             Assert.Equal("", criminalFileContent.CourtLocaCd);
             Assert.Equal("", criminalFileContent.CourtRoomCd);
@@ -753,7 +756,7 @@ namespace tests.api.Controllers
             Assert.Equal("Present", party.PartyAppearanceMethodDesc); //Doesn't seem to have any appearance methods
         }
 
-        
+
         [Fact(Skip = "Unused for now")]
         public async Task Get_Archive()
         {

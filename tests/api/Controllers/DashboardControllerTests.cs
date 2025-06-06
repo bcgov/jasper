@@ -3,9 +3,11 @@ using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
+using Mapster;
+using MapsterMapper;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
-using Scv.Api.Mappers;
+using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using tests.api.Helpers;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -39,9 +41,11 @@ namespace tests.api.Controllers
 
             var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
-            
-            var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<LocationProfile>());
-            var mapper = config.CreateMapper();
+
+            // IMapper setup
+            var config = new TypeAdapterConfig();
+            config.Apply(new LocationMapping());
+            var mapper = new Mapper(config);
 
             var locationService = new LocationService(
                 locationServices.Configuration,

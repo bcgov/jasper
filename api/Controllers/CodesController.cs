@@ -42,7 +42,7 @@ namespace Scv.Api.Controllers
         }
 
         /// <summary>
-        /// Gets External ExternalRole information
+        /// Gets External Role information
         /// </summary>
         /// <returns>External ExternalRole Lookups</returns>
         [HttpGet]

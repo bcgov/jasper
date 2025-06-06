@@ -34,7 +34,6 @@ public class RoleServiceTests
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
         // IMapper setup
-        // IMapper setup
         var config = new TypeAdapterConfig();
         config.Apply(new AccessControlManagementMapping());
         var mapper = new Mapper(config);
@@ -237,7 +236,7 @@ public class RoleServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Equal(2, result.Errors.Count);
-        Assert.Equal("ExternalRole ID is not found.", result.Errors[0]);
+        Assert.Equal("Role ID is not found.", result.Errors[0]);
         Assert.Equal("Found one or more invalid permission IDs.", result.Errors[1]);
         _mockPermissionRepo.Verify(p => p.GetActivePermissionsAsync(), Times.Once);
         _mockRoleRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);

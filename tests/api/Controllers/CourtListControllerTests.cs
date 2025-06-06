@@ -95,7 +95,7 @@ namespace tests.api.Controllers
             var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
-            // Mapper setup
+            // IMapper setup
             var config = new TypeAdapterConfig();
             config.Apply(new CalendarMapping());
             config.Apply(new LocationMapping());

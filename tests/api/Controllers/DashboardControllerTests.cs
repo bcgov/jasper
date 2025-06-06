@@ -42,7 +42,7 @@ namespace tests.api.Controllers
             var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
             var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
 
-            // Mapper setup
+            // IMapper setup
             var config = new TypeAdapterConfig();
             config.Apply(new LocationMapping());
             var mapper = new Mapper(config);

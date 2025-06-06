@@ -38,7 +38,6 @@ public class UserServiceTests
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
         // IMapper setup
-        // IMapper setup
         var config = new TypeAdapterConfig();
         config.Apply(new AccessControlManagementMapping());
         var mapper = new Mapper(config);

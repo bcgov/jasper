@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FluentValidation;
 using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -12,11 +13,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using Scv.Api.Constants;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Models;
 using Scv.Api.Models.archive;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Criminal.Detail;
@@ -31,32 +34,27 @@ namespace Scv.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
 
-    public class FilesController : ControllerBase
+    public class FilesController(
+        IConfiguration configuration,
+        ILogger<FilesController> logger,
+        FilesService filesService,
+        VcCivilFileAccessHandler vcCivilFileAccessHandler,
+        IHttpContextAccessor httpContextAccessor,
+        IValidator<BinderDto> binderValidator) : ControllerBase
     {
         #region Variables
 
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<FilesController> _logger;
-        private readonly FilesService _filesService;
-        private readonly CivilFilesService _civilFilesService;
-        private readonly CriminalFilesService _criminalFilesService;
-        private readonly VcCivilFileAccessHandler _vcCivilFileAccessHandler;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly ILogger<FilesController> _logger = logger;
+        private readonly FilesService _filesService = filesService;
+        private readonly CivilFilesService _civilFilesService = filesService.Civil;
+        private readonly CriminalFilesService _criminalFilesService = filesService.Criminal;
+        private readonly VcCivilFileAccessHandler _vcCivilFileAccessHandler = vcCivilFileAccessHandler;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IValidator<BinderDto> _binderValidator = binderValidator;
 
         #endregion Variables
-
         #region Constructor
-
-        public FilesController(IConfiguration configuration, ILogger<FilesController> logger, FilesService filesService, VcCivilFileAccessHandler vcCivilFileAccessHandler, IHttpContextAccessor httpContextAccessor)
-        {
-            _configuration = configuration;
-            _logger = logger;
-            _filesService = filesService;
-            _civilFilesService = filesService.Civil;
-            _criminalFilesService = filesService.Criminal;
-            _vcCivilFileAccessHandler = vcCivilFileAccessHandler;
-            _httpContextAccessor = httpContextAccessor;
-        }
 
         #endregion Constructor
 
@@ -193,6 +191,87 @@ namespace Scv.Api.Controllers
 
             return Ok(civilFiles);
         }
+
+        [HttpPost]
+        [Route("civil/{fileId}/judicial-binders")]
+        public async Task<ActionResult> CreateJudicialBinder(string fileId, BinderDto dto)
+        {
+            var context = new ValidationContext<BinderDto>(dto)
+            {
+                RootContextData = { ["FileId"] = fileId }
+            };
+
+            var basicValidation = await _binderValidator.ValidateAsync(context);
+            if (!basicValidation.IsValid)
+            {
+                return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
+            }
+
+            var businessRulesValidation = await _civilFilesService.ValidateJudicialBinderAsync(fileId, dto);
+            if (!businessRulesValidation.Succeeded)
+            {
+                return BadRequest(new { error = businessRulesValidation.Errors });
+            }
+
+            var result = await _civilFilesService.CreateJudicialBinderAsync(fileId, dto);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { error = result.Errors });
+            }
+            return Ok(result);
+        }
+
+        [HttpPut]
+        [Route("civil/{fileId}/judicial-binders/{binderId}")]
+        public async Task<ActionResult> UpdateJudicialBinder(string fileId, string binderId, BinderDto dto)
+        {
+            var context = new ValidationContext<BinderDto>(dto)
+            {
+                RootContextData =
+                {
+                    ["RouteId"] = binderId,
+                    ["FileId"] = fileId,
+                    ["IsEdit"] = true
+                },
+            };
+
+            var basicValidation = await _binderValidator.ValidateAsync(context);
+            if (!basicValidation.IsValid)
+            {
+                return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
+            }
+
+            var businessRulesValidation = await _civilFilesService.ValidateJudicialBinderAsync(fileId, dto);
+            if (!businessRulesValidation.Succeeded)
+            {
+                return BadRequest(new { error = businessRulesValidation.Errors });
+            }
+
+            var result = await _civilFilesService.UpdateJudicialBinderAsync(dto);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { error = result.Errors });
+            }
+            return Ok(result);
+        }
+
+        [HttpDelete("civil/{fileId}/judicial-binders/{binderId}")]
+        public virtual async Task<IActionResult> DeleteJudicialBinder(string fileId, string binderId)
+        {
+            if (!ObjectId.TryParse(binderId, out _))
+            {
+                return BadRequest("Invalid ID.");
+            }
+
+            var result = await _civilFilesService.DeleteJudicialBinderAsync(binderId);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { errors = result.Errors });
+            }
+
+            return NoContent();
+        }
+
 
         #endregion Civil Only
 

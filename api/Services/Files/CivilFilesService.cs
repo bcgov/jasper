@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
+using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -12,12 +13,16 @@ using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Infrastructure;
+using Scv.Api.Models;
 using Scv.Api.Models.Civil.AppearanceDetail;
 using Scv.Api.Models.Civil.Appearances;
 using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Search;
+using Scv.Db.Contants;
 using Scv.Db.Models;
+using Scv.Db.Repositories;
 using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
 
@@ -38,6 +43,7 @@ namespace Scv.Api.Services.Files
         private readonly string _requestPartId;
         private readonly List<string> _filterOutDocumentTypes;
         private readonly ClaimsPrincipal _currentUser;
+        private readonly IRepositoryBase<Binder> _binderRepo;
 
         #endregion Variables
 
@@ -50,7 +56,8 @@ namespace Scv.Api.Services.Files
             LocationService locationService,
             IAppCache cache,
             ClaimsPrincipal user,
-            ILogger<CivilFilesService> logger)
+            ILogger<CivilFilesService> logger,
+            IRepositoryBase<Binder> jbRepo)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -64,6 +71,7 @@ namespace Scv.Api.Services.Files
             _logger = logger;
             _filterOutDocumentTypes = configuration.GetNonEmptyValue("ExcludeDocumentTypeCodesForCounsel").Split(",").ToList();
             _currentUser = user;
+            _binderRepo = jbRepo;
         }
 
         #endregion Constructor
@@ -242,6 +250,7 @@ namespace Scv.Api.Services.Files
             detail.Party = await PopulateDetailParties(detail.Party, courtListParties);
             detail.Document = await PopulateDetailDocuments(detail.Document, fileContentCivilFile, isVcUser, isStaff);
             detail.HearingRestriction = await PopulateDetailHearingRestrictions(fileDetail.HearingRestriction);
+            detail.JudicialBinders = await PopulateJudicialBinders(fileId);
             if (isVcUser)
             {
                 //SCV-266 - Disable comments for VC Users.
@@ -338,6 +347,121 @@ namespace Scv.Api.Services.Files
             return await _filesClient.FilesCivilFilecontentAsync(_requestAgencyIdentifierId,
                 _requestPartId, _applicationCode, agencyId, roomCode, proceedingDateString,
                 appearanceId, physicalFileId);
+        }
+
+        public async Task<OperationResult<BinderDto>> CreateJudicialBinderAsync(string fileId, BinderDto dto)
+        {
+            try
+            {
+                var entity = dto.Adapt<Binder>();
+                var fileDetail = await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
+
+                // Add "system-generated" labels related to judicial binder
+                entity.Labels.Add(LabelConstants.PHYSICAL_FILE_ID, fileId);
+                entity.Labels.Add(LabelConstants.JUDGE_ID, _currentUser.UserId());
+                entity.Labels.Add(LabelConstants.COURT_CLASS_CD, fileDetail.CourtClassCd.ToString());
+
+                // Ensure ordering is correct
+                entity.Documents = entity.Documents
+                    .OrderBy(d => d.Order)
+                    .Select((doc, index) => { doc.Order = index; return doc; })
+                    .ToList();
+
+                await _binderRepo.AddAsync(entity);
+
+                return OperationResult<BinderDto>.Success(_mapper.Map<BinderDto>(entity));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error when adding data: {message}", ex.Message);
+                return OperationResult<BinderDto>.Failure("Error when adding data.");
+            }
+        }
+
+        public async Task<OperationResult<BinderDto>> ValidateJudicialBinderAsync(string fileId, BinderDto dto, bool isEdit = false)
+        {
+            var errors = new List<string>();
+
+            var fileDetail = await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
+            if (fileDetail.PhysicalFileId == null)
+            {
+                errors.Add("Case file is not found.");
+                return OperationResult<BinderDto>.Failure([.. errors]);
+            }
+
+            if (isEdit && await _binderRepo.GetByIdAsync(dto.Id) == null)
+            {
+                errors.Add("Binder ID is not found.");
+            }
+
+            // Check if document ids are present in the Civil File
+            var detail = _mapper.Map<RedactedCivilFileDetailResponse>(fileDetail);
+            foreach (var document in PopulateDetailCsrsDocuments(fileDetail.Appearance))
+            {
+                if (!_currentUser.IsVcUser())
+                {
+                    detail.Document.Add(document);
+                }
+            }
+
+            var docIds = dto.Documents.Select(d => d.DocumentId);
+            var civilDocIds = detail.Document.Select(d => d.CivilDocumentId);
+            if (!docIds.All(id => civilDocIds.Contains(id)))
+            {
+                errors.Add("Found one or more invalid Document IDs.");
+            }
+
+            return errors.Count != 0
+                ? OperationResult<BinderDto>.Failure([.. errors])
+                : OperationResult<BinderDto>.Success(dto);
+        }
+
+        public async Task<OperationResult<BinderDto>> UpdateJudicialBinderAsync(BinderDto dto)
+        {
+            try
+            {
+                var entity = await _binderRepo.GetByIdAsync(dto.Id);
+
+                // Map updated values to entity
+                dto.Adapt(entity);
+
+                // Ensure ordering is correct
+                entity.Documents = entity.Documents
+                    .OrderBy(d => d.Order)
+                    .Select((doc, index) => { doc.Order = index; return doc; })
+                    .ToList();
+
+                await _binderRepo.UpdateAsync(entity);
+
+                return OperationResult<BinderDto>.Success(_mapper.Map<BinderDto>(entity));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error when updating data: {message}", ex.Message);
+                return OperationResult<BinderDto>.Failure("Error when updating data.");
+            }
+        }
+
+        public virtual async Task<OperationResult> DeleteJudicialBinderAsync(string id)
+        {
+            try
+            {
+                var existingEntity = await _binderRepo.GetByIdAsync(id);
+                if (existingEntity == null)
+                {
+                    var err = new List<string> { $"Entity not found." };
+                    return OperationResult.Failure([.. err]);
+                }
+
+                await _binderRepo.DeleteAsync(existingEntity);
+
+                return OperationResult.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting data: {message}", ex.Message);
+                return OperationResult.Failure("Error when deleting data.");
+            }
         }
 
         #endregion Methods
@@ -466,6 +590,28 @@ namespace Scv.Api.Services.Files
                 hearing.HearingRestrictionTypeDsc = await _lookupService.GetHearingRestrictionDescription(hearing.HearingRestrictionTypeCd.ToString());
             }
             return civilHearingRestrictions;
+        }
+
+        private async Task<ICollection<BinderDto>> PopulateJudicialBinders(string fileId)
+        {
+            var judgeId = _currentUser.JasperUserId();
+            var labels = new List<string> { LabelConstants.PHYSICAL_FILE_ID, LabelConstants.JUDGE_ID };
+
+            // Query Binders where the label values are matching (Case File Id and Judge)
+            var entities = await _binderRepo.FindAsync(jb => jb.Documents.Any());
+            if (entities == null)
+            {
+                _logger.LogInformation("No binder found for Judge: {judgeId} and Case File Id: {fileId}", judgeId, fileId);
+                return [];
+            }
+
+            var dtos = _mapper.Map<List<BinderDto>>(entities);
+            foreach (var binder in dtos)
+            {
+                binder.Documents.Sort((a, b) => a.Order.CompareTo(b.Order));
+            }
+
+            return dtos;
         }
 
         #endregion Civil Details

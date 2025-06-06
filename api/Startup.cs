@@ -75,7 +75,6 @@ namespace Scv.Api
             );
 
             services.AddMapster();
-            services.AddAutoMapper();
             services.AddJasperDb(Configuration);
 
             #region Cors

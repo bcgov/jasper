@@ -83,7 +83,7 @@ public class RoleDtoValidatorTests
         var result = _validator.TestValidate(dto);
 
         result.ShouldHaveValidationErrorFor(r => r.Name)
-            .WithErrorMessage("Role name is required.");
+            .WithErrorMessage("ExternalRole name is required.");
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class RoleDtoValidatorTests
         var result = _validator.TestValidate(dto);
 
         result.ShouldHaveValidationErrorFor(r => r.Name)
-            .WithErrorMessage("Role name is required.");
+            .WithErrorMessage("ExternalRole name is required.");
     }
 
     [Fact]

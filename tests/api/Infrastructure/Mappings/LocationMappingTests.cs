@@ -1,21 +1,23 @@
-using AutoMapper;
-using Scv.Api.Mappers;
+using Mapster;
+using MapsterMapper;
+using Scv.Api.Infrastructure.Mappings;
 using Xunit;
-using JC = JCCommon.Clients.LocationServices;
-using PCSS = PCSSCommon.Models;
-using Location = Scv.Api.Models.Location.Location;
 using CourtRoom = Scv.Api.Models.Location.CourtRoom;
+using JC = JCCommon.Clients.LocationServices;
+using Location = Scv.Api.Models.Location.Location;
+using PCSS = PCSSCommon.Models;
 
-namespace tests.api.Mappers;
+namespace tests.api.Infrastructure.Mappings;
 
-public class LocationProfileTests
+public class LocationMappingTests
 {
     private readonly IMapper _mapper;
 
-    public LocationProfileTests()
+    public LocationMappingTests()
     {
-        var config = new MapperConfiguration(cfg => cfg.AddProfile<LocationProfile>());
-        _mapper = config.CreateMapper();
+        var config = new TypeAdapterConfig();
+        config.Apply(new LocationMapping());
+        _mapper = new Mapper(config);
     }
 
     [Fact]

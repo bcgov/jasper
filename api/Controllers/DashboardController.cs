@@ -76,17 +76,12 @@ namespace Scv.Api.Controllers
                     return Ok(calendarSchedule);
                 }
 
-                var calendarDays = calendars.SelectMany(calendarDays => _mapper.Map<List<CalendarDay>>(calendarDays)).ToList();
-                if (calendarDays == null)
+                var calendarDays = calendars.SelectMany(cd => _mapper.Map<List<CalendarDay>>(cd)).ToList();
+                if (isMySchedule)
                 {
-                    calendarSchedule.Schedule = new List<CalendarDay>();
+                    calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
                 }
-                else
-                {
-                    if (isMySchedule)
-                        calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
-                    calendarSchedule.Schedule = calendarDays;
-                }
+                calendarSchedule.Schedule = calendarDays;
 
                 calendarSchedule.Presiders = calendars
                     .Where(t => t.IsPresider && t.Days.Any())

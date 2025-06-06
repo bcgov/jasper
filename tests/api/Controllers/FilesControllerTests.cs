@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using FluentValidation;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -25,6 +26,7 @@ using Scv.Api.Models.Search;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Models;
+using Scv.Db.Repositories;
 using tests.api.Helpers;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -90,12 +92,23 @@ namespace tests.api.Controllers
             };
             var identity = new ClaimsIdentity(claims, "Cookies");
             var principal = new ClaimsPrincipal(identity);
+            var mockBinderRepo = new Mock<IRepositoryBase<Binder>>();
+            var mockBinderDtoValidator = new Mock<IValidator<BinderDto>>();
 
-            _service = new FilesService(fileServices.Configuration, fileServicesClient, new Mapper(), lookupService, locationService, new CachingService(), principal, fileServices.LogFactory);
+            _service = new FilesService(
+                fileServices.Configuration,
+                fileServicesClient,
+                new Mapper(),
+                lookupService,
+                locationService,
+                new CachingService(),
+                principal,
+                fileServices.LogFactory,
+                mockBinderRepo.Object);
 
             //TODO fake this.
             var vcCivilFileAccessHandler = new VcCivilFileAccessHandler(new ScvDbContext());
-            _controller = new FilesController(fileServices.Configuration, fileServices.LogFactory.CreateLogger<FilesController>(), _service, vcCivilFileAccessHandler, contextAccessor);
+            _controller = new FilesController(fileServices.Configuration, fileServices.LogFactory.CreateLogger<FilesController>(), _service, vcCivilFileAccessHandler, contextAccessor, mockBinderDtoValidator.Object);
             _controller.ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration);
         }
 

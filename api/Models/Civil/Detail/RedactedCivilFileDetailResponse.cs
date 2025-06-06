@@ -48,5 +48,11 @@ namespace Scv.Api.Models.Civil.Detail
         public CivilAppearanceResponse Appearances { get; set; }
         //Used just for searching.
         public string NextApprDt { get; set; }
+        /// <summary>
+        /// Judicial Binder for the currently logged on Judge and case detail.
+        /// Ideally, each judge should have only one binder per case but we designed it
+        /// as a list to allow for future flexibility.
+        /// </summary>
+        public ICollection<BinderDto> JudicialBinders { get; set; }
     }
 }

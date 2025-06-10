@@ -15,7 +15,7 @@ public interface IRepositoryBase<TEntity> where TEntity : EntityBase
     Task<TEntity> GetByIdAsync(string id);
     Task<IEnumerable<TEntity>> GetAllAsync();
     Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
-    Task<IEnumerable<TEntity>> FindAsync(string collectionName, FilterDefinition<TEntity> filterDefintion);
+    Task<IEnumerable<TEntity>> FindAsync(string collectionName, FilterDefinition<TEntity> filterDefinition);
     Task AddAsync(TEntity entity);
     Task UpdateAsync(TEntity entity);
     Task DeleteAsync(TEntity entity);

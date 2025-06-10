@@ -23,7 +23,7 @@ public interface IBinderService : ICrudService<BinderDto>
 public class BinderService(
     IAppCache cache,
     IMapper mapper,
-    ILogger<UserService> logger,
+    ILogger<BinderService> logger,
     IRepositoryBase<Binder> binderRepo
     ) : CrudServiceBase<IRepositoryBase<Binder>, Binder, BinderDto>(
         cache,

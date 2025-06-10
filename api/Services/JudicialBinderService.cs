@@ -26,7 +26,7 @@ public class JudicialBinderService : BinderService
     public JudicialBinderService(
         IAppCache cache,
         IMapper mapper,
-        ILogger<UserService> logger,
+        ILogger<JudicialBinderService> logger,
         IRepositoryBase<Binder> binderRepo,
         FileServicesClient filesClient,
         ClaimsPrincipal currentUser

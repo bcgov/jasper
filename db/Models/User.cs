@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
+using Scv.Db.Contants;
 
 namespace Scv.Db.Models
 {
-    [Collection("users")]
+    [Collection(CollectionNameConstants.USERS)]
     public class User : EntityBase
     {
         public required string FirstName { get; set; }

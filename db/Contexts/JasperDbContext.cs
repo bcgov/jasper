@@ -5,7 +5,7 @@ using Scv.Db.Models;
 
 namespace Scv.Db.Contexts
 {
-    public class JasperDbContext(DbContextOptions options) : DbContext(options)
+    public class JasperDbContext(DbContextOptions<JasperDbContext> options) : DbContext(options)
     {
         public DbSet<Permission> Permissions { get; init; }
         public DbSet<Role> Roles { get; init; }

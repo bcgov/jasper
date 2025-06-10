@@ -18,7 +18,7 @@ namespace Scv.Api.Controllers;
 public abstract class AccessControlManagementControllerBase<TService, TDto>(
     TService service,
     IValidator<TDto> validator) : ControllerBase
-    where TService : IAccessControlManagementService<TDto>
+    where TService : ICrudService<TDto>
     where TDto : BaseDto
 {
     public TService Service { get; } = service;

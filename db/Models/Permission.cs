@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
+using Scv.Db.Contants;
 
 namespace Scv.Db.Models
 {
-    [Collection("permissions")]
+    [Collection(CollectionNameConstants.PERMISSIONS)]
     public class Permission : EntityBase
     {
         // Administrative Functions

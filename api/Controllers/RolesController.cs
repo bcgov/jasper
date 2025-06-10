@@ -11,8 +11,8 @@ namespace Scv.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class RolesController(
-    IAccessControlManagementService<RoleDto> roleService,
+    ICrudService<RoleDto> roleService,
     IValidator<RoleDto> validator
-) : AccessControlManagementControllerBase<IAccessControlManagementService<RoleDto>, RoleDto>(roleService, validator)
+) : AccessControlManagementControllerBase<ICrudService<RoleDto>, RoleDto>(roleService, validator)
 {
 }

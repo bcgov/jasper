@@ -10,8 +10,6 @@ using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Db.Models;
-using Scv.Db.Repositories;
 
 namespace Scv.Api.Services.Files
 {
@@ -41,8 +39,7 @@ namespace Scv.Api.Services.Files
             LocationService locationService,
             IAppCache cache,
             ClaimsPrincipal claimsPrincipal,
-            ILoggerFactory factory,
-            IRepositoryBase<Binder> binderRepo)
+            ILoggerFactory factory)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -56,8 +53,7 @@ namespace Scv.Api.Services.Files
                 locationService,
                 _cache,
                 claimsPrincipal,
-                factory.CreateLogger<CivilFilesService>(),
-                binderRepo);
+                factory.CreateLogger<CivilFilesService>());
             Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal);
 
             _applicationCode = claimsPrincipal.ApplicationCode();

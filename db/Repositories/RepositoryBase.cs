@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
 
@@ -14,15 +15,17 @@ public interface IRepositoryBase<TEntity> where TEntity : EntityBase
     Task<TEntity> GetByIdAsync(string id);
     Task<IEnumerable<TEntity>> GetAllAsync();
     Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
+    Task<IEnumerable<TEntity>> FindAsync(string collectionName, FilterDefinition<TEntity> filterDefintion);
     Task AddAsync(TEntity entity);
     Task UpdateAsync(TEntity entity);
     Task DeleteAsync(TEntity entity);
 }
 
-public class RepositoryBase<TEntity>(JasperDbContext context) : IRepositoryBase<TEntity> where TEntity : EntityBase
+public class RepositoryBase<TEntity>(JasperDbContext context, IMongoDatabase mongoDb) : IRepositoryBase<TEntity> where TEntity : EntityBase
 {
     protected readonly JasperDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
     protected readonly DbSet<TEntity> _dbSet = context.Set<TEntity>();
+    protected readonly IMongoDatabase _mongoDb = mongoDb;
 
     public virtual async Task<TEntity> GetByIdAsync(string id)
     {
@@ -37,6 +40,19 @@ public class RepositoryBase<TEntity>(JasperDbContext context) : IRepositoryBase<
     public virtual async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
     {
         return await _dbSet.Where(predicate).ToListAsync();
+    }
+
+    /// <summary>
+    /// FilterDefinition is MongoDb specific to construct and perform queries using native driver.
+    /// This allows for dynamic field name queries (e.g. "Labels.{key}") and values at runtime.
+    /// </summary>
+    /// <param name="filterDefinition"></param>
+    /// <returns></returns>
+    public virtual async Task<IEnumerable<TEntity>> FindAsync(string collectionName, FilterDefinition<TEntity> filterDefinition)
+    {
+        var collection = _mongoDb.GetCollection<TEntity>(collectionName);
+
+        return await collection.Find(filterDefinition).ToListAsync();
     }
 
     public virtual async Task AddAsync(TEntity entity)

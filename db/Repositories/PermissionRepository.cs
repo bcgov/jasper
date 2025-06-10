@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
 
@@ -12,7 +13,7 @@ public interface IPermissionRepository : IRepositoryBase<Permission>
     Task<IEnumerable<Permission>> GetActivePermissionsAsync();
 }
 
-public class PermissionRepository(JasperDbContext context) : RepositoryBase<Permission>(context), IPermissionRepository
+public class PermissionRepository(JasperDbContext context, IMongoDatabase mongoDb) : RepositoryBase<Permission>(context, mongoDb), IPermissionRepository
 {
     public async Task<IEnumerable<Permission>> GetActivePermissionsAsync()
     {

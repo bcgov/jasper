@@ -1,10 +1,11 @@
 ﻿
 using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
+using Scv.Db.Contants;
 
 namespace Scv.Db.Models
 {
-    [Collection("roles")]
+    [Collection(CollectionNameConstants.ROLES)]
     public class Role : EntityBase
     {
         public const string ADMIN = "System Administrator";

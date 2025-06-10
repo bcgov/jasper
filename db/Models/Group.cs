@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
+using Scv.Db.Contants;
 
 namespace Scv.Db.Models
 {
-    [Collection("groups")]
+    [Collection(CollectionNameConstants.GROUPS)]
     public class Group : EntityBase
     {
         public const string TRAINING_AND_ADMIN = "Training and Administration";

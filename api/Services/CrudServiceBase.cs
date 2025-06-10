@@ -11,7 +11,7 @@ using Scv.Db.Repositories;
 
 namespace Scv.Api.Services;
 
-public interface IAccessControlManagementService<TDto> where TDto : BaseDto
+public interface ICrudService<TDto> where TDto : BaseDto
 {
     Task<List<TDto>> GetAllAsync();
     Task<TDto> GetByIdAsync(string id);
@@ -21,11 +21,11 @@ public interface IAccessControlManagementService<TDto> where TDto : BaseDto
     Task<OperationResult> DeleteAsync(string id);
 }
 
-public abstract class AccessControlManagementServiceBase<TRepo, TEntity, TDto>(
+public abstract class CrudServiceBase<TRepo, TEntity, TDto>(
     IAppCache cache,
     IMapper mapper,
     ILogger logger,
-    TRepo repo) : ServiceBase(cache), IAccessControlManagementService<TDto>
+    TRepo repo) : ServiceBase(cache), ICrudService<TDto>
     where TRepo : IRepositoryBase<TEntity>
     where TEntity : EntityBase
     where TDto : BaseDto

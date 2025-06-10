@@ -15,14 +15,14 @@ using Xunit;
 namespace tests.api.Controllers;
 public class GroupsControllerTests
 {
-    private readonly Mock<IAccessControlManagementService<GroupDto>> _mockGroupService;
+    private readonly Mock<ICrudService<GroupDto>> _mockGroupService;
     private readonly Mock<IValidator<GroupDto>> _mockValidator;
     private readonly GroupsController _controller;
     private readonly Faker _faker;
 
     public GroupsControllerTests()
     {
-        _mockGroupService = new Mock<IAccessControlManagementService<GroupDto>>();
+        _mockGroupService = new Mock<ICrudService<GroupDto>>();
         _mockValidator = new Mock<IValidator<GroupDto>>();
         _controller = new GroupsController(
             _mockGroupService.Object,

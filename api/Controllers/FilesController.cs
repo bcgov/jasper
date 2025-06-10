@@ -24,7 +24,9 @@ using Scv.Api.Models.archive;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Models.Search;
+using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Db.Contants;
 using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 
@@ -40,7 +42,8 @@ namespace Scv.Api.Controllers
         FilesService filesService,
         VcCivilFileAccessHandler vcCivilFileAccessHandler,
         IHttpContextAccessor httpContextAccessor,
-        IValidator<BinderDto> binderValidator) : ControllerBase
+        IValidator<BinderDto> binderValidator,
+        JudicialBinderService jbService) : ControllerBase
     {
         #region Variables
 
@@ -52,11 +55,9 @@ namespace Scv.Api.Controllers
         private readonly VcCivilFileAccessHandler _vcCivilFileAccessHandler = vcCivilFileAccessHandler;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IValidator<BinderDto> _binderValidator = binderValidator;
+        private readonly JudicialBinderService _jbService = jbService;
 
         #endregion Variables
-        #region Constructor
-
-        #endregion Constructor
 
         #region Actions
 
@@ -192,6 +193,34 @@ namespace Scv.Api.Controllers
             return Ok(civilFiles);
         }
 
+
+        /// <summary>
+        /// Retrieves the judicial binders for the current user and file id
+        /// </summary>
+        /// <param name="fileId">The case file id.</param>
+        /// <returns>The judicial binders.</returns>
+        [HttpGet]
+        [Route("civil/{fileId}/judicial-binders")]
+        public async Task<ActionResult> GetJudicialBinders(string fileId)
+        {
+            var judgeId = this.User.JasperUserId();
+            var labelFilters = new Dictionary<string, string>
+            {
+                { LabelConstants.PHYSICAL_FILE_ID, fileId },
+                { LabelConstants.JUDGE_ID, judgeId }
+            };
+
+            var binders = await _jbService.GetByLabels(labelFilters);
+
+            return Ok(binders);
+        }
+
+        /// <summary>
+        /// Creates a judicial binder for the current user and file id
+        /// </summary>
+        /// <param name="fileId">The case file id.</param>
+        /// <param name="dto">The payload of judicial binder.</param>
+        /// <returns>The created judicial binder.</returns>
         [HttpPost]
         [Route("civil/{fileId}/judicial-binders")]
         public async Task<ActionResult> CreateJudicialBinder(string fileId, BinderDto dto)
@@ -207,13 +236,16 @@ namespace Scv.Api.Controllers
                 return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
             }
 
-            var businessRulesValidation = await _civilFilesService.ValidateJudicialBinderAsync(fileId, dto);
+            // Ensure File Id is added as a label
+            dto.Labels.TryAdd(LabelConstants.PHYSICAL_FILE_ID, fileId);
+
+            var businessRulesValidation = await _jbService.ValidateAsync(dto);
             if (!businessRulesValidation.Succeeded)
             {
                 return BadRequest(new { error = businessRulesValidation.Errors });
             }
 
-            var result = await _civilFilesService.CreateJudicialBinderAsync(fileId, dto);
+            var result = await _jbService.AddAsync(dto);
             if (!result.Succeeded)
             {
                 return BadRequest(new { error = result.Errors });
@@ -221,6 +253,13 @@ namespace Scv.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Updates a judicial binder for the current user and file id
+        /// </summary>
+        /// <param name="fileId">The case file id.</param>
+        /// <param name="binderId">The id of the judicial binder.</param>
+        /// <param name="dto">The payload of judicial binder.</param>
+        /// <returns>The updated judicial binder.</returns>
         [HttpPut]
         [Route("civil/{fileId}/judicial-binders/{binderId}")]
         public async Task<ActionResult> UpdateJudicialBinder(string fileId, string binderId, BinderDto dto)
@@ -241,13 +280,16 @@ namespace Scv.Api.Controllers
                 return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
             }
 
-            var businessRulesValidation = await _civilFilesService.ValidateJudicialBinderAsync(fileId, dto);
+            // Ensure File Id is added as a label
+            dto.Labels.TryAdd(LabelConstants.PHYSICAL_FILE_ID, fileId);
+
+            var businessRulesValidation = await _jbService.ValidateAsync(dto);
             if (!businessRulesValidation.Succeeded)
             {
                 return BadRequest(new { error = businessRulesValidation.Errors });
             }
 
-            var result = await _civilFilesService.UpdateJudicialBinderAsync(dto);
+            var result = await _jbService.UpdateAsync(dto);
             if (!result.Succeeded)
             {
                 return BadRequest(new { error = result.Errors });
@@ -255,6 +297,13 @@ namespace Scv.Api.Controllers
             return Ok(result);
         }
 
+
+        /// <summary>
+        /// Deletes the judicial binder by id.
+        /// </summary>
+        /// <param name="fileId">The case file id.</param>
+        /// <param name="binderId">The id of the judicial binder.</param>
+        /// <returns></returns>
         [HttpDelete("civil/{fileId}/judicial-binders/{binderId}")]
         public virtual async Task<IActionResult> DeleteJudicialBinder(string fileId, string binderId)
         {
@@ -263,7 +312,7 @@ namespace Scv.Api.Controllers
                 return BadRequest("Invalid ID.");
             }
 
-            var result = await _civilFilesService.DeleteJudicialBinderAsync(binderId);
+            var result = await _jbService.DeleteAsync(binderId);
             if (!result.Succeeded)
             {
                 return BadRequest(new { errors = result.Errors });

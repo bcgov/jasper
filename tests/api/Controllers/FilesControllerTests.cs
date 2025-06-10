@@ -21,12 +21,12 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Mappings;
+using Scv.Api.Models;
 using Scv.Api.Models.archive;
 using Scv.Api.Models.Search;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Models;
-using Scv.Db.Repositories;
 using tests.api.Helpers;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -92,7 +92,7 @@ namespace tests.api.Controllers
             };
             var identity = new ClaimsIdentity(claims, "Cookies");
             var principal = new ClaimsPrincipal(identity);
-            var mockBinderRepo = new Mock<IRepositoryBase<Binder>>();
+            var mockBinderService = new Mock<JudicialBinderService>();
             var mockBinderDtoValidator = new Mock<IValidator<BinderDto>>();
 
             _service = new FilesService(
@@ -103,12 +103,18 @@ namespace tests.api.Controllers
                 locationService,
                 new CachingService(),
                 principal,
-                fileServices.LogFactory,
-                mockBinderRepo.Object);
+                fileServices.LogFactory);
 
             //TODO fake this.
             var vcCivilFileAccessHandler = new VcCivilFileAccessHandler(new ScvDbContext());
-            _controller = new FilesController(fileServices.Configuration, fileServices.LogFactory.CreateLogger<FilesController>(), _service, vcCivilFileAccessHandler, contextAccessor, mockBinderDtoValidator.Object);
+            _controller = new FilesController(
+                fileServices.Configuration,
+                fileServices.LogFactory.CreateLogger<FilesController>(),
+                _service,
+                vcCivilFileAccessHandler,
+                contextAccessor,
+                mockBinderDtoValidator.Object,
+                mockBinderService.Object);
             _controller.ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration);
         }
 

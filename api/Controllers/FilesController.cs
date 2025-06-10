@@ -203,7 +203,7 @@ namespace Scv.Api.Controllers
         [Route("civil/{fileId}/judicial-binders")]
         public async Task<ActionResult> GetJudicialBinders(string fileId)
         {
-            var judgeId = this.User.JasperUserId();
+            var judgeId = this.User.UserId();
             var labelFilters = new Dictionary<string, string>
             {
                 { LabelConstants.PHYSICAL_FILE_ID, fileId },

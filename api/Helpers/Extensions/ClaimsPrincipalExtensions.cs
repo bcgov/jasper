@@ -25,7 +25,7 @@ namespace Scv.Api.Helpers.Extensions
             return identity.Claims.FirstOrDefault(c => c.Type == CustomClaimTypes.JcParticipantId)?.Value;
         }
 
-        public static string UserId(this ClaimsPrincipal claimsPrincipal) =>
+        public static string ExternalUserId(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
 
         public static string PreferredUsername(this ClaimsPrincipal claimsPrincipal) =>
@@ -100,7 +100,7 @@ namespace Scv.Api.Helpers.Extensions
         public static List<string> Roles(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindAll(CustomClaimTypes.Role)?.Select(c => c.Value).ToList() ?? [];
 
-        public static string JasperUserId(this ClaimsPrincipal claimsPrincipal) =>
+        public static string UserId(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(CustomClaimTypes.UserId);
     }
 }

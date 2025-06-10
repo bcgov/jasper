@@ -16,7 +16,7 @@ namespace Scv.Api.Infrastructure.Authorization
         }
         public async Task<bool> HasCivilFileAccess(ClaimsPrincipal user, string civilFileId)
         {
-            var userId = user.UserId();
+            var userId = user.ExternalUserId();
             var now = DateTimeOffset.UtcNow;
             var fileAccess = await Db.RequestFileAccess
                 .AnyAsync(r => r.UserId == userId && r.Expires > now && r.FileId == civilFileId);

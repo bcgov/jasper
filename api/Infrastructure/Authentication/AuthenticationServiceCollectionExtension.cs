@@ -129,7 +129,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                         var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
                         var logger = loggerFactory.CreateLogger("OnTokenValidated");
-                        logger.LogInformation($"OpenIdConnect UserId - {context.Principal.UserId()} - logged in.");
+                        logger.LogInformation($"OpenIdConnect UserId - {context.Principal.ExternalUserId()} - logged in.");
 
                         //Cleanup keycloak claims, that are unused.
                         foreach (var claim in identity.Claims.WhereToList(c =>
@@ -143,7 +143,7 @@ namespace Scv.Api.Infrastructure.Authentication
                         if (context.Principal.IsVcUser())
                         {
                             var db = context.HttpContext.RequestServices.GetRequiredService<ScvDbContext>();
-                            var userId = context.Principal.UserId();
+                            var userId = context.Principal.ExternalUserId();
                             var now = DateTimeOffset.UtcNow;
                             var fileAccess = await db.RequestFileAccess
                                 .Where(r => r.UserId == userId && r.Expires > now)
@@ -152,7 +152,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                             if (fileAccess != null && !string.IsNullOrEmpty(fileAccess.PartId) && !string.IsNullOrEmpty(fileAccess.AgencyId))
                             {
-                                logger.LogInformation($"UserId - {context.Principal.UserId()} - Using credentials passed in from A2A.");
+                                logger.LogInformation($"UserId - {context.Principal.ExternalUserId()} - Using credentials passed in from A2A.");
                                 var aesGcmEncryption = context.HttpContext.RequestServices.GetRequiredService<AesGcmEncryption>();
                                 partId = aesGcmEncryption.Decrypt(fileAccess.PartId);
                                 agencyId = aesGcmEncryption.Decrypt(fileAccess.AgencyId);

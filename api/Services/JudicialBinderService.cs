@@ -56,7 +56,7 @@ public class JudicialBinderService : BinderService
 
         // Add system-generated labels for judicial binder
         dto.Labels.Add(LabelConstants.PHYSICAL_FILE_ID, fileId);
-        dto.Labels.Add(LabelConstants.JUDGE_ID, _currentUser.JasperUserId());
+        dto.Labels.Add(LabelConstants.JUDGE_ID, _currentUser.UserId());
         dto.Labels.Add(LabelConstants.COURT_CLASS_CD, fileDetail.CourtClassCd.ToString());
     }
 

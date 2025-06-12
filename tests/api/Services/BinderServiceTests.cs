@@ -7,6 +7,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -16,6 +17,7 @@ public class BinderServiceTests
 {
     private readonly Bogus.Faker _faker;
     private readonly Mock<IRepositoryBase<Binder>> _mockBinderRepo;
+    private readonly Mock<IBinderFactory> _mockBinderFactory;
     private readonly BinderService _binderService;
 
     public BinderServiceTests()
@@ -35,11 +37,13 @@ public class BinderServiceTests
         var logger = new Mock<ILogger<BinderService>>();
 
         _mockBinderRepo = new Mock<IRepositoryBase<Binder>>();
+        _mockBinderFactory = new Mock<IBinderFactory>();
 
         _binderService = new BinderService(
             cachingService,
             mapper,
             logger.Object,
-            _mockBinderRepo.Object);
+            _mockBinderRepo.Object,
+            _mockBinderFactory.Object);
     }
 }

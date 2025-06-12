@@ -150,7 +150,6 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
-                services.AddScoped<JudicialBinderProcessor>();
             }
 
             return services;

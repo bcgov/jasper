@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Security.Claims;
+using FluentValidation;
 using JCCommon.Clients.FileServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
@@ -10,15 +11,22 @@ namespace Scv.Api.Processors;
 
 public interface IBinderFactory
 {
-    IBinderProcessor Generate(BinderDto dto);
+    IBinderProcessor Create(BinderDto dto);
 }
 
-public class BinderFactory(IServiceProvider serviceProvider, ILogger<BinderFactory> logger) : IBinderFactory
+public class BinderFactory(
+    FileServicesClient filesClient,
+    ClaimsPrincipal currentUser,
+    ILogger<BinderFactory> logger,
+    IValidator<BinderDto> basicValidator
+    ) : IBinderFactory
 {
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly FileServicesClient _filesClient = filesClient;
+    private readonly ClaimsPrincipal _currentUser = currentUser;
     private readonly ILogger<BinderFactory> _logger = logger;
+    private readonly IValidator<BinderDto> _basicValidator = basicValidator;
 
-    public IBinderProcessor Generate(BinderDto dto)
+    public IBinderProcessor Create(BinderDto dto)
     {
         var courtClass = dto.Labels.GetValue(LabelConstants.COURT_CLASS_CD);
         var isValid = Enum.TryParse(courtClass, ignoreCase: true, out CourtClassCd courtClassCode);
@@ -35,7 +43,7 @@ public class BinderFactory(IServiceProvider serviceProvider, ILogger<BinderFacto
             case CourtClassCd.F:
             case CourtClassCd.L:
             case CourtClassCd.M:
-                return _serviceProvider.GetRequiredService<JudicialBinderProcessor>();
+                return new JudicialBinderProcessor(_filesClient, _currentUser, _basicValidator, dto);
             //case CourtClassCd.A:
             //case CourtClassCd.Y:
             //case CourtClassCd.T:

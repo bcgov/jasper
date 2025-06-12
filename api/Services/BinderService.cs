@@ -100,7 +100,7 @@ public class BinderService(
     {
         if (!ObjectId.TryParse(id, out _))
         {
-            return OperationResult.Failure(["Invalid ID."]);
+            return OperationResult.Failure("Invalid ID.");
         }
 
         var binderToDelete = await base.GetByIdAsync(id);

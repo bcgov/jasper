@@ -21,7 +21,6 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models;
 using Scv.Api.Models.archive;
 using Scv.Api.Models.Search;
 using Scv.Api.Services;
@@ -92,8 +91,6 @@ namespace tests.api.Controllers
             };
             var identity = new ClaimsIdentity(claims, "Cookies");
             var principal = new ClaimsPrincipal(identity);
-            var mockBinderService = new Mock<JudicialBinderService>();
-            var mockBinderDtoValidator = new Mock<IValidator<BinderDto>>();
 
             _service = new FilesService(
                 fileServices.Configuration,
@@ -112,9 +109,7 @@ namespace tests.api.Controllers
                 fileServices.LogFactory.CreateLogger<FilesController>(),
                 _service,
                 vcCivilFileAccessHandler,
-                contextAccessor,
-                mockBinderDtoValidator.Object,
-                mockBinderService.Object);
+                contextAccessor);
             _controller.ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration);
         }
 

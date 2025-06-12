@@ -1,5 +1,5 @@
-﻿using FluentValidation;
-using Scv.Api.Helpers.Extensions;
+﻿using System.Collections.Generic;
+using FluentValidation;
 using Scv.Api.Models;
 using Scv.Db.Contants;
 
@@ -9,16 +9,15 @@ public class BinderDtoValidator : BaseDtoValidator<BinderDto>
 {
     public BinderDtoValidator() : base()
     {
-        RuleFor(r => r.Id)
-            .Must((dto, id, context) =>
-            {
-                if (!IsEdit(context))
-                {
-                    return true;
-                }
+        RuleFor(r => r.Labels)
+            .Must(HaveRequiredLabels)
+            .WithMessage($"Labels must contain {LabelConstants.PHYSICAL_FILE_ID} and {LabelConstants.COURT_CLASS_CD}");
+    }
 
-                var fileId = context.RootContextData["FileId"] as string;
-                return fileId == dto.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
-            });
+    private bool HaveRequiredLabels(Dictionary<string, string> labels)
+    {
+        return labels.Count != 0
+            && labels.ContainsKey(LabelConstants.PHYSICAL_FILE_ID)
+            && labels.ContainsKey(LabelConstants.COURT_CLASS_CD);
     }
 }

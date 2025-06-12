@@ -18,6 +18,7 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
@@ -147,7 +148,9 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<RoleDto>, RoleService>();
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<IUserService, UserService>();
-                services.AddScoped<JudicialBinderService>();
+                services.AddScoped<IBinderFactory, BinderFactory>();
+                services.AddScoped<IBinderService, BinderService>();
+                services.AddScoped<JudicialBinderProcessor>();
             }
 
             return services;

@@ -14,7 +14,7 @@ public class BinderDtoValidator : BaseDtoValidator<BinderDto>
             .WithMessage($"Labels must contain {LabelConstants.PHYSICAL_FILE_ID} and {LabelConstants.COURT_CLASS_CD}");
     }
 
-    private bool HaveRequiredLabels(Dictionary<string, string> labels)
+    private static bool HaveRequiredLabels(Dictionary<string, string> labels)
     {
         return labels.Count != 0
             && labels.ContainsKey(LabelConstants.PHYSICAL_FILE_ID)

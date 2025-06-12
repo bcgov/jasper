@@ -41,6 +41,6 @@ public class BinderFactory(IServiceProvider serviceProvider, ILogger<BinderFacto
             //case CourtClassCd.T:
             default:
                 throw new NotSupportedException("Unsupported processor");
-        };
+        }
     }
 }

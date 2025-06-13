@@ -37,8 +37,7 @@ public class BinderService(
 
     public async Task<OperationResult<List<BinderDto>>> GetByLabels(Dictionary<string, string> labels)
     {
-        var dto = new BinderDto { Labels = labels };
-        var binderProcessor = _binderFactory.Create(dto);
+        var binderProcessor = _binderFactory.Create(labels);
 
         var processorValidation = await binderProcessor.ValidateAsync();
         if (!processorValidation.Succeeded)

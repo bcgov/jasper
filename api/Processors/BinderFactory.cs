@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
@@ -12,6 +13,7 @@ namespace Scv.Api.Processors;
 public interface IBinderFactory
 {
     IBinderProcessor Create(BinderDto dto);
+    IBinderProcessor Create(Dictionary<string, string> labels);
 }
 
 public class BinderFactory(
@@ -25,6 +27,11 @@ public class BinderFactory(
     private readonly ClaimsPrincipal _currentUser = currentUser;
     private readonly ILogger<BinderFactory> _logger = logger;
     private readonly IValidator<BinderDto> _basicValidator = basicValidator;
+
+    public IBinderProcessor Create(Dictionary<string, string> labels)
+    {
+        return this.Create(new BinderDto { Labels = labels });
+    }
 
     public IBinderProcessor Create(BinderDto dto)
     {

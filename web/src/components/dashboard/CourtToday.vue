@@ -10,7 +10,7 @@
           <span>today</span>
         </div>
         <!-- Activity -->
-        <v-slide-group v-if="showActivityDetails" show-arrows>
+        <v-slide-group show-arrows>
           <v-slide-group-item
             v-if="today.activities && today.activities.length"
             v-for="(
@@ -20,6 +20,7 @@
                 activityDescription,
                 period,
                 activityClassDescription,
+                activityDisplayCode,
                 filesCount,
                 continuationsCount,
               },
@@ -27,6 +28,7 @@
             ) in today.activities"
           >
             <div
+              v-if="activityDescription"
               :class="[
                 'px-4',
                 { divider: index !== today.activities.length - 1 },
@@ -65,11 +67,13 @@
                 </div>
               </div>
             </div>
+            <div v-else class="d-flex justify-center align-center">
+              <h2 data-testid="no-court-scheduled" class="px-4">
+                {{ activityDisplayCode }}
+              </h2>
+            </div>
           </v-slide-group-item>
         </v-slide-group>
-        <div v-else class="d-flex justify-center align-center">
-          <h2 class="px-4">No court scheduled</h2>
-        </div>
       </div>
       <v-btn-tertiary>Today's court list</v-btn-tertiary>
     </div>
@@ -84,7 +88,9 @@
     today: CalendarDayV2;
   }>();
 
-  const cleanActivityClassDescription = (activityClassDescription): string => {
+  const cleanActivityClassDescription = (
+    activityClassDescription: string
+  ): string => {
     return activityClassDescription.trim().replace(/\s+/g, '-').toLowerCase();
   };
 

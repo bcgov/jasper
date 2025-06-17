@@ -5,8 +5,16 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 describe('CourtToday.vue', () => {
-  it(`renders 'No court scheduled' activity`, () => {
-    const mockToday = {} as CalendarDayV2;
+  it(`renders 'activityDisplayCode' when 'activityDescription' is null`, () => {
+    const mockActivity = faker.lorem.word();
+    const mockToday = {
+      activities: [
+        {
+          activityClassDescription: faker.lorem.word(),
+          activityDisplayCode: mockActivity,
+        } as CalendarDayActivity,
+      ],
+    } as CalendarDayV2;
 
     const wrapper = mount(CourtToday, {
       props: {
@@ -14,8 +22,13 @@ describe('CourtToday.vue', () => {
       },
     });
 
-    const header = wrapper.find('h2');
-    expect(header.text()).toBe('No court scheduled');
+    const activitiesComps = wrapper.findAll('v-slide-group-item');
+    expect(activitiesComps.length).toBe(1);
+
+    const noCourtEl = activitiesComps[0].find(
+      '[data-testid="no-court-scheduled"]'
+    );
+    expect(noCourtEl.text()).toBe(mockActivity);
   });
 
   it(`renders 1 activity`, () => {

@@ -696,8 +696,8 @@
         // Hard-code start and end date for demo/testing purposes until Dashboard has been refactored
         const { payload } = await dashboardService.getMySchedule(
           '01-Jun-2025',
-          '30-Jun-2025',
-          '13-Jun-2025'
+          '30-Jul-2025',
+          '01-Jul-2025'
         );
         todaySchedule.value = payload.today;
 

@@ -117,24 +117,36 @@ public class DashboardService(
                 continue;
             }
 
-            var sameLocation = amActivity.LocationId == pmActivity.LocationId;
-            var sameActivity = amActivity.ActivityCode == pmActivity.ActivityCode;
-            var sameRoom = amActivity.CourtRoomCode == pmActivity.CourtRoomCode;
-
-            if (sameLocation && sameActivity && sameRoom)
+            if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
             {
                 activities.Add(CreateCalendarDayActivity(amActivity));
             }
             else
             {
-                activities.Add(CreateCalendarDayActivity(amActivity, Period.AM));
-                activities.Add(CreateCalendarDayActivity(pmActivity, Period.PM));
+                if (amActivity != null)
+                {
+                    activities.Add(CreateCalendarDayActivity(amActivity, Period.AM));
+                }
+
+                if (pmActivity != null)
+                {
+                    activities.Add(CreateCalendarDayActivity(pmActivity, Period.PM));
+                }
             }
 
             days.Add(new CalendarDayV2 { Date = item.Date, Activities = activities });
         }
         return days;
 
+    }
+
+    private static bool IsSameAmPmActivity(JudicialCalendarActivity amActivity, JudicialCalendarActivity pmActivity)
+    {
+        var sameLocation = amActivity.LocationId == pmActivity.LocationId;
+        var sameActivity = amActivity.ActivityCode == pmActivity.ActivityCode;
+        var sameRoom = amActivity.CourtRoomCode == pmActivity.CourtRoomCode;
+
+        return sameLocation && sameActivity && sameRoom;
     }
 
     private static CalendarDayActivity CreateCalendarDayActivity(JudicialCalendarActivity activity, Period? period = null) => new()

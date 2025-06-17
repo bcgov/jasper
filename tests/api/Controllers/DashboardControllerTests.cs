@@ -1,76 +1,62 @@
 ﻿using System.Security.Claims;
-using JCCommon.Clients.FileServices;
-using JCCommon.Clients.LocationServices;
-using JCCommon.Clients.LookupCodeServices;
-using LazyCache;
-using Mapster;
-using MapsterMapper;
+using System.Threading.Tasks;
+using Bogus;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure.Mappings;
+using Scv.Api.Infrastructure;
+using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
-using tests.api.Helpers;
-using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
-using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
+using Xunit;
 
 namespace tests.api.Controllers
 {
     public class DashboardControllerTests
     {
-        #region Variables
-
+        private readonly Faker _faker;
         private readonly DashboardController _controller;
+        private readonly Mock<IDashboardService> _dashboardService;
 
         private ClaimsIdentity _identity;
 
-        #endregion Variables
-
-        #region Constructor
-
         public DashboardControllerTests()
         {
-            var fileServices = new EnvironmentBuilder("FileServicesClient:Username", "FileServicesClient:Password", "FileServicesClient:Url");
-            var lookupServices = new EnvironmentBuilder("LookupServicesClient:Username", "LookupServicesClient:Password", "LookupServicesClient:Url");
-            var locationServices = new EnvironmentBuilder("LocationServicesClient:Username", "LocationServicesClient:Password", "LocationServicesClient:Url");
-            var pcssServices = new EnvironmentBuilder("PCSSServicesClient:Username", "PCSSServicesClient:Password", "PCSSServicesClient:Url");
+            _faker = new Faker();
+            _dashboardService = new Mock<IDashboardService>();
 
-            var lookupServiceClient = new LookupCodeServicesClient(lookupServices.HttpClient);
-            var locationServiceClient = new LocationServicesClient(locationServices.HttpClient);
-            var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
-            var pcssLookupServicesClient = new PCSSLookupServices.LookupServicesClient(pcssServices.HttpClient);
-
-            var fileServicesClient = new FileServicesClient(fileServices.HttpClient);
-            var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
-
-            // IMapper setup
-            var config = new TypeAdapterConfig();
-            config.Apply(new LocationMapping());
-            var mapper = new Mapper(config);
-
-            var locationService = new LocationService(
-                locationServices.Configuration,
-                locationServiceClient,
-                pcssLocationServicesClient,
-                pcssLookupServicesClient,
-                new CachingService(),
-                mapper);
-
-            var claims = new[] {
-                new Claim(CustomClaimTypes.ApplicationCode, "SCV"),
-                new Claim(CustomClaimTypes.JcParticipantId,  fileServices.Configuration.GetNonEmptyValue("Request:PartId")),
-                new Claim(CustomClaimTypes.JcAgencyCode, fileServices.Configuration.GetNonEmptyValue("Request:AgencyIdentifierId")),
-                new Claim(CustomClaimTypes.IsSupremeUser, "True"),
-            };
-            _identity = new ClaimsIdentity(claims, "Cookies");
-            var principal = new ClaimsPrincipal(_identity);
-
-            //var assignmentService = new AssignmentService(fileServices.Configuration, fileServices.LogFactory.CreateLogger<AssignmentService>(), fileServicesClient, new Mapper(), lookupService, locationService,null, new CachingService(), principal);
-            //_controller = new DashboardController(assignmentService, locationService, null, null)
-            //{
-            //    ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration)
-            //};
+            _controller = new DashboardController(null, null, _dashboardService.Object);
         }
 
-        #endregion Constructor
+        [Fact]
+        public async Task GetMySchedule_Returns_BadRequest()
+        {
+            _dashboardService
+                .Setup(d => d.GetMyScheduleAsync(
+                    DashboardController.TEST_JUDGE_ID,
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CalendarSchedule>.Failure(_faker.Lorem.Paragraph()));
+
+            var result = await _controller.GetMySchedule(_faker.Date.ToString(), _faker.Date.ToString());
+
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetMySchedule_Returns_Success()
+        {
+            _dashboardService
+                .Setup(d => d.GetMyScheduleAsync(
+                    DashboardController.TEST_JUDGE_ID,
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CalendarSchedule>.Success(new CalendarSchedule()));
+
+            var result = await _controller.GetMySchedule(_faker.Date.ToString(), _faker.Date.ToString());
+
+            Assert.IsType<OkObjectResult>(result);
+        }
     }
 }

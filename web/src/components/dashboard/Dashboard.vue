@@ -693,11 +693,20 @@
         const { schedule, presiders, activities } =
           await dashboardService.getMonthlySchedule(year, +month, locationIds);
 
-        // Hard-code start and end date for demo/testing purposes until Dashboard has been refactored
+        const firstDay = new Date(
+          currentCalendarDate.getFullYear(),
+          currentCalendarDate.getMonth(),
+          1
+        );
+        const lastDay = new Date(
+          currentCalendarDate.getFullYear(),
+          currentCalendarDate.getMonth() + 1,
+          0
+        );
         const { payload } = await dashboardService.getMySchedule(
-          '01-Jun-2025',
-          '30-Jul-2025',
-          '01-Jul-2025'
+          firstDay.toLocaleDateString(),
+          lastDay.toLocaleDateString(),
+          currentCalendarDate.toLocaleDateString()
         );
         todaySchedule.value = payload.today;
 

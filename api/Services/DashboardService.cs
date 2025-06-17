@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
@@ -31,9 +32,9 @@ public class DashboardService(
     public async Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate)
     {
         // Validate dates
-        var isValidCurrentDate = DateTime.TryParse(currentDate, out var validCurrentDate);
-        var isValidStartDate = DateTime.TryParse(startDate, out var validStartDate);
-        var isValidEndDate = DateTime.TryParse(endDate, out var validEndDate);
+        var isValidCurrentDate = DateTime.TryParseExact(currentDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validCurrentDate);
+        var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
+        var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
 
         if (!isValidCurrentDate || !isValidStartDate || !isValidEndDate)
         {

@@ -544,6 +544,7 @@
   import { Activity, CalendarDay, Location, Presider } from '@/types';
   import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
   import Calendar from '../calendar/Calendar.vue';
+  import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 
   export default defineComponent({
     components: {
@@ -703,10 +704,11 @@
           currentCalendarDate.getMonth() + 1,
           0
         );
+
         const { payload } = await dashboardService.getMySchedule(
-          firstDay.toLocaleDateString(),
-          lastDay.toLocaleDateString(),
-          currentCalendarDate.toLocaleDateString()
+          formatDateInstanceToDDMMMYYYY(firstDay),
+          formatDateInstanceToDDMMMYYYY(lastDay),
+          formatDateInstanceToDDMMMYYYY(currentCalendarDate)
         );
         todaySchedule.value = payload.today;
 

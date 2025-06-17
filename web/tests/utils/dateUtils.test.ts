@@ -1,5 +1,6 @@
 import {
   extractTime,
+  formatDateInstanceToDDMMMYYYY,
   formatDateToDDMMMYYYY,
   hoursMinsFormatter,
 } from '@/utils/dateUtils';
@@ -73,6 +74,23 @@ describe('dateUtils', () => {
 
     it('throws an error for invalid date format', () => {
       expect(() => extractTime('invalid-date')).toThrowError();
+    });
+  });
+
+  describe('formatDateInstanceToDDMMMYYYY', () => {
+    it('formats a valid Date correctly', () => {
+      const date = new Date(2025, 5, 17);
+      expect(formatDateInstanceToDDMMMYYYY(date)).toBe('17-Jun-2025');
+    });
+
+    it('formats a date with single-digit day/month', () => {
+      const date = new Date(2025, 0, 5);
+      expect(formatDateInstanceToDDMMMYYYY(date)).toBe('05-Jan-2025');
+    });
+
+    it('returns empty string for invalid Date', () => {
+      const date = new Date('invalid');
+      expect(formatDateInstanceToDDMMMYYYY(date)).toBe('');
     });
   });
 });

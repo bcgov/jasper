@@ -5,14 +5,31 @@
  * @returns {string} A formatted date string in "DD-MMM-YYYY" format (e.g., "01-Jan-2023").
  */
 export const formatDateToDDMMMYYYY = (dateString: string): string => {
-  if(!dateString){
+  if (!dateString) {
     return '';
   }
   const normalizedDateString = dateString.split(' ')[0]; // Extract only the date part
-  const date = normalizedDateString ? new Date(`${normalizedDateString}T00:00:00`) : null;
+  const date = normalizedDateString
+    ? new Date(`${normalizedDateString}T00:00:00`)
+    : null;
   if (!date) {
     return '';
   }
+
+  const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
+  const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);
+  const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
+
+  return `${day}-${month}-${year}`;
+};
+
+/**
+ * Formats a Date() instance into the format "DD-MMM-YYYY".
+ * @param date - The Date object
+ * @returns A formatted date string in "DD-MMM-YYYY" format (e.g., "01-Jan-2023").
+ */
+export const formatDateInstanceToDDMMMYYYY = (date: Date): string => {
+  if (!date || isNaN(date.getTime())) return '';
 
   const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
   const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);
@@ -48,10 +65,10 @@ export const hoursMinsFormatter = (hours: string, minutes: string) => {
  * @returns The formatted time in 12-hour format with AM/PM (e.g., "2:30 PM").
  */
 export const extractTime = (date: string) => {
-    const time = date.split(' ')[1];
-    const hours = parseInt(time.slice(0, 2), 10);
-    const minutes = time.slice(3, 5);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12; // Convert to 12-hour format
-    return `${formattedHours}:${minutes} ${period}`;
+  const time = date.split(' ')[1];
+  const hours = parseInt(time.slice(0, 2), 10);
+  const minutes = time.slice(3, 5);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const formattedHours = hours % 12 || 12; // Convert to 12-hour format
+  return `${formattedHours}:${minutes} ${period}`;
 };

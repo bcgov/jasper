@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using LazyCache;
 using PCSSCommon.Clients.JudicialCalendarServices;
@@ -14,40 +13,36 @@ namespace Scv.Api.Services;
 
 public interface IDashboardService
 {
-    Task<OperationResult<CalendarSchedule>> GetMySchedule(string startDate, string endDate);
+    Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate);
 }
 
 public class DashboardService(
     IAppCache cache,
-    ClaimsPrincipal currentUser,
     JudicialCalendarServicesClient calendarClient,
     SearchDateClient searchDateClient) : ServiceBase(cache), IDashboardService
 {
-    public const int TEST_JUDGE_ID = 229;
     public const string DATE_FORMAT = "dd-MMM-yyyy";
 
-    private readonly ClaimsPrincipal _currentUser = currentUser;
     private readonly JudicialCalendarServicesClient _calendarClient = calendarClient;
     private readonly SearchDateClient _searchDateClient = searchDateClient;
 
     public override string CacheName => nameof(DashboardService);
 
-    public async Task<OperationResult<CalendarSchedule>> GetMySchedule(string startDate, string endDate)
+    public async Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate)
     {
         // Validate dates
+        var isValidCurrentDate = DateTime.TryParse(currentDate, out var validCurrentDate);
         var isValidStartDate = DateTime.TryParse(startDate, out var validStartDate);
         var isValidEndDate = DateTime.TryParse(endDate, out var validEndDate);
 
-        if (!isValidStartDate || !isValidEndDate)
+        if (!isValidCurrentDate || !isValidStartDate || !isValidEndDate)
         {
-            return OperationResult<CalendarSchedule>.Failure("startDate and/or endDate is invalid.");
+            return OperationResult<CalendarSchedule>.Failure("currentDate, startDate and/or endDate is invalid.");
         }
 
-        // Get the PCSS JudgeId from CurrentUser
-        var judgeId = TEST_JUDGE_ID;
+        var formattedCurrentDate = validCurrentDate.ToString(DATE_FORMAT);
         var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
         var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
-        var currentDate = DateTime.Now.ToString(DATE_FORMAT);
 
         async Task<JudicialCalendar> MySchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
 
@@ -60,14 +55,13 @@ public class DashboardService(
         return OperationResult<CalendarSchedule>.Success(new CalendarSchedule
         {
             Days = days,
-            Today = await GetTodaysSchedule(judgeId, days)
+            Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, days)
         });
     }
 
-    private async Task<CalendarDay> GetTodaysSchedule(int judgeId, List<CalendarDay> days)
+    private async Task<CalendarDayV2> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDayV2> days)
     {
-        var todaysDate = "06-Jun-2025";
-        var today = days.SingleOrDefault(d => d.Date == todaysDate);
+        var today = days.SingleOrDefault(d => d.Date == currentDate);
         if (today == null)
         {
             return null;
@@ -78,7 +72,7 @@ public class DashboardService(
             // Query Court List for each activity to get the scheduled files count.
             var courtList = await _searchDateClient.GetCourtListAppearancesAsync(
                 activity.LocationId.GetValueOrDefault(),
-                todaysDate,
+                currentDate,
                 judgeId,
                 activity.RoomCode,
                 null);
@@ -99,9 +93,9 @@ public class DashboardService(
         return today;
     }
 
-    private static List<CalendarDay> GetDays(JudicialCalendar calendar)
+    private static List<CalendarDayV2> GetDays(JudicialCalendar calendar)
     {
-        var days = new List<CalendarDay>();
+        var days = new List<CalendarDayV2>();
         foreach (var item in calendar.Days)
         {
             var activities = new List<CalendarDayActivity>();
@@ -119,7 +113,7 @@ public class DashboardService(
                     ActivityClassDescription = item.Assignment.ActivityClassDescription,
                     IsRemote = item.Assignment.IsVideo.GetValueOrDefault()
                 });
-                days.Add(new CalendarDay { Date = item.Date, Activities = activities });
+                days.Add(new CalendarDayV2 { Date = item.Date, Activities = activities });
                 continue;
             }
 
@@ -137,7 +131,7 @@ public class DashboardService(
                 activities.Add(CreateCalendarDayActivity(pmActivity, Period.PM));
             }
 
-            days.Add(new CalendarDay { Date = item.Date, Activities = activities });
+            days.Add(new CalendarDayV2 { Date = item.Date, Activities = activities });
         }
         return days;
 

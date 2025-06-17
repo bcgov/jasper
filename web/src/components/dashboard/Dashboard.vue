@@ -585,7 +585,7 @@
 
       const sittingActivities = ref(false);
       const nonSittingActivities = ref(false);
-      const todaySchedule = ref<CalendarDay>(null);
+      const todaySchedule = ref<CalendarDay>();
 
       let currentCalendarDate = new Date('dd-mm-yyyy');
 
@@ -690,17 +690,19 @@
         const year = currentMonth.getFullYear();
         const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
 
-        const { days, presiders, activities } =
+        const { schedule, presiders, activities } =
           await dashboardService.getMonthlySchedule(year, +month, locationIds);
 
+        // Hard-code start and end date for demo/testing purposes until Dashboard has been refactored
         const { payload } = await dashboardService.getMySchedule(
           '01-Jun-2025',
-          '30-Jun-2025'
+          '30-Jun-2025',
+          '13-Jun-2025'
         );
         todaySchedule.value = payload.today;
 
-        allEvents = [...days];
-        filteredEvents.value = [...days];
+        allEvents = [...schedule];
+        filteredEvents.value = [...schedule];
 
         loadPresiders(presiders);
         loadActivities(activities);

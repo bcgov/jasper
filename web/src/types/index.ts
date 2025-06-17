@@ -1,5 +1,6 @@
 export * from './Activity';
 export * from './CalendarDay';
+export * from './CalendarDayActivity';
 export * from './CalendarSchedule';
 export * from './JudicialCalendarActivity';
 export * from './JudicialCalendarAssignment';

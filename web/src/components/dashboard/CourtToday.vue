@@ -76,11 +76,12 @@
   </v-banner>
 </template>
 <script setup lang="ts">
+  import { CalendarDayV2 } from '@/types';
   import { mdiCalendarCheckOutline } from '@mdi/js';
   import { computed } from 'vue';
 
   const props = defineProps<{
-    today: CalendarDay;
+    today: CalendarDayV2;
   }>();
 
   const cleanActivityClassDescription = (activityClassDescription): string => {
@@ -106,7 +107,7 @@
     font-size: 1.125rem;
   }
   .divider {
-    border-right: 0.125rem solid var(---border-gray-500);
+    border-right: 0.125rem solid var(--border-gray-500);
   }
   .civil {
     color: var(--text-purple-500);

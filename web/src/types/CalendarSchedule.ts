@@ -3,7 +3,8 @@ import { CalendarDay } from './CalendarDay';
 import { Presider } from './Presider';
 
 export interface CalendarSchedule {
-  schedule: CalendarDay[];
+  today: CalendarDay;
+  days: CalendarDay[];
   activities: Activity[];
   presiders: Presider[];
 }

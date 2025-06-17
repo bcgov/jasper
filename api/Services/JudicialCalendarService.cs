@@ -62,7 +62,10 @@ namespace Scv.Api.Services
         /// <returns>Judge's calendar based from start and end date</returns>
         public async Task<JudicialCalendar> GetJudgeCalendarAsync(int judgeId, DateTime startDate, DateTime endDate)
         {
-            return await _judicialCalendarsClient.ReadCalendarAsync(judgeId, startDate.ToString(PCSSConstants.DATE_FORMAT), endDate.ToString(PCSSConstants.DATE_FORMAT));
+            return await _judicialCalendarsClient.ReadCalendarV2Async(
+                judgeId,
+                startDate.ToString(PCSSConstants.DATE_FORMAT),
+                endDate.ToString(PCSSConstants.DATE_FORMAT));
         }
 
 

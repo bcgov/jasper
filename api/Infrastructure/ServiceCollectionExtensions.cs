@@ -140,6 +140,7 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
 
+            services.AddScoped<IDashboardService, DashboardService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))

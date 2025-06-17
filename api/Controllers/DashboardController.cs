@@ -16,24 +16,36 @@ namespace Scv.Api.Controllers
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("api/[controller]")]
     [ApiController]
-    public class DashboardController : ControllerBase
+    public class DashboardController(JudicialCalendarService judicialCalendarService, IMapper mapper, IDashboardService dashboardService) : ControllerBase
     {
         #region Variables
 
-        private readonly JudicialCalendarService _judicialCalendarService;
-        private readonly IMapper _mapper;
+        private readonly JudicialCalendarService _judicialCalendarService = judicialCalendarService;
+        private readonly IMapper _mapper = mapper;
+        private readonly IDashboardService _dashboardService = dashboardService;
 
         #endregion Variables
 
-        #region Constructor
+        #region Methods
 
-        public DashboardController(JudicialCalendarService judicialCalendarService, IMapper mapper)
+        /// <summary>
+        /// Retrieves the schedule of the currently logged on user
+        /// </summary>
+        /// <param name="startDate">The start date of the schedule.</param>
+        /// <param name="endDate">The end date of the schedule.</param>
+        /// <returns>The user schedule based on start and end dates.</returns>
+        [HttpGet]
+        [Route("my-schedule")]
+        public async Task<IActionResult> GetMySchedule(string startDate, string endDate)
         {
-            _judicialCalendarService = judicialCalendarService;
-            _mapper = mapper;
-        }
+            var result = await _dashboardService.GetMySchedule(startDate, endDate);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { error = result.Errors });
+            }
 
-        #endregion Constructor
+            return Ok(result);
+        }
 
         /// <summary>
         /// Retrieves the events for the specified month.
@@ -63,7 +75,7 @@ namespace Scv.Api.Controllers
                 var isMySchedule = string.IsNullOrWhiteSpace(locationIds);
 
                 // Test Judge Id
-                var judgeId = 190;
+                var judgeId = 229;
 
                 // Get "Judge's Calendar" when no LocationIds provided. Otherwise, get all judge's calendar for the provided LocationIds.
                 var calendars = isMySchedule
@@ -79,7 +91,7 @@ namespace Scv.Api.Controllers
                 var calendarDays = calendars.SelectMany(cd => _mapper.Map<List<CalendarDay>>(cd)).ToList();
                 if (isMySchedule)
                 {
-                    calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
+                    //calendarDays = calendarDays.Where(t => t.Assignment != null && t.Assignment.JudgeId == judgeId).ToList();
                 }
                 calendarSchedule.Schedule = calendarDays;
 
@@ -142,6 +154,8 @@ namespace Scv.Api.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
+        #endregion Methods
 
         #region Helpers
 

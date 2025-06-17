@@ -1,13 +1,6 @@
 <template>
   <div class="judges-dashboard">
-    <header class="header">
-      <div class="top-line">Court Today</div>
-      <div class="bot-line">
-        <div class="left">Criminal</div>
-        <div class="center">Scheduled:</div>
-        <div class="right">Today's court list</div>
-      </div>
-    </header>
+    <CourtToday v-if="todaySchedule" :today="todaySchedule" />
     <section class="dashboard-container">
       <div class="tools-container">
         <button class="filters" @click="toggleLeft()">
@@ -548,9 +541,9 @@
 </style>
 <script lang="ts">
   import { DashboardService, LocationService } from '@/services';
-import { Activity, CalendarDay, Location, Presider } from '@/types';
-import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
-import Calendar from '../calendar/Calendar.vue';
+  import { Activity, CalendarDay, Location, Presider } from '@/types';
+  import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
+  import Calendar from '../calendar/Calendar.vue';
 
   export default defineComponent({
     components: {
@@ -592,6 +585,7 @@ import Calendar from '../calendar/Calendar.vue';
 
       const sittingActivities = ref(false);
       const nonSittingActivities = ref(false);
+      const todaySchedule = ref<CalendarDay>(null);
 
       let currentCalendarDate = new Date('dd-mm-yyyy');
 
@@ -602,7 +596,7 @@ import Calendar from '../calendar/Calendar.vue';
       const loadLocations = async () => {
         const data = await locationsService.getLocations();
         // Location with locationId comes from PCSS. Exclude data from JC for now
-        locations.value = [...data.filter(l => "locationId" in l)];
+        locations.value = [...data.filter((l) => 'locationId' in l)];
       };
 
       const showAllLocations = () => {
@@ -696,11 +690,17 @@ import Calendar from '../calendar/Calendar.vue';
         const year = currentMonth.getFullYear();
         const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
 
-        const { schedule, presiders, activities } =
+        const { days, presiders, activities } =
           await dashboardService.getMonthlySchedule(year, +month, locationIds);
 
-        allEvents = [...schedule];
-        filteredEvents.value = [...schedule];
+        const { payload } = await dashboardService.getMySchedule(
+          '01-Jun-2025',
+          '30-Jun-2025'
+        );
+        todaySchedule.value = payload.today;
+
+        allEvents = [...days];
+        filteredEvents.value = [...days];
 
         loadPresiders(presiders);
         loadActivities(activities);
@@ -826,6 +826,7 @@ import Calendar from '../calendar/Calendar.vue';
         getPresiders,
         getActivities,
         onFilterLocations,
+        todaySchedule,
       };
     },
   });

@@ -17,7 +17,7 @@ public class CalendarMapping : IRegister
             {
                 foreach (var day in dest)
                 {
-                    day.RotaInitials = src.RotaInitials;
+                    //day.RotaInitials = src.RotaInitials;
                 }
             });
     }

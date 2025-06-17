@@ -22,11 +22,26 @@
   /* Border colors */
   --border-blue-500: #4092c1;
 
+  --border-gray-500: #b5becd;
+
   /* Text colors */
   --text-blue-800: #183a4a; /* base font color*/
+
   --text-gray-300: #8c8c8c;
+  --text-gray-400: #767676;
+
   --text-black-500: #000000;
+
   --text-blue-500: #4092c1;
+  --text-blue-600: #1e98d7;
+  --text-blue-900: #336699;
+
+  --text-green-500: #317d3a;
+
+  --text-orange-500: #c2550f;
+
+  --text-purple-500: #79368f;
+
   --text-red-500: #db1e05;
   --text-white-500: #ffffff;
 }

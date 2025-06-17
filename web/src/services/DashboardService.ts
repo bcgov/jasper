@@ -1,4 +1,5 @@
 import { CalendarSchedule } from '@/types';
+import { ApiResponse } from '@/types/ApiResponse';
 import { HttpService } from './HttpService';
 
 export class DashboardService {
@@ -15,6 +16,15 @@ export class DashboardService {
   ): Promise<CalendarSchedule> {
     return await this.httpService.get<CalendarSchedule>(
       `api/dashboard/monthly-schedule?year=${year}&month=${month}&locationIds=${locationIds}`
+    );
+  }
+
+  async getMySchedule(
+    startDate: string,
+    endDate: string
+  ): Promise<ApiResponse<CalendarSchedule>> {
+    return await this.httpService.get<ApiResponse<CalendarSchedule>>(
+      `api/dashboard/my-schedule?startDate=${startDate}&endDate=${endDate}`
     );
   }
 }

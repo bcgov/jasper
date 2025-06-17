@@ -144,15 +144,15 @@ namespace PCSSCommon.Clients.JudicialCalendarServices
 
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<JudicialCalendar> ReadCalendarAsync(int judgeId, string startDate, string endDate)
+        public virtual System.Threading.Tasks.Task<JudicialCalendar> ReadCalendarV2Async(int judgeId, string startDate, string endDate)
         {
-            return ReadCalendarAsync(judgeId, startDate, endDate, System.Threading.CancellationToken.None);
+            return ReadCalendarV2Async(judgeId, startDate, endDate, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<JudicialCalendar> ReadCalendarAsync(int judgeId, string startDate, string endDate, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<JudicialCalendar> ReadCalendarV2Async(int judgeId, string startDate, string endDate, System.Threading.CancellationToken cancellationToken)
         {
             if (judgeId == null)
                 throw new System.ArgumentNullException("judgeId");
@@ -168,8 +168,8 @@ namespace PCSSCommon.Clients.JudicialCalendarServices
 
                     var urlBuilder_ = new System.Text.StringBuilder();
 
-                    // Operation Path: "api/calendar/judges/{judgeId}"
-                    urlBuilder_.Append("api/calendar/judges/");
+                    // Operation Path: "api/v2/calendar/judges/{judgeId}"
+                    urlBuilder_.Append("api/v2/calendar/judges/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(judgeId, System.Globalization.CultureInfo.InvariantCulture)));
                     urlBuilder_.Append('?');
                     if (startDate != null)

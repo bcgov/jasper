@@ -23,4 +23,5 @@ export interface CalendarDay {
   hasAdjudicatorIssues: boolean;
   haveJudgeDetails: any[];
   assignment: JudicialCalendarAssignment;
+  activities: any[];
 }

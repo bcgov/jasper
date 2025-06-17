@@ -37,7 +37,4 @@
     <ProjectReference Include="..\jc-interface-client\jc-interface-client.csproj" />
     <ProjectReference Include="..\pcss-client\pcss-client.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Mappers\" />
-  </ItemGroup>
 </Project>

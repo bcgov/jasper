@@ -49,7 +49,7 @@
                     >
                   </div>
                 </div>
-                <div v-if="filesCount" class="mt-1">
+                <div data-testid="scheduled" v-if="filesCount" class="mt-1">
                   <span class="mr-3">Scheduled:</span>
                   <span
                     >{{ filesCount }}

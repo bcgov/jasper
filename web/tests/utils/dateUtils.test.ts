@@ -1,6 +1,7 @@
 import {
   extractTime,
   formatDateInstanceToDDMMMYYYY,
+  formatDateInstanceToMMMYYYY,
   formatDateToDDMMMYYYY,
   hoursMinsFormatter,
 } from '@/utils/dateUtils';
@@ -91,6 +92,40 @@ describe('dateUtils', () => {
     it('returns empty string for invalid Date', () => {
       const date = new Date('invalid');
       expect(formatDateInstanceToDDMMMYYYY(date)).toBe('');
+    });
+  });
+
+  describe('formatDateInstanceToMMMYYYY', () => {
+    it('formats a valid date to "MMM YYYY"', () => {
+      const date = new Date('2025-06-15');
+      const result = formatDateInstanceToMMMYYYY(date);
+      expect(result).toBe('Jun 2025');
+    });
+
+    it('returns empty string for invalid Date object', () => {
+      const date = new Date('invalid-date-string');
+      const result = formatDateInstanceToMMMYYYY(date);
+      expect(result).toBe('');
+    });
+
+    it('returns empty string if passed null', () => {
+      const result = formatDateInstanceToMMMYYYY(null as unknown as Date);
+      expect(result).toBe('');
+    });
+
+    it('returns empty string if passed undefined', () => {
+      const result = formatDateInstanceToMMMYYYY(undefined as unknown as Date);
+      expect(result).toBe('');
+    });
+
+    it('formats edge case: January 1, 2000', () => {
+      const result = formatDateInstanceToMMMYYYY(new Date(2000, 0, 1));
+      expect(result).toBe('Jan 2000');
+    });
+
+    it('formats leap year date correctly', () => {
+      const result = formatDateInstanceToMMMYYYY(new Date(2024, 1, 29));
+      expect(result).toBe('Feb 2024');
     });
   });
 });

@@ -12,7 +12,7 @@
         <!-- Activity -->
         <v-slide-group show-arrows>
           <v-slide-group-item
-            v-if="today.activities && today.activities.length"
+            v-if="internalToday.activities && internalToday.activities.length"
             v-for="(
               {
                 locationName,
@@ -25,13 +25,13 @@
                 continuationsCount,
               },
               index
-            ) in today.activities"
+            ) in internalToday.activities"
           >
             <div
-              v-if="activityDescription"
+              v-if="activityDisplayCode"
               :class="[
                 'px-4',
-                { divider: index !== today.activities.length - 1 },
+                { divider: index !== internalToday.activities.length - 1 },
               ]"
             >
               <h2>{{ locationName }} {{ period ? `(${period})` : '' }}</h2>
@@ -69,7 +69,7 @@
             </div>
             <div v-else class="d-flex justify-center align-center">
               <h2 data-testid="no-court-scheduled" class="px-4">
-                {{ activityDisplayCode }}
+                {{ activityDescription }}
               </h2>
             </div>
           </v-slide-group-item>
@@ -82,11 +82,13 @@
 <script setup lang="ts">
   import { CalendarDayV2 } from '@/types';
   import { mdiCalendarCheckOutline } from '@mdi/js';
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
 
   const props = defineProps<{
     today: CalendarDayV2;
   }>();
+
+  const internalToday = ref({ ...props.today });
 
   const cleanActivityClassDescription = (
     activityClassDescription: string
@@ -96,9 +98,9 @@
 
   const showActivityDetails = computed(
     () =>
-      props.today.activities &&
-      props.today.activities.length > 0 &&
-      props.today.activities.every((a) => a.activityDescription)
+      internalToday.activities &&
+      internalToday.activities.length > 0 &&
+      internalToday.activities.every((a) => a.activityDescription)
   );
 </script>
 <style lang="css" scoped>

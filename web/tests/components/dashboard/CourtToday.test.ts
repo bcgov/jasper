@@ -5,13 +5,13 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 describe('CourtToday.vue', () => {
-  it(`renders 'activityDisplayCode' when 'activityDescription' is null`, () => {
+  it(`renders 'activityDescription' when 'activityDisplayCode' is null`, () => {
     const mockActivity = faker.lorem.word();
     const mockToday = {
       activities: [
         {
           activityClassDescription: faker.lorem.word(),
-          activityDisplayCode: mockActivity,
+          activityDescription: mockActivity,
         } as CalendarDayActivity,
       ],
     } as CalendarDayV2;
@@ -38,6 +38,7 @@ describe('CourtToday.vue', () => {
         {
           locationName: mockLocation,
           period: 'AM',
+          activityDisplayCode: faker.lorem.word(),
           activityDescription: faker.lorem.word(),
           activityClassDescription: faker.lorem.word(),
           filesCount: 1,
@@ -70,6 +71,8 @@ describe('CourtToday.vue', () => {
           locationName: mockLocation,
           period: 'AM',
           activityDescription: faker.lorem.word(),
+          activityDisplayCode: faker.lorem.word(),
+
           activityClassDescription: faker.lorem.word(),
           filesCount: 2,
           continuationsCount: 2,
@@ -78,6 +81,7 @@ describe('CourtToday.vue', () => {
           locationName: mockLocation,
           period: 'AM',
           activityDescription: faker.lorem.word(),
+          activityDisplayCode: faker.lorem.word(),
           activityClassDescription: faker.lorem.word(),
           filesCount: 1,
           continuationsCount: 1,

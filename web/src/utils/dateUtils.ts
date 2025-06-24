@@ -39,6 +39,20 @@ export const formatDateInstanceToDDMMMYYYY = (date: Date): string => {
 };
 
 /**
+ * Formats a Date() instance into the format "MMM YYYY".
+ * @param date - The Date object
+ * @returns A formatted date string in "MMM YYYY" format (e.g., "Jan 2023").
+ */
+export const formatDateInstanceToMMMYYYY = (date: Date): string => {
+  if (!date || isNaN(date.getTime())) return '';
+
+  const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);
+  const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
+
+  return `${month} ${year}`;
+};
+
+/**
  * Formats hours and minutes into a human-readable string.
  *
  * @param hours - The number of hours as a string. Should be a valid integer in string format.

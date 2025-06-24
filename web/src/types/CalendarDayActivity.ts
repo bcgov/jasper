@@ -1,6 +1,7 @@
 export interface CalendarDayActivity {
   locationId?: number;
   locationName: string;
+  locationShortName: string;
   activityCode: string;
   activityDisplayCode: string;
   activityDescription: string;

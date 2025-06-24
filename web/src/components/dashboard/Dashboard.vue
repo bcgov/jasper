@@ -1,6 +1,18 @@
 <template>
-  <div class="judges-dashboard">
-    <CourtToday v-if="todaySchedule" :today="todaySchedule" />
+  <v-container class="p-0">
+    <v-skeleton-loader v-if="isLoading" type="table" :loading="isLoading">
+    </v-skeleton-loader>
+    <div v-else class="d-flex flex-column">
+      <CourtToday v-if="todaySchedule" :today="todaySchedule" />
+      <CalendarToolbar v-if="selectedDate" v-model="selectedDate" />
+      <MyCalendar
+        v-if="calendarData && selectedDate"
+        :data="calendarData"
+        :selectedDate
+      />
+    </div>
+  </v-container>
+  <!-- <div class="judges-dashboard">
     <section class="dashboard-container">
       <div class="tools-container">
         <button class="filters" @click="toggleLeft()">
@@ -29,7 +41,6 @@
               <img src="../../assets/arrow-down.svg" alt="more" />
             </button>
 
-            <!-- Collapsible content -->
             <b-collapse id="locations" class="mt-2">
               <b-card>
                 <b-form-checkbox-group
@@ -62,7 +73,6 @@
               <img src="../../assets/arrow-down.svg" alt="more" />
             </button>
 
-            <!-- Collapsible content -->
             <b-collapse id="presiders" class="mt-2">
               <b-card>
                 <b-form-checkbox
@@ -101,7 +111,6 @@
               <img src="../../assets/arrow-down.svg" alt="more" />
             </button>
 
-            <!-- Collapsible content -->
             <b-collapse id="activities" class="mt-2">
               <b-card>
                 <b-form-checkbox
@@ -159,6 +168,7 @@
           class="dashboard-calendar"
           :class="{ 'calendar-active': menuActive, '': !menuActive }"
         >
+
           <Calendar
             :events="arEvents"
             @monthChange="getMonthlySchedule"
@@ -269,578 +279,302 @@
         </div>
       </div>
     </b-modal>
-  </div>
+  </div> -->
 </template>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
-
-  header {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  button {
-    outline: none !important;
-  }
-
-  .filters img,
-  .accordion-button img,
-  .more img {
-    width: 20px;
-  }
-
-  .accordion-button.collapsed {
-    border: 0;
-  }
-
-  .accordion-content {
-    border-bottom: 1px solid gray;
-  }
-
-  .singleCheckbox {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    margin-left: 15px;
-    margin-top: 5px;
-  }
-
-  .activitiesPanel {
-    margin-top: 25px;
-  }
-
-  .left-menu-active .accordion-content {
-    padding-bottom: 10px;
-  }
-
-  .modal-buttons {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin: 30px auto 0 auto;
-    justify-content: space-between;
-  }
-
-  .modal-header-title {
-    font-family: 'Work Sans', sans-serif;
-    font-size: 24px;
-    color: #183a4a;
-    margin-bottom: 30px;
-    margin-top: -10px;
-  }
-
-  .moreItems {
-    font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
-    color: #183a4a;
-    background: none;
-    border: none;
-    text-decoration: underline;
-  }
-
-  #locations-click-modal___BV_modal_header_,
-  #presiders-click-modal___BV_modal_header_,
-  #activities-click-modal___BV_modal_header_ {
-    border-bottom: 0 !important;
-    font-size: 30px;
-  }
-
-  #locations-click-modal #locations-filter-box,
-  #presiders-click-modal #presiders-filter-box,
-  #activities-click-modal #activities-filter-box {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  #locations-click-modal .modal,
-  #presiders-click-modal .modal,
-  #activities-click-modal .modal {
-    border-radius: 20px !important;
-    padding: 10px;
-    box-shadow: 4px 3px 6px 1px rgb(109 109 109 / 40%) !important;
-  }
-
-  .modal-button-right {
-    cursor: pointer;
-    padding: 8px 0;
-    font-size: 16px;
-    border: 1px solid #183a4a;
-    width: 120px;
-    background-color: #183a4a;
-    color: #fff;
-    border-radius: 20px;
-    font-family: sans-serif;
-    transition: all ease-in-out 0.4s;
-    text-transform: capitalize;
-  }
-
-  .accordion-content div[role='group'] {
-    display: flex !important;
-    align-items: flex-start;
-    justify-content: flex-start;
-    flex-direction: column;
-  }
-
-  .modal-button-right:hover {
-    border: 1px solid #183a4a;
-    background-color: #fff;
-    color: #183a4a;
-  }
-
-  .moreItems:hover {
-    text-decoration: none;
-  }
-
-  .top-line {
-    background-color: rgba(157, 146, 146, 0.19);
-    padding: 8px 15px;
-    color: #fff;
-  }
-
-  .bot-line {
-    display: flex;
-    background-color: #8e8d8d;
-    padding: 12px 15px;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .calendar-search-checkbox {
-    font-family: 'Work Sans', sans-serif;
-  }
-
-  .card {
-    border: none;
-  }
-
-  .accordion-button {
-    width: 100%;
-    border: 0;
-    display: Flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: transparent;
-    font-family: 'Work Sans', sans-serif;
-    outline: none;
-  }
-
-  .dashboard-container {
-    max-width: 1440px;
-    margin: 20px auto;
-  }
-
-  .calendar-container {
-    display: flex;
-  }
-
-  .dashboard-calendar {
-    width: 100%;
-  }
-
-  .calendar-active {
-    width: 80%;
-  }
-
-  .right-menu {
-    display: none;
-  }
-
-  .right-menu-active {
-    display: block;
-    width: 19%;
-    border: none;
-    margin-top: 70px;
-  }
-
-  .left-menu {
-    display: none;
-  }
-
-  .left-menu-active {
-    display: block;
-    width: 19%;
-    border: none;
-    margin-top: 70px;
-    padding-right: 15px;
-  }
-
-  .dashboard-collapse-section {
-    margin: 0 auto;
-    max-width: 1200px;
-    width: 100%;
-    padding-bottom: 100px;
-  }
-
-  .dashboard-collapse {
-    border-bottom: 1px solid #000;
-    color: #000;
-    padding: 10px;
-    max-width: 500px;
-  }
-
-  .tools-container {
-    max-width: 1440px;
-    margin: 0 auto 0px auto;
-    position: relative;
-    display: Flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .tools-container button {
-    font-size: 16px;
-    text-decoration: underline;
-    color: #183a4a;
-    font-family: 'Work Sans', sans-serif;
-    transition: all ease-in-out 0.4s;
-    background: transparent;
-    border: 0;
-  }
-
-  .tools-container button:hover {
-    text-decoration: none;
-  }
-
-  .tools-container span {
-    margin-left: 10px;
-  }
-
-  .inverseButton:hover,
-  .defaultButton {
-    font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
-    color: #fff;
-    background-color: #183a4a;
-    border-radius: 20px;
-    border: 1px solid transparent;
-  }
-
-  .inverseButton,
-  .defaultButton:hover {
-    background-color: #fff;
-    font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
-    color: #183a4a;
-    border: 1px solid #183a4a;
-  }
-
-  .defaultButton {
-    margin: 90px auto 10px auto;
-    padding: 5px 10px;
-    width: 90%;
-    border-radius: 20px;
-  }
-
-  .inverseButton {
-    border-radius: 20px;
-    width: 90%;
-    margin: 0 auto;
-    padding: 5px 10px;
-  }
-</style>
-<script lang="ts">
+<script setup lang="ts">
   import { DashboardService, LocationService } from '@/services';
-  import { Activity, CalendarDay, Location, Presider } from '@/types';
-  import { computed, defineComponent, inject, onMounted, Ref, ref } from 'vue';
-  import Calendar from '../calendar/Calendar.vue';
+  import {
+    Activity,
+    CalendarDay,
+    CalendarDayV2,
+    Location,
+    Presider,
+  } from '@/types';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
+  import { computed, inject, onMounted, Ref, ref, watch } from 'vue';
+  import CalendarToolbar from './CalendarToolbar.vue';
+  import CourtToday from './CourtToday.vue';
+  import MyCalendar from './MyCalendar.vue';
 
-  export default defineComponent({
-    components: {
-      Calendar,
-    },
-    setup() {
-      const locationsService = inject<LocationService>('locationService');
-      const dashboardService = inject<DashboardService>('dashboardService');
+  const locationsService = inject<LocationService>('locationService');
+  const dashboardService = inject<DashboardService>('dashboardService');
 
-      if (!locationsService || !dashboardService) {
-        throw new Error('Service is not available!');
-      }
+  if (!locationsService || !dashboardService) {
+    throw new Error('Service is not available!');
+  }
 
-      const isMySchedule = ref(true);
+  const isLoading = ref(true);
 
-      const locations = ref<Location[]>([]);
-      const selectedLocations = ref<string[]>([]);
-      const isLocationModalVisible = ref(false);
+  const isMySchedule = ref(true);
 
-      const presiders = ref<Presider[]>([]);
-      const selectedPresiders = ref<string[]>([]);
-      const isPresiderModalVisible = ref(false);
-      const areAllPresidersChecked = ref(true);
+  const locations = ref<Location[]>([]);
+  const selectedLocations = ref<string[]>([]);
+  const isLocationModalVisible = ref(false);
 
-      const activities = ref<Activity[]>([]);
-      const selectedActivities = ref<string[]>([]);
-      const areAllActivitiesChecked = ref(true);
-      const isActivitiesModalVisible = ref(false);
+  const presiders = ref<Presider[]>([]);
+  const selectedPresiders = ref<string[]>([]);
+  const isPresiderModalVisible = ref(false);
+  const areAllPresidersChecked = ref(true);
 
-      const filteredEvents = ref<CalendarDay[]>([]);
+  const activities = ref<Activity[]>([]);
+  const selectedActivities = ref<string[]>([]);
+  const areAllActivitiesChecked = ref(true);
+  const isActivitiesModalVisible = ref(false);
 
-      let allEvents: CalendarDay[] = [];
+  const filteredEvents = ref<CalendarDay[]>([]);
 
-      let sizeChange = 0;
+  let allEvents: CalendarDay[] = [];
 
-      const showLeftMenu = ref(false);
-      const showRightMenu = ref(false);
-      const menuActive = ref(false);
+  let sizeChange = 0;
 
-      const sittingActivities = ref(false);
-      const nonSittingActivities = ref(false);
-      const todaySchedule = ref<CalendarDay>();
+  const showLeftMenu = ref(false);
+  const showRightMenu = ref(false);
+  const menuActive = ref(false);
 
-      let currentCalendarDate = new Date('dd-mm-yyyy');
+  const sittingActivities = ref(false);
+  const nonSittingActivities = ref(false);
 
-      onMounted(async () => {
-        await loadLocations();
-      });
+  let currentCalendarDate = new Date('dd-mm-yyyy');
 
-      const loadLocations = async () => {
-        const data = await locationsService.getLocations();
-        // Location with locationId comes from PCSS. Exclude data from JC for now
-        locations.value = [...data.filter((l) => 'locationId' in l)];
-      };
+  //
+  const selectedDate = ref(new Date());
+  let startDay = new Date(
+    selectedDate.value.getFullYear(),
+    selectedDate.value.getMonth(),
+    1
+  );
+  let endDay = new Date(
+    selectedDate.value.getFullYear(),
+    selectedDate.value.getMonth() + 1,
+    0
+  );
+  const todaySchedule = ref<CalendarDayV2>();
+  const calendarData = ref<CalendarDayV2[]>([]);
 
-      const showAllLocations = () => {
-        isLocationModalVisible.value = true;
-      };
-
-      const onFilterLocations = async () => {
-        if (selectedLocations.value.length === 0) {
-          return;
-        }
-
-        isLocationModalVisible.value = false;
-        await getMonthlySchedule(currentCalendarDate);
-      };
-
-      const onResetLocations = async () => {
-        selectedLocations.value.length = 0;
-        isLocationModalVisible.value = false;
-        await getMonthlySchedule(currentCalendarDate);
-      };
-
-      const loadPresiders = (data: Presider[]) => {
-        if (selectedLocations.value.length === 0) {
-          presiders.value.length = 0;
-          selectedPresiders.value.length = 0;
-          areAllPresidersChecked.value = false;
-          return;
-        }
-
-        areAllPresidersChecked.value = true;
-        selectedPresiders.value = data.map((p) => p.value);
-        presiders.value = [...data];
-      };
-
-      const showAllPresiders = () => {
-        isPresiderModalVisible.value = true;
-      };
-
-      const resetPresiders = () => {
-        areAllPresidersChecked.value = true;
-        selectedPresiders.value = presiders.value.map((p) => p.value);
-        isPresiderModalVisible.value = false;
-        filterByPresiders();
-      };
-
-      const loadActivities = (data: Activity[]) => {
-        if (selectedLocations.value.length == 0) {
-          activities.value.length = 0;
-          selectedActivities.value.length = 0;
-          areAllActivitiesChecked.value = false;
-          return;
-        }
-
-        areAllActivitiesChecked.value = true;
-        selectedActivities.value = data.map((a) => a.value);
-        activities.value = [...data];
-      };
-
-      const showAllActivities = () => {
-        isActivitiesModalVisible.value = true;
-      };
-
-      const resetActivities = () => {
-        areAllActivitiesChecked.value = true;
-        selectedActivities.value = activities.value.map((a) => a.value);
-        isActivitiesModalVisible.value = false;
-        filterByActivities();
-      };
-
-      const toggleRight = () => {
-        showRightMenu.value = !showRightMenu.value;
-        showLeftMenu.value = false;
-        menuActive.value = showRightMenu.value;
-        sizeChange++;
-      };
-
-      const toggleLeft = () => {
-        showLeftMenu.value = !showLeftMenu.value;
-        showRightMenu.value = false;
-        menuActive.value = showLeftMenu.value;
-        sizeChange++;
-      };
-
-      const getMonthlySchedule = async (currentMonth) => {
-        currentCalendarDate = currentMonth;
-
-        const locationIds =
-          selectedLocations.value.length > 0
-            ? selectedLocations.value.join(',')
-            : '';
-        const year = currentMonth.getFullYear();
-        const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
-
-        const { schedule, presiders, activities } =
-          await dashboardService.getMonthlySchedule(year, +month, locationIds);
-
-        const firstDay = new Date(
-          currentCalendarDate.getFullYear(),
-          currentCalendarDate.getMonth(),
-          1
-        );
-        const lastDay = new Date(
-          currentCalendarDate.getFullYear(),
-          currentCalendarDate.getMonth() + 1,
-          0
-        );
-
-        const { payload } = await dashboardService.getMySchedule(
-          formatDateInstanceToDDMMMYYYY(firstDay),
-          formatDateInstanceToDDMMMYYYY(lastDay),
-          formatDateInstanceToDDMMMYYYY(currentCalendarDate)
-        );
-        todaySchedule.value = payload.today;
-
-        allEvents = [...schedule];
-        filteredEvents.value = [...schedule];
-
-        loadPresiders(presiders);
-        loadActivities(activities);
-      };
-
-      const onLocationChecked = () => {
-        isMySchedule.value = selectedLocations.value.length === 0;
-        getMonthlySchedule(currentCalendarDate);
-      };
-
-      const onSelectAllPresiders = () => {
-        if (areAllPresidersChecked.value) {
-          selectedPresiders.value = presiders.value.map((p) => p.value);
-        } else {
-          selectedPresiders.value.splice(0);
-        }
-        filterByPresiders();
-      };
-
-      const onPreciderChecked = () => {
-        areAllPresidersChecked.value =
-          selectedPresiders.value.length === presiders.value.length;
-        filterByPresiders();
-      };
-
-      const filterByPresiders = () => {
-        if (selectedPresiders.value.length) {
-          filteredEvents.value = allEvents.filter(
-            (event) =>
-              selectedPresiders.value.includes(
-                String(event.assignment.judgeId)
-              ) || selectedPresiders.value.includes(String(event.judgeId))
-          );
-        } else {
-          filteredEvents.value = [];
-        }
-      };
-
-      const onActivityChecked = () => {
-        areAllActivitiesChecked.value =
-          selectedActivities.value.length === activities.value.length;
-        filterByActivities();
-      };
-
-      const onSelectAllActivities = () => {
-        if (areAllActivitiesChecked.value) {
-          selectedActivities.value = activities.value.map((p) => p.value);
-        } else {
-          selectedActivities.value.splice(0);
-        }
-        filterByActivities();
-      };
-
-      const filterByActivities = () => {
-        if (selectedActivities.value.length > 0) {
-          filteredEvents.value = allEvents.filter(
-            (event) =>
-              selectedActivities.value.includes(
-                event.assignment.activityCode
-              ) ||
-              selectedActivities.value.includes(
-                event.assignment.activityAm?.activityCode
-              ) ||
-              selectedActivities.value.includes(
-                event.assignment.activityPm?.activityCode
-              )
-          );
-        } else {
-          filteredEvents.value = [];
-        }
-      };
-
-      const getFirstNItemsFromList = <T,>(
-        items: Ref<T[]>,
-        limit = 7
-      ): Ref<T[]> => {
-        return computed(() => {
-          return items.value.length > limit
-            ? items.value.slice(0, limit)
-            : items.value;
-        });
-      };
-
-      const getLocations = getFirstNItemsFromList(locations);
-      const getPresiders = getFirstNItemsFromList(presiders);
-      const getActivities = getFirstNItemsFromList(activities);
-
-      return {
-        toggleLeft,
-        toggleRight,
-        showLeftMenu,
-        showRightMenu,
-        selectedLocations,
-        locations,
-        onLocationChecked,
-        showAllLocations,
-        areAllPresidersChecked,
-        onSelectAllPresiders,
-        selectedPresiders,
-        presiders,
-        onPreciderChecked,
-        showAllPresiders,
-        areAllActivitiesChecked,
-        onSelectAllActivities,
-        selectedActivities,
-        activities,
-        onActivityChecked,
-        showAllActivities,
-        sittingActivities,
-        nonSittingActivities,
-        menuActive,
-        arEvents: filteredEvents,
-        getMonthlySchedule,
-        sizeChange,
-        isMySchedule,
-        showLocationModal: isLocationModalVisible,
-        onResetLocations,
-        isPresiderModalVisible,
-        resetPresiders,
-        isActivitiesModalVisible,
-        resetActivities,
-        getLocations,
-        getPresiders,
-        getActivities,
-        onFilterLocations,
-        todaySchedule,
-      };
-    },
+  onMounted(async () => {
+    isLoading.value = true;
+    await Promise.all([loadLocations(), loadCalendarData()]);
+    isLoading.value = false;
   });
+
+  watch(selectedDate, async (newVal) => {
+    startDay = new Date(newVal.getFullYear(), newVal.getMonth(), 1);
+    endDay = new Date(newVal.getFullYear(), newVal.getMonth() + 1, 0);
+
+    await loadCalendarData();
+  });
+
+  const loadCalendarData = async () => {
+    const { payload } = await dashboardService.getMySchedule(
+      formatDateInstanceToDDMMMYYYY(startDay),
+      formatDateInstanceToDDMMMYYYY(endDay),
+      formatDateInstanceToDDMMMYYYY(selectedDate.value)
+    );
+
+    todaySchedule.value = payload.today;
+    calendarData.value = [...payload.days];
+  };
+
+  const loadLocations = async () => {
+    const data = await locationsService.getLocations();
+    // Location with locationId comes from PCSS. Exclude data from JC for now
+    locations.value = [...data.filter((l) => 'locationId' in l)];
+  };
+
+  const showAllLocations = () => {
+    isLocationModalVisible.value = true;
+  };
+
+  const onFilterLocations = async () => {
+    if (selectedLocations.value.length === 0) {
+      return;
+    }
+
+    isLocationModalVisible.value = false;
+    await getMonthlySchedule(currentCalendarDate);
+  };
+
+  const onResetLocations = async () => {
+    selectedLocations.value.length = 0;
+    isLocationModalVisible.value = false;
+    await getMonthlySchedule(currentCalendarDate);
+  };
+
+  const loadPresiders = (data: Presider[]) => {
+    if (selectedLocations.value.length === 0) {
+      presiders.value.length = 0;
+      selectedPresiders.value.length = 0;
+      areAllPresidersChecked.value = false;
+      return;
+    }
+
+    areAllPresidersChecked.value = true;
+    selectedPresiders.value = data.map((p) => p.value);
+    presiders.value = [...data];
+  };
+
+  const showAllPresiders = () => {
+    isPresiderModalVisible.value = true;
+  };
+
+  const resetPresiders = () => {
+    areAllPresidersChecked.value = true;
+    selectedPresiders.value = presiders.value.map((p) => p.value);
+    isPresiderModalVisible.value = false;
+    filterByPresiders();
+  };
+
+  const loadActivities = (data: Activity[]) => {
+    if (selectedLocations.value.length == 0) {
+      activities.value.length = 0;
+      selectedActivities.value.length = 0;
+      areAllActivitiesChecked.value = false;
+      return;
+    }
+
+    areAllActivitiesChecked.value = true;
+    selectedActivities.value = data.map((a) => a.value);
+    activities.value = [...data];
+  };
+
+  const showAllActivities = () => {
+    isActivitiesModalVisible.value = true;
+  };
+
+  const resetActivities = () => {
+    areAllActivitiesChecked.value = true;
+    selectedActivities.value = activities.value.map((a) => a.value);
+    isActivitiesModalVisible.value = false;
+    filterByActivities();
+  };
+
+  const toggleRight = () => {
+    showRightMenu.value = !showRightMenu.value;
+    showLeftMenu.value = false;
+    menuActive.value = showRightMenu.value;
+    sizeChange++;
+  };
+
+  const toggleLeft = () => {
+    showLeftMenu.value = !showLeftMenu.value;
+    showRightMenu.value = false;
+    menuActive.value = showLeftMenu.value;
+    sizeChange++;
+  };
+
+  const getMonthlySchedule = async (currentMonth) => {
+    currentCalendarDate = currentMonth;
+
+    const locationIds =
+      selectedLocations.value.length > 0
+        ? selectedLocations.value.join(',')
+        : '';
+    const year = currentMonth.getFullYear();
+    const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+
+    const { schedule, presiders, activities } =
+      await dashboardService.getMonthlySchedule(year, +month, locationIds);
+
+    const firstDay = new Date(
+      currentCalendarDate.getFullYear(),
+      currentCalendarDate.getMonth(),
+      1
+    );
+    const lastDay = new Date(
+      currentCalendarDate.getFullYear(),
+      currentCalendarDate.getMonth() + 1,
+      0
+    );
+
+    const { payload } = await dashboardService.getMySchedule(
+      formatDateInstanceToDDMMMYYYY(firstDay),
+      formatDateInstanceToDDMMMYYYY(lastDay),
+      formatDateInstanceToDDMMMYYYY(currentCalendarDate)
+      //'11-Jun-2025'
+    );
+    todaySchedule.value = payload.today;
+
+    allEvents = [...schedule];
+    filteredEvents.value = [...schedule];
+    calendarData.value = payload.days;
+
+    loadPresiders(presiders);
+    loadActivities(activities);
+  };
+
+  const onLocationChecked = () => {
+    isMySchedule.value = selectedLocations.value.length === 0;
+    getMonthlySchedule(currentCalendarDate);
+  };
+
+  const onSelectAllPresiders = () => {
+    if (areAllPresidersChecked.value) {
+      selectedPresiders.value = presiders.value.map((p) => p.value);
+    } else {
+      selectedPresiders.value.splice(0);
+    }
+    filterByPresiders();
+  };
+
+  const onPreciderChecked = () => {
+    areAllPresidersChecked.value =
+      selectedPresiders.value.length === presiders.value.length;
+    filterByPresiders();
+  };
+
+  const filterByPresiders = () => {
+    if (selectedPresiders.value.length) {
+      filteredEvents.value = allEvents.filter(
+        (event) =>
+          selectedPresiders.value.includes(String(event.assignment.judgeId)) ||
+          selectedPresiders.value.includes(String(event.judgeId))
+      );
+    } else {
+      filteredEvents.value = [];
+    }
+  };
+
+  const onActivityChecked = () => {
+    areAllActivitiesChecked.value =
+      selectedActivities.value.length === activities.value.length;
+    filterByActivities();
+  };
+
+  const onSelectAllActivities = () => {
+    if (areAllActivitiesChecked.value) {
+      selectedActivities.value = activities.value.map((p) => p.value);
+    } else {
+      selectedActivities.value.splice(0);
+    }
+    filterByActivities();
+  };
+
+  const filterByActivities = () => {
+    if (selectedActivities.value.length > 0) {
+      filteredEvents.value = allEvents.filter(
+        (event) =>
+          selectedActivities.value.includes(event.assignment.activityCode) ||
+          selectedActivities.value.includes(
+            event.assignment.activityAm?.activityCode
+          ) ||
+          selectedActivities.value.includes(
+            event.assignment.activityPm?.activityCode
+          )
+      );
+    } else {
+      filteredEvents.value = [];
+    }
+  };
+
+  const getFirstNItemsFromList = <T,>(items: Ref<T[]>, limit = 7): Ref<T[]> => {
+    return computed(() => {
+      return items.value.length > limit
+        ? items.value.slice(0, limit)
+        : items.value;
+    });
+  };
+
+  const getLocations = getFirstNItemsFromList(locations);
+  const getPresiders = getFirstNItemsFromList(presiders);
+  const getActivities = getFirstNItemsFromList(activities);
 </script>

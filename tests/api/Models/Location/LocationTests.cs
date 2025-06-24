@@ -87,4 +87,21 @@ public class LocationTest
         Assert.True(result.Active);
         Assert.Equal(jcLocation.CourtRooms, result.CourtRooms);
     }
+
+    [Fact]
+    public void Create_ShouldReturnLocation_WhenPcssLocationHasShortName()
+    {
+        var jcLocation = LocationModel.Create("Vancouver Law Courts", "123", "456", true, default);
+        var pcssLocation = LocationModel.Create("Vancouver", "123", "789", true, default);
+
+        var result = LocationModel.Create(jcLocation, pcssLocation);
+
+        Assert.NotNull(result);
+        Assert.Equal("Vancouver Law Courts", result.Name);
+        Assert.Equal("456", result.Code);
+        Assert.NotNull(result.LocationId);
+        Assert.True(result.Active);
+        Assert.Equal(jcLocation.CourtRooms, result.CourtRooms);
+        Assert.Equal(pcssLocation.Name, result.ShortName);
+    }
 }

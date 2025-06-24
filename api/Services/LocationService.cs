@@ -72,6 +72,12 @@ namespace Scv.Api.Services
 
         #region Lookup Methods
 
+        public async Task<string> GetLocationShortName(string locationId)
+        {
+            var locations = await GetLocations();
+            return locations.FirstOrDefault(loc => loc.LocationId == locationId)?.ShortName;
+        }
+
         public async Task<string> GetLocationName(string code) => FindLongDescriptionFromCode(await GetLocations(), code);
 
         //Take the shortDesc -> translate it to code. 

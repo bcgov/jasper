@@ -10,6 +10,7 @@ public class Location
     private static readonly string[] invalidWords = ["Law", "Courts", "Court", "Provincial"];
 
     public string Name { get; set; }
+    public string ShortName { get; set; }
     public string Code { get; set; }
     public string LocationId { get; set; }
     public string AgencyIdentifierCd { get; set; }
@@ -26,10 +27,11 @@ public class Location
         CourtRooms = courtRooms;
     }
 
-    private Location(string name, string code, string locationId, string agencyIdentifierCd, bool? active, ICollection<CourtRoom> courtRooms)
+    private Location(string name, string shortName, string code, string locationId, string agencyIdentifierCd, bool? active, ICollection<CourtRoom> courtRooms)
         : this(name, code, locationId, active, courtRooms)
     {
         AgencyIdentifierCd = agencyIdentifierCd;
+        ShortName = shortName;
     }
 
     public static Location Create(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms)
@@ -41,6 +43,7 @@ public class Location
     {
         return new Location(
             jcLocation.Name,
+            pcssLocation?.Name,
             jcLocation.LocationId,
             pcssLocation?.LocationId,
             jcLocation.Code,

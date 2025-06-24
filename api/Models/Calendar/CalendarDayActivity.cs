@@ -10,6 +10,7 @@ public class CalendarDayActivity
 {
     public int? LocationId { get; set; }
     public string LocationName { get; set; }
+    public string LocationShortName { get; set; }
     public string ActivityCode { get; set; }
     public string ActivityDisplayCode { get; set; }
     public string ActivityDescription { get; set; }

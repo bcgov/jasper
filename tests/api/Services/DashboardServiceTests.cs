@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Bogus;
+using JCCommon.Clients.LocationServices;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
@@ -15,6 +17,8 @@ using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
 using Xunit;
 using static PCSSCommon.Models.ActivityClassUsage;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
+using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Services;
 public class DashboardServiceTests : ServiceTestBase
@@ -22,6 +26,7 @@ public class DashboardServiceTests : ServiceTestBase
     private readonly Faker _faker;
     private readonly IMapper _mapper;
     private readonly CachingService _cachingService;
+    private readonly Mock<IConfiguration> _mockConfig;
 
     public DashboardServiceTests()
     {
@@ -31,9 +36,16 @@ public class DashboardServiceTests : ServiceTestBase
         _cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
+        // IConfiguration setup
+        _mockConfig = new Mock<IConfiguration>();
+        var mockSection = new Mock<IConfigurationSection>();
+        mockSection.Setup(s => s.Value).Returns(_faker.Random.Number().ToString());
+        _mockConfig.Setup(c => c.GetSection("Caching:LocationExpiryMinutes")).Returns(mockSection.Object);
+
         // IMapper setup
         var config = new TypeAdapterConfig();
         config.Apply(new CalendarMapping());
+        config.Apply(new LocationMapping());
         _mapper = new Mapper(config);
 
     }
@@ -62,16 +74,52 @@ public class DashboardServiceTests : ServiceTestBase
                 null))
             .ReturnsAsync(courtList);
 
+        var mockLocationService = this.SetupLocationService();
+
         var dashboardService = new DashboardService(
             _cachingService,
             mockJudicialCalendarClient.Object,
-            mockSearchDateClient.Object);
+            mockSearchDateClient.Object,
+            mockLocationService.Object);
 
         return (
             dashboardService,
             mockJudicialCalendarClient,
             mockSearchDateClient
         );
+    }
+
+    private Mock<LocationService> SetupLocationService()
+    {
+        var mockJCLocationClient = new Mock<LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockPCSSLocationClient = new Mock<PCSSLocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockPCSSLookupClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, this.HttpClient);
+
+        mockJCLocationClient
+            .Setup(c => c.LocationsGetAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(() => []);
+        mockJCLocationClient
+            .Setup(c => c.LocationsRoomsGetAsync())
+            .ReturnsAsync([]);
+
+        mockPCSSLocationClient
+            .Setup(c => c.GetLocationsAsync())
+            .ReturnsAsync(() => []);
+
+        mockPCSSLookupClient
+            .Setup(c => c.GetCourtRoomsAsync())
+            .ReturnsAsync(() => []);
+
+        var mockLocationService = new Mock<LocationService>(
+            MockBehavior.Strict,
+            _mockConfig.Object,
+            mockJCLocationClient.Object,
+            mockPCSSLocationClient.Object,
+            mockPCSSLookupClient.Object,
+            _cachingService,
+            _mapper);
+
+        return mockLocationService;
     }
 
     [Fact]
@@ -128,16 +176,17 @@ public class DashboardServiceTests : ServiceTestBase
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            currentDate.ToShortDateString(),
-            startDate.ToShortDateString(),
-            endDate.ToShortDateString());
+            currentDate.ToString(DashboardService.DATE_FORMAT),
+            startDate.ToString(DashboardService.DATE_FORMAT),
+            endDate.ToString(DashboardService.DATE_FORMAT)
+        );
 
         Assert.Single(result.Payload.Days);
         Assert.Single(result.Payload.Days[0].Activities);
         Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
         Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
         Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
+        Assert.True(string.IsNullOrEmpty(result.Payload.Days[0].Activities[0].ActivityDisplayCode));
         Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
         Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
         Assert.Null(result.Payload.Days[0].Activities[0].Period);
@@ -202,9 +251,9 @@ public class DashboardServiceTests : ServiceTestBase
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            startDate.ToShortDateString(),
-            endDate.ToShortDateString(),
-            currentDate.ToShortDateString()
+            currentDate.ToString(DashboardService.DATE_FORMAT),
+            startDate.ToString(DashboardService.DATE_FORMAT),
+            endDate.ToString(DashboardService.DATE_FORMAT)
         );
 
         Assert.Single(result.Payload.Days);
@@ -318,9 +367,9 @@ public class DashboardServiceTests : ServiceTestBase
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            currentDate.ToShortDateString(),
-            startDate.ToShortDateString(),
-            endDate.ToShortDateString()
+            currentDate.ToString(DashboardService.DATE_FORMAT),
+            startDate.ToString(DashboardService.DATE_FORMAT),
+            endDate.ToString(DashboardService.DATE_FORMAT)
         );
 
         Assert.Single(result.Payload.Days);

@@ -20,12 +20,14 @@ public interface IDashboardService
 public class DashboardService(
     IAppCache cache,
     JudicialCalendarServicesClient calendarClient,
-    SearchDateClient searchDateClient) : ServiceBase(cache), IDashboardService
+    SearchDateClient searchDateClient,
+    LocationService locationService) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
 
     private readonly JudicialCalendarServicesClient _calendarClient = calendarClient;
     private readonly SearchDateClient _searchDateClient = searchDateClient;
+    private readonly LocationService _locationService = locationService;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -51,7 +53,7 @@ public class DashboardService(
 
         var mySchedule = await myScheduleTask;
 
-        var days = GetDays(mySchedule);
+        var days = await GetDays(mySchedule);
 
         return OperationResult<CalendarSchedule>.Success(new CalendarSchedule
         {
@@ -94,7 +96,7 @@ public class DashboardService(
         return today;
     }
 
-    private static List<CalendarDayV2> GetDays(JudicialCalendar calendar)
+    private async Task<List<CalendarDayV2>> GetDays(JudicialCalendar calendar)
     {
         var days = new List<CalendarDayV2>();
         foreach (var item in calendar.Days)
@@ -109,8 +111,11 @@ public class DashboardService(
                 {
                     LocationId = item.Assignment.LocationId,
                     LocationName = item.Assignment.LocationName,
+                    LocationShortName = item.Assignment.LocationId != null
+                        ? await _locationService.GetLocationShortName(item.Assignment.LocationId.ToString())
+                        : null,
                     ActivityCode = item.Assignment.ActivityCode,
-                    ActivityDisplayCode = item.Assignment.ActivityDisplayCode,
+                    ActivityDescription = item.Assignment.ActivityDescription,
                     ActivityClassDescription = item.Assignment.ActivityClassDescription,
                     IsRemote = item.Assignment.IsVideo.GetValueOrDefault()
                 });
@@ -120,18 +125,18 @@ public class DashboardService(
 
             if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
             {
-                activities.Add(CreateCalendarDayActivity(amActivity));
+                activities.Add(await CreateCalendarDayActivity(amActivity));
             }
             else
             {
                 if (amActivity != null)
                 {
-                    activities.Add(CreateCalendarDayActivity(amActivity, Period.AM));
+                    activities.Add(await CreateCalendarDayActivity(amActivity, Period.AM));
                 }
 
                 if (pmActivity != null)
                 {
-                    activities.Add(CreateCalendarDayActivity(pmActivity, Period.PM));
+                    activities.Add(await CreateCalendarDayActivity(pmActivity, Period.PM));
                 }
             }
 
@@ -150,10 +155,13 @@ public class DashboardService(
         return sameLocation && sameActivity && sameRoom;
     }
 
-    private static CalendarDayActivity CreateCalendarDayActivity(JudicialCalendarActivity activity, Period? period = null) => new()
+    private async Task<CalendarDayActivity> CreateCalendarDayActivity(JudicialCalendarActivity activity, Period? period = null) => new()
     {
         LocationId = activity.LocationId,
         LocationName = activity.LocationName,
+        LocationShortName = activity.LocationId != null
+            ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
+            : null,
         ActivityCode = activity.ActivityCode,
         ActivityClassDescription = activity.ActivityClassDescription,
         ActivityDisplayCode = activity.ActivityDisplayCode,

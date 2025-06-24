@@ -121,51 +121,55 @@ public class DashboardService(
     private async Task<List<CalendarDayV2>> GetDays(JudicialCalendar calendar)
     {
         var days = new List<CalendarDayV2>();
-        foreach (var item in calendar.Days)
+        foreach (var day in calendar.Days)
         {
-            var activities = new List<CalendarDayActivity>();
-            var amActivity = item.Assignment.ActivityAm;
-            var pmActivity = item.Assignment.ActivityPm;
+            var activities = await GetDayActivities(day);
+            days.Add(new CalendarDayV2 { Date = day.Date, Activities = activities });
 
-            if (amActivity == null && pmActivity == null)
-            {
-                activities.Add(new CalendarDayActivity
-                {
-                    LocationId = item.Assignment.LocationId,
-                    LocationName = item.Assignment.LocationName,
-                    LocationShortName = item.Assignment.LocationId != null
-                        ? await _locationService.GetLocationShortName(item.Assignment.LocationId.ToString())
-                        : null,
-                    ActivityCode = item.Assignment.ActivityCode,
-                    ActivityDescription = item.Assignment.ActivityDescription,
-                    ActivityClassDescription = item.Assignment.ActivityClassDescription,
-                    IsRemote = item.Assignment.IsVideo.GetValueOrDefault()
-                });
-                days.Add(new CalendarDayV2 { Date = item.Date, Activities = activities });
-                continue;
-            }
-
-            if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
-            {
-                activities.Add(await CreateCalendarDayActivity(amActivity));
-            }
-            else
-            {
-                if (amActivity != null)
-                {
-                    activities.Add(await CreateCalendarDayActivity(amActivity, Period.AM));
-                }
-
-                if (pmActivity != null)
-                {
-                    activities.Add(await CreateCalendarDayActivity(pmActivity, Period.PM));
-                }
-            }
-
-            days.Add(new CalendarDayV2 { Date = item.Date, Activities = activities });
         }
         return days;
+    }
 
+    private async Task<List<CalendarDayActivity>> GetDayActivities(JudicialCalendarDay day)
+    {
+        var activities = new List<CalendarDayActivity>();
+        var amActivity = day.Assignment.ActivityAm;
+        var pmActivity = day.Assignment.ActivityPm;
+
+        if (amActivity == null && pmActivity == null)
+        {
+            activities.Add(new CalendarDayActivity
+            {
+                LocationId = day.Assignment.LocationId,
+                LocationName = day.Assignment.LocationName,
+                LocationShortName = day.Assignment.LocationId != null
+                    ? await _locationService.GetLocationShortName(day.Assignment.LocationId.ToString())
+                    : null,
+                ActivityCode = day.Assignment.ActivityCode,
+                ActivityDescription = day.Assignment.ActivityDescription,
+                ActivityClassDescription = day.Assignment.ActivityClassDescription,
+                IsRemote = day.Assignment.IsVideo.GetValueOrDefault()
+            });
+            return activities;
+        }
+
+        if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
+        {
+            activities.Add(await CreateCalendarDayActivity(amActivity));
+            return activities;
+        }
+
+        if (amActivity != null)
+        {
+            activities.Add(await CreateCalendarDayActivity(amActivity, Period.AM));
+        }
+
+        if (pmActivity != null)
+        {
+            activities.Add(await CreateCalendarDayActivity(pmActivity, Period.PM));
+        }
+
+        return activities;
     }
 
     private static bool IsSameAmPmActivity(JudicialCalendarActivity amActivity, JudicialCalendarActivity pmActivity)

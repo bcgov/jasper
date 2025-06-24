@@ -55,11 +55,33 @@ public class DashboardService(
 
         var days = await GetDays(mySchedule);
 
+
+        // Determine if today's schedule needs to be queried separately
+        var isInRange = validCurrentDate >= validStartDate && validCurrentDate <= validEndDate;
+        if (isInRange)
+        {
+            return OperationResult<CalendarSchedule>.Success(new CalendarSchedule
+            {
+                Days = days,
+                Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, days)
+            });
+        }
+
+        // Query schedule for today
+        async Task<JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedCurrentDate, formattedCurrentDate);
+
+        var todayScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedCurrentDate}-{formattedCurrentDate}", TodaysSchedule);
+
+        var todaySchedule = await todayScheduleTask;
+
+        var today = await GetDays(todaySchedule);
+
         return OperationResult<CalendarSchedule>.Success(new CalendarSchedule
         {
             Days = days,
-            Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, days)
+            Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, today)
         });
+
     }
 
     private async Task<CalendarDayV2> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDayV2> days)

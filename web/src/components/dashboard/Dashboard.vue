@@ -367,8 +367,7 @@
   const loadCalendarData = async () => {
     const { payload } = await dashboardService.getMySchedule(
       formatDateInstanceToDDMMMYYYY(startDay),
-      formatDateInstanceToDDMMMYYYY(endDay),
-      formatDateInstanceToDDMMMYYYY(selectedDate.value)
+      formatDateInstanceToDDMMMYYYY(endDay)
     );
 
     todaySchedule.value = payload.today;
@@ -488,9 +487,7 @@
 
     const { payload } = await dashboardService.getMySchedule(
       formatDateInstanceToDDMMMYYYY(firstDay),
-      formatDateInstanceToDDMMMYYYY(lastDay),
-      formatDateInstanceToDDMMMYYYY(currentCalendarDate)
-      //'11-Jun-2025'
+      formatDateInstanceToDDMMMYYYY(lastDay)
     );
     todaySchedule.value = payload.today;
 

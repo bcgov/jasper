@@ -404,4 +404,65 @@ public class DashboardServiceTests : ServiceTestBase
                     It.IsAny<string>(),
                     null), Times.AtMost(2));
     }
+
+    [Fact]
+    public async Task GetMySchedule_Returns_Success_WhenCurrentDateIsNotInBetweenStartAndEndDate()
+    {
+        var mockJudgeId = _faker.Random.Int();
+        var mockLocationId = _faker.Random.Int();
+        var mockLocationName = _faker.Address.City();
+        var mockActivityCode = _faker.Lorem.Word();
+        var mockActivityDisplayCode = _faker.Lorem.Word();
+        var mockActivityClassDescription = _faker.Lorem.Word();
+        var mockIsRemote = _faker.Random.Bool();
+
+        var mockJudicialCalendar = new JudicialCalendar
+        {
+            Days =
+            [
+                new JudicialCalendarDay
+                {
+                    Assignment = new JudicialCalendarAssignment
+                    {
+                        LocationId = mockLocationId,
+                        LocationName = mockLocationName,
+                        ActivityCode = mockActivityCode,
+                        ActivityDisplayCode = mockActivityDisplayCode,
+                        ActivityClassDescription = mockActivityClassDescription,
+                        IsVideo = mockIsRemote
+                    }
+                }
+            ]
+        };
+
+        var (dashboardService, mockJudicialCalendarClient, _) = this.SetupDashboardService(mockJudicialCalendar, null);
+
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddMonths(-5);
+        var endDate = currentDate.AddMonths(-4);
+
+        var result = await dashboardService.GetMyScheduleAsync(
+            mockJudgeId,
+            currentDate.ToString(DashboardService.DATE_FORMAT),
+            startDate.ToString(DashboardService.DATE_FORMAT),
+            endDate.ToString(DashboardService.DATE_FORMAT)
+        );
+
+        Assert.Single(result.Payload.Days);
+        Assert.Single(result.Payload.Days[0].Activities);
+        Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
+        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
+        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
+        Assert.True(string.IsNullOrEmpty(result.Payload.Days[0].Activities[0].ActivityDisplayCode));
+        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
+        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
+        Assert.Null(result.Payload.Days[0].Activities[0].Period);
+
+        mockJudicialCalendarClient
+            .Verify(jcc => jcc
+                .ReadCalendarV2Async(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()), Times.Exactly(2));
+    }
 }

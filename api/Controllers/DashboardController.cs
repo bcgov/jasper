@@ -38,14 +38,12 @@ namespace Scv.Api.Controllers
         /// </summary>
         /// <param name="startDate">The start date of the schedule.</param>
         /// <param name="endDate">The end date of the schedule.</param>
-        /// <param name="todaysDate">The today's date to easily override current date for demo/testing purposes.</param>
         /// <returns>The user schedule based on start and end dates.</returns>
         [HttpGet]
         [Route("my-schedule")]
-        public async Task<IActionResult> GetMySchedule(string startDate, string endDate, string todaysDate = null)
+        public async Task<IActionResult> GetMySchedule(string startDate, string endDate)
         {
-            // Temp code to easily override the current date. 
-            var currentDate = string.IsNullOrEmpty(todaysDate) ? DateTime.Now.ToShortDateString() : todaysDate;
+            var currentDate = DateTime.Now.ToString(DashboardService.DATE_FORMAT);
 
             var result = await _dashboardService.GetMyScheduleAsync(TEST_JUDGE_ID, currentDate, startDate, endDate);
             if (!result.Succeeded)

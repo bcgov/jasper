@@ -21,11 +21,10 @@ export class DashboardService {
 
   async getMySchedule(
     startDate: string,
-    endDate: string,
-    todaysDate: string
+    endDate: string
   ): Promise<ApiResponse<CalendarSchedule>> {
     return await this.httpService.get<ApiResponse<CalendarSchedule>>(
-      `api/dashboard/my-schedule?startDate=${startDate}&endDate=${endDate}&todaysDate=${todaysDate}`
+      `api/dashboard/my-schedule?startDate=${startDate}&endDate=${endDate}`
     );
   }
 }

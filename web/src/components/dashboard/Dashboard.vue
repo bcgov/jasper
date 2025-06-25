@@ -1,7 +1,11 @@
 <template>
   <v-container class="p-0">
-    <v-skeleton-loader v-if="isLoading" type="table" :loading="isLoading">
-    </v-skeleton-loader>
+    <v-skeleton-loader
+      v-if="isLoading"
+      type="date-picker"
+      :loading="isLoading"
+    ></v-skeleton-loader>
+
     <div v-else class="d-flex flex-column">
       <CourtToday v-if="todaySchedule" :today="todaySchedule" />
       <CalendarToolbar v-if="selectedDate" v-model="selectedDate" />
@@ -336,7 +340,6 @@
 
   let currentCalendarDate = new Date('dd-mm-yyyy');
 
-  //
   const selectedDate = ref(new Date());
   let startDay = new Date(
     selectedDate.value.getFullYear(),

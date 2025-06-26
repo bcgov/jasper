@@ -356,8 +356,13 @@
 
   onMounted(async () => {
     isLoading.value = true;
-    await Promise.all([loadLocations(), loadCalendarData()]);
-    isLoading.value = false;
+    try {
+      await Promise.all([loadLocations(), loadCalendarData()]);
+    } catch (error) {
+      console.error('Retrieving data failed.', error);
+    } finally {
+      isLoading.value = false;
+    }
   });
 
   watch(selectedDate, async (newVal) => {

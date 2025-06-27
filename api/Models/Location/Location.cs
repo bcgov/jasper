@@ -8,7 +8,7 @@ public class Location
 {
     private const string BASE_URL = "https://provincialcourt.bc.ca/court-locations/";
     private static readonly string[] invalidWords = ["Law", "Courts", "Court", "Provincial"];
-    private static readonly string[] courtTypes = ["Provincial Court", "Law Courts", "Provincial Courts"];
+    private static readonly string[] courtTypes = ["Provincial Courts", "Provincial Court", "Law Courts"];
 
     public string Name { get; set; }
     public string ShortName { get; set; }

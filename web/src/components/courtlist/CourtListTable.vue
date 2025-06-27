@@ -132,6 +132,7 @@
   import CourtListTableActionBarGroup from '@/components/courtlist/CourtListTableActionBarGroup.vue';
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
+  import { bannerClasses } from '@/constants/bannerClasses';
   import { CourtClassEnum, DivisionEnum, FileMarkerEnum } from '@/types/common';
   import { CourtListAppearance, PcssCounsel } from '@/types/courtlist';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
@@ -149,10 +150,7 @@
   import { computed, ref } from 'vue';
 
   const selected = ref<CourtListAppearance[]>([]);
-  const bannerClasses = {
-    Family: 'family-table-banner',
-    'Small Claims': 'small-claims-table-banner',
-  };
+
   const sortBy = ref([
     { key: 'appearanceSequenceNumber', order: 'asc' },
   ] as const);

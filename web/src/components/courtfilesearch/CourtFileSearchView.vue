@@ -148,7 +148,7 @@
     FileDetail,
     SearchModeEnum,
   } from '@/types/courtFileSearch';
-  import { roomsInfoType } from '@/types/courtlist';
+  import { LocationInfo } from '@/types/courtlist';
   import { computed, inject, onMounted, reactive, ref } from 'vue';
 
   const CRIMINAL_CODE = 'R';
@@ -168,7 +168,7 @@
   const selectedFiles = ref<FileDetail[]>([]);
   const searchResults = ref<FileDetail[]>([]);
   const classes = ref<LookupCode[]>([]);
-  const courtRooms = ref<roomsInfoType[]>([]);
+  const courtRooms = ref<LocationInfo[]>([]);
   const selectedDivision = ref('isCriminal');
   const isLookupDataReady = ref(false);
   const isLookupDataMounted = ref(false);
@@ -276,6 +276,7 @@
       isSmallClaims: false,
       [selectedDivision.value]: true,
     });
+    searchResults.value.length = 0;
   };
 
   const handleSubmit = async () => {

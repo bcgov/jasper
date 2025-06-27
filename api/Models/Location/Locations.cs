@@ -65,7 +65,7 @@ public class Locations : IList<Location>
                 return Location.Create(jc, match);
             })
             .Where(loc => loc.Active.GetValueOrDefault())
-            .OrderBy(loc => loc.Name)
+            .OrderBy(loc => loc.ShortName)
             .ToList();
 
         return [.. locations];

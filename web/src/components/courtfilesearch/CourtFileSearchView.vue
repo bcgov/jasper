@@ -79,8 +79,8 @@
         <v-col :cols="searchCriteria.searchBy === 'orgName' ? 3 : 2">
           <v-select
             v-model="searchCriteria.fileHomeAgencyId"
-            :items="courtRooms"
-            item-title="name"
+            :items="sortedLocations"
+            item-title="shortName"
             item-value="code"
             label="Location"
             :required="true"
@@ -268,6 +268,12 @@
       isLookupDataMounted.value = true;
     }
   };
+
+  const sortedLocations = computed(() => {
+    return [...courtRooms.value].sort((a, b) => {
+      return a.shortName.localeCompare(b.shortName);
+    });
+  });
 
   const handleDivisionChange = () => {
     Object.assign(searchCriteria, {

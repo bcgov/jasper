@@ -3,6 +3,7 @@ import { courtListType } from '../courtlist/jsonTypes';
 
 export interface LocationInfo {
   name: string;
+  shortName: string;
   code: string;
   locationId: string;
   active?: boolean;

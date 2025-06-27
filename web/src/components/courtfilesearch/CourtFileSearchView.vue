@@ -80,7 +80,7 @@
           <v-select
             v-model="searchCriteria.fileHomeAgencyId"
             :items="courtRooms"
-            item-title="name"
+            item-title="shortName"
             item-value="code"
             label="Location"
             :required="true"

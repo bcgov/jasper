@@ -8,6 +8,7 @@ public class Location
 {
     private const string BASE_URL = "https://provincialcourt.bc.ca/court-locations/";
     private static readonly string[] invalidWords = ["Law", "Courts", "Court", "Provincial"];
+    private static readonly string[] courtTypes = ["Provincial Courts", "Provincial Court", "Law Courts"];
 
     public string Name { get; set; }
     public string ShortName { get; set; }
@@ -31,7 +32,8 @@ public class Location
         : this(name, code, locationId, active, courtRooms)
     {
         AgencyIdentifierCd = agencyIdentifierCd;
-        ShortName = shortName;
+        // When short name is not available, use the location name and make it a short name
+        ShortName = string.IsNullOrWhiteSpace(shortName) ? GenerateShortName(name) : shortName;
     }
 
     public static Location Create(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms)
@@ -64,5 +66,17 @@ public class Location
         locationName = string.Join("-", filteredWords);
 
         return new Uri(BASE_URL + locationName.ToLower());
+    }
+
+    private static string GenerateShortName(string name)
+    {
+        string result = name;
+
+        foreach (var phrase in courtTypes)
+        {
+            result = result.Replace(phrase, "", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return string.Join(" ", result.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 }

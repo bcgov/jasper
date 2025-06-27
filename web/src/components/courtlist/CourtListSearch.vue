@@ -11,7 +11,7 @@
                 @update:modelValue="selectedCourtRoom = ''"
                 :items="locationsAndCourtRooms"
                 return-object
-                item-title="name"
+                item-title="shortName"
                 item-value="locationId"
                 label="Location"
                 :loading="!isLocationDataMounted"

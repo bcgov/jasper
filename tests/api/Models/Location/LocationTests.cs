@@ -89,10 +89,27 @@ public class LocationTest
     }
 
     [Fact]
-    public void Create_ShouldReturnLocation_WhenPcssLocationHasShortName()
+    public void Create_ShouldReturnLocation_WithCorrectShortNameWhenPcssShortNameIsNotAvailable()
     {
         var jcLocation = LocationModel.Create("Vancouver Law Courts", "123", "456", true, default);
         var pcssLocation = LocationModel.Create("Vancouver", "123", "789", true, default);
+
+        var result = LocationModel.Create(jcLocation, pcssLocation);
+
+        Assert.NotNull(result);
+        Assert.Equal("Vancouver Law Courts", result.Name);
+        Assert.Equal("456", result.Code);
+        Assert.NotNull(result.LocationId);
+        Assert.True(result.Active);
+        Assert.Equal(jcLocation.CourtRooms, result.CourtRooms);
+        Assert.Equal("Vancouver", result.ShortName);
+    }
+
+    [Fact]
+    public void Create_ShouldReturnLocation_WhenPcssLocationHasShortName()
+    {
+        var jcLocation = LocationModel.Create("Vancouver Law Courts", "123", "456", true, default);
+        var pcssLocation = LocationModel.Create("222-Main", "123", "789", true, default);
 
         var result = LocationModel.Create(jcLocation, pcssLocation);
 

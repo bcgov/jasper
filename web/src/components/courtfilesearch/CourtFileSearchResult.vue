@@ -19,7 +19,8 @@
         :group-by
         :items-per-page="maxItemsPerPage"
         :headers
-        :return-object="true"
+        :sort-by="sortBy"
+        return-object
         :items="searchResults"
         :item-value="idSelector"
       >
@@ -29,7 +30,10 @@
           <tr>
             <td class="pa-0" style="height: 1rem" :colspan="columns.length">
               <v-banner
-                class="table-banner"
+                :class="
+                  bannerClasses[getCourtClassLabel(item.value)] ||
+                  'table-banner'
+                "
                 :ref="
                   () => {
                     if (!isGroupOpen(item)) toggleGroup(item);
@@ -44,6 +48,9 @@
               </v-banner>
             </td>
           </tr>
+        </template>
+        <template #item.sealStatusCd="{ item }">
+          <span v-if="item.sealStatusCd != 'NA'" class="sealed">(Sealed)</span>
         </template>
       </v-data-table-virtual>
     </v-skeleton-loader>
@@ -63,15 +70,17 @@
 
 <script setup lang="ts">
   import ActionBar from '@/components/shared/table/ActionBar.vue';
+  import { bannerClasses } from '@/constants/bannerClasses';
   import { beautifyDate } from '@/filters';
   import { KeyValueInfo, LookupCode } from '@/types/common';
   import { FileDetail } from '@/types/courtFileSearch';
-  import { roomsInfoType } from '@/types/courtlist';
+  import { LocationInfo } from '@/types/courtlist';
+  import { getCourtClassLabel } from '@/utils/utils';
   import { mdiFileDocumentOutline } from '@mdi/js';
   import { computed, defineProps, ref } from 'vue';
 
   const props = defineProps<{
-    courtRooms: roomsInfoType[];
+    courtRooms: LocationInfo[];
     searchResults: FileDetail[];
     classes: LookupCode[];
     isSearching: boolean;
@@ -97,10 +106,12 @@
   const idSelector = computed(() =>
     props.isCriminal ? 'mdocJustinNo' : 'physicalFileId'
   );
+  const sortBy = ref([{ key: 'nextApprDt', order: 'desc' }] as const);
+
   const groupBy = ref([
     {
       key: 'courtClassCd',
-      order: 'asc' as const,
+      order: 'desc' as const,
     },
   ]);
   const fullHeaders = ref([
@@ -158,6 +169,10 @@
     },
     { title: 'OW', key: 'warrantyYN' },
     { title: 'IC', key: 'inCustodyYN' },
+    {
+      title: '',
+      key: 'sealStatusCd',
+    },
   ]);
 
   const headers = computed(() => {
@@ -191,3 +206,10 @@
     emit('files-viewed', files);
   }
 </script>
+<style scoped>
+  .sealed {
+    color: var(--text-red-500);
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+</style>

@@ -18,8 +18,6 @@
           activityDescription,
           roomCode,
           isRemote,
-          showCourtList,
-          locationId,
           restrictions,
         } in activities"
       >
@@ -33,18 +31,16 @@
           >
           <div :class="cleanActivityClassDescription(activityClassDescription)">
             <span data-testid="activity">
-              {{ activityDisplayCode ?? activityDescription }}
+              {{
+                isWeekend
+                  ? 'Weekend'
+                  : (activityDisplayCode ?? activityDescription)
+              }}
             </span>
             <span v-if="roomCode" data-testid="room"> ({{ roomCode }})</span>
           </div>
         </div>
         <div>
-          <router-link
-            class="court-list-link"
-            :to="{ name: 'CourtList', query: { locationId, roomCode, date } }"
-          >
-            <v-icon v-if="showCourtList" :icon="mdiListBoxOutline" />
-          </router-link>
           <v-icon v-if="!showVideo && isRemote" :icon="mdiVideo" />
           <v-chip
             size="small"
@@ -60,11 +56,12 @@
 </template>
 <script setup lang="ts">
   import { CalendarDayActivity } from '@/types';
-  import { mdiListBoxOutline, mdiVideo } from '@mdi/js';
+  import { mdiVideo } from '@mdi/js';
   import { computed } from 'vue';
 
   const props = defineProps<{
     date: string;
+    isWeekend: boolean;
     activities: CalendarDayActivity[];
   }>();
 
@@ -101,10 +98,6 @@
   .period {
     color: var(--text-white-500);
     background-color: var(--bg-blue-800);
-  }
-
-  .court-list-link {
-    color: var(--text-blue-800);
   }
 
   .ar {

@@ -29,5 +29,7 @@ export interface CalendarDay {
 
 export interface CalendarDayV2 {
   date: string;
+  isWeekend: boolean;
+  showCourtList: boolean;
   activities: CalendarDayActivity[];
 }

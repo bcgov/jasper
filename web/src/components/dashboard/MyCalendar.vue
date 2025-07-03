@@ -13,6 +13,7 @@
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
         :date="event.extendedProps.date"
+        :isWeekend="event.extendedProps.isWeekend"
         :activities="event.extendedProps.activities"
       />
     </template>
@@ -20,10 +21,13 @@
 </template>
 <script setup lang="ts">
   import { CalendarDayV2 } from '@/types';
-  import { CalendarOptions } from '@fullcalendar/core';
+  import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
+  import { CalendarOptions, DayCellMountArg } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
+  import { mdiListBoxOutline } from '@mdi/js';
   import { computed, ref, watchEffect } from 'vue';
+  import MyCalendarDay from './MyCalendarDay.vue';
 
   const props = defineProps<{
     data: CalendarDayV2[];
@@ -35,38 +39,41 @@
     props.data.map((d) => ({
       start: new Date(d.date),
       extendedProps: {
-        activities: d.activities,
-        date: d.date,
+        ...d,
       },
     }))
   );
 
-  // const dayCellDidMount = (info: DayCellMountArg) => {
-  //   // Appends the Court List icon next to the day's date
+  const dayCellDidMount = (info: DayCellMountArg) => {
+    // Appends the Court List icon next to the day's date
+    const date = formatDateInstanceToDDMMMYYYY(info.date);
+    const data = props.data.find((d) => d.date === date);
 
-  //   const data = props.data.filter(
-  //     (d) => d.date == formatDateInstanceToDDMMMYYYY(info.date)
-  //   );
+    if (!data || data.activities.length === 0 || !data.showCourtList) {
+      return;
+    }
 
-  //   // Needs LocationId, Room and Date
-  //   info.el.querySelector('.fc-daygrid-day-top')?.insertAdjacentHTML(
-  //     'beforeend',
-  //     `
-  //     <a class="court-list" href="#" title="View Court List">
-  //       <svg viewBox="0 0 24 24" width="18" height="18" style="fill:#666;">
-  //         <path d="${mdiListBoxOutline}" />
-  //       </svg>
-  //     </a>
-  //   `
-  //   );
-  // };
+    const locationIds = [
+      ...new Set(data.activities.map((a) => a.locationId)),
+    ].join(',');
+    info.el.querySelector('.fc-daygrid-day-top')?.insertAdjacentHTML(
+      'beforeend',
+      `
+      <a class="court-list" href="/court-list?locationIds=${locationIds}&date=${date}" title="View Court List">
+        <svg viewBox="0 0 24 24" width="18" height="18" style="fill:#666;">
+          <path d="${mdiListBoxOutline}" />
+        </svg>
+      </a>
+    `
+    );
+  };
 
   const calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
     plugins: [dayGridPlugin],
     headerToolbar: false,
     dayHeaderFormat: { weekday: 'long' },
-    //dayCellDidMount,
+    dayCellDidMount,
   };
 
   const calendarRef = ref();

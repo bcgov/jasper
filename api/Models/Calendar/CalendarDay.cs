@@ -51,5 +51,7 @@ public class CalendarDay : JudicialCalendarDay
 public class CalendarDayV2
 {
     public string Date { get; set; }
+    public bool IsWeekend { get; set; }
+    public bool ShowCourtList { get; set; }
     public List<CalendarDayActivity> Activities { get; set; }
 }

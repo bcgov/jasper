@@ -27,6 +27,8 @@ public class DashboardService(
     IMapper mapper) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
+    public const string SITTING_ACTIVITY_CODE = "SIT";
+    public const string NON_SITTING_ACTIVITY_CODE = "NS";
 
     private readonly JudicialCalendarServicesClient _calendarClient = calendarClient;
     private readonly SearchDateClient _searchDateClient = searchDateClient;
@@ -128,7 +130,20 @@ public class DashboardService(
         foreach (var day in calendar.Days)
         {
             var activities = await GetDayActivities(day);
-            days.Add(new CalendarDayV2 { Date = day.Date, Activities = activities });
+
+            DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
+            var isWeekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
+            var showCourtList = activities
+                .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
+                    && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
+
+            days.Add(new CalendarDayV2
+            {
+                Date = day.Date,
+                IsWeekend = isWeekend,
+                ShowCourtList = showCourtList,
+                Activities = activities
+            });
 
         }
         return days;
@@ -139,30 +154,28 @@ public class DashboardService(
         var activities = new List<CalendarDayActivity>();
         var amActivity = day.Assignment.ActivityAm;
         var pmActivity = day.Assignment.ActivityPm;
-        DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
 
-        var isWeekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
 
         if (amActivity == null && pmActivity == null)
         {
-            activities.Add(await CreateCalendarDayActivity(day.Assignment, day.Restrictions, isWeekend));
+            activities.Add(await CreateCalendarDayActivity(day.Assignment, day.Restrictions));
             return activities;
         }
 
         if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, isWeekend));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions));
             return activities;
         }
 
         if (amActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, isWeekend, Period.AM));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, Period.AM));
         }
 
         if (pmActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, isWeekend, Period.PM));
+            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, Period.PM));
         }
 
         return activities;
@@ -180,7 +193,6 @@ public class DashboardService(
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
         PCSS.JudicialCalendarActivity judicialActivity,
         List<PCSS.AdjudicatorRestriction> judicialRestrictions,
-        bool isWeekend,
         Period? period = null)
     {
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
@@ -189,8 +201,6 @@ public class DashboardService(
         activity.LocationShortName = activity.LocationId != null
             ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
             : null;
-        activity.ActivityDisplayCode = isWeekend ? null : activity.ActivityDisplayCode;
-        activity.ActivityDescription = isWeekend ? "Weekend" : activity.ActivityDescription;
         activity.Period = period;
         activity.Restrictions = restrictions;
 
@@ -199,8 +209,7 @@ public class DashboardService(
 
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
         PCSS.JudicialCalendarAssignment assignment,
-        List<PCSS.AdjudicatorRestriction> judicialRestrictions,
-        bool isWeekend)
+        List<PCSS.AdjudicatorRestriction> judicialRestrictions)
     {
         var activity = _mapper.Map<CalendarDayActivity>(assignment);
         var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(judicialRestrictions.Where(r => r.ActivityCode == activity.ActivityCode));
@@ -208,8 +217,6 @@ public class DashboardService(
         activity.LocationShortName = assignment.LocationId != null
                     ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
                     : null;
-        activity.ActivityDisplayCode = isWeekend ? null : assignment.ActivityDisplayCode;
-        activity.ActivityDescription = isWeekend ? "Weekend" : assignment.ActivityDescription;
         activity.Restrictions = restrictions;
 
         return activity;

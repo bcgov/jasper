@@ -51,8 +51,41 @@ tbody tr:nth-of-type(odd) {
   overflow-y: auto !important;
   scrollbar-color: transparent transparent !important;
   scrollbar-width: thin !important;
-  --scrollbar-background: var(--styled-scrollbar-background, var(--shreddit-content-background)) !important;
+  --scrollbar-background: var(
+    --styled-scrollbar-background,
+    var(--shreddit-content-background)
+  ) !important;
 }
 .scrollable:hover {
   scrollbar-color: var(--color-neutral-border) transparent !important;
+}
+
+/* Dashboard Common Styles */
+.civil {
+  color: var(--text-purple-500);
+}
+
+.criminal {
+  color: var(--text-blue-600);
+}
+
+.family {
+  color: var(--text-green-500);
+}
+
+.mixed {
+  color: var(--text-orange-500);
+}
+
+.non-sitting {
+  color: var(--text-gray-400);
+}
+
+.sitting,
+.judge-sitting {
+  color: var(--text-red-500);
+}
+
+.specialty {
+  color: var(--text-blue-900);
 }

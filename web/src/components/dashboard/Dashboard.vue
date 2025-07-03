@@ -5,7 +5,6 @@
       type="date-picker"
       :loading="isLoading"
     ></v-skeleton-loader>
-
     <div v-else class="d-flex flex-column">
       <CourtToday v-if="todaySchedule" :today="todaySchedule" />
       <CalendarToolbar v-if="selectedDate" v-model="selectedDate" />
@@ -13,6 +12,7 @@
         v-if="calendarData && selectedDate"
         :data="calendarData"
         :selectedDate
+        :isLoading="isCalendarLoading"
       />
     </div>
   </v-container>
@@ -287,13 +287,8 @@
 </template>
 <script setup lang="ts">
   import { DashboardService, LocationService } from '@/services';
-  import {
-    Activity,
-    CalendarDay,
-    CalendarDayV2,
-    Location,
-    Presider,
-  } from '@/types';
+  import { Activity, CalendarDay, CalendarDayV2, Presider } from '@/types';
+  import { LocationInfo } from '@/types/courtlist';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { computed, inject, onMounted, Ref, ref, watch } from 'vue';
   import CalendarToolbar from './CalendarToolbar.vue';
@@ -308,10 +303,11 @@
   }
 
   const isLoading = ref(true);
+  const isCalendarLoading = ref(true);
 
   const isMySchedule = ref(true);
 
-  const locations = ref<Location[]>([]);
+  const locations = ref<LocationInfo[]>([]);
   const selectedLocations = ref<string[]>([]);
   const isLocationModalVisible = ref(false);
 
@@ -373,6 +369,7 @@
   });
 
   const loadCalendarData = async () => {
+    isCalendarLoading.value = true;
     const { payload } = await dashboardService.getMySchedule(
       formatDateInstanceToDDMMMYYYY(startDay),
       formatDateInstanceToDDMMMYYYY(endDay)
@@ -380,6 +377,7 @@
 
     todaySchedule.value = payload.today;
     calendarData.value = [...payload.days];
+    isCalendarLoading.value = false;
   };
 
   const loadLocations = async () => {

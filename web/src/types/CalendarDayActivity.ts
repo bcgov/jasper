@@ -1,3 +1,5 @@
+import { AdjudicatorRestriction } from './AdjudicatorRestriction';
+
 export interface CalendarDayActivity {
   locationId?: number;
   locationName: string;
@@ -11,4 +13,6 @@ export interface CalendarDayActivity {
   period: string;
   filesCount: number;
   continuationsCount: number;
+  showCourtList: boolean;
+  restrictions: AdjudicatorRestriction[];
 }

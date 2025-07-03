@@ -7,6 +7,9 @@ namespace Scv.Api.Infrastructure.Mappings;
 
 public class CalendarMapping : IRegister
 {
+    public const string SITTING_ACTIVITY_CODE = "SIT";
+    public const string NON_SITTING_ACTIVITY_CODE = "NS";
+
     public void Register(TypeAdapterConfig config)
     {
         config.NewConfig<PCSS.JudicialCalendarDay, CalendarDay>();
@@ -20,5 +23,18 @@ public class CalendarMapping : IRegister
                     day.RotaInitials = src.RotaInitials;
                 }
             });
+
+        config.NewConfig<PCSS.JudicialCalendarActivity, CalendarDayActivity>()
+            .Map(dest => dest.RoomCode, src => src.CourtRoomCode)
+            .Map(dest => dest.ShowCourtList, src => src.ActivityClassCode != SITTING_ACTIVITY_CODE
+                && src.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
+
+        config.NewConfig<PCSS.JudicialCalendarAssignment, CalendarDayActivity>()
+            .Map(dest => dest.ShowCourtList, src => src.ActivityClassCode != SITTING_ACTIVITY_CODE
+                && src.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
+
+        config.NewConfig<PCSS.AdjudicatorRestriction, AdjudicatorRestriction>()
+            .Map(dest => dest.FileId, src => src.JustinOrCeisId)
+            .Map(dest => dest.RoomCode, src => src.CourtRoomCode);
     }
 }

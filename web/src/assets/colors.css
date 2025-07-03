@@ -2,14 +2,18 @@
   /* Background colors */
   --bg-black-50: rgba(0, 0, 0, 0.05);
 
+  --bg-blue-50: #f5fafe;
   --bg-blue-100: #d9e5f4;
+  --bg-blue-200: #b4e5ff;
   --bg-blue-300: #72acca;
   --bg-blue-500: #4092c1;
+  --bg-blue-800: #183a4a;
 
   --bg-gray-200: #f5f5f5;
   --bg-gray-300: #f8f7fa;
   --bg-gray-400: #f7f7f7;
   --bg-gray-500: #efedf5;
+  --bg-gray-700: #c2bdd2;
 
   --bg-green-300: #86b28a;
   --bg-green-500: #2e8540;

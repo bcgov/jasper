@@ -7,9 +7,6 @@ namespace Scv.Api.Infrastructure.Mappings;
 
 public class CalendarMapping : IRegister
 {
-    public const string SITTING_ACTIVITY_CODE = "SIT";
-    public const string NON_SITTING_ACTIVITY_CODE = "NS";
-
     public void Register(TypeAdapterConfig config)
     {
         config.NewConfig<PCSS.JudicialCalendarDay, CalendarDay>();

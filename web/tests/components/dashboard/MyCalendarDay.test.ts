@@ -51,7 +51,7 @@ describe('MyCalendarDay.test.ts', () => {
 
     expect(remoteEl).not.toBeNull();
 
-    expect(arEl.text()).toBe(1);
+    expect(arEl.text()).toBe('1');
   });
 
   it('renders 1 location with multiple activities when location is the same', () => {

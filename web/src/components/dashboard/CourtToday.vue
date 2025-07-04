@@ -12,7 +12,7 @@
         <!-- Activity -->
         <v-slide-group show-arrows>
           <v-slide-group-item
-            v-if="internalToday.activities && internalToday.activities.length"
+            v-if="today.activities && today.activities.length"
             v-for="(
               {
                 locationName,
@@ -25,13 +25,13 @@
                 continuationsCount,
               },
               index
-            ) in internalToday.activities"
+            ) in today.activities"
           >
             <div
               v-if="activityDisplayCode"
               :class="[
                 'px-4',
-                { divider: index !== internalToday.activities.length - 1 },
+                { divider: index !== today.activities.length - 1 },
               ]"
             >
               <h2>{{ locationName }} {{ period ? `(${period})` : '' }}</h2>
@@ -80,15 +80,13 @@
   </v-banner>
 </template>
 <script setup lang="ts">
-  import { CalendarDayV2 } from '@/types';
+  import { CalendarDay } from '@/types';
   import { mdiCalendarCheckOutline } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
 
   const props = defineProps<{
-    today: CalendarDayV2;
+    today: CalendarDay;
   }>();
-
-  const internalToday = ref({ ...props.today });
 
   const cleanActivityClassDescription = (
     activityClassDescription: string
@@ -98,9 +96,9 @@
 
   const showActivityDetails = computed(
     () =>
-      internalToday.activities &&
-      internalToday.activities.length > 0 &&
-      internalToday.activities.every((a) => a.activityDescription)
+      props.today.activities &&
+      props.today.activities.length > 0 &&
+      props.today.activities.every((a) => a.activityDescription)
   );
 </script>
 <style lang="css" scoped>
@@ -116,26 +114,5 @@
   }
   .divider {
     border-right: 0.125rem solid var(--border-gray-500);
-  }
-  .civil {
-    color: var(--text-purple-500);
-  }
-  .criminal {
-    color: var(--text-blue-600);
-  }
-  .family {
-    color: var(--text-green-500);
-  }
-  .mixed {
-    color: var(--text-orange-500);
-  }
-  .non-sitting {
-    color: var(--text-gray-400);
-  }
-  .sitting {
-    color: var(--text-red-500);
-  }
-  .specialty {
-    color: var(--text-blue-900);
   }
 </style>

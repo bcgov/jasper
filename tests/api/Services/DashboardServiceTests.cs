@@ -53,7 +53,8 @@ public class DashboardServiceTests : ServiceTestBase
     private (
         DashboardService dashboardService,
         Mock<JudicialCalendarServicesClient> mockJudicialCalenderClient,
-        Mock<SearchDateClient> mockSearchDateClient
+        Mock<SearchDateClient> mockSearchDateClient,
+        Mock<LocationService> mockLocationService
 
     ) SetupDashboardService(
         JudicialCalendar schedule,
@@ -80,12 +81,14 @@ public class DashboardServiceTests : ServiceTestBase
             _cachingService,
             mockJudicialCalendarClient.Object,
             mockSearchDateClient.Object,
-            mockLocationService.Object);
+            mockLocationService.Object,
+            _mapper);
 
         return (
             dashboardService,
             mockJudicialCalendarClient,
-            mockSearchDateClient
+            mockSearchDateClient,
+            mockLocationService
         );
     }
 
@@ -119,13 +122,17 @@ public class DashboardServiceTests : ServiceTestBase
             _cachingService,
             _mapper);
 
+        mockLocationService
+            .Setup(l => l.GetLocationShortName(It.IsAny<string>()))
+            .ReturnsAsync(string.Empty);
+
         return mockLocationService;
     }
 
     [Fact]
     public async Task GetMySchedule_Returns_Failure_When_Dates_Are_Invalid()
     {
-        var (dashboardService, _, _) = this.SetupDashboardService(null, null);
+        var (dashboardService, _, _, _) = this.SetupDashboardService(null, null);
 
         var result = await dashboardService.GetMyScheduleAsync(
             _faker.Random.Int(),
@@ -168,7 +175,7 @@ public class DashboardServiceTests : ServiceTestBase
             ]
         };
 
-        var (dashboardService, mockJudicialCalendarClient, _) = this.SetupDashboardService(mockJudicialCalendar, null);
+        var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
 
         var currentDate = DateTime.Now;
         var startDate = currentDate.AddDays(-5);
@@ -186,7 +193,7 @@ public class DashboardServiceTests : ServiceTestBase
         Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
         Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
         Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.True(string.IsNullOrEmpty(result.Payload.Days[0].Activities[0].ActivityDisplayCode));
+        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
         Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
         Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
         Assert.Null(result.Payload.Days[0].Activities[0].Period);
@@ -243,7 +250,7 @@ public class DashboardServiceTests : ServiceTestBase
             ]
         };
 
-        var (dashboardService, mockJudicialCalendarClient, _) = this.SetupDashboardService(mockJudicialCalendar, null);
+        var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
 
         var currentDate = DateTime.Now;
         var startDate = currentDate.AddDays(-5);
@@ -360,7 +367,8 @@ public class DashboardServiceTests : ServiceTestBase
 
         var (dashboardService,
             mockJudicialCalendarClient,
-            mockSearchDateClient) = this.SetupDashboardService(mockJudicialCalendar, mockCourtList);
+            mockSearchDateClient,
+            _) = this.SetupDashboardService(mockJudicialCalendar, mockCourtList);
 
         var startDate = currentDate.AddDays(-5);
         var endDate = currentDate.AddDays(5);
@@ -435,7 +443,7 @@ public class DashboardServiceTests : ServiceTestBase
             ]
         };
 
-        var (dashboardService, mockJudicialCalendarClient, _) = this.SetupDashboardService(mockJudicialCalendar, null);
+        var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
 
         var currentDate = DateTime.Now;
         var startDate = currentDate.AddMonths(-5);
@@ -453,7 +461,7 @@ public class DashboardServiceTests : ServiceTestBase
         Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
         Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
         Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.True(string.IsNullOrEmpty(result.Payload.Days[0].Activities[0].ActivityDisplayCode));
+        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
         Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
         Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
         Assert.Null(result.Payload.Days[0].Activities[0].Period);
@@ -464,5 +472,115 @@ public class DashboardServiceTests : ServiceTestBase
                     It.IsAny<int>(),
                     It.IsAny<string>(),
                     It.IsAny<string>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task GetMySchedule_Returns_Success_For_WeekendAndShowCourtListDays()
+    {
+        var mockJudgeId = _faker.Random.Int();
+        var mockLocationId = _faker.Random.Int();
+        var mockLocationName = _faker.Address.City();
+        var mockActivityCode = _faker.Lorem.Word();
+        var mockActivityDisplayCode = _faker.Lorem.Word();
+        var mockActivityClassDescription = _faker.Lorem.Word();
+        var mockIsRemote = _faker.Random.Bool();
+
+        var mockJudicialCalendar = new JudicialCalendar
+        {
+            Days =
+            [
+                new JudicialCalendarDay
+                {
+                    Date = GetRandomWeekend().ToString(DashboardService.DATE_FORMAT),
+                    Assignment = new JudicialCalendarAssignment
+                    {
+                        LocationId = mockLocationId,
+                        LocationName = mockLocationName,
+                        ActivityCode = mockActivityCode,
+                        ActivityDisplayCode = mockActivityDisplayCode,
+                        ActivityClassCode = "CrimRem",
+                        ActivityClassDescription = mockActivityClassDescription,
+                        IsVideo = mockIsRemote
+                    }
+                },
+                new JudicialCalendarDay
+                {
+                    Date = GetRandomWeekend().ToString(DashboardService.DATE_FORMAT),
+                    Assignment = new JudicialCalendarAssignment
+                    {
+                        LocationId = mockLocationId,
+                        LocationName = mockLocationName,
+                        ActivityCode = mockActivityCode,
+                        ActivityDisplayCode = mockActivityDisplayCode,
+                        ActivityClassCode = DashboardService.SITTING_ACTIVITY_CODE,
+                        ActivityClassDescription = mockActivityClassDescription,
+                        IsVideo = mockIsRemote
+                    }
+                },
+                new JudicialCalendarDay
+                {
+                    Date = GetRandomWeekend().ToString(DashboardService.DATE_FORMAT),
+                    Assignment = new JudicialCalendarAssignment
+                    {
+                        LocationId = mockLocationId,
+                        LocationName = mockLocationName,
+                        ActivityCode = mockActivityCode,
+                        ActivityDisplayCode = mockActivityDisplayCode,
+                        ActivityClassCode = DashboardService.NON_SITTING_ACTIVITY_CODE,
+                        ActivityClassDescription = mockActivityClassDescription,
+                        IsVideo = mockIsRemote
+                    }
+                }
+            ]
+        };
+
+        var (dashboardService,
+            mockJudicialCalendarClient,
+            _,
+            mockLocationService) = this.SetupDashboardService(mockJudicialCalendar, null);
+
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddMonths(-5);
+        var endDate = currentDate.AddMonths(-4);
+
+        var result = await dashboardService.GetMyScheduleAsync(
+            mockJudgeId,
+            currentDate.ToString(DashboardService.DATE_FORMAT),
+            startDate.ToString(DashboardService.DATE_FORMAT),
+            endDate.ToString(DashboardService.DATE_FORMAT)
+        );
+
+        Assert.Equal(3, result.Payload.Days.Count);
+        Assert.Single(result.Payload.Days[0].Activities);
+        Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
+        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
+        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
+        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
+        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
+        Assert.True(result.Payload.Days[0].IsWeekend);
+        Assert.True(result.Payload.Days[0].ShowCourtList);
+        Assert.False(result.Payload.Days[1].ShowCourtList);
+        Assert.False(result.Payload.Days[2].ShowCourtList);
+        Assert.Null(result.Payload.Days[0].Activities[0].Period);
+
+        mockJudicialCalendarClient
+            .Verify(jcc => jcc
+                .ReadCalendarV2Async(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()), Times.Exactly(2));
+        mockLocationService
+            .Verify(l => l
+                .GetLocationShortName(It.IsAny<string>()), Times.Exactly(6));
+
+    }
+
+    private static DateTime GetRandomWeekend()
+    {
+        var baseDate = new Faker().Date.Past(2).Date;
+        var offset = DayOfWeek.Saturday - baseDate.DayOfWeek;
+        var saturday = baseDate.AddDays(offset);
+        return saturday.AddDays(new Faker().Random.Int(0, 1));
     }
 }

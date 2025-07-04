@@ -1,33 +1,78 @@
 <template>
-  <FullCalendar class="m-3" :options="calendarOptions" ref="calendarRef">
+  <v-skeleton-loader
+    v-if="isLoading"
+    type="date-picker"
+    :loading="isLoading"
+  ></v-skeleton-loader>
+  <FullCalendar
+    v-else="isLoading"
+    class="m-3"
+    :options="calendarOptions"
+    ref="calendarRef"
+  >
     <template v-slot:eventContent="{ event }">
-      <MyCalendarDay :activities="event.extendedProps.activities" />
+      <MyCalendarDay
+        :isWeekend="event.extendedProps.isWeekend"
+        :activities="event.extendedProps.activities"
+      />
     </template>
   </FullCalendar>
 </template>
 <script setup lang="ts">
-  import { CalendarDayV2 } from '@/types';
-  import { CalendarOptions } from '@fullcalendar/core';
+  import { CalendarDay } from '@/types';
+  import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
+  import { CalendarOptions, DayCellMountArg } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
-
-  import { ref, watchEffect, computed } from 'vue';
+  import { mdiListBoxOutline } from '@mdi/js';
+  import { computed, ref, watchEffect } from 'vue';
+  import MyCalendarDay from './MyCalendarDay.vue';
 
   const props = defineProps<{
-    data: CalendarDayV2[];
+    data: CalendarDay[];
     selectedDate: Date;
+    isLoading: boolean;
   }>();
 
   const calendarEvents = computed(() =>
-    props.data.map((d) => ({ start: new Date(d.date), ...d }))
+    props.data.map((d) => ({
+      start: new Date(d.date),
+      extendedProps: {
+        ...d,
+      },
+    }))
   );
+
+  const dayCellDidMount = (info: DayCellMountArg) => {
+    // Appends the Court List icon next to the day's date
+    const date = formatDateInstanceToDDMMMYYYY(info.date);
+    const data = props.data.find((d) => d.date === date);
+
+    if (!data || data.activities.length === 0 || !data.showCourtList) {
+      return;
+    }
+
+    const locationIds = [
+      ...new Set(data.activities.map((a) => a.locationId)),
+    ].join(',');
+    info.el.querySelector('.fc-daygrid-day-top')?.insertAdjacentHTML(
+      'beforeend',
+      `
+      <a class="court-list" href="/court-list?locationIds=${locationIds}&date=${date}" title="View Court List">
+        <svg viewBox="0 0 24 24" width="18" height="18" style="fill:#666;">
+          <path d="${mdiListBoxOutline}" />
+        </svg>
+      </a>
+    `
+    );
+  };
 
   const calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
     plugins: [dayGridPlugin],
     headerToolbar: false,
     dayHeaderFormat: { weekday: 'long' },
-    events: calendarEvents.value,
+    dayCellDidMount,
   };
 
   const calendarRef = ref();
@@ -37,21 +82,19 @@
     if (calendarApi) {
       calendarApi.removeAllEvents();
 
-      props.data.forEach((e) =>
-        calendarApi.addEvent({ start: new Date(e.date), ...e })
-      );
+      calendarEvents.value.forEach((e) => {
+        return calendarApi.addEvent({ ...e });
+      });
       calendarApi.gotoDate(props.selectedDate);
     }
   });
 </script>
 <style scoped>
-  /* FullCalendar Styles */
-  :deep(.fc-col-header-cell) {
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
+  :deep(.court-list) {
+    margin-right: 4px;
   }
 
+  /* Header Styles */
   :deep(.fc-col-header-cell-cushion),
   :deep(.fc-col-header-cell-cushion:hover) {
     color: var(--text-blue-800);
@@ -61,23 +104,64 @@
     text-decoration: none;
   }
 
+  :deep(.fc-event) {
+    display: block;
+  }
+
+  /* Day Styles */
   :deep(.fc-daygrid-day-top) {
     flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 
   :deep(.fc-daygrid-day-number),
   :deep(.fc-daygrid-day-number:hover) {
     font-weight: bold;
-    color: var(--text-gray-400) !important;
+    color: var(--text-gray-400);
     text-decoration: none;
   }
 
+  :deep(.fc-daygrid-day-frame) {
+    padding: 0.3125rem;
+  }
+
+  :deep(.fc-daygrid-day) {
+    background-color: var(--bg-white-500) !important;
+  }
+
+  :deep(.fc-daygrid-day:hover) {
+    background-color: var(--bg-blue-100) !important;
+  }
+
+  :deep(.fc-daygrid-dot-event:hover) {
+    background-color: transparent;
+  }
+
+  /* Today Styles */
+  :deep(.fc-day-today .fc-daygrid-day-frame) {
+    position: relative;
+    background-color: var(--bg-blue-50) !important;
+  }
+
+  :deep(.fc-day-today .fc-daygrid-day-frame)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 5px;
+    width: 100%;
+    background-color: var(--bg-blue-500);
+  }
+
+  /* Weekend Styles */
   :deep(.fc-day-sun .fc-daygrid-day-frame),
   :deep(.fc-day-sat .fc-daygrid-day-frame) {
     background-color: var(--bg-gray-400) !important;
   }
 
-  :deep(.fc-daygrid-day) {
-    background-color: var(--bg-white-500) !important;
+  :deep(.fc-day-sun .fc-daygrid-day-frame:hover),
+  :deep(.fc-day-sat .fc-daygrid-day-frame:hover) {
+    background-color: var(--bg-blue-100) !important;
   }
 </style>

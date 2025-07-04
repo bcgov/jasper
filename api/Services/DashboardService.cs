@@ -4,11 +4,13 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
+using MapsterMapper;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
-using PCSSCommon.Models;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
+
+using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Services;
 
@@ -21,13 +23,17 @@ public class DashboardService(
     IAppCache cache,
     JudicialCalendarServicesClient calendarClient,
     SearchDateClient searchDateClient,
-    LocationService locationService) : ServiceBase(cache), IDashboardService
+    LocationService locationService,
+    IMapper mapper) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
+    public const string SITTING_ACTIVITY_CODE = "SIT";
+    public const string NON_SITTING_ACTIVITY_CODE = "NS";
 
     private readonly JudicialCalendarServicesClient _calendarClient = calendarClient;
     private readonly SearchDateClient _searchDateClient = searchDateClient;
     private readonly LocationService _locationService = locationService;
+    private readonly IMapper _mapper = mapper;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -47,7 +53,7 @@ public class DashboardService(
         var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
         var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
 
-        async Task<JudicialCalendar> MySchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
+        async Task<PCSS.JudicialCalendar> MySchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
 
         var myScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedStartDate}-{formattedEndDate}", MySchedule);
 
@@ -68,7 +74,7 @@ public class DashboardService(
         }
 
         // Query schedule for today
-        async Task<JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedCurrentDate, formattedCurrentDate);
+        async Task<PCSS.JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedCurrentDate, formattedCurrentDate);
 
         var todayScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedCurrentDate}-{formattedCurrentDate}", TodaysSchedule);
 
@@ -84,7 +90,7 @@ public class DashboardService(
 
     }
 
-    private async Task<CalendarDayV2> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDayV2> days)
+    private async Task<CalendarDay> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDay> days)
     {
         var today = days.SingleOrDefault(d => d.Date == currentDate);
         if (today == null)
@@ -118,61 +124,64 @@ public class DashboardService(
         return today;
     }
 
-    private async Task<List<CalendarDayV2>> GetDays(JudicialCalendar calendar)
+    private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar)
     {
-        var days = new List<CalendarDayV2>();
+        var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
             var activities = await GetDayActivities(day);
-            days.Add(new CalendarDayV2 { Date = day.Date, Activities = activities });
+
+            DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
+            var isWeekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
+            var showCourtList = activities
+                .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
+                    && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
+
+            days.Add(new CalendarDay
+            {
+                Date = day.Date,
+                IsWeekend = isWeekend,
+                ShowCourtList = showCourtList,
+                Activities = activities
+            });
 
         }
         return days;
     }
 
-    private async Task<List<CalendarDayActivity>> GetDayActivities(JudicialCalendarDay day)
+    private async Task<List<CalendarDayActivity>> GetDayActivities(PCSS.JudicialCalendarDay day)
     {
         var activities = new List<CalendarDayActivity>();
         var amActivity = day.Assignment.ActivityAm;
         var pmActivity = day.Assignment.ActivityPm;
 
+
         if (amActivity == null && pmActivity == null)
         {
-            activities.Add(new CalendarDayActivity
-            {
-                LocationId = day.Assignment.LocationId,
-                LocationName = day.Assignment.LocationName,
-                LocationShortName = day.Assignment.LocationId != null
-                    ? await _locationService.GetLocationShortName(day.Assignment.LocationId.ToString())
-                    : null,
-                ActivityCode = day.Assignment.ActivityCode,
-                ActivityDescription = day.Assignment.ActivityDescription,
-                ActivityClassDescription = day.Assignment.ActivityClassDescription,
-                IsRemote = day.Assignment.IsVideo.GetValueOrDefault()
-            });
+            activities.Add(await CreateCalendarDayActivity(day.Assignment, day.Restrictions));
             return activities;
         }
 
         if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions));
             return activities;
         }
 
         if (amActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, Period.AM));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, Period.AM));
         }
 
         if (pmActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(pmActivity, Period.PM));
+            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, Period.PM));
         }
 
         return activities;
     }
 
-    private static bool IsSameAmPmActivity(JudicialCalendarActivity amActivity, JudicialCalendarActivity pmActivity)
+    private static bool IsSameAmPmActivity(PCSS.JudicialCalendarActivity amActivity, PCSS.JudicialCalendarActivity pmActivity)
     {
         var sameLocation = amActivity.LocationId == pmActivity.LocationId;
         var sameActivity = amActivity.ActivityCode == pmActivity.ActivityCode;
@@ -181,20 +190,36 @@ public class DashboardService(
         return sameLocation && sameActivity && sameRoom;
     }
 
-    private async Task<CalendarDayActivity> CreateCalendarDayActivity(JudicialCalendarActivity activity, Period? period = null) => new()
+    private async Task<CalendarDayActivity> CreateCalendarDayActivity(
+        PCSS.JudicialCalendarActivity judicialActivity,
+        List<PCSS.AdjudicatorRestriction> judicialRestrictions,
+        Period? period = null)
     {
-        LocationId = activity.LocationId,
-        LocationName = activity.LocationName,
-        LocationShortName = activity.LocationId != null
+        var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
+        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(judicialRestrictions.Where(r => r.ActivityCode == activity.ActivityCode));
+
+        activity.LocationShortName = activity.LocationId != null
             ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
-            : null,
-        ActivityCode = activity.ActivityCode,
-        ActivityClassDescription = activity.ActivityClassDescription,
-        ActivityDisplayCode = activity.ActivityDisplayCode,
-        ActivityDescription = activity.ActivityDescription,
-        IsRemote = activity.IsVideo.GetValueOrDefault(),
-        RoomCode = activity.CourtRoomCode,
-        Period = period
-    };
+            : null;
+        activity.Period = period;
+        activity.Restrictions = restrictions;
+
+        return activity;
+    }
+
+    private async Task<CalendarDayActivity> CreateCalendarDayActivity(
+        PCSS.JudicialCalendarAssignment assignment,
+        List<PCSS.AdjudicatorRestriction> judicialRestrictions)
+    {
+        var activity = _mapper.Map<CalendarDayActivity>(assignment);
+        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(judicialRestrictions.Where(r => r.ActivityCode == activity.ActivityCode));
+
+        activity.LocationShortName = assignment.LocationId != null
+                    ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
+                    : null;
+        activity.Restrictions = restrictions;
+
+        return activity;
+    }
 
 }

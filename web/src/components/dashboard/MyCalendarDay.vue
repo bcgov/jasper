@@ -7,7 +7,11 @@
     >
       <div class="mb-1 d-flex justify-space-between">
         <span data-testid="short-name">{{ locationShortName }}</span>
-        <v-icon v-if="showVideo" :icon="mdiVideo" />
+        <v-icon
+          data-testid="location-remote-icon"
+          v-if="showVideo"
+          :icon="mdiVideo"
+        />
       </div>
       <div
         class="d-flex align-center justify-space-between mb-1"
@@ -41,7 +45,11 @@
           </div>
         </div>
         <div>
-          <v-icon v-if="!showVideo && isRemote" :icon="mdiVideo" />
+          <v-icon
+            data-testid="activity-remote-icon"
+            v-if="!showVideo && isRemote"
+            :icon="mdiVideo"
+          />
           <v-chip
             size="small"
             density="compact"
@@ -60,7 +68,6 @@
   import { computed } from 'vue';
 
   const props = defineProps<{
-    date: string;
     isWeekend: boolean;
     activities: CalendarDayActivity[];
   }>();

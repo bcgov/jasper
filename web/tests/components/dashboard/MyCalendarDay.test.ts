@@ -25,6 +25,7 @@ describe('MyCalendarDay.test.ts', () => {
     const wrapper = mount(MyCalendarDay, {
       props: {
         activities: mockActivities,
+        isWeekend: false,
       },
     });
 
@@ -49,7 +50,7 @@ describe('MyCalendarDay.test.ts', () => {
     expect(remoteEl).not.toBeNull();
   });
 
-  it('renders 2 activity details', () => {
+  it('renders 1 location with multiple activities when location is the same', () => {
     const mockShortName = faker.location.city();
     const mockPeriod = faker.helpers.arrayElement(['AM', 'PM']);
     const mockActivityDisplayCode = faker.lorem.word();
@@ -77,12 +78,19 @@ describe('MyCalendarDay.test.ts', () => {
     const wrapper = mount(MyCalendarDay, {
       props: {
         activities: mockActivities,
+        isWeekend: false,
       },
     });
 
-    const activities = wrapper.findAll('[data-testid="activity-detail"]');
+    const locations = wrapper.findAll('[data-testid="short-name"]');
+    const activities = wrapper.findAll('[data-testid="activity"]');
+    const locationRemoteIconEl = wrapper.find(
+      '[data-testid="location-remote-icon"]'
+    );
 
-    expect(activities.length).toBe(mockActivities.length);
+    expect(locations.length).toBe(1);
+    expect(activities.length).toBe(2);
+    expect(locationRemoteIconEl.exists()).toBeTruthy();
   });
 
   it('renders available activity details', () => {
@@ -99,6 +107,7 @@ describe('MyCalendarDay.test.ts', () => {
     const wrapper = mount(MyCalendarDay, {
       props: {
         activities: mockActivities,
+        isWeekend: false,
       },
     });
 
@@ -106,6 +115,9 @@ describe('MyCalendarDay.test.ts', () => {
     const roomEl = wrapper.find('[data-testid="room"]');
     const periodEl = wrapper.find('v-chip');
     const remoteEl = wrapper.find('v-icon');
+    const locationRemoteIconEl = wrapper.find(
+      '[data-testid="location-remote-icon"]'
+    );
 
     expect(activityEl).not.toBeNull();
     expect(activityEl.text()).toBe(mockActivityDescription);
@@ -113,5 +125,84 @@ describe('MyCalendarDay.test.ts', () => {
     expect(roomEl.exists()).toBeFalsy();
     expect(periodEl.exists()).toBeFalsy();
     expect(remoteEl.exists()).toBeFalsy();
+    expect(locationRemoteIconEl.exists()).toBeFalsy();
+  });
+
+  it('renders "Weekend" when date falls on a weekend', () => {
+    const mockActivityDescription = faker.lorem.word();
+
+    const mockActivities = [
+      {
+        activityClassDescription: faker.lorem.word(),
+        activityDescription: mockActivityDescription,
+        isRemote: false,
+      } as CalendarDayActivity,
+    ];
+
+    const wrapper = mount(MyCalendarDay, {
+      props: {
+        activities: mockActivities,
+        isWeekend: true,
+      },
+    });
+
+    const activityEl = wrapper.find('[data-testid="activity"]');
+
+    expect(activityEl).not.toBeNull();
+    expect(activityEl.text()).toBe('Weekend');
+  });
+
+  it('renders multiple location with multiple activities', () => {
+    const mockShortName1 = faker.location.city();
+    const mockShortName2 = faker.location.city();
+    const mockPeriod = faker.helpers.arrayElement(['AM', 'PM']);
+    const mockActivityDisplayCode = faker.lorem.word();
+    const mockRoomCode = faker.location.buildingNumber();
+
+    const mockActivities = [
+      {
+        locationShortName: mockShortName1,
+        period: mockPeriod,
+        activityDisplayCode: mockActivityDisplayCode,
+        roomCode: mockRoomCode,
+        activityClassDescription: faker.lorem.word(),
+        isRemote: true,
+      } as CalendarDayActivity,
+      {
+        locationShortName: mockShortName1,
+        period: mockPeriod,
+        activityDisplayCode: mockActivityDisplayCode,
+        roomCode: mockRoomCode,
+        activityClassDescription: faker.lorem.word(),
+        isRemote: false,
+      } as CalendarDayActivity,
+      {
+        locationShortName: mockShortName2,
+        period: mockPeriod,
+        activityDisplayCode: mockActivityDisplayCode,
+        roomCode: mockRoomCode,
+        activityClassDescription: faker.lorem.word(),
+        isRemote: true,
+      } as CalendarDayActivity,
+    ];
+
+    const wrapper = mount(MyCalendarDay, {
+      props: {
+        activities: mockActivities,
+        isWeekend: false,
+      },
+    });
+
+    const activityDetails = wrapper.findAll('[data-testid="activity-detail"]');
+    const locationRemoteIcons = wrapper.findAll(
+      '[data-testid="location-remote-icon"]'
+    );
+    const activityRemoteIcons = wrapper.findAll(
+      '[data-testid="activity-remote-icon"]'
+    );
+
+    expect(activityDetails.length).toBe(2);
+    expect(locationRemoteIcons.length).toBe(1);
+    expect(activityRemoteIcons.length).toBe(1);
   });
 });

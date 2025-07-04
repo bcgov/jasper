@@ -12,7 +12,6 @@
   >
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
-        :date="event.extendedProps.date"
         :isWeekend="event.extendedProps.isWeekend"
         :activities="event.extendedProps.activities"
       />

@@ -35,6 +35,15 @@ select {
 .small-claims-table-banner {
   background-color: var(--bg-purple-500) !important;
 }
+.criminal-label {
+  color: var(--bg-blue-500) !important;
+}
+.family-label {
+  color: var(--bg-green-500) !important;
+}
+.small-label {
+  color: var(--bg-purple-500) !important;
+}
 
 tbody tr:nth-of-type(odd) {
   background-color: var(--bg-black-50);

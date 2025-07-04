@@ -54,7 +54,7 @@
         </template>
       </v-data-table-virtual>
     </v-skeleton-loader>
-    <action-bar :selected="selectedItems" @clicked="handleViewFilesClick">
+    <ActionBar :selected="selectedItems" @clicked="handleViewFilesClick">
       <v-btn
         size="large"
         class="mx-2"
@@ -64,7 +64,7 @@
       >
         View case details
       </v-btn>
-    </action-bar>
+    </ActionBar>
   </div>
 </template>
 

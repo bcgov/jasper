@@ -277,6 +277,7 @@
       [selectedDivision.value]: true,
     });
     searchResults.value.length = 0;
+    selectedFiles.value = [];
   };
 
   const handleSubmit = async () => {

@@ -7,21 +7,21 @@
           <v-btn base-color="white">View all documents</v-btn>
         </v-col>
       </v-row>
-      <v-tabs v-model="activeTab">
+      <v-tabs v-model="activeTab" center-active>
         <template v-for="file in props.files" :key="file.key">
           <v-tab
             class="text-body-1 mb-0"
             selected-class="active-tab"
-            rounded="t-lg"
+            :rounded="fileNumber == file.key ? 't-lg' : false"
             :ripple="false"
             :to="file.key"
             hide-slider
             base-color="white"
             color="black"
+            border="e-md"
             @click="fileNumber = file.key"
-            >{{ file.value }}</v-tab
-          >
-          <v-divider class="ms-2" inset vertical thickness="2"></v-divider>
+            >{{ file.value }}
+          </v-tab>
         </template>
       </v-tabs>
     </v-container>
@@ -38,7 +38,6 @@
     courtClass: { type: String, default: null },
   });
   const activeTab = ref(() => fileNumber.value);
-
   const getBannerStyle = computed(() => getCourtClassStyle(props.courtClass));
 </script>
 

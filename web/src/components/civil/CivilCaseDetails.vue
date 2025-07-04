@@ -196,12 +196,12 @@
 
       onMounted(() => {
         loading.value = true;
-        civilFileStore.civilFileInformation.fileNumber = getSingleValue(
-          route.params.fileNumber
-        );
+        const routeFileNumber = getSingleValue(route.params.fileNumber);
+        civilFileStore.civilFileInformation.fileNumber = routeFileNumber;
         civilFileStore.updateCivilFile(civilFileStore.civilFileInformation);
         getFileDetails();
         navigateToSection(route.params.section);
+        fileNumber.value = routeFileNumber;
         loading.value = false;
       });
 

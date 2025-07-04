@@ -1,5 +1,17 @@
 <template>
-  <h5 class="my-1">Case Details</h5>
+  <h5 class="my-1">
+    Case Details
+    <span
+      class="pl-3"
+      :class="
+        labelClasses[getCourtClassLabel(details.courtClassCd)] ||
+        'criminal-label'
+      "
+    >
+      {{ details.fileNumberTxt }}
+    </span>
+    <CopyToClipboard :text="details.fileNumberTxt" />
+  </h5>
   <v-card color="var(--bg-gray-500)" flat>
     <div class="mx-2 d-flex align-center pt-2">
       <DivisionBadge
@@ -33,7 +45,10 @@
   </v-card>
 </template>
 <script setup lang="ts">
+  import CopyToClipboard from '@/components/shared/CopyToClipboard.vue';
+  import { labelClasses } from '@/constants/labelClasses';
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
+  import { getCourtClassLabel } from '@/utils/utils';
   import { computed, ref } from 'vue';
   import DivisionBadge from '../common/DivisionBadge.vue';
 

@@ -3,7 +3,7 @@ import {
   banType,
   criminalAppearancesType,
   criminalFileDetailsType,
-  crownType,
+  crownType
 } from '@/types/criminal/jsonTypes';
 import { mount } from '@vue/test-utils';
 import CriminalSummary from 'CMP/case-details/criminal/CriminalSummary.vue';
@@ -33,6 +33,7 @@ const createParticipant = (givenNm: string, lastNm: string) => ({
   counselRelatedRepTypeCd: '',
   counselEnteredDt: '',
   designatedCounselYN: '',
+  ageNotice: [],
   additionalProperties: {} as AdditionalProperties,
   additionalProp1: {},
   additionalProp2: {},
@@ -96,7 +97,7 @@ describe('CriminalSummary.vue', () => {
       props: { details },
     });
 
-    expect(wrapper.find('h5').text()).toBe('Case Details');
+    expect(wrapper.find('h5').text()).toContain('Case Details');
     expect(wrapper.findComponent({ name: 'DivisionBadge' }).exists()).toBe(
       true
     );
@@ -130,7 +131,7 @@ describe('CriminalSummary.vue', () => {
       props: { details },
     });
 
-    expect(wrapper.find('span').text()).toBe('BAN');
+    expect(wrapper.findAll('span')[2].text()).toBe('BAN');
   });
 
   it.each([

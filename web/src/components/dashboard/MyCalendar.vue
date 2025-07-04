@@ -20,7 +20,7 @@
   </FullCalendar>
 </template>
 <script setup lang="ts">
-  import { CalendarDayV2 } from '@/types';
+  import { CalendarDay } from '@/types';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { CalendarOptions, DayCellMountArg } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
@@ -30,7 +30,7 @@
   import MyCalendarDay from './MyCalendarDay.vue';
 
   const props = defineProps<{
-    data: CalendarDayV2[];
+    data: CalendarDay[];
     selectedDate: Date;
     isLoading: boolean;
   }>();

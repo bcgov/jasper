@@ -80,12 +80,12 @@
   </v-banner>
 </template>
 <script setup lang="ts">
-  import { CalendarDayV2 } from '@/types';
+  import { CalendarDay } from '@/types';
   import { mdiCalendarCheckOutline } from '@mdi/js';
   import { computed } from 'vue';
 
   const props = defineProps<{
-    today: CalendarDayV2;
+    today: CalendarDay;
   }>();
 
   const cleanActivityClassDescription = (

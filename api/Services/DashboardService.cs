@@ -90,7 +90,7 @@ public class DashboardService(
 
     }
 
-    private async Task<CalendarDayV2> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDayV2> days)
+    private async Task<CalendarDay> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDay> days)
     {
         var today = days.SingleOrDefault(d => d.Date == currentDate);
         if (today == null)
@@ -124,9 +124,9 @@ public class DashboardService(
         return today;
     }
 
-    private async Task<List<CalendarDayV2>> GetDays(PCSS.JudicialCalendar calendar)
+    private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar)
     {
-        var days = new List<CalendarDayV2>();
+        var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
             var activities = await GetDayActivities(day);
@@ -137,7 +137,7 @@ public class DashboardService(
                 .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
                     && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
 
-            days.Add(new CalendarDayV2
+            days.Add(new CalendarDay
             {
                 Date = day.Date,
                 IsWeekend = isWeekend,

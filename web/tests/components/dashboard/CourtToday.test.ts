@@ -1,5 +1,5 @@
 import CourtToday from '@/components/dashboard/CourtToday.vue';
-import { CalendarDayActivity, CalendarDayV2 } from '@/types';
+import { CalendarDay, CalendarDayActivity } from '@/types';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ describe('CourtToday.vue', () => {
           activityDescription: mockActivity,
         } as CalendarDayActivity,
       ],
-    } as CalendarDayV2;
+    } as CalendarDay;
 
     const wrapper = mount(CourtToday, {
       props: {
@@ -45,7 +45,7 @@ describe('CourtToday.vue', () => {
           continuationsCount: 1,
         } as CalendarDayActivity,
       ],
-    } as CalendarDayV2;
+    } as CalendarDay;
 
     const wrapper = mount(CourtToday, {
       props: {
@@ -87,7 +87,7 @@ describe('CourtToday.vue', () => {
           continuationsCount: 1,
         } as CalendarDayActivity,
       ],
-    } as CalendarDayV2;
+    } as CalendarDay;
 
     const wrapper = mount(CourtToday, {
       props: {

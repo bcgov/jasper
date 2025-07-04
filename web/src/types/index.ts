@@ -1,4 +1,5 @@
 export * from './Activity';
+export * from './AdjudicatorRestriction';
 export * from './CalendarDay';
 export * from './CalendarDayActivity';
 export * from './CalendarSchedule';

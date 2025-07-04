@@ -1,5 +1,5 @@
 import MyCalendarDay from '@/components/dashboard/MyCalendarDay.vue';
-import { CalendarDayActivity } from '@/types';
+import { AdjudicatorRestriction, CalendarDayActivity } from '@/types';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
@@ -19,6 +19,7 @@ describe('MyCalendarDay.test.ts', () => {
         roomCode: mockRoomCode,
         activityClassDescription: faker.lorem.word(),
         isRemote: true,
+        restrictions: [{} as AdjudicatorRestriction],
       } as CalendarDayActivity,
     ];
 
@@ -34,6 +35,7 @@ describe('MyCalendarDay.test.ts', () => {
     const roomEl = wrapper.find('[data-testid="room"]');
     const periodEl = wrapper.find('v-chip');
     const remoteEl = wrapper.find('v-icon');
+    const arEl = wrapper.find('[data-testid="activity-restrictions"]');
 
     expect(shortNameEl).not.toBeNull();
     expect(shortNameEl.text()).toBe(mockShortName);
@@ -48,6 +50,8 @@ describe('MyCalendarDay.test.ts', () => {
     expect(periodEl.text()).toBe(mockPeriod.toString());
 
     expect(remoteEl).not.toBeNull();
+
+    expect(arEl.text()).toBe(1);
   });
 
   it('renders 1 location with multiple activities when location is the same', () => {

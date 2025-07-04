@@ -54,6 +54,7 @@
             size="small"
             density="compact"
             class="ar ml-1"
+            data-testid="activity-restrictions"
             v-if="restrictions && restrictions.length > 0"
             >{{ restrictions.length }}</v-chip
           >

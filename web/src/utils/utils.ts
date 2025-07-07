@@ -9,6 +9,7 @@ import { CourtClassEnum, LookupCode } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
 import { inject } from 'vue';
+import { LocationQueryValue } from 'vue-router';
 
 export const SessionManager = {
   getSettings: async function () {
@@ -295,4 +296,20 @@ export const getCourtClassLabel = (courtClassCd: string): string => {
     default:
       return 'Unknown';
   }
+};
+
+/**
+ * Parses QueryString to string
+ * @param value The query string param
+ * @param fallback The fallback param when parsing fails
+ * @returns string
+ */
+export const parseQueryStringToString = (
+  value: LocationQueryValue | LocationQueryValue[] | null | undefined,
+  fallback = ''
+): string => {
+  if (Array.isArray(value)) {
+    return value[0] ?? fallback;
+  }
+  return value ?? fallback;
 };

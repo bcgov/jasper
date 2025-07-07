@@ -45,10 +45,7 @@
         class="w-100"
       >
         <court-list-card :cardInfo="pairing.card" />
-        <court-list-table
-          :search="search"
-          :data="pairing.table"
-        />
+        <court-list-table :search="search" :data="pairing.table" />
       </template>
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"
@@ -60,12 +57,18 @@
 
 <script setup lang="ts">
   import { CourtListService } from '@/services';
-  import { HttpService } from '@/services/HttpService';
   import { usePDFViewerStore } from '@/stores';
   import { DivisionEnum } from '@/types/common';
   import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
+  import {
+    formatDateInstanceToDDMMMYYYY,
+    parseDDMMMYYYYToDate,
+  } from '@/utils/dateUtils';
+  import { parseQueryStringToString } from '@/utils/utils';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
-  import { computed, inject, provide, ref } from 'vue';
+  import { computed, inject, onMounted, provide, ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import CourtListSearch from './CourtListSearch.vue';
   import CourtListTable from './CourtListTable.vue';
   import CourtListTableSearch from './CourtListTableSearch.vue';
 
@@ -128,9 +131,30 @@
       : ''
   );
 
-  const httpService = inject<HttpService>('httpService');
+  const route = useRoute();
+  const router = useRouter();
+
+  onMounted(() => {
+    const dateParam = parseQueryStringToString(route.query.date);
+    const date = parseDDMMMYYYYToDate(dateParam);
+    selectedDate.value = date ?? selectedDate.value;
+  });
+
+  watch(selectedDate, (newValue) => {
+    if (!route.query.date) {
+      return;
+    }
+
+    router.replace({
+      query: {
+        ...route.query,
+        date: formatDateInstanceToDDMMMYYYY(newValue),
+      },
+    });
+  });
+
   const courtListService = inject<CourtListService>('courtListService');
-  if (!httpService || !courtListService) {
+  if (!courtListService) {
     throw new Error('Service(s) is undefined.');
   }
 

@@ -4,6 +4,7 @@ import {
   formatDateInstanceToMMMYYYY,
   formatDateToDDMMMYYYY,
   hoursMinsFormatter,
+  parseDDMMMYYYYToDate,
 } from '@/utils/dateUtils';
 import { describe, expect, it } from 'vitest';
 
@@ -126,6 +127,51 @@ describe('dateUtils', () => {
     it('formats leap year date correctly', () => {
       const result = formatDateInstanceToMMMYYYY(new Date(2024, 1, 29));
       expect(result).toBe('Feb 2024');
+    });
+  });
+
+  describe('parseDDMMMYYYYToDate', () => {
+    it('parses a valid date string correctly', () => {
+      const result = parseDDMMMYYYYToDate('07-Jul-2025');
+      expect(result).toEqual(new Date(2025, 6, 7));
+    });
+
+    it('trims and parses a valid date with extra spaces', () => {
+      const result = parseDDMMMYYYYToDate(' 01-Jan-2000 ');
+      expect(result).toEqual(new Date(2000, 0, 1));
+    });
+
+    it('returns null for invalid month abbreviation', () => {
+      const result = parseDDMMMYYYYToDate('15-XYZ-2021');
+      expect(result).toBeNull();
+    });
+
+    it('returns null if dateStr is empty', () => {
+      const result = parseDDMMMYYYYToDate('');
+      expect(result).toBeNull();
+    });
+
+    it('returns null if dateStr is not a string', () => {
+      // @ts-expect-error - intentionally passing wrong type
+      expect(parseDDMMMYYYYToDate(12345)).toBeNull();
+    });
+
+    it('returns null for wrong format (missing parts)', () => {
+      expect(parseDDMMMYYYYToDate('07-Jul')).toBeNull();
+      expect(parseDDMMMYYYYToDate('2025')).toBeNull();
+    });
+
+    it('returns null for invalid numbers', () => {
+      expect(parseDDMMMYYYYToDate('xx-Jul-2025')).toBeNull();
+      expect(parseDDMMMYYYYToDate('07-Jul-xx')).toBeNull();
+    });
+
+    it.only('returns null for NaN Date (e.g. 32nd of a month)', () => {
+      expect(parseDDMMMYYYYToDate('32-Jan-2022')).toBeNull();
+    });
+
+    it('returns null for completely invalid format', () => {
+      expect(parseDDMMMYYYYToDate('not-a-date')).toBeNull();
     });
   });
 });

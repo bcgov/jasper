@@ -86,3 +86,54 @@ export const extractTime = (date: string) => {
   const formattedHours = hours % 12 || 12; // Convert to 12-hour format
   return `${formattedHours}:${minutes} ${period}`;
 };
+
+/**
+ * Parses the dateStr with format "DD-MMM-YYYY" to new Date()
+ * @param dateStr dateStr with format "DD-MMM-YYYY"
+ * @returns Date object or null
+ */
+export const parseDDMMMYYYYToDate = (dateStr: string): Date | null => {
+  if (!dateStr || typeof dateStr !== 'string') {
+    return null;
+  }
+
+  const parts = dateStr.trim().split('-');
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [dayStr, monthStr, yearStr] = parts;
+  const day = Number(dayStr);
+  const year = Number(yearStr);
+
+  const months: Record<string, number> = {
+    Jan: 0,
+    Feb: 1,
+    Mar: 2,
+    Apr: 3,
+    May: 4,
+    Jun: 5,
+    Jul: 6,
+    Aug: 7,
+    Sep: 8,
+    Oct: 9,
+    Nov: 10,
+    Dec: 11,
+  };
+
+  const month = months[monthStr];
+  if (isNaN(day) || isNaN(year) || month === undefined) {
+    return null;
+  }
+
+  const date = new Date(year, month, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+};

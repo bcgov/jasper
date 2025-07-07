@@ -117,4 +117,9 @@
   .divider {
     border-right: 0.125rem solid var(--border-gray-500);
   }
+
+  .v-btn:hover {
+    color: var(--text-white-500) !important;
+    text-decoration: none;
+  }
 </style>

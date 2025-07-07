@@ -55,16 +55,28 @@
     const locationIds = [
       ...new Set(data.activities.map((a) => a.locationId)),
     ].join(',');
-    info.el.querySelector('.fc-daygrid-day-top')?.insertAdjacentHTML(
-      'beforeend',
-      `
-      <a class="court-list" href="/court-list?locationIds=${locationIds}&date=${date}" title="View Court List">
-        <svg viewBox="0 0 24 24" width="18" height="18" style="fill:#666;">
-          <path d="${mdiListBoxOutline}" />
-        </svg>
-      </a>
-    `
-    );
+
+    const dayTop = info.el.querySelector('.fc-daygrid-day-top');
+    if (!dayTop) {
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.className = 'court-list';
+    link.href = `/list?locationIds=${locationIds}&date=${date}`;
+    link.title = 'View Court List';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '18');
+    svg.setAttribute('height', '18');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', mdiListBoxOutline);
+
+    svg.appendChild(path);
+    link.appendChild(svg);
+    dayTop.appendChild(link);
   };
 
   const calendarOptions: CalendarOptions = {

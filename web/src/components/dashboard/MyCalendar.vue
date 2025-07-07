@@ -46,8 +46,15 @@
   const dayCellDidMount = (info: DayCellMountArg) => {
     // Appends the Court List icon next to the day's date
     const date = formatDateInstanceToDDMMMYYYY(info.date);
+    const data = props.data.find((d) => d.date === date);
     const dayTop = info.el.querySelector('.fc-daygrid-day-top');
-    if (!dayTop) {
+
+    if (
+      !data ||
+      data.activities.length === 0 ||
+      !data.showCourtList ||
+      !dayTop
+    ) {
       return;
     }
 

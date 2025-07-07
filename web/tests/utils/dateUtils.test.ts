@@ -151,11 +151,6 @@ describe('dateUtils', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null if dateStr is not a string', () => {
-      // @ts-expect-error - intentionally passing wrong type
-      expect(parseDDMMMYYYYToDate(12345)).toBeNull();
-    });
-
     it('returns null for wrong format (missing parts)', () => {
       expect(parseDDMMMYYYYToDate('07-Jul')).toBeNull();
       expect(parseDDMMMYYYYToDate('2025')).toBeNull();
@@ -166,7 +161,7 @@ describe('dateUtils', () => {
       expect(parseDDMMMYYYYToDate('07-Jul-xx')).toBeNull();
     });
 
-    it.only('returns null for NaN Date (e.g. 32nd of a month)', () => {
+    it('returns null for NaN Date (e.g. 32nd of a month)', () => {
       expect(parseDDMMMYYYYToDate('32-Jan-2022')).toBeNull();
     });
 

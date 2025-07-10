@@ -17,6 +17,15 @@
       />
     </template>
   </FullCalendar>
+  <!--
+    This component is teleported into a specific calendar cell so
+    it appears inside or over that day, even though it's rendered
+    outside FullCalendar. Only events with activities will have
+    the expanded panel.
+  -->
+  <template v-for="day in calendarEventsWithActivities">
+    <MyCalendarDayExpanded :expandedDate :day="day" />
+  </template>
 </template>
 <script setup lang="ts">
   import { CalendarDay } from '@/types';
@@ -39,9 +48,15 @@
       start: new Date(d.date),
       extendedProps: {
         ...d,
-      },
+      } as CalendarDay,
     }))
   );
+
+  const calendarEventsWithActivities = computed(() =>
+    props.data.filter((d) => d.activities.length > 0)
+  );
+
+  const expandedDate = ref<string | null>(null);
 
   const dayCellDidMount = (info: DayCellMountArg) => {
     // Appends the Court List icon next to the day's date
@@ -74,6 +89,20 @@
     svg.appendChild(path);
     link.appendChild(svg);
     dayTop.appendChild(link);
+
+    // Attach a click event for the expanded panel
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('fc-expand-wrapper');
+    wrapper.setAttribute('data-date', date);
+
+    info.el.style.position = 'relative';
+
+    info.el.appendChild(wrapper);
+    info.el.classList.add('cursor-pointer');
+
+    info.el.addEventListener('click', () => {
+      expandedDate.value = expandedDate.value === date ? null : date;
+    });
   };
 
   const calendarOptions: CalendarOptions = {
@@ -127,7 +156,7 @@
   :deep(.fc-daygrid-day-number),
   :deep(.fc-daygrid-day-number:hover) {
     font-weight: bold;
-    color: var(--text-gray-400);
+    color: var(--text-blue-800);
     text-decoration: none;
   }
 

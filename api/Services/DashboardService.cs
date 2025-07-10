@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
+using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Infrastructure;
@@ -29,6 +30,8 @@ public class DashboardService(
     public const string DATE_FORMAT = "dd-MMM-yyyy";
     public const string SITTING_ACTIVITY_CODE = "SIT";
     public const string NON_SITTING_ACTIVITY_CODE = "NS";
+    public const string SEIZED_RESTRICTION_CODE = "S";
+    public const string FIX_A_DATE_APPEARANCE_CODE = "FXD";
 
     private readonly JudicialCalendarServicesClient _calendarClient = calendarClient;
     private readonly SearchDateClient _searchDateClient = searchDateClient;
@@ -129,11 +132,17 @@ public class DashboardService(
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
-            var activities = await GetDayActivities(day);
 
             DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
+
+            var activities = await GetDayActivities(day);
+
             var isWeekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
             var showCourtList = activities
+                .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
+                    && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
+            // Show DARS icon (headset) when judge is sitting, assigned to an activity and date today or earlier
+            var showDars = date.Date <= DateTime.Now.Date && activities
                 .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
                     && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
 
@@ -142,7 +151,11 @@ public class DashboardService(
                 Date = day.Date,
                 IsWeekend = isWeekend,
                 ShowCourtList = showCourtList,
-                Activities = activities
+                Activities = activities.Select(a =>
+                {
+                    a.ShowDars = showDars;
+                    return a;
+                }).ToList()
             });
 
         }
@@ -196,7 +209,15 @@ public class DashboardService(
         Period? period = null)
     {
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
-        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(judicialRestrictions.Where(r => r.ActivityCode == activity.ActivityCode));
+        // Exclude FXD restrictions
+        var jRestrictions = judicialRestrictions
+            .Where(r => r.ActivityCode == activity.ActivityCode
+                && r.RestrictionCode == SEIZED_RESTRICTION_CODE
+                && r.AppearanceReasonCode != FIX_A_DATE_APPEARANCE_CODE)
+            .GroupBy(r => r.FileName)
+            .Select(r => r.First());
+
+        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(jRestrictions);
 
         activity.LocationShortName = activity.LocationId != null
             ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
@@ -212,7 +233,14 @@ public class DashboardService(
         List<PCSS.AdjudicatorRestriction> judicialRestrictions)
     {
         var activity = _mapper.Map<CalendarDayActivity>(assignment);
-        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(judicialRestrictions.Where(r => r.ActivityCode == activity.ActivityCode));
+        // Exclude FXD restrictions
+        var jRestrictions = judicialRestrictions
+            .Where(r => r.ActivityCode == activity.ActivityCode
+                && r.RestrictionCode == SEIZED_RESTRICTION_CODE
+                && r.AppearanceReasonCode != FIX_A_DATE_APPEARANCE_CODE)
+            .GroupBy(r => r.FileName)
+            .Select(r => r.First());
+        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(jRestrictions);
 
         activity.LocationShortName = assignment.LocationId != null
                     ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())

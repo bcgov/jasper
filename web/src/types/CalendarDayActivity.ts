@@ -14,5 +14,6 @@ export interface CalendarDayActivity {
   filesCount: number;
   continuationsCount: number;
   showCourtList: boolean;
+  showDars: boolean;
   restrictions: AdjudicatorRestriction[];
 }

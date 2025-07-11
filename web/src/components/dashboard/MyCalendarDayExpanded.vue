@@ -17,7 +17,7 @@
           ) in groupedActivities"
         >
           <div class="mb-2 d-flex">
-            <span data-testid="name">{{ locationName }}</span>
+            <span class="location" data-testid="name">{{ locationName }}</span>
             <v-icon
               data-testid="location-remote-icon"
               v-if="showVideo"
@@ -165,5 +165,9 @@
   .continuations a:hover {
     color: var(--text-blue-500);
     text-decoration: none;
+  }
+
+  .location {
+    color: var(--text-gray-400);
   }
 </style>

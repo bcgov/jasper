@@ -14,7 +14,7 @@
     </v-row>
     <v-row v-if="showAlias" class="mx-1 mt-0">
       <v-col cols="6" class="data-label">Alias</v-col>
-      <v-col data-testid="alias">
+      <v-col>
         <LabelWithTooltip :values="aliases" />
       </v-col>
     </v-row>

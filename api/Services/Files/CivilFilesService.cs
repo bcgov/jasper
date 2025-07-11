@@ -213,7 +213,10 @@ namespace Scv.Api.Services.Files
             detail.Appearances = appearances;
 
             ICollection<ClParty> courtListParties = [];
-            if ((detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.C || detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.F)
+            if ((detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.C
+                || detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.M
+                || detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.L
+                || detail.CourtClassCd == CivilFileDetailResponseCourtClassCd.F)
                 && detail.Appearances != null
                 && detail.Appearances.ApprDetail.Count != 0)
             {
@@ -223,7 +226,7 @@ namespace Scv.Api.Services.Files
                 var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
                 if (latestApprearance != null)
                 {
-                    var agencyId = await _locationService.GetLocationAgencyIdentifier(detail.HomeLocationAgenId);
+                    var agencyId = await _locationService.GetLocationAgencyIdentifier(latestApprearance.CourtAgencyId);
                     var courtList = await _filesClient.FilesCourtlistAsync(
                         _requestAgencyIdentifierId,
                         _requestPartId,

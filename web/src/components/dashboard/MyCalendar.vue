@@ -12,6 +12,7 @@
   >
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
+        :date="event.extendedProps.date"
         :isWeekend="event.extendedProps.isWeekend"
         :activities="event.extendedProps.activities"
       />
@@ -24,7 +25,11 @@
     the expanded panel.
   -->
   <template v-for="day in calendarEventsWithActivities">
-    <MyCalendarDayExpanded :expandedDate :day="day" />
+    <MyCalendarDayExpanded
+      :expandedDate
+      :day="day"
+      :close="closeExpandedPanel"
+    />
   </template>
 </template>
 <script setup lang="ts">
@@ -53,7 +58,7 @@
   );
 
   const calendarEventsWithActivities = computed(() =>
-    props.data.filter((d) => d.activities.length > 0)
+    props.data.filter((d) => d.activities.length > 0 && d.showCourtList)
   );
 
   const expandedDate = ref<string | null>(null);
@@ -126,6 +131,44 @@
       calendarApi.gotoDate(props.selectedDate);
     }
   });
+
+  const closeExpandedPanel = (e: MouseEvent) => {
+    // Determine whether the expanded panel is going to be closed.
+    // Expanded panel should only close when the click is from a date
+    // without an activitiy (e.g. Weekend, Non-sitting, Sitting).
+    const target = e.target as HTMLElement;
+    if (!target) {
+      expandedDate.value = null;
+      return;
+    }
+
+    // Find the nearest Calendar cell
+    const dayGridCell = target.closest('.fc-daygrid-day');
+    if (!dayGridCell) {
+      expandedDate.value = null;
+      return;
+    }
+
+    // Traverse down and retrieve the element that has a data-formatted-date attr
+    const dateEl = dayGridCell.querySelector(
+      '[data-formatted-date]'
+    ) as HTMLElement | null;
+    if (!dateEl || !dateEl.dataset.formattedDate) {
+      expandedDate.value = null;
+      return;
+    }
+
+    // If the date is in the calendarEventsWithActivities,
+    // then the click happened on a cell that has an expanded panel.
+    // If not found, we can safely close the panel.
+    const date = dateEl.dataset.formattedDate;
+    const hasActivity = calendarEventsWithActivities.value.find(
+      (e) => e.date === date
+    );
+    if (!hasActivity) {
+      expandedDate.value = null;
+    }
+  };
 </script>
 <style scoped>
   :deep(.court-list) {

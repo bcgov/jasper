@@ -3,7 +3,7 @@
     :to="`.fc-expand-wrapper[data-date='${day.date}']`"
     v-if="expandedDate === day.date"
   >
-    <div class="pa-2 expanded-content">
+    <div class="pa-2 expanded-content" v-click-outside="close">
       <div class="header d-flex align-center justify-space-between">
         <span>{{ dayNumberText }}</span>
         <RouterLink :to="{ name: 'CourtList', query: { date: day.date } }">
@@ -97,6 +97,7 @@
   const props = defineProps<{
     expandedDate: string | null;
     day: CalendarDay;
+    close: () => void;
   }>();
 
   const cleanActivityClassDescription = (

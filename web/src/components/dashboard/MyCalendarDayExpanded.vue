@@ -16,7 +16,7 @@
             { locationName, activities, showVideo }, index
           ) in groupedActivities"
         >
-          <div class="mb-2 d-flex">
+          <div class="mb-2 d-flex justify-space-between">
             <span class="location" data-testid="name">{{ locationName }}</span>
             <v-icon
               data-testid="location-remote-icon"
@@ -69,15 +69,20 @@
             </div>
             <div
               v-if="restrictions && restrictions.length > 0"
-              class="d-flex flex-column justify-start mt-2 continuations"
+              class="d-flex flex-column justify-start mt-2 seized"
             >
-              <span><b>Continuations:</b></span>
+              <span><b>Seized:</b></span>
               <a
-                v-for="{ fileName, fileId, isCivil } in restrictions"
+                v-for="{
+                  fileName,
+                  fileId,
+                  isCivil,
+                  appearanceReasonCode,
+                } in restrictions"
                 :href="`/${isCivil ? 'civil' : 'criminal'}-file/${fileId}`"
                 target="_blank"
                 rel="noopener"
-                >{{ fileName }}</a
+                >{{ fileName }} ({{ appearanceReasonCode }})</a
               >
             </div>
           </div>
@@ -131,7 +136,7 @@
 <style scoped>
   .expanded-content {
     position: absolute;
-    width: 300px;
+    width: 375px;
     top: 0;
     left: 0;
     z-index: 10;
@@ -157,12 +162,12 @@
     text-decoration: none;
   }
 
-  .continuations a {
+  .seized a {
     color: var(--text-blue-500);
     text-decoration: underline;
   }
 
-  .continuations a:hover {
+  .seized a:hover {
     color: var(--text-blue-500);
     text-decoration: none;
   }

@@ -35,7 +35,7 @@ public class BindersController(IBinderService binderService) : ControllerBase
 
         var routeValues = new RouteValueDictionary(result.Payload.Labels);
 
-        return CreatedAtAction(nameof(GetBinders), routeValues, result.Payload);
+        return CreatedAtAction(nameof(GetBinders), routeValues, result);
     }
 
     [HttpPut]
@@ -51,13 +51,13 @@ public class BindersController(IBinderService binderService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public virtual async Task<IActionResult> Delete(string id)
+    public virtual async Task<IActionResult> DeleteBinder(string id)
     {
         var result = await _binderService.DeleteAsync(id);
         if (!result.Succeeded)
         {
 
-            return BadRequest(new { errors = result.Errors });
+            return BadRequest(new { error = result.Errors });
         }
 
         return NoContent();

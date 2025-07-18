@@ -86,3 +86,11 @@ export interface PersonType {
   givenNm: string;
   lastNm: string;
 }
+
+export interface DataTableHeader {
+  key: string;
+  title?: string;
+  value?: (item: any) => string;
+  sortRaw?: (a: any, b: any) => number;
+  [key: string]: any;
+}

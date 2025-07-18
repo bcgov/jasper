@@ -49,7 +49,12 @@
           v-if="isCriminal"
           :participants="criminalDetails.participant"
         />
-        <CivilDocumentsView v-else :documents="civilDetails.document" />
+        <CivilDocumentsView
+          v-else
+          :documents="civilDetails.document"
+          :courtClassCd="courtClassCd!"
+          :fileId="fileId"
+        />
       </v-window-item>
       <v-window-item value="appearances">
         <AppearancesView
@@ -88,8 +93,9 @@
     details: FileDetailsType;
     activityClassCd: string;
     fileId: string;
+    courtClassCd?: string;
   }>();
-  
+
   const isCriminal = computed(() => props.activityClassCd === DivisionEnum.R);
   const selectedTab = ref('documents');
   const criminalDetails = ref<criminalFileDetailsType>(

@@ -60,6 +60,7 @@
             <CaseHeader
               :details="details"
               :activityClassCd="details.activityClassCd"
+              :courtClassCd="details.courtClassCd"
               :fileId="fileId"
             />
           </v-col>
@@ -485,7 +486,7 @@
           if (jParty.counsel.length > 0) {
             partyInfo.counsel = [];
             for (const couns of jParty.counsel) {
-              partyInfo.counsel.push(couns.fullNm);
+              partyInfo.counsel.push(couns.counselFullName);
             }
           } else {
             partyInfo.counsel = [];

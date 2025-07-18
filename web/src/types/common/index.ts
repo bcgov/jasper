@@ -72,6 +72,7 @@ export interface UserInfo {
   subRole: string;
   isSupremeUser: string;
   agencyCode: string;
+  userId: string;
 }
 
 export interface LookupCode {

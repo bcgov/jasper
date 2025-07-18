@@ -223,7 +223,7 @@
     const labels = {
       ['physicalFileId']: props.fileId,
       ['courtClassCd']: props.courtClassCd,
-      ['judgeId']: commonStore.userInfo?.judgeId,
+      ['judgeId']: commonStore.userInfo?.userId,
     };
 
     // Get binders associated to the current user. In Phase 1, we are supporting 1 binder per case per user.

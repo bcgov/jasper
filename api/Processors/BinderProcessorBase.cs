@@ -35,7 +35,7 @@ public abstract class BinderProcessorBase(
 
         // Add standard labels for a binder
         this.Binder.Labels.Add(LabelConstants.PHYSICAL_FILE_ID, fileId);
-        this.Binder.Labels.Add(LabelConstants.JUDGE_ID, this.CurrentUser.JudgeId());
+        this.Binder.Labels.Add(LabelConstants.JUDGE_ID, this.CurrentUser.UserId());
 
         // Sort documents
         this.Binder.Documents = this.Binder.Documents
@@ -65,7 +65,7 @@ public abstract class BinderProcessorBase(
 
         // Validate current user is accessing own binder
         var judgeId = this.Binder.Labels.GetValue(LabelConstants.JUDGE_ID);
-        if (judgeId != this.CurrentUser.JudgeId())
+        if (judgeId != this.CurrentUser.UserId())
         {
             errors.Add("Current user does not have access to this binder.");
         }

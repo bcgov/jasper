@@ -17,7 +17,6 @@ namespace Scv.Api.Helpers
         public const string Permission = nameof(CustomClaimTypes) + nameof(Permission);
         public const string Role = nameof(CustomClaimTypes) + nameof(Role);
         public const string UserId = nameof(CustomClaimTypes) + nameof(UserId);
-        public const string JudgeId = nameof(CustomClaimTypes) + nameof(JudgeId);
 
         public static readonly List<string> UsedKeycloakClaimTypes =
         [

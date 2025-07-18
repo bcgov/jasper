@@ -20,7 +20,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Encryption;
@@ -172,9 +171,6 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.JcAgencyCode, agencyId),
                             new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         });
-
-                        // This is temporary until we are able to login to PCSS to get user info such as judge id.
-                        claims.Add(new Claim(CustomClaimTypes.JudgeId, DashboardController.TEST_JUDGE_ID.ToString()));
 
                         // Remove checking when the "real" mongo db has been configured
                         var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");

@@ -5,7 +5,11 @@
     type="table"
     :loading="isBinderLoading"
   ></v-skeleton-loader>
-  <div data-testid="jb-container" v-if="!isBinderLoading">
+  <div
+    class="mb-5"
+    data-testid="jb-container"
+    v-if="!isBinderLoading && binderDocuments.length !== 0"
+  >
     <v-card class="my-3" color="var(--bg-gray-500)" elevation="0">
       <v-card-text>
         <v-row align="center" no-gutters>

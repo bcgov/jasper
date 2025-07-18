@@ -12,7 +12,7 @@ describe('AllDocuments.vue', () => {
     rolesLoading: false,
     roles: [],
     baseHeaders: [],
-    binderDocumentIds: [],
+    binderDocumentIds: [] as string[],
     addDocumentToBinder: vi.fn(),
     openIndividualDocument: vi.fn(),
   };
@@ -47,7 +47,7 @@ describe('AllDocuments.vue', () => {
 
   it('hides the judicial binder alert when there is an existing binder', () => {
     mockProps.documents = [{} as civilDocumentType, {} as civilDocumentType];
-    mockProps.hasBinder = true;
+    mockProps.binderDocumentIds = [''];
     const wrapper = mount(AllDocuments, {
       props: mockProps,
     });

@@ -2,7 +2,7 @@ import { BinderService } from '@/services';
 import { useCommonStore } from '@/stores';
 import { shallowMount } from '@vue/test-utils';
 import CivilDocumentsView from 'CMP/case-details/civil/CivilDocumentsView.vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { nextTick } from 'vue';
 
 vi.mock('@/stores', () => ({
@@ -70,6 +70,8 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('renders the component correctly', () => {
+    (mockBinderService.getBinders as Mock).mockResolvedValue([]);
+
     expect(wrapper.exists()).toBe(true);
     expect(wrapper.find('v-select').exists()).toBe(true);
     expect(wrapper.findComponent({ name: 'JudicialBinder' }).exists()).toBe(
@@ -92,15 +94,15 @@ describe('CivilDocumentsView.vue', () => {
     expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(true);
   });
 
-  it('does not render action-bar when two or more documents without imageIds are selected', async () => {
+  it('renders action-bar when two or more documents are selected', async () => {
     wrapper.vm.selectedItems = [{}, {}];
 
     await nextTick();
 
-    expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(true);
   });
 
-  it('does not render action-bar when one document with imageId is selected', async () => {
+  it('does not render action-bar when one document is selected', async () => {
     wrapper.vm.selectedItems = [mockDocuments[0]];
 
     await nextTick();

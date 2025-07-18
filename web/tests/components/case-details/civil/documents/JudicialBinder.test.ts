@@ -1,4 +1,5 @@
 import JudicialBinder from '@/components/case-details/civil/documents/JudicialBinder.vue';
+import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -9,7 +10,7 @@ describe('JudicialBinder.vue', () => {
     rolesLoading: false,
     roles: [],
     baseHeaders: [],
-    binderDocuments: [],
+    binderDocuments: [] as civilDocumentType[],
     openIndividualDocument: vi.fn(),
   };
 
@@ -29,6 +30,7 @@ describe('JudicialBinder.vue', () => {
 
   it('renders judicial binder', () => {
     mockProps.isBinderLoading = false;
+    mockProps.binderDocuments = [{} as civilDocumentType];
 
     const wrapper = mount(JudicialBinder, {
       props: mockProps,

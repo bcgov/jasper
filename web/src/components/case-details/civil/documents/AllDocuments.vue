@@ -1,6 +1,6 @@
 <template>
   <v-card
-    class="mt-5 mb-3"
+    class="my-3"
     color="var(--bg-gray-500)"
     elevation="0"
     data-testid="all-documents-container"
@@ -15,7 +15,7 @@
     </v-card-text>
   </v-card>
   <v-alert
-    v-if="!hasBinder"
+    v-if="binderDocumentIds.length === 0"
     :class="['ml-3', courtClassCdStyle]"
     border="start"
     text="To create a judicial binder, click the ellipsis icon on the document you want to include, then select “Add to Binder”."
@@ -98,7 +98,6 @@
     selectedItems: civilDocumentType[];
     documents: civilDocumentType[];
     courtClassCdStyle: string;
-    hasBinder: boolean;
     rolesLoading: boolean;
     roles: LookupCode[];
     baseHeaders: DataTableHeader[];

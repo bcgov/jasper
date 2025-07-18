@@ -20,8 +20,8 @@
   </v-row>
 
   <JudicialBinder
-    :courtClassCdStyle="courtClassCdStyle"
-    :binderDocuments="binderDocuments"
+    :courtClassCdStyle
+    :binderDocuments
     :isBinderLoading
     :rolesLoading
     :roles="roles ?? []"
@@ -30,15 +30,14 @@
   />
 
   <AllDocuments
-    :courtClassCdStyle="courtClassCdStyle"
+    :courtClassCdStyle
     :documents="filteredDocuments"
     :rolesLoading
     :roles="roles ?? []"
     :baseHeaders="headers"
     :addDocumentToBinder
-    :hasBinder
     :openIndividualDocument
-    :selectedItems="selectedItems"
+    :selectedItems
     :binderDocumentIds="currentBinder?.documents.map((d) => d.documentId) ?? []"
     @update:selectedItems="(val) => (selectedItems = val)"
   />
@@ -51,6 +50,7 @@
         :prepend-icon="mdiFileDocumentMultipleOutline"
         style="letter-spacing: 0.001rem"
         @click="openMergedDocuments()"
+        :disabled="!enableViewTogether"
       >
         View together
       </v-btn>
@@ -106,8 +106,9 @@
   }
 
   const selectedItems = ref<civilDocumentType[]>([]);
-  const showActionbar = computed<boolean>(
-    () => selectedItems.value.filter((item) => item.imageId).length > 1
+  const showActionbar = computed<boolean>(() => selectedItems.value.length > 1);
+  const enableViewTogether = computed<boolean>(
+    () => selectedItems.value.filter((d) => d.imageId).length > 1
   );
   const selectedType = ref<string>();
   const isBinderLoading = ref(true);
@@ -183,8 +184,6 @@
     return filteredAndSorted;
   });
 
-  const hasBinder = computed(() => !!currentBinder.value?.documents?.length);
-
   const typeCount = (type: any): number =>
     props.documents.filter((doc) => doc.documentTypeCd === type.value).length;
 
@@ -221,20 +220,20 @@
   };
 
   const loadBinder = async () => {
-      const labels = {
-        ['physicalFileId']: props.fileId,
-        ['courtClassCd']: props.courtClassCd,
-        ['judgeId']: commonStore.userInfo?.judgeId,
-      };
+    const labels = {
+      ['physicalFileId']: props.fileId,
+      ['courtClassCd']: props.courtClassCd,
+      ['judgeId']: commonStore.userInfo?.judgeId,
+    };
 
-      // Get binders associated to the current user. In Phase 1, we are supporting 1 binder per case per user.
-      const binders = await binderService.getBinders(labels);
+    // Get binders associated to the current user. In Phase 1, we are supporting 1 binder per case per user.
+    const binders = await binderService.getBinders(labels);
 
-      currentBinder.value =
-        binders.payload.length > 0
-          ? binders.payload[0]
-          : ({ id: null, labels, documents: [] } as Binder);
-    }
+    currentBinder.value =
+      binders && binders.payload.length > 0
+        ? binders.payload[0]
+        : ({ id: null, labels, documents: [] } as Binder);
+  };
 
   const addDocumentToBinder = async (documentId: string) => {
     currentBinder.value?.documents.push({

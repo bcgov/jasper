@@ -14,6 +14,17 @@ export interface IHttpService {
     headers: Record<string, string>,
     responseType: 'json' | 'blob'
   ): Promise<T>;
+  put<T>(
+    resource: string,
+    data: any,
+    headers: Record<string, string>,
+    responseType: 'json' | 'blob'
+  ): Promise<T>;
+  delete<T>(
+    resource: string,
+    headers: Record<string, string>,
+    responseType: 'json' | 'blob'
+  ): Promise<T>;
 }
 
 export class HttpService implements IHttpService {
@@ -94,6 +105,45 @@ export class HttpService implements IHttpService {
       return response.data;
     } catch (error) {
       console.error('Error in POST request: ', error);
+      throw error;
+    }
+  }
+
+  public async put<T>(
+    resource: string,
+    data: any,
+    headers: Record<string, string> = {},
+    responseType: 'json' | 'blob' = 'json'
+  ): Promise<T> {
+    const config: AxiosRequestConfig = {
+      headers,
+      responseType,
+    };
+
+    try {
+      const response = await this.client.put<T>(resource, data, config);
+      return response.data;
+    } catch (error) {
+      console.error('Error in PUT request: ', error);
+      throw error;
+    }
+  }
+
+  public async delete<T>(
+    resource: string,
+    headers: Record<string, string> = {},
+    responseType: 'json' | 'blob' = 'json'
+  ): Promise<T> {
+    const config: AxiosRequestConfig = {
+      headers,
+      responseType,
+    };
+
+    try {
+      const response = await this.client.delete<T>(resource, config);
+      return response.data;
+    } catch (error) {
+      console.error('Error in DELETE request: ', error);
       throw error;
     }
   }

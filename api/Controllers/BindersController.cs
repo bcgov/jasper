@@ -35,7 +35,7 @@ public class BindersController(IBinderService binderService) : ControllerBase
 
         var routeValues = new RouteValueDictionary(result.Payload.Labels);
 
-        return CreatedAtAction(nameof(GetBinders), routeValues, result.Payload);
+        return CreatedAtAction(nameof(GetBinders), routeValues, result);
     }
 
     [HttpPut]

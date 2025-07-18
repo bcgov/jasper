@@ -1,5 +1,6 @@
 import { App } from 'vue';
 import { AuthService } from './AuthService';
+import { BinderService } from './BinderService';
 import { CourtListService } from './CourtListService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
@@ -15,6 +16,7 @@ export function registerRouter(app: App) {
   const filesService = new FilesService(httpService);
   const dashboardService = new DashboardService(httpService);
   const courtListService = new CourtListService(httpService);
+  const binderService = new BinderService(httpService);
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -23,9 +25,11 @@ export function registerRouter(app: App) {
   app.provide('filesService', filesService);
   app.provide('dashboardService', dashboardService);
   app.provide('courtListService', courtListService);
+  app.provide('binderService', binderService);
 }
 
 export * from './AuthService';
+export * from './BinderService';
 export * from './CourtListService';
 export * from './DashboardService';
 export * from './FilesService';

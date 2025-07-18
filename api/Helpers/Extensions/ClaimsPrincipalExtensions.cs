@@ -102,5 +102,9 @@ namespace Scv.Api.Helpers.Extensions
 
         public static string UserId(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(CustomClaimTypes.UserId);
+
+        public static string JudgeId(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue(CustomClaimTypes.JudgeId);
+
     }
 }

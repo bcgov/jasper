@@ -3,6 +3,7 @@
     class="mt-5 mb-3"
     color="var(--bg-gray-500)"
     elevation="0"
+    data-testid="all-documents-container"
     v-if="documents?.length > 0"
   >
     <v-card-text>

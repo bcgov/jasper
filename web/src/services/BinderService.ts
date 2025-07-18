@@ -1,8 +1,13 @@
 import { Binder } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
+import { IHttpService } from './HttpService';
 import { ServiceBase } from './ServiceBase';
 
 export class BinderService extends ServiceBase {
+  constructor(httpService: IHttpService) {
+    super(httpService);
+  }
+
   async getBinders(
     queryParams: Record<string, any> | undefined
   ): Promise<ApiResponse<Binder[]>> {

@@ -11,19 +11,19 @@ export interface IHttpService {
   post<T>(
     resource: string,
     data: any,
-    headers: Record<string, string>,
-    responseType: 'json' | 'blob'
+    headers?: Record<string, string>,
+    responseType?: 'json' | 'blob'
   ): Promise<T>;
   put<T>(
     resource: string,
     data: any,
-    headers: Record<string, string>,
-    responseType: 'json' | 'blob'
+    headers?: Record<string, string>,
+    responseType?: 'json' | 'blob'
   ): Promise<T>;
   delete<T>(
     resource: string,
-    headers: Record<string, string>,
-    responseType: 'json' | 'blob'
+    headers?: Record<string, string>,
+    responseType?: 'json' | 'blob'
   ): Promise<T>;
 }
 

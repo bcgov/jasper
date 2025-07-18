@@ -1,9 +1,7 @@
-import { HttpService } from './HttpService';
+import { IHttpService } from './HttpService';
 
 export class ServiceBase {
-  protected readonly httpService: HttpService;
-
-  constructor(httpService: HttpService) {
+  constructor(protected httpService: IHttpService) {
     this.httpService = httpService;
   }
 }

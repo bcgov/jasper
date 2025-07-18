@@ -189,11 +189,17 @@
     props.documents.filter((doc) => doc.documentTypeCd === type.value).length;
 
   onMounted(async () => {
-    rolesLoading.value = true;
-    roles.value = await getRoles();
-    rolesLoading.value = false;
-
-    await loadBinder();
+    try {
+      rolesLoading.value = true;
+      isBinderLoading.value = true;
+      const [rolesResp] = await Promise.all([getRoles(), loadBinder()]);
+      roles.value = rolesResp;
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      rolesLoading.value = false;
+      isBinderLoading.value = false;
+    }
   });
 
   const openIndividualDocument = (data: civilDocumentType) =>
@@ -215,8 +221,6 @@
   };
 
   const loadBinder = async () => {
-    try {
-      isBinderLoading.value = true;
       const labels = {
         ['physicalFileId']: props.fileId,
         ['courtClassCd']: props.courtClassCd,
@@ -230,12 +234,7 @@
         binders.payload.length > 0
           ? binders.payload[0]
           : ({ id: null, labels, documents: [] } as Binder);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      isBinderLoading.value = false;
     }
-  };
 
   const addDocumentToBinder = async (documentId: string) => {
     currentBinder.value?.documents.push({

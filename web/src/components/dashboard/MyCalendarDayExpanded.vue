@@ -7,7 +7,11 @@
       <div class="header d-flex align-center justify-space-between">
         <span>{{ dayNumberText }}</span>
         <RouterLink :to="{ name: 'CourtList', query: { date: day.date } }">
-          <v-icon v-if="day.showCourtList" :icon="mdiListBoxOutline" />
+          <v-icon
+            data-testid="court-list"
+            v-if="day.showCourtList"
+            :icon="mdiListBoxOutline"
+          />
         </RouterLink>
       </div>
       <div class="d-flex flex-column">
@@ -42,6 +46,7 @@
                   size="small"
                   density="compact"
                   class="period mr-1"
+                  data-testid="period"
                   v-if="period"
                   >{{ period }}</v-chip
                 >
@@ -59,7 +64,11 @@
                 </div>
               </div>
               <div>
-                <v-icon v-if="showDars" :icon="mdiHeadphones" />
+                <v-icon
+                  v-if="showDars"
+                  data-testid="dars"
+                  :icon="mdiHeadphones"
+                />
                 <v-icon
                   data-testid="activity-remote-icon"
                   v-if="!showVideo && isRemote"
@@ -70,6 +79,7 @@
             <div
               v-if="restrictions && restrictions.length > 0"
               class="d-flex flex-column justify-start mt-2 seized"
+              data-testid="restrictions"
             >
               <span><b>Seized:</b></span>
               <a
@@ -164,7 +174,6 @@
 
   .seized a {
     color: var(--text-blue-500);
-    text-decoration: underline;
   }
 
   .seized a:hover {

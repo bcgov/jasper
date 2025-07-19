@@ -13,7 +13,6 @@ export interface CalendarDayActivity {
   period: string;
   filesCount: number;
   continuationsCount: number;
-  showCourtList: boolean;
   showDars: boolean;
   restrictions: AdjudicatorRestriction[];
 }

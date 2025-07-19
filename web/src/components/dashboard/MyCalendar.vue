@@ -12,11 +12,25 @@
   >
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
+        :date="event.extendedProps.date"
         :isWeekend="event.extendedProps.isWeekend"
         :activities="event.extendedProps.activities"
       />
     </template>
   </FullCalendar>
+  <!--
+    This component is teleported into a specific calendar cell so
+    it appears inside or over that day, even though it's rendered
+    outside FullCalendar. Only events with activities will have
+    the expanded panel.
+  -->
+  <template v-for="day in calendarEventsWithActivities">
+    <MyCalendarDayExpanded
+      :expandedDate
+      :day="day"
+      :close="closeExpandedPanel"
+    />
+  </template>
 </template>
 <script setup lang="ts">
   import { CalendarDay } from '@/types';
@@ -39,9 +53,15 @@
       start: new Date(d.date),
       extendedProps: {
         ...d,
-      },
+      } as CalendarDay,
     }))
   );
+
+  const calendarEventsWithActivities = computed(() =>
+    props.data.filter((d) => d.activities.length > 0 && d.showCourtList)
+  );
+
+  const expandedDate = ref<string | null>(null);
 
   const dayCellDidMount = (info: DayCellMountArg) => {
     // Appends the Court List icon next to the day's date
@@ -74,6 +94,20 @@
     svg.appendChild(path);
     link.appendChild(svg);
     dayTop.appendChild(link);
+
+    // Attach a click event for the expanded panel
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('fc-expand-wrapper');
+    wrapper.setAttribute('data-date', date);
+
+    info.el.style.position = 'relative';
+
+    info.el.appendChild(wrapper);
+    info.el.classList.add('cursor-pointer');
+
+    info.el.addEventListener('click', () => {
+      expandedDate.value = expandedDate.value === date ? null : date;
+    });
   };
 
   const calendarOptions: CalendarOptions = {
@@ -97,6 +131,44 @@
       calendarApi.gotoDate(props.selectedDate);
     }
   });
+
+  const closeExpandedPanel = (e: MouseEvent) => {
+    // Determine whether the expanded panel is going to be closed.
+    // Expanded panel should only close when the click is from a date
+    // without an activitiy (e.g. Weekend, Non-sitting, Sitting).
+    const target = e.target as HTMLElement;
+    if (!target) {
+      expandedDate.value = null;
+      return;
+    }
+
+    // Find the nearest Calendar cell
+    const dayGridCell = target.closest('.fc-daygrid-day');
+    if (!dayGridCell) {
+      expandedDate.value = null;
+      return;
+    }
+
+    // Traverse down and retrieve the element that has a data-formatted-date attr
+    const dateEl = dayGridCell.querySelector(
+      '[data-formatted-date]'
+    ) as HTMLElement | null;
+    if (!dateEl || !dateEl.dataset.formattedDate) {
+      expandedDate.value = null;
+      return;
+    }
+
+    // If the date is in the calendarEventsWithActivities,
+    // then the click happened on a cell that has an expanded panel.
+    // If not found, we can safely close the panel.
+    const date = dateEl.dataset.formattedDate;
+    const hasActivity = calendarEventsWithActivities.value.find(
+      (e) => e.date === date
+    );
+    if (!hasActivity) {
+      expandedDate.value = null;
+    }
+  };
 </script>
 <style scoped>
   :deep(.court-list) {
@@ -127,7 +199,7 @@
   :deep(.fc-daygrid-day-number),
   :deep(.fc-daygrid-day-number:hover) {
     font-weight: bold;
-    color: var(--text-gray-400);
+    color: var(--text-blue-800);
     text-decoration: none;
   }
 

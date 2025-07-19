@@ -19,7 +19,7 @@ public class CalendarDayActivity
     public string ActivityClassCode { get; set; }
     public string ActivityClassDescription { get; set; }
     public bool IsRemote { get; set; }
-    public bool ShowCourtList { get; set; }
+    public bool ShowDars { get; set; }
     public string RoomCode { get; set; }
     public Period? Period { get; set; }
     public int FilesCount { get; set; }

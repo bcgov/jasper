@@ -1,5 +1,8 @@
 <template>
-  <div class="d-flex flex-column calendar-day">
+  <div
+    class="d-flex flex-column calendar-day"
+    :data-formatted-date="props.date"
+  >
     <div
       class="mb-2"
       data-testid="activity-detail"
@@ -69,6 +72,7 @@
   import { computed } from 'vue';
 
   const props = defineProps<{
+    date: string;
     isWeekend: boolean;
     activities: CalendarDayActivity[];
   }>();

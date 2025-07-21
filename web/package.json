@@ -31,7 +31,7 @@
     "@vitejs/plugin-basic-ssl": "^2.1.0",
     "axios": "^1.10.0",
     "base64url": "^3.0.1",
-    "bootstrap": "^4.3.1",
+    "bootstrap": "^5.3.7",
     "bootstrap-vue-next": "^0.29.3",
     "cross-env": "^7.0.3",
     "intersection-observer": "^0.12.2",

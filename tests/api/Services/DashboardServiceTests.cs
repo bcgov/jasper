@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Bogus;
 using JCCommon.Clients.LocationServices;
@@ -189,14 +190,17 @@ public class DashboardServiceTests : ServiceTestBase
         );
 
         Assert.Single(result.Payload.Days);
+
+        var activity = result.Payload.Days.First().Activities.First();
+
         Assert.Single(result.Payload.Days[0].Activities);
-        Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
-        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
-        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
-        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
-        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
-        Assert.Null(result.Payload.Days[0].Activities[0].Period);
+        Assert.Equal(mockLocationId, activity.LocationId);
+        Assert.Equal(mockLocationName, activity.LocationName);
+        Assert.Equal(mockActivityCode, activity.ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, activity.ActivityDisplayCode);
+        Assert.Equal(mockActivityClassDescription, activity.ActivityClassDescription);
+        Assert.Equal(mockIsRemote, activity.IsRemote);
+        Assert.Null(activity.Period);
 
         mockJudicialCalendarClient
             .Verify(jcc => jcc
@@ -264,17 +268,21 @@ public class DashboardServiceTests : ServiceTestBase
         );
 
         Assert.Single(result.Payload.Days);
-        Assert.Equal(2, result.Payload.Days[0].Activities.Count);
-        Assert.Equal(mockLocationId1, result.Payload.Days[0].Activities[0].LocationId);
-        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
-        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
-        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
-        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
+        Assert.Equal(2, result.Payload.Days[0].Activities.Count());
 
-        Assert.Equal(Period.AM, result.Payload.Days[0].Activities[0].Period);
-        Assert.Equal(Period.PM, result.Payload.Days[0].Activities[1].Period);
-        Assert.Equal(mockLocationId2, result.Payload.Days[0].Activities[1].LocationId);
+        var firstActivity = result.Payload.Days.First().Activities.First();
+        var secondActivity = result.Payload.Days.First().Activities.Skip(1).First();
+
+        Assert.Equal(mockLocationId1, firstActivity.LocationId);
+        Assert.Equal(mockLocationName, firstActivity.LocationName);
+        Assert.Equal(mockActivityCode, firstActivity.ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, firstActivity.ActivityDisplayCode);
+        Assert.Equal(mockActivityClassDescription, firstActivity.ActivityClassDescription);
+        Assert.Equal(mockIsRemote, firstActivity.IsRemote);
+
+        Assert.Equal(Period.AM, firstActivity.Period);
+        Assert.Equal(Period.PM, secondActivity.Period);
+        Assert.Equal(mockLocationId2, secondActivity.LocationId);
 
 
         mockJudicialCalendarClient
@@ -380,21 +388,23 @@ public class DashboardServiceTests : ServiceTestBase
             endDate.ToString(DashboardService.DATE_FORMAT)
         );
 
+        var activities = result.Payload.Days[0].Activities.ToList();
+
         Assert.Single(result.Payload.Days);
-        Assert.Equal(2, result.Payload.Days[0].Activities.Count);
-        Assert.Equal(mockLocationId1, result.Payload.Days[0].Activities[0].LocationId);
-        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
-        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
-        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
-        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
+        Assert.Equal(2, activities.Count);
+        Assert.Equal(mockLocationId1, activities[0].LocationId);
+        Assert.Equal(mockLocationName, activities[0].LocationName);
+        Assert.Equal(mockActivityCode, activities[0].ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, activities[0].ActivityDisplayCode);
+        Assert.Equal(mockActivityClassDescription, activities[0].ActivityClassDescription);
+        Assert.Equal(mockIsRemote, activities[0].IsRemote);
 
-        Assert.Equal(Period.AM, result.Payload.Days[0].Activities[0].Period);
-        Assert.Equal(Period.PM, result.Payload.Days[0].Activities[1].Period);
-        Assert.Equal(mockLocationId2, result.Payload.Days[0].Activities[1].LocationId);
+        Assert.Equal(Period.AM, activities[0].Period);
+        Assert.Equal(Period.PM, activities[1].Period);
+        Assert.Equal(mockLocationId2, activities[1].LocationId);
 
-        Assert.Equal(mockFileCount, result.Payload.Days[0].Activities[0].FilesCount);
-        Assert.Equal(1, result.Payload.Days[0].Activities[0].ContinuationsCount);
+        Assert.Equal(mockFileCount, activities[0].FilesCount);
+        Assert.Equal(1, activities[0].ContinuationsCount);
 
         mockJudicialCalendarClient
             .Verify(jcc => jcc
@@ -457,14 +467,17 @@ public class DashboardServiceTests : ServiceTestBase
         );
 
         Assert.Single(result.Payload.Days);
-        Assert.Single(result.Payload.Days[0].Activities);
-        Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
-        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
-        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
-        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
-        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
-        Assert.Null(result.Payload.Days[0].Activities[0].Period);
+
+        var activities = result.Payload.Days[0].Activities.ToList();
+
+        Assert.Single(activities);
+        Assert.Equal(mockLocationId, activities[0].LocationId);
+        Assert.Equal(mockLocationName, activities[0].LocationName);
+        Assert.Equal(mockActivityCode, activities[0].ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, activities[0].ActivityDisplayCode);
+        Assert.Equal(mockActivityClassDescription, activities[0].ActivityClassDescription);
+        Assert.Equal(mockIsRemote, activities[0].IsRemote);
+        Assert.Null(activities[0].Period);
 
         mockJudicialCalendarClient
             .Verify(jcc => jcc
@@ -551,18 +564,21 @@ public class DashboardServiceTests : ServiceTestBase
         );
 
         Assert.Equal(3, result.Payload.Days.Count);
-        Assert.Single(result.Payload.Days[0].Activities);
-        Assert.Equal(mockLocationId, result.Payload.Days[0].Activities[0].LocationId);
-        Assert.Equal(mockLocationName, result.Payload.Days[0].Activities[0].LocationName);
-        Assert.Equal(mockActivityCode, result.Payload.Days[0].Activities[0].ActivityCode);
-        Assert.Equal(mockActivityDisplayCode, result.Payload.Days[0].Activities[0].ActivityDisplayCode);
-        Assert.Equal(mockActivityClassDescription, result.Payload.Days[0].Activities[0].ActivityClassDescription);
-        Assert.Equal(mockIsRemote, result.Payload.Days[0].Activities[0].IsRemote);
+
+        var activities = result.Payload.Days[0].Activities.ToList();
+
+        Assert.Single(activities);
+        Assert.Equal(mockLocationId, activities[0].LocationId);
+        Assert.Equal(mockLocationName, activities[0].LocationName);
+        Assert.Equal(mockActivityCode, activities[0].ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, activities[0].ActivityDisplayCode);
+        Assert.Equal(mockActivityClassDescription, activities[0].ActivityClassDescription);
+        Assert.Equal(mockIsRemote, activities[0].IsRemote);
         Assert.True(result.Payload.Days[0].IsWeekend);
         Assert.True(result.Payload.Days[0].ShowCourtList);
         Assert.False(result.Payload.Days[1].ShowCourtList);
         Assert.False(result.Payload.Days[2].ShowCourtList);
-        Assert.Null(result.Payload.Days[0].Activities[0].Period);
+        Assert.Null(activities[0].Period);
 
         mockJudicialCalendarClient
             .Verify(jcc => jcc

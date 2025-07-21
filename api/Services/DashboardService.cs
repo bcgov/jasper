@@ -155,7 +155,7 @@ public class DashboardService(
                 {
                     a.ShowDars = showDars;
                     return a;
-                }).ToList()
+                })
             });
 
         }

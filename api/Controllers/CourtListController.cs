@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
@@ -18,7 +19,6 @@ namespace Scv.Api.Controllers
     {
         #region Variables
 
-        private readonly int TEST_JUDGE_ID = 229;
         private readonly CourtListService _courtListService = courtListService;
         private readonly IValidator<CourtListReportRequest> _reportValidator = reportValidator;
 
@@ -38,11 +38,11 @@ namespace Scv.Api.Controllers
         public async Task<ActionResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null)
         {
             var result = (agencyId == null && roomCode == null)
-                ? await _courtListService.GetJudgeCourtListAppearances(TEST_JUDGE_ID, proceeding)
-                : await _courtListService.GetCourtListAppearances(agencyId, TEST_JUDGE_ID, roomCode, proceeding);
+                ? await _courtListService.GetJudgeCourtListAppearances(this.User.JudgeId(), proceeding)
+                : await _courtListService.GetCourtListAppearances(agencyId, this.User.JudgeId(), roomCode, proceeding);
 
             return Ok(result);
-        }   
+        }
 
         /// <summary>
         /// Generates a Court List PDF report.

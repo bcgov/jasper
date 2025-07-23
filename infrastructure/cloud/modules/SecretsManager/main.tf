@@ -223,7 +223,8 @@ resource "aws_secretsmanager_secret_version" "pcss_secret_value" {
   secret_string = jsonencode({
     username = "",
     password = "",
-    baseUrl  = ""
+    baseUrl  = "",
+    judgeId  = ""
   })
 }
 

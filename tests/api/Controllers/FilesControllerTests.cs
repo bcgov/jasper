@@ -65,7 +65,11 @@ namespace tests.api.Controllers
             _fileServicesClient = fileServicesClient;
             var pcssLocationServicesClient = new PCSSLocationServices.LocationServicesClient(pcssServices.HttpClient);
             var pcssLookupServicesClient = new PCSSLookupServices.LookupServicesClient(pcssServices.HttpClient);
-            var lookupService = new LookupService(lookupServices.Configuration, lookupServiceClient, new CachingService());
+            var lookupService = new LookupService(
+                lookupServices.Configuration,
+                lookupServiceClient,
+                new CachingService(),
+                new Mock<IDocumentCategoryService>().Object);
 
             // IMapper setup
             var config = new TypeAdapterConfig();

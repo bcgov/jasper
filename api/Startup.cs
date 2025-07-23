@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
+using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -25,6 +27,7 @@ using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Middleware;
+using Scv.Api.Jobs;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
 
@@ -76,6 +79,7 @@ namespace Scv.Api
 
             services.AddMapster();
             services.AddJasperDb(Configuration);
+            services.AddHangfire(Configuration);
 
             #region Cors
 
@@ -202,6 +206,26 @@ namespace Scv.Api
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            {
+                Authorization = [new HangFireDashboardAuthorizationFilter()]
+            });
+
+            #region Setup Jobs
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var provider = scope.ServiceProvider;
+                var allJobs = provider.GetServices<IRecurringJob>();
+
+                Console.WriteLine("JOBS");
+
+                foreach (var job in allJobs)
+                {
+                    RecurringJobHelper.AddOrUpdate(job);
+                }
+            }
+            #endregion Setup Jobs
 
             app.UseEndpoints(endpoints =>
             {

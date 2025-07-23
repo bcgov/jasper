@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Net.Http;
 using System.Reflection;
+using Hangfire;
+using Hangfire.Mongo;
+using Hangfire.Mongo.Migration.Strategies;
+using Hangfire.Mongo.Migration.Strategies.Backup;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -17,6 +21,7 @@ using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
+using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
@@ -25,6 +30,7 @@ using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
+using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
 using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 using PCSSJudicialCalendarServices = PCSSCommon.Clients.JudicialCalendarServices;
@@ -128,6 +134,9 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSReportServices.ReportServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSConfigServices.ConfigurationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
@@ -141,6 +150,9 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JudicialCalendarService>();
 
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
+
+            services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -152,6 +164,35 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
             }
+
+            return services;
+        }
+
+        public static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddHangfire((sp, config) =>
+            {
+                var mongoClient = sp.GetRequiredService<IMongoClient>();
+                var dbName = configuration.GetValue<string>("HANGFIRE_DB") ?? "hangfire";
+
+
+                config
+                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UseMongoStorage(mongoClient, dbName, new MongoStorageOptions
+                    {
+                        MigrationOptions = new MongoMigrationOptions
+                        {
+                            MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                            BackupStrategy = new CollectionMongoBackupStrategy(),
+                        },
+                        CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection,
+                        Prefix = "hangfire.mongo",
+                        CheckConnection = true
+                    });
+            });
+            services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");
 
             return services;
         }

@@ -407,7 +407,7 @@ namespace Scv.Api.Services.Files
             {
                 var documentFromFileContent = civilFileContent?.Document?.FirstOrDefault(doc => doc.DocumentId == document.CivilDocumentId);
                 document.FiledBy = documentFromFileContent?.FiledBy;
-                document.Category = _lookupService.GetDocumentCategory(document.DocumentTypeCd);
+                document.Category = await _lookupService.GetDocumentCategory(document.DocumentTypeCd);
                 document.DocumentTypeDescription = await _lookupService.GetDocumentDescriptionAsync(document.DocumentTypeCd);
                 document.ImageId = (document.SealedYN == "Y" && isStaff) ? null : document.ImageId;
                 document.NextAppearanceDt = document.Appearance?.Where(app => DateTime.TryParse(app?.AppearanceDate, out DateTime appearanceDate) && appearanceDate >= DateTime.Today).FirstOrDefault()?.AppearanceDate;
@@ -584,7 +584,7 @@ namespace Scv.Api.Services.Files
             documents = documents.WhereToList(doc => !isVcUser || !_filterOutDocumentTypes.Contains(doc.DocumentTypeCd));
             foreach (var document in documents)
             {
-                document.Category = _lookupService.GetDocumentCategory(document.DocumentTypeCd);
+                document.Category = await _lookupService.GetDocumentCategory(document.DocumentTypeCd);
                 document.DocumentTypeDescription = await _lookupService.GetDocumentDescriptionAsync(document.DocumentTypeCd);
                 document.ImageId = document.SealedYN != "N" ? null : document.ImageId;
                 foreach (var issue in document.Issue)

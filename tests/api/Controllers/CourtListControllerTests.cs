@@ -157,7 +157,7 @@ namespace tests.api.Controllers
                 .ReturnsAsync(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection());
 
             var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
-            var actionResult = await controller.GetCourtList("4801", "101", DateTime.Parse("2016-04-04"));
+            var actionResult = await controller.GetCourtList(DateTime.Parse("2016-04-04"), "4801", "101");
 
             mockCourtListService
                 .Verify(c => c.GetCourtListAppearances(

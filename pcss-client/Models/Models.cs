@@ -3488,6 +3488,19 @@ public partial class ActivityClassUsage
             public System.Collections.Generic.ICollection<Adjudicator> AslFeederAdjudicators { get; set; }
         }
     }
+}
+
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
+public partial class PcssConfiguration
+{
+    [Newtonsoft.Json.JsonProperty("pcssConfigurationId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? PcssConfigurationId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("key", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string Key { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("value", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string Value { get; set; }
 
 }
 

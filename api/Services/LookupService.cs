@@ -23,6 +23,7 @@ namespace Scv.Api.Services
         private readonly IAppCache _cache;
         private readonly IConfiguration _configuration;
         private readonly LookupCodeServicesClient _lookupClient;
+        private readonly IDocumentCategoryService _dcService;
 
         #endregion Variables
 
@@ -32,10 +33,15 @@ namespace Scv.Api.Services
 
         #region Constructor
 
-        public LookupService(IConfiguration configuration, LookupCodeServicesClient lookupClient, IAppCache cache)
+        public LookupService(
+            IConfiguration configuration,
+            LookupCodeServicesClient lookupClient,
+            IAppCache cache,
+            IDocumentCategoryService dcService)
         {
             _configuration = configuration;
             _lookupClient = lookupClient;
+            _dcService = dcService;
             _cache = cache;
             _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:LookupExpiryMinutes")) * 60;
             SetupLookupServicesClient();
@@ -285,20 +291,20 @@ namespace Scv.Api.Services
         /// <param name="documentCode"></param>
         /// <param name="docmClassification"></param>
         /// <returns>string</returns>
-        public string GetDocumentCategory(string documentCode, string docmClassification = null)
+        public async Task<string> GetDocumentCategory(string documentCode, string docmClassification = null)
         {
-            var configurationSections =
-                _configuration.GetSection("DocumentCategories").Get<Dictionary<string, string>>() ??
-                throw new ConfigurationException("Couldn't not build dictionary based on DocumentCategories");
+            var documentCategories = await _dcService.GetAllAsync();
 
-            if (!String.IsNullOrEmpty(documentCode))
+            if (!string.IsNullOrWhiteSpace(documentCode))
             {
-                var categoryFromConfig =
-                    configurationSections.FirstOrDefault(cs => cs.Value.Split(",").Contains(documentCode)).Key;
-                return categoryFromConfig;
+                var category = documentCategories.FirstOrDefault(cs => cs.Value.Split(",").Contains(documentCode));
+                return category?.Name;
             }
 
-            return configurationSections.Keys.Contains(docmClassification, StringComparer.OrdinalIgnoreCase) ? docmClassification : null;
+            return documentCategories
+                .Any(dc => string.Equals(dc.Name, docmClassification, StringComparison.OrdinalIgnoreCase))
+                    ? docmClassification
+                    : null;
         }
 
         #endregion Lookup Methods

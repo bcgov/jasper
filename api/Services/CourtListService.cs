@@ -257,7 +257,7 @@ namespace Scv.Api.Services
                 {
                     hearingRestriction.HearingRestrictionTypeDesc = await _lookupService.GetHearingRestrictionDescription(hearingRestriction.HearingRestrictiontype);
                 }
-                courtListFile.Document = PopulateCivilDocuments(courtListFile.Document);
+                courtListFile.Document = await PopulateCivilDocuments(courtListFile.Document);
             }
 
             return courtList;
@@ -285,11 +285,11 @@ namespace Scv.Api.Services
         }
 
 
-        private ICollection<CivilClDocument> PopulateCivilDocuments(ICollection<CivilClDocument> documents)
+        private async Task<ICollection<CivilClDocument>> PopulateCivilDocuments(ICollection<CivilClDocument> documents)
         {
             foreach (var document in documents)
             {
-                document.Category = _lookupService.GetDocumentCategory(document.DocumentTypeCd);
+                document.Category = await _lookupService.GetDocumentCategory(document.DocumentTypeCd);
             }
             return documents;
         }

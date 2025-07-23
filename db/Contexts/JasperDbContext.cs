@@ -12,6 +12,7 @@ namespace Scv.Db.Contexts
         public DbSet<Group> Groups { get; init; }
         public DbSet<User> Users { get; init; }
         public DbSet<Binder> Binders { get; set; }
+        public DbSet<DocumentCategory> DocumentCategories { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -40,6 +41,7 @@ namespace Scv.Db.Contexts
             });
             modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
             modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
+            modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
         }
     }
 }

@@ -1,9 +1,12 @@
-﻿using System.Security.Claims;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Bogus;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
+using Scv.Api.Helpers;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
@@ -17,14 +20,27 @@ namespace tests.api.Controllers
         private readonly DashboardController _controller;
         private readonly Mock<IDashboardService> _dashboardService;
 
-        private ClaimsIdentity _identity;
-
         public DashboardControllerTests()
         {
             _faker = new Faker();
             _dashboardService = new Mock<IDashboardService>();
+            var httpContext = new Mock<HttpContext>();
+            var claims = new List<Claim>
+            {
+                new(CustomClaimTypes.JudgeId, _faker.Random.Int().ToString()),
+            };
 
-            _controller = new DashboardController(null, null, _dashboardService.Object);
+            var identity = new ClaimsIdentity(claims, _faker.Random.Word());
+            var mockUser = new ClaimsPrincipal(identity);
+            httpContext.Setup(c => c.User).Returns(mockUser);
+
+            _controller = new DashboardController(null, null, _dashboardService.Object)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = httpContext.Object
+                }
+            };
         }
 
         [Fact]
@@ -32,7 +48,7 @@ namespace tests.api.Controllers
         {
             _dashboardService
                 .Setup(d => d.GetMyScheduleAsync(
-                    DashboardController.TEST_JUDGE_ID,
+                    It.IsAny<int>(),
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>()))
@@ -48,7 +64,7 @@ namespace tests.api.Controllers
         {
             _dashboardService
                 .Setup(d => d.GetMyScheduleAsync(
-                    DashboardController.TEST_JUDGE_ID,
+                    It.IsAny<int>(),
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>()))

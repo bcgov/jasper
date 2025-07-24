@@ -4,6 +4,7 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
 
@@ -19,11 +20,6 @@ namespace Scv.Api.Controllers
         private readonly JudicialCalendarService _judicialCalendarService = judicialCalendarService;
         private readonly IMapper _mapper = mapper;
         private readonly IDashboardService _dashboardService = dashboardService;
-
-        /// <summary>
-        /// Hard-coded judge id
-        /// </summary>
-        public const int TEST_JUDGE_ID = 229;
 
         #endregion Variables
 
@@ -41,7 +37,7 @@ namespace Scv.Api.Controllers
         {
             var currentDate = DateTime.Now.ToString(DashboardService.DATE_FORMAT);
 
-            var result = await _dashboardService.GetMyScheduleAsync(TEST_JUDGE_ID, currentDate, startDate, endDate);
+            var result = await _dashboardService.GetMyScheduleAsync(this.User.JudgeId(), currentDate, startDate, endDate);
             if (!result.Succeeded)
             {
                 return BadRequest(new { error = result.Errors });

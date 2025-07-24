@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Security.Claims;
@@ -41,6 +42,7 @@ namespace tests.api.Controllers
 
         private readonly Faker _faker;
         private readonly Mock<IValidator<CourtListReportRequest>> _mockReportValidator;
+        private readonly Mock<HttpContext> _httpContext;
 
         #endregion Variables
 
@@ -48,9 +50,18 @@ namespace tests.api.Controllers
 
         public CourtListControllerTests()
         {
-
             _faker = new Faker();
             _mockReportValidator = new Mock<IValidator<CourtListReportRequest>>();
+
+            _httpContext = new Mock<HttpContext>();
+            var claims = new List<Claim>
+            {
+                new(CustomClaimTypes.JudgeId, _faker.Random.Int().ToString()),
+            };
+
+            var identity = new ClaimsIdentity(claims, _faker.Random.Word());
+            var mockUser = new ClaimsPrincipal(identity);
+            _httpContext.Setup(c => c.User).Returns(mockUser);
         }
 
         #endregion Constructor
@@ -159,7 +170,13 @@ namespace tests.api.Controllers
                     It.IsAny<DateTime>()))
                 .ReturnsAsync(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection());
 
-            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
+            var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = _httpContext.Object
+                }
+            };
             var actionResult = await controller.GetCourtList(DateTime.Parse("2016-04-04"), "4801", "101");
 
             mockCourtListService

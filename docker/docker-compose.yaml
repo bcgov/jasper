@@ -71,6 +71,7 @@ services:
       - PCSS__Url=${PCSS_URL}
       - PCSS__Username=${PCSS_USERNAME}
       - PCSS__Password=${PCSS_PASSWORD}
+      - PCSS__JudgeId=${PCSS_JUDGE_ID}
       - AWS_API_GATEWAY_URL=${AWS_API_GATEWAY_URL}
       - AWS_API_GATEWAY_API_KEY=${AWS_API_GATEWAY_API_KEY}
       - AuthorizerKey=${AuthorizerKey}

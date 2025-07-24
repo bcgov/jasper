@@ -172,6 +172,13 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         });
 
+                        // Get JudgeId from env variable until login process is finalized.
+                        var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
+
+                        logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
+
+                        claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+
                         // Remove checking when the "real" mongo db has been configured
                         var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
                         if (!string.IsNullOrEmpty(connectionString))

@@ -41,7 +41,7 @@ namespace Scv.Api.Services
             _lookupClient = lookupClient;
             _dcService = dcService;
             _cache = cache;
-            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:LookupExpiryMinutes")) * 60;
+            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(_configuration.GetNonEmptyValue("Caching:LookupExpiryMinutes")) * 60;
             SetupLookupServicesClient();
         }
 

@@ -5,7 +5,7 @@ using Scv.Api.Jobs;
 
 namespace Scv.Api.Helpers;
 
-public class RecurringJobHelper
+public static class RecurringJobHelper
 {
     public static void AddOrUpdate(IRecurringJob job)
     {

@@ -69,7 +69,7 @@ public class DocumentCategoryService(
                     Value = category.Value,
                     ExternalId = category.PcssConfigurationId.GetValueOrDefault()
                 });
-                _logger.LogInformation("{key} category added.", category.Key);
+                _logger.LogInformation("{Key} category added.", category.Key);
                 continue;
             }
 
@@ -79,7 +79,7 @@ public class DocumentCategoryService(
                 categoryEntity.Value = category.Value;
                 categoryEntity.ExternalId = category.PcssConfigurationId.GetValueOrDefault();
                 await _dcRepo.UpdateAsync(categoryEntity);
-                _logger.LogInformation("{key} category updated.", category.Key);
+                _logger.LogInformation("{Key} category updated.", category.Key);
             }
         }
     }

@@ -33,7 +33,7 @@ public class SyncDocumentCategoriesJob(
         }
         catch (Exception ex)
         {
-            _logger.LogError("Error occured while syncing the document categories: {excecption}", ex);
+            _logger.LogError("Error occured while syncing the document categories: {Message}", ex.Message);
         }
     }
 }

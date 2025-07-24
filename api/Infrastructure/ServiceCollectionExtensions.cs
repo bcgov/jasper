@@ -170,11 +170,18 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration configuration)
         {
+            // Remove checking when the "real" mongo db has been configured
+            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            var dbName = configuration.GetValue<string>("MONGODB_NAME");
+            if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(dbName))
+            {
+                return services;
+            }
+
             services.AddHangfire((sp, config) =>
             {
                 var mongoClient = sp.GetRequiredService<IMongoClient>();
                 var dbName = configuration.GetValue<string>("HANGFIRE_DB") ?? "hangfire";
-
 
                 config
                     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

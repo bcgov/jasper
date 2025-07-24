@@ -1,14 +1,12 @@
-﻿using LazyCache;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using JCCommon.Clients.LookupCodeServices;
+using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using JCCommon.Clients.LookupCodeServices;
 using CodeLookup = System.Collections.Generic.ICollection<JCCommon.Clients.LookupCodeServices.LookupCode>;
 
 namespace Scv.Api.Services
@@ -286,18 +284,22 @@ namespace Scv.Api.Services
         public async Task<string> GetHearingRestrictionDescription(string code) => FindLongDescriptionFromCode(await GetHearingRestrictions(), code);
 
         /// <summary>
-        /// Reads from the configuration for the document category.
+        /// Retrieves the Document Category based from code or docm class
         /// </summary>
         /// <param name="documentCode"></param>
         /// <param name="docmClassification"></param>
-        /// <returns>string</returns>
+        /// <returns></returns>
         public async Task<string> GetDocumentCategory(string documentCode, string docmClassification = null)
         {
             var documentCategories = await _dcService.GetAllAsync();
 
             if (!string.IsNullOrWhiteSpace(documentCode))
             {
-                var category = documentCategories.FirstOrDefault(cs => cs.Value.Split(",").Contains(documentCode));
+                var category = documentCategories
+                    .FirstOrDefault(cs => cs.Value
+                        .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                        .Select(cs => cs.Trim())
+                        .Contains(documentCode));
                 return category?.Name;
             }
 

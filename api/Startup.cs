@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
@@ -207,25 +206,31 @@ namespace Scv.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            // Remove checking when the "real" mongo db has been configured
+            var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            var dbName = Configuration.GetValue<string>("MONGODB_NAME");
+            if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(dbName))
             {
-                Authorization = [new HangFireDashboardAuthorizationFilter()]
-            });
-
-            #region Setup Jobs
-            using (var scope = app.ApplicationServices.CreateScope())
-            {
-                var provider = scope.ServiceProvider;
-                var allJobs = provider.GetServices<IRecurringJob>();
-
-                Console.WriteLine("JOBS");
-
-                foreach (var job in allJobs)
+                app.UseHangfireDashboard("/hangfire", new DashboardOptions
                 {
-                    RecurringJobHelper.AddOrUpdate(job);
+                    Authorization = [new HangFireDashboardAuthorizationFilter()]
+                });
+
+                #region Setup Jobs
+                using (var scope = app.ApplicationServices.CreateScope())
+                {
+                    var provider = scope.ServiceProvider;
+                    var allJobs = provider.GetServices<IRecurringJob>();
+
+                    Console.WriteLine("JOBS");
+
+                    foreach (var job in allJobs)
+                    {
+                        RecurringJobHelper.AddOrUpdate(job);
+                    }
                 }
+                #endregion Setup Jobs
             }
-            #endregion Setup Jobs
 
             app.UseEndpoints(endpoints =>
             {

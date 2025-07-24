@@ -15,7 +15,7 @@ public class SyncDocumentCategoriesJob(
     private readonly IDocumentCategoryService _service = service;
     private readonly IConfiguration _configuration = configuration;
 
-    private const string DEFAULT_SCHEDULE = "0 7 * * *"; // 7AM UTC / 12AM PST
+    public const string DEFAULT_SCHEDULE = "0 7 * * *"; // 7AM UTC / 12AM PST
 
     public string JobName => nameof(SyncDocumentCategoriesJob);
 

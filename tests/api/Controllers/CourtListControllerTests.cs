@@ -101,12 +101,15 @@ namespace tests.api.Controllers
             config.Apply(new LocationMapping());
             var mapper = new Mapper(config);
 
+            var mockDocCatService = new Mock<IDocumentCategoryService>();
+
             // Services setup
             var mockLookupService = new Mock<LookupService>(
                 MockBehavior.Strict,
                 mockConfig.Object,
                 mockLookupCodeServicesClient.Object,
-                cachingService);
+                cachingService,
+                mockDocCatService.Object);
             var mockLocationService = new Mock<LocationService>(
                 MockBehavior.Strict,
                 mockConfig.Object,
@@ -150,10 +153,10 @@ namespace tests.api.Controllers
             var mockCourtListService = this.SetupCourtListService();
             mockCourtListService
                 .Setup(c => c.GetCourtListAppearances(
-                    "4801",
-                    190,
-                    "101",
-                    DateTime.Parse("2016-04-04")))
+                    It.IsAny<string>(),
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>()))
                 .ReturnsAsync(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection());
 
             var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object);
@@ -162,7 +165,7 @@ namespace tests.api.Controllers
             mockCourtListService
                 .Verify(c => c.GetCourtListAppearances(
                     It.IsAny<string>(),
-                    190,
+                    It.IsAny<int>(),
                     It.IsAny<string>(),
                     It.IsAny<DateTime>()),
                     Times.Once);

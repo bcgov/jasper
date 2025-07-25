@@ -152,8 +152,6 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
 
-            services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
-
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
             {
@@ -163,6 +161,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
+                services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
             }
 
             return services;

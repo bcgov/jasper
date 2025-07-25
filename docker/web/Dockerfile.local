@@ -2,7 +2,7 @@ ARG NODE_VERSION=22
 ARG VITE_PORT=1339
 ARG WEB_SRC=./web
 
-FROM registry.access.redhat.com/ubi9/nodejs-${NODE_VERSION} 
+FROM registry.access.redhat.com/ubi9/nodejs-${NODE_VERSION}:latest
 ARG WEB_SRC
 ARG VITE_PORT
 

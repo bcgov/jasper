@@ -4,11 +4,13 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bogus;
+using JCCommon.Clients.LocationServices;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
@@ -19,9 +21,11 @@ using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Xunit;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
+using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Services;
-public class UserServiceTests
+public class UserServiceTests : ServiceTestBase
 {
     private readonly Faker _faker;
     private readonly Mock<IRepositoryBase<User>> _mockUserRepo;
@@ -29,6 +33,7 @@ public class UserServiceTests
     private readonly Mock<IRepositoryBase<Role>> _mockRoleRepo;
     private readonly Mock<IPermissionRepository> _mockPermissionRepo;
     private readonly UserService _userService;
+    private readonly Mock<IConfiguration> _mockConfig;
 
     public UserServiceTests()
     {
@@ -43,6 +48,12 @@ public class UserServiceTests
         config.Apply(new AccessControlManagementMapping());
         var mapper = new Mapper(config);
 
+        // IConfiguration setup
+        _mockConfig = new Mock<IConfiguration>();
+        var mockSection = new Mock<IConfigurationSection>();
+        mockSection.Setup(s => s.Value).Returns(_faker.Random.Number().ToString());
+        _mockConfig.Setup(c => c.GetSection("Caching:LocationExpiryMinutes")).Returns(mockSection.Object);
+
         // ILogger setup
         var logger = new Mock<ILogger<UserService>>();
 
@@ -50,6 +61,36 @@ public class UserServiceTests
         _mockGroupRepo = new Mock<IRepositoryBase<Group>>();
         _mockRoleRepo = new Mock<IRepositoryBase<Role>>();
         _mockPermissionRepo = new Mock<IPermissionRepository>();
+
+        var mockPersonServiceClient = new Mock<PersonServicesClient>(MockBehavior.Strict, this.HttpClient);
+
+        var mockJCLocationClient = new Mock<LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockPCSSLocationClient = new Mock<PCSSLocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockPCSSLookupClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, this.HttpClient);
+
+        mockJCLocationClient
+            .Setup(c => c.LocationsGetAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(() => []);
+        mockJCLocationClient
+            .Setup(c => c.LocationsRoomsGetAsync())
+            .ReturnsAsync([]);
+
+        mockPCSSLocationClient
+            .Setup(c => c.GetLocationsAsync())
+            .ReturnsAsync(() => []);
+
+        mockPCSSLookupClient
+            .Setup(c => c.GetCourtRoomsAsync())
+            .ReturnsAsync(() => []);
+
+        var mockLocationService = new Mock<LocationService>(
+            MockBehavior.Strict,
+            _mockConfig.Object,
+            mockJCLocationClient.Object,
+            mockPCSSLocationClient.Object,
+            mockPCSSLookupClient.Object,
+            cachingService,
+            mapper);
 
         _userService = new UserService(
             cachingService,
@@ -59,8 +100,8 @@ public class UserServiceTests
             _mockGroupRepo.Object,
             _mockRoleRepo.Object,
             _mockPermissionRepo.Object,
-            new Mock<PersonServicesClient>().Object,
-            new Mock<LocationService>().Object);
+            mockPersonServiceClient.Object,
+            mockLocationService.Object);
     }
 
     [Fact]

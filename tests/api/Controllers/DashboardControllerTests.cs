@@ -34,7 +34,7 @@ namespace tests.api.Controllers
             var mockUser = new ClaimsPrincipal(identity);
             httpContext.Setup(c => c.User).Returns(mockUser);
 
-            _controller = new DashboardController(null, null, _dashboardService.Object)
+            _controller = new DashboardController(_dashboardService.Object)
             {
                 ControllerContext = new ControllerContext
                 {

@@ -109,5 +109,8 @@ namespace Scv.Api.Helpers.Extensions
 
             return int.TryParse(value, out var userId) ? userId : default;
         }
+
+        public static bool CanViewOthersSchedule(this ClaimsPrincipal claimsPrincipal)
+            => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.Groups && c.Value == "jasper-view-others-schedule");
     }
 }

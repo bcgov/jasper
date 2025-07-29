@@ -59,7 +59,7 @@
               >
                 <v-btn
                   :color="schedule === MY_SCHEDULE ? `${GREEN}` : ''"
-                  :value=MY_SCHEDULE
+                  :value="MY_SCHEDULE"
                   text="My Schedule"
                 />
                 <v-btn
@@ -120,6 +120,7 @@
   const searchAllowed = ref(true);
   const selectedCourtRoom = ref();
   const formSubmit = ref(false);
+  const judgeId = ref(commonStore.userInfo?.judgeId);
   const TEN_MINUTES = 600000;
   const NINE_MINUTES = 540000;
   const ONE_MINUTE = 60000;
@@ -156,6 +157,14 @@
     { immediate: true }
   );
 
+  watch(
+    () => commonStore.userInfo?.judgeId,
+    async (newVal: number) => {
+      judgeId.value = newVal;
+      searchForCourtList();
+    }
+  );
+
   watch([selectedCourtRoom, schedule, selectedCourtLocation, date], () =>
     setupAutoRefresh()
   );
@@ -178,11 +187,14 @@
     isMounted.value = false;
     isSearching.value = true;
     const data = await courtListService?.getCourtList(
-      selectedCourtLocation?.value?.locationId ? selectedCourtLocation.value.locationId.toString() : null,
+      selectedCourtLocation?.value?.locationId
+        ? selectedCourtLocation.value.locationId.toString()
+        : null,
       selectedCourtRoom?.value,
-      shortHandDate.value
+      shortHandDate.value,
+      judgeId.value
     );
-    
+
     if (data) {
       courtListStore.courtListInformation.detailsData = data;
     }

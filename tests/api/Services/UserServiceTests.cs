@@ -12,6 +12,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
+using PCSSCommon.Clients.PersonServices;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
@@ -57,7 +58,9 @@ public class UserServiceTests
             _mockUserRepo.Object,
             _mockGroupRepo.Object,
             _mockRoleRepo.Object,
-            _mockPermissionRepo.Object);
+            _mockPermissionRepo.Object,
+            new Mock<PersonServicesClient>().Object,
+            new Mock<LocationService>().Object);
     }
 
     [Fact]

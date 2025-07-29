@@ -8,5 +8,6 @@ export * from './CalendarSchedule';
 export * from './JudicialCalendarActivity';
 export * from './JudicialCalendarAssignment';
 export * from './Location';
+export * from './PersonSearchItem';
 export * from './Presider';
 export * from './Tag';

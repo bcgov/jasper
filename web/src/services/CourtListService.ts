@@ -18,13 +18,15 @@ export class CourtListService {
   async getCourtList(
     agencyId: string | null,
     roomCode: string | null,
-    proceeding: string
+    proceeding: string,
+    judgeId: number | null
   ): Promise<courtListType> {
     const url = `api/courtlist`;
     const params = {
       agencyId: agencyId,
       roomCode,
       proceeding,
+      judgeId: judgeId ?? '',
     };
     return this.httpService.client
       .get<courtListType>(url, { params })

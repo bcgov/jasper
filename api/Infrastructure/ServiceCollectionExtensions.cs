@@ -36,6 +36,7 @@ using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 using PCSSJudicialCalendarServices = PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
+using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 
@@ -136,6 +137,9 @@ namespace Scv.Api.Infrastructure
                 .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSConfigServices.ConfigurationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();

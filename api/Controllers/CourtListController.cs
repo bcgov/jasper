@@ -32,14 +32,20 @@ namespace Scv.Api.Controllers
         /// </summary>
         /// <param name="agencyId">Agency Identifier Code (Location Code)</param>
         /// <param name="roomCode">The room code</param>
+        /// <param name="judgeId">The judge id</param>
         /// <param name="proceeding">The proceeding date in the format YYYY-MM-dd</param>
         /// <returns>CourtList</returns>
         [HttpGet]
-        public async Task<ActionResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null)
+        public async Task<ActionResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null, int? judgeId = null)
         {
+            // Only users with right KC permissions can view other's schedule
+            var overrideJudgeId = judgeId != null && this.User.CanViewOthersSchedule()
+                ? judgeId.GetValueOrDefault()
+                : this.User.JudgeId();
+
             var result = (agencyId == null && roomCode == null)
-                ? await _courtListService.GetJudgeCourtListAppearances(this.User.JudgeId(), proceeding)
-                : await _courtListService.GetCourtListAppearances(agencyId, this.User.JudgeId(), roomCode, proceeding);
+                ? await _courtListService.GetJudgeCourtListAppearances(overrideJudgeId, proceeding)
+                : await _courtListService.GetCourtListAppearances(agencyId, overrideJudgeId, roomCode, proceeding);
 
             return Ok(result);
         }

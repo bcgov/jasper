@@ -14,6 +14,9 @@
           >
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
+            <JudgeSelector
+              v-if="selectedTab === 'dashboard' || selectedTab === 'court-list'"
+            />
             <v-btn
               class="ma-2"
               @click.stop="profile = true"
@@ -24,7 +27,6 @@
           </div>
         </v-tabs>
       </v-app-bar>
-
       <v-main>
         <router-view />
       </v-main>
@@ -37,6 +39,7 @@
   import { mdiAccountCircle } from '@mdi/js';
   import { ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
+  import JudgeSelector from './components/shared/JudgeSelector.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
   import { useThemeStore } from './stores/ThemeStore';

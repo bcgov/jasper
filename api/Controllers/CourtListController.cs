@@ -38,14 +38,9 @@ namespace Scv.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null, int? judgeId = null)
         {
-            // Only users with right KC permissions can view other's schedule
-            var overrideJudgeId = judgeId != null && this.User.CanViewOthersSchedule()
-                ? judgeId.GetValueOrDefault()
-                : this.User.JudgeId();
-
             var result = (agencyId == null && roomCode == null)
-                ? await _courtListService.GetJudgeCourtListAppearances(overrideJudgeId, proceeding)
-                : await _courtListService.GetCourtListAppearances(agencyId, overrideJudgeId, roomCode, proceeding);
+                ? await _courtListService.GetJudgeCourtListAppearances(this.User.JudgeId(judgeId), proceeding)
+                : await _courtListService.GetCourtListAppearances(agencyId, this.User.JudgeId(judgeId), roomCode, proceeding);
 
             return Ok(result);
         }

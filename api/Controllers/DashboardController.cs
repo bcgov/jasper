@@ -26,13 +26,9 @@ namespace Scv.Api.Controllers
         [Route("my-schedule")]
         public async Task<IActionResult> GetMySchedule(string startDate, string endDate, int? judgeId = null)
         {
-            // Only users with right KC permissions can view other's schedule
-            var overrideJudgeId = judgeId != null && this.User.CanViewOthersSchedule()
-                ? judgeId.GetValueOrDefault()
-                : this.User.JudgeId();
             var currentDate = DateTime.Now.ToString(DashboardService.DATE_FORMAT);
 
-            var result = await _dashboardService.GetMyScheduleAsync(overrideJudgeId, currentDate, startDate, endDate);
+            var result = await _dashboardService.GetMyScheduleAsync(this.User.JudgeId(judgeId), currentDate, startDate, endDate);
             if (!result.Succeeded)
             {
                 return BadRequest(new { error = result.Errors });

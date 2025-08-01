@@ -83,4 +83,13 @@ it('does not render AppearanceMethods when no appearanceMethods', () => {
     });
     expect(wrapper.findComponent({name: 'AppearanceMethods'}).exists()).toBe(false);
   });
+
+    it('renders key documents', () => {
+      const cards = wrapper.findAll('v-card');
+      const tables = wrapper.findAll('v-data-table-virtual');
+  
+      expect(tables).toHaveLength(2);
+      expect(cards).toHaveLength(2);
+      expect(cards[0].html()).toContain('Key Documents');
+    });
 });

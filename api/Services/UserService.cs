@@ -1,21 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using PCSSCommon.Clients.PersonServices;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using PCSSModels = PCSSCommon.Models;
 
 namespace Scv.Api.Services;
-
 
 public interface IUserService : ICrudService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
+    Task<IEnumerable<PCSSModels.PersonSearchItem>> GetJudges();
 }
 
 public class UserService(
@@ -25,7 +28,9 @@ public class UserService(
     IRepositoryBase<User> userRepo,
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
-    IPermissionRepository permissionRepo
+    IPermissionRepository permissionRepo,
+    PersonServicesClient personClient,
+    LocationService locationService
 ) : CrudServiceBase<IRepositoryBase<User>, User, UserDto>(
         cache,
         mapper,
@@ -35,6 +40,8 @@ public class UserService(
     private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
     private readonly IRepositoryBase<Role> _roleRepo = roleRepo;
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
+    private readonly PersonServicesClient _personClient = personClient;
+    private readonly LocationService _locationService = locationService;
 
     public override string CacheName => "GetUsersAsync";
 
@@ -109,5 +116,14 @@ public class UserService(
         user.Roles = roles;
 
         return user;
+    }
+
+    public async Task<IEnumerable<PCSSModels.PersonSearchItem>> GetJudges()
+    {
+        // This is a temp solution to retrieves list of users(judge) from external source. 
+        var date = DateTime.Now.ToString("dd-MMM-yyyy");
+        var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
+        var judges = await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
+        return judges.OrderBy(j => j.FullName);
     }
 }

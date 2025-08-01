@@ -7,6 +7,7 @@ import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
+import { UserService } from './UserService';
 
 export function registerRouter(app: App) {
   const httpService = new HttpService(import.meta.env.BASE_URL);
@@ -17,6 +18,7 @@ export function registerRouter(app: App) {
   const dashboardService = new DashboardService(httpService);
   const courtListService = new CourtListService(httpService);
   const binderService = new BinderService(httpService);
+  const userService = new UserService(httpService);
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -26,6 +28,7 @@ export function registerRouter(app: App) {
   app.provide('dashboardService', dashboardService);
   app.provide('courtListService', courtListService);
   app.provide('binderService', binderService);
+  app.provide('userService', userService);
 }
 
 export * from './AuthService';
@@ -36,3 +39,4 @@ export * from './FilesService';
 export * from './LocationService';
 export * from './LookupService';
 export * from './RedirectHandlerService';
+export * from './UserService';

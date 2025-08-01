@@ -130,6 +130,7 @@ namespace Scv.Api.Controllers
                 IsSupremeUser = HttpContext.User.IsSupremeUser(),
                 AgencyCode = HttpContext.User.AgencyCode(),
                 UserId = HttpContext.User.UserId(),
+                JudgeId = HttpContext.User.JudgeId(),
                 DateTime.UtcNow
             }));
         }

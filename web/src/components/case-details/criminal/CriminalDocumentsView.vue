@@ -46,9 +46,9 @@
     <v-data-table-virtual
       v-if="documents?.length"
       v-model="selectedItems"
-      :headers="headers"
+      :headers="type === 'documents' ? headers : keyDocumentHeaders"
       :items="documents"
-      :sort-by="sortBy"
+      :sort-by="type === 'documents' ? sortBy : keyDocumentsSortBy"
       :group-by
       show-select
       return-object
@@ -77,16 +77,25 @@
         {{ formatCategory(item) }}
       </template>
       <template v-slot:item.documentTypeDescription="{ item }">
-        <a
-          v-if="item.imageId"
-          href="javascript:void(0)"
-          @click="openIndividualDocument(item)"
-        >
-          {{ formatType(item) }}
-        </a>
-        <span v-else>
-          {{ formatType(item) }}
-        </span>
+        <v-row>
+          <v-col>
+            <a
+              v-if="item.imageId"
+              href="javascript:void(0)"
+              @click="openIndividualDocument(item)"
+            >
+              {{ formatType(item) }}
+            </a>
+            <span v-else>
+              {{ formatType(item) }}
+            </span>
+          </v-col>
+        </v-row>
+        <v-row v-if="type === 'keyDocuments' && item.category === 'BAIL'">
+          <v-col>
+            {{ item.docmDispositionDsc }} <span class="pl-2" /> {{ formatDateToDDMMMYYYY(item.issueDate) }}
+          </v-col>
+        </v-row>
       </template>
     </v-data-table-virtual>
   </div>
@@ -126,6 +135,7 @@
     () => selectedItems.value.filter((item) => item.imageId).length > 1
   );
   const sortBy = ref([{ key: 'issueDate', order: 'desc' }] as const);
+  const keyDocumentsSortBy = ref([{ key: 'category', order: 'desc' }] as const);
   const selectedCategory = ref<string>();
   const selectedAccused = ref<string>();
 
@@ -208,7 +218,7 @@
   const headers = [
     { key: 'data-table-group' },
     {
-      title: 'DATE SWORN/FILED',
+      title: 'DATE FILED/ISSUES',
       key: 'issueDate',
       value: (item) => formatDateToDDMMMYYYY(item.issueDate),
       sortRaw: (a: documentType, b: documentType) =>
@@ -221,6 +231,38 @@
     {
       title: 'CATEGORY',
       key: 'category',
+    },
+    {
+      title: 'PAGES',
+      key: 'documentPageCount',
+    },
+  ];
+
+  const keyDocumentHeaders = [
+    { key: 'data-table-group' },
+    {
+      title: 'DATE FILED/ISSUED',
+      key: 'issueDate',
+      value: (item) => formatDateToDDMMMYYYY(item.issueDate),
+      sortRaw: (a: documentType, b: documentType) =>
+        new Date(a.issueDate).getTime() - new Date(b.issueDate).getTime(),
+    },
+    {
+      title: 'DOCUMENT TYPE',
+      key: 'documentTypeDescription',
+    },
+    {
+      title: 'CATEGORY',
+      key: 'category',
+      sortRaw: (a: documentType, b: documentType) => {
+        const order = ['Initiating', 'BAIL', 'ROP'];
+        const getOrder = (cat: string) => {
+          const formatted = cat === 'rop' ? 'ROP' : cat;
+          const idx = order.indexOf(formatted);
+          return idx === -1 ? order.length : idx;
+        };
+        return getOrder(b.category) - getOrder(a.category);
+      },
     },
     {
       title: 'PAGES',

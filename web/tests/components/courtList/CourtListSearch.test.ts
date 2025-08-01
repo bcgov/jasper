@@ -1,11 +1,11 @@
-import { LocationService, CourtListService } from '@/services';
+import { CourtListService, LocationService } from '@/services';
 import { useCommonStore, useCourtListStore } from '@/stores';
+import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { mount } from '@vue/test-utils';
 import CourtListSearch from 'CMP/courtlist/CourtListSearch.vue';
-import { useSnackbarStore } from '@/stores/SnackbarStore';
-import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/stores');
 vi.mock('@/services');
@@ -23,7 +23,7 @@ describe('CourtListSearch.vue', () => {
   let courtListService: any;
 
   beforeEach(() => {
-    vi.useFakeTimers()
+    vi.useFakeTimers();
     setActivePinia(createPinia());
     snackbarStore = useSnackbarStore();
     commonStore = {
@@ -45,7 +45,7 @@ describe('CourtListSearch.vue', () => {
     };
     courtListService = {
       getCourtList: vi.fn().mockResolvedValue(Promise.resolve({})),
-      getMyCourtList: vi.fn().mockResolvedValue(Promise.resolve({}))
+      getMyCourtList: vi.fn().mockResolvedValue(Promise.resolve({})),
     };
 
     (useCommonStore as any).mockReturnValue(commonStore);
@@ -64,8 +64,8 @@ describe('CourtListSearch.vue', () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers()
-  })
+    vi.useRealTimers();
+  });
 
   it('renders correctly', () => {
     expect(wrapper.exists()).toBe(true);
@@ -116,7 +116,10 @@ describe('CourtListSearch.vue', () => {
 
     await wrapper.vm.searchForCourtList();
     expect(courtListService.getCourtList).toHaveBeenCalledWith(
-      "1", "Room 1", "2023-01-01"
+      '1',
+      'Room 1',
+      '2023-01-01',
+      undefined
     );
     await nextTick();
 
@@ -168,7 +171,6 @@ describe('CourtListSearch.vue', () => {
     expect(snackbarStore.isVisible).toBe(false);
   });
 
-
   it(`searches for new court-list data after ${TEN_MINUTES} ms`, async () => {
     wrapper.vm.selectedCourtLocation = {
       locationId: 1,
@@ -183,7 +185,10 @@ describe('CourtListSearch.vue', () => {
     await vi.advanceTimersByTimeAsync(TEN_MINUTES);
 
     expect(courtListService.getCourtList).toHaveBeenCalledWith(
-      "1", "Room 1", "2023-01-01"
+      '1',
+      'Room 1',
+      '2023-01-01',
+      undefined
     );
   });
 });

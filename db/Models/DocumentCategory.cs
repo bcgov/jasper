@@ -14,6 +14,7 @@ public class DocumentCategory : EntityBase
     public const string ORDERS = "ORDERS";
     public const string PLEADINGS = "PLEADINGS";
     public const string PSR = "PSR";
+    public const string ROP = "ROP";
 
     public static readonly List<string> ALL_DOCUMENT_CATEGORIES = [
         AFFIDAVITS,
@@ -23,6 +24,11 @@ public class DocumentCategory : EntityBase
         ORDERS,
         PLEADINGS,
         PSR
+    ];
+
+    public static readonly List<string> KEY_DOCUMENT_CATEGORIES = [
+        INITIATING,
+        ROP
     ];
 
     public string Name { get; set; }

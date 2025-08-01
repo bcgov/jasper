@@ -32,14 +32,15 @@ namespace Scv.Api.Controllers
         /// </summary>
         /// <param name="agencyId">Agency Identifier Code (Location Code)</param>
         /// <param name="roomCode">The room code</param>
+        /// <param name="judgeId">The judge id</param>
         /// <param name="proceeding">The proceeding date in the format YYYY-MM-dd</param>
         /// <returns>CourtList</returns>
         [HttpGet]
-        public async Task<ActionResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null)
+        public async Task<ActionResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null, int? judgeId = null)
         {
             var result = (agencyId == null && roomCode == null)
-                ? await _courtListService.GetJudgeCourtListAppearances(this.User.JudgeId(), proceeding)
-                : await _courtListService.GetCourtListAppearances(agencyId, this.User.JudgeId(), roomCode, proceeding);
+                ? await _courtListService.GetJudgeCourtListAppearances(this.User.JudgeId(judgeId), proceeding)
+                : await _courtListService.GetCourtListAppearances(agencyId, this.User.JudgeId(judgeId), roomCode, proceeding);
 
             return Ok(result);
         }

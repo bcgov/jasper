@@ -1,4 +1,4 @@
-import MyCalendar from '@/components/dashboard/MyCalendar.vue';
+import MyCalendar from '@/components/dashboard/my-calendar/MyCalendar.vue';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 

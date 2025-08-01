@@ -1,4 +1,4 @@
-import MyCalendarDayExpanded from '@/components/dashboard/MyCalendarDayExpanded.vue';
+import MyCalendarDayExpanded from '@/components/dashboard/my-calendar/MyCalendarDayExpanded.vue';
 import {
   AdjudicatorRestriction,
   CalendarDay,

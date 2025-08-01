@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { BootstrapVueNextResolver } from 'bootstrap-vue-next';
 import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
+import svgLoader from 'vite-svg-loader';
 
 const path = require('path');
 const vueSrc = 'src';
@@ -12,6 +13,7 @@ export default defineConfig({
     process.env.NODE_ENV === 'production' ? '/S2I_INJECT_PUBLIC_PATH/' : '/',
   plugins: [
     vue(),
+    svgLoader(),
     Components({
       resolvers: [
         BootstrapVueNextResolver({

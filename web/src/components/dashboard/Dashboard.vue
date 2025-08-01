@@ -7,7 +7,11 @@
     ></v-skeleton-loader>
     <div v-else class="d-flex flex-column">
       <CourtToday v-if="todaySchedule" :today="todaySchedule" />
-      <CalendarToolbar v-if="selectedDate" v-model="selectedDate" />
+      <CalendarToolbar
+        v-if="selectedDate"
+        v-model:selectedDate="selectedDate"
+        v-model:isCourtCalendar="isCourtCalendar"
+      />
       <MyCalendar
         v-if="calendarData && selectedDate"
         :data="calendarData"
@@ -24,7 +28,7 @@
   import { inject, onMounted, ref, watch } from 'vue';
   import CalendarToolbar from './CalendarToolbar.vue';
   import CourtToday from './CourtToday.vue';
-  import MyCalendar from './MyCalendar.vue';
+  import MyCalendar from './my-calendar/MyCalendar.vue';
 
   const locationsService = inject<LocationService>('locationService');
   const dashboardService = inject<DashboardService>('dashboardService');
@@ -35,6 +39,7 @@
 
   const isLoading = ref(true);
   const isCalendarLoading = ref(true);
+  const isCourtCalendar = ref(false);
 
   let currentCalendarDate = new Date('dd-mm-yyyy');
 

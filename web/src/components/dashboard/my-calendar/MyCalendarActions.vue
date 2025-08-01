@@ -1,7 +1,5 @@
 <template>
   <div class="d-flex align-center centered">
-    <!-- Month Picker -->
-    <h3 data-testid="title" class="m-0">Schedule for {{ currentDate }}</h3>
     <v-menu location="bottom end">
       <template v-slot:activator="{ props }">
         <v-icon :icon="mdiChevronDown" v-bind="props" />
@@ -27,14 +25,13 @@
       size="large"
       class="ml-3"
       @click="today"
+      density="comfortable"
     ></v-btn-secondary>
   </div>
 </template>
 <script setup lang="ts">
-  import { formatDateInstanceToMMMYYYY } from '@/utils/dateUtils';
-  import { computed, ref } from 'vue';
-
   import { mdiChevronDown, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
+  import { ref } from 'vue';
 
   const selectedDate = defineModel<Date>();
 
@@ -73,16 +70,9 @@
     selectedMonth.value = currentDate.getMonth();
     selectedDate.value = currentDate;
   };
-
-  const currentDate = computed(() => {
-    return selectedYear.value !== undefined && selectedMonth.value !== undefined
-      ? formatDateInstanceToMMMYYYY(
-          new Date(selectedYear.value, selectedMonth.value)
-        )
-      : null;
-  });
 </script>
 <style scoped>
+  /* My Schedule Controls  */
   :deep(.v-picker__body .v-date-picker-controls) {
     display: none;
   }

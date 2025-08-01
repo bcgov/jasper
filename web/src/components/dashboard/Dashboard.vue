@@ -83,14 +83,18 @@
 
   const loadCalendarData = async () => {
     isCalendarLoading.value = true;
-    const { payload } = await dashboardService.getMySchedule(
-      formatDateInstanceToDDMMMYYYY(startDay),
-      formatDateInstanceToDDMMMYYYY(endDay),
-      judgeId.value
-    );
-
-    todaySchedule.value = payload.today;
-    calendarData.value = [...payload.days];
-    isCalendarLoading.value = false;
+    try {
+      const { payload } = await dashboardService.getMySchedule(
+        formatDateInstanceToDDMMMYYYY(startDay),
+        formatDateInstanceToDDMMMYYYY(endDay),
+        judgeId.value
+      );
+      todaySchedule.value = payload.today;
+      calendarData.value = [...payload.days];
+    } catch (error) {
+      console.error('Failed to load calendar data:', error);
+    } finally {
+      isCalendarLoading.value = false;
+    }
   };
 </script>

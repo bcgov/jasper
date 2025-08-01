@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.AccessControlManagement;
@@ -40,8 +42,16 @@ public class UsersController(
             return Ok(new List<PCSSModels.PersonSearchItem>());
         }
 
-        var result = await this.Service.GetJudges();
-
-        return Ok(result);
+        try
+        {
+            var result = await this.Service.GetJudges();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error retrieving judges.");
+            Console.WriteLine(ex);
+            return Ok(new List<PCSSModels.PersonSearchItem>());
+        }
     }
 }

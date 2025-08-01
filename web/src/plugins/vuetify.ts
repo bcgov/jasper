@@ -67,6 +67,7 @@ export default createVuetify({
       hover: true,
       showSelect: true,
       returnObject: true,
+      hideDefaultFooter: true,
     },
     VDataTableVirtual: {
       hover: true,

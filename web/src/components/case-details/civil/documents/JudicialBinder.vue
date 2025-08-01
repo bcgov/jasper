@@ -38,10 +38,17 @@
       />
     </div>
     <div class="jb-table overflow-y-auto">
-      <v-table :headers="headers" :items="binderDocuments">
+      <v-data-table
+        v-model="selectedBinderItems"
+        item-value="civilDocumentId"
+        return-object
+        :items="binderDocuments"
+        show-select
+      >
         <template v-slot:default>
           <thead>
             <tr>
+              <th id="selectAllHeader"></th>
               <th
                 id="table-header"
                 v-for="header in headers"
@@ -68,12 +75,12 @@
           >
             <template #item="{ element }">
               <tr>
-                <!-- Handle column -->
+                <!-- Checkbox column. We need to build our own since we're desconstructing the whole table. -->
                 <td>
-                  <v-icon
-                    style="cursor: move"
-                    class="handle"
-                    :icon="mdiDragVertical"
+                  <v-checkbox-btn
+                    v-model="selectedBinderItems"
+                    :value="element.civilDocumentId"
+                    :input-value="selectedBinderItems?.includes(element)"
                   />
                 </td>
                 <!-- SequenceNumber column -->
@@ -141,11 +148,19 @@
                   <!-- Actions column -->
                   <EllipsesMenu :menuItems="removeFromBinder(element)" />
                 </td>
+                <!-- Handle column -->
+                <td>
+                  <v-icon
+                    style="cursor: move"
+                    class="handle"
+                    :icon="mdiDragVertical"
+                  />
+                </td>
               </tr>
             </template>
           </draggable>
         </template>
-      </v-table>
+      </v-data-table>
     </div>
   </div>
 </template>
@@ -169,7 +184,6 @@
     roles: LookupCode[];
     baseHeaders: DataTableHeader[];
     binderDocuments: civilDocumentType[];
-    selectedItems: civilDocumentType[];
     removeDocumentFromBinder: (documentId: string) => void;
     openIndividualDocument: (data: civilDocumentType) => void;
     deleteBinder: () => void;
@@ -185,7 +199,7 @@
       }
     ) => void
   >();
-
+  const selectedBinderItems = defineModel<civilDocumentType[]>();
   const draggableItems = ref<civilDocumentType[]>([...props.binderDocuments]);
   const drag = ref(false);
   const dragOptions = {
@@ -204,23 +218,22 @@
   );
 
   const headers = [
+    ...props.baseHeaders,
     {
       title: '',
       key: 'drag',
-      align: 'start' as const,
+      align: 'right' as const,
       sortable: false,
     },
-    ...props.baseHeaders,
   ];
 
-  const removeFromBinder = (item: civilDocumentType) => 
-    [
-      {
-        title: 'Remove from binder',
-        action: () => props.removeDocumentFromBinder(item.civilDocumentId),
-        enable: true,
-      },
-    ];
+  const removeFromBinder = (item: civilDocumentType) => [
+    {
+      title: 'Remove from binder',
+      action: () => props.removeDocumentFromBinder(item.civilDocumentId),
+      enable: true,
+    },
+  ];
 
   const dropped = (event) =>
     emit('update:reordered', {

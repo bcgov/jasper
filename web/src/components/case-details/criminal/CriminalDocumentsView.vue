@@ -91,7 +91,7 @@
             </span>
           </v-col>
         </v-row>
-        <v-row v-if="type === 'keyDocuments' && item.category === 'BAIL'">
+        <v-row v-if="type === 'keyDocuments' && item.category === 'BAIL'" no-gutters>
           <v-col>
             {{ item.docmDispositionDsc }} <span class="pl-2" /> {{ formatDateToDDMMMYYYY(item.issueDate) }}
           </v-col>

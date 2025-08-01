@@ -94,19 +94,38 @@ describe('CivilDocumentsView.vue', () => {
     expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(true);
   });
 
-  it('renders action-bar when two or more documents are selected', async () => {
+  it('renders both action-bars when two or more documents are selected', async () => {
     wrapper.vm.selectedItems = [{}, {}];
+    wrapper.vm.selectedBinderItems = [{}];
 
     await nextTick();
 
-    expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(true);
+    expect(wrapper.findAllComponents({ name: 'ActionBar' })).toHaveLength(2);
   });
 
-  it('does not render action-bar when one document is selected', async () => {
+  it('renders one action-bar when one document is selected', async () => {
     wrapper.vm.selectedItems = [mockDocuments[0]];
 
     await nextTick();
 
-    expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(false);
+    expect(wrapper.findAllComponents({ name: 'ActionBar' })).toHaveLength(1);
+  });
+
+  it('renders one action-bar when one document is selected', async () => {
+    wrapper.vm.selectedItems = [mockDocuments[0]];
+
+    await nextTick();
+
+    expect(wrapper.findAllComponents({ name: 'ActionBar' })).toHaveLength(1);
+  });
+
+  it('removeSelectedJudicialDocuments should clear all selected binder items', async () => {
+    wrapper.vm.selectedItems = [{}, {}];
+    wrapper.vm.selectedBinderItems = [mockDocuments[0]];
+    wrapper.vm.removeSelectedJudicialDocuments();
+
+    await nextTick();
+
+    expect(wrapper.vm.selectedBinderItems).toEqual([]);
   });
 });

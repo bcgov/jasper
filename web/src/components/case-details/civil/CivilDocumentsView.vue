@@ -20,6 +20,7 @@
   </v-row>
 
   <JudicialBinder
+    v-model="selectedBinderItems"
     :courtClassCdStyle
     :binderDocuments
     :isBinderLoading
@@ -29,7 +30,6 @@
     :removeDocumentFromBinder
     :deleteBinder="deleteCurrentBinder"
     :baseHeaders="headers"
-    :selectedItems="selectedBinderItems"
     @update:reordered="(documentData) => handleReordering(documentData)"
   />
 
@@ -46,7 +46,25 @@
     @update:selectedItems="(val) => (selectedItems = val)"
   />
 
-  <ActionBar v-if="showActionbar" :selected="selectedItems">
+  <ActionBar
+    :selected="selectedBinderItems"
+    selectionPrependText="Judicial Binder document/s"
+  >
+    <v-btn
+      size="large"
+      class="mx-2"
+      :prepend-icon="mdiNotebookRemoveOutline"
+      style="letter-spacing: 0.001rem"
+      @click="removeSelectedJudicialDocuments()"
+    >
+      Remove
+    </v-btn>
+  </ActionBar>
+  <ActionBar
+    v-if="showActionbar"
+    :selected="selectedItems"
+    selectionPrependText="Documents"
+  >
     <template #default>
       <v-btn
         size="large"
@@ -91,7 +109,11 @@
   } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
-  import { mdiFileDocumentMultipleOutline, mdiNotebookOutline } from '@mdi/js';
+  import {
+    mdiFileDocumentMultipleOutline,
+    mdiNotebookOutline,
+    mdiNotebookRemoveOutline,
+  } from '@mdi/js';
   import { computed, inject, onMounted, ref } from 'vue';
   import AllDocuments from './documents/AllDocuments.vue';
   import JudicialBinder from './documents/JudicialBinder.vue';
@@ -223,8 +245,8 @@
       prepareCivilDocumentData(data)
     );
 
-    // Todo, parts of these binder operation methods should be moved to a 
-    // shared binder space, that way the code is not repeated
+  // Todo, parts of these binder operation methods should be moved to a
+  // shared binder space, that way the code is not repeated
   const openMergedDocuments = () => {
     const documents: [CourtDocumentType, DocumentData][] = [];
     selectedItems.value
@@ -256,8 +278,19 @@
     await saveBinder();
   };
 
+  const removeSelectedJudicialDocuments = async () => {
+    if (!currentBinder.value?.documents) {
+      return;
+    }
+    currentBinder.value.documents = currentBinder.value?.documents.filter(
+      (d) => !selectedBinderItems.value.find((item) => item === d.documentId)
+    );
+    selectedBinderItems.value = [];
+    await saveBinder();
+  };
+
   const removeDocumentFromBinder = async (documentId: string) => {
-    if(!currentBinder.value?.documents) {
+    if (!currentBinder.value?.documents) {
       return;
     }
     currentBinder.value.documents = currentBinder.value?.documents.filter(
@@ -268,7 +301,7 @@
   };
 
   const deleteCurrentBinder = async () => {
-    if(!currentBinder.value?.id) {
+    if (!currentBinder.value?.id) {
       return;
     }
     isBinderLoading.value = true;
@@ -326,8 +359,8 @@
     await saveBinder();
   };
 
-  const handleReordering =  (documentData) => {
-    if(!currentBinder.value?.documents){
+  const handleReordering = (documentData) => {
+    if (!currentBinder.value?.documents) {
       return;
     }
     const docs = currentBinder.value.documents;

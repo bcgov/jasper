@@ -10,7 +10,6 @@ using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
-
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Services;
@@ -18,6 +17,7 @@ namespace Scv.Api.Services;
 public interface IDashboardService
 {
     Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate);
+    Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate);
 }
 
 public class DashboardService(
@@ -39,6 +39,8 @@ public class DashboardService(
     private readonly IMapper _mapper = mapper;
 
     public override string CacheName => nameof(DashboardService);
+
+    #region Public Methods
 
     public async Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate)
     {
@@ -93,6 +95,83 @@ public class DashboardService(
 
     }
 
+    public async Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate)
+    {
+        var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
+        var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
+
+        if (!isValidStartDate || !isValidEndDate)
+        {
+            return OperationResult<CourtCalendarSchedule>.Failure("startDate and/or endDate is invalid.");
+        }
+
+        var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
+        var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
+
+        async Task<PCSS.ReadJudicialCalendarsResponse> JudicialCalendar() => await _calendarClient.ReadCalendarsV2Async(
+               locationIds,
+               formattedStartDate,
+               formattedEndDate,
+               string.Empty);
+
+        var judicialCalendarTask = this.GetDataFromCache($"{this.CacheName}-{locationIds}-{formattedStartDate}-{formattedEndDate}", JudicialCalendar);
+
+        var judicialCalendar = await judicialCalendarTask;
+
+        var calendarsWithData = judicialCalendar.Calendars.Where(c => c.Days.Count > 0);
+
+        // Agregate calendars into a single list of CalendarDay
+        var calendarDays = await Task.WhenAll(calendarsWithData.Select(c => GetDays(c)));
+        var aggCalendarDays = calendarDays.SelectMany(c => c)
+            .GroupBy(c => (c.Date, c.IsWeekend, c.ShowCourtList))
+            .Select((c) => new CalendarDay
+            {
+                Date = c.Key.Date,
+                IsWeekend = c.Key.IsWeekend,
+                ShowCourtList = c.Key.ShowCourtList,
+                Activities = c.SelectMany(c => c.Activities)
+            });
+
+        // Query Presiders
+        var presiders = calendarsWithData
+            .Where(c => c.IsPresider)
+            .DistinctBy(c => c.Id)
+            .Select(c => new Presider
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Initials = c.RotaInitials,
+                HomeLocationId = c.HomeLocationId,
+                HomeLocationName = c.HomeLocationName,
+            })
+            .OrderBy(c => c.Initials);
+
+        // Query Activities
+        var activities = aggCalendarDays
+            .SelectMany(c => c.Activities)
+            .DistinctBy(a => a.ActivityCode)
+            .Select(a => new Activity
+            {
+                Code = a.ActivityCode,
+                DisplayCode = a.ActivityDisplayCode,
+                Description = a.ActivityDescription,
+                ClassCode = a.ActivityClassCode,
+                ClassDescription = a.ActivityClassDescription
+            })
+            .OrderBy(a => a.ClassDescription);
+
+        return OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule
+        {
+            Days = [.. aggCalendarDays],
+            Presiders = [.. presiders],
+            Activities = [.. activities]
+        });
+    }
+
+    #endregion Public Methods
+
+    #region Private Methods
+
     private async Task<CalendarDay> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDay> days)
     {
         var today = days.SingleOrDefault(d => d.Date == currentDate);
@@ -132,7 +211,6 @@ public class DashboardService(
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
-
             DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
 
             var activities = await GetDayActivities(day);
@@ -177,18 +255,18 @@ public class DashboardService(
 
         if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId));
             return activities;
         }
 
         if (amActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, Period.AM));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId, Period.AM));
         }
 
         if (pmActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, Period.PM));
+            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, day.JudgeId, Period.PM));
         }
 
         return activities;
@@ -206,8 +284,10 @@ public class DashboardService(
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
         PCSS.JudicialCalendarActivity judicialActivity,
         List<PCSS.AdjudicatorRestriction> judicialRestrictions,
+        int judgeId,
         Period? period = null)
     {
+
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
         // Exclude FXD restrictions
         var jRestrictions = judicialRestrictions
@@ -224,6 +304,7 @@ public class DashboardService(
             : null;
         activity.Period = period;
         activity.Restrictions = restrictions;
+        activity.JudgeId = judgeId;
 
         return activity;
     }
@@ -246,8 +327,10 @@ public class DashboardService(
                     ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
                     : null;
         activity.Restrictions = restrictions;
+        activity.JudgeId = assignment.JudgeId.GetValueOrDefault();
 
         return activity;
     }
 
+    #endregion Private Methods
 }

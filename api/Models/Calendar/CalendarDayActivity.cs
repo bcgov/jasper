@@ -24,5 +24,6 @@ public class CalendarDayActivity
     public Period? Period { get; set; }
     public int FilesCount { get; set; }
     public int ContinuationsCount { get; set; }
+    public int JudgeId { get; set; }
     public List<AdjudicatorRestriction> Restrictions { get; set; } = [];
 }

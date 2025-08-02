@@ -36,5 +36,19 @@ namespace Scv.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet]
+        [Route("court-calendar")]
+        public async Task<IActionResult> GetCourtCalendar(string locationIds, string startDate, string endDate)
+        {
+            var result = await _dashboardService.GetCourtCalendarScheduleAsync(locationIds, startDate, endDate);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { error = result.Errors });
+            }
+
+            return Ok(result);
+        }
     }
 }

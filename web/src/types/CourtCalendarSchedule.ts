@@ -2,10 +2,8 @@ import { Activity } from './Activity';
 import { CalendarDay } from './CalendarDay';
 import { Presider } from './Presider';
 
-export interface CalendarSchedule {
-  today: CalendarDay;
+export interface CourtCalendarSchedule {
   days: CalendarDay[];
-  schedule: CalendarDay[];
   activities: Activity[];
   presiders: Presider[];
 }

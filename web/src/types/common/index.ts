@@ -73,7 +73,7 @@ export interface UserInfo {
   isSupremeUser: string;
   agencyCode: string;
   userId: string;
-  judgeId: string;
+  judgeId: number;
 }
 
 export interface LookupCode {

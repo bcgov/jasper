@@ -23,7 +23,7 @@ namespace Scv.Api.Controllers
         [Route("today")]
         public async Task<IActionResult> GetTodaysSchedule(int? judgeId = null)
         {
-            var result = await _dashboardService.GetTodaysSchedule(this.User.JudgeId(judgeId));
+            var result = await _dashboardService.GetTodaysScheduleAsync(this.User.JudgeId(judgeId));
             if (!result.Succeeded)
             {
                 return BadRequest(new { error = result.Errors });

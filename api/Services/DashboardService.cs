@@ -18,7 +18,7 @@ namespace Scv.Api.Services;
 
 public interface IDashboardService
 {
-    Task<OperationResult<CalendarDay>> GetTodaysSchedule(int judgeId);
+    Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId);
     Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
     Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate);
 }
@@ -47,7 +47,7 @@ public class DashboardService(
 
     #region Public Methods
 
-    public async Task<OperationResult<CalendarDay>> GetTodaysSchedule(int judgeId)
+    public async Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId)
     {
         try
         {

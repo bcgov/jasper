@@ -15,7 +15,7 @@
     :options="calendarOptions"
     ref="calendarRef"
   >
-    <!-- This will be worked on separately  -->
+    <!-- This will be worked on separately -->
     <!-- <template v-slot:eventContent="{ event }">
       <MyCalendarDay
         :date="event.extendedProps.date"
@@ -58,36 +58,21 @@
   const endDay = ref(new Date(selectedDate.value));
   const locationIds = ref('');
 
-  onMounted(async () => {
+  const updateCalendar = async () => {
     calculateDateRange(calendarView.value);
     await loadCalendarData();
-  });
 
-  watch(selectedDate, async (newDate) => {
-    calculateDateRange(calendarView.value);
-    await loadCalendarData();
-  });
-
-  watch(calendarView, async (newView) => {
-    if (!calendarRef.value) {
-      return;
-    }
-
-    calculateDateRange(newView);
-    await loadCalendarData();
-
-    // Change the calendar view
-    const calendarApi = calendarRef.value.getApi();
-    calendarApi.changeView(newView);
-  });
+    const calendarApi = calendarRef.value?.getApi();
+    calendarApi.changeView(calendarView.value);
+  };
 
   const loadCalendarData = async () => {
     isCalendarLoading.value = true;
     try {
       const { payload } = await dashboardService.getCourtCalendar(
-        locationIds,
         formatDateInstanceToDDMMMYYYY(startDay.value),
-        formatDateInstanceToDDMMMYYYY(endDay.value)
+        formatDateInstanceToDDMMMYYYY(endDay.value),
+        locationIds.value
       );
       calendarData.value = [...payload.days];
       presiders.value = [...payload.presiders];
@@ -128,6 +113,12 @@
     },
   };
 
+  onMounted(updateCalendar);
+
+  watch(selectedDate, updateCalendar);
+
+  watch(calendarView, updateCalendar);
+
   watchEffect(() => {
     const calendarApi = calendarRef.value?.getApi();
     if (calendarApi) {
@@ -142,7 +133,6 @@
 
   const calculateDateRange = (calendarView: string) => {
     // Update the start and end days based on the calendar view
-
     switch (calendarView) {
       case MONTH_CALENDAR_VIEW: {
         // First and last day of the month
@@ -159,19 +149,31 @@
         break;
       }
       case TWO_WEEK_CALENDAR_VIEW: {
-        // Start from the previous Sunday to two weeks later
-        startDay.value.setDate(
+        // Two weeks starting from the first Sunday before the selected date
+        const sunday = new Date(selectedDate.value);
+        sunday.setDate(
           selectedDate.value.getDate() - selectedDate.value.getDay()
         );
-        endDay.value.setDate(startDay.value.getDate() + 13);
+
+        const twoWeeksLater = new Date(sunday);
+        twoWeeksLater.setDate(sunday.getDate() + 13);
+
+        startDay.value = sunday;
+        endDay.value = twoWeeksLater;
         break;
       }
       case ONE_WEEK_CALENDAR_VIEW: {
-        // Start from the previous Sunday to the next Saturday
-        startDay.value.setDate(
+        // One week starting from the first Sunday before the selected date
+        const sunday = new Date(selectedDate.value);
+        sunday.setDate(
           selectedDate.value.getDate() - selectedDate.value.getDay()
         );
-        endDay.value.setDate(startDay.value.getDate() + 6);
+
+        const saturday = new Date(sunday);
+        saturday.setDate(sunday.getDate() + 6);
+
+        startDay.value = sunday;
+        endDay.value = saturday;
         break;
       }
     }

@@ -174,7 +174,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                         // Get JudgeId and HomeLocationId from env variable until login process is finalized.
                         var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
-                        var homeLocationId = configuration.GetNonEmptyValue("PCSS:HomeLocationId");
+                        var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
 
                         logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
 

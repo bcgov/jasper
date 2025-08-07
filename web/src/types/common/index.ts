@@ -127,3 +127,9 @@ export enum FileMarkerEnum {
   OTH,
   W,
 }
+
+export enum CalendarViewEnum {
+  MonthView = 'dayGridMonth',
+  TwoWeekView = 'dayGridTwoWeek',
+  WeekView = 'dayGridWeek',
+}

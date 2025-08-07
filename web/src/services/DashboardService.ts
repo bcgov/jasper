@@ -1,13 +1,12 @@
 import { CalendarDay } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { CourtCalendarSchedule } from '@/types/CourtCalendarSchedule';
-import { HttpService } from './HttpService';
+import { IHttpService } from './HttpService';
+import { ServiceBase } from './ServiceBase';
 
-export class DashboardService {
-  private readonly httpService: HttpService;
-
-  constructor(httpService: HttpService) {
-    this.httpService = httpService;
+export class DashboardService extends ServiceBase {
+  constructor(httpService: IHttpService) {
+    super(httpService);
   }
 
   getCourtCalendar(

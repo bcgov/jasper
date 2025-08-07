@@ -111,16 +111,11 @@
     judgeId: number | undefined;
   }>();
 
-  onMounted(async () => {
-    await loadTodaysSchedule();
-  });
+  const fetchSchedule = async () => await loadTodaysSchedule();
 
-  watch(
-    () => props.judgeId,
-    async () => {
-      await loadTodaysSchedule();
-    }
-  );
+  onMounted(fetchSchedule);
+
+  watch(() => props.judgeId, fetchSchedule);
 
   const loadTodaysSchedule = async () => {
     isLoading.value = true;

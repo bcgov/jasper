@@ -1,8 +1,4 @@
 <template>
-  <MyCalendarToolbar
-    v-model:selectedDate="selectedDate"
-    v-model:isCourtCalendar="isCourtCalendar"
-  />
   <v-skeleton-loader
     v-if="isCalendarLoading"
     type="date-picker"
@@ -46,7 +42,6 @@
   import { mdiListBoxOutline } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch, watchEffect } from 'vue';
   import MyCalendarDay from './MyCalendarDay.vue';
-  import MyCalendarToolbar from './MyCalendarToolbar.vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
 
@@ -58,11 +53,14 @@
     judgeId: number | undefined;
   }>();
 
-  const isCourtCalendar = defineModel<boolean>('isCourtCalendar');
+  const selectedDate = defineModel<Date>('selectedDate')!;
+
+  if (!selectedDate.value) {
+    throw new Error('selectedDate is required');
+  }
 
   const isCalendarLoading = ref(true);
   const calendarData = ref<CalendarDay[]>([]);
-  const selectedDate = ref(new Date());
   const expandedDate = ref<string | null>(null);
   const calendarRef = ref();
 
@@ -82,8 +80,10 @@
   });
 
   watch(selectedDate, async (newDate) => {
-    startDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-    endDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+    if (newDate) {
+      startDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      endDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+    }
     await loadCalendarData();
   });
 

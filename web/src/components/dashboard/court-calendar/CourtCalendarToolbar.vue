@@ -3,6 +3,7 @@
     <div class="my-calendar text-left">
       <a
         href="#"
+        data-testid="my-calendar-link"
         class="text-decoration-underline cursor-pointer"
         @click="isCourtCalendar = !isCourtCalendar"
         ><v-icon :icon="mdiChevronLeft" />View My Calendar</a

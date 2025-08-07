@@ -1,37 +1,41 @@
 <template>
-  <CourtToday :judgeId="judgeId" />
+  <CourtToday :judgeId="judgeId" v-if="!isCourtCalendar" />
+  <CalendarToolbar
+    v-model:selectedDate="selectedDate"
+    v-model:isCourtCalendar="isCourtCalendar"
+    v-model:calendarView="calendarView"
+  />
   <CourtCalendar
     v-if="isCourtCalendar"
-    v-model:isCourtCalendar="isCourtCalendar"
+    v-model:selectedDate="selectedDate"
+    v-model:calendarView="calendarView"
   />
-  <MyCalendar
-    v-else
-    :judgeId="judgeId"
-    v-model:isCourtCalendar="isCourtCalendar"
-  />
+  <MyCalendar v-else :judgeId="judgeId" v-model:selectedDate="selectedDate" />
 </template>
 <script setup lang="ts">
-  import { DashboardService } from '@/services';
   import { useCommonStore } from '@/stores';
-  import { inject, ref, watch } from 'vue';
+  import { CalendarViewEnum } from '@/types/common';
+  import { ref, watch } from 'vue';
+  import CalendarToolbar from './CalendarToolbar.vue';
   import CourtCalendar from './court-calendar/CourtCalendar.vue';
   import CourtToday from './CourtToday.vue';
   import MyCalendar from './my-calendar/MyCalendar.vue';
 
   const commonStore = useCommonStore();
-  const dashboardService = inject<DashboardService>('dashboardService');
-
-  if (!dashboardService) {
-    throw new Error('Service is not available!');
-  }
-
   const judgeId = ref(commonStore.userInfo?.judgeId);
   const isCourtCalendar = ref(false);
+  const selectedDate = ref(new Date());
+  const calendarView = ref(CalendarViewEnum.MonthView);
 
   watch(
     () => commonStore.userInfo?.judgeId,
-    async (newVal, _oldVal) => {
-      judgeId.value = newVal;
-    }
+    async (newVal, _oldVal) => (judgeId.value = newVal)
   );
+
+  watch(isCourtCalendar, (newVal) => {
+    calendarView.value = newVal
+      ? CalendarViewEnum.TwoWeekView
+      : CalendarViewEnum.MonthView;
+    selectedDate.value = new Date();
+  });
 </script>

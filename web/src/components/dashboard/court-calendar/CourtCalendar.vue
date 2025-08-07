@@ -1,9 +1,4 @@
 <template>
-  <CourtCalendarToolbar
-    v-model:selectedDate="selectedDate"
-    v-model:isCourtCalendar="isCourtCalendar"
-    v-model:calendarView="calendarView"
-  />
   <v-skeleton-loader
     v-if="isCalendarLoading"
     type="date-picker"
@@ -28,37 +23,41 @@
 <script setup lang="ts">
   import { DashboardService } from '@/services';
   import { Activity, CalendarDay, Presider } from '@/types';
+  import { CalendarViewEnum } from '@/types/common';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { CalendarOptions } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
   import { computed, inject, onMounted, ref, watch, watchEffect } from 'vue';
-  import CourtCalendarToolbar from './CourtCalendarToolbar.vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
-
-  const TWO_WEEK_CALENDAR_VIEW = 'dayGridTwoWeek';
-  const ONE_WEEK_CALENDAR_VIEW = 'dayGridWeek';
-  const MONTH_CALENDAR_VIEW = 'dayGridMonth';
 
   if (!dashboardService) {
     throw new Error('Service is not available!');
   }
 
-  const isCourtCalendar = defineModel<boolean>('isCourtCalendar');
+  const selectedDate = defineModel<Date>('selectedDate');
+  const calendarView = defineModel<string>('calendarView');
+
+  if (!selectedDate.value) {
+    throw new Error('selectedDate is required');
+  }
 
   const isCalendarLoading = ref(true);
   const calendarRef = ref();
   const calendarData = ref<CalendarDay[]>([]);
   const presiders = ref<Presider[]>([]);
   const activities = ref<Activity[]>([]);
-  const selectedDate = ref(new Date());
-  const calendarView = ref(TWO_WEEK_CALENDAR_VIEW);
+
   const startDay = ref(new Date(selectedDate.value));
   const endDay = ref(new Date(selectedDate.value));
   const locationIds = ref('');
 
   const updateCalendar = async () => {
+    if (!calendarView.value) {
+      throw new Error('calendarView is required');
+    }
+
     calculateDateRange(calendarView.value);
     await loadCalendarData();
 
@@ -132,9 +131,13 @@
   });
 
   const calculateDateRange = (calendarView: string) => {
+    if (!selectedDate.value) {
+      throw new Error('selectedDate is required');
+    }
+
     // Update the start and end days based on the calendar view
     switch (calendarView) {
-      case MONTH_CALENDAR_VIEW: {
+      case CalendarViewEnum.MonthView: {
         // First and last day of the month
         startDay.value = new Date(
           selectedDate.value.getFullYear(),
@@ -148,7 +151,7 @@
         );
         break;
       }
-      case TWO_WEEK_CALENDAR_VIEW: {
+      case CalendarViewEnum.TwoWeekView: {
         // Two weeks starting from the first Sunday before the selected date
         const sunday = new Date(selectedDate.value);
         sunday.setDate(
@@ -162,7 +165,7 @@
         endDay.value = twoWeeksLater;
         break;
       }
-      case ONE_WEEK_CALENDAR_VIEW: {
+      case CalendarViewEnum.WeekView: {
         // One week starting from the first Sunday before the selected date
         const sunday = new Date(selectedDate.value);
         sunday.setDate(

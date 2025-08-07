@@ -1,26 +1,29 @@
-import MyCalendar from '@/components/dashboard/my-calendar/MyCalendar.vue';
+import CourtCalendar from '@/components/dashboard/court-calendar/CourtCalendar.vue';
 import { DashboardService } from '@/services';
+import { CalendarViewEnum } from '@/types/common';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/services');
 
-describe('MyCalendar.vue', () => {
+describe('CourtCalendar.vue', () => {
   let dashboardService: any;
 
   beforeEach(() => {
     dashboardService = {
-      getMySchedule: vi.fn().mockResolvedValue({ payload: [] }),
+      getCourtCalendar: vi.fn().mockResolvedValue({
+        payload: { days: [], presiders: [], activities: [] },
+      }),
     };
 
     (DashboardService as any).mockReturnValue(dashboardService);
   });
 
   const mountComponent = () => {
-    return mount(MyCalendar, {
+    return mount(CourtCalendar, {
       props: {
-        judgeId: 1,
         selectedDate: new Date(),
+        calendarView: CalendarViewEnum.TwoWeekView,
       },
       global: {
         provide: {
@@ -30,7 +33,7 @@ describe('MyCalendar.vue', () => {
     });
   };
 
-  it('renders MyCalendarToolbar and FullCalendar', async () => {
+  it('renders CourtCalendarToolbar and FullCalendar', async () => {
     const wrapper = mountComponent();
 
     await flushPromises();

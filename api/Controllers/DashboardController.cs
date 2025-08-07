@@ -32,7 +32,6 @@ namespace Scv.Api.Controllers
             return Ok(result);
         }
 
-
         /// <summary>
         /// Retrieves the schedule of the currently logged on user
         /// </summary>

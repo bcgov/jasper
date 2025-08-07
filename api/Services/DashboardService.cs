@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using DnsClient.Internal;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
@@ -96,7 +95,6 @@ public class DashboardService(
             _logger.LogError(ex, ex.Message);
             return OperationResult<CalendarDay>.Failure("Something went wrong when querying Today's Schedule");
         }
-
     }
 
     public async Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate)
@@ -128,7 +126,6 @@ public class DashboardService(
             _logger.LogError(ex, ex.Message);
             return OperationResult<List<CalendarDay>>.Failure("Something went wrong when querying My Schedule");
         }
-
     }
 
     public async Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate)
@@ -295,7 +292,6 @@ public class DashboardService(
         int judgeId,
         Period? period = null)
     {
-
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
         // Exclude FXD restrictions
         var jRestrictions = judicialRestrictions

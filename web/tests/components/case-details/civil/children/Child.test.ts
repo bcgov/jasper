@@ -3,9 +3,19 @@ import { partyType } from '@/types/civil/jsonTypes';
 import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 import { faker } from '@faker-js/faker';
 import { mount, shallowMount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 describe('Child.vue', () => {
+  beforeAll(() => {
+    vi.useFakeTimers();
+    // Set a fixed date for consistent test results
+    vi.setSystemTime(new Date('2025-08-08'));
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
   it('renders Child component', () => {
     const mockChild = {
       givenNm: faker.person.firstName(),
@@ -58,13 +68,25 @@ describe('Child.vue', () => {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.0`;
   };
 
+  // Current date is fixed to Aug 8, 2025 in beforeAll
   it.each([
-    ['1985-10-12 00:00:00.0', '39'],
+    ['1985-10-12 00:00:00.0', '39'], // 39 years old
     [null, ''],
-    [formatDate(new Date()), '0 months'],
-    [formatDate(new Date(), { months: -5 }), '5 months'],
-    [formatDate(new Date(), { days: -2 }), '0 months'],
-    [formatDate(new Date(), { years: -2 }), '2'],
+    [formatDate(new Date('2025-08-06')), '0 months'], // 2 days old
+    [formatDate(new Date('2025-03-06')), '5 months'], // 5 months old
+    [formatDate(new Date('2025-08-04')), '0 months'], // 4 days old
+    [formatDate(new Date('2023-08-06')), '2'], // 2 years old and 2 days
+    [formatDate(new Date('2024-08-28')), '11 months'], // 11 months old  and 20 days
+    [formatDate(new Date('2024-08-06')), '1'], // 1 year old and 2 days
+    [formatDate(new Date('2023-08-01')), '2'], // 2 years old and 7 days
+    [formatDate(new Date('2023-08-31')), '1'], // 1 year and 11 months old
+    [formatDate(new Date('2024-08-09')), '11 months'], // 11 months and 30 days old
+    [formatDate(new Date('2023-08-07')), '2'], // 2 years old and 1 day
+    [formatDate(new Date('2024-08-07')), '1'], // 1 year old and 1 day
+    [formatDate(new Date('2025-08-07')), '0 months'], // 1 day old
+    [formatDate(new Date('2024-08-08')), '1'], // 1 year old (birthday)
+    [formatDate(new Date('2020-02-29')), '5'], // 5 years old (leap year)
+    [formatDate(new Date('2024-02-29')), '1'], // 1 years old and 5 months (leap year)
   ])('renders correct age', (birthDate, expectedAge) => {
     const wrapper = mount(Child, {
       props: {
@@ -81,8 +103,8 @@ describe('Child.vue', () => {
     expect(ageColumns).toHaveLength(2);
 
     // Age calculation currently not working as expected. Requires investigation.
-    //const ageValue = ageColumns[1].text();
-    //expect(ageValue).toBe(expectedAge);
+    const ageValue = ageColumns[1].text();
+    expect(ageValue).toBe(expectedAge);
 
     const birthDateColumns = rows[2].findAll('v-col');
     expect(birthDateColumns).toHaveLength(2);

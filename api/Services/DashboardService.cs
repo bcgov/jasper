@@ -7,6 +7,7 @@ using LazyCache;
 using MapsterMapper;
 using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
@@ -18,6 +19,7 @@ namespace Scv.Api.Services;
 public interface IDashboardService
 {
     Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate);
+    Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges();
 }
 
 public class DashboardService(
@@ -25,7 +27,9 @@ public class DashboardService(
     JudicialCalendarServicesClient calendarClient,
     SearchDateClient searchDateClient,
     LocationService locationService,
-    IMapper mapper) : ServiceBase(cache), IDashboardService
+    IMapper mapper,
+    PersonServicesClient personClient
+) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
     public const string SITTING_ACTIVITY_CODE = "SIT";
@@ -37,6 +41,7 @@ public class DashboardService(
     private readonly SearchDateClient _searchDateClient = searchDateClient;
     private readonly LocationService _locationService = locationService;
     private readonly IMapper _mapper = mapper;
+    private readonly PersonServicesClient _personClient = personClient;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -91,6 +96,15 @@ public class DashboardService(
             Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, today)
         });
 
+    }
+
+    public async Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges()
+    {
+        // This is a temp solution to retrieves list of users(judge) from external source. 
+        var date = DateTime.Now.ToString("dd-MMM-yyyy");
+        var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
+        var judges = await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
+        return judges.OrderBy(j => j.FullName);
     }
 
     private async Task<CalendarDay> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDay> days)

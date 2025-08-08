@@ -11,6 +11,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
@@ -78,12 +79,15 @@ public class DashboardServiceTests : ServiceTestBase
 
         var mockLocationService = this.SetupLocationService();
 
+        var mockPersonServiceClient = new Mock<PersonServicesClient>(MockBehavior.Strict, this.HttpClient);
+
         var dashboardService = new DashboardService(
             _cachingService,
             mockJudicialCalendarClient.Object,
             mockSearchDateClient.Object,
             mockLocationService.Object,
-            _mapper);
+            _mapper,
+            mockPersonServiceClient.Object);
 
         return (
             dashboardService,

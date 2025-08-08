@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
+using PCSSModels = PCSSCommon.Models;
 
 namespace Scv.Api.Controllers
 {
@@ -35,6 +37,28 @@ namespace Scv.Api.Controllers
             }
 
             return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("judges")]
+        public async Task<IActionResult> GetJudges()
+        {
+            if (!this.User.CanViewOthersSchedule())
+            {
+                return Ok(new List<PCSSModels.PersonSearchItem>());
+            }
+
+            try
+            {
+                var result = await _dashboardService.GetJudges();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error retrieving judges.");
+                Console.WriteLine(ex);
+                return Ok(new List<PCSSModels.PersonSearchItem>());
+            }
         }
     }
 }

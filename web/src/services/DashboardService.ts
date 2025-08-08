@@ -1,4 +1,4 @@
-import { CalendarSchedule } from '@/types';
+import { CalendarSchedule, PersonSearchItem } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { HttpService } from './HttpService';
 
@@ -27,5 +27,9 @@ export class DashboardService {
     return await this.httpService.get<ApiResponse<CalendarSchedule>>(
       `api/dashboard/my-schedule?startDate=${startDate}&endDate=${endDate}&judgeId=${judgeId ?? ''}`
     );
+  }
+
+  getJudges(): Promise<PersonSearchItem[]> {
+    return this.httpService.get<PersonSearchItem[]>(`api/dashboard/judges`);
   }
 }

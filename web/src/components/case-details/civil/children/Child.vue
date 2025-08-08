@@ -45,42 +45,45 @@
     return lastNm ? formatToFullName(lastNm, givenNm) : orgNm;
   });
   const age = computed(() => {
-    if (!props.child.birthDate) {
+    const birthDateRaw = props.child.birthDate;
+    if (!birthDateRaw) {
       return '';
     }
 
-    const currentDate = new Date();
-    const birthDate = new Date(props.child.birthDate);
-
+    const birthDate = new Date(birthDateRaw);
     if (isNaN(birthDate.getTime())) {
       return '';
     }
 
-    const yearsDiff = currentDate.getFullYear() - birthDate.getFullYear();
+    const today = new Date();
 
-    // Check if birthdate had passed this year
-    const hadBirthday =
-      currentDate.getMonth() > birthDate.getMonth() ||
-      (currentDate.getMonth() === birthDate.getMonth() &&
-        currentDate.getDate() >= birthDate.getDate());
+    let years = today.getFullYear() - birthDate.getFullYear();
 
-    if (yearsDiff > 1 || (yearsDiff === 1 && hadBirthday)) {
-      // Age has been at least 1 year old
-      return yearsDiff - (hadBirthday ? 0 : 1);
-    } else {
-      // Age is less than 1 year
-      let monthsDiff = currentDate.getMonth() - birthDate.getMonth();
+    // Check if birthday has happened this year yet
+    const birthdayPassed =
+      today.getMonth() > birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() &&
+        today.getDate() >= birthDate.getDate());
 
-      if (monthsDiff < 0) {
-        monthsDiff += 12;
-      }
-
-      if (currentDate.getDate() < birthDate.getDate()) {
-        monthsDiff = Math.max(0, monthsDiff - 1);
-      }
-
-      return `${monthsDiff} months`;
+    if (!birthdayPassed) {
+      years--;
     }
+
+    if (years >= 1) {
+      return years.toString();
+    }
+
+    // Calculate months difference for less than 1 year
+    let months = today.getMonth() - birthDate.getMonth();
+    if (today.getDate() < birthDate.getDate()) {
+      months--;
+    }
+
+    if (months < 0) {
+      months += 12;
+    }
+
+    return `${Math.max(0, months)} months`;
   });
 </script>
 <style scoped>

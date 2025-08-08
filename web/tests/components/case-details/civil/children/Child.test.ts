@@ -102,7 +102,7 @@ describe('Child.vue', () => {
     const ageColumns = rows[1].findAll('v-col');
     expect(ageColumns).toHaveLength(2);
 
-    // Age calculation currently not working as expected. Requires investigation.
+    // The current date has to be fixed to avoid issue since dates are relative to the current date
     const ageValue = ageColumns[1].text();
     expect(ageValue).toBe(expectedAge);
 

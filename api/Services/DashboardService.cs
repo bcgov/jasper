@@ -5,20 +5,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
+using Microsoft.Extensions.Logging;
 using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
-
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Services;
 
 public interface IDashboardService
 {
-    Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate);
+    Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId);
+    Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
+    Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate);
     Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges();
 }
 
@@ -28,6 +30,7 @@ public class DashboardService(
     SearchDateClient searchDateClient,
     LocationService locationService,
     IMapper mapper,
+    ILogger<DashboardService> logger,
     PersonServicesClient personClient
 ) : ServiceBase(cache), IDashboardService
 {
@@ -41,112 +44,192 @@ public class DashboardService(
     private readonly SearchDateClient _searchDateClient = searchDateClient;
     private readonly LocationService _locationService = locationService;
     private readonly IMapper _mapper = mapper;
+    private readonly ILogger<DashboardService> _logger = logger;
     private readonly PersonServicesClient _personClient = personClient;
 
     public override string CacheName => nameof(DashboardService);
 
-    public async Task<OperationResult<CalendarSchedule>> GetMyScheduleAsync(int judgeId, string currentDate, string startDate, string endDate)
+    #region Public Methods
+
+    public async Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId)
     {
-        // Validate dates
-        var isValidCurrentDate = DateTime.TryParseExact(currentDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validCurrentDate);
-        var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
-        var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
-
-        if (!isValidCurrentDate || !isValidStartDate || !isValidEndDate)
+        try
         {
-            return OperationResult<CalendarSchedule>.Failure("currentDate, startDate and/or endDate is invalid.");
-        }
+            var currentDate = DateTime.Now.ToString(DATE_FORMAT);
+            async Task<PCSS.JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, currentDate, currentDate);
+            var todayScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{currentDate}-{currentDate}", TodaysSchedule);
+            var todaySchedule = await todayScheduleTask;
 
-        var formattedCurrentDate = validCurrentDate.ToString(DATE_FORMAT);
-        var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
-        var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
-
-        async Task<PCSS.JudicialCalendar> MySchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
-
-        var myScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedStartDate}-{formattedEndDate}", MySchedule);
-
-        var mySchedule = await myScheduleTask;
-
-        var days = await GetDays(mySchedule);
-
-
-        // Determine if today's schedule needs to be queried separately
-        var isInRange = validCurrentDate >= validStartDate && validCurrentDate <= validEndDate;
-        if (isInRange)
-        {
-            return OperationResult<CalendarSchedule>.Success(new CalendarSchedule
+            var days = await GetDays(todaySchedule);
+            var today = days.SingleOrDefault(d => d.Date == currentDate);
+            if (today == null)
             {
-                Days = days,
-                Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, days)
+                return OperationResult<CalendarDay>.Success(new CalendarDay
+                {
+                    Date = currentDate
+                });
+            }
+
+            foreach (var activity in today.Activities)
+            {
+                // Query Court List for each activity to get the scheduled files count.
+                var courtList = await _searchDateClient.GetCourtListAppearancesAsync(
+                    activity.LocationId.GetValueOrDefault(),
+                    currentDate,
+                    judgeId,
+                    activity.RoomCode,
+                    null);
+
+                // Get the File count of the current Activity, Room and Judge
+                var result = courtList.Items
+                    .FirstOrDefault(cl => cl.ActivityCd == activity.ActivityCode
+                        && cl.CourtRoomDetails
+                            .Any(crd => crd.CourtRoomCd == activity.RoomCode
+                                && crd.AdjudicatorDetails.Any(ad => ad.AdjudicatorId == judgeId)));
+                if (result != null)
+                {
+                    activity.FilesCount = result.CasesTarget.GetValueOrDefault();
+                    activity.ContinuationsCount = result.Appearances.Count(a => a.ContinuationYn == "Y");
+                }
+            }
+
+            return OperationResult<CalendarDay>.Success(today);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return OperationResult<CalendarDay>.Failure("Something went wrong when querying Today's Schedule");
+        }
+    }
+
+    public async Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate)
+    {
+        try
+        {
+            // Validate dates
+            var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
+            var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
+
+            if (!isValidStartDate || !isValidEndDate)
+            {
+                return OperationResult<List<CalendarDay>>.Failure("currentDate, startDate and/or endDate is invalid.");
+            }
+
+            var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
+            var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
+
+            async Task<PCSS.JudicialCalendar> MySchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
+            var myScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedStartDate}-{formattedEndDate}", MySchedule);
+            var mySchedule = await myScheduleTask;
+            var days = await GetDays(mySchedule);
+
+            return OperationResult<List<CalendarDay>>.Success(days);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return OperationResult<List<CalendarDay>>.Failure("Something went wrong when querying My Schedule");
+        }
+    }
+
+    public async Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate)
+    {
+        try
+        {
+            var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
+            var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
+
+            if (!isValidStartDate || !isValidEndDate)
+            {
+                return OperationResult<CourtCalendarSchedule>.Failure("startDate and/or endDate is invalid.");
+            }
+
+            var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
+            var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
+
+            async Task<PCSS.ReadJudicialCalendarsResponse> JudicialCalendar() => await _calendarClient.ReadCalendarsV2Async(
+                   locationIds,
+                   formattedStartDate,
+                   formattedEndDate,
+                   string.Empty);
+
+            var judicialCalendarTask = this.GetDataFromCache($"{this.CacheName}-{locationIds}-{formattedStartDate}-{formattedEndDate}", JudicialCalendar);
+            var judicialCalendar = await judicialCalendarTask;
+            var calendarsWithData = judicialCalendar.Calendars.Where(c => c.Days.Count > 0);
+
+            // Agregate calendars into a single list of CalendarDay
+            var calendarDays = await Task.WhenAll(calendarsWithData.Select(c => GetDays(c)));
+            var aggCalendarDays = calendarDays.SelectMany(c => c)
+                .GroupBy(c => (c.Date, c.IsWeekend, c.ShowCourtList))
+                .Select((c) => new CalendarDay
+                {
+                    Date = c.Key.Date,
+                    IsWeekend = c.Key.IsWeekend,
+                    ShowCourtList = c.Key.ShowCourtList,
+                    Activities = c.SelectMany(c => c.Activities)
+                });
+
+            // Query Presiders
+            var presiders = calendarsWithData
+                .Where(c => c.IsPresider)
+                .DistinctBy(c => c.Id)
+                .Select(c => new Presider
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Initials = c.RotaInitials,
+                    HomeLocationId = c.HomeLocationId,
+                    HomeLocationName = c.HomeLocationName,
+                })
+                .OrderBy(c => c.Initials);
+
+            // Query Activities
+            var activities = aggCalendarDays
+                .SelectMany(c => c.Activities)
+                .DistinctBy(a => a.ActivityCode)
+                .Select(a => new Activity
+                {
+                    Code = a.ActivityCode,
+                    DisplayCode = a.ActivityDisplayCode,
+                    Description = a.ActivityDescription,
+                    ClassCode = a.ActivityClassCode,
+                    ClassDescription = a.ActivityClassDescription
+                })
+                .OrderBy(a => a.ClassDescription);
+
+            return OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule
+            {
+                Days = [.. aggCalendarDays],
+                Presiders = [.. presiders],
+                Activities = [.. activities]
             });
         }
-
-        // Query schedule for today
-        async Task<PCSS.JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedCurrentDate, formattedCurrentDate);
-
-        var todayScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedCurrentDate}-{formattedCurrentDate}", TodaysSchedule);
-
-        var todaySchedule = await todayScheduleTask;
-
-        var today = await GetDays(todaySchedule);
-
-        return OperationResult<CalendarSchedule>.Success(new CalendarSchedule
+        catch (Exception ex)
         {
-            Days = days,
-            Today = await GetTodaysSchedule(judgeId, formattedCurrentDate, today)
-        });
-
+            _logger.LogError(ex, ex.Message);
+            return OperationResult<CourtCalendarSchedule>.Failure("Something went wrong when querying Court Calendar");
+        }
     }
 
     public async Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges()
     {
-        // This is a temp solution to retrieves list of users(judge) from external source. 
+        // This is a temp solution to retrieve list of users(judge) from external source. 
         var date = DateTime.Now.ToString("dd-MMM-yyyy");
         var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
         var judges = await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
         return judges.OrderBy(j => j.FullName);
     }
 
-    private async Task<CalendarDay> GetTodaysSchedule(int judgeId, string currentDate, List<CalendarDay> days)
-    {
-        var today = days.SingleOrDefault(d => d.Date == currentDate);
-        if (today == null)
-        {
-            return null;
-        }
+    #endregion Public Methods
 
-        foreach (var activity in today.Activities)
-        {
-            // Query Court List for each activity to get the scheduled files count.
-            var courtList = await _searchDateClient.GetCourtListAppearancesAsync(
-                activity.LocationId.GetValueOrDefault(),
-                currentDate,
-                judgeId,
-                activity.RoomCode,
-                null);
-
-            // Get the File count of the current Activity, Room and Judge
-            var result = courtList.Items
-                .FirstOrDefault(cl => cl.ActivityCd == activity.ActivityCode
-                    && cl.CourtRoomDetails
-                        .Any(crd => crd.CourtRoomCd == activity.RoomCode
-                            && crd.AdjudicatorDetails.Any(ad => ad.AdjudicatorId == judgeId)));
-            if (result != null)
-            {
-                activity.FilesCount = result.CasesTarget.GetValueOrDefault();
-                activity.ContinuationsCount = result.Appearances.Count(a => a.ContinuationYn == "Y");
-            }
-        }
-
-        return today;
-    }
+    #region Private Methods
 
     private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar)
     {
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
-
             DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
 
             var activities = await GetDayActivities(day);
@@ -191,18 +274,18 @@ public class DashboardService(
 
         if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId));
             return activities;
         }
 
         if (amActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, Period.AM));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId, Period.AM));
         }
 
         if (pmActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, Period.PM));
+            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, day.JudgeId, Period.PM));
         }
 
         return activities;
@@ -220,6 +303,7 @@ public class DashboardService(
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
         PCSS.JudicialCalendarActivity judicialActivity,
         List<PCSS.AdjudicatorRestriction> judicialRestrictions,
+        int judgeId,
         Period? period = null)
     {
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
@@ -238,6 +322,7 @@ public class DashboardService(
             : null;
         activity.Period = period;
         activity.Restrictions = restrictions;
+        activity.JudgeId = judgeId;
 
         return activity;
     }
@@ -260,8 +345,10 @@ public class DashboardService(
                     ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
                     : null;
         activity.Restrictions = restrictions;
+        activity.JudgeId = assignment.JudgeId.GetValueOrDefault();
 
         return activity;
     }
 
+    #endregion Private Methods
 }

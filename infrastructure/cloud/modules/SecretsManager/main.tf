@@ -221,10 +221,11 @@ resource "aws_secretsmanager_secret" "pcss_secret" {
 resource "aws_secretsmanager_secret_version" "pcss_secret_value" {
   secret_id = aws_secretsmanager_secret.pcss_secret.id
   secret_string = jsonencode({
-    username = "",
-    password = "",
-    baseUrl  = "",
-    judgeId  = ""
+    username            = "",
+    password            = "",
+    baseUrl             = "",
+    judgeId             = "",
+    judgeHomeLocationId = ""
   })
 }
 

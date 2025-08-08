@@ -77,6 +77,7 @@ namespace Scv.Api
             );
 
             services.AddMapster();
+            services.AddNutrient();
             services.AddJasperDb(Configuration);
             services.AddHangfire(Configuration);
 

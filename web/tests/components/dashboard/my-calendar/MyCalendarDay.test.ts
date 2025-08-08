@@ -1,5 +1,6 @@
-import MyCalendarDay from '@/components/dashboard/MyCalendarDay.vue';
+import MyCalendarDay from '@/components/dashboard/my-calendar/MyCalendarDay.vue';
 import { AdjudicatorRestriction, CalendarDayActivity } from '@/types';
+import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
@@ -25,6 +26,7 @@ describe('MyCalendarDay.test.ts', () => {
 
     const wrapper = mount(MyCalendarDay, {
       props: {
+        date: formatDateInstanceToDDMMMYYYY(new Date()),
         activities: mockActivities,
         isWeekend: false,
       },
@@ -81,6 +83,8 @@ describe('MyCalendarDay.test.ts', () => {
 
     const wrapper = mount(MyCalendarDay, {
       props: {
+        date: formatDateInstanceToDDMMMYYYY(new Date()),
+
         activities: mockActivities,
         isWeekend: false,
       },
@@ -110,6 +114,7 @@ describe('MyCalendarDay.test.ts', () => {
 
     const wrapper = mount(MyCalendarDay, {
       props: {
+        date: formatDateInstanceToDDMMMYYYY(new Date()),
         activities: mockActivities,
         isWeekend: false,
       },
@@ -145,6 +150,8 @@ describe('MyCalendarDay.test.ts', () => {
 
     const wrapper = mount(MyCalendarDay, {
       props: {
+        date: formatDateInstanceToDDMMMYYYY(new Date()),
+
         activities: mockActivities,
         isWeekend: true,
       },
@@ -192,6 +199,7 @@ describe('MyCalendarDay.test.ts', () => {
 
     const wrapper = mount(MyCalendarDay, {
       props: {
+        date: formatDateInstanceToDDMMMYYYY(new Date()),
         activities: mockActivities,
         isWeekend: false,
       },

@@ -29,6 +29,7 @@ using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
+using GdPicture14;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
@@ -39,6 +40,7 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Documents;
 
 namespace Scv.Api.Infrastructure
 {
@@ -47,6 +49,16 @@ namespace Scv.Api.Infrastructure
         const string X_APIGW_KEY_HEADER = "x-api-key";
         const string X_ORIGIN_VERIFY_HEADER = "x-origin-verify";
         const string X_TARGET_APP = "x-target-app";
+
+        public static void AddNutrient(this IServiceCollection services)
+        {
+            LicenseManager licenseManager = new();
+            // For now, use the trial license.
+            // https://www.nutrient.io/sdk/dotnet/getting-started/integrate/#activating-the-trial-license
+            licenseManager.RegisterKEY("");
+
+            services.AddScoped<IDocumentMerger, DocumentMerger>();
+        }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
         {

@@ -54,6 +54,7 @@ output "api_secrets" {
     ["PCSS__Password", "${aws_secretsmanager_secret.pcss_secret.arn}:password::"],
     ["PCSS__Url", "${aws_secretsmanager_secret.pcss_secret.arn}:baseUrl::"],
     ["PCSS__JudgeId", "${aws_secretsmanager_secret.pcss_secret.arn}:judgeId::"],
+    ["PCSS__JudgeHomeLocationId", "${aws_secretsmanager_secret.pcss_secret.arn}:judgeHomeLocationId::"],
     ["Request__ApplicationCd", "${aws_secretsmanager_secret.request_secret.arn}:applicationCd::"],
     ["Request__AgencyIdentifierId", "${aws_secretsmanager_secret.request_secret.arn}:agencyIdentifierId::"],
     ["Request__GetUserLoginDefaultAgencyId", "${aws_secretsmanager_secret.request_secret.arn}:getUserLoginDefaultAgencyId::"],

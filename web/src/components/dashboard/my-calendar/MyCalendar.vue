@@ -1,12 +1,12 @@
 <template>
   <v-skeleton-loader
-    v-if="isLoading"
+    v-if="isCalendarLoading"
     type="date-picker"
-    :loading="isLoading"
+    :loading="isCalendarLoading"
   ></v-skeleton-loader>
   <FullCalendar
-    v-else="isLoading"
-    class="m-3"
+    class="mx-2"
+    v-else
     :options="calendarOptions"
     ref="calendarRef"
   >
@@ -33,23 +33,85 @@
   </template>
 </template>
 <script setup lang="ts">
+  import { DashboardService } from '@/services';
   import { CalendarDay } from '@/types';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { CalendarOptions, DayCellMountArg } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
   import { mdiListBoxOutline } from '@mdi/js';
-  import { computed, ref, watchEffect } from 'vue';
+  import { computed, inject, onMounted, ref, watch, watchEffect } from 'vue';
   import MyCalendarDay from './MyCalendarDay.vue';
 
+  const dashboardService = inject<DashboardService>('dashboardService');
+
+  if (!dashboardService) {
+    throw new Error('Service is not available!');
+  }
+
   const props = defineProps<{
-    data: CalendarDay[];
-    selectedDate: Date;
-    isLoading: boolean;
+    judgeId: number | undefined;
   }>();
 
+  const selectedDate = defineModel<Date>('selectedDate')!;
+
+  if (!selectedDate.value) {
+    throw new Error('selectedDate is required');
+  }
+
+  const isCalendarLoading = ref(true);
+  const calendarData = ref<CalendarDay[]>([]);
+  const expandedDate = ref<string | null>(null);
+  const calendarRef = ref();
+
+  let startDay = new Date(
+    selectedDate.value.getFullYear(),
+    selectedDate.value.getMonth(),
+    1
+  );
+  let endDay = new Date(
+    selectedDate.value.getFullYear(),
+    selectedDate.value.getMonth() + 1,
+    0
+  );
+
+  onMounted(async () => {
+    await loadCalendarData();
+  });
+
+  watch(selectedDate, async (newDate) => {
+    if (newDate) {
+      startDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      endDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+    }
+    await loadCalendarData();
+  });
+
+  watch(
+    () => props.judgeId,
+    async () => {
+      await loadCalendarData();
+    }
+  );
+
+  const loadCalendarData = async () => {
+    isCalendarLoading.value = true;
+    try {
+      const { payload } = await dashboardService.getMySchedule(
+        formatDateInstanceToDDMMMYYYY(startDay),
+        formatDateInstanceToDDMMMYYYY(endDay),
+        props.judgeId
+      );
+      calendarData.value = [...payload];
+    } catch (error) {
+      console.error('Failed to load calendar data:', error);
+    } finally {
+      isCalendarLoading.value = false;
+    }
+  };
+
   const calendarEvents = computed(() =>
-    props.data.map((d) => ({
+    calendarData.value.map((d) => ({
       start: new Date(d.date),
       extendedProps: {
         ...d,
@@ -58,15 +120,13 @@
   );
 
   const calendarEventsWithActivities = computed(() =>
-    props.data.filter((d) => d.activities.length > 0 && d.showCourtList)
+    calendarData.value.filter((d) => d.activities.length > 0 && d.showCourtList)
   );
-
-  const expandedDate = ref<string | null>(null);
 
   const dayCellDidMount = (info: DayCellMountArg) => {
     // Appends the Court List icon next to the day's date
     const date = formatDateInstanceToDDMMMYYYY(info.date);
-    const data = props.data.find((d) => d.date === date);
+    const data = calendarData.value.find((d) => d.date === date);
     const dayTop = info.el.querySelector('.fc-daygrid-day-top');
 
     if (
@@ -116,9 +176,10 @@
     headerToolbar: false,
     dayHeaderFormat: { weekday: 'long' },
     dayCellDidMount,
+    contentHeight: 'auto',
+    dayMaxEventRows: true,
+    expandRows: false,
   };
-
-  const calendarRef = ref();
 
   watchEffect(() => {
     const calendarApi = calendarRef.value?.getApi();
@@ -128,7 +189,7 @@
       calendarEvents.value.forEach((e) => {
         return calendarApi.addEvent({ ...e });
       });
-      calendarApi.gotoDate(props.selectedDate);
+      calendarApi.gotoDate(selectedDate.value);
     }
   });
 

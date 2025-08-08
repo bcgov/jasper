@@ -73,7 +73,7 @@ export interface UserInfo {
   isSupremeUser: string;
   agencyCode: string;
   userId: string;
-  judgeId: string;
+  judgeId: number;
 }
 
 export interface LookupCode {
@@ -126,4 +126,10 @@ export enum FileMarkerEnum {
   LOCT,
   OTH,
   W,
+}
+
+export enum CalendarViewEnum {
+  MonthView = 'dayGridMonth',
+  TwoWeekView = 'dayGridTwoWeek',
+  WeekView = 'dayGridWeek',
 }

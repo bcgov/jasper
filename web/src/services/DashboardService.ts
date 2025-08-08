@@ -1,31 +1,39 @@
-import { CalendarSchedule, PersonSearchItem } from '@/types';
+import { CalendarDay, PersonSearchItem } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
-import { HttpService } from './HttpService';
+import { CourtCalendarSchedule } from '@/types/CourtCalendarSchedule';
+import { IHttpService } from './HttpService';
+import { ServiceBase } from './ServiceBase';
 
-export class DashboardService {
-  private readonly httpService: HttpService;
-
-  constructor(httpService: HttpService) {
-    this.httpService = httpService;
+export class DashboardService extends ServiceBase {
+  constructor(httpService: IHttpService) {
+    super(httpService);
   }
 
-  async getMonthlySchedule(
-    year: number,
-    month: number,
-    locationIds: string = ''
-  ): Promise<CalendarSchedule> {
-    return await this.httpService.get<CalendarSchedule>(
-      `api/dashboard/monthly-schedule?year=${year}&month=${month}&locationIds=${locationIds}`
+  getCourtCalendar(
+    startDate: string,
+    endDate: string,
+    locationIds: string
+  ): Promise<ApiResponse<CourtCalendarSchedule>> {
+    return this.httpService.get<ApiResponse<CourtCalendarSchedule>>(
+      `api/dashboard/court-calendar?startDate=${startDate}&endDate=${endDate}&locationIds=${locationIds}`
     );
   }
 
-  async getMySchedule(
+  getMySchedule(
     startDate: string,
     endDate: string,
-    judgeId: number | null
-  ): Promise<ApiResponse<CalendarSchedule>> {
-    return await this.httpService.get<ApiResponse<CalendarSchedule>>(
+    judgeId: number | undefined
+  ): Promise<ApiResponse<CalendarDay[]>> {
+    return this.httpService.get<ApiResponse<CalendarDay[]>>(
       `api/dashboard/my-schedule?startDate=${startDate}&endDate=${endDate}&judgeId=${judgeId ?? ''}`
+    );
+  }
+
+  getTodaysSchedule(
+    judgeId: number | undefined
+  ): Promise<ApiResponse<CalendarDay>> {
+    return this.httpService.get<ApiResponse<CalendarDay>>(
+      `api/dashboard/today?judgeId=${judgeId ?? ''} `
     );
   }
 

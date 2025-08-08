@@ -115,6 +115,12 @@ namespace Scv.Api.Helpers.Extensions
             return int.TryParse(value, out var userId) ? userId : default;
         }
 
+        public static int JudgeHomeLocationId(this ClaimsPrincipal claimsPrincipal)
+        {
+            var value = claimsPrincipal.FindFirstValue(CustomClaimTypes.JudgeHomeLocationId);
+            return int.TryParse(value, out var id) ? id : default;
+        }
+
         public static bool CanViewOthersSchedule(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.Groups && c.Value == "jasper-view-others-schedule");
     }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
@@ -28,6 +29,7 @@ namespace tests.api.Controllers
             var claims = new List<Claim>
             {
                 new(CustomClaimTypes.JudgeId, _faker.Random.Int().ToString()),
+                new(CustomClaimTypes.JudgeHomeLocationId, _faker.Random.Int().ToString()),
             };
 
             var identity = new ClaimsIdentity(claims, _faker.Random.Word());
@@ -50,9 +52,8 @@ namespace tests.api.Controllers
                 .Setup(d => d.GetMyScheduleAsync(
                     It.IsAny<int>(),
                     It.IsAny<string>(),
-                    It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(OperationResult<CalendarSchedule>.Failure(_faker.Lorem.Paragraph()));
+                .ReturnsAsync(OperationResult<List<CalendarDay>>.Failure(_faker.Lorem.Paragraph()));
 
             var result = await _controller.GetMySchedule(_faker.Date.ToString(), _faker.Date.ToString());
 
@@ -60,19 +61,102 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async Task GetMySchedule_Returns_Success()
+        public async Task GetMySchedule_Returns_OK()
         {
             _dashboardService
                 .Setup(d => d.GetMyScheduleAsync(
                     It.IsAny<int>(),
                     It.IsAny<string>(),
-                    It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(OperationResult<CalendarSchedule>.Success(new CalendarSchedule()));
+                .ReturnsAsync(OperationResult<List<CalendarDay>>.Success([]));
 
             var result = await _controller.GetMySchedule(_faker.Date.ToString(), _faker.Date.ToString());
 
             Assert.IsType<OkObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetTodaysSchedule_Returns_BadRequest()
+        {
+            _dashboardService
+                .Setup(d => d.GetTodaysScheduleAsync(It.IsAny<int>()))
+                .ReturnsAsync(OperationResult<CalendarDay>.Failure(_faker.Lorem.Paragraph()));
+
+            var result = await _controller.GetTodaysSchedule();
+
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetTodaysSchedule_Returns_OK()
+        {
+            _dashboardService
+                .Setup(d => d.GetTodaysScheduleAsync(It.IsAny<int>()))
+                .ReturnsAsync(OperationResult<CalendarDay>.Success(new CalendarDay()));
+
+            var result = await _controller.GetTodaysSchedule();
+
+            Assert.IsType<OkObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendar_Returns_BadRequest()
+        {
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarScheduleAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Failure(_faker.Lorem.Paragraph()));
+
+            var result = await _controller.GetCourtCalendar(_faker.Date.ToString(), _faker.Date.ToString());
+
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendar_Returns_OK_And_Uses_Judge_Home_Location_Id_When_Location_Ids_Is_Missing()
+        {
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarScheduleAsync(
+                    _controller.HttpContext.User.JudgeHomeLocationId().ToString(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule()));
+
+            var result = await _controller.GetCourtCalendar(
+                _faker.Date.ToString(),
+                _faker.Date.ToString());
+
+            Assert.IsType<OkObjectResult>(result);
+            _dashboardService
+                .Verify(d => d.GetCourtCalendarScheduleAsync(
+                    _controller.HttpContext.User.JudgeHomeLocationId().ToString(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+                    Times.Once);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendar_Returns_OK_And_Uses_Location_Ids()
+        {
+            var locationIds = _faker.Random.Number().ToString();
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarScheduleAsync(
+                    locationIds,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule()));
+
+            var result = await _controller.GetCourtCalendar(
+                _faker.Date.ToString(),
+                _faker.Date.ToString(),
+                locationIds);
+
+            Assert.IsType<OkObjectResult>(result);
+            _dashboardService
+                .Verify(d => d.GetCourtCalendarScheduleAsync(
+                    locationIds,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+                    Times.Once);
         }
     }
 }

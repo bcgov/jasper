@@ -4,7 +4,7 @@ export * from './Binder';
 export * from './BinderDocument';
 export * from './CalendarDay';
 export * from './CalendarDayActivity';
-export * from './CalendarSchedule';
+export * from './CourtCalendarSchedule';
 export * from './JudicialCalendarActivity';
 export * from './JudicialCalendarAssignment';
 export * from './Location';

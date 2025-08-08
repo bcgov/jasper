@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
@@ -24,6 +25,7 @@ using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Services;
+
 public class DashboardServiceTests : ServiceTestBase
 {
     private readonly Faker _faker;
@@ -80,13 +82,16 @@ public class DashboardServiceTests : ServiceTestBase
 
         var mockLocationService = this.SetupLocationService();
 
+        var mockPersonServiceClient = new Mock<PersonServicesClient>(MockBehavior.Strict, this.HttpClient);
+
         var dashboardService = new DashboardService(
             _cachingService,
             mockJudicialCalendarClient.Object,
             mockSearchDateClient.Object,
             mockLocationService.Object,
             _mapper,
-            new Mock<ILogger<DashboardService>>().Object);
+            new Mock<ILogger<DashboardService>>().Object,
+            mockPersonServiceClient.Object);
 
         return (
             dashboardService,

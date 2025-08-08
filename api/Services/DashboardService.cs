@@ -8,6 +8,7 @@ using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
@@ -20,6 +21,7 @@ public interface IDashboardService
     Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId);
     Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
     Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate);
+    Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges();
 }
 
 public class DashboardService(
@@ -28,7 +30,9 @@ public class DashboardService(
     SearchDateClient searchDateClient,
     LocationService locationService,
     IMapper mapper,
-    ILogger<DashboardService> logger) : ServiceBase(cache), IDashboardService
+    ILogger<DashboardService> logger,
+    PersonServicesClient personClient
+) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
     public const string SITTING_ACTIVITY_CODE = "SIT";
@@ -41,6 +45,7 @@ public class DashboardService(
     private readonly LocationService _locationService = locationService;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<DashboardService> _logger = logger;
+    private readonly PersonServicesClient _personClient = personClient;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -205,6 +210,15 @@ public class DashboardService(
             _logger.LogError(ex, ex.Message);
             return OperationResult<CourtCalendarSchedule>.Failure("Something went wrong when querying Court Calendar");
         }
+    }
+
+    public async Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges()
+    {
+        // This is a temp solution to retrieve list of users(judge) from external source. 
+        var date = DateTime.Now.ToString("dd-MMM-yyyy");
+        var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
+        var judges = await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
+        return judges.OrderBy(j => j.FullName);
     }
 
     #endregion Public Methods

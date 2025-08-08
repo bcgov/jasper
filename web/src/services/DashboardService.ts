@@ -1,4 +1,4 @@
-import { CalendarDay } from '@/types';
+import { CalendarDay, PersonSearchItem } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { CourtCalendarSchedule } from '@/types/CourtCalendarSchedule';
 import { IHttpService } from './HttpService';
@@ -35,5 +35,9 @@ export class DashboardService extends ServiceBase {
     return this.httpService.get<ApiResponse<CalendarDay>>(
       `api/dashboard/today?judgeId=${judgeId ?? ''} `
     );
+  }
+
+  getJudges(): Promise<PersonSearchItem[]> {
+    return this.httpService.get<PersonSearchItem[]>(`api/dashboard/judges`);
   }
 }

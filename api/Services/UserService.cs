@@ -11,14 +11,12 @@ using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
-using PCSSModels = PCSSCommon.Models;
 
 namespace Scv.Api.Services;
 
 public interface IUserService : ICrudService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
-    Task<IEnumerable<PCSSModels.PersonSearchItem>> GetJudges();
 }
 
 public class UserService(
@@ -116,14 +114,5 @@ public class UserService(
         user.Roles = roles;
 
         return user;
-    }
-
-    public async Task<IEnumerable<PCSSModels.PersonSearchItem>> GetJudges()
-    {
-        // This is a temp solution to retrieves list of users(judge) from external source. 
-        var date = DateTime.Now.ToString("dd-MMM-yyyy");
-        var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
-        var judges = await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
-        return judges.OrderBy(j => j.FullName);
     }
 }

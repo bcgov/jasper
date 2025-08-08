@@ -18,40 +18,40 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { UserService } from '@/services/UserService';
-  import { PersonSearchItem } from '@/types';
-  import { inject, onMounted, ref, watch } from 'vue';
+  import { DashboardService } from '@/services';
   import { useCommonStore } from '@/stores';
+  import { PersonSearchItem } from '@/types';
   import { UserInfo } from '@/types/common';
+  import { inject, onMounted, ref, watch } from 'vue';
 
   const judges = ref<PersonSearchItem[]>();
-  const userService = inject<UserService>('userService');
+  const userService = inject<DashboardService>('dashboardService');
   const isLoading = ref(true);
   const commonStore = useCommonStore();
-  const selectedJudgeId = ref(null);
+  const selectedJudgeId = ref<number | null>(null);
   const isDataLoaded = ref(false);
 
   onMounted(async () => {
     isLoading.value = true;
     const result = await userService?.getJudges();
     judges.value = result;
-    selectedJudgeId.value = commonStore.userInfo?.judgeId;
+    selectedJudgeId.value = commonStore.userInfo?.judgeId ?? null;
     isLoading.value = false;
   });
 
-  watch(selectedJudgeId, async (newVal: number) => {
+  watch(selectedJudgeId, (newVal) => {
     if (!newVal) {
       return;
     }
 
-    if (newVal != commonStore.userInfo.judgeId) {
+    if (newVal != commonStore.userInfo?.judgeId) {
       commonStore.setUserInfo({ ...commonStore.userInfo, judgeId: newVal });
     }
   });
 
   watch(
     () => commonStore.userInfo,
-    (newUserInfo: UserInfo) => {
+    (newUserInfo: UserInfo | null) => {
       if (!newUserInfo) {
         return;
       }

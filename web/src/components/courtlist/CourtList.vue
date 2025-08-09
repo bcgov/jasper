@@ -162,20 +162,21 @@
 
     data.items.forEach((courtList: any) => {
       const courtRoomDetails = courtList.courtRoomDetails[0];
-      const adjudicatorDetails = courtRoomDetails.adjudicatorDetails[0];
-      if (adjudicatorDetails) {
-        const card = {} as CourtListCardInfo;
-        const appearances = courtList.appearances as CourtListAppearance[];
-        card.fileCount = courtList.casesTarget;
-        card.activity = courtList.activityDsc;
-        card.presider = adjudicatorDetails?.adjudicatorNm;
-        card.courtListRoom = courtRoomDetails.courtRoomCd;
-        card.courtListLocationID = courtList.locationId;
-        card.courtListLocation = courtList.locationNm;
-        card.amPM = adjudicatorDetails?.amPm;
-
-        cardTablePairings.value.push({ card, table: appearances });
+      if(!courtRoomDetails) {
+        return;
       }
+      const adjudicatorDetails = courtRoomDetails.adjudicatorDetails[0];
+      const card = {} as CourtListCardInfo;
+      const appearances = courtList.appearances as CourtListAppearance[];
+      card.fileCount = courtList.casesTarget;
+      card.activity = courtList.activityDsc;
+      card.presider = adjudicatorDetails?.adjudicatorNm;
+      card.courtListRoom = courtRoomDetails.courtRoomCd;
+      card.courtListLocationID = courtList.locationId;
+      card.courtListLocation = courtList.locationNm;
+      card.amPM = adjudicatorDetails?.amPm;
+
+      cardTablePairings.value.push({ card, table: appearances });
     });
   };
 

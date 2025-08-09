@@ -343,7 +343,8 @@ export interface CriminalAppearanceDetails {
   appearanceMethods: CriminalAppearanceMethod[];
   estimatedTimeHour: string;
   estimatedTimeMin: string;
-  initiatingDocuments: CriminalDocument[];
+  documents: documentType[];
+  keyDocuments: documentType[];
   courtLevelCd: CriminalFileDetailResponseCourtLevelCd;
 }
 

@@ -11,16 +11,16 @@
       <v-col>
         <v-card title="Key Documents" variant="flat">
           <v-data-table-virtual
-            :items="details.initiatingDocuments"
+            :items="details.keyDocuments"
             :headers
             :sortBy
             density="compact"
           >
+            <template v-slot:item.docmClassification="{ item }">
+              {{ formatCategory(item) }}
+            </template>
             <template v-slot:item.docmFormDsc="{ item }">
-              <a
-                v-if="item.imageId"
-                href="javascript:void(0)"
-              >
+              <a v-if="item.imageId" href="javascript:void(0)">
                 {{ formatType(item) }}
               </a>
               <span v-else>
@@ -77,7 +77,7 @@
     { title: 'CRIMINAL CODE', key: 'statuteSectionDsc' },
     { title: 'DESCRIPTION', key: 'statuteDsc' },
     { title: 'LAST RESULTS', key: 'appearanceResultDesc' },
-    { title: 'PLEA', key: '' }, // Awaiting more info on clAppearanceCount 
+    { title: 'PLEA', key: '' }, // Awaiting more info on clAppearanceCount
     { title: 'FINDINGS', key: 'findingDsc' },
   ]);
 
@@ -113,9 +113,13 @@
     );
     loading.value = false;
   });
+  const formatCategory = (item: documentType) =>
+    item.category === 'rop' ? 'ROP' : item.category;
 
   const formatType = (item: documentType) =>
-    item.docmClassification === 'rop' ? 'Record of Proceedings' : item.docmFormDsc;
+    item.category === 'rop'
+      ? 'Record of Proceedings'
+      : item.documentTypeDescription;
 </script>
 
 <style scoped>

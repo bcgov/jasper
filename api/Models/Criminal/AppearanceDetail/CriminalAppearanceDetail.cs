@@ -32,8 +32,8 @@ public class CriminalAppearanceDetail
     public ICollection<CriminalAppearanceMethod> AppearanceMethods { get; set; }
     public string EstimatedTimeHour { get; set; }
     public string EstimatedTimeMin { get; set; }
-    public List<CriminalDocument> InitiatingDocuments { get; set; }
-    public IEnumerable<CriminalDocument> KeyDocuments => KeyDocumentResolver.GetCriminalKeyDocuments(InitiatingDocuments);
+    public IEnumerable<CriminalDocument> Documents { get; set; }
+    public IEnumerable<CriminalDocument> KeyDocuments => KeyDocumentResolver.GetCriminalKeyDocuments(Documents);
     
     public CriminalFileDetailResponseCourtLevelCd CourtLevelCd { get; set; }
 }

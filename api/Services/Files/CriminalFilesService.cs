@@ -223,7 +223,7 @@ namespace Scv.Api.Services.Files
                 Adjudicator = await PopulateAppearanceDetailAdjudicator(appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 JustinCounsel = await PopulateAppearanceDetailJustinCounsel(criminalParticipant, appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 Charges = await PopulateCharges(appearanceCount.ApprCount),
-                InitiatingDocuments = GetInitiatingDocuments(accusedFile.Document),
+                Documents = await GetCriminalDocuments(accusedFile),
                 CourtLevelCd = detail.CourtLevelCd
             };
             return appearanceDetail;
@@ -234,23 +234,6 @@ namespace Scv.Api.Services.Files
         #region Helpers
 
         #region Criminal Details
-
-        private static List<CriminalDocument> GetInitiatingDocuments(ICollection<CfcDocument> documents)
-        {
-            return documents?.Where(doc => doc?.DocmClassification == "Initiating" && !string.IsNullOrEmpty(doc.ImageId))
-                .Select(doc =>
-                    new CriminalDocument
-                    {
-                        IssueDate = doc.IssueDate,
-                        ImageId = doc.ImageId,
-                        DocmClassification = doc.DocmClassification,
-                        DocmDispositionDsc = doc.DocmDispositionDsc,
-                        DocmFormDsc = doc.DocmFormDsc,
-                        DocmFormId = doc.DocmFormId,
-                        DocmId = doc.DocmId,
-                        DocumentPageCount = doc.DocumentPageCount
-                    }).ToList();
-        }
 
         private async Task<CriminalFileAppearances> PopulateDetailsAppearancesAsync(string fileId, FutureYN? future, HistoryYN? history)
         {

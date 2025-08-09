@@ -12,7 +12,7 @@ describe('CourtListCriminalDetails.vue', () => {
 
     const mockDetails = {
         appearanceMethods: [{ method: 'In Person' }],
-        initiatingDocuments: [
+        keyDocuments: [
             {
             issueDate: '2024-06-01',
             docmFormDsc: 'Form A',

@@ -88,7 +88,7 @@ namespace Scv.Api.Controllers
         {
             if (!this.User.CanViewOthersSchedule())
             {
-                return Ok(new List<PCSSModels.PersonSearchItem>());
+                return Unauthorized();
             }
 
             try

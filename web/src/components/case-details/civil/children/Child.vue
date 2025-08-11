@@ -33,6 +33,7 @@
   import { partyType } from '@/types/civil/jsonTypes';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { formatToFullName } from '@/utils/utils';
+  import { DateTime } from 'luxon';
   import { computed } from 'vue';
 
   const props = defineProps<{
@@ -46,43 +47,33 @@
   });
   const age = computed(() => {
     const birthDateRaw = props.child.birthDate;
-    if (!birthDateRaw) {
-      return '';
+    if (!birthDateRaw) return '';
+
+    const birthDate = DateTime.fromFormat(
+      birthDateRaw,
+      'yyyy-MM-dd HH:mm:ss.S'
+    );
+    if (!birthDate.isValid) return '';
+
+    const today = DateTime.now().startOf('day');
+    let years = today.year - birthDate.year;
+    let months = today.month - birthDate.month;
+
+    // Adjust if birthday hasn't occurred this year yet
+    if (today.day < birthDate.day) {
+      months--;
     }
 
-    const birthDate = new Date(birthDateRaw);
-    if (isNaN(birthDate.getTime())) {
-      return '';
-    }
-
-    const today = new Date();
-
-    let years = today.getFullYear() - birthDate.getFullYear();
-
-    // Check if birthday has happened this year yet
-    const birthdayPassed =
-      today.getMonth() > birthDate.getMonth() ||
-      (today.getMonth() === birthDate.getMonth() &&
-        today.getDate() >= birthDate.getDate());
-
-    if (!birthdayPassed) {
+    if (months < 0) {
       years--;
+      months += 12;
     }
 
     if (years >= 1) {
       return years.toString();
     }
 
-    // Calculate months difference for less than 1 year
-    let months = today.getMonth() - birthDate.getMonth();
-    if (today.getDate() < birthDate.getDate()) {
-      months--;
-    }
-
-    if (months < 0) {
-      months += 12;
-    }
-
+    // Show months only if less than a year old
     return `${Math.max(0, months)} months`;
   });
 </script>

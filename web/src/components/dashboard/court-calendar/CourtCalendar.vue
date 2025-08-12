@@ -10,14 +10,9 @@
     :options="calendarOptions"
     ref="calendarRef"
   >
-    <!-- This will be worked on separately -->
-    <!-- <template v-slot:eventContent="{ event }">
-      <MyCalendarDay
-        :date="event.extendedProps.date"
-        :isWeekend="event.extendedProps.isWeekend"
-        :activities="event.extendedProps.activities"
-      />
-    </template> -->
+    <template v-slot:eventContent="{ event }">
+      <CourtCalendarDay :activities="event.extendedProps.activities" />
+    </template>
   </FullCalendar>
 </template>
 <script setup lang="ts">

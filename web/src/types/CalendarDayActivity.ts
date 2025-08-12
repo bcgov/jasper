@@ -15,4 +15,6 @@ export interface CalendarDayActivity {
   continuationsCount: number;
   showDars: boolean;
   restrictions: AdjudicatorRestriction[];
+  judgeId: number;
+  judgeInitials: string;
 }

@@ -30,7 +30,7 @@
     <PackageReference Include="LazyCache" Version="2.4.0" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.24" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="9.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.1" />
     <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />

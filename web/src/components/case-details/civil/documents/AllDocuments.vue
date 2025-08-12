@@ -59,11 +59,7 @@
     <template v-slot:item.filedBy="{ item }">
       <LabelWithTooltip
         v-if="item.filedBy?.length > 0"
-        :values="
-          item.filedBy
-            .map((p) => p.filedByName)
-            .sort((a, b) => a.localeCompare(b))
-        "
+        :values="item.filedBy.map((p) => p.filedByName)"
         :location="Anchor.Top"
       />
     </template>

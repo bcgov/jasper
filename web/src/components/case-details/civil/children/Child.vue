@@ -56,25 +56,13 @@
     if (!birthDate.isValid) return '';
 
     const today = DateTime.now().startOf('day');
-    let years = today.year - birthDate.year;
-    let months = today.month - birthDate.month;
+    const diff = today.diff(birthDate, ['years', 'months']).toObject();
 
-    // Adjust if birthday hasn't occurred this year yet
-    if (today.day < birthDate.day) {
-      months--;
+    if ((diff.years ?? 0) >= 1) {
+      return Math.floor(diff.years!); // return the whole number of years as the age if years is non-zero
+    } else {
+      return `${Math.floor(diff.months ?? 0)} months`; // if the age is less then 1, return the whole number of months.
     }
-
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
-
-    if (years >= 1) {
-      return years.toString();
-    }
-
-    // Show months only if less than a year old
-    return `${Math.max(0, months)} months`;
   });
 </script>
 <style scoped>

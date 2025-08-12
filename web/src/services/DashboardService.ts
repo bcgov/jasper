@@ -38,6 +38,10 @@ export class DashboardService extends ServiceBase {
   }
 
   getJudges(): Promise<PersonSearchItem[]> {
-    return this.httpService.get<PersonSearchItem[]>(`api/dashboard/judges`);
+    return this.httpService.get<PersonSearchItem[]>(
+      `api/dashboard/judges`,
+      {},
+      { skipErrorHandler: true }
+    );
   }
 }

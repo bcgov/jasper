@@ -25,5 +25,6 @@ public class CalendarDayActivity
     public int FilesCount { get; set; }
     public int ContinuationsCount { get; set; }
     public int JudgeId { get; set; }
+    public string JudgeInitials { get; set; }
     public List<AdjudicatorRestriction> Restrictions { get; set; } = [];
 }

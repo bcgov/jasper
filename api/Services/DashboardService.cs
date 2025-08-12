@@ -156,12 +156,11 @@ public class DashboardService(
             // Agregate calendars into a single list of CalendarDay
             var calendarDays = await Task.WhenAll(calendarsWithData.Select(c => GetDays(c)));
             var aggCalendarDays = calendarDays.SelectMany(c => c)
-                .GroupBy(c => (c.Date, c.IsWeekend, c.ShowCourtList))
+                .GroupBy(c => (c.Date, c.IsWeekend))
                 .Select((c) => new CalendarDay
                 {
                     Date = c.Key.Date,
                     IsWeekend = c.Key.IsWeekend,
-                    ShowCourtList = c.Key.ShowCourtList,
                     Activities = c.SelectMany(c => c.Activities)
                 });
 
@@ -237,6 +236,8 @@ public class DashboardService(
                 Activities = activities.Select(a =>
                 {
                     a.ShowDars = showDars;
+                    a.JudgeId = calendar.Id;
+                    a.JudgeInitials = calendar.RotaInitials;
                     return a;
                 })
             });
@@ -260,18 +261,18 @@ public class DashboardService(
 
         if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions));
             return activities;
         }
 
         if (amActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId, Period.AM));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, Period.AM));
         }
 
         if (pmActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, day.JudgeId, Period.PM));
+            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, Period.PM));
         }
 
         return activities;
@@ -289,7 +290,6 @@ public class DashboardService(
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
         PCSS.JudicialCalendarActivity judicialActivity,
         List<PCSS.AdjudicatorRestriction> judicialRestrictions,
-        int judgeId,
         Period? period = null)
     {
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
@@ -308,7 +308,6 @@ public class DashboardService(
             : null;
         activity.Period = period;
         activity.Restrictions = restrictions;
-        activity.JudgeId = judgeId;
 
         return activity;
     }
@@ -331,7 +330,6 @@ public class DashboardService(
                     ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
                     : null;
         activity.Restrictions = restrictions;
-        activity.JudgeId = assignment.JudgeId.GetValueOrDefault();
 
         return activity;
     }

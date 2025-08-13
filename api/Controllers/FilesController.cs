@@ -361,6 +361,10 @@ namespace Scv.Api.Controllers
         [Route("document/generate-pdf")]
         public async Task<IActionResult> GeneratePdf(PdfDocumentRequest[] documentRequests)
         {
+            if (documentRequests.Length == 0)
+            {
+                return BadRequest("No documents were provided for generation.");
+            }
             var result = await _documentMerger.MergeDocuments(documentRequests);
             return Ok(result);
         }

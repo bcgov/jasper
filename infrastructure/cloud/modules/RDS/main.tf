@@ -1,5 +1,5 @@
 data "aws_security_group" "data_sg" {
-  name = "Data_sg"
+  name = "Data"
 }
 
 resource "aws_db_subnet_group" "db_subnet_group" {

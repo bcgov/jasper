@@ -24,15 +24,15 @@ data "aws_vpc" "vpc" {
 
 # Security Groups
 data "aws_security_group" "web_sg" {
-  name = "Web_sg"
+  name = "Web"
 }
 
 data "aws_security_group" "app_sg" {
-  name = "App_sg"
+  name = "App"
 }
 
 data "aws_security_group" "data_sg" {
-  name = "Data_sg"
+  name = "Data"
 }
 
 #

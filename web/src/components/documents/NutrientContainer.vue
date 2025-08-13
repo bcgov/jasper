@@ -26,7 +26,8 @@
   const configuration = {
     initialViewState: new NutrientViewer.ViewState({
       sidebarMode: NutrientViewer.SidebarMode.DOCUMENT_OUTLINE,
-    })
+    }),
+    container: '.pdf-container'
   };
 
   const loadNutrient = async () => {
@@ -49,7 +50,6 @@
 
     await NutrientViewer.load({
       ...configuration,
-      container: '.pdf-container',
       document: `data:application/pdf;base64,${documentResponse.base64Pdf}`,
     });
     // Todo - Render outline from page ranges

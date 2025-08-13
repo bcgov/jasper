@@ -277,14 +277,13 @@
     );
 
   const openMergedDocuments = () => {
-    const documents: [DocumentRequestType, DocumentData][] = [];
+    const documents: { documentType: DocumentRequestType, documentData: DocumentData }[] = [];
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item) => {
-        const documentType = getCriminalDocumentType(item);
-        const requestType = documentType === CourtDocumentType.Criminal ? DocumentRequestType.File : DocumentRequestType.ROP;
+        const documentType = getCriminalDocumentType(item) === CourtDocumentType.Criminal ? DocumentRequestType.File : DocumentRequestType.ROP;
         const documentData = prepareCriminalDocumentData(item);
-        documents.push([requestType, documentData]);
+        documents.push({ documentType, documentData });
       });
 
     shared.openDocumentsPdfV2(documents);

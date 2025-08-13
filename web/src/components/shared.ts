@@ -77,14 +77,17 @@ export default {
     }
   },
   openDocumentsPdfV2(
-    documents: [documentType: DocumentRequestType, documentData: DocumentData][]
+    documents: {
+      documentType: DocumentRequestType, 
+      documentData: DocumentData
+    }[]
   ): void {
     if (!documents || documents.length === 0) return;
 
     const pdfStore = usePDFViewerStore();
 
     pdfStore.addDocuments(
-      documents.map(([documentType, documentData]) => ({
+      documents.map(({documentType, documentData}) => ({
         type: documentType,
         data: {
           partId: documentData.partId || '',

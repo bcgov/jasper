@@ -249,14 +249,13 @@
   // Todo, parts of these binder operation methods should be moved to a
   // shared binder space, that way the code is not repeated
   const openMergedDocuments = () => {
-    const documents: [DocumentRequestType, DocumentData][] = [];
+    const documents: { documentType: DocumentRequestType, documentData: DocumentData }[] = [];
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item) => {
-        const documentType = getCivilDocumentType(item);
-        const requestType = documentType === CourtDocumentType.CSR ? DocumentRequestType.CourtSummary : DocumentRequestType.File;
+        const documentType = getCivilDocumentType(item) === CourtDocumentType.CSR ? DocumentRequestType.CourtSummary : DocumentRequestType.File;
         const documentData = prepareCivilDocumentData(item);
-        documents.push([requestType, documentData]);
+        documents.push({ documentType, documentData });
       });
     shared.openDocumentsPdfV2(documents);
   };

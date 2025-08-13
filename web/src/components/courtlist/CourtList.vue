@@ -56,16 +56,16 @@
 </template>
 
 <script setup lang="ts">
-import { DocumentData, DocumentRequestType } from '@/types/shared';
+  import shared from '@/components/shared';
   import { CourtListService } from '@/services';
   import { usePDFViewerStore } from '@/stores';
   import { DivisionEnum } from '@/types/common';
   import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
+  import { DocumentData, DocumentRequestType } from '@/types/shared';
   import {
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
-  import shared from '@/components/shared';
   import { parseQueryStringToString } from '@/utils/utils';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
   import { computed, inject, provide, ref, watch } from 'vue';
@@ -164,7 +164,7 @@ import { DocumentData, DocumentRequestType } from '@/types/shared';
 
     data.items.forEach((courtList: any) => {
       const courtRoomDetails = courtList.courtRoomDetails[0];
-      if(!courtRoomDetails) {
+      if (!courtRoomDetails) {
         return;
       }
       const adjudicatorDetails = courtRoomDetails.adjudicatorDetails[0];
@@ -222,9 +222,12 @@ import { DocumentData, DocumentRequestType } from '@/types/shared';
         uniqueMap.set(key, obj);
       });
     });
-    const documents: [DocumentRequestType, DocumentData][] = [];
+    const documents: {
+      documentType: DocumentRequestType;
+      documentData: DocumentData;
+    }[] = [];
     uniqueMap.forEach((value) => {
-      let queryParams: Record<string, any> = {
+      let documentData: Record<string, any> = {
         courtDivisionCd: value.division,
         courtClass: value.class,
         date: value.date,
@@ -233,12 +236,15 @@ import { DocumentData, DocumentRequestType } from '@/types/shared';
       };
 
       if (value.division === DivisionEnum.R) {
-        queryParams.reportType = reportType;
+        documentData.reportType = reportType;
       } else if (value.division === DivisionEnum.I) {
-        queryParams.additionsList = reportType === 'Additions' ? 'Y' : 'N';
+        documentData.additionsList = reportType === 'Additions' ? 'Y' : 'N';
       }
 
-      documents.push([DocumentRequestType.Report, queryParams]);
+      documents.push({
+        documentType: DocumentRequestType.Report,
+        documentData,
+      });
     });
     shared.openDocumentsPdfV2(documents);
 

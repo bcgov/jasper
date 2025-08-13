@@ -20,7 +20,6 @@
   if (!filesService) {
     throw new Error('HttpService is not available!');
   }
-  const containerRef = useTemplateRef('pdf-container');
   const loading = ref(false);
   const emptyStore = ref(false);
   const configuration = {
@@ -39,10 +38,10 @@
       emptyStore.value = true;
       return;
     }
-    return loadMultipleV2();
+    return loadMultiple();
   };
 
-  const loadMultipleV2 = async () => {
+  const loadMultiple = async () => {
     const documentResponse = await filesService.generatePdf(
       pdfStore.documents
     );
@@ -60,11 +59,10 @@
   });
 
   onUnmounted(() => {
-    const container = containerRef.value;
-
-    if (container && NutrientViewer) {
-      NutrientViewer.unload(container);
+    if (NutrientViewer) {
+      NutrientViewer.unload('.pdf-container');
     }
+    
     pdfStore.clearDocuments();
   });
 </script>

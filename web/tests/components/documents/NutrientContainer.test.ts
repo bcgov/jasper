@@ -79,17 +79,17 @@ describe('NutrientContainer.vue', () => {
     wrapper.unmount();
   });
 
-  // Look into why these tests are failing
-  // it('renders loading indicators initially', async () => {
-  //   expect(wrapper.findComponent({ name: 'v-progress-linear' }).exists()).toBe(true);
-  //   expect(wrapper.findComponent({ name: 'v-skeleton-loader' }).exists()).toBe(true);
-  // });
+  it('does not render loaders when fully mounted', async () => {
+    await flushPromises();
+    expect(wrapper.findComponent({ name: 'v-progress-linear' }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'v-skeleton-loader' }).exists()).toBe(false);
+  });
 
-  // it('unloads NutrientViewer on unmount', async () => {
-  //   await flushPromises();
-  //   wrapper.unmount();
-  //   expect(mockUnload).toHaveBeenCalled();
-  // });
+  it('unloads NutrientViewer on unmount', async () => {
+    await flushPromises();
+    wrapper.unmount();
+    expect(mockUnload).toHaveBeenCalled();
+  });
 
   it('expect load to be called with correct b64 content', () => {
     expect(globalThis.NutrientViewer.load).toHaveBeenCalledWith(

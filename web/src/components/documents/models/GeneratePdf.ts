@@ -12,15 +12,11 @@ export type GeneratePdfRequest = {
     profSeqNo: string;
     courtLevelCd: string;
     courtClassCd: string;
-    requestAgencyIdentifierId: string;
-    requestPartId: string;
-    applicationCd: string;
     appearanceId: string;
-    reportName: string;
     documentId: string;
     courtDivisionCd: string;
     fileId: string;
-    flatten: boolean;
+    isCriminal: boolean;
     correlationId: string;
     date?: Date;
     locationId?: number;

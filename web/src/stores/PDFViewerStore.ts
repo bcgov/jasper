@@ -7,7 +7,7 @@ export const usePDFViewerStore = defineStore('PDFViewerStore', {
     documents: [] as GeneratePdfRequest[],
   }),
   getters: {
-    documents: (state) => state.documents,
+    documentRequests: (state) => state.documents,
   },
   actions: {
     addDocuments(documents: GeneratePdfRequest[]): void {

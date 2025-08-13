@@ -1,5 +1,9 @@
 import { usePDFViewerStore } from '@/stores';
-import { CourtDocumentType, DocumentData, DocumentRequestType } from '@/types/shared';
+import {
+  CourtDocumentType,
+  DocumentData,
+  DocumentRequestType,
+} from '@/types/shared';
 import { splunkLog } from '@/utils/utils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -87,16 +91,12 @@ export default {
           profSeqNo: documentData.profSeqNo || '',
           courtLevelCd: documentData.courtLevel || '',
           courtClassCd: documentData.courtClass || '',
-          requestAgencyIdentifierId: '',
-          requestPartId: '',
-          applicationCd: '',
           appearanceId: documentData.appearanceId || '',
-          reportName: documentData.documentDescription || '',
           documentId: documentData.documentId
             ? this.convertToBase64Url(documentData.documentId)
             : documentData.documentId || '',
           fileId: documentData.fileId || '',
-          flatten: true,
+          isCriminal: documentData.isCriminal || false,
           correlationId: uuidv4(),
           courtDivisionCd: documentData.courtDivisionCd || '',
           date: documentData.date,

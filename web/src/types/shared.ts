@@ -4,16 +4,21 @@ export interface DocumentData {
   appearanceDate?: string;
   appearanceId?: string;
   courtClass?: string;
-  courtLevel: string;
+  courtLevel?: string;
   dateFiled?: string;
   documentDescription?: string;
   documentId?: string;
   fileId?: string;
-  fileNumberText: string;
-  location: string;
+  fileNumberText?: string;
+  location?: string;
   partId?: string;
   partyName?: string;
   profSeqNo?: string;
+  courtDivisionCd?: string;
+  date?: Date;
+  locationId?: number;
+  roomCode?: string;
+  reportType?: string;
 }
 
 export enum CourtDocumentType {
@@ -24,6 +29,14 @@ export enum CourtDocumentType {
   ROP,
   CriminalZip,
   CivilZip,
+  Report,
+}
+
+export enum DocumentRequestType {
+    File,
+    ROP,
+    Report,
+    CourtSummary
 }
 
 export interface FileDetailsType {

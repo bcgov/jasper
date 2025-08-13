@@ -1,6 +1,6 @@
-import { CourtDocumentType, DocumentData } from '@/types/shared';
-import { splunkLog } from '@/utils/utils';
 import { usePDFViewerStore } from '@/stores';
+import { CourtDocumentType, DocumentData, DocumentRequestType } from '@/types/shared';
+import { splunkLog } from '@/utils/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 export default {
@@ -72,22 +72,40 @@ export default {
       window.open(url);
     }
   },
-  openMergedDocumentsPdf(
-    documents: [documentType: CourtDocumentType, documentData: DocumentData][]
+  openDocumentsPdfV2(
+    documents: [documentType: DocumentRequestType, documentData: DocumentData][]
   ): void {
     if (!documents || documents.length === 0) return;
 
     const pdfStore = usePDFViewerStore();
-    let documentsUrls: string[] = [];
-    documents.forEach(([documentType, documentData]) => {
-      const correlationId = uuidv4();
-      const url = this.renderDocumentUrl(documentType, documentData, correlationId);
-      documentsUrls.push(url);
-    });
-    pdfStore.addUrls({
-      urls: documentsUrls,
-    });
-    
+
+    pdfStore.addDocuments(
+      documents.map(([documentType, documentData]) => ({
+        type: documentType,
+        data: {
+          partId: documentData.partId || '',
+          profSeqNo: documentData.profSeqNo || '',
+          courtLevelCd: documentData.courtLevel || '',
+          courtClassCd: documentData.courtClass || '',
+          requestAgencyIdentifierId: '',
+          requestPartId: '',
+          applicationCd: '',
+          appearanceId: documentData.appearanceId || '',
+          reportName: documentData.documentDescription || '',
+          documentId: documentData.documentId
+            ? this.convertToBase64Url(documentData.documentId)
+            : documentData.documentId || '',
+          fileId: documentData.fileId || '',
+          flatten: true,
+          correlationId: uuidv4(),
+          courtDivisionCd: documentData.courtDivisionCd || '',
+          date: documentData.date,
+          locationId: documentData.locationId,
+          roomCode: documentData.roomCode || '',
+          reportType: documentData.reportType || '',
+        },
+      }))
+    );
     window.open('/pdf-viewer', 'pdf-viewer');
   },
   generateFileName(

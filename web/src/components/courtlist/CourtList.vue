@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { DocumentData, DocumentRequestType } from '@/types/shared';
   import { CourtListService } from '@/services';
   import { usePDFViewerStore } from '@/stores';
   import { DivisionEnum } from '@/types/common';
@@ -64,6 +65,7 @@
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
+  import shared from '@/components/shared';
   import { parseQueryStringToString } from '@/utils/utils';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
   import { computed, inject, provide, ref, watch } from 'vue';
@@ -220,10 +222,10 @@
         uniqueMap.set(key, obj);
       });
     });
-
-    uniqueMap.forEach((value, key) => {
+    const documents: [DocumentRequestType, DocumentData][] = [];
+    uniqueMap.forEach((value) => {
       let queryParams: Record<string, any> = {
-        courtDivision: value.division,
+        courtDivisionCd: value.division,
         courtClass: value.class,
         date: value.date,
         locationId: value.locationId,
@@ -236,12 +238,9 @@
         queryParams.additionsList = reportType === 'Additions' ? 'Y' : 'N';
       }
 
-      documentUrls.value.push(courtListService.generateReportUrl(queryParams));
+      documents.push([DocumentRequestType.Report, queryParams]);
     });
-
-    pdfStore.addUrls({
-      urls: documentUrls.value,
-    });
+    shared.openDocumentsPdfV2(documents);
 
     window.open('/pdf-viewer', 'pdf-viewer');
   };

@@ -13,7 +13,7 @@
 <script setup lang="ts">
   import { FilesService } from '@/services/FilesService';
   import { usePDFViewerStore } from '@/stores';
-  import { inject, onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
+  import { inject, onMounted, onUnmounted, ref } from 'vue';
 
   const pdfStore = usePDFViewerStore();
   const filesService = inject<FilesService>('filesService');
@@ -26,7 +26,7 @@
     initialViewState: new NutrientViewer.ViewState({
       sidebarMode: NutrientViewer.SidebarMode.DOCUMENT_OUTLINE,
     }),
-    container: '.pdf-container'
+    container: '.pdf-container',
   };
 
   const loadNutrient = async () => {
@@ -42,9 +42,7 @@
   };
 
   const loadMultiple = async () => {
-    const documentResponse = await filesService.generatePdf(
-      pdfStore.documents
-    );
+    const documentResponse = await filesService.generatePdf(pdfStore.documents);
     loading.value = false;
 
     await NutrientViewer.load({
@@ -62,7 +60,7 @@
     if (NutrientViewer) {
       NutrientViewer.unload('.pdf-container');
     }
-    
+
     pdfStore.clearDocuments();
   });
 </script>

@@ -1,0 +1,10 @@
+region              = "ca-central-1"
+test_s3_bucket_name = "jasper-test-lz-s3-bucket-dev"
+web_subnet_names    = ["Dev-Web-MainTgwAttach-B", "Dev-Web-MainTgwAttach-A"]
+app_subnet_names    = ["Dev-App-A", "Dev-App-B"]
+data_subnet_names   = ["Dev-Data-A", "Dev-Data-B"]
+openshift_iam_user  = "openshiftuserdev"
+iam_user_table_name = "BCGOV-LZA-IAM-USER-TABLE"
+lb_name             = "default"
+rds_db_ca_cert      = "rds-ca-rsa2048-g1"
+cert_domain_name    = "*.example.ca"

@@ -121,7 +121,7 @@ resource "aws_lb_listener" "https_listener" {
 # health check rule
 resource "aws_lb_listener_rule" "gov_healthcheck_lr" {
   listener_arn = aws_lb_listener.https_listener.arn
-  priority     = 200
+  priority     = 10
 
   condition {
     path_pattern {

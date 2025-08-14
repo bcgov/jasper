@@ -122,7 +122,7 @@ module "alb" {
   tg_api_arn       = module.tg_api.tg_arn
   web_security_group_id = data.aws_security_group.web_sg.id
   vpc_id = data.aws_vpc.vpc.id
-  web_subnets_ids = module.subnets.web_subnet_ids
+  web_subnets_ids = module.subnets.web_subnets_ids
   depends_on = [ module.subnets ]
 }
 

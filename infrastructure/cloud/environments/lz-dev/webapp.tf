@@ -135,8 +135,8 @@ module "lambda" {
   apigw_execution_arn = module.apigw.apigw_execution_arn
   lambda_ecr_repo_url = module.initial.lambda_ecr.ecr_repo_url
   lambda_memory_size  = var.lambda_memory_size
-  subnet_ids          = module.subnets.all_subnet_ids
-  sg_ids              = [data.aws_security_group.web_sg.id, data.aws_security_group.data_sg.id, data.aws_security_group.app_sg.id]
+  subnet_ids          = module.subnets.app_subnets_ids
+  sg_ids              = [data.aws_security_group.app_sg.id]
   lambda_secrets      = module.secrets_manager.lambda_secrets
   ecs_cluster_name    = module.ecs_cluster.ecs_cluster.name
 }

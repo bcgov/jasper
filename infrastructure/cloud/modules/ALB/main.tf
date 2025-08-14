@@ -23,62 +23,62 @@ resource "aws_lb" "default_lb" {
   }
 }
 
-resource "aws_lb_target_group" "api_lb_tg" {
-  name        = "jasper-api-tg-${var.environment}"
-  port        = 5000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-  health_check {
-    enabled             = true
-    interval            = 30
-    path                = "/api/test/headers"
-    port                = 5000
-    protocol            = "HTTP"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-    timeout             = 5
-    matcher             = "200"
-  }
+# resource "aws_lb_target_group" "api_lb_tg" {
+#   name        = "jasper-api-tg-${var.environment}"
+#   port        = 5000
+#   protocol    = "HTTP"
+#   vpc_id      = var.vpc_id
+#   target_type = "ip"
+#   health_check {
+#     enabled             = true
+#     interval            = 30
+#     path                = "/api/test/headers"
+#     port                = 5000
+#     protocol            = "HTTP"
+#     healthy_threshold   = 3
+#     unhealthy_threshold = 3
+#     timeout             = 5
+#     matcher             = "200"
+#   }
 
-  tags = {
-    Name = "jasper-api-tg-${var.environment}"
-  }
-  lifecycle {
-    ignore_changes = [
-      tags
-    ]
-  }
-}
+#   tags = {
+#     Name = "jasper-api-tg-${var.environment}"
+#   }
+#   lifecycle {
+#     ignore_changes = [
+#       tags
+#     ]
+#   }
+# }
 
 
-resource "aws_lb_target_group" "web_lb_tg" {
-  name        = "jasper-web-tg-${var.environment}"
-  port        = 8080
-  protocol    = "HTTPS"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-  health_check {
-    enabled             = true
-    interval            = 30
-    path                = "/"
-    port                = 8080
-    protocol            = "HTTPS"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-    timeout             = 5
-    matcher             = "200"
-  }
+# resource "aws_lb_target_group" "web_lb_tg" {
+#   name        = "jasper-web-tg-${var.environment}"
+#   port        = 8080
+#   protocol    = "HTTPS"
+#   vpc_id      = var.vpc_id
+#   target_type = "ip"
+#   health_check {
+#     enabled             = true
+#     interval            = 30
+#     path                = "/"
+#     port                = 8080
+#     protocol            = "HTTPS"
+#     healthy_threshold   = 3
+#     unhealthy_threshold = 3
+#     timeout             = 5
+#     matcher             = "200"
+#   }
 
-  tags = {
-    Name = "jasper-web-tg-${var.environment}"
-  }
-  lifecycle {
-    ignore_changes = [
-      tags
-    ]
-  }
-}
+#   tags = {
+#     Name = "jasper-web-tg-${var.environment}"
+#   }
+#   lifecycle {
+#     ignore_changes = [
+#       tags
+#     ]
+#   }
+# }
 
 # HTTP Listener
 resource "aws_lb_listener" "http_listener" {
@@ -156,7 +156,7 @@ resource "aws_lb_listener_rule" "web_lr" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.web_lb_tg.arn
+    target_group_arn = var.tg_web_arn
   }
 
   tags = {
@@ -177,7 +177,7 @@ resource "aws_lb_listener_rule" "api_path_lr" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.api_lb_tg.arn
+    target_group_arn = var.tg_api_arn
   }
 
   tags = {

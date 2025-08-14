@@ -120,6 +120,10 @@ module "alb" {
   cert_domain_name = var.cert_domain_name
   tg_web_arn       = module.tg_web.tg_arn
   tg_api_arn       = module.tg_api.tg_arn
+  web_security_group_id = data.aws_security_group.web_sg.id
+  vpc_id = data.aws_vpc.vpc.id
+  web_subnets_ids = module.subnets.web_subnet_ids
+  depends_on = [ module.subnets ]
 }
 
 # Create Lambda Functions

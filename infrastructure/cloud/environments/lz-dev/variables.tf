@@ -72,3 +72,8 @@ variable "lambda_memory_size" {
   description = "The Lambda Function default Memory Size"
   type        = number
 }
+
+variable "web_security_group_name" {
+  description = "The name of the security group for the web tier"
+  type        = string
+}

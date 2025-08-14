@@ -146,7 +146,7 @@ resource "aws_lb_listener_rule" "gov_healthcheck_lr" {
 # Web Listener Rule
 resource "aws_lb_listener_rule" "web_lr" {
   listener_arn = aws_lb_listener.https_listener.arn
-  priority     = 200
+  priority     = 201
 
   condition {
     path_pattern {

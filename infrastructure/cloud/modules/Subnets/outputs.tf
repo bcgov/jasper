@@ -1,5 +1,5 @@
 output "web_subnets_ids" {
-  value = [for subnet in data.data.aws_subnets.web : subnet.id]
+  value = [for subnet in data.aws_subnets.web : subnet.id]
 }
 
 output "app_subnets_ids" {

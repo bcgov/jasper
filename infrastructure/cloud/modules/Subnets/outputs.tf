@@ -1,19 +1,20 @@
 output "web_subnets_ids" {
-  value = [for subnet in data.aws_subnets.web : subnet.id]
+  value = data.aws_subnets.web.ids
+  
 }
 
 output "app_subnets_ids" {
-  value = [for subnet in data.aws_subnets.app : subnet.id]
+  value = data.aws_subnets.app.ids
 }
 
 output "data_subnets_ids" {
-  value = [for subnet in data.aws_subnets.data : subnet.id]
+  value = data.aws_subnets.data.ids
 }
 
 output "all_subnet_ids" {
   value = concat(
-    [for subnet in data.aws_subnets.web : subnet.id],
-    [for subnet in data.aws_subnets.app : subnet.id],
-    [for subnet in data.aws_subnets.data : subnet.id]
+    data.aws_subnets.web.ids,
+    data.aws_subnets.app.ids,
+    data.aws_subnets.data.ids
   )
 }

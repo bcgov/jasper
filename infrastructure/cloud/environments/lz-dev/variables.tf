@@ -73,7 +73,4 @@ variable "lambda_memory_size" {
   type        = number
 }
 
-variable "web_security_group_name" {
-  description = "The name of the security group for the web tier"
-  type        = string
-}
+

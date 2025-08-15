@@ -258,11 +258,11 @@ public class DashboardService(
                     a.JudgeInitials = calendar.RotaInitials;
                     // True when currently logged on judge is away from home location
                     a.IsJudgeAway = judgeId.HasValue
-                        && judgeId.GetValueOrDefault() == calendar.Id
+                        && judgeId.Value == calendar.Id
                         && a.LocationId != calendar.HomeLocationId;
                     // True when judge is away from home location
                     a.IsJudgeBorrowed = judgeId.HasValue
-                        && judgeId.GetValueOrDefault() != calendar.Id
+                        && judgeId.Value != calendar.Id
                         && a.LocationId != calendar.HomeLocationId;
                     return a;
                 })

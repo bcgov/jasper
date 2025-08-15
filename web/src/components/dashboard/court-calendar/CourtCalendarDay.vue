@@ -10,13 +10,18 @@
       >
 
       <div
-        class="d-flex justify-space-between border-b mb-1"
+        data-testid="judge-activities"
         v-for="[judgeInitials, activities] in judgeActivities"
+        :class="[
+          'd-flex justify-space-between border-b mb-1',
+          activities.every((a) => a.isJudgeAway) ? 'is-away' : '',
+          activities.every((a) => a.isJudgeBorrowed) ? 'is-borrowed' : '',
+        ]"
       >
-        <span data-testid="judge-initials">{{ judgeInitials }} -</span>
+        <span data-testid="judge-initials">{{ judgeInitials }}</span>
         <div class="d-flex flex-column">
           <div
-            class="d-flex justify-end"
+            class="d-flex justify-end align-center"
             v-for="{
               activityDescription,
               activityClassDescription,
@@ -45,7 +50,7 @@
             <v-icon
               v-if="showDars"
               data-testid="dars"
-              class="ml-1"
+              size="16"
               :icon="mdiHeadphones"
             />
           </div>
@@ -73,10 +78,6 @@
     () => {
       const data: Record<string, Record<string, CalendarDayActivity[]>> = {};
 
-      // Arrange data to easily render judge's activities
-      // Location
-      //  - Judge
-      //    - Activities
       for (const activity of props.activities) {
         const locationKey = activity.locationShortName;
         const judgeKey = activity.judgeInitials;
@@ -92,24 +93,26 @@
         data[locationKey][judgeKey].push(activity);
       }
 
-      return Object.entries(data)
-        .sort(([a], [b]) => a.localeCompare(b)) // sort location name
-        .map(([locationName, judgeActivities]) => [
-          locationName,
-          Object.entries(judgeActivities)
-            .sort(([a], [b]) => a.localeCompare(b)) // sort judge initials
-            .map(([judgeInitials, activities]) => [
-              judgeInitials,
-              [...activities].sort((a, b) =>
-                a.activityDisplayCode.localeCompare(b.activityDisplayCode)
-              ), // sort activity display code
-            ]),
-        ]);
+      return Object.entries(data).map(([locationName, judgeActivities]) => [
+        locationName,
+        Object.entries(judgeActivities).map(([judgeInitials, activities]) => [
+          judgeInitials,
+          [...activities],
+        ]),
+      ]);
     }
   );
 </script>
 <style scoped>
   .calendar-day {
     color: var(--text-blue-800) !important;
+  }
+
+  .is-borrowed {
+    background-color: var(--bg-yellow-500);
+  }
+
+  .is-away {
+    background-color: var(--bg-blue-200);
   }
 </style>

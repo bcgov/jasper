@@ -1,42 +1,32 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using GdPicture14;
-using Microsoft.AspNetCore.WebUtilities;
-using Moq;
-using Scv.Api.Documents;
-using Scv.Api.Models.Document;
-using Scv.Api.Services.Files;
-using Xunit;
 using JCCommon.Clients.FileServices;
-using tests.api.Services;
-using System.Linq;
-using System.Security.Claims;
-using FluentValidation;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
+using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Controllers;
+using Moq;
+using PCSSCommon.Clients.FileDetailServices;
+using Scv.Api.Documents;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.Exceptions;
-using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.archive;
-using Scv.Api.Models.Search;
+using Scv.Api.Models.Document;
 using Scv.Api.Services;
-using Scv.Db.Models;
+using Scv.Api.Services.Files;
 using tests.api.Helpers;
+using tests.api.Services;
+using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
-using PCSSCommon.Clients.FileDetailServices;
-using Microsoft.Extensions.Configuration;
-using LazyCache.Providers;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace tests.api.Documents;
 
@@ -158,7 +148,6 @@ public class DocumentMergerTest : ServiceTestBase
             _mapper,
             mockLookupService.Object,
             locationService.Object,
-            mockFileDetailClient.Object,
             _cachingService,
             mockUser,
             mockLoggerFactory.Object);

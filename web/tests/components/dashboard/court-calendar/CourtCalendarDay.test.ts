@@ -31,6 +31,28 @@ describe('CourtCalendarDay.vue', () => {
       activityClassDescription: faker.lorem.word(),
       showDars: true,
     } as CalendarDayActivity,
+    {
+      judgeId: faker.number.int(),
+      judgeInitials: faker.string.alphanumeric(4),
+      locationShortName: mockShortName,
+      period: mockPeriod,
+      activityDisplayCode: mockActivityDisplayCode,
+      roomCode: mockRoomCode,
+      activityClassDescription: faker.lorem.word(),
+      showDars: true,
+      isJudgeAway: true,
+    } as CalendarDayActivity,
+    {
+      judgeId: faker.number.int(),
+      judgeInitials: faker.string.alphanumeric(4),
+      locationShortName: mockShortName,
+      period: mockPeriod,
+      activityDisplayCode: mockActivityDisplayCode,
+      roomCode: mockRoomCode,
+      activityClassDescription: faker.lorem.word(),
+      showDars: true,
+      isJudgeBorrowed: true,
+    } as CalendarDayActivity,
   ];
 
   it('renders CourtCalendarDay', () => {
@@ -40,16 +62,21 @@ describe('CourtCalendarDay.vue', () => {
       },
     });
 
-    const sortedActivities = mockActivities.sort((a, b) =>
-      a.judgeInitials.localeCompare(b.judgeInitials)
-    );
-
     expect(wrapper.find('[data-testid="short-name"]').text()).toBe(
       mockShortName
     );
     expect(wrapper.findAll('[data-testid="judge-initials"]')[0].text()).toBe(
-      `${sortedActivities[0].judgeInitials} -`
+      mockActivities[0].judgeInitials
     );
     expect(wrapper.findAll('[data-testid="dars"]')[0].exists()).toBe(true);
+
+    const judgeActivities = wrapper.findAll('[data-testid="judge-activities"]');
+
+    expect(
+      judgeActivities.filter((e) => e.classes().includes('is-away')).length
+    ).toBe(1);
+    expect(
+      judgeActivities.filter((e) => e.classes().includes('is-borrowed')).length
+    ).toBe(1);
   });
 });

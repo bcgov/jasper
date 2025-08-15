@@ -130,6 +130,10 @@ public class DashboardServiceTests : ServiceTestBase
             .Setup(l => l.GetLocationShortName(It.IsAny<string>()))
             .ReturnsAsync(string.Empty);
 
+        mockLocationService
+            .Setup(l => l.GetRegionName(It.IsAny<string>()))
+            .ReturnsAsync(string.Empty);
+
         return mockLocationService;
     }
 
@@ -373,8 +377,8 @@ public class DashboardServiceTests : ServiceTestBase
         };
 
         var (dashboardService,
-            mockJudicialCalendarClient,
-            mockSearchDateClient,
+            _,
+            _,
             _) = this.SetupDashboardService(mockJudicialCalendar, mockCourtList);
 
         var startDate = currentDate.AddDays(-5);
@@ -722,7 +726,7 @@ public class DashboardServiceTests : ServiceTestBase
     {
         var (dashboardService, _, _, _) = this.SetupDashboardService(null, new ActivityAppearanceResultsCollection());
 
-        var result = await dashboardService.GetCourtCalendarScheduleAsync("", "", "");
+        var result = await dashboardService.GetCourtCalendarScheduleAsync(0, "", "", "");
 
         Assert.False(result.Succeeded);
     }
@@ -848,6 +852,7 @@ public class DashboardServiceTests : ServiceTestBase
             .ReturnsAsync(new ReadJudicialCalendarsResponse { Calendars = mockJCData });
 
         var result = await dashboardService.GetCourtCalendarScheduleAsync(
+            _faker.Random.Number(),
             mockLocationId.ToString(),
             startDate.ToString(DashboardService.DATE_FORMAT),
             endDate.ToString(DashboardService.DATE_FORMAT));

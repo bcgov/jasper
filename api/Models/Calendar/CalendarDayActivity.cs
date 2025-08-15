@@ -13,6 +13,7 @@ public class CalendarDayActivity
     public int? LocationId { get; set; }
     public string LocationName { get; set; }
     public string LocationShortName { get; set; }
+    public string LocationRegionName { get; set; }
     public string ActivityCode { get; set; }
     public string ActivityDisplayCode { get; set; }
     public string ActivityDescription { get; set; }
@@ -26,5 +27,7 @@ public class CalendarDayActivity
     public int ContinuationsCount { get; set; }
     public int JudgeId { get; set; }
     public string JudgeInitials { get; set; }
+    public bool IsJudgeAway { get; set; }
+    public bool IsJudgeBorrowed { get; set; }
     public List<AdjudicatorRestriction> Restrictions { get; set; } = [];
 }

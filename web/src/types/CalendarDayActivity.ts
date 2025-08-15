@@ -17,4 +17,6 @@ export interface CalendarDayActivity {
   restrictions: AdjudicatorRestriction[];
   judgeId: number;
   judgeInitials: string;
+  isJudgeBorrowed: boolean;
+  isJudgeAway: boolean;
 }

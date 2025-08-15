@@ -1,5 +1,5 @@
 data "aws_security_group" "data_sg" {
-  name = "Data_sg"
+  name = "Data"
 }
 
 resource "aws_db_subnet_group" "db_subnet_group" {
@@ -14,7 +14,7 @@ resource "aws_db_instance" "postgres_db_instance" {
   engine                              = "postgres"
   engine_version                      = "16.8"
   instance_class                      = "db.t3.micro"
-  db_name                             = "${var.app_name}postgresdb${var.environment}"
+  db_name                             = "${var.app_name}postgresdb${replace(var.environment, "-", "")}"
   username                            = var.db_username
   password                            = var.db_password
   parameter_group_name                = "default.postgres16"
@@ -23,7 +23,7 @@ resource "aws_db_instance" "postgres_db_instance" {
   storage_encrypted                   = true
   kms_key_id                          = var.kms_key_arn
   ca_cert_identifier                  = var.rds_db_ca_cert
-  identifier                          = "${var.app_name}-postgres-db-${var.environment}"
+  identifier                          = "${var.app_name}-postgres-db-${replace(var.environment, "-", "")}"
   skip_final_snapshot                 = true
   backup_retention_period             = 0 #tfsec:ignore:aws-rds-specify-backup-retention
   performance_insights_enabled        = true

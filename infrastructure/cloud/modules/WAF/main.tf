@@ -37,7 +37,7 @@ resource "aws_wafv2_web_acl" "waf_web_acl" {
         }
 
         positional_constraint = "EXACTLY"
-        search_string         = "/healthcheck"
+        search_string         = "/bcgovhealthcheck"
 
         text_transformation {
           priority = 0

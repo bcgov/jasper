@@ -14,7 +14,7 @@ env:
   WEB_IMAGE_NAME: web
   WEB_RUNTIME_IMAGE_NAME: web-runtime
   WEB_ARTIFACTS_IMAGE_NAME: web-artifacts
-  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper-lz
   WEB_BASE_HREF: /
 
 jobs:
@@ -84,12 +84,12 @@ jobs:
     name: Deploy to DEV
     needs: build
     env:
-      ENVIRONMENT: dev
+      ENVIRONMENT: lz-dev
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: dev
+    environment: lz-dev
 
     steps:
       - name: Checkout
@@ -109,60 +109,60 @@ jobs:
           tier_name: web
           short_sha: ${{ needs.build.outputs.short_sha }}
 
-  deploy2test:
-    name: Deploy to TEST
-    needs: [build, deploy2dev]
-    env:
-      ENVIRONMENT: test
-    permissions:
-      id-token: write
-      packages: write
-    runs-on: ubuntu-latest
-    environment: test
+  # deploy2test:
+  #   name: Deploy to TEST
+  #   needs: [build, deploy2dev]
+  #   env:
+  #     ENVIRONMENT: test
+  #   permissions:
+  #     id-token: write
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   environment: test
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Deploy to ${{ env.ENVIRONMENT }}
-        uses: ./.github/workflows/actions/deploy-app
-        with:
-          environment: ${{ env.ENVIRONMENT }}
-          aws_account: ${{ vars.AWS_ACCOUNT }}
-          region: ${{ vars.AWS_REGION }}
-          app_name: ${{ vars.APP_NAME }}
-          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
-          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
-          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          image_name: ${{ env.WEB_IMAGE_NAME }}
-          tier_name: web
-          short_sha: ${{ needs.build.outputs.short_sha }}
+  #     - name: Deploy to ${{ env.ENVIRONMENT }}
+  #       uses: ./.github/workflows/actions/deploy-app
+  #       with:
+  #         environment: ${{ env.ENVIRONMENT }}
+  #         aws_account: ${{ vars.AWS_ACCOUNT }}
+  #         region: ${{ vars.AWS_REGION }}
+  #         app_name: ${{ vars.APP_NAME }}
+  #         aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+  #         ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+  #         github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+  #         image_name: ${{ env.WEB_IMAGE_NAME }}
+  #         tier_name: web
+  #         short_sha: ${{ needs.build.outputs.short_sha }}
 
-  deploy2prod:
-    name: Deploy to PROD
-    needs: [build, deploy2dev, deploy2test]
-    env:
-      ENVIRONMENT: prod
-    permissions:
-      id-token: write
-      packages: write
-    runs-on: ubuntu-latest
-    environment: prod
+  # deploy2prod:
+  #   name: Deploy to PROD
+  #   needs: [build, deploy2dev, deploy2test]
+  #   env:
+  #     ENVIRONMENT: prod
+  #   permissions:
+  #     id-token: write
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   environment: prod
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Deploy to ${{ env.ENVIRONMENT }}
-        uses: ./.github/workflows/actions/deploy-app
-        with:
-          environment: ${{ env.ENVIRONMENT }}
-          aws_account: ${{ vars.AWS_ACCOUNT }}
-          region: ${{ vars.AWS_REGION }}
-          app_name: ${{ vars.APP_NAME }}
-          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
-          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
-          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
-          image_name: ${{ env.WEB_IMAGE_NAME }}
-          tier_name: web
-          short_sha: ${{ needs.build.outputs.short_sha }}
+  #     - name: Deploy to ${{ env.ENVIRONMENT }}
+  #       uses: ./.github/workflows/actions/deploy-app
+  #       with:
+  #         environment: ${{ env.ENVIRONMENT }}
+  #         aws_account: ${{ vars.AWS_ACCOUNT }}
+  #         region: ${{ vars.AWS_REGION }}
+  #         app_name: ${{ vars.APP_NAME }}
+  #         aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+  #         ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+  #         github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+  #         image_name: ${{ env.WEB_IMAGE_NAME }}
+  #         tier_name: web
+  #         short_sha: ${{ needs.build.outputs.short_sha }}

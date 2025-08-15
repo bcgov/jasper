@@ -20,6 +20,7 @@ on:
           - dev
           - test
           - prod
+          - lz-dev
 
 env:
   WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"

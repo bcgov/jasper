@@ -57,19 +57,11 @@
       </v-chip-group>
     </template>
     <template v-slot:item.filedBy="{ item }">
-      <span v-for="(role, index) in item.filedBy" :key="index">
-        <span v-if="role.roleTypeCode">
-          <v-skeleton-loader
-            class="bg-transparent"
-            type="text"
-            :loading="rolesLoading"
-          >
-            {{
-              roles ? getLookupShortDescription(role.roleTypeCode, roles) : ''
-            }}
-          </v-skeleton-loader>
-        </span>
-      </span>
+      <LabelWithTooltip
+        v-if="item.filedBy?.length > 0"
+        :values="item.filedBy.map((p) => p.filedByName)"
+        :location="Anchor.Top"
+      />
     </template>
     <template v-slot:item.issue="{ item }">
       <LabelWithTooltip
@@ -88,7 +80,6 @@
   import { civilDocumentType } from '@/types/civil/jsonTypes';
   import { Anchor, LookupCode } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
-  import { getLookupShortDescription } from '@/utils/utils';
   import { mdiNotebookOutline } from '@mdi/js';
   import { ref } from 'vue';
 

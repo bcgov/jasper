@@ -106,6 +106,7 @@
     CourtDocumentType,
     DataTableHeader,
     DocumentData,
+    DocumentRequestType
   } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
@@ -248,15 +249,15 @@
   // Todo, parts of these binder operation methods should be moved to a
   // shared binder space, that way the code is not repeated
   const openMergedDocuments = () => {
-    const documents: [CourtDocumentType, DocumentData][] = [];
+    const documents: { documentType: DocumentRequestType, documentData: DocumentData }[] = [];
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item) => {
-        const documentType = getCivilDocumentType(item);
+        const documentType = getCivilDocumentType(item) === CourtDocumentType.CSR ? DocumentRequestType.CourtSummary : DocumentRequestType.File;
         const documentData = prepareCivilDocumentData(item);
-        documents.push([documentType, documentData]);
+        documents.push({ documentType, documentData });
       });
-    shared.openMergedDocumentsPdf(documents);
+    shared.openDocumentsPdfV2(documents);
   };
 
   const loadBinder = async () => {

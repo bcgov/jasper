@@ -41,6 +41,7 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Documents;
+using Scv.Api.Documents.Strategies;
 
 namespace Scv.Api.Infrastructure
 {
@@ -58,6 +59,11 @@ namespace Scv.Api.Infrastructure
             licenseManager.RegisterKEY("");
 
             services.AddScoped<IDocumentMerger, DocumentMerger>();
+            services.AddScoped<IDocumentRetriever, DocumentRetriever>();
+            services.AddScoped<IDocumentStrategy, FileStrategy>();
+            services.AddScoped<IDocumentStrategy, ROPStrategy>();
+            services.AddScoped<IDocumentStrategy, ReportStrategy>();
+            services.AddScoped<IDocumentStrategy, CourtSummaryReportStrategy>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)

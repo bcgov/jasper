@@ -117,24 +117,11 @@
                 </td>
                 <td>
                   <!-- Filed By column -->
-                  <span v-for="(role, index) in element.filedBy" :key="index">
-                    <span v-if="role.roleTypeCode">
-                      <v-skeleton-loader
-                        class="bg-transparent"
-                        type="text"
-                        :loading="props.rolesLoading"
-                      >
-                        {{
-                          props.roles
-                            ? getLookupShortDescription(
-                                role.roleTypeCode,
-                                props.roles
-                              )
-                            : ''
-                        }}
-                      </v-skeleton-loader>
-                    </span>
-                  </span>
+                  <LabelWithTooltip
+                    v-if="element.filedBy?.length > 0"
+                    :values="element.filedBy.map((p) => p.filedByName)"
+                    :location="Anchor.Top"
+                  />
                 </td>
                 <td>
                   <!-- Issues column -->
@@ -166,16 +153,15 @@
 </template>
 
 <script setup lang="ts">
-  import draggable from 'vuedraggable';
   import ConfirmButton from '@/components/shared/ConfirmButton.vue';
   import EllipsesMenu from '@/components/shared/EllipsesMenu.vue';
   import { civilDocumentType } from '@/types/civil/jsonTypes';
   import { Anchor, LookupCode } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
-  import { getLookupShortDescription } from '@/utils/utils';
   import { mdiDragVertical, mdiNotebookOutline } from '@mdi/js';
-  import { watch, ref } from 'vue';
+  import { ref, watch } from 'vue';
+  import draggable from 'vuedraggable';
 
   const props = defineProps<{
     isBinderLoading: boolean;

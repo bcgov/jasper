@@ -11,9 +11,8 @@ using Scv.Api.Services.Files;
 
 namespace Scv.Api.Documents;
 
-public class DocumentMerger(FilesService filesService) : IDocumentMerger
+public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMerger
 {
-    private readonly FilesService _filesService = filesService;
     /// <summary>
     /// Merges multiple PDF documents into a single PDF document in base64 format.
     /// </summary>
@@ -26,17 +25,12 @@ public class DocumentMerger(FilesService filesService) : IDocumentMerger
         using GdPictureDocumentConverter gdpictureConverter = new();
 
         // Retrieve all document streams to merge
-        foreach (var documentRequest in documentRequests.Select(dcr => dcr.Data))
-        {
-            var documentResponseStreamCopy = new MemoryStream();
+        var retrieveTasks = documentRequests
+            .Select(documentRetriever.Retrieve);
 
-            // TODO- Here we will call the correct strategy,
-            // which then calls the appropriate api based off the documentRequest type
-            var documentId = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(documentRequest.DocumentId));
-            var documentResponse = await _filesService.DocumentAsync(documentId, true, documentRequest.FileId, documentRequest.CorrelationId);
-            await documentResponse.Stream.CopyToAsync(documentResponseStreamCopy);
-            streamsToMerge.Add(documentResponseStreamCopy);
-        }
+        var documentStreams = await Task.WhenAll(retrieveTasks);
+
+        streamsToMerge.AddRange(documentStreams);
         
         MemoryStream outputStream = new();
 

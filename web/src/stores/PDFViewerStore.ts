@@ -1,19 +1,20 @@
 import { defineStore } from 'pinia';
+import { GeneratePdfRequest } from '@/components/documents/models/GeneratePdf';
 
 export const usePDFViewerStore = defineStore('PDFViewerStore', {
   persist: true,
   state: () => ({
-    urls: [] as string[]
+    documents: [] as GeneratePdfRequest[],
   }),
   getters: {
-    documentUrls: (state) => state.urls,
+    documentRequests: (state) => state.documents,
   },
   actions: {
-    addUrls({ urls }): void {
-      this.urls = [...urls];
+    addDocuments(documents: GeneratePdfRequest[]): void {
+      this.documents = [...documents];
     },
-    clearUrls(): void {
-      this.urls.length = 0;
+    clearDocuments(): void {
+      this.documents.length = 0;
     },
   },
 });

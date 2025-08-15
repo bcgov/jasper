@@ -1,29 +1,33 @@
 import { useSnackbarStore } from '@/stores/SnackbarStore';
-import axios, {
-  AxiosInstance,
-  AxiosRequestConfig,
-  InternalAxiosRequestConfig,
-} from 'axios';
+import { CustomAxiosConfig } from '@/types';
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import redirectHandlerService from './RedirectHandlerService';
 
 export interface IHttpService {
-  get<T>(resource: string, queryParams?: Record<string, any>): Promise<T>;
+  get<T>(
+    resource: string,
+    queryParams?: Record<string, any>,
+    config?: CustomAxiosConfig
+  ): Promise<T>;
   post<T>(
     resource: string,
     data: any,
     headers?: Record<string, string>,
-    responseType?: 'json' | 'blob'
+    responseType?: 'json' | 'blob',
+    config?: CustomAxiosConfig
   ): Promise<T>;
   put<T>(
     resource: string,
     data: any,
     headers?: Record<string, string>,
-    responseType?: 'json' | 'blob'
+    responseType?: 'json' | 'blob',
+    config?: CustomAxiosConfig
   ): Promise<T>;
   delete<T>(
     resource: string,
     headers?: Record<string, string>,
-    responseType?: 'json' | 'blob'
+    responseType?: 'json' | 'blob',
+    config?: CustomAxiosConfig
   ): Promise<T>;
 }
 
@@ -47,7 +51,7 @@ export class HttpService implements IHttpService {
 
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => this.handleAuthError(error)
+      (error) => this.handleError(error)
     );
   }
 
@@ -57,9 +61,15 @@ export class HttpService implements IHttpService {
     return config;
   }
 
-  private handleAuthError(error: any) {
+  private handleError(error: any) {
     console.error(error);
     console.log('User unauthenticated.');
+
+    if (error.config?.skipErrorHandler) {
+      // Component handles the error
+      return Promise.reject(new Error(error));
+    }
+
     // todo: check for a 403 and handle it
     if (error.response && error.response.status === 401) {
       redirectHandlerService.handleUnauthorized(window.location.href);
@@ -76,11 +86,13 @@ export class HttpService implements IHttpService {
 
   public async get<T>(
     resource: string,
-    queryParams: Record<string, any> = {}
+    queryParams: Record<string, any> = {},
+    config: CustomAxiosConfig = {}
   ): Promise<T> {
     try {
       const response = await this.client.get<T>(resource, {
         params: queryParams,
+        ...config,
       });
       return response.data;
     } catch (error) {
@@ -93,15 +105,15 @@ export class HttpService implements IHttpService {
     resource: string,
     data: any,
     headers: Record<string, string> = {},
-    responseType: 'json' | 'blob' = 'json'
+    responseType: 'json' | 'blob' = 'json',
+    config: CustomAxiosConfig = {}
   ): Promise<T> {
-    const config: AxiosRequestConfig = {
-      headers,
-      responseType,
-    };
-
     try {
-      const response = await this.client.post<T>(resource, data, config);
+      const response = await this.client.post<T>(resource, data, {
+        headers,
+        responseType,
+        ...config,
+      });
       return response.data;
     } catch (error) {
       console.error('Error in POST request: ', error);
@@ -113,15 +125,15 @@ export class HttpService implements IHttpService {
     resource: string,
     data: any,
     headers: Record<string, string> = {},
-    responseType: 'json' | 'blob' = 'json'
+    responseType: 'json' | 'blob' = 'json',
+    config: CustomAxiosConfig = {}
   ): Promise<T> {
-    const config: AxiosRequestConfig = {
-      headers,
-      responseType,
-    };
-
     try {
-      const response = await this.client.put<T>(resource, data, config);
+      const response = await this.client.put<T>(resource, data, {
+        headers,
+        responseType,
+        ...config,
+      });
       return response.data;
     } catch (error) {
       console.error('Error in PUT request: ', error);
@@ -132,15 +144,15 @@ export class HttpService implements IHttpService {
   public async delete<T>(
     resource: string,
     headers: Record<string, string> = {},
-    responseType: 'json' | 'blob' = 'json'
+    responseType: 'json' | 'blob' = 'json',
+    config: CustomAxiosConfig = {}
   ): Promise<T> {
-    const config: AxiosRequestConfig = {
-      headers,
-      responseType,
-    };
-
     try {
-      const response = await this.client.delete<T>(resource, config);
+      const response = await this.client.delete<T>(resource, {
+        headers,
+        responseType,
+        ...config,
+      });
       return response.data;
     } catch (error) {
       console.error('Error in DELETE request: ', error);

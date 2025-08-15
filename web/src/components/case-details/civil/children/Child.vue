@@ -33,6 +33,7 @@
   import { partyType } from '@/types/civil/jsonTypes';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { formatToFullName } from '@/utils/utils';
+  import { DateTime } from 'luxon';
   import { computed } from 'vue';
 
   const props = defineProps<{
@@ -45,41 +46,22 @@
     return lastNm ? formatToFullName(lastNm, givenNm) : orgNm;
   });
   const age = computed(() => {
-    if (!props.child.birthDate) {
-      return '';
-    }
+    const birthDateRaw = props.child.birthDate;
+    if (!birthDateRaw) return '';
 
-    const currentDate = new Date();
-    const birthDate = new Date(props.child.birthDate);
+    const birthDate = DateTime.fromFormat(
+      birthDateRaw,
+      'yyyy-MM-dd HH:mm:ss.S'
+    );
+    if (!birthDate.isValid) return '';
 
-    if (isNaN(birthDate.getTime())) {
-      return '';
-    }
+    const today = DateTime.now().startOf('day');
+    const diff = today.diff(birthDate, ['years', 'months']).toObject();
 
-    const yearsDiff = currentDate.getFullYear() - birthDate.getFullYear();
-
-    // Check if birthdate had passed this year
-    const hadBirthday =
-      currentDate.getMonth() > birthDate.getMonth() ||
-      (currentDate.getMonth() === birthDate.getMonth() &&
-        currentDate.getDate() >= birthDate.getDate());
-
-    if (yearsDiff > 1 || (yearsDiff === 1 && hadBirthday)) {
-      // Age has been at least 1 year old
-      return yearsDiff - (hadBirthday ? 0 : 1);
+    if ((diff.years ?? 0) >= 1) {
+      return Math.floor(diff.years!); // return the whole number of years as the age if years is non-zero
     } else {
-      // Age is less than 1 year
-      let monthsDiff = currentDate.getMonth() - birthDate.getMonth();
-
-      if (monthsDiff < 0) {
-        monthsDiff += 12;
-      }
-
-      if (currentDate.getDate() < birthDate.getDate()) {
-        monthsDiff = Math.max(0, monthsDiff - 1);
-      }
-
-      return `${monthsDiff} months`;
+      return `${Math.floor(diff.months ?? 0)} months`; // if the age is less then 1, return the whole number of months.
     }
   });
 </script>

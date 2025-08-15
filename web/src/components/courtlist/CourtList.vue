@@ -56,10 +56,12 @@
 </template>
 
 <script setup lang="ts">
+  import shared from '@/components/shared';
   import { CourtListService } from '@/services';
   import { usePDFViewerStore } from '@/stores';
   import { DivisionEnum } from '@/types/common';
   import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
+  import { DocumentData, DocumentRequestType } from '@/types/shared';
   import {
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
@@ -162,7 +164,7 @@
 
     data.items.forEach((courtList: any) => {
       const courtRoomDetails = courtList.courtRoomDetails[0];
-      if(!courtRoomDetails) {
+      if (!courtRoomDetails) {
         return;
       }
       const adjudicatorDetails = courtRoomDetails.adjudicatorDetails[0];
@@ -220,10 +222,13 @@
         uniqueMap.set(key, obj);
       });
     });
-
-    uniqueMap.forEach((value, key) => {
-      let queryParams: Record<string, any> = {
-        courtDivision: value.division,
+    const documents: {
+      documentType: DocumentRequestType;
+      documentData: DocumentData;
+    }[] = [];
+    uniqueMap.forEach((value) => {
+      let documentData: Record<string, any> = {
+        courtDivisionCd: value.division,
         courtClass: value.class,
         date: value.date,
         locationId: value.locationId,
@@ -231,17 +236,17 @@
       };
 
       if (value.division === DivisionEnum.R) {
-        queryParams.reportType = reportType;
+        documentData.reportType = reportType;
       } else if (value.division === DivisionEnum.I) {
-        queryParams.additionsList = reportType === 'Additions' ? 'Y' : 'N';
+        documentData.additionsList = reportType === 'Additions' ? 'Y' : 'N';
       }
 
-      documentUrls.value.push(courtListService.generateReportUrl(queryParams));
+      documents.push({
+        documentType: DocumentRequestType.Report,
+        documentData,
+      });
     });
-
-    pdfStore.addUrls({
-      urls: documentUrls.value,
-    });
+    shared.openDocumentsPdfV2(documents);
 
     window.open('/pdf-viewer', 'pdf-viewer');
   };

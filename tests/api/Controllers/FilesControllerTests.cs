@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Controllers;
+using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
@@ -106,11 +107,14 @@ namespace tests.api.Controllers
                 principal,
                 fileServices.LogFactory);
 
+            var mockDocumentMerger = new Mock<IDocumentMerger>();
+
             //TODO fake this.
             var vcCivilFileAccessHandler = new VcCivilFileAccessHandler(new ScvDbContext());
             _controller = new FilesController(
                 fileServices.Configuration,
                 fileServices.LogFactory.CreateLogger<FilesController>(),
+                mockDocumentMerger.Object,
                 _service,
                 vcCivilFileAccessHandler,
                 contextAccessor);

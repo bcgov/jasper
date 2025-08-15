@@ -1,32 +1,32 @@
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.WebUtilities;
-using Moq;
-using Scv.Api.Documents.Strategies;
-using Scv.Api.Models.Document;
-using Scv.Api.Services.Files;
-using Xunit;
 using System;
 using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
-using tests.api.Services;
+using System.IO;
 using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
+using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moq;
+using PCSSCommon.Clients.FileDetailServices;
+using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
+using Scv.Api.Models.Document;
 using Scv.Api.Services;
+using Scv.Api.Services.Files;
 using tests.api.Helpers;
+using tests.api.Services;
+using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
-using PCSSCommon.Clients.FileDetailServices;
-using Microsoft.Extensions.Configuration;
-using LazyCache.Providers;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace tests.api.Documents.Strategies;
 
@@ -154,7 +154,6 @@ public class ROPStrategyTest : ServiceTestBase
             _mapper,
             mockLookupService.Object,
             locationService.Object,
-            mockFileDetailClient.Object,
             _cachingService,
             mockUser,
             mockLoggerFactory.Object);

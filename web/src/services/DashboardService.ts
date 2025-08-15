@@ -12,10 +12,11 @@ export class DashboardService extends ServiceBase {
   getCourtCalendar(
     startDate: string,
     endDate: string,
-    locationIds: string
+    locationIds: string,
+    judgeId: number | undefined
   ): Promise<ApiResponse<CourtCalendarSchedule>> {
     return this.httpService.get<ApiResponse<CourtCalendarSchedule>>(
-      `api/dashboard/court-calendar?startDate=${startDate}&endDate=${endDate}&locationIds=${locationIds}`
+      `api/dashboard/court-calendar?startDate=${startDate}&endDate=${endDate}&locationIds=${locationIds}&judgeId=${judgeId ?? ''}`
     );
   }
 

@@ -10,14 +10,9 @@
     :options="calendarOptions"
     ref="calendarRef"
   >
-    <!-- This will be worked on separately -->
-    <!-- <template v-slot:eventContent="{ event }">
-      <MyCalendarDay
-        :date="event.extendedProps.date"
-        :isWeekend="event.extendedProps.isWeekend"
-        :activities="event.extendedProps.activities"
-      />
-    </template> -->
+    <template v-slot:eventContent="{ event }">
+      <CourtCalendarDay :activities="event.extendedProps.activities" />
+    </template>
   </FullCalendar>
 </template>
 <script setup lang="ts">
@@ -35,6 +30,10 @@
   if (!dashboardService) {
     throw new Error('Service is not available!');
   }
+
+  const props = defineProps<{
+    judgeId: number | undefined;
+  }>();
 
   const selectedDate = defineModel<Date>('selectedDate');
   const calendarView = defineModel<string>('calendarView');
@@ -71,7 +70,8 @@
       const { payload } = await dashboardService.getCourtCalendar(
         formatDateInstanceToDDMMMYYYY(startDay.value),
         formatDateInstanceToDDMMMYYYY(endDay.value),
-        locationIds.value
+        locationIds.value,
+        props.judgeId
       );
       calendarData.value = [...payload.days];
       presiders.value = [...payload.presiders];
@@ -117,6 +117,8 @@
   watch(selectedDate, updateCalendar);
 
   watch(calendarView, updateCalendar);
+
+  watch(() => props.judgeId, updateCalendar);
 
   watchEffect(() => {
     const calendarApi = calendarRef.value?.getApi();

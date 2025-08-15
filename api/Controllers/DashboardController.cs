@@ -58,14 +58,15 @@ namespace Scv.Api.Controllers
         /// <param name="startDate">The start date of the schedule.</param>
         /// <param name="endDate">The end date of the schedule.</param>
         /// <param name="locationIds">List location ids.</param>
+        /// <param name="judgeId">The override judgeId.</param>
         /// <returns>Court calendar</returns>
         [HttpGet]
         [Route("court-calendar")]
-        public async Task<IActionResult> GetCourtCalendar(string startDate, string endDate, string locationIds = "")
+        public async Task<IActionResult> GetCourtCalendar(string startDate, string endDate, string locationIds = "", int? judgeId = null)
         {
             var ids = string.IsNullOrWhiteSpace(locationIds) ? this.User.JudgeHomeLocationId().ToString() : locationIds;
 
-            var result = await _dashboardService.GetCourtCalendarScheduleAsync(ids, startDate, endDate);
+            var result = await _dashboardService.GetCourtCalendarScheduleAsync(this.User.JudgeId(judgeId), ids, startDate, endDate);
 
             if (!result.Succeeded)
             {

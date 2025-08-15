@@ -9,6 +9,7 @@
     v-if="isCourtCalendar"
     v-model:selectedDate="selectedDate"
     v-model:calendarView="calendarView"
+    :judgeId="judgeId"
   />
   <MyCalendar v-else :judgeId="judgeId" v-model:selectedDate="selectedDate" />
 </template>

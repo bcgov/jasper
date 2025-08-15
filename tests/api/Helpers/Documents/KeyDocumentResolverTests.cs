@@ -15,7 +15,7 @@ public class KeyDocumentResolverTest
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
 
-        Assert.Null(result);
+        Assert.Empty(result);
     }
 
     [Fact]

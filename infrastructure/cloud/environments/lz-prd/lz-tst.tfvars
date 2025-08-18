@@ -1,0 +1,10 @@
+region              = "ca-central-1"
+test_s3_bucket_name = "jasper-test-s3-bucket-test"
+web_subnet_names    = ["Prod-Web-MainTgwAttach-B", "Prod-Web-MainTgwAttach-A"]
+app_subnet_names    = ["Prod-App-A", "Prod-App-B"]
+data_subnet_names   = ["Prod-Data-A", "Prod-Data-B"]
+openshift_iam_user  = "openshiftuserprod"
+iam_user_table_name = "BCGOV-LZA-IAM-USER-TABLE"
+lb_name             = "default"
+rds_db_ca_cert      = "rds-ca-rsa2048-g1"
+cert_domain_name    = "internal.stratus.cloud.gov.bc.ca"

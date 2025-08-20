@@ -94,8 +94,8 @@ module "efs" {
   web_subnet_ids      = module.subnets.web_subnets_ids
   app_subnet_ids      = module.subnets.app_subnets_ids
   kms_key_arn         = module.initial.kms_key_arn
-  web_security_group_ids = data.aws_security_group.web_sg.id
-  app_security_group_ids = data.aws_security_group.app_sg.id
+  web_security_group_id = data.aws_security_group.web_sg.id
+  app_security_group_id = data.aws_security_group.app_sg.id
 }
 
 # Create Target Groups

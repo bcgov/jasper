@@ -168,8 +168,7 @@ public class DashboardService(
                     IsWeekend = c.Key.IsWeekend,
                     Activities = c
                         .SelectMany(a => a.Activities)
-                        .OrderBy(a => a.LocationRegionName)
-                        .ThenBy(a => a.LocationShortName)
+                        .OrderBy(a => a.LocationShortName)
                         .ThenBy(a => a.JudgeInitials)
                 });
 
@@ -319,26 +318,8 @@ public class DashboardService(
         Period? period = null)
     {
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
-        // Exclude FXD restrictions
-        var jRestrictions = judicialRestrictions
-            .Where(r => r.ActivityCode == activity.ActivityCode
-                && r.RestrictionCode == SEIZED_RESTRICTION_CODE
-                && r.AppearanceReasonCode != FIX_A_DATE_APPEARANCE_CODE)
-            .GroupBy(r => r.FileName)
-            .Select(r => r.First());
-
-        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(jRestrictions);
-
-        activity.LocationShortName = activity.LocationId != null
-            ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
-            : null;
-        activity.LocationRegionName = activity.LocationId != null
-            ? await _locationService.GetRegionName(activity.LocationId.ToString())
-            : null;
         activity.Period = period;
-        activity.Restrictions = restrictions;
-
-        return activity;
+        return await PopulateCommonActivityData(activity, judicialRestrictions);
     }
 
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
@@ -346,6 +327,11 @@ public class DashboardService(
         List<PCSS.AdjudicatorRestriction> judicialRestrictions)
     {
         var activity = _mapper.Map<CalendarDayActivity>(assignment);
+        return await PopulateCommonActivityData(activity, judicialRestrictions);
+    }
+
+    private async Task<CalendarDayActivity> PopulateCommonActivityData(CalendarDayActivity activity, List<PCSS.AdjudicatorRestriction> judicialRestrictions)
+    {
         // Exclude FXD restrictions
         var jRestrictions = judicialRestrictions
             .Where(r => r.ActivityCode == activity.ActivityCode
@@ -355,8 +341,8 @@ public class DashboardService(
             .Select(r => r.First());
         var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(jRestrictions);
 
-        activity.LocationShortName = assignment.LocationId != null
-                    ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
+        activity.LocationShortName = activity.LocationId != null
+                    ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
                     : null;
         activity.Restrictions = restrictions;
 

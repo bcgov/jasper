@@ -135,10 +135,6 @@ public class DashboardServiceTests : ServiceTestBase
             .Setup(l => l.GetLocationShortName(It.IsAny<string>()))
             .ReturnsAsync(string.Empty);
 
-        mockLocationService
-            .Setup(l => l.GetRegionName(It.IsAny<string>()))
-            .ReturnsAsync(string.Empty);
-
         return mockLocationService;
     }
 

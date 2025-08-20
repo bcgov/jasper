@@ -133,6 +133,16 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "rds:DescribeDBSecurityGroups"
         ],
         "Resource" : "arn:aws:rds:${var.region}:${var.account_id}:db:${var.app_name}-postgres-db-${var.environment}"
+      },
+      # policy to be able to mount efs
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "elasticfilesystem:DescribeFileSystems",
+          "elasticfilesystem:CreateMountTarget",
+          "elasticfilesystem:DeleteMountTarget"
+        ],
+        "Resource" : "*"
       }
     ]
   })
@@ -316,6 +326,16 @@ resource "aws_iam_policy" "lambda_role_policy" {
         #     "ec2:Vpc" : "arn:aws:ec2:${var.region}:*:vpc/${var.vpc_id}"
         #   }
         # }
+      },
+      # policy to be able to mount efs
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "elasticfilesystem:DescribeFileSystems",
+          "elasticfilesystem:CreateMountTarget",
+          "elasticfilesystem:DeleteMountTarget"
+        ],
+        "Resource" : "*"
       }
     ]
   })

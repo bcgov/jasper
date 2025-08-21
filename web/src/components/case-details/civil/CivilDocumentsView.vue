@@ -272,7 +272,7 @@
       // Get binders associated to the current user. In Phase 1, we are supporting 1 binder per case per user.
       getBindersResp = await binderService.getBinders(labels);
     } catch (error) {
-      console.error("Error occured while retrieving user's binders.");
+      console.error(`Error occured while retrieving user's binders: ${error}`);
     } finally {
       currentBinder.value =
         getBindersResp &&

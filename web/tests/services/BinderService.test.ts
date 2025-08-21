@@ -38,7 +38,10 @@ describe('BinderService', () => {
     const result = await service.getBinders(queryParams);
     expect(mockHttpService.get).toHaveBeenCalledWith(
       'api/binders',
-      queryParams
+      queryParams,
+      {
+        skipErrorHandler: true,
+      }
     );
     expect(result).toEqual(expectedResponse);
   });
@@ -54,7 +57,13 @@ describe('BinderService', () => {
     (mockHttpService.post as Mock).mockResolvedValueOnce(expectedResponse);
 
     const result = await service.addBinder(binder);
-    expect(mockHttpService.post).toHaveBeenCalledWith('api/binders', binder);
+    expect(mockHttpService.post).toHaveBeenCalledWith(
+      'api/binders',
+      binder,
+      {},
+      'json',
+      { skipErrorHandler: true }
+    );
     expect(result).toEqual(expectedResponse);
   });
 
@@ -69,7 +78,13 @@ describe('BinderService', () => {
     (mockHttpService.put as Mock).mockResolvedValueOnce(expectedResponse);
 
     const result = await service.updateBinder(binder);
-    expect(mockHttpService.put).toHaveBeenCalledWith('api/binders', binder);
+    expect(mockHttpService.put).toHaveBeenCalledWith(
+      'api/binders',
+      binder,
+      {},
+      'json',
+      { skipErrorHandler: true }
+    );
     expect(result).toEqual(expectedResponse);
   });
 
@@ -80,7 +95,10 @@ describe('BinderService', () => {
 
     await service.deleteBinder(binderId);
     expect(mockHttpService.delete).toHaveBeenCalledWith(
-      `api/binders/${binderId}`
+      `api/binders/${binderId}`,
+      {},
+      'json',
+      { skipErrorHandler: true }
     );
   });
 });

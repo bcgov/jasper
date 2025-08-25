@@ -14,7 +14,7 @@ if [ $? -eq 0 ]; then
   currentSecretAccessKey=$(echo "$param_value" | jq -r '.current.SecretAccessKey')
 
   if [ "$AWS_ACCESS_KEY_ID" = "$pendingAccessKeyId" ] || [ "$AWS_SECRET_ACCESS_KEY" = "$pendingSecretAccessKey" ]; then
-    echo "Updating AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for aws-secret-${$AWS_SECRET_PREFIX}${ENVIRONMENT} secret..."
+    echo "Updating AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for aws-secret-${AWS_SECRET_PREFIX}${ENVIRONMENT} secret..."
     
     oc create secret generic aws-secret-${AWS_SECRET_PREFIX}${ENVIRONMENT} \
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \

@@ -16,7 +16,7 @@ if [ $? -eq 0 ]; then
   if [ "$AWS_ACCESS_KEY_ID" = "$pendingAccessKeyId" ] || [ "$AWS_SECRET_ACCESS_KEY" = "$pendingSecretAccessKey" ]; then
     echo "Updating AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for aws-secret-${$AWS_SECRET_PREFIX}${ENVIRONMENT} secret..."
     
-    oc create secret generic aws-secret-$AWS_SECRET_PREFIX${ENVIRONMENT} \
+    oc create secret generic aws-secret-${AWS_SECRET_PREFIX}${ENVIRONMENT} \
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \
       --dry-run=client -o yaml | oc apply -f -

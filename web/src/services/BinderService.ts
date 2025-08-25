@@ -13,19 +13,38 @@ export class BinderService extends ServiceBase {
   ): Promise<ApiResponse<Binder[]>> {
     return this.httpService.get<ApiResponse<Binder[]>>(
       `api/binders`,
-      queryParams
+      queryParams,
+      { skipErrorHandler: true }
     );
   }
 
   addBinder(binder: Binder): Promise<ApiResponse<Binder>> {
-    return this.httpService.post<ApiResponse<Binder>>(`api/binders`, binder);
+    return this.httpService.post<ApiResponse<Binder>>(
+      `api/binders`,
+      binder,
+      {},
+      'json',
+      {
+        skipErrorHandler: true,
+      }
+    );
   }
 
   updateBinder(binder: Binder): Promise<ApiResponse<Binder>> {
-    return this.httpService.put<ApiResponse<Binder>>(`api/binders`, binder);
+    return this.httpService.put<ApiResponse<Binder>>(
+      `api/binders`,
+      binder,
+      {},
+      'json',
+      {
+        skipErrorHandler: true,
+      }
+    );
   }
 
   deleteBinder(binderId: string): Promise<void> {
-    return this.httpService.delete(`api/binders/${binderId}`);
+    return this.httpService.delete(`api/binders/${binderId}`, {}, 'json', {
+      skipErrorHandler: true,
+    });
   }
 }

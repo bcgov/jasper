@@ -111,7 +111,6 @@ namespace Scv.Api.Infrastructure.Authentication
                 options.SaveTokens = true;
                 options.CallbackPath = "/api/auth/signin-oidc";
                 options.Scope.Add("groups");
-                options.Scope.Add("vc_authn");
                 options.Events = new OpenIdConnectEvents
                 {
                     OnTicketReceived = context =>
@@ -190,6 +189,7 @@ namespace Scv.Api.Infrastructure.Authentication
                             var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
                             if (userDto != null)
                             {
+                                // UserId's value refers to the id in the User collection from MongoDb.
                                 claims.Add(new Claim(CustomClaimTypes.UserId, userDto.Id));
 
                                 var permissionsClaims = userDto.Permissions.Select(p => new Claim(CustomClaimTypes.Permission, p));

@@ -91,6 +91,8 @@ objects:
                 env:
                   - name: ENVIRONMENT
                     value: "${ENVIRONMENT}"
+                  - name: AWS_SECRET_PREFIX
+                    value: "${AWS_SECRET_PREFIX}"
                   - name: AWS_ACCESS_KEY_ID
                     valueFrom:
                       secretKeyRef:
@@ -138,8 +140,8 @@ parameters:
     
   - name: AWS_SECRET_PREFIX
     description: AWS secret prefix to handle new landing zone environment
-    required: true
-    value: "lz-"
+    required: false
+    value: ""
 
   - name: CRON_SCHEDULE
     description: Cronjob Schedule

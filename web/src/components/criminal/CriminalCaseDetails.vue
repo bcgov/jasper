@@ -223,7 +223,6 @@
         criminalFileStore.updateCriminalFile(
           criminalFileStore.criminalFileInformation
         );
-        getFileDetails();
         fileNumber.value = routeFileNumber;
         loading.value = false;
       });

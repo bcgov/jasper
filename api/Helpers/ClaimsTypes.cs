@@ -19,6 +19,7 @@ namespace Scv.Api.Helpers
         public const string UserId = nameof(CustomClaimTypes) + nameof(UserId);
         public const string JudgeId = nameof(CustomClaimTypes) + nameof(JudgeId);
         public const string JudgeHomeLocationId = nameof(CustomClaimTypes) + nameof(JudgeHomeLocationId);
+        public const string UserGuid = "idir_user_guid";
 
         public static readonly List<string> UsedKeycloakClaimTypes =
         [
@@ -27,7 +28,8 @@ namespace Scv.Api.Helpers
             "name",
             "preferred_username",
             "groups",
-            ClaimTypes.Email
+            ClaimTypes.Email,
+            UserGuid
         ];
     }
 }

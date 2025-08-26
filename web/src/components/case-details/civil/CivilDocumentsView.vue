@@ -53,6 +53,15 @@
     <v-btn
       size="large"
       class="mx-2"
+      :prepend-icon="mdiFileDocumentMultipleOutline"
+      style="letter-spacing: 0.001rem"
+      @click="openMergedDocuments(true)"
+    >
+      View together
+    </v-btn>
+    <v-btn
+      size="large"
+      class="mx-2"
       :prepend-icon="mdiNotebookRemoveOutline"
       style="letter-spacing: 0.001rem"
       @click="removeSelectedJudicialDocuments()"
@@ -248,12 +257,13 @@
 
   // Todo, parts of these binder operation methods should be moved to a
   // shared binder space, that way the code is not repeated
-  const openMergedDocuments = () => {
+  const openMergedDocuments = (isBinder = false) => {
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
     }[] = [];
-    selectedItems.value
+    const source = isBinder ? selectedBinderItems : selectedItems;
+    source.value
       .filter((item) => item.imageId)
       .forEach((item) => {
         const documentType =

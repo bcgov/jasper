@@ -27,10 +27,8 @@ namespace Scv.Api.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
-            // Authenticated user must have an idir_user_guid and belongs to specific groups
-            if (user.UserGuid() != null
-                && (user.Groups().Contains("court-viewer-supreme")
-                    || user.Groups().Contains("court-viewer-provincial")))
+            // Authenticated user must belong to specific groups
+            if (user.Groups().Contains("court-viewer-supreme") || user.Groups().Contains("court-viewer-provincial"))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;

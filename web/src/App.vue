@@ -15,7 +15,12 @@
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
             <JudgeSelector
-              v-if="selectedTab === 'dashboard' || selectedTab === 'court-list'"
+              v-if="
+                (selectedTab === 'dashboard' || selectedTab === 'court-list') &&
+                judges &&
+                judges?.length > 0
+              "
+              :judges="judges"
             />
             <v-btn
               class="ma-2"
@@ -37,12 +42,14 @@
 
 <script setup lang="ts">
   import { mdiAccountCircle } from '@mdi/js';
-  import { ref, watch } from 'vue';
+  import { inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import JudgeSelector from './components/shared/JudgeSelector.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
+  import { DashboardService } from './services';
   import { useThemeStore } from './stores/ThemeStore';
+  import { PersonSearchItem } from './types';
 
   const themeStore = useThemeStore();
   const theme = ref(themeStore.state);
@@ -50,6 +57,12 @@
 
   const route = useRoute();
   const selectedTab = ref('/dashboard');
+  const userService = inject<DashboardService>('dashboardService');
+  const judges = ref<PersonSearchItem[]>([]);
+
+  onMounted(async () => {
+    judges.value = (await userService?.getJudges()) ?? [];
+  });
 
   watch(
     () => route.path,

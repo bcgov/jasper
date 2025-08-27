@@ -76,9 +76,9 @@ exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
             cols="12"
             xs="12"
           >
-            <!---->
-            <!---->
-            <!---->
+            <!-- v-if -->
+            <!-- v-if -->
+            <!-- v-if -->
           </v-col>
         </v-row>
       </v-card>

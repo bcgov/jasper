@@ -59,7 +59,6 @@ describe('RequestAccess.vue', () => {
 
     const wrapper = await mountComponent();
 
-    console.log(wrapper.html());
     expect(wrapper.find('v-text-field').attributes('disabled')).toBeDefined();
     expect(wrapper.find('v-btn').attributes('disabled')).toBeDefined();
     expect(wrapper.text()).toContain('Your request has been submitted!');
@@ -104,7 +103,6 @@ describe('RequestAccess.vue', () => {
     await flushPromises();
 
     expect(mockRequestAccess).toHaveBeenCalledWith('test@example.com');
-    console.log(wrapper.text());
     expect(wrapper.text()).toContain('Your request has been submitted!');
   });
 

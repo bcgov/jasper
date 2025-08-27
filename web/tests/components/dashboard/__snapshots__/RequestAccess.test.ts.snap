@@ -8,15 +8,15 @@ exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
       <h2 class="mt-4">Request Access To JASPER:</h2>
     </b-row>
     <b-row class="mx-auto my-0 p-0">
-      <b-form-group class="mx-auto my-4" style="width: 20rem;"><label class="h6 m-0 p-0">Email:<span class="text-danger">*</span></label>
-        <b-form-input size="sm" modelvalue="test@example.com" placeholder="Enter Your Email" style="text-align: center;" disabled="false" title="This email is associated to the account you logged in with. You should not change this email unless instructed."></b-form-input>
+      <b-form-group class="mx-auto my-4" style="width: 20rem;"><label class="h6 m-0 p-0" for="email">Email:<span class="text-danger">*</span></label>
+        <b-form-input id="email" size="sm" modelvalue="test@example.com" placeholder="Enter Your Email" style="text-align: center;" disabled="false" title="This email is associated to the account you logged in with. You should not change this email unless instructed."></b-form-input>
       </b-form-group>
     </b-row>
     <b-button variant="primary" class="py-2 px-5" disabled="false">Submit Your Request</b-button>
     <b-row class="mx-auto my-4 p-0">
-      <!--v-if-->
-      <!--v-if-->
-      <!--v-if-->
+      <!---->
+      <!---->
+      <!---->
     </b-row>
   </b-card>
 </b-card>"

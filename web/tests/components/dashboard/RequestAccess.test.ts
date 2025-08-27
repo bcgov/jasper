@@ -1,3 +1,4 @@
+import { CustomAPIError } from './../../../src/utils/utils';
 import RequestAccess from '@/components/dashboard/RequestAccess.vue';
 import { useCommonStore } from '@/stores';
 import { getByText } from '@/utils/testutils';
@@ -110,7 +111,9 @@ describe('RequestAccess.vue', () => {
   it('calls requestAccess and displays errors returned from backend', async () => {
     mockGetByEmail.mockResolvedValue(undefined);
     const axiosError = new AxiosError('test error');
-    mockRequestAccess.mockRejectedValue(axiosError);
+    mockRequestAccess.mockRejectedValue(
+      new CustomAPIError(axiosError.message, axiosError)
+    );
     snackStore.showSnackbar = vi.fn();
 
     const wrapper = await mountComponent();

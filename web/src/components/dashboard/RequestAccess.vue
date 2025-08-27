@@ -75,8 +75,8 @@
   import { UserService } from '@/services/UserService';
   import { useCommonStore } from '@/stores';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
-  import { isPositiveInteger } from '@/utils/utils';
-  import axios from 'axios';
+  import { CustomAPIError, isPositiveInteger } from '@/utils/utils';
+  import axios, { AxiosError } from 'axios';
   import _ from 'underscore';
   import { inject, onMounted, ref } from 'vue';
 
@@ -103,9 +103,14 @@
               throw Error();
             }
           } catch (error) {
-            if (axios.isAxiosError(error)) {
+            if (
+              error instanceof CustomAPIError &&
+              axios.isAxiosError(
+                (error as CustomAPIError<AxiosError>).originalError
+              )
+            ) {
               snackBarStore.showSnackbar(
-                `${error?.response?.data?.error?.join('&nbsp;') ?? ''}`,
+                `${(error as CustomAPIError<AxiosError<[]>>)?.originalError?.response?.data?.join(' ') ?? ''}`,
                 '#b84157',
                 'Unable to submit access request'
               );

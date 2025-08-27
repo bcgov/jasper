@@ -43,7 +43,7 @@ namespace Scv.Api.Infrastructure.Authorization
             if (user.IsVcUser() && endpoint != null)
             {
 
-                var isFilesController = actionDescriptor.ControllerTypeInfo.Name == nameof(FilesController);
+                var isFilesController = actionDescriptor?.ControllerTypeInfo.Name == nameof(FilesController);
 
 
                 var allowedActionsForVc = new List<string>

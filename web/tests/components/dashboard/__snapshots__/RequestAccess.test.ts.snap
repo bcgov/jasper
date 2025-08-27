@@ -1,23 +1,30 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
-"<b-card bg-variant="white" class="home">
-  <b-card style="width: 50%; margin: 2rem auto 0px;" bg-variant="light" class="text-center" body-class="access-body">
-    <b-row align-h="center"><img class="img-fluid ml-5 mr-2" src="/public/images/bcid-logo-en.svg" width="177" height="44" alt="B.C. Government Logo"></b-row>
-    <b-row align-h="center">
-      <h2 class="mt-4">Request Access To JASPER:</h2>
-    </b-row>
-    <b-row class="mx-auto my-0 p-0">
-      <b-form-group class="mx-auto my-4" style="width: 20rem;"><label class="h6 m-0 p-0" for="email">Email:<span class="text-danger">*</span></label>
-        <b-form-input id="email" size="sm" modelvalue="test@example.com" placeholder="Enter Your Email" style="text-align: center;" disabled="false" title="This email is associated to the account you logged in with. You should not change this email unless instructed."></b-form-input>
-      </b-form-group>
-    </b-row>
-    <b-button variant="primary" class="py-2 px-5" disabled="false">Submit Your Request</b-button>
-    <b-row class="mx-auto my-4 p-0">
-      <!---->
-      <!---->
-      <!---->
-    </b-row>
-  </b-card>
-</b-card>"
+"<v-container data-v-93f38d58="" class="home" fluid="">
+  <v-row data-v-93f38d58="" justify="center">
+    <v-col data-v-93f38d58="" cols="12" md="8" lg="6">
+      <v-card data-v-93f38d58="" class="text-center access-body" elevation="2" style="padding: 1rem;"><img data-v-93f38d58="" class="img-fluid ml-5 mr-2" src="/public/images/bcid-logo-en.svg" width="177" height="44" alt="B.C. Government Logo">
+        <v-row data-v-93f38d58="" justify="center">
+          <h2 data-v-93f38d58="" class="mt-4">Request Access To JASPER:</h2>
+        </v-row>
+        <v-row data-v-93f38d58="" justify="center">
+          <v-col data-v-93f38d58="" cols="12" sm="10" md="8" xs="10">
+            <v-text-field data-v-93f38d58="" id="email" modelvalue="test@example.com" label="Email" disabled="false" placeholder="Enter Your Email" persistent-hint="" hint="This email is associated to the account you logged in with. You should not change this email unless instructed." type="email" required="" class="email-input"></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row data-v-93f38d58="" justify="center">
+          <v-btn data-v-93f38d58="" color="primary" class="py-2 px-5" disabled="false">Submit Your Request</v-btn>
+        </v-row>
+        <v-row data-v-93f38d58="" justify="center" class="my-4">
+          <v-col data-v-93f38d58="" cols="12" xs="12">
+            <!---->
+            <!---->
+            <!---->
+          </v-col>
+        </v-row>
+      </v-card>
+    </v-col>
+  </v-row>
+</v-container>"
 `;

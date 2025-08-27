@@ -59,9 +59,9 @@ public class UsersController(
     [Route("request-access")]
     public async Task<ActionResult> RequestAccess(string email)
     {
-        logger.LogInformation("User Id {UserId}, requested access with email: {EmailAddress}", User.UserId(), email);
-
         var userIdentifier = User.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
+        logger.LogInformation("User Id {UserId}, requested access with guid: {userIdentifier}", User.UserId(), userIdentifier);
+
         Guid userGuid;
         Guid.TryParse(userIdentifier?.Split("@").FirstOrDefault(), out userGuid);
         var newUser = new UserDto()

@@ -1,77 +1,90 @@
 <template>
-  <b-card bg-variant="white" class="home">
-    <b-card
-      style="width: 50%; margin: 2rem auto 0 auto"
-      bg-variant="light"
-      class="text-center"
-      body-class="access-body"
-    >
-      <b-row align-h="center">
-        <img
-          class="img-fluid ml-5 mr-2"
-          src="../../../public/images/bcid-logo-en.svg"
-          width="177"
-          height="44"
-          alt="B.C. Government Logo"
-        />
-      </b-row>
-      <b-row align-h="center">
-        <h2 class="mt-4">Request Access To JASPER:</h2>
-      </b-row>
-      <b-row class="mx-auto my-0 p-0">
-        <b-form-group class="mx-auto my-4" style="width: 20rem">
-          <label class="h6 m-0 p-0" for="email"
-            >Email:<span class="text-danger">*</span></label
-          >
-          <b-form-input
-            id="email"
-            size="sm"
-            v-model="selectedEmail"
-            placeholder="Enter Your Email"
-            style="text-align: center"
-            :disabled="isSubmitted || isUserInvalid || isUserDisabled"
-            v-b-tooltip.hover
-            title="This email is associated to the account you logged in with. You should not change this email unless instructed."
-          >
-          </b-form-input>
-        </b-form-group>
-      </b-row>
-      <b-button
-        variant="primary"
-        class="py-2 px-5"
-        @click="requestAccess()"
-        :disabled="isSubmitted || isUserInvalid || isUserDisabled"
-      >
-        {{ isSubmitted ? 'Submitted' : 'Submit Your Request' }}</b-button
-      >
-      <b-row class="mx-auto my-4 p-0">
-        <b-badge
-          v-if="isSubmitted"
-          class="px-5 mx-auto shared-badge bg-success"
+  <v-container class="home" fluid>
+    <v-row justify="center">
+      <v-col cols="12" md="8" lg="6">
+        <v-card
+          class="text-center access-body"
+          elevation="2"
+          style="padding: 1rem"
         >
-          Your request has been submitted!<br />
-          We will get back to you soon.
-        </b-badge>
-        <b-badge
-          v-if="isUserDisabled"
-          class="px-5 mx-auto shared-badge bg-warning"
-        >
-          Your user has been disabled.<br />
-          Please contact the JASPER admin if you require access.
-        </b-badge>
-        <b-badge
-          v-if="isUserInvalid"
-          class="px-5 mx-auto shared-badge bg-warning"
-        >
-          Warning, you do not have valid access to JASPER.<br />
-          Please contact the JASPER admin to correct your account.
-        </b-badge>
-      </b-row>
-    </b-card>
-  </b-card>
+          <img
+            class="img-fluid ml-5 mr-2"
+            src="../../../public/images/bcid-logo-en.svg"
+            width="177"
+            height="44"
+            alt="B.C. Government Logo"
+          />
+          <v-row justify="center">
+            <h2 class="mt-4">Request Access To JASPER:</h2>
+          </v-row>
+          <v-row justify="center">
+            <v-col cols="12" sm="10" md="8" xs="10">
+              <v-text-field
+                id="email"
+                v-model="selectedEmail"
+                label="Email"
+                :disabled="isSubmitted || isUserInvalid || isUserDisabled"
+                placeholder="Enter Your Email"
+                persistent-hint
+                hint="This email is associated to the account you logged in with. You should not change this email unless instructed."
+                type="email"
+                required
+                class="email-input"
+              >
+                <template #append>
+                  <span class="text-danger">*</span>
+                </template>
+              </v-text-field>
+            </v-col>
+          </v-row>
+          <v-row justify="center">
+            <v-btn
+              color="primary"
+              class="py-2 px-5"
+              @click="requestAccess"
+              :disabled="isSubmitted || isUserInvalid || isUserDisabled"
+            >
+              {{ isSubmitted ? 'Submitted' : 'Submit Your Request' }}
+            </v-btn>
+          </v-row>
+          <v-row justify="center" class="my-4">
+            <v-col cols="12" xs="12">
+              <v-alert
+                v-if="isSubmitted"
+                border="start"
+                type="success"
+                class="shared-badge px-5 mx-auto"
+              >
+                Your request has been submitted!<br />
+                We will get back to you soon.
+              </v-alert>
+              <v-alert
+                v-if="isUserDisabled"
+                border="start"
+                type="warning"
+                class="shared-badge px-5 mx-auto"
+              >
+                Your user has been disabled.<br />
+                Please contact the JASPER admin if you require access.
+              </v-alert>
+              <v-alert
+                v-if="isUserInvalid"
+                border="start"
+                type="warning"
+                class="shared-badge px-5 mx-auto"
+              >
+                Warning, you do not have valid access to JASPER.<br />
+                Please contact the JASPER admin to correct your account.
+              </v-alert>
+            </v-col>
+          </v-row>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
   import { UserService } from '@/services/UserService';
   import { useCommonStore } from '@/stores';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
@@ -80,79 +93,64 @@
   import _ from 'underscore';
   import { inject, onMounted, ref } from 'vue';
 
-  export default {
-    name: 'AccessRequest',
-    setup() {
-      const commonStore = useCommonStore();
-      const snackBarStore = useSnackbarStore();
-      const selectedEmail = ref<string>(commonStore.userInfo?.email ?? '');
-      const isUserDisabled = ref(false);
-      const isUserInvalid = ref(false);
-      const isSubmitted = ref(false);
-      const userService = inject<UserService>('userService');
+  const commonStore = useCommonStore();
+  const snackBarStore = useSnackbarStore();
+  const selectedEmail = ref<string>(commonStore.userInfo?.email ?? '');
+  const isUserDisabled = ref(false);
+  const isUserInvalid = ref(false);
+  const isSubmitted = ref(false);
+  const userService = inject<UserService>('userService');
 
-      const requestAccess = async (): Promise<void> => {
-        if (!_.isEmpty(selectedEmail.value)) {
-          try {
-            const accessRequest = await userService?.requestAccess(
-              selectedEmail.value
-            );
-            if (accessRequest?.email === selectedEmail.value) {
-              isSubmitted.value = true;
-            } else {
-              throw Error();
-            }
-          } catch (error) {
-            if (
-              error instanceof CustomAPIError &&
-              axios.isAxiosError(
-                (error as CustomAPIError<AxiosError>).originalError
-              )
-            ) {
-              snackBarStore.showSnackbar(
-                `${(error as CustomAPIError<AxiosError<[]>>)?.originalError?.response?.data?.join(' ') ?? ''}`,
-                '#b84157',
-                'Unable to submit access request'
-              );
-            }
-          }
+  const requestAccess = async (): Promise<void> => {
+    if (!_.isEmpty(selectedEmail.value)) {
+      try {
+        const accessRequest = await userService?.requestAccess(
+          selectedEmail.value
+        );
+        if (accessRequest?.email === selectedEmail.value) {
+          isSubmitted.value = true;
+          console.log('setting is submitted to true');
+        } else {
+          throw Error();
         }
-      };
-
-      const checkForEmail = async (): Promise<void> => {
-        if (!_.isEmpty(selectedEmail.value)) {
-          const user = await userService?.getByEmail(selectedEmail.value);
-          if (user?.email === selectedEmail.value) {
-            if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
-              isUserDisabled.value = true;
-            } else if (user?.isPendingRegistration) {
-              isSubmitted.value = true;
-            } else {
-              isUserInvalid.value = true;
-            }
-          }
+      } catch (error) {
+        if (
+          error instanceof CustomAPIError &&
+          axios.isAxiosError(
+            (error as CustomAPIError<AxiosError>).originalError
+          )
+        ) {
+          snackBarStore.showSnackbar(
+            `${(error as CustomAPIError<AxiosError<[]>>)?.originalError?.response?.data?.join(' ') ?? ''}`,
+            '#b84157',
+            'Unable to submit access request'
+          );
         }
-      };
-
-      onMounted(async () => {
-        await checkForEmail();
-      });
-
-      return {
-        selectedEmail,
-        isSubmitted,
-        userService,
-        snackBarStore,
-        isUserDisabled,
-        isUserInvalid,
-        requestAccess,
-        checkForEmail,
-      };
-    },
+      }
+    }
   };
+
+  const checkForEmail = async (): Promise<void> => {
+    if (!_.isEmpty(selectedEmail.value)) {
+      const user = await userService?.getByEmail(selectedEmail.value);
+      if (user?.email === selectedEmail.value) {
+        if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
+          isUserDisabled.value = true;
+        } else if (user?.isPendingRegistration) {
+          isSubmitted.value = true;
+        } else {
+          isUserInvalid.value = true;
+        }
+      }
+    }
+  };
+
+  onMounted(async () => {
+    await checkForEmail();
+  });
 </script>
 
-<style>
+<style scoped>
   .card {
     border: white;
   }
@@ -169,5 +167,9 @@
 
   .access-body {
     background-color: var(--bg-blue-100);
+  }
+
+  .email-input :deep() input {
+    text-align: center;
   }
 </style>

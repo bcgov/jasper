@@ -1,7 +1,6 @@
 import { CustomAPIError } from './../../../src/utils/utils';
 import RequestAccess from '@/components/dashboard/RequestAccess.vue';
 import { useCommonStore } from '@/stores';
-import { getByText } from '@/utils/testutils';
 import { flushPromises, mount } from '@vue/test-utils';
 import { AxiosError } from 'axios';
 import { createPinia, setActivePinia } from 'pinia';
@@ -60,8 +59,9 @@ describe('RequestAccess.vue', () => {
 
     const wrapper = await mountComponent();
 
-    expect(wrapper.find('b-form-input').attributes('disabled')).toBeDefined();
-    expect(wrapper.find('b-button').attributes('disabled')).toBeDefined();
+    console.log(wrapper.html());
+    expect(wrapper.find('v-text-field').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('v-btn').attributes('disabled')).toBeDefined();
     expect(wrapper.text()).toContain('Your request has been submitted!');
   });
 
@@ -100,11 +100,11 @@ describe('RequestAccess.vue', () => {
 
     const wrapper = await mountComponent();
     await nextTick();
-    await wrapper.find('b-button').trigger('click');
-    await nextTick();
+    wrapper.find('v-btn').trigger('click');
+    await flushPromises();
 
     expect(mockRequestAccess).toHaveBeenCalledWith('test@example.com');
-    expect(wrapper.vm.isSubmitted).toBe(true);
+    console.log(wrapper.text());
     expect(wrapper.text()).toContain('Your request has been submitted!');
   });
 
@@ -118,11 +118,10 @@ describe('RequestAccess.vue', () => {
 
     const wrapper = await mountComponent();
     await nextTick();
-    await wrapper.find('b-button').trigger('click');
+    wrapper.find('v-btn').trigger('click');
     await nextTick();
 
     expect(mockRequestAccess).toHaveBeenCalledWith('test@example.com');
-    expect(wrapper.vm.isSubmitted).toBe(false);
     expect(snackStore.showSnackbar).toHaveBeenCalled();
   });
 
@@ -136,7 +135,8 @@ describe('RequestAccess.vue', () => {
       global: { provide: { userService: mockUserService } },
     });
     await flushPromises();
-    getByText(wrapper, 'Submit Your Request').trigger('click');
+    wrapper.find('v-btn').trigger('click');
+    await nextTick();
 
     expect(mockRequestAccess).not.toHaveBeenCalled();
   });

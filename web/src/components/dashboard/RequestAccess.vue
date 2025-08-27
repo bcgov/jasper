@@ -109,7 +109,6 @@
         );
         if (accessRequest?.email === selectedEmail.value) {
           isSubmitted.value = true;
-          console.log('setting is submitted to true');
         } else {
           throw Error();
         }

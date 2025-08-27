@@ -1,23 +1,23 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
-"<v-container data-v-93f38d58="" class="home" fluid="">
-  <v-row data-v-93f38d58="" justify="center">
-    <v-col data-v-93f38d58="" cols="12" md="8" lg="6">
-      <v-card data-v-93f38d58="" class="text-center access-body" elevation="2" style="padding: 1rem;"><img data-v-93f38d58="" class="img-fluid ml-5 mr-2" src="/public/images/bcid-logo-en.svg" width="177" height="44" alt="B.C. Government Logo">
-        <v-row data-v-93f38d58="" justify="center">
-          <h2 data-v-93f38d58="" class="mt-4">Request Access To JASPER:</h2>
+"<v-container data-v-c724dafc="" class="home" fluid="">
+  <v-row data-v-c724dafc="" justify="center">
+    <v-col data-v-c724dafc="" cols="12" md="8" lg="6">
+      <v-card data-v-c724dafc="" class="text-center access-body" elevation="2" style="padding: 1rem;"><img data-v-c724dafc="" class="img-fluid ml-5 mr-2" src="/public/images/bcid-logo-en.svg" width="177" height="44" alt="B.C. Government Logo">
+        <v-row data-v-c724dafc="" justify="center">
+          <h2 data-v-c724dafc="" class="mt-4">Request Access To JASPER:</h2>
         </v-row>
-        <v-row data-v-93f38d58="" justify="center">
-          <v-col data-v-93f38d58="" cols="12" sm="10" md="8" xs="10">
-            <v-text-field data-v-93f38d58="" id="email" modelvalue="test@example.com" label="Email" disabled="false" placeholder="Enter Your Email" persistent-hint="" hint="This email is associated to the account you logged in with. You should not change this email unless instructed." type="email" required="" class="email-input"></v-text-field>
+        <v-row data-v-c724dafc="" justify="center">
+          <v-col data-v-c724dafc="" cols="12" sm="10" md="8" xs="10">
+            <v-text-field data-v-c724dafc="" id="email" modelvalue="test@example.com" label="Email" disabled="false" placeholder="Enter Your Email" persistent-hint="" hint="This email is associated to the account you logged in with. You should not change this email unless instructed." type="email" required="" class="email-input"></v-text-field>
           </v-col>
         </v-row>
-        <v-row data-v-93f38d58="" justify="center">
-          <v-btn data-v-93f38d58="" color="primary" class="py-2 px-5" disabled="false">Submit Your Request</v-btn>
+        <v-row data-v-c724dafc="" justify="center">
+          <v-btn data-v-c724dafc="" color="primary" class="py-2 px-5" disabled="false">Submit Your Request</v-btn>
         </v-row>
-        <v-row data-v-93f38d58="" justify="center" class="my-4">
-          <v-col data-v-93f38d58="" cols="12" xs="12">
+        <v-row data-v-c724dafc="" justify="center" class="my-4">
+          <v-col data-v-c724dafc="" cols="12" xs="12">
             <!---->
             <!---->
             <!---->

@@ -60,7 +60,7 @@ public class UsersController(
     public async Task<ActionResult> RequestAccess(string email)
     {
         var userIdentifier = User.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
-        logger.LogInformation("User Id {UserId}, requested access with guid: {userIdentifier}", User.UserId(), userIdentifier);
+        logger.LogInformation("User Id {UserId}, requested access with guid: {UserIdentifier}", User.UserId(), userIdentifier);
 
         Guid userGuid;
         Guid.TryParse(userIdentifier?.Split("@").FirstOrDefault(), out userGuid);

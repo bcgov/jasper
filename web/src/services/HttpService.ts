@@ -62,11 +62,10 @@ export class HttpService implements IHttpService {
 
   private handleError(error: any) {
     console.error(error);
-    console.log('User unauthenticated.');
 
     if (error.config?.skipErrorHandler) {
       // Component handles the error
-      return Promise.reject(new Error(error));
+      return Promise.reject(error);
     }
 
     // todo: check for a 403 and handle it
@@ -80,7 +79,7 @@ export class HttpService implements IHttpService {
         'Error'
       );
     }
-    return Promise.reject(new Error(error));
+    return Promise.reject(error);
   }
 
   public async get<T>(

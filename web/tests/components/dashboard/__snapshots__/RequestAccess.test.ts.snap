@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
+"<b-card bg-variant="white" class="home">
+  <b-card style="width: 50%; margin: 2rem auto 0px;" bg-variant="light" class="text-center" body-class="access-body">
+    <b-row align-h="center"><img class="img-fluid ml-5 mr-2" src="/public/images/bcid-logo-en.svg" width="177" height="44" alt="B.C. Government Logo"></b-row>
+    <b-row align-h="center">
+      <h2 class="mt-4">Request Access To JASPER:</h2>
+    </b-row>
+    <b-row class="mx-auto my-0 p-0">
+      <b-form-group class="mx-auto my-4" style="width: 20rem;"><label class="h6 m-0 p-0">Email:<span class="text-danger">*</span></label>
+        <b-form-input size="sm" modelvalue="test@example.com" placeholder="Enter Your Email" style="text-align: center;" disabled="false" title="This email is associated to the account you logged in with. You should not change this email unless instructed."></b-form-input>
+      </b-form-group>
+    </b-row>
+    <b-button variant="primary" class="py-2 px-5" disabled="false">Submit Your Request</b-button>
+    <b-row class="mx-auto my-4 p-0">
+      <!--v-if-->
+      <!--v-if-->
+      <!--v-if-->
+    </b-row>
+  </b-card>
+</b-card>"
+`;

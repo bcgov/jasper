@@ -47,6 +47,7 @@ describe('RequestAccess.vue', () => {
   it('renders correctly (snapshot)', async () => {
     mockGetByEmail.mockResolvedValue(undefined);
     const wrapper = await mountComponent();
+    await wrapper.vm.$nextTick();
 
     expect(wrapper.html()).toMatchSnapshot();
   });

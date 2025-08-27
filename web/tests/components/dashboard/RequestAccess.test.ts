@@ -1,12 +1,12 @@
-import { CustomAPIError } from './../../../src/utils/utils';
 import RequestAccess from '@/components/dashboard/RequestAccess.vue';
 import { useCommonStore } from '@/stores';
+import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { flushPromises, mount } from '@vue/test-utils';
 import { AxiosError } from 'axios';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { CustomAPIError } from './../../../src/utils/utils';
 
 // Mock UserService
 const mockRequestAccess = vi.fn();
@@ -47,9 +47,10 @@ describe('RequestAccess.vue', () => {
   it('renders correctly (snapshot)', async () => {
     mockGetByEmail.mockResolvedValue(undefined);
     const wrapper = await mountComponent();
-    await wrapper.vm.$nextTick();
 
-    expect(wrapper.html()).toMatchSnapshot();
+    await vi.waitFor(() => {
+      expect(wrapper.html()).toMatchSnapshot();
+    });
   });
 
   it('disables input and button when isSubmitted is true', async () => {

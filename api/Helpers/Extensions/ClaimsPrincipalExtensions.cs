@@ -53,6 +53,10 @@ namespace Scv.Api.Helpers.Extensions
         => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.IsSupremeUser) &&
            claimsPrincipal.FindFirstValue(CustomClaimTypes.IsSupremeUser).Equals("true", StringComparison.OrdinalIgnoreCase);
 
+        public static bool IsActive(this ClaimsPrincipal claimsPrincipal)
+        => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.IsActive) &&
+           claimsPrincipal.FindFirstValue(CustomClaimTypes.IsActive).Equals("true", StringComparison.OrdinalIgnoreCase);
+
         public static string ExternalRole(this ClaimsPrincipal claimsPrincipal) =>
            claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalRole);
 

@@ -8,6 +8,7 @@ import { civilApprDetailType } from '@/types/civil/jsonTypes';
 import { CourtClassEnum, LookupCode } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
+import _ from 'underscore';
 import { inject } from 'vue';
 import { LocationQueryValue } from 'vue-router';
 
@@ -313,3 +314,16 @@ export const parseQueryStringToString = (
   }
   return value ?? fallback;
 };
+
+export const isPositiveInteger = (value) => {
+  return _.isNumber(value) && value > 0;
+};
+
+export class CustomAPIError<T> extends Error {
+  public originalError: T;
+  constructor(message, originalError) {
+    super(message);
+    this.name = 'CustomAPIError';
+    this.originalError = originalError; // Store the original Axios error
+  }
+}

@@ -79,7 +79,7 @@ public class UserService(
         // Check if user exists
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {email} is not found", email);
+            this.Logger.LogInformation("User with email: {email} is not found", email.Replace(Environment.NewLine, ""));
             return null;
         }
 

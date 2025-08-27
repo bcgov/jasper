@@ -20,6 +20,23 @@ namespace Scv.Api.Infrastructure.Authorization
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, ProviderAuthorizationHandler requirement)
         {
             var user = context.User;
+            var httpContext = context.Resource as DefaultHttpContext;
+            var endpoint = httpContext?.GetEndpoint();
+            var actionDescriptor = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>();
+            var isAuthController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(AuthController);
+            var isUserController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(UsersController);
+
+            if (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetMyUser)) ||
+            (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo)))
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
+
+            if (!user.IsActive())
+            {
+                context.Fail();
+            }
 
             if (user.Identity.AuthenticationType == SiteMinderAuthenticationHandler.SiteMinder)
             {
@@ -27,21 +44,17 @@ namespace Scv.Api.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
-            // Authenticated user must belong to specific groups
             if (user.Groups().Contains("court-viewer-supreme") || user.Groups().Contains("court-viewer-provincial"))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
             }
 
-            var httpContext = context.Resource as DefaultHttpContext;
-            var endpoint = httpContext?.GetEndpoint();
-
             if (user.IsVcUser() && endpoint != null)
             {
-                var actionDescriptor = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
-                var isFilesController = actionDescriptor.ControllerTypeInfo.Name == nameof(FilesController);
-                var isAuthController = actionDescriptor.ControllerTypeInfo.Name == nameof(AuthController);
+
+                var isFilesController = actionDescriptor?.ControllerTypeInfo.Name == nameof(FilesController);
+
 
                 var allowedActionsForVc = new List<string>
                 {
@@ -53,11 +66,6 @@ namespace Scv.Api.Infrastructure.Authorization
                 };
 
                 if (isFilesController && allowedActionsForVc.Contains(actionDescriptor.ActionName))
-                {
-                    context.Succeed(requirement);
-                    return Task.CompletedTask;
-                }
-                if (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))
                 {
                     context.Succeed(requirement);
                     return Task.CompletedTask;

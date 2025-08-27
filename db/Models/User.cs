@@ -16,6 +16,8 @@ namespace Scv.Db.Models
 
         public bool IsActive { get; set; }
 
+        public bool? IsPendingRegistration { get; set; } = false;
+
         public Guid? ADId { get; set; }
 
         public string ADUsername { get; set; }

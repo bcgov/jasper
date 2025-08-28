@@ -252,22 +252,22 @@ namespace Scv.Api.Infrastructure.Authentication
             ILogger logger,
             List<Claim> claims)
         {
+            var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
+            var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
+
+            // Remove checking when the "real" mongo db has been configured
+            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                // Defaults the logged in user to the default judge.
+                logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
+                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+                return;
+            }
+
             try
             {
-                var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
-                var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
-
-                // Remove checking when the "real" mongo db has been configured
-                var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-                if (string.IsNullOrWhiteSpace(connectionString))
-                {
-                    // Defaults the logged in user to the default judge.
-                    logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
-                    claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
-                    claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
-                    return;
-                }
-
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
                 var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
 
@@ -310,10 +310,6 @@ namespace Scv.Api.Infrastructure.Authentication
                     }
                 }
 
-                logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
-                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
-                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
-
                 // UserId's value refers to the id in the User collection from MongoDb.
                 claims.Add(new Claim(CustomClaimTypes.UserId, userDto.Id));
 
@@ -327,6 +323,13 @@ namespace Scv.Api.Infrastructure.Authentication
             catch (Exception ex)
             {
                 logger.LogError("Something went wrong during post authentication process: {Error}", ex);
+            }
+            finally
+            {
+                // Add the final value of judgeId and homeLocationId as claims of the current user
+                logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
+                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
             }
         }
     }

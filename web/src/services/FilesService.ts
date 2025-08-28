@@ -2,6 +2,7 @@ import { CivilAppearanceDetails } from '@/types/civil/jsonTypes/index';
 import { CourtFileSearchResponse } from '@/types/courtFileSearch';
 import { CriminalAppearanceDetails } from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
+import { GeneratePdfResponse, GeneratePdfRequest } from '@/components/documents/models/GeneratePdf';
 
 export class FilesService {
   private httpService: HttpService;
@@ -43,6 +44,15 @@ export class FilesService {
   ): Promise<CriminalAppearanceDetails> {
     return this.httpService.get<any>(
       `${this.baseUrl}/criminal/${fileId}/appearance-detail/${appearanceId}/${partId}`
+    );
+  }
+
+  async generatePdf(
+    requestData: GeneratePdfRequest[]
+  ): Promise<GeneratePdfResponse> {
+    return this.httpService.post<GeneratePdfResponse>(
+      `${this.baseUrl}/document/generate-pdf`,
+      requestData
     );
   }
 

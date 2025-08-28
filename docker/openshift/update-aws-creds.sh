@@ -1,5 +1,6 @@
 #!/bin/sh
 ENVIRONMENT="${ENVIRONMENT}"
+AWS_SECRET_PREFIX="${AWS_SECRET_PREFIX}"
 
 # AWS Access Keys/IDs has a scheduled rotation and needs to be kept up-to-date in OpenShift.
 # https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/design-build-and-deploy-an-application/iam-user-service/#setup-automation-to-retrieve-and-use-keys
@@ -13,9 +14,9 @@ if [ $? -eq 0 ]; then
   currentSecretAccessKey=$(echo "$param_value" | jq -r '.current.SecretAccessKey')
 
   if [ "$AWS_ACCESS_KEY_ID" = "$pendingAccessKeyId" ] || [ "$AWS_SECRET_ACCESS_KEY" = "$pendingSecretAccessKey" ]; then
-    echo "Updating AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for aws-secret-${ENVIRONMENT} secret..."
+    echo "Updating AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for aws-secret-${AWS_SECRET_PREFIX}${ENVIRONMENT} secret..."
     
-    oc create secret generic aws-secret-${ENVIRONMENT} \
+    oc create secret generic aws-secret-${AWS_SECRET_PREFIX}${ENVIRONMENT} \
       --from-literal=AWS_ACCESS_KEY_ID=$currentAccessKeyId \
       --from-literal=AWS_SECRET_ACCESS_KEY=$currentSecretAccessKey \
       --dry-run=client -o yaml | oc apply -f -

@@ -3,8 +3,9 @@
 # Vault details
 VAULT_SECRET_ENV="${VAULT_SECRET_ENV}"
 LOCAL_SECRET_PATH="${LOCAL_SECRET_PATH}"
+AWS_SECRET_PREFIX="${AWS_SECRET_PREFIX}"
 
-aws_secret_format="external/jasper-X-secret-$VAULT_SECRET_ENV"
+aws_secret_format="external/jasper-X-secret-$AWS_SECRET_PREFIX$VAULT_SECRET_ENV"
 secret_keys="\
   aspnet_core \
   auth \

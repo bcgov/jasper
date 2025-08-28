@@ -79,7 +79,7 @@
                 <td>
                   <v-checkbox-btn
                     v-model="selectedBinderItems"
-                    :value="element.civilDocumentId"
+                    :value="element"
                     :input-value="selectedBinderItems?.includes(element)"
                   />
                 </td>

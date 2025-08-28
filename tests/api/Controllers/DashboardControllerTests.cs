@@ -103,7 +103,7 @@ namespace tests.api.Controllers
         public async Task GetCourtCalendar_Returns_BadRequest()
         {
             _dashboardService
-                .Setup(d => d.GetCourtCalendarScheduleAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(d => d.GetCourtCalendarScheduleAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Failure(_faker.Lorem.Paragraph()));
 
             var result = await _controller.GetCourtCalendar(_faker.Date.ToString(), _faker.Date.ToString());
@@ -114,8 +114,10 @@ namespace tests.api.Controllers
         [Fact]
         public async Task GetCourtCalendar_Returns_OK_And_Uses_Judge_Home_Location_Id_When_Location_Ids_Is_Missing()
         {
+            var judgeId = _controller.HttpContext.User.JudgeId();
             _dashboardService
                 .Setup(d => d.GetCourtCalendarScheduleAsync(
+                    judgeId,
                     _controller.HttpContext.User.JudgeHomeLocationId().ToString(),
                     It.IsAny<string>(),
                     It.IsAny<string>()))
@@ -128,6 +130,7 @@ namespace tests.api.Controllers
             Assert.IsType<OkObjectResult>(result);
             _dashboardService
                 .Verify(d => d.GetCourtCalendarScheduleAsync(
+                    judgeId,
                     _controller.HttpContext.User.JudgeHomeLocationId().ToString(),
                     It.IsAny<string>(),
                     It.IsAny<string>()),
@@ -140,6 +143,7 @@ namespace tests.api.Controllers
             var locationIds = _faker.Random.Number().ToString();
             _dashboardService
                 .Setup(d => d.GetCourtCalendarScheduleAsync(
+                    It.IsAny<int>(),
                     locationIds,
                     It.IsAny<string>(),
                     It.IsAny<string>()))
@@ -153,6 +157,7 @@ namespace tests.api.Controllers
             Assert.IsType<OkObjectResult>(result);
             _dashboardService
                 .Verify(d => d.GetCourtCalendarScheduleAsync(
+                    It.IsAny<int>(),
                     locationIds,
                     It.IsAny<string>(),
                     It.IsAny<string>()),

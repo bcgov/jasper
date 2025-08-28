@@ -10,112 +10,46 @@
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
 
-<script setup>
+<script setup lang="ts">
+  import { FilesService } from '@/services/FilesService';
   import { usePDFViewerStore } from '@/stores';
-  import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
+  import { inject, onMounted, onUnmounted, ref } from 'vue';
 
   const pdfStore = usePDFViewerStore();
-  const containerRef = useTemplateRef('pdf-container');
+  const filesService = inject<FilesService>('filesService');
+  if (!filesService) {
+    throw new Error('HttpService is not available!');
+  }
   const loading = ref(false);
   const emptyStore = ref(false);
   const configuration = {
     initialViewState: new NutrientViewer.ViewState({
       sidebarMode: NutrientViewer.SidebarMode.DOCUMENT_OUTLINE,
     }),
+    container: '.pdf-container',
   };
 
-  const loadNutrient = () => {
+  const loadNutrient = async () => {
     loading.value = true;
     emptyStore.value = false;
 
-    if (!pdfStore.documentUrls.length) {
+    if (!pdfStore.documents.length) {
       loading.value = false;
       emptyStore.value = true;
       return;
     }
-    return pdfStore.documentUrls.length === 1 ? loadSingle() : loadMultiple();
+    return loadMultiple();
   };
 
   const loadMultiple = async () => {
-    const instance = await NutrientViewer.load({
-      ...configuration,
-      container: containerRef.value,
-      document: pdfStore.documentUrls[0],
-      headless: true,
-    });
-
-    // We skip the first index since we used it to load the nutrient viewer.
-    const documentBlobs = await Promise.all(
-      pdfStore.documentUrls
-        .slice(1)
-        .map((url) => fetch(url).then((result) => result.blob()))
-    );
-
-    // Track the starting page index for each document
-    let pageIndices = [0]; // First document always starts at 0
-    let afterPageIndex = instance.totalPageCount;
-    // Prepare merge operations
-    const mergeDocumentOperations = [];
-    for (const element of documentBlobs) {
-      const blob = element;
-      const documentInstance = await NutrientViewer.load({
-        ...configuration,
-        document: await blob.arrayBuffer(),
-        headless: true,
-      });
-      pageIndices.push(afterPageIndex);
-      mergeDocumentOperations.push({
-        type: 'importDocument',
-        afterPageIndex: afterPageIndex - 1, // Insert after the last page (zero-based)
-        treatImportedDocumentAsOnePage: false,
-        document: blob,
-      });
-      afterPageIndex += documentInstance.totalPageCount;
-      NutrientViewer.unload(documentInstance);
-    }
-
-    const mergedDocument = await instance.exportPDFWithOperations(
-      mergeDocumentOperations
-    );
-
-    loading.value = false;
-    // Load merged document and set outline
-    const mergedInstance = await NutrientViewer.load({
-      ...configuration,
-      container: containerRef.value,
-      document: mergedDocument,
-    });
-
-    // Build outline for each document's starting page
-    const outline = NutrientViewer.Immutable.List(
-      pdfStore.documentUrls.map(
-        (url, idx) =>
-          new NutrientViewer.OutlineElement({
-            action: new NutrientViewer.Actions.GoToAction({
-              pageIndex: pageIndices[idx],
-            }),
-            children: NutrientViewer.Immutable.List([]),
-            title: `Document ${idx + 1}`,
-          })
-      )
-    );
-
-    mergedInstance.setDocumentOutline(outline);
-  };
-
-  const loadSingle = async () => {
-    const documentBlob = await fetch(pdfStore.documentUrls[0]).then((result) =>
-      result.blob()
-    );
-    const documentBuffer = await documentBlob.arrayBuffer();
-    // We set our own loader to false, nutrient's internal loader can take it from here
+    const documentResponse = await filesService.generatePdf(pdfStore.documents);
     loading.value = false;
 
     await NutrientViewer.load({
       ...configuration,
-      container: containerRef.value,
-      document: documentBuffer,
+      document: `data:application/pdf;base64,${documentResponse.base64Pdf}`,
     });
+    // Todo - Render outline from page ranges
   };
 
   onMounted(() => {
@@ -123,12 +57,11 @@
   });
 
   onUnmounted(() => {
-    const container = containerRef.value;
-
-    if (container && NutrientViewer) {
-      NutrientViewer.unload(container);
+    if (NutrientViewer) {
+      NutrientViewer.unload('.pdf-container');
     }
-    pdfStore.clearUrls();
+
+    pdfStore.clearDocuments();
   });
 </script>
 

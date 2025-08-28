@@ -21,9 +21,11 @@ using Scv.Api.Models.archive;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Models.Search;
+using Scv.Api.Models.Document;
 using Scv.Api.Services.Files;
 using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
+using Scv.Api.Documents;
 
 namespace Scv.Api.Controllers
 {
@@ -34,6 +36,7 @@ namespace Scv.Api.Controllers
     public class FilesController(
         IConfiguration configuration,
         ILogger<FilesController> logger,
+        IDocumentMerger documentMerger,
         FilesService filesService,
         VcCivilFileAccessHandler vcCivilFileAccessHandler,
         IHttpContextAccessor httpContextAccessor) : ControllerBase
@@ -42,6 +45,7 @@ namespace Scv.Api.Controllers
 
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<FilesController> _logger = logger;
+        private readonly IDocumentMerger _documentMerger = documentMerger;
         private readonly FilesService _filesService = filesService;
         private readonly CivilFilesService _civilFilesService = filesService.Civil;
         private readonly CriminalFilesService _criminalFilesService = filesService.Criminal;
@@ -342,6 +346,29 @@ namespace Scv.Api.Controllers
 
             return File(documentResponse.Stream, "application/pdf");
         }
+
+        /// <summary>
+        /// Generates a singular PDF document based off the relevant request data.
+        /// </summary>
+        /// <param name="documentRequests">An array of <see cref="PdfDocumentRequest"/> objects representing the documents to display in a single PDF.</param>
+        /// <returns>
+        /// An <see cref="IActionResult"/> containing the result of the merge operation.
+        /// </returns>
+        /// <remarks>
+        /// This endpoint accepts a POST request to "document/generate-pdf" and returns the a singular PDF document.
+        /// </remarks>
+        [HttpPost]
+        [Route("document/generate-pdf")]
+        public async Task<IActionResult> GeneratePdf(PdfDocumentRequest[] documentRequests)
+        {
+            if (documentRequests.Length == 0)
+            {
+                return BadRequest("No documents were provided for generation.");
+            }
+            var result = await _documentMerger.MergeDocuments(documentRequests);
+            return Ok(result);
+        }
+
 
         [HttpPost]
         [Route("archive")]

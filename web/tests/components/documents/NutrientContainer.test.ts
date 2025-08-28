@@ -2,22 +2,28 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import NutrientContainer from 'CMP/documents/NutrientContainer.vue';
 import { setActivePinia, createPinia } from 'pinia'
-const mockDocumentUrls = ['url1.pdf', 'url2.pdf', 'url3.pdf'];
+import { FilesService } from '@/services/FilesService';
 
+const mockDocuments = [{ test: "1" }, { test: "2" }, { test: "3" }];
 const mockLoad = vi.fn().mockImplementation(() => ({setDocumentOutline: vi.fn().mockImplementation(() => ({}))}));
 const mockUnload = vi.fn();
+let filesService: any;
+let mockResponse: any = {
+  base64Pdf: 'testBase64String',
+};
 
 // Mock store
 vi.mock('@/stores/PDFViewerStore', () => {
   return {
     usePDFViewerStore: vi.fn(() => ({
-      get documentUrls() {
-        return mockDocumentUrls;
+      get documents() {
+        return mockDocuments;
       },
-      clearUrls: vi.fn(),
+      clearDocuments: vi.fn(),
     })),
   };
 });
+vi.mock('@/services/FilesService');
 
 globalThis.NutrientViewer = {
   ViewState: vi.fn().mockImplementation(() => ({})),
@@ -39,6 +45,9 @@ describe('NutrientContainer.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setActivePinia(createPinia());
+    filesService = {
+      generatePdf: vi.fn().mockResolvedValue(mockResponse)
+    };
 
     // Mock global fetch to avoid real network requests
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -59,6 +68,9 @@ describe('NutrientContainer.vue', () => {
     wrapper = mount(NutrientContainer, {
       global: {
         stubs: ['v-progress-linear', 'v-skeleton-loader'],
+        provide: {
+          filesService
+        }
       },
     });
   });
@@ -67,22 +79,22 @@ describe('NutrientContainer.vue', () => {
     wrapper.unmount();
   });
 
-  it('renders loading indicators initially', async () => {
-    expect(wrapper.findComponent({ name: 'v-progress-linear' }).exists()).toBe(true);
-    expect(wrapper.findComponent({ name: 'v-skeleton-loader' }).exists()).toBe(true);
-  });
-
-  it('expect load to be called initally with first document', () => {
-    expect(globalThis.NutrientViewer.load).toHaveBeenCalledWith(
-      expect.objectContaining({document: 'url1.pdf'})
-    );
-    expect.objectContaining({document: 'url1.pdf'});
+  it('does not render loaders when fully mounted', async () => {
+    await flushPromises();
+    expect(wrapper.findComponent({ name: 'v-progress-linear' }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'v-skeleton-loader' }).exists()).toBe(false);
   });
 
   it('unloads NutrientViewer on unmount', async () => {
     await flushPromises();
     wrapper.unmount();
     expect(mockUnload).toHaveBeenCalled();
+  });
+
+  it('expect load to be called with correct b64 content', () => {
+    expect(globalThis.NutrientViewer.load).toHaveBeenCalledWith(
+      expect.objectContaining({ document: `data:application/pdf;base64,${mockResponse.base64Pdf}` })
+    );
   });
 
   it('shows pdf-container after loading', async () => {

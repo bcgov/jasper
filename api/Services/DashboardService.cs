@@ -20,7 +20,7 @@ public interface IDashboardService
 {
     Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId);
     Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
-    Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate);
+    Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate);
     Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges();
 }
 
@@ -97,7 +97,7 @@ public class DashboardService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, ex.Message);
+            _logger.LogError(ex, "Something went wrong when querying Today's Schedule: {Message}", ex.Message);
             return OperationResult<CalendarDay>.Failure("Something went wrong when querying Today's Schedule");
         }
     }
@@ -128,12 +128,12 @@ public class DashboardService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, ex.Message);
+            _logger.LogError(ex, "Something went wrong when querying My Schedule: {Message}", ex.Message);
             return OperationResult<List<CalendarDay>>.Failure("Something went wrong when querying My Schedule");
         }
     }
 
-    public async Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(string locationIds, string startDate, string endDate)
+    public async Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate)
     {
         try
         {
@@ -158,16 +158,18 @@ public class DashboardService(
             var judicialCalendar = await judicialCalendarTask;
             var calendarsWithData = judicialCalendar.Calendars.Where(c => c.Days.Count > 0);
 
-            // Agregate calendars into a single list of CalendarDay
-            var calendarDays = await Task.WhenAll(calendarsWithData.Select(c => GetDays(c)));
+            // Aggregate calendars into a single list of CalendarDay
+            var calendarDays = await Task.WhenAll(calendarsWithData.Select(c => GetDays(c, judgeId)));
             var aggCalendarDays = calendarDays.SelectMany(c => c)
-                .GroupBy(c => (c.Date, c.IsWeekend, c.ShowCourtList))
+                .GroupBy(c => (c.Date, c.IsWeekend))
                 .Select((c) => new CalendarDay
                 {
                     Date = c.Key.Date,
                     IsWeekend = c.Key.IsWeekend,
-                    ShowCourtList = c.Key.ShowCourtList,
-                    Activities = c.SelectMany(c => c.Activities)
+                    Activities = c
+                        .SelectMany(a => a.Activities)
+                        .OrderBy(a => a.LocationShortName)
+                        .ThenBy(a => a.JudgeInitials)
                 });
 
             // Query Presiders
@@ -207,7 +209,7 @@ public class DashboardService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, ex.Message);
+            _logger.LogError(ex, "Something went wrong when querying Court Calendar: {Message}", ex.Message);
             return OperationResult<CourtCalendarSchedule>.Failure("Something went wrong when querying Court Calendar");
         }
     }
@@ -225,7 +227,7 @@ public class DashboardService(
 
     #region Private Methods
 
-    private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar)
+    private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar, int? judgeId = null)
     {
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
@@ -251,6 +253,16 @@ public class DashboardService(
                 Activities = activities.Select(a =>
                 {
                     a.ShowDars = showDars;
+                    a.JudgeId = calendar.Id;
+                    a.JudgeInitials = calendar.RotaInitials;
+                    // True when currently logged on judge is away from home location
+                    a.IsJudgeAway = judgeId.HasValue
+                        && judgeId.Value == calendar.Id
+                        && a.LocationId != calendar.HomeLocationId;
+                    // True when judge is away from home location
+                    a.IsJudgeBorrowed = judgeId.HasValue
+                        && judgeId.Value != calendar.Id
+                        && a.LocationId != calendar.HomeLocationId;
                     return a;
                 })
             });
@@ -274,18 +286,18 @@ public class DashboardService(
 
         if (amActivity != null && pmActivity != null && IsSameAmPmActivity(amActivity, pmActivity))
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions));
             return activities;
         }
 
         if (amActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, day.JudgeId, Period.AM));
+            activities.Add(await CreateCalendarDayActivity(amActivity, day.Restrictions, Period.AM));
         }
 
         if (pmActivity != null)
         {
-            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, day.JudgeId, Period.PM));
+            activities.Add(await CreateCalendarDayActivity(pmActivity, day.Restrictions, Period.PM));
         }
 
         return activities;
@@ -303,28 +315,11 @@ public class DashboardService(
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
         PCSS.JudicialCalendarActivity judicialActivity,
         List<PCSS.AdjudicatorRestriction> judicialRestrictions,
-        int judgeId,
         Period? period = null)
     {
         var activity = _mapper.Map<CalendarDayActivity>(judicialActivity);
-        // Exclude FXD restrictions
-        var jRestrictions = judicialRestrictions
-            .Where(r => r.ActivityCode == activity.ActivityCode
-                && r.RestrictionCode == SEIZED_RESTRICTION_CODE
-                && r.AppearanceReasonCode != FIX_A_DATE_APPEARANCE_CODE)
-            .GroupBy(r => r.FileName)
-            .Select(r => r.First());
-
-        var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(jRestrictions);
-
-        activity.LocationShortName = activity.LocationId != null
-            ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
-            : null;
         activity.Period = period;
-        activity.Restrictions = restrictions;
-        activity.JudgeId = judgeId;
-
-        return activity;
+        return await PopulateCommonActivityData(activity, judicialRestrictions);
     }
 
     private async Task<CalendarDayActivity> CreateCalendarDayActivity(
@@ -332,6 +327,11 @@ public class DashboardService(
         List<PCSS.AdjudicatorRestriction> judicialRestrictions)
     {
         var activity = _mapper.Map<CalendarDayActivity>(assignment);
+        return await PopulateCommonActivityData(activity, judicialRestrictions);
+    }
+
+    private async Task<CalendarDayActivity> PopulateCommonActivityData(CalendarDayActivity activity, List<PCSS.AdjudicatorRestriction> judicialRestrictions)
+    {
         // Exclude FXD restrictions
         var jRestrictions = judicialRestrictions
             .Where(r => r.ActivityCode == activity.ActivityCode
@@ -341,11 +341,10 @@ public class DashboardService(
             .Select(r => r.First());
         var restrictions = _mapper.Map<List<AdjudicatorRestriction>>(jRestrictions);
 
-        activity.LocationShortName = assignment.LocationId != null
-                    ? await _locationService.GetLocationShortName(assignment.LocationId.ToString())
+        activity.LocationShortName = activity.LocationId != null
+                    ? await _locationService.GetLocationShortName(activity.LocationId.ToString())
                     : null;
         activity.Restrictions = restrictions;
-        activity.JudgeId = assignment.JudgeId.GetValueOrDefault();
 
         return activity;
     }

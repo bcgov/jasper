@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as DocumentUtils from 'CMP/documents/DocumentUtils';
-import { CourtDocumentType, DocumentData } from '@/types/shared';
+import { CourtDocumentType } from '@/types/shared';
 
 vi.mock('@/filters', () => ({
   beautifyDate: vi.fn((date) => `beautified-${date}`),
@@ -42,6 +42,7 @@ describe('DocumentUtils', () => {
         documentDescription: 'Record of Proceedings',
         fileId: 'FN-001',
         fileNumberText: '12345',
+        isCriminal: true,
         partId: 10,
         profSeqNo: 20,
         location: 'Vancouver',

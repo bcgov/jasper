@@ -123,7 +123,7 @@
     criminalParticipantType,
     documentType,
   } from '@/types/criminal/jsonTypes';
-  import { CourtDocumentType, DocumentData } from '@/types/shared';
+  import { DocumentRequestType, DocumentData, CourtDocumentType } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { formatFromFullname } from '@/utils/utils';
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
@@ -277,15 +277,15 @@
     );
 
   const openMergedDocuments = () => {
-    const documents: [CourtDocumentType, DocumentData][] = [];
+    const documents: { documentType: DocumentRequestType, documentData: DocumentData }[] = [];
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item) => {
-        const documentType = getCriminalDocumentType(item);
+        const documentType = getCriminalDocumentType(item) === CourtDocumentType.Criminal ? DocumentRequestType.File : DocumentRequestType.ROP;
         const documentData = prepareCriminalDocumentData(item);
-        documents.push([documentType, documentData]);
+        documents.push({ documentType, documentData });
       });
 
-    shared.openMergedDocumentsPdf(documents);
+    shared.openDocumentsPdfV2(documents);
   };
 </script>

@@ -53,6 +53,15 @@
     <v-btn
       size="large"
       class="mx-2"
+      :prepend-icon="mdiFileDocumentMultipleOutline"
+      style="letter-spacing: 0.001rem"
+      @click="openMergedDocuments(true)"
+    >
+      View together
+    </v-btn>
+    <v-btn
+      size="large"
+      class="mx-2"
       :prepend-icon="mdiNotebookRemoveOutline"
       style="letter-spacing: 0.001rem"
       @click="removeSelectedJudicialDocuments()"
@@ -106,6 +115,7 @@
     CourtDocumentType,
     DataTableHeader,
     DocumentData,
+    DocumentRequestType,
   } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
@@ -247,26 +257,40 @@
 
   // Todo, parts of these binder operation methods should be moved to a
   // shared binder space, that way the code is not repeated
-  const openMergedDocuments = () => {
-    const documents: [CourtDocumentType, DocumentData][] = [];
-    selectedItems.value
+  const openMergedDocuments = (isBinder = false) => {
+    const documents: {
+      documentType: DocumentRequestType;
+      documentData: DocumentData;
+    }[] = [];
+    const source = isBinder ? selectedBinderItems : selectedItems;
+    source.value
       .filter((item) => item.imageId)
       .forEach((item) => {
-        const documentType = getCivilDocumentType(item);
+        const documentType =
+          getCivilDocumentType(item) === CourtDocumentType.CSR
+            ? DocumentRequestType.CourtSummary
+            : DocumentRequestType.File;
         const documentData = prepareCivilDocumentData(item);
-        documents.push([documentType, documentData]);
+        documents.push({ documentType, documentData });
       });
-    shared.openMergedDocumentsPdf(documents);
+    shared.openDocumentsPdfV2(documents);
   };
 
   const loadBinder = async () => {
-    // Get binders associated to the current user. In Phase 1, we are supporting 1 binder per case per user.
-    const binders = await binderService.getBinders(labels);
-
-    currentBinder.value =
-      binders && binders.payload.length > 0
-        ? binders.payload[0]
-        : ({ id: null, labels, documents: [] } as Binder);
+    let getBindersResp: ApiResponse<Binder[]> | null = null;
+    try {
+      // Get binders associated to the current user. In Phase 1, we are supporting 1 binder per case per user.
+      getBindersResp = await binderService.getBinders(labels);
+    } catch (error) {
+      console.error(`Error occured while retrieving user's binders: ${error}`);
+    } finally {
+      currentBinder.value =
+        getBindersResp &&
+        getBindersResp.succeeded &&
+        getBindersResp.payload.length > 0
+          ? binders.payload[0]
+          : ({ id: null, labels, documents: [] } as Binder);
+    }
   };
 
   const addDocumentToBinder = async (documentId: string) => {

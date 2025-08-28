@@ -17,7 +17,7 @@ public class FileStrategy(FilesService filesService) : IDocumentStrategy
     {
         var documentResponseStreamCopy = new MemoryStream();
         var documentId = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(documentRequest.DocumentId));
-        var documentResponse = await _filesService.DocumentAsync(documentId, true, documentRequest.FileId, documentRequest.CorrelationId);
+        var documentResponse = await _filesService.DocumentAsync(documentId, documentRequest.IsCriminal, documentRequest.FileId, documentRequest.CorrelationId);
         await documentResponse.Stream.CopyToAsync(documentResponseStreamCopy);
         
         return documentResponseStreamCopy;

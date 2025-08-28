@@ -28,6 +28,7 @@ export const prepareCriminalDocumentData = (data) => {
     location:
       criminalFileStore.criminalFileInformation.detailsData
         .homeLocationAgencyName,
+    isCriminal: true,
   };
   return documentData;
 };
@@ -47,6 +48,7 @@ export const prepareCivilDocumentData = (data) => {
     courtLevel: civilFileStore.civilFileInformation.detailsData.courtLevelCd,
     location:
       civilFileStore.civilFileInformation.detailsData.homeLocationAgencyName,
+    isCriminal: false,
   };
   return documentData;
 };

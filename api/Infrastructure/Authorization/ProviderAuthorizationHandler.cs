@@ -27,7 +27,8 @@ namespace Scv.Api.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
-            if (user.IsIdirUser() && (user.Groups().Contains("court-viewer-supreme") || user.Groups().Contains("court-viewer-provincial")))
+            // Authenticated user must belong to specific groups
+            if (user.Groups().Contains("court-viewer-supreme") || user.Groups().Contains("court-viewer-provincial"))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
@@ -57,7 +58,7 @@ namespace Scv.Api.Infrastructure.Authorization
                     return Task.CompletedTask;
                 }
                 if (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))
-                { 
+                {
                     context.Succeed(requirement);
                     return Task.CompletedTask;
                 }

@@ -142,7 +142,7 @@ jobs:
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
           lambda: ${{ matrix.lambda }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
-  # deploy2test:
+  deploy2test:
     name: Deploy to TEST
     needs: [get-lambdas, deploy2gchr, deploy2dev]
     env:
@@ -174,7 +174,7 @@ jobs:
           lambda: ${{ matrix.lambda }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
 
-  # deploy2prod:
+  deploy2prod:
     name: Deploy to PROD
     needs: [get-lambdas, deploy2gchr, deploy2dev, deploy2test]
     env:

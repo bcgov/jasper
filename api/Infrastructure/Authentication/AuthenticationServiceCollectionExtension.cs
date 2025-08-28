@@ -287,10 +287,10 @@ namespace Scv.Api.Infrastructure.Authentication
                     var result = await userService.AddAsync(userDto);
                     if (!result.Succeeded)
                     {
-                        logger.LogInformation("Unable to add {Email}: {Message}", userDto.Email, result.Errors);
+                        logger.LogInformation("Unable to add user: {Message}", result.Errors);
                     }
 
-                    logger.LogInformation("User {Email} has been added to the db.", userDto.Email);
+                    logger.LogInformation("A user has been added to the db.");
 
                     userDto = result.Payload;
                 }
@@ -322,7 +322,7 @@ namespace Scv.Api.Infrastructure.Authentication
             }
             catch (Exception ex)
             {
-                logger.LogError("Something went wrong during post authentication process: {Error}", ex);
+                logger.LogError(ex, "Something went wrong during post authentication process: {Exception}", ex);
             }
             finally
             {

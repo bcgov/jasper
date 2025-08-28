@@ -281,7 +281,7 @@ namespace Scv.Api.Infrastructure.Authentication
                         LastName = context.Principal.FindFirstValue(ClaimTypes.Surname),
                         Email = context.Principal.Email(),
                         UserGuid = context.Principal.UserGuid(),
-                        IsActive = true
+                        IsActive = false
                     };
 
                     var result = await userService.AddAsync(userDto);

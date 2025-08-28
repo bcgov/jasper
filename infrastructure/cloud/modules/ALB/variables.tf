@@ -28,4 +28,17 @@ variable "tg_api_arn" {
   type        = string
 }
 
+variable "web_security_group_id" {
+  description = "The ID of the security group for the web tier"
+  type        = string
+}
 
+variable "vpc_id" {
+  description = "The ID of the VPC"
+  type        = string
+}
+
+variable "web_subnets_ids" {
+  description = "The IDs of the subnets for the web tier"
+  type        = list(string)
+}

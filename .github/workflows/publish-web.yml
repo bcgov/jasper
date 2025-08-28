@@ -14,7 +14,7 @@ env:
   WEB_IMAGE_NAME: web
   WEB_RUNTIME_IMAGE_NAME: web-runtime
   WEB_ARTIFACTS_IMAGE_NAME: web-artifacts
-  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper-lz
   WEB_BASE_HREF: /
 
 jobs:
@@ -84,12 +84,12 @@ jobs:
     name: Deploy to DEV
     needs: build
     env:
-      ENVIRONMENT: dev
+      ENVIRONMENT: lz-dev
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: dev
+    environment: lz-dev
 
     steps:
       - name: Checkout
@@ -113,12 +113,12 @@ jobs:
     name: Deploy to TEST
     needs: [build, deploy2dev]
     env:
-      ENVIRONMENT: test
+      ENVIRONMENT: lz-tst
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: test
+    environment: lz-tst
 
     steps:
       - name: Checkout
@@ -142,12 +142,12 @@ jobs:
     name: Deploy to PROD
     needs: [build, deploy2dev, deploy2test]
     env:
-      ENVIRONMENT: prod
+      ENVIRONMENT: lz-prd
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: prod
+    environment: lz-prd
 
     steps:
       - name: Checkout

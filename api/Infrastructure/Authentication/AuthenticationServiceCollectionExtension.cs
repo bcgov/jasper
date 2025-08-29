@@ -262,12 +262,12 @@ namespace Scv.Api.Infrastructure.Authentication
                 var judges = await dashboardService.GetJudges();
 
                 // Find out the judge home location from list of judges
-                int.TryParse(context.Principal.ExternalJudgeId(), out int pcssJudgeId);
+                int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId);
 
-                var judge = judges.FirstOrDefault(j => j.PersonId == pcssJudgeId);
+                var judge = judges.FirstOrDefault(j => j.PersonId == externalJudgeId);
                 if (judge != null)
                 {
-                    judgeId = pcssJudgeId.ToString();
+                    judgeId = externalJudgeId.ToString();
                     homeLocationId = judge.HomeLocationId.ToString();
                 }
             }

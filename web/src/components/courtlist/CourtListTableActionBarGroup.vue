@@ -9,6 +9,7 @@
         :selectionPrependText="courtClass + ' file/s'"
       >
         <template #default>
+          <!-- Hide temporarily until opening Key docs and Judicial Binder is implemented.
           <v-btn
             size="large"
             class="mx-2"
@@ -16,12 +17,14 @@
             style="letter-spacing: 0.001rem"
           >
             View document bundle
-          </v-btn>
+          </v-btn> -->
           <v-btn
             size="large"
             class="mx-2"
             :prepend-icon="mdiFileDocumentOutline"
             style="letter-spacing: 0.001rem"
+            data-testid="view-case-details"
+            @click="() => onViewApprCaseDetails(group)"
           >
             View case details
           </v-btn>
@@ -35,15 +38,17 @@
   import ActionBar from '@/components/shared/table/ActionBar.vue';
   import { CourtListAppearance } from '@/types/courtlist';
   import { getCourtClassLabel } from '@/utils/utils';
-  import {
-    mdiFileDocumentMultipleOutline,
-    mdiFileDocumentOutline,
-  } from '@mdi/js';
+  import { mdiFileDocumentOutline } from '@mdi/js';
   import { computed } from 'vue';
 
   const props = defineProps<{
     selected: CourtListAppearance[];
   }>();
+
+  const emit =
+    defineEmits<
+      (e: 'view-case-details', appearances: CourtListAppearance[]) => void
+    >();
 
   const groupedSelections = computed(() => {
     const groups: Record<string, CourtListAppearance[]> = {};
@@ -56,4 +61,8 @@
     }
     return groups;
   });
+
+  const onViewApprCaseDetails = (appearances: CourtListAppearance[]) => {
+    emit('view-case-details', appearances);
+  };
 </script>

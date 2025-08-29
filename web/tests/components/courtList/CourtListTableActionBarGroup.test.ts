@@ -1,25 +1,25 @@
-import { describe, it, expect } from 'vitest';
+import { CourtListAppearance } from '@/types/courtlist';
 import { mount } from '@vue/test-utils';
 import CourtListTableActionBarGroup from 'CMP/courtlist/CourtListTableActionBarGroup.vue';
-import { CourtListAppearance } from '@/types/courtlist';
+import { describe, expect, it } from 'vitest';
 
 const mockAppearances: CourtListAppearance[] = [
   {
-      id: 1,
-      courtClassCd: 'A',
+    id: 1,
+    courtClassCd: 'A',
   } as unknown as CourtListAppearance,
   {
-      id: 2,
-      courtClassCd: 'Y',
+    id: 2,
+    courtClassCd: 'Y',
   } as unknown as CourtListAppearance,
   {
-      id: 3,
-      courtClassCd: 'C',
+    id: 3,
+    courtClassCd: 'C',
   } as unknown as CourtListAppearance,
   {
-      id: 4,
-      courtClassCd: 'F',
-  } as unknown as CourtListAppearance
+    id: 4,
+    courtClassCd: 'F',
+  } as unknown as CourtListAppearance,
 ];
 
 describe('CourtListTableActionBarGroup.vue', () => {
@@ -36,7 +36,7 @@ describe('CourtListTableActionBarGroup.vue', () => {
 
   it('groups appearances by correct court class', () => {
     const wrapper = mount(CourtListTableActionBarGroup, {
-      props: { selected: mockAppearances }
+      props: { selected: mockAppearances },
     });
 
     const actionBars = wrapper.findAllComponents({ name: 'action-bar' });
@@ -54,5 +54,19 @@ describe('CourtListTableActionBarGroup.vue', () => {
       },
     });
     expect(wrapper.html()).not.toContain('file/s');
+  });
+
+  it('clicking the first View Case Details button should emit an event and payload from the first mock data', () => {
+    const wrapper = mount(CourtListTableActionBarGroup, {
+      props: { selected: mockAppearances },
+    });
+
+    const firstViewButton = wrapper.find('[data-testid="view-case-details"]');
+    firstViewButton.trigger('click');
+
+    expect(wrapper.emitted('view-case-details')).toBeTruthy();
+    expect(wrapper.emitted('view-case-details')![0][0]).toEqual([
+      mockAppearances[0],
+    ]);
   });
 });

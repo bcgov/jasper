@@ -129,23 +129,21 @@
     }
   };
 
-  const checkForEmail = async (): Promise<void> => {
+  const checkForUser = async (): Promise<void> => {
     if (!_.isEmpty(selectedEmail.value)) {
-      const user = await userService?.getByEmail(selectedEmail.value);
-      if (user?.email === selectedEmail.value) {
-        if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
-          isUserDisabled.value = true;
-        } else if (user?.isPendingRegistration) {
-          isSubmitted.value = true;
-        } else {
-          isUserInvalid.value = true;
-        }
+      const user = await userService?.getMyUser();
+      if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
+        isUserDisabled.value = true;
+      } else if (user?.isPendingRegistration) {
+        isSubmitted.value = true;
+      } else {
+        isUserInvalid.value = true;
       }
     }
   };
 
   onMounted(async () => {
-    await checkForEmail();
+    await checkForUser();
   });
 </script>
 

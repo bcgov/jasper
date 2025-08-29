@@ -32,9 +32,9 @@ namespace Scv.Api.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
-            if ((user.Groups().Contains("court-viewer-supreme") || user.Groups().Contains("court-viewer-provincial") ||
-                (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))) ||
-                (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetByEmail))))
+            if (user.Groups().Contains("court-viewer-supreme") || user.Groups().Contains("court-viewer-provincial") ||
+                (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo)) ||
+                (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetMyUser))))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;

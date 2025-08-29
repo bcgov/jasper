@@ -10,10 +10,10 @@ import { CustomAPIError } from './../../../src/utils/utils';
 
 // Mock UserService
 const mockRequestAccess = vi.fn();
-const mockGetByEmail = vi.fn();
+const mockGetMyUser = vi.fn();
 const mockUserService = {
   requestAccess: mockRequestAccess,
-  getByEmail: mockGetByEmail,
+  getMyUser: mockGetMyUser,
 };
 
 // Mock stores
@@ -45,7 +45,7 @@ describe('RequestAccess.vue', () => {
   });
 
   it('renders correctly (snapshot)', async () => {
-    mockGetByEmail.mockResolvedValue(undefined);
+    mockGetMyUser.mockResolvedValue(undefined);
     const wrapper = await mountComponent();
 
     await vi.waitFor(() => {
@@ -54,7 +54,7 @@ describe('RequestAccess.vue', () => {
   });
 
   it('disables input and button when isSubmitted is true', async () => {
-    mockGetByEmail.mockResolvedValue({
+    mockGetMyUser.mockResolvedValue({
       email: 'test@example.com',
       isPendingRegistration: true,
     });
@@ -67,7 +67,7 @@ describe('RequestAccess.vue', () => {
   });
 
   it('shows user disabled badge if user is inactive with roles', async () => {
-    mockGetByEmail.mockResolvedValue({
+    mockGetMyUser.mockResolvedValue({
       email: 'test@example.com',
       isActive: false,
       roles: [1, 2],
@@ -80,7 +80,7 @@ describe('RequestAccess.vue', () => {
   });
 
   it('shows user invalid badge if user is not pending, not disabled', async () => {
-    mockGetByEmail.mockResolvedValue({
+    mockGetMyUser.mockResolvedValue({
       email: 'test@example.com',
       isActive: true,
       isPendingRegistration: false,
@@ -96,7 +96,7 @@ describe('RequestAccess.vue', () => {
   });
 
   it('calls requestAccess and sets isSubmitted on success', async () => {
-    mockGetByEmail.mockResolvedValue(undefined);
+    mockGetMyUser.mockResolvedValue(undefined);
     mockRequestAccess.mockResolvedValue({ email: 'test@example.com' });
 
     const wrapper = await mountComponent();
@@ -109,7 +109,7 @@ describe('RequestAccess.vue', () => {
   });
 
   it('calls requestAccess and displays errors returned from backend', async () => {
-    mockGetByEmail.mockResolvedValue(undefined);
+    mockGetMyUser.mockResolvedValue(undefined);
     const axiosError = new AxiosError('test error');
     mockRequestAccess.mockRejectedValue(
       new CustomAPIError(axiosError.message, axiosError)
@@ -129,7 +129,7 @@ describe('RequestAccess.vue', () => {
     (useCommonStore as any).mockReturnValue({
       userInfo: { email: '' },
     });
-    mockGetByEmail.mockResolvedValue(undefined);
+    mockGetMyUser.mockResolvedValue(undefined);
 
     const wrapper = mount(RequestAccess, {
       global: { provide: { userService: mockUserService } },

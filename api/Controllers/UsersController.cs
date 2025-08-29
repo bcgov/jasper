@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
@@ -35,19 +36,14 @@ public class UsersController(
     }
 
     /// <summary>
-    /// Get user by email
+    /// Get the user information for the currently logged-in user.
     /// </summary>
-    /// <returns>User matching email</returns>
+    /// <returns>Active users</returns>
     [HttpGet]
-    [Route("email")]
-    public async Task<IActionResult> GetByEmail(string email)
+    [Route("me")]
+    public Task<IActionResult> GetMyUser()
     {
-        var matchingUser = await base.Service.GetWithPermissionsAsync(email);
-        if (matchingUser != null)
-        {
-            return Ok(matchingUser);
-        }
-        return NoContent();
+        return base.GetById(User.UserId());
     }
 
     /// <summary>
@@ -57,24 +53,30 @@ public class UsersController(
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [HttpGet]
     [Route("request-access")]
-    public async Task<ActionResult> RequestAccess(string email)
+    public async Task<IActionResult> RequestAccess(string email)
     {
-        var userIdentifier = User.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
-        logger.LogInformation("User Id {UserId}, requested access with guid: {UserIdentifier}", User.UserId(), userIdentifier);
+        logger.LogInformation("User Id {UserId}, requested access", User.UserId());
 
-        Guid userGuid;
-        Guid.TryParse(userIdentifier?.Split("@").FirstOrDefault(), out userGuid);
-        var newUser = new UserDto()
+        var existingUserResponse = (await base.GetById(User.UserId()));
+        if (existingUserResponse is OkObjectResult okResult)
         {
-            FirstName = User.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
-            LastName = User.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
-            Email = email,
-            IsActive = false,
-            IsPendingRegistration = true,
-            ADId = userGuid,
-            ADUsername = userIdentifier,
-        };
-        var result = await base.Create(newUser); // Note: this handles validation and duplicate prevention.
-        return (ActionResult)result;
+            var existingUser = (UserDto)okResult.Value;
+            if (email != existingUser?.Email)
+            {
+                var emailValidator = new EmailAddressAttribute();
+                if (!emailValidator.IsValid(email))
+                {
+                    return BadRequest("Invalid email format.");
+                }
+                existingUser.Email = email;
+            }
+
+            var result = await base.Update(User.UserId(), existingUser);
+            return result;
+        } 
+        else
+        {
+            return existingUserResponse;
+        }
     }
 }

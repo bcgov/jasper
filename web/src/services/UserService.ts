@@ -17,9 +17,7 @@ export class UserService extends ServiceBase {
     );
   }
 
-  async getByEmail(email: string): Promise<UserInfo> {
-    return await this.httpService.get<UserInfo>(`api/users/email`, {
-      email: email,
-    });
+  async getMyUser(): Promise<UserInfo> {
+    return await this.httpService.get<UserInfo>(`api/users/me`);
   }
 }

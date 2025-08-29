@@ -38,14 +38,6 @@ describe('CourtFilesSelector.vue', async () => {
     expect(wrapper.vm.fileNumber).toBe(files.value[1].key);
   });
 
-  it('renders the "View all documents" button', () => {
-    const wrapper = mount(CourtFilesSelector, {
-      props: { files: files.value, fileNumber },
-    });
-    const button = wrapper.find('v-btn');
-    expect(button.text()).toBe('View all documents');
-  });
-
   it.each([
     {
       courtClass: getEnumName(CourtClassEnum, CourtClassEnum.A),

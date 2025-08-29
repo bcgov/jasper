@@ -39,9 +39,6 @@
           </v-tab>
         </v-tabs>
       </v-col>
-      <v-col cols="2">
-        <v-btn-secondary text="View shared folder" />
-      </v-col>
     </v-row>
     <v-window mandatory continuous v-model="selectedTab" class="mt-3">
       <v-window-item value="documents">

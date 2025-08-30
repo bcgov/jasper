@@ -23,17 +23,12 @@
                 id="email"
                 v-model="selectedEmail"
                 label="Email"
-                :disabled="isSubmitted || isUserInvalid || isUserDisabled"
-                placeholder="Enter Your Email"
+                :disabled="true"
                 persistent-hint
-                hint="This email is associated to the account you logged in with. You should not change this email unless instructed."
+                hint="This email is associated to the account you logged in with, it will be used to create your account."
                 type="email"
-                required
                 class="email-input"
               >
-                <template #append>
-                  <span class="text-danger">*</span>
-                </template>
               </v-text-field>
             </v-col>
           </v-row>
@@ -130,15 +125,16 @@
   };
 
   const checkForUser = async (): Promise<void> => {
-    if (!_.isEmpty(selectedEmail.value)) {
-      const user = await userService?.getMyUser();
-      if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
-        isUserDisabled.value = true;
-      } else if (user?.isPendingRegistration) {
-        isSubmitted.value = true;
-      } else {
-        isUserInvalid.value = true;
-      }
+    const user = await userService?.getMyUser();
+    if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
+      isUserDisabled.value = true;
+    } else if (user?.isPendingRegistration) {
+      isSubmitted.value = true;
+    } else if (
+      (user?.isActive && !isPositiveInteger(user?.roles?.length)) ||
+      !user
+    ) {
+      isUserInvalid.value = true;
     }
   };
 

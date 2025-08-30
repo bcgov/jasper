@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -29,7 +30,7 @@ public class UsersController(
     /// </summary>
     /// <returns>Active users</returns>
     [HttpGet]
-    [RequiresPermission(permissions: [Permission.LOCK_UNLOCK_USERS])]
+    [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
     public override Task<IActionResult> GetAll()
     {
         return base.GetAll();
@@ -41,9 +42,15 @@ public class UsersController(
     /// <returns>Active users</returns>
     [HttpGet]
     [Route("me")]
-    public Task<IActionResult> GetMyUser()
+    public async Task<IActionResult> GetMyUser()
     {
-        return base.GetById(User.UserId());
+        var userId = User.UserId();
+        logger.LogInformation("User Id {UserId}, returning their own user information", userId);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("Invalid user. Please contact the JASPER admin.");
+        }
+        return await base.GetById(User.UserId());
     }
 
     /// <summary>
@@ -51,29 +58,31 @@ public class UsersController(
     /// </summary>
     /// <returns>The user resulting from the access request.</returns>
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
-    [HttpGet]
+    [HttpPut]
     [Route("request-access")]
-    public async Task<IActionResult> RequestAccess(string email)
+    public async Task<IActionResult> RequestAccess()
     {
-        logger.LogInformation("User Id {UserId}, requested access", User.UserId());
+        var userId = User.UserId();
+        logger.LogInformation("User Id {UserId}, requested access", userId);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("Invalid user. Please contact the JASPER admin.");
+        }
 
-        var existingUserResponse = (await base.GetById(User.UserId()));
+        var existingUserResponse = await base.GetById(User.UserId());
+        var email = User.Email();
         if (existingUserResponse is OkObjectResult okResult)
         {
             var existingUser = (UserDto)okResult.Value;
             if (email != existingUser?.Email)
             {
-                var emailValidator = new EmailAddressAttribute();
-                if (!emailValidator.IsValid(email))
-                {
-                    return BadRequest("Invalid email format.");
-                }
                 existingUser.Email = email;
             }
+            existingUser.IsPendingRegistration = true;
 
             var result = await base.Update(User.UserId(), existingUser);
             return result;
-        } 
+        }
         else
         {
             return existingUserResponse;

@@ -7,14 +7,10 @@ export class UserService extends ServiceBase {
     super(httpService);
   }
 
-  async requestAccess(email: string): Promise<UserInfo> {
-    return await this.httpService.get<UserInfo>(
-      `api/users/request-access`,
-      {
-        email: email,
-      },
-      { skipErrorHandler: true }
-    );
+  async requestAccess(): Promise<UserInfo> {
+    return await this.httpService.put<UserInfo>(`api/users/request-access`, {
+      skipErrorHandler: true,
+    });
   }
 
   async getMyUser(): Promise<UserInfo> {

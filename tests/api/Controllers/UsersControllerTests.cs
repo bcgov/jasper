@@ -1,4 +1,5 @@
 using Bogus;
+using DocumentFormat.OpenXml.Spreadsheet;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
@@ -65,13 +66,11 @@ namespace tests.api.Controllers
         {
             // Arrange
             var email = _faker.Internet.Email();
-            var userId = Guid.NewGuid().ToString();
-            var givenName = _faker.Name.FirstName();
-            var familyName = _faker.Name.LastName();
 
             var claims = new List<Claim>
             {
                 new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new Claim(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -99,7 +98,7 @@ namespace tests.api.Controllers
                 .ReturnsAsync(OperationResult<UserDto>.Success(existingUser));
 
             // Act
-            var result = await controller.RequestAccess(email);
+            var result = await controller.RequestAccess();
 
             // Assert
             var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
@@ -113,19 +112,14 @@ namespace tests.api.Controllers
         {
             // Arrange
             var email = _faker.Internet.Email();
-            var userId = Guid.NewGuid().ToString();
 
             var claims = new List<Claim>
             {
                 new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new Claim(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
-
-            var validationFailures = new List<ValidationFailure>
-            {
-                new ValidationFailure("Email", "Invalid email")
-            };
 
             var existingUser = new UserDto { Email = "old@email.com" };
 
@@ -139,7 +133,7 @@ namespace tests.api.Controllers
 
             _mockUserService
                 .Setup(s => s.ValidateAsync(It.IsAny<UserDto>(), It.IsAny<bool>()))
-                .ReturnsAsync(OperationResult<UserDto>.Failure(["Invalid email"]));
+                .ReturnsAsync(OperationResult<UserDto>.Failure("Invalid email"));
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<UserDto>(), default))
@@ -150,7 +144,7 @@ namespace tests.api.Controllers
                 .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             // Act
-            var result = await controller.RequestAccess(email);
+            var result = await controller.RequestAccess();
 
             // Assert
             var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
@@ -163,13 +157,11 @@ namespace tests.api.Controllers
         {
             // Arrange
             var email = _faker.Internet.Email();
-            var userId = Guid.NewGuid().ToString();
-            var givenName = _faker.Name.FirstName();
-            var familyName = _faker.Name.LastName();
 
             var claims = new List<Claim>
             {
                 new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new Claim(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -198,7 +190,7 @@ namespace tests.api.Controllers
                 .ReturnsAsync(OperationResult<UserDto>.Success(existingUser));
 
             // Act
-            var result = await controller.RequestAccess(email);
+            var result = await controller.RequestAccess();
 
             // Assert
             var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
@@ -213,11 +205,11 @@ namespace tests.api.Controllers
         {
             // Arrange
             var email = _faker.Internet.Email();
-            var userId = Guid.NewGuid().ToString();
 
             var claims = new List<Claim>
             {
                 new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new Claim(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -228,11 +220,11 @@ namespace tests.api.Controllers
                 .ReturnsAsync((UserDto)null);
 
             // Act
-            var result = await controller.RequestAccess(email);
+            var result = await controller.RequestAccess();
 
             // Assert
             var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
-            var badRequest = Assert.IsType<NotFoundResult>(actionResult);
+            Assert.IsType<NotFoundResult>(actionResult);
         }
 
         [Fact]
@@ -240,34 +232,39 @@ namespace tests.api.Controllers
         {
             // Arrange
             var invalidEmail = "not-an-email";
-            var userId = Guid.NewGuid().ToString();
 
             var claims = new List<Claim>
             {
                 new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new Claim(ClaimTypes.Email, invalidEmail),
             };
 
             var controller = CreateControllerWithContext(claims);
 
             var existingUser = new UserDto { Email = "old@email.com" };
 
-            // Mock base.GetById to return existing user
+            _mockValidator
+                .Setup(v => v.ValidateAsync(It.IsAny<UserDto>(), default))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+            _mockValidator
+                .Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<UserDto>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+            _mockUserService
+                .Setup(s => s.ValidateAsync(It.IsAny<UserDto>(), It.IsAny<bool>()))
+                .ReturnsAsync(OperationResult<UserDto>.Failure("Invalid email format."));
+
             _mockUserService
                 .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
                 .ReturnsAsync(existingUser);
 
-            // Mock base.Update to return updated user
-            _mockUserService
-                .Setup(s => s.UpdateAsync(It.IsAny<UserDto>()))
-                .ReturnsAsync(OperationResult<UserDto>.Success(existingUser));
-
             // Act
-            var result = await controller.RequestAccess(invalidEmail);
+            var result = await controller.RequestAccess();
 
             // Assert
             var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
-            var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
-            Assert.Equal("Invalid email format.", badRequest.Value);
+            Assert.IsType<BadRequestObjectResult>(actionResult);
         }
 
         [Fact]
@@ -275,11 +272,11 @@ namespace tests.api.Controllers
         {
             // Arrange
             var email = _faker.Internet.Email();
-            var userId = Guid.NewGuid().ToString();
 
             var claims = new List<Claim>
             {
                 new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new Claim(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -307,7 +304,7 @@ namespace tests.api.Controllers
                 .ReturnsAsync(OperationResult<UserDto>.Success(existingUser));
 
             // Act
-            var result = await controller.RequestAccess(email);
+            var result = await controller.RequestAccess();
 
             // Assert
             var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
@@ -317,6 +314,23 @@ namespace tests.api.Controllers
 
             // Ensure UpdateAsync was called
             _mockUserService.Verify(s => s.UpdateAsync(It.IsAny<UserDto>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RequestAccess_ReturnsBadRequest_WhenUserIdNull()
+        {
+            // Arrange
+            var claims = new List<Claim>{};
+
+            var controller = CreateControllerWithContext(claims);
+
+            // Act
+            var result = await controller.RequestAccess();
+
+            // Assert
+            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
+            Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
         }
     }
 }

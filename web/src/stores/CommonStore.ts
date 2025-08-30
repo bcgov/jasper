@@ -1,8 +1,8 @@
 import {
   CourtRoomsJsonInfoType,
   IconStyleType,
+  LookupCode,
   UserInfo,
-  LookupCode
 } from '@/types/common';
 import { defineStore } from 'pinia';
 
@@ -23,6 +23,7 @@ export const useCommonStore = defineStore('CommonStore', {
     courtRoomsAndLocations: [] as CourtRoomsJsonInfoType[],
     roles: [] as LookupCode[],
     enableArchive: false,
+    email: '',
   }),
   actions: {
     setUserInfo(userInfo): void {

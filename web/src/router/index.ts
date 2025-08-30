@@ -1,10 +1,19 @@
-import { SessionManager } from '@/utils/utils';
+import { useCommonStore } from '@/stores';
+import { isPositiveInteger, SessionManager } from '@/utils/utils';
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 
 async function authGuard(to: any, from: any, next: any) {
+  const commonStore = useCommonStore();
   const results = await SessionManager.getSettings();
   if (results) {
-    next();
+    if (
+      !isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
+      to.name !== 'RequestAccess'
+    ) {
+      next({ path: '/request-access' });
+    } else {
+      next();
+    }
   }
 }
 
@@ -71,6 +80,11 @@ const routes: RouteRecordRaw[] = [
     path: '/pdf-viewer',
     name: 'NutrientContainer',
     component: () => import('@/components/documents/NutrientContainer.vue'),
+  },
+  {
+    path: '/request-access',
+    name: 'RequestAccess',
+    component: () => import('@/components/dashboard/RequestAccess.vue'),
   },
 ];
 

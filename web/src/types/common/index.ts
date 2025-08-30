@@ -68,12 +68,15 @@ export interface CourtRoomsInfo {
 export interface UserInfo {
   userType: string;
   enableArchive: boolean;
-  role: string;
+  roles: string[];
   subRole: string;
   isSupremeUser: string;
+  isPendingRegistration?: boolean;
+  isActive: boolean;
   agencyCode: string;
   userId: string;
   judgeId: number;
+  email: string;
 }
 
 export interface LookupCode {

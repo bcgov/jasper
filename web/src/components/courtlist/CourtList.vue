@@ -61,7 +61,7 @@
   import { usePDFViewerStore } from '@/stores';
   import { DivisionEnum } from '@/types/common';
   import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
-  import { DocumentData, DocumentRequestType } from '@/types/shared';
+  import { DocumentRequestType } from '@/types/shared';
   import {
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
@@ -202,6 +202,7 @@
       string,
       {
         locationId: number;
+        locationName: string;
         date: string;
         division: string;
         class: string;
@@ -212,20 +213,24 @@
       element.table.forEach((data) => {
         const obj = {
           locationId: element.card.courtListLocationID,
+          locationName: element.card.courtListLocation,
           date: data.appearanceDt,
           division: data.courtDivisionCd,
           class: data.courtClassCd,
           courtRoom: data.courtRoomCd,
         };
 
-        const key = `${obj.locationId}|${obj.date}|${obj.division}|${obj.class}|${obj.courtRoom}`;
+        const key = `${obj.locationId}|${obj.locationName}|${obj.date}|${obj.division}|${obj.class}|${obj.courtRoom}`;
         uniqueMap.set(key, obj);
       });
     });
-    const documents: {
+    const documents: Array<{
       documentType: DocumentRequestType;
-      documentData: DocumentData;
-    }[] = [];
+      documentData: Record<string, any>;
+      memberName: string;
+      documentName: any;
+      caseNumber: string;
+    }> = [];
     uniqueMap.forEach((value) => {
       let documentData: Record<string, any> = {
         courtDivisionCd: value.division,
@@ -234,7 +239,6 @@
         locationId: value.locationId,
         roomCode: value.courtRoom,
       };
-
       if (value.division === DivisionEnum.R) {
         documentData.reportType = reportType;
       } else if (value.division === DivisionEnum.I) {
@@ -244,6 +248,9 @@
       documents.push({
         documentType: DocumentRequestType.Report,
         documentData,
+        memberName: value.courtRoom,
+        documentName: documentData.reportType || documentData.date,
+        caseNumber: value.locationName,
       });
     });
     shared.openDocumentsPdfV2(documents);

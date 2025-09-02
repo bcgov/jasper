@@ -12,14 +12,14 @@ export default {
     const base64 = btoa(inputText);
     return base64.replace(/[+/=]/g, (char) => {
       switch (char) {
-      case '+':
-        return '-';
-      case '/':
-        return '_';
-      case '=':
-        return '';
-      default:
-        return char;
+        case '+':
+          return '-';
+        case '/':
+          return '_';
+        case '=':
+          return '';
+        default:
+          return char;
       }
     });
   },
@@ -40,75 +40,90 @@ export default {
     switch (documentType) {
       case CourtDocumentType.CSR:
         return `${import.meta.env.BASE_URL}api/files/civil/court-summary-report/${
-            documentData.appearanceId
-          }/${encodeURIComponent(fileName)}?vcCivilFileId=${
-            documentData.fileId
-          }`
+          documentData.appearanceId
+        }/${encodeURIComponent(fileName)}?vcCivilFileId=${documentData.fileId}`;
       case CourtDocumentType.ROP:
         return `${
           import.meta.env.BASE_URL
-          }api/files/criminal/record-of-proceedings/${
-            documentData.partId
-          }/${encodeURIComponent(fileName)}?profSequenceNumber=${
-            documentData.profSeqNo
-          }&courtLevelCode=${documentData.courtLevel}&courtClassCode=${
-            documentData.courtClass
-          }`
+        }api/files/criminal/record-of-proceedings/${
+          documentData.partId
+        }/${encodeURIComponent(fileName)}?profSequenceNumber=${
+          documentData.profSeqNo
+        }&courtLevelCode=${documentData.courtLevel}&courtClassCode=${
+          documentData.courtClass
+        }`;
       default:
-          return `${
-            import.meta.env.BASE_URL
-          }api/files/document/${documentId}/${encodeURIComponent(
-            fileName
-          )}?isCriminal=${isCriminal}&fileId=${
-            documentData.fileId
-          }&CorrelationId=${correlationId}`;
+        return `${
+          import.meta.env.BASE_URL
+        }api/files/document/${documentId}/${encodeURIComponent(
+          fileName
+        )}?isCriminal=${isCriminal}&fileId=${
+          documentData.fileId
+        }&CorrelationId=${correlationId}`;
     }
   },
+  // Eventually will be deprecated in favor of opening even
+  // single documents in the nutrient-viewer
   openDocumentsPdf(
     documentType: CourtDocumentType,
     documentData: DocumentData
   ): void {
     const correlationId = uuidv4();
-    const url = this.renderDocumentUrl(documentType, documentData, correlationId);
-    if(documentType !== CourtDocumentType.ROP && documentType !== CourtDocumentType.CSR) {
+    const url = this.renderDocumentUrl(
+      documentType,
+      documentData,
+      correlationId
+    );
+    if (
+      documentType !== CourtDocumentType.ROP &&
+      documentType !== CourtDocumentType.CSR
+    ) {
       this.openRequestedTab(url, correlationId);
-    }else{
+    } else {
       window.open(url);
     }
   },
   openDocumentsPdfV2(
-    documents: {
-      documentType: DocumentRequestType, 
-      documentData: DocumentData
+    documents?: {
+      documentType: DocumentRequestType;
+      documentData: DocumentData;
+      memberName: string;
+      documentName: string;
+      caseNumber?: string;
     }[]
   ): void {
     if (!documents || documents.length === 0) return;
-
+    
     const pdfStore = usePDFViewerStore();
-
-    pdfStore.addDocuments(
-      documents.map(({documentType, documentData}) => ({
-        type: documentType,
-        data: {
-          partId: documentData.partId || '',
-          profSeqNo: documentData.profSeqNo || '',
-          courtLevelCd: documentData.courtLevel || '',
-          courtClassCd: documentData.courtClass || '',
-          appearanceId: documentData.appearanceId || '',
-          documentId: documentData.documentId
-            ? this.convertToBase64Url(documentData.documentId)
-            : documentData.documentId || '',
-          fileId: documentData.fileId || '',
-          isCriminal: documentData.isCriminal || false,
-          correlationId: uuidv4(),
-          courtDivisionCd: documentData.courtDivisionCd || '',
-          date: documentData.date,
-          locationId: documentData.locationId,
-          roomCode: documentData.roomCode || '',
-          reportType: documentData.reportType || '',
+    pdfStore.clearDocuments();
+    documents.forEach((doc) => {
+      pdfStore.addDocument({
+        request: {
+          type: doc.documentType,
+          data: {
+            partId: doc.documentData.partId || '',
+            profSeqNo: doc.documentData.profSeqNo || '',
+            courtLevelCd: doc.documentData.courtLevel || '',
+            courtClassCd: doc.documentData.courtClass || '',
+            appearanceId: doc.documentData.appearanceId || '',
+            documentId: doc.documentData.documentId
+              ? this.convertToBase64Url(doc.documentData.documentId)
+              : doc.documentData.documentId || '',
+            fileId: doc.documentData.fileId || '',
+            isCriminal: doc.documentData.isCriminal || false,
+            correlationId: uuidv4(),
+            courtDivisionCd: doc.documentData.courtDivisionCd || '',
+            date: doc.documentData.date,
+            locationId: doc.documentData.locationId,
+            roomCode: doc.documentData.roomCode || '',
+            reportType: doc.documentData.reportType || '',
+          },
         },
-      }))
-    );
+        caseNumber: doc.caseNumber || doc.documentData.fileNumberText || 'Case',
+        memberName: doc.memberName,
+        documentName: doc.documentName,
+      });
+    });
     window.open('/pdf-viewer', 'pdf-viewer');
   },
   generateFileName(

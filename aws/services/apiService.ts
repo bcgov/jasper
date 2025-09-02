@@ -87,7 +87,7 @@ export class ApiService {
       ) as { [header: string]: string | number | boolean };
 
       return {
-        statusCode: 200,
+        statusCode: response.status,
         headers: responseHeaders,
         body: isBinary
           ? Buffer.from(new Uint8Array(response.data as ArrayBuffer)).toString(

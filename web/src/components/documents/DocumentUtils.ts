@@ -43,7 +43,7 @@ export const prepareCivilDocumentData = (data) => {
     documentDescription: data.documentTypeCd,
     documentId: data.civilDocumentId,
     fileId: civilFileStore.civilFileInformation.fileNumber,
-    fileNumberText: data.documentTypeDescription,
+    fileNumberText: civilFileStore.civilFileInformation.detailsData.fileNumberTxt,
     courtClass: civilFileStore.civilFileInformation.detailsData.courtClassCd,
     courtLevel: civilFileStore.civilFileInformation.detailsData.courtLevelCd,
     location:

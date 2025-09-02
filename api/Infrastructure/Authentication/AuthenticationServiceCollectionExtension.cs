@@ -255,12 +255,29 @@ namespace Scv.Api.Infrastructure.Authentication
             var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
             var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
 
+            // Default the user to his own external Judge Id.
+            if (!string.IsNullOrWhiteSpace(context.Principal.ExternalJudgeId()))
+            {
+                var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
+                var judges = await dashboardService.GetJudges();
+
+                // Find out the judge home location from list of judges
+                int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId);
+
+                var judge = judges.FirstOrDefault(j => j.PersonId == externalJudgeId);
+                if (judge != null)
+                {
+                    judgeId = externalJudgeId.ToString();
+                    homeLocationId = judge.HomeLocationId.ToString();
+                }
+            }
+
             // Remove checking when the "real" mongo db has been configured
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 // Defaults the logged in user to the default judge.
-                logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
+                logger.LogInformation("Acting as Judge Id - {JudgeId} with Home Location Id - {HomeLocationId}.", judgeId, homeLocationId);
                 claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
                 claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
                 return;
@@ -327,7 +344,7 @@ namespace Scv.Api.Infrastructure.Authentication
             finally
             {
                 // Add the final value of judgeId and homeLocationId as claims of the current user
-                logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
+                logger.LogInformation("Acting as Judge Id - {JudgeId} with Home Location Id - {HomeLocationId}.", judgeId, homeLocationId);
                 claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
                 claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
             }

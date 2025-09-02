@@ -22,13 +22,13 @@ describe("ApiService", () => {
     mockHttpService = new HttpService() as MockedObject<HttpService>;
     mockHttpService.get = vi
       .fn()
-      .mockResolvedValue({ data: "get response", headers: {} });
+      .mockResolvedValue({ data: "get response", headers: {}, status: 200 });
     mockHttpService.post = vi
       .fn()
-      .mockResolvedValue({ data: "post response", headers: {} });
+      .mockResolvedValue({ data: "post response", headers: {}, status: 200 });
     mockHttpService.put = vi
       .fn()
-      .mockResolvedValue({ data: "put response", headers: {} });
+      .mockResolvedValue({ data: "put response", headers: {}, status: 204 });
     mockHttpService.init = vi.fn();
 
     mockSecretsManagerService =

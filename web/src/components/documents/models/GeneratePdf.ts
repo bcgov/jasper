@@ -2,7 +2,12 @@ import { DocumentRequestType } from "@/types/shared";
 
 export interface GeneratePdfResponse {
   base64Pdf: string;
-  pageRanges: Array<[number, number]>;
+  pageRanges: Array<PageRange>;
+}
+export interface PageRange
+{
+    start: number,
+    end: number
 }
 
 export type GeneratePdfRequest = {

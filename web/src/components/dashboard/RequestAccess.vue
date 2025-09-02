@@ -7,13 +7,7 @@
           elevation="2"
           style="padding: 1rem"
         >
-          <component
-            :is="BcIcon"
-            width="177"
-            height="44"
-            class="ml-4"
-            title="B.C. Government Logo"
-          />
+          <img src="../../assets/jasper.png" alt="B.C. Government Logo" />
           <v-row justify="center">
             <h2 class="mt-4">Request Access To JASPER:</h2>
           </v-row>
@@ -80,7 +74,6 @@
 </template>
 
 <script setup lang="ts">
-  import BcIcon from '@/assets/bcid-logo-en.svg';
   import { UserService } from '@/services/UserService';
   import { useCommonStore } from '@/stores';
   import { useSnackbarStore } from '@/stores/SnackbarStore';

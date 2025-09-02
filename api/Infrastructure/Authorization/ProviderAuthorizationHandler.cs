@@ -26,8 +26,7 @@ namespace Scv.Api.Infrastructure.Authorization
             var isAuthController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(AuthController);
             var isUserController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(UsersController);
 
-            if (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetMyUser)) ||
-            (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo)))
+            if (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetMyUser)))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
@@ -66,6 +65,11 @@ namespace Scv.Api.Infrastructure.Authorization
                 };
 
                 if (isFilesController && allowedActionsForVc.Contains(actionDescriptor.ActionName))
+                {
+                    context.Succeed(requirement);
+                    return Task.CompletedTask;
+                }
+                if (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))
                 {
                     context.Succeed(requirement);
                     return Task.CompletedTask;

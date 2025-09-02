@@ -5,11 +5,6 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 async function authGuard(to: any, from: any, next: any) {
   const commonStore = useCommonStore();
   const results = await SessionManager.getSettings();
-  console.log(
-    to.name,
-    isPositiveInteger(commonStore?.userInfo?.roles?.length),
-    commonStore?.userInfo?.isActive
-  );
   if (results) {
     if (
       (!isPositiveInteger(commonStore?.userInfo?.roles?.length) ||

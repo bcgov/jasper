@@ -7,7 +7,12 @@
           elevation="2"
           style="padding: 1rem"
         >
-          <img src="../../assets/jasper.png" alt="B.C. Government Logo" />
+          <img
+            class="logo"
+            src="../../assets/jasper-logo.svg"
+            alt="logo"
+            width="63"
+          />
           <v-row justify="center">
             <h2 class="mt-4">Request Access To JASPER:</h2>
           </v-row>

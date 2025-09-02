@@ -20,8 +20,10 @@ exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
         style="padding: 1rem;"
       >
         <img
-          alt="B.C. Government Logo"
-          src="/src/assets/jasper.png"
+          alt="logo"
+          class="logo"
+          src="/src/assets/jasper-logo.svg"
+          width="63"
         />
         <v-row justify="center">
           <h2 class="mt-4">

@@ -11,8 +11,10 @@
 </template>
 
 <script setup lang="ts">
+  import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
   import { FilesService } from '@/services/FilesService';
   import { usePDFViewerStore } from '@/stores';
+  import { StoreDocument } from '@/stores/PDFViewerStore';
   import { inject, onMounted, onUnmounted, ref } from 'vue';
 
   const pdfStore = usePDFViewerStore();
@@ -28,6 +30,8 @@
     }),
     container: '.pdf-container',
   };
+  let documentResponse: GeneratePdfResponse | null = null;
+  let pageIndex = 0;
 
   const loadNutrient = async () => {
     loading.value = true;
@@ -42,14 +46,67 @@
   };
 
   const loadMultiple = async () => {
-    const documentResponse = await filesService.generatePdf(pdfStore.documents);
+    const groupedDocs = pdfStore.groupedDocuments;
+    const allDocs: StoreDocument[] = [];
+    Object.values(groupedDocs).forEach(
+      (userGroup: Record<string, StoreDocument[]>) => {
+        Object.values(userGroup).forEach((docs) => {
+          allDocs.push(...(docs as StoreDocument[]));
+        });
+      }
+    );
+
+    documentResponse = await filesService.generatePdf(
+      allDocs.map((doc) => doc.request)
+    );
     loading.value = false;
 
-    await NutrientViewer.load({
+    let instance = await NutrientViewer.load({
       ...configuration,
       document: `data:application/pdf;base64,${documentResponse.base64Pdf}`,
     });
-    // Todo - Render outline from page ranges
+    configureOutline(instance);
+  };
+
+  const configureOutline = (instance: any) => {
+    const outline = NutrientViewer.Immutable.List(
+      Object.entries(pdfStore.groupedDocuments).map(([groupKey, userGroup]) =>
+        makeCaseElement(groupKey, userGroup)
+      )
+    );
+    instance.setDocumentOutline(outline);
+  };
+
+  const makeCaseElement = (
+    groupKey: string,
+    userGroup: Record<string, StoreDocument[]>
+  ) => {
+    return new NutrientViewer.OutlineElement({
+      title: groupKey,
+      children: NutrientViewer.Immutable.List(
+        Object.entries(userGroup).map(([name, docs]) =>
+          makeMemberElement(name || 'Documents', docs)
+        )
+      ),
+    });
+  };
+
+  const makeMemberElement = (memberName: string, docs: StoreDocument[]) => {
+    return new NutrientViewer.OutlineElement({
+      title: memberName,
+      children: NutrientViewer.Immutable.List(
+        docs.map((doc) => makeDocElement(doc))
+      ),
+    });
+  };
+
+  const makeDocElement = (doc: StoreDocument) => {
+    return new NutrientViewer.OutlineElement({
+      title: doc.documentName,
+      action: new NutrientViewer.Actions.GoToAction({
+        pageIndex: documentResponse?.pageRanges?.[pageIndex++]?.start,
+      }),
+    });
   };
 
   onMounted(() => {

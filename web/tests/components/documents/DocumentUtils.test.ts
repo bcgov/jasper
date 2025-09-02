@@ -18,8 +18,15 @@ const mockCriminalFileStore = {
   },
 };
 
+const mockCivilFileStore = {
+  civilFileInformation: {
+    detailsData: {}
+  }
+};
+
 vi.mock('@/stores', () => ({
   useCriminalFileStore: () => mockCriminalFileStore,
+  useCivilFileStore : () => mockCivilFileStore,
 }));
 
 describe('DocumentUtils', () => {
@@ -60,6 +67,14 @@ describe('DocumentUtils', () => {
       };
       const result = DocumentUtils.prepareCriminalDocumentData(data);
       expect(result.documentDescription).toBe('Other Type');
+    });
+
+    it('should prepare use civilDocumentId when no civil appearanceId', () => {
+      const data = {
+        civilDocumentId: 'civ-1',
+      };
+      const result = DocumentUtils.prepareCivilDocumentData(data);
+      expect(result.appearanceId).toBe('civ-1');
     });
   });
 

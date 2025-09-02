@@ -91,9 +91,13 @@
             </span>
           </v-col>
         </v-row>
-        <v-row v-if="type === 'keyDocuments' && item.category === 'BAIL'" no-gutters>
+        <v-row
+          v-if="type === 'keyDocuments' && item.category === 'BAIL'"
+          no-gutters
+        >
           <v-col>
-            {{ item.docmDispositionDsc }} <span class="pl-2" /> {{ formatDateToDDMMMYYYY(item.issueDate) }}
+            {{ item.docmDispositionDsc }} <span class="pl-2" />
+            {{ formatDateToDDMMMYYYY(item.issueDate) }}
           </v-col>
         </v-row>
       </template>
@@ -123,7 +127,11 @@
     criminalParticipantType,
     documentType,
   } from '@/types/criminal/jsonTypes';
-  import { DocumentRequestType, DocumentData, CourtDocumentType } from '@/types/shared';
+  import {
+    CourtDocumentType,
+    DocumentData,
+    DocumentRequestType,
+  } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { formatFromFullname } from '@/utils/utils';
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
@@ -277,13 +285,26 @@
     );
 
   const openMergedDocuments = () => {
-    const documents: { documentType: DocumentRequestType, documentData: DocumentData }[] = [];
+    const documents: {
+      documentType: DocumentRequestType;
+      documentData: DocumentData;
+      memberName: string;
+      documentName: string;
+    }[] = [];
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item) => {
-        const documentType = getCriminalDocumentType(item) === CourtDocumentType.Criminal ? DocumentRequestType.File : DocumentRequestType.ROP;
+        const documentType =
+          getCriminalDocumentType(item) === CourtDocumentType.Criminal
+            ? DocumentRequestType.File
+            : DocumentRequestType.ROP;
         const documentData = prepareCriminalDocumentData(item);
-        documents.push({ documentType, documentData });
+        documents.push({
+          documentType,
+          documentData,
+          memberName: item.fullName,
+          documentName: documentData.documentDescription || ''
+        });
       });
 
     shared.openDocumentsPdfV2(documents);

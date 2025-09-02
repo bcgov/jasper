@@ -3,8 +3,15 @@
     <v-app>
       <profile-off-canvas v-model="profile" />
       <v-app-bar app>
-        <v-app-bar-title>
-          <router-link to="/"> JASPER </router-link>
+        <v-app-bar-title class="mr-4">
+          <router-link to="/">
+            <img
+              class="logo"
+              src="./assets/jasper-logo.svg"
+              alt="logo"
+              width="63"
+            />
+          </router-link>
         </v-app-bar-title>
         <v-tabs align-tabs="start" v-model="selectedTab">
           <v-tab value="dashboard" to="/dashboard">Dashboard</v-tab>
@@ -83,8 +90,19 @@
   .v-tabs {
     flex: 10;
   }
-  .v-app-bar-title a {
-    text-decoration: none;
-    color: inherit;
+
+  .v-toolbar-title {
+    flex: none;
+  }
+
+  .logo {
+    transition:
+      transform 0.3s ease,
+      filter 0.3s ease;
+  }
+
+  .logo:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
   }
 </style>

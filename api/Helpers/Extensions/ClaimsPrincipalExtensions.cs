@@ -124,7 +124,10 @@ namespace Scv.Api.Helpers.Extensions
         public static bool CanViewOthersSchedule(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.Groups && c.Value == "jasper-view-others-schedule");
 
-        public static string UserGuid(this ClaimsPrincipal claimsPrincipal) =>
-            claimsPrincipal.FindFirstValue(CustomClaimTypes.UserGuid);
+        public static string UserGuid(this ClaimsPrincipal claimsPrincipal)
+            => claimsPrincipal.FindFirstValue(CustomClaimTypes.UserGuid);
+
+        public static string ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)
+            => claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalJudgeId);
     }
 }

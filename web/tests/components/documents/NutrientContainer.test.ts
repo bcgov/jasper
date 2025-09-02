@@ -5,6 +5,34 @@ import { setActivePinia, createPinia } from 'pinia'
 import { FilesService } from '@/services/FilesService';
 
 const mockDocuments = [{ test: "1" }, { test: "2" }, { test: "3" }];
+const mockGroupedDocuments = {
+    "20111101-1": {
+        "John Johnson": [
+            {
+                "request": {
+                    "type": 0,
+                    "data": {
+                    }
+                },
+                "caseNumber": "123",
+                "memberName": "John Johnson",
+                "documentName": "Information"
+            }
+        ],
+        "Elmer Fudd": [
+            {
+                "request": {
+                    "type": 0,
+                    "data": {
+                    }
+                },
+                "caseNumber": "123",
+                "memberName": "Elmer Fudd",
+                "documentName": "Information"
+            }
+        ]
+    }
+};
 const mockLoad = vi.fn().mockImplementation(() => ({setDocumentOutline: vi.fn().mockImplementation(() => ({}))}));
 const mockUnload = vi.fn();
 let filesService: any;
@@ -18,6 +46,9 @@ vi.mock('@/stores/PDFViewerStore', () => {
     usePDFViewerStore: vi.fn(() => ({
       get documents() {
         return mockDocuments;
+      },
+      get groupedDocuments() {
+        return mockGroupedDocuments;
       },
       clearDocuments: vi.fn(),
     })),

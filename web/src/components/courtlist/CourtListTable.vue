@@ -39,7 +39,7 @@
       </tr>
     </template>
     <template #item.accusedNm="{ item }">
-      <a href="#" @click.prevent="viewCaseDetails(item)">
+      <a href="#" @click.prevent="viewCaseDetails([item])">
         {{ item.accusedNm || item.styleOfCause }}
       </a>
     </template>
@@ -135,7 +135,10 @@
       <v-icon :icon="mdiFileDocumentEditOutline" size="large" />
     </template>
   </v-data-table-virtual>
-  <CourtListTableActionBarGroup :selected />
+  <CourtListTableActionBarGroup
+    :selected
+    @view-case-details="viewCaseDetails"
+  />
 </template>
 
 <script setup lang="ts">
@@ -145,7 +148,12 @@
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
   import { useCourtFileSearchStore } from '@/stores';
-  import { CourtClassEnum, DivisionEnum, FileMarkerEnum } from '@/types/common';
+  import {
+    CourtClassEnum,
+    DivisionEnum,
+    FileMarkerEnum,
+    KeyValueInfo,
+  } from '@/types/common';
   import { CourtListAppearance, PcssCounsel } from '@/types/courtlist';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
   import { getCourtClassLabel, getEnumName } from '@/utils/utils';
@@ -333,15 +341,41 @@
     return [];
   };
 
-  const viewCaseDetails = (item: CourtListAppearance) => {
-    const isCriminal = item.courtDivisionCd === DivisionEnum.R;
-    const number = isCriminal ? item.justinNo : item.physicalFileId;
+  const viewCaseDetails = (selectedItems: CourtListAppearance[]) => {
+    if (selectedItems.length === 0) {
+      return;
+    }
+
+    const { justinNo, physicalFileId, courtDivisionCd } = selectedItems[0];
+
+    // User can only view case details of the same class which means the same division as well.
+    const isCriminal = courtDivisionCd === DivisionEnum.R;
+
+    // Prepare the first case detail info
+    const number = isCriminal ? justinNo : physicalFileId;
     const caseDetailUrl = `/${isCriminal ? 'criminal-file' : 'civil-file'}/${number}`;
+
+    // Make a list of unique key (justinNo or physicalFileId) - value (file number) pairs
+    const files = Array.from(
+      new Map(
+        selectedItems.map(
+          ({ justinNo, physicalFileId, aslCourtFileNumber }) => [
+            isCriminal ? justinNo : physicalFileId,
+            {
+              key: isCriminal ? justinNo : physicalFileId,
+              value: aslCourtFileNumber,
+            },
+          ]
+        )
+      ).values()
+    ) as KeyValueInfo[];
+
     courtFileSearchStore.addFilesForViewing({
       searchCriteria: {},
       searchResults: [],
-      files: [{ key: number, value: item.courtFileNumber }],
+      files,
     });
+
     window.open(caseDetailUrl);
   };
 </script>

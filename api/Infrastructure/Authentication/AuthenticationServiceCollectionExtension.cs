@@ -23,6 +23,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 
@@ -171,34 +172,7 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         });
 
-                        // Get JudgeId and HomeLocationId from env variable until login process is finalized.
-                        var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
-                        var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
-
-                        logger.LogInformation("Acting as Judge Id - {JudgeId}.", judgeId);
-
-                        claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
-                        claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
-
-                        // Remove checking when the "real" mongo db has been configured
-                        var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-                        if (!string.IsNullOrEmpty(connectionString))
-                        {
-                            // Add user's permissions and roles as claims
-                            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                            var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
-                            if (userDto != null)
-                            {
-                                // UserId's value refers to the id in the User collection from MongoDb.
-                                claims.Add(new Claim(CustomClaimTypes.UserId, userDto.Id));
-
-                                var permissionsClaims = userDto.Permissions.Select(p => new Claim(CustomClaimTypes.Permission, p));
-                                claims.AddRange(permissionsClaims);
-
-                                var rolesClaims = userDto.Roles.Select(r => new Claim(CustomClaimTypes.Role, r));
-                                claims.AddRange(rolesClaims);
-                            }
-                        }
+                        await OnPostAuthSuccess(configuration, context, logger, claims);
 
                         identity.AddClaims(claims);
                     },
@@ -270,6 +244,110 @@ namespace Scv.Api.Infrastructure.Authentication
                 SiteMinderAuthenticationHandler.SiteMinder, null);
 
             return services;
+        }
+
+        private static async Task OnPostAuthSuccess(
+            IConfiguration configuration,
+            Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
+            ILogger logger,
+            List<Claim> claims)
+        {
+            var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
+            var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
+
+            // Default the user to his own external Judge Id.
+            if (!string.IsNullOrWhiteSpace(context.Principal.ExternalJudgeId()))
+            {
+                var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
+                var judges = await dashboardService.GetJudges();
+
+                // Find out the judge home location from list of judges
+                int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId);
+
+                var judge = judges.FirstOrDefault(j => j.PersonId == externalJudgeId);
+                if (judge != null)
+                {
+                    judgeId = externalJudgeId.ToString();
+                    homeLocationId = judge.HomeLocationId.ToString();
+                }
+            }
+
+            // Remove checking when the "real" mongo db has been configured
+            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                // Defaults the logged in user to the default judge.
+                logger.LogInformation("Acting as Judge Id - {JudgeId} with Home Location Id - {HomeLocationId}.", judgeId, homeLocationId);
+                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+                return;
+            }
+
+            try
+            {
+                var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                var userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
+
+                // Insert new user to the db. In the future, we need to ensure that the currently
+                // logged on user has an account in PCSS before it is added to the db.
+                if (userDto == null)
+                {
+                    userDto = new UserDto
+                    {
+                        FirstName = context.Principal.FindFirstValue(ClaimTypes.GivenName),
+                        LastName = context.Principal.FindFirstValue(ClaimTypes.Surname),
+                        Email = context.Principal.Email(),
+                        UserGuid = context.Principal.UserGuid(),
+                        IsActive = false
+                    };
+
+                    var result = await userService.AddAsync(userDto);
+                    if (!result.Succeeded)
+                    {
+                        logger.LogInformation("Unable to add user: {Message}", result.Errors);
+                    }
+
+                    logger.LogInformation("A user has been added to the db.");
+
+                    userDto = result.Payload;
+                }
+
+                // Attempt to override the default Judge Id and HomeLocationId if the current user has been mapped.
+                if (userDto.JudgeId != null)
+                {
+                    var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
+
+                    var judges = await dashboardService.GetJudges();
+
+                    var judge = judges.FirstOrDefault(j => j.PersonId == userDto.JudgeId);
+                    if (judge != null)
+                    {
+                        judgeId = judge.PersonId.ToString();
+                        homeLocationId = judge.HomeLocationId.ToString();
+                    }
+                }
+
+                // UserId's value refers to the id in the User collection from MongoDb.
+                claims.Add(new Claim(CustomClaimTypes.UserId, userDto.Id));
+
+                // Add Roles and Permissions as claims if available
+                var permissionsClaims = userDto.Permissions.Select(p => new Claim(CustomClaimTypes.Permission, p));
+                claims.AddRange(permissionsClaims);
+
+                var rolesClaims = userDto.Roles.Select(r => new Claim(CustomClaimTypes.Role, r));
+                claims.AddRange(rolesClaims);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Something went wrong during post authentication process: {Exception}", ex);
+            }
+            finally
+            {
+                // Add the final value of judgeId and homeLocationId as claims of the current user
+                logger.LogInformation("Acting as Judge Id - {JudgeId} with Home Location Id - {HomeLocationId}.", judgeId, homeLocationId);
+                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+            }
         }
     }
 }

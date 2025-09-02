@@ -20,6 +20,21 @@ namespace Scv.Db.Models
 
         public string ADUsername { get; set; }
 
+        /// <summary>
+        /// Guid from DIAM
+        /// </summary>
+        public string UserGuid { get; set; }
+
+        /// <summary>
+        /// Guid from ProvJud. This is going to be populated manually for now.
+        /// </summary>
+        public string NativeGuid { get; set; }
+
+        /// <summary>
+        /// Id used as parameter for external systems backend APIs. This is going to be mapped manually for now.
+        /// </summary>
+        public int? JudgeId { get; set; }
+
         public List<string> GroupIds { get; set; } = [];
     }
 }

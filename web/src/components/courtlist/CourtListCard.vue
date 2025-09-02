@@ -27,9 +27,6 @@
             }}
           </h5>
         </v-col>
-        <v-col>
-          <v-btn-secondary> View shared folder </v-btn-secondary>
-        </v-col>
       </v-row>
 
       <v-row>

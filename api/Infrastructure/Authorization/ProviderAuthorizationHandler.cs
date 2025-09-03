@@ -32,11 +32,6 @@ namespace Scv.Api.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
-            if (!user.IsActive())
-            {
-                context.Fail();
-            }
-
             if (user.Identity.AuthenticationType == SiteMinderAuthenticationHandler.SiteMinder)
             {
                 context.Succeed(requirement);

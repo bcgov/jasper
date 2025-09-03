@@ -23,6 +23,13 @@ public class PermissionHandler(
             return Task.CompletedTask;
         }
 
+        if (!context.User.IsActive())
+        {
+            _logger.LogInformation("User is inactive.");
+            context.Fail();
+            return Task.CompletedTask;
+        }
+
         var isAuthorized = context.User.HasPermissions(requirement.RequiredPermissions, requirement.ApplyOrCondition);
         if (!isAuthorized)
         {

@@ -29,7 +29,10 @@
       </template>
     </v-alert>
     <div class="d-flex justify-end my-3">
-      <v-btn-secondary class="mr-3" text="View Binder"></v-btn-secondary>
+      <v-btn-secondary 
+        class="mr-3"
+        text="View Binder"
+        @click="viewBinder" />
       <ConfirmButton
         buttonText="Delete Judicial Binder"
         infoText="Are you sure you want to delete your Judicial Binder? This will not delete any documents."
@@ -173,6 +176,7 @@
     removeDocumentFromBinder: (documentId: string) => void;
     openIndividualDocument: (data: civilDocumentType) => void;
     deleteBinder: () => void;
+    viewBinder: () => void;
   }>();
 
   const emit = defineEmits<

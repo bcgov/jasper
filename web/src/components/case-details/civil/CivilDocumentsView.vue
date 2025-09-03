@@ -29,6 +29,7 @@
     :openIndividualDocument
     :removeDocumentFromBinder
     :deleteBinder="deleteCurrentBinder"
+    :viewBinder="() => openMergedDocuments(binderDocuments)"
     :baseHeaders="headers"
     @update:reordered="(documentData) => handleReordering(documentData)"
   />
@@ -55,7 +56,7 @@
       class="mx-2"
       :prepend-icon="mdiFileDocumentMultipleOutline"
       style="letter-spacing: 0.001rem"
-      @click="openMergedDocuments(true)"
+      @click="openMergedDocuments(selectedBinderItems)"
     >
       View together
     </v-btn>
@@ -80,7 +81,7 @@
         class="mx-2"
         :prepend-icon="mdiFileDocumentMultipleOutline"
         style="letter-spacing: 0.001rem"
-        @click="openMergedDocuments()"
+        @click="openMergedDocuments(selectedItems)"
         :disabled="!enableViewTogether"
       >
         View together
@@ -257,15 +258,14 @@
 
   // Todo, parts of these binder operation methods should be moved to a
   // shared binder space, that way the code is not repeated
-  const openMergedDocuments = (isBinder = false) => {
+  const openMergedDocuments = (items: civilDocumentType[] = []) => {
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
       memberName: string;
       documentName: string;
     }[] = [];
-    const source = isBinder ? selectedBinderItems : selectedItems;
-    source.value
+    items
       .filter((item) => item.imageId)
       .forEach((item) => {
         const documentType =
@@ -277,7 +277,10 @@
           documentType,
           documentData,
           memberName: '',
-          documentName: item.documentTypeDescription + ' - ' + formatDateToDDMMMYYYY(item.filedDt),
+          documentName:
+            item.documentTypeDescription +
+            ' - ' +
+            formatDateToDDMMMYYYY(item.filedDt),
         });
       });
     shared.openDocumentsPdfV2(documents);
@@ -295,7 +298,7 @@
         getBindersResp &&
         getBindersResp.succeeded &&
         getBindersResp.payload.length > 0
-          ? binders.payload[0]
+          ? getBindersResp.payload[0]
           : ({ id: null, labels, documents: [] } as Binder);
     }
   };

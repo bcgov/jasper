@@ -5,12 +5,7 @@
       <v-app-bar app>
         <v-app-bar-title class="mr-4">
           <router-link to="/">
-            <img
-              class="logo"
-              src="./assets/jasper-logo.svg"
-              alt="logo"
-              width="63"
-            />
+            <img class="logo" :src="logo" alt="logo" width="63" />
           </router-link>
         </v-app-bar-title>
         <v-tabs align-tabs="start" v-model="selectedTab">
@@ -48,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+  import logo from '@/assets/jasper-logo.svg?url';
   import { mdiAccountCircle } from '@mdi/js';
   import { inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';

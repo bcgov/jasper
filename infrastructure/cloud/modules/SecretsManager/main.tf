@@ -10,6 +10,10 @@ resource "aws_secretsmanager_secret_version" "file_services_client_secret_value"
     password = "",
     baseUrl  = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+
 }
 
 resource "aws_secretsmanager_secret" "location_services_client_secret" {
@@ -24,6 +28,9 @@ resource "aws_secretsmanager_secret_version" "location_services_client_secret_va
     password = "",
     baseUrl  = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "lookup_services_client_secret" {
@@ -38,6 +45,9 @@ resource "aws_secretsmanager_secret_version" "lookup_services_client_secret_valu
     password = "",
     baseUrl  = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "user_services_client_secret" {
@@ -52,6 +62,9 @@ resource "aws_secretsmanager_secret_version" "user_services_client_secret_value"
     password = "",
     baseUrl  = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "keycloak_secret" {
@@ -69,6 +82,9 @@ resource "aws_secretsmanager_secret_version" "keycloak_secret_value" {
     presReqConfId = "",
     vcIdpHint     = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "request_secret" {
@@ -84,6 +100,9 @@ resource "aws_secretsmanager_secret_version" "request_secret_value" {
     partId                      = "",
     getUserLoginDefaultAgencyId = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "splunk_secret" {
@@ -98,6 +117,9 @@ resource "aws_secretsmanager_secret_version" "splunk_secret_value" {
     collectorUrl = "",
     token        = "",
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "database_secret" {
@@ -117,6 +139,9 @@ resource "aws_secretsmanager_secret_version" "database_secret_value" {
     mongoDbName             = "",
     defaultUsers            = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 data "aws_secretsmanager_secret_version" "current_db_secret_value" {
@@ -134,6 +159,9 @@ resource "aws_secretsmanager_secret_version" "aspnet_core_secret_value" {
     urls        = "",
     environment = "",
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "misc_secret" {
@@ -155,6 +183,9 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     mtlsCert                       = "",
     allowedIpRanges                = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 data "aws_secretsmanager_secret_version" "current_misc_secret_value" {
@@ -174,6 +205,9 @@ resource "aws_secretsmanager_secret_version" "auth_secret_value" {
     allowSiteMinderUserType = "",
     apigwApiKey             = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "mtls_cert_secret" {
@@ -188,6 +222,9 @@ resource "aws_secretsmanager_secret_version" "mtls_cert_secret_value" {
     key  = "",
     ca   = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "api_authorizer_secret" {
@@ -227,6 +264,9 @@ resource "aws_secretsmanager_secret_version" "pcss_secret_value" {
     judgeId             = "",
     judgeHomeLocationId = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret" "dars_secret" {
@@ -241,4 +281,7 @@ resource "aws_secretsmanager_secret_version" "dars_secret_value" {
     password = "",
     baseUrl  = ""
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }

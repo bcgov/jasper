@@ -4,6 +4,8 @@
 // </auto-generated>
 //----------------------
 
+#pragma warning disable 649 // Disable "CS0649 Field is never assigned to, and will always have its default value null"
+
 using PCSSCommon.Models;
 
 namespace PCSSCommon.Clients.PersonServices;
@@ -248,4 +250,4 @@ public partial class PersonServicesClient
     }
 }
 
-
+#pragma warning restore 649

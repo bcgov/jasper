@@ -1,12 +1,12 @@
 import RequestAccess from '@/components/dashboard/RequestAccess.vue';
 import { useCommonStore } from '@/stores';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { CustomAPIError } from '@/types/ApiResponse';
 import { flushPromises, mount } from '@vue/test-utils';
 import { AxiosError } from 'axios';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import { CustomAPIError } from './../../../src/utils/utils';
 
 // Mock UserService
 const mockRequestAccess = vi.fn();

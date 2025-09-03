@@ -82,10 +82,11 @@
   import { UserService } from '@/services/UserService';
   import { useCommonStore } from '@/stores';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
-  import { CustomAPIError, isPositiveInteger } from '@/utils/utils';
+  import { isPositiveInteger } from '@/utils/utils';
   import axios, { AxiosError } from 'axios';
   import _ from 'underscore';
   import { inject, onMounted, ref } from 'vue';
+  import { CustomAPIError } from '@/types/ApiResponse';
 
   const commonStore = useCommonStore();
   const snackBarStore = useSnackbarStore();

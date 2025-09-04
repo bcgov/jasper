@@ -96,6 +96,7 @@ module "efs" {
   kms_key_arn         = module.initial.kms_key_arn
   web_security_group_id = data.aws_security_group.web_sg.id
   app_security_group_id = data.aws_security_group.app_sg.id
+  count = var.create_efs ? 1 : 0
 }
 
 # Create Target Groups

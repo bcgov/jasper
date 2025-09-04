@@ -74,3 +74,8 @@ variable "lambda_memory_size" {
 }
 
 
+variable create_efs {
+  description = "Boolean to create EFS or not"
+  type        = bool
+  default     = false
+}

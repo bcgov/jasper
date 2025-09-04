@@ -11,6 +11,7 @@ namespace Scv.Api.Infrastructure.Authorization
         {
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAuthorizationHandler, ProviderAuthorizationHandler>();
+            services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
             services.AddAuthorization(options =>
             {

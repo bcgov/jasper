@@ -1,4 +1,6 @@
-﻿using System;
+﻿using DocumentFormat.OpenXml.InkML;
+using Scv.Api.Models.AccessControlManagement;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -133,5 +135,11 @@ namespace Scv.Api.Helpers.Extensions
 
         public static string ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalJudgeId);
+
+        // Check if any of the user's claims have meaningfully changed compared to the current user data
+        public static bool HasChanged(this ClaimsPrincipal claimsPrincipal, UserDto currentUser)
+            => claimsPrincipal.IsActive() != currentUser.IsActive ||
+            !claimsPrincipal.Roles().Order().SequenceEqual(currentUser.Roles.Order()) ||
+            !claimsPrincipal.Permissions().Order().SequenceEqual(currentUser.Permissions.Order());
     }
 }

@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Hangfire;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -29,6 +26,10 @@ using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Jobs;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace Scv.Api
 {
@@ -75,6 +76,8 @@ namespace Scv.Api
                         options.EnableSensitiveDataLogging();
                 }
             );
+
+            services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationRedirectMiddlewareResultHandler>();
 
             services.AddMapster();
             services.AddNutrient();

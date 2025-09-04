@@ -50,14 +50,11 @@ public class UsersController(
         {
             return BadRequest("Invalid user. Please contact the JASPER admin.");
         }
-        var existingUserResponse = await base.GetById(User.UserId());
-        if (existingUserResponse is OkObjectResult okResult)
+        var user = await base.Service.GetByIdWithPermissionsAsync(User.UserId());
+
+        if (user != null)
         {
-            var existingUser = (UserDto)okResult.Value;
-            if (existingUser?.Email != null)
-            {
-                return Ok(await base.Service.GetWithPermissionsAsync(existingUser.Email));
-            }
+            return Ok(user);
         }
         return NotFound("Unable to locate JASPER user. Please contact the JASPER admin.");
     }
@@ -66,7 +63,6 @@ public class UsersController(
     /// Allows a new user without authorization to JASPER to request access to the application.
     /// </summary>
     /// <returns>The user resulting from the access request.</returns>
-    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [HttpPut]
     [Route("request-access")]
     public async Task<IActionResult> RequestAccess()

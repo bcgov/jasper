@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Services;
 using Scv.Db.Models;
 using Xunit;
 
@@ -66,7 +69,8 @@ public class PermissionHandlerTests
 
         var claims = new List<Claim>{
             new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
-            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS)
+            new(CustomClaimTypes.Permission, Permission.ACCESS_DARS),
+            new(CustomClaimTypes.IsActive, "true")
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -94,7 +98,8 @@ public class PermissionHandlerTests
         var claims = new List<Claim>{
             new(CustomClaimTypes.Permission, Permission.LOCK_UNLOCK_USERS),
             new(CustomClaimTypes.Permission, Permission.ACCESS_DARS),
-            new(CustomClaimTypes.Permission, Permission.VIEW_CASE_DETAILS)
+            new(CustomClaimTypes.Permission, Permission.VIEW_CASE_DETAILS),
+            new(CustomClaimTypes.IsActive, "true")
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -108,5 +113,27 @@ public class PermissionHandlerTests
         await _handler.HandleAsync(context);
 
         Assert.True(context.HasSucceeded);
+    }
+
+    [Fact]
+    public async Task UserDisabled_ShouldNotBeAuthorized()
+    {
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
+
+        var claims = new List<Claim>{
+            new(CustomClaimTypes.IsActive, "false")
+        };
+
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var user = new ClaimsPrincipal(identity);
+
+        var context = new AuthorizationHandlerContext(
+            [],
+            user,
+            null);
+
+        await _handler.HandleAsync(context);
+
+        Assert.False(context.HasSucceeded);
     }
 }

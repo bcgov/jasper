@@ -1,12 +1,12 @@
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { CustomAxiosConfig } from '@/types';
+import { CustomAPIError } from '@/types/ApiResponse';
 import axios, {
   AxiosError,
   AxiosInstance,
   InternalAxiosRequestConfig,
 } from 'axios';
 import redirectHandlerService from './RedirectHandlerService';
-import { CustomAPIError } from '@/utils/utils';
 
 export interface IHttpService {
   get<T>(
@@ -78,6 +78,10 @@ export class HttpService implements IHttpService {
     // todo: check for a 403 and handle it
     if (error.response && error.response.status === 401) {
       redirectHandlerService.handleUnauthorized(window.location.href);
+    } else if (error.response && error.response.status === 409) {
+      window.location.replace(
+        `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
+      );
     } else {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(

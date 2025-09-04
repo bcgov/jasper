@@ -1,18 +1,18 @@
 <template>
   <v-row>
     <v-col cols="6" />
-    <v-col cols="3" class="ml-auto" v-if="documentTypes.length > 1">
+    <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
       <v-select
-        v-model="selectedType"
+        v-model="selectedCategory"
         label="Documents"
         placeholder="All documents"
         hide-details
-        :items="documentTypes"
+        :items="documentCategories"
       >
         <template v-slot:item="{ props: itemProps, item }">
           <v-list-item
             v-bind="itemProps"
-            :title="item.title + ' (' + typeCount(item.raw) + ')'"
+            :title="item.title + ' (' + categoryCount(item.raw) + ')'"
           ></v-list-item>
         </template>
       </v-select>
@@ -148,7 +148,7 @@
   const enableViewTogether = computed<boolean>(
     () => selectedItems.value.filter((d) => d.imageId).length > 1
   );
-  const selectedType = ref<string>();
+  const selectedCategory = ref<string>();
   const isBinderLoading = ref(true);
   const rolesLoading = ref(false);
   const roles = ref<LookupCode[]>();
@@ -196,7 +196,7 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
-  const documentTypes = ref<any[]>([
+  const documentCategories = ref<any[]>([
     ...new Map(
       props.documents
         .filter((d) => d.category)
@@ -206,12 +206,12 @@
         ])
     ).values(),
   ]);
-  const filterByType = (item: civilDocumentType) =>
-    !selectedType.value ||
-    item.category?.toLowerCase() === selectedType.value?.toLowerCase();
+  const filterByCategory = (item: civilDocumentType) =>
+    !selectedCategory.value ||
+    item.category?.toLowerCase() === selectedCategory.value?.toLowerCase();
 
   const filteredDocuments = computed(() =>
-    props.documents.filter(filterByType)
+    props.documents.filter(filterByCategory)
   );
 
   const binderDocuments = computed(() => {
@@ -231,11 +231,11 @@
       .filter(
         (item): item is (typeof props.documents)[number] => item !== undefined
       )
-      .filter(filterByType);
+      .filter(filterByCategory);
     return filteredAndSorted;
   });
 
-  const typeCount = (type: any): number =>
+  const categoryCount = (type: any): number =>
     props.documents.filter((doc) => doc.category === type.value).length;
 
   onMounted(async () => {
@@ -319,7 +319,10 @@
       return;
     }
     currentBinder.value.documents = currentBinder.value?.documents.filter(
-      (d) => !selectedBinderItems.value.find((item) => item === d.documentId)
+      (d) =>
+        !selectedBinderItems.value.find(
+          (item) => item.civilDocumentId === d.documentId
+        )
     );
     selectedBinderItems.value = [];
     await saveBinder();

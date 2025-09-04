@@ -35,7 +35,7 @@ describe('CivilDocumentsView.vue', () => {
   const mockDocuments = [
     {
       civilDocumentId: '1',
-      documentTypeCd: 'CSR',
+      category: 'CSR',
       documentTypeDescription: 'Civil Document 1',
       filedDt: '2023-01-01',
       filedBy: [{ roleTypeCode: 'Role1' }],
@@ -46,7 +46,7 @@ describe('CivilDocumentsView.vue', () => {
     },
     {
       civilDocumentId: '2',
-      documentTypeCd: 'DOC',
+      category: 'ROP',
       documentTypeDescription: 'Civil Document 2',
       filedDt: '2023-02-01',
       filedBy: [{ roleTypeCode: 'Role2' }],
@@ -81,7 +81,7 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('filters documents by selected type', async () => {
-    wrapper.vm.selectedType = 'CSR';
+    wrapper.vm.selectedCategory = 'CSR';
 
     expect(wrapper.vm.filteredDocuments).toEqual([mockDocuments[0]]);
   });

@@ -74,7 +74,7 @@ module "iam" {
   iam_user_table_name = var.iam_user_table_name
   secrets_arn_list    = module.secrets_manager.secrets_arn_list
   account_id          = data.aws_caller_identity.current.account_id
-  kms_key_id          = module.initial.kms_key_arn
+  kms_key_id          = module.initial.kms_key_id
   region              = var.region
   vpc_id              = data.aws_vpc.vpc.id
 }

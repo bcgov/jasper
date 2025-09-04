@@ -63,6 +63,19 @@ module "rds" {
   all_subnet_ids = module.subnets.all_subnet_ids
 }
 
+module "mongodb" {
+  source              = "../../modules/MongoDocDB"
+  environment         = var.environment
+  data_subnets_ids    = module.subnets.data_subnets_ids
+  kms_key_id          = module.initial.kms_key_arn
+  app_sg_id           = data.aws_security_group.app_sg.id
+  delete_protection_enabled = var.delete_protection_enabled
+  mongo_node_count    = var.mongo_node_count
+  mongo_instance_type = var.mongo_instance_type
+  mongousername       = var.mongousername
+  app_name            = var.app_name
+}
+
 # Create IAM Roles/Policies
 module "iam" {
   source              = "../../modules/IAM"

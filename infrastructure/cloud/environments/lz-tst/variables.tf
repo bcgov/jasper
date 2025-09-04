@@ -74,3 +74,27 @@ variable "lambda_memory_size" {
 }
 
 
+
+variable delete_protection_enabled {
+  description = "Flag to enable or disable deletion protection for the DocDB cluster"
+  type        = bool
+  default     = true
+}
+
+variable mongo_node_count {
+  description = "Number of instances in the DocDB cluster"
+  type        = number
+  default     = 1
+}
+
+variable mongo_instance_type {
+  description = "Instance type for the DocDB instances"
+  type        = string
+  default     = "db.t3.medium"
+}
+
+variable mongousername {
+  description = "Username for the MongoDB admin user"
+  type        = string
+}
+

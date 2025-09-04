@@ -9,3 +9,7 @@ lb_name             = "default"
 rds_db_ca_cert      = "rds-ca-rsa2048-g1"
 cert_domain_name    = "internal.stratus.cloud.gov.bc.ca"
 create_efs         = false
+delete_protection_enabled = false
+mongo_node_count    = 1
+mongo_instance_type = "db.t3.medium"
+mongousername       = "adminmongo"

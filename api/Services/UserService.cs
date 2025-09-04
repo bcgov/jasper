@@ -74,7 +74,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.Email == email);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {email} is not found", email.Replace(Environment.NewLine, ""));
+            this.Logger.LogInformation("User with email: {Email} is not found", email.Replace(Environment.NewLine, ""));
             return null;
         }
 
@@ -86,7 +86,7 @@ public class UserService(
         var user = await GetByIdAsync(userId);
         if (user == null)
         {
-            this.Logger.LogInformation("User with id: {userId} is not found", userId);
+            this.Logger.LogInformation("User with id: {UserId} is not found", userId);
             return null;
         }
 

@@ -29,10 +29,7 @@
       </template>
     </v-alert>
     <div class="d-flex justify-end my-3">
-      <v-btn-secondary 
-        class="mr-3"
-        text="View Binder"
-        @click="viewBinder" />
+      <v-btn-secondary class="mr-3" text="View Binder" @click="viewBinder" />
       <ConfirmButton
         buttonText="Delete Judicial Binder"
         infoText="Are you sure you want to delete your Judicial Binder? This will not delete any documents."
@@ -130,7 +127,7 @@
                   <!-- Issues column -->
                   <LabelWithTooltip
                     v-if="element.issue?.length > 0"
-                    :values="element.issue.map((issue) => issue.issueTypeDesc)"
+                    :values="element.issue.map((issue) => issue.issueDsc)"
                     :location="Anchor.Top"
                   />
                 </td>

@@ -13,7 +13,7 @@
     <template v-slot:item.issue="{ item }">
       <LabelWithTooltip
         v-if="item.issue?.length > 0"
-        :values="item.issue.map((issue) => issue.issueTypeDesc)"
+        :values="item.issue.map((issue) => issue.issueDsc)"
         :location="Anchor.Top"
       />
     </template>
@@ -32,7 +32,7 @@
 
   const headers = [
     { title: 'SEQ', key: 'fileSeqNo' },
-    { title: 'DOCUMENT TYPE', key: 'category' },
+    { title: 'DOCUMENT TYPE', key: 'documentTypeDescription' },
     { title: 'ACT', key: 'activity' },
     {
       title: 'DATE FILED',

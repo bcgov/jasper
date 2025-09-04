@@ -66,7 +66,7 @@
     <template v-slot:item.issue="{ item }">
       <LabelWithTooltip
         v-if="item.issue?.length > 0"
-        :values="item.issue.map((issue) => issue.issueTypeDesc)"
+        :values="item.issue.map((issue) => issue.issueDsc)"
         :location="Anchor.Top"
       />
     </template>

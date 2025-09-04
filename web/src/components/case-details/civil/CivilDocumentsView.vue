@@ -198,15 +198,17 @@
 
   const documentTypes = ref<any[]>([
     ...new Map(
-      props.documents.map((doc) => [
-        doc.documentTypeCd,
-        { title: doc.documentTypeDescription, value: doc.documentTypeCd },
-      ])
+      props.documents
+        .filter((d) => d.category)
+        .map((doc) => [
+          doc.category,
+          { title: doc.category, value: doc.category },
+        ])
     ).values(),
   ]);
   const filterByType = (item: civilDocumentType) =>
     !selectedType.value ||
-    item.documentTypeCd?.toLowerCase() === selectedType.value?.toLowerCase();
+    item.category?.toLowerCase() === selectedType.value?.toLowerCase();
 
   const filteredDocuments = computed(() =>
     props.documents.filter(filterByType)
@@ -234,7 +236,7 @@
   });
 
   const typeCount = (type: any): number =>
-    props.documents.filter((doc) => doc.documentTypeCd === type.value).length;
+    props.documents.filter((doc) => doc.category === type.value).length;
 
   onMounted(async () => {
     try {

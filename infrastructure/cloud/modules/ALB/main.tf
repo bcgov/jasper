@@ -12,13 +12,13 @@ resource "aws_lb" "default_lb" {
   load_balancer_type = "application"
   security_groups    = [var.web_security_group_id]
   subnets            = var.web_subnets_ids
-
   tags = {
     Public = "True"
   }
   lifecycle {
     ignore_changes = [
-      tags
+      tags,
+      access_logs
     ]
   }
 }

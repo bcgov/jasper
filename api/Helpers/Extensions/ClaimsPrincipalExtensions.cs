@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.InkML;
-using Scv.Api.Models.AccessControlManagement;
+﻿using Scv.Api.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;

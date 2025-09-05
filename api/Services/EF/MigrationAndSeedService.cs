@@ -28,7 +28,7 @@ namespace Scv.Api.Services.EF
         public async Task ExecuteMigrationsAndSeeds()
         {
             this.ExecuteSCVMigrationsAndSeeds();
-            await this.ExecuteJasperMigrationsAndSeeds();
+            //await this.ExecuteJasperMigrationsAndSeeds();
         }
 
         #region JASPER Migrations and Seeds

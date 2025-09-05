@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Net.Http;
-using System.Net.Security;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using Amazon.S3;
 using GdPicture14;
 using Hangfire;
 using Hangfire.Mongo;
@@ -33,7 +30,6 @@ using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
-using Scv.Api.Services.AWS;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
@@ -87,69 +83,22 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
         {
-            // Remove checking when the "real" mongo db has been configured
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             var dbName = configuration.GetValue<string>("MONGODB_NAME");
-            var certBucket = configuration.GetValue<string>("CERT_BUCKET");
-            var certKey = configuration.GetValue<string>("MONGODB_CERT_KEY");
-            if (string.IsNullOrWhiteSpace(connectionString)
-                || string.IsNullOrWhiteSpace(dbName))
+
+            if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(dbName))
             {
                 return services;
             }
 
-
             services.AddSingleton<IMongoClient>(m =>
             {
-                if (string.IsNullOrWhiteSpace(certBucket) || string.IsNullOrWhiteSpace(certKey))
-                {
-                    return new MongoClient(connectionString);
-                }
-
                 var logger = m.GetRequiredService<ILogger<MongoClient>>();
-
-
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
-
-                // Add debugging for certificate validation
-                settings.SslSettings = new SslSettings
-                {
-                    ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
-                    {
-                        logger.LogError("SSL Policy Errors: {Errors}", errors);
-
-                        if (certificate is X509Certificate2 cert2)
-                        {
-                            logger.LogInformation("Certificate Subject: {Subject}", cert2.Subject);
-                            logger.LogInformation("Certificate Issuer: {Issuer}", cert2.Issuer);
-                            logger.LogInformation("Thumbprint: {Thumbprint}", cert2.Thumbprint);
-                        }
-
-                        if (chain != null)
-                        {
-                            foreach (var element in chain.ChainElements)
-                            {
-                                logger.LogInformation("Chain Element Subject: {Subject}", element.Certificate.Subject);
-                                logger.LogInformation("Chain Element Issuer: {Issuer}", element.Certificate.Issuer);
-
-                                foreach (var status in element.ChainElementStatus)
-                                {
-                                    logger.LogWarning("  Status: {Status}", status.StatusInformation);
-                                }
-                            }
-                        }
-
-                        // Fail if there are any errors
-                        return errors == SslPolicyErrors.None;
-                    }
-                };
-
                 var client = new MongoClient(settings);
 
-                // Check if a connection can be established
                 try
                 {
-                    // The ping command is a simple way to check connectivity
                     var database = client.GetDatabase(dbName);
                     database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
                     logger.LogInformation("MongoDB connection established successfully.");
@@ -157,15 +106,9 @@ namespace Scv.Api.Infrastructure
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Failed to connect to MongoDB.");
-
-                    if (ex.InnerException != null)
-                    {
-                        logger.LogError(ex.InnerException, "Inner exception while connecting to MongoDB.");
-                    }
-
                     throw;
-
                 }
+
                 return client;
 
             });
@@ -301,13 +244,6 @@ namespace Scv.Api.Infrastructure
             });
             services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");
 
-            return services;
-        }
-
-        public static IServiceCollection AddAWSServices(this IServiceCollection services)
-        {
-            services.AddAWSService<IAmazonS3>();
-            services.AddSingleton<IS3Service, S3Service>();
             return services;
         }
 

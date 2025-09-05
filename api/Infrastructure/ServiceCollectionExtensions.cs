@@ -1,6 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using Amazon.S3;
+using GdPicture14;
 using Hangfire;
 using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
@@ -16,6 +20,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using Scv.Api.Documents;
+using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
@@ -25,11 +31,11 @@ using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
+using Scv.Api.Services.AWS;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
-using GdPicture14;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
@@ -40,8 +46,6 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
-using Scv.Api.Documents;
-using Scv.Api.Documents.Strategies;
 
 namespace Scv.Api.Infrastructure
 {
@@ -84,12 +88,35 @@ namespace Scv.Api.Infrastructure
             // Remove checking when the "real" mongo db has been configured
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             var dbName = configuration.GetValue<string>("MONGODB_NAME");
-            if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(dbName))
+            var certBucket = configuration.GetValue<string>("CERT_BUCKET");
+            var certKey = configuration.GetValue<string>("MONGODB_CERT_KEY");
+            if (string.IsNullOrWhiteSpace(connectionString)
+                || string.IsNullOrWhiteSpace(dbName))
             {
                 return services;
             }
 
-            services.AddSingleton<IMongoClient>(m => new MongoClient(connectionString));
+
+            services.AddSingleton<IMongoClient>(m =>
+            {
+                if (string.IsNullOrWhiteSpace(certBucket) || string.IsNullOrWhiteSpace(certKey))
+                {
+                    return new MongoClient(connectionString);
+                }
+
+                var s3Service = m.GetRequiredService<IS3Service>();
+                var certStream = s3Service.DownloadFileAsync(certBucket, certKey).GetAwaiter().GetResult();
+                var clientCert = X509CertificateLoader.LoadCertificate(((MemoryStream)certStream).ToArray());
+
+                var settings = MongoClientSettings.FromConnectionString(connectionString);
+                settings.SslSettings = new SslSettings
+                {
+                    ClientCertificates = [clientCert],
+                };
+
+                return new MongoClient(connectionString);
+
+            });
             services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(dbName));
 
             services.AddScoped<PermissionSeeder>();
@@ -222,6 +249,13 @@ namespace Scv.Api.Infrastructure
             });
             services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");
 
+            return services;
+        }
+
+        public static IServiceCollection AddAWSServices(this IServiceCollection services)
+        {
+            services.AddAWSService<IAmazonS3>();
+            services.AddSingleton<IS3Service, S3Service>();
             return services;
         }
 

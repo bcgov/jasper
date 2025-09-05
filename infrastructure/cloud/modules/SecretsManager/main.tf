@@ -135,6 +135,7 @@ resource "aws_secretsmanager_secret_version" "database_secret_value" {
     password                = "",
     database                = "",
     adminPassword           = "",
+    mongoDbCertKey          = "",
     mongoDbConnectionString = "",
     mongoDbName             = "",
     defaultUsers            = ""
@@ -181,7 +182,8 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     siteMinderLogoutUrl            = "",
     includeSiteMinderHeaders       = "",
     mtlsCert                       = "",
-    allowedIpRanges                = ""
+    allowedIpRanges                = "",
+    certBucket                     = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

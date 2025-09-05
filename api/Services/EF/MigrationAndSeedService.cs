@@ -25,10 +25,10 @@ namespace Scv.Api.Services.EF
         public IServiceProvider Services { get; } = services;
         private ILogger<MigrationAndSeedService> Logger { get; } = logger;
 
-        public async Task ExecuteMigrationsAndSeeds()
+        public void ExecuteMigrationsAndSeeds()
         {
             this.ExecuteSCVMigrationsAndSeeds();
-            await this.ExecuteJasperMigrationsAndSeeds();
+            //await this.ExecuteJasperMigrationsAndSeeds();
         }
 
         #region JASPER Migrations and Seeds

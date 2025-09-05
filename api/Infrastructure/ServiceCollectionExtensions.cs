@@ -1,6 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Net.Http;
+using System.Net.Security;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using Amazon.S3;
@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Scv.Api.Documents;
@@ -105,7 +106,44 @@ namespace Scv.Api.Infrastructure
                     return new MongoClient(connectionString);
                 }
 
+                var logger = m.GetRequiredService<ILogger<MongoClient>>();
+
+
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
+
+                // Add debugging for certificate validation
+                settings.SslSettings = new SslSettings
+                {
+                    ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                    {
+                        logger.LogError("SSL Policy Errors: {Errors}", errors);
+
+                        if (certificate is X509Certificate2 cert2)
+                        {
+                            logger.LogInformation("Certificate Subject: {Subject}", cert2.Subject);
+                            logger.LogInformation("Certificate Issuer: {Issuer}", cert2.Issuer);
+                            logger.LogInformation("Thumbprint: {Thumbprint}", cert2.Thumbprint);
+                        }
+
+                        if (chain != null)
+                        {
+                            foreach (var element in chain.ChainElements)
+                            {
+                                logger.LogInformation("Chain Element Subject: {Subject}", element.Certificate.Subject);
+                                logger.LogInformation("Chain Element Issuer: {Issuer}", element.Certificate.Issuer);
+
+                                foreach (var status in element.ChainElementStatus)
+                                {
+                                    logger.LogWarning("  Status: {Status}", status.StatusInformation);
+                                }
+                            }
+                        }
+
+                        // Fail if there are any errors
+                        return errors == SslPolicyErrors.None;
+                    }
+                };
+
                 var client = new MongoClient(settings);
 
                 // Check if a connection can be established
@@ -114,15 +152,20 @@ namespace Scv.Api.Infrastructure
                     // The ping command is a simple way to check connectivity
                     var database = client.GetDatabase(dbName);
                     database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
-                    Console.WriteLine("MongoDB connection established successfully.");
+                    logger.LogInformation("MongoDB connection established successfully.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Failed to connect to MongoDB: {ex.Message}");
+                    logger.LogError(ex, "Failed to connect to MongoDB.");
+
+                    if (ex.InnerException != null)
+                    {
+                        logger.LogError(ex.InnerException, "Inner exception while connecting to MongoDB.");
+                    }
+
                     throw;
+
                 }
-
-
                 return client;
 
             });

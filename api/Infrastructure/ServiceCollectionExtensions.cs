@@ -106,7 +106,7 @@ namespace Scv.Api.Infrastructure
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Failed to connect to MongoDB.");
-                    throw;
+                    throw new InvalidOperationException("Failed to establish MongoDB connection.", ex);
                 }
 
                 return client;

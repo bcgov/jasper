@@ -288,7 +288,8 @@
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
-      memberName: string;
+      groupKeyOne: string;
+      groupKeyTwo: string;
       documentName: string;
     }[] = [];
     selectedItems.value
@@ -302,7 +303,8 @@
         documents.push({
           documentType,
           documentData,
-          memberName: item.fullName,
+          groupKeyOne: documentData.fileNumberText,
+          groupKeyTwo: item.fullName,
           documentName: documentData.documentDescription || ''
         });
       });

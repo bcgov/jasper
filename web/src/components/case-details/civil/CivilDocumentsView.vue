@@ -264,7 +264,8 @@
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
-      memberName: string;
+      groupKeyOne: string;
+      groupKeyTwo: string;
       documentName: string;
     }[] = [];
     items
@@ -278,7 +279,8 @@
         documents.push({
           documentType,
           documentData,
-          memberName: '',
+          groupKeyOne: documentData.fileNumberText,
+          groupKeyTwo: '',
           documentName:
             item.documentTypeDescription +
             ' - ' +

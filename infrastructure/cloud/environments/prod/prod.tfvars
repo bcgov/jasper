@@ -8,3 +8,7 @@ iam_user_table_name = "BCGOV_IAM_USER_TABLE"
 lb_name             = "default"
 rds_db_ca_cert      = "rds-ca-rsa2048-g1"
 cert_domain_name    = "*.example.ca"
+delete_protection_enabled = true
+mongo_node_count    = 1
+mongo_instance_type = "db.t3.medium"
+mongousername       = "adminmongo"

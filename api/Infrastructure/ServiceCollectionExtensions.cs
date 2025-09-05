@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Reflection;
+using GdPicture14;
 using Hangfire;
 using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
@@ -15,7 +16,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using Scv.Api.Documents;
+using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
@@ -29,7 +34,6 @@ using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
-using GdPicture14;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
@@ -40,8 +44,6 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
-using Scv.Api.Documents;
-using Scv.Api.Documents.Strategies;
 
 namespace Scv.Api.Infrastructure
 {
@@ -81,15 +83,35 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddJasperDb(this IServiceCollection services, IConfiguration configuration)
         {
-            // Remove checking when the "real" mongo db has been configured
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             var dbName = configuration.GetValue<string>("MONGODB_NAME");
-            if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(dbName))
+
+            if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(dbName))
             {
                 return services;
             }
 
-            services.AddSingleton<IMongoClient>(m => new MongoClient(connectionString));
+            services.AddSingleton<IMongoClient>(m =>
+            {
+                var logger = m.GetRequiredService<ILogger<MongoClient>>();
+                var settings = MongoClientSettings.FromConnectionString(connectionString);
+                var client = new MongoClient(settings);
+
+                try
+                {
+                    var database = client.GetDatabase(dbName);
+                    database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
+                    logger.LogInformation("MongoDB connection established successfully.");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to connect to MongoDB.");
+                    throw new InvalidOperationException("Failed to establish MongoDB connection.", ex);
+                }
+
+                return client;
+
+            });
             services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(dbName));
 
             services.AddScoped<PermissionSeeder>();

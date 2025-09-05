@@ -14,8 +14,8 @@ const mockGroupedDocuments = {
                     "data": {
                     }
                 },
-                "caseNumber": "123",
-                "memberName": "John Johnson",
+                "groupKeyOne": "123",
+                "groupKeyTwo": "John Johnson",
                 "documentName": "Information"
             }
         ],
@@ -26,8 +26,8 @@ const mockGroupedDocuments = {
                     "data": {
                     }
                 },
-                "caseNumber": "123",
-                "memberName": "Elmer Fudd",
+                "groupKeyOne": "123",
+                "groupKeyTwo": "Elmer Fudd",
                 "documentName": "Information"
             }
         ]
@@ -91,7 +91,8 @@ describe('NutrientContainer.vue', () => {
       const mergedInstance = {
         totalPageCount: typeof document !== 'string' && document instanceof ArrayBuffer ? 3 : 2,
         exportPDFWithOperations: vi.fn().mockResolvedValue('mergedDocument'),
-        setDocumentOutline: vi.fn()
+        setDocumentOutline: vi.fn(),
+        setViewState: vi.fn(),
       };
       return Promise.resolve(mergedInstance);
     });

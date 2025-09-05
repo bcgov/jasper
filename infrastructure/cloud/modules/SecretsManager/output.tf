@@ -32,7 +32,6 @@ output "api_secrets" {
     ["DARS__Url", "${aws_secretsmanager_secret.dars_secret.arn}:baseUrl::"],
     ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString::"],
     ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey::"],
-    ["DEFAULT_USERS", "${aws_secretsmanager_secret.database_secret.arn}:defaultUsers::"],
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
     ["FileServicesClient__Password", "${aws_secretsmanager_secret.file_services_client_secret.arn}:password::"],
     ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl::"],
@@ -93,6 +92,10 @@ output "db_password" {
 output "allowed_ip_ranges" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).allowedIpRanges
   sensitive = true
+}
+
+output "default_users" {
+  value = jsonencode(jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string)["defaultUsers"])
 }
 
 output "lambda_secrets" {

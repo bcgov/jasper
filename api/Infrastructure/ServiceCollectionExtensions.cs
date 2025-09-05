@@ -105,30 +105,7 @@ namespace Scv.Api.Infrastructure
                     return new MongoClient(connectionString);
                 }
 
-                Console.WriteLine("Downloading certificate from S3...");
-
-                var s3Service = m.GetRequiredService<IS3Service>();
-                var certStream = s3Service.DownloadFileAsync(certBucket, certKey).GetAwaiter().GetResult();
-                var certArray = ((MemoryStream)certStream).ToArray();
-
-                Console.WriteLine($"Certificate downloaded. Length: {certArray.Length}");
-                var clientCert = X509CertificateLoader.LoadCertificate(certArray);
-
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
-                settings.SslSettings = new SslSettings
-                {
-                    EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12,
-                    ClientCertificates = [clientCert],
-                    CheckCertificateRevocation = true,
-                    ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                    {
-                        // Custom validation logic can be added here if needed
-                        return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
-                    }
-
-                };
-
-
                 var client = new MongoClient(settings);
 
                 // Check if a connection can be established

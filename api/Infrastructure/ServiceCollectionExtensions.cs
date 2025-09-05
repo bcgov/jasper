@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
@@ -104,17 +105,48 @@ namespace Scv.Api.Infrastructure
                     return new MongoClient(connectionString);
                 }
 
+                Console.WriteLine("Downloading certificate from S3...");
+
                 var s3Service = m.GetRequiredService<IS3Service>();
                 var certStream = s3Service.DownloadFileAsync(certBucket, certKey).GetAwaiter().GetResult();
-                var clientCert = X509CertificateLoader.LoadCertificate(((MemoryStream)certStream).ToArray());
+                var certArray = ((MemoryStream)certStream).ToArray();
+
+                Console.WriteLine($"Certificate downloaded. Length: {certArray.Length}");
+                var clientCert = X509CertificateLoader.LoadCertificate(certArray);
 
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
                 settings.SslSettings = new SslSettings
                 {
+                    EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12,
                     ClientCertificates = [clientCert],
+                    CheckCertificateRevocation = true,
+                    ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        // Custom validation logic can be added here if needed
+                        return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
+                    }
+
                 };
 
-                return new MongoClient(connectionString);
+
+                var client = new MongoClient(settings);
+
+                // Check if a connection can be established
+                try
+                {
+                    // The ping command is a simple way to check connectivity
+                    var database = client.GetDatabase(dbName);
+                    database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
+                    Console.WriteLine("MongoDB connection established successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to connect to MongoDB: {ex.Message}");
+                    throw;
+                }
+
+
+                return client;
 
             });
             services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(dbName));

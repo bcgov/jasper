@@ -209,30 +209,28 @@ namespace Scv.Api
             app.UseAuthorization();
 
             // Remove checking when the "real" mongo db has been configured
-            var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-            var dbName = Configuration.GetValue<string>("MONGODB_NAME");
-            if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(dbName))
-            {
-                app.UseHangfireDashboard("/hangfire", new DashboardOptions
-                {
-                    Authorization = [new HangFireDashboardAuthorizationFilter()]
-                });
+            // var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            // var dbName = Configuration.GetValue<string>("MONGODB_NAME");
+            // if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(dbName))
+            // {
+            //     app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            //     {
+            //         Authorization = [new HangFireDashboardAuthorizationFilter()]
+            //     });
 
-                #region Setup Jobs
-                using (var scope = app.ApplicationServices.CreateScope())
-                {
-                    var provider = scope.ServiceProvider;
-                    var allJobs = provider.GetServices<IRecurringJob>();
+            //     #region Setup Jobs
+            //     using (var scope = app.ApplicationServices.CreateScope())
+            //     {
+            //         var provider = scope.ServiceProvider;
+            //         var allJobs = provider.GetServices<IRecurringJob>();
 
-                    Console.WriteLine("JOBS");
-
-                    foreach (var job in allJobs)
-                    {
-                        RecurringJobHelper.AddOrUpdate(job);
-                    }
-                }
-                #endregion Setup Jobs
-            }
+            //         foreach (var job in allJobs)
+            //         {
+            //             RecurringJobHelper.AddOrUpdate(job);
+            //         }
+            //     }
+            //     #endregion Setup Jobs
+            // }
 
             app.UseEndpoints(endpoints =>
             {

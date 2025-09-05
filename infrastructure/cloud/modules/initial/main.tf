@@ -37,11 +37,3 @@ module "lambda_ecr" {
   kms_key_id  = module.kms.kms_key_id
   repo_name   = "lambda"
 }
-
-# S3 Buckets
-module "s3" {
-  source      = "../S3"
-  environment = var.environment
-  app_name    = var.app_name
-  kms_key_arn = module.kms.kms_key_arn
-}

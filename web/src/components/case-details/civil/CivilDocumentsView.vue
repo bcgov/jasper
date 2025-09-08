@@ -247,12 +247,16 @@
   });
 
   const categoryCount = (category: string): number =>
-    category === SCHEDULED_CATEGORY
+    category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()
       ? props.documents.filter((doc) => doc.nextAppearanceDt).length
-      : props.documents.filter((doc) => doc.category === category).length;
+      : props.documents.filter(
+          (doc) => doc.category?.toLowerCase() === category.toLowerCase()
+        ).length;
 
   const categoryTitle = (category: string): string =>
-    category === CSR_CATEGORY ? CSR_CATEGORY_DESC : category;
+    category.toLowerCase() === CSR_CATEGORY.toLowerCase()
+      ? CSR_CATEGORY_DESC
+      : category;
 
   onMounted(async () => {
     try {

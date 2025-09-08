@@ -53,6 +53,16 @@ describe('CivilDocumentsView.vue', () => {
       issue: [{ issueTypeDesc: 'Issue2' }],
       documentSupport: [{ actCd: 'Act2' }],
     },
+    {
+      civilDocumentId: '3',
+      category: 'Pleadings',
+      documentTypeDescription: 'Civil Document 3',
+      filedDt: '2023-02-01',
+      nextAppearanceDt: '2023-03-01',
+      filedBy: [{ roleTypeCode: 'Role3' }],
+      issue: [{ issueTypeDesc: 'Issue3' }],
+      documentSupport: [{ actCd: 'Act3' }],
+    },
   ];
   beforeEach(() => {
     wrapper = shallowMount(CivilDocumentsView, {
@@ -127,5 +137,14 @@ describe('CivilDocumentsView.vue', () => {
     await nextTick();
 
     expect(wrapper.vm.selectedBinderItems).toEqual([]);
+  });
+
+  it('inserts "Scheduled" option when a document has a next appearance date', async () => {
+    expect(wrapper.vm.documentCategories).toEqual([
+      'Scheduled',
+      mockDocuments[0].category,
+      mockDocuments[1].category,
+      mockDocuments[2].category,
+    ]);
   });
 });

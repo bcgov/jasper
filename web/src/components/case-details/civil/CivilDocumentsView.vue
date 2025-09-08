@@ -12,7 +12,9 @@
         <template v-slot:item="{ props: itemProps, item }">
           <v-list-item
             v-bind="itemProps"
-            :title="item.title + ' (' + categoryCount(item.raw) + ')'"
+            :title="
+              categoryTitle(item.title) + ' (' + categoryCount(item.raw) + ')'
+            "
           ></v-list-item>
         </template>
       </v-select>
@@ -142,6 +144,10 @@
     throw new Error('Service is undefined.');
   }
 
+  const SCHEDULED_CATEGORY = 'Scheduled';
+  const CSR_CATEGORY = 'CSR';
+  const CSR_CATEGORY_DESC = 'Court Summary';
+
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
   const showActionbar = computed<boolean>(() => selectedItems.value.length > 1);
@@ -196,19 +202,24 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
-  const documentCategories = ref<any[]>([
-    ...new Map(
-      props.documents
-        .filter((d) => d.category)
-        .map((doc) => [
-          doc.category,
-          { title: doc.category, value: doc.category },
-        ])
-    ).values(),
-  ]);
+  const scheduledDocuments = props.documents.filter(
+    (doc) => doc.nextAppearanceDt
+  );
+
+  const documentCategories = ref<string[]>(
+    (scheduledDocuments.length > 0 ? [SCHEDULED_CATEGORY] : []).concat(
+      Array.from(
+        new Set(
+          props.documents.filter((d) => d.category).map((doc) => doc.category)
+        )
+      )
+    )
+  );
   const filterByCategory = (item: civilDocumentType) =>
     !selectedCategory.value ||
-    item.category?.toLowerCase() === selectedCategory.value?.toLowerCase();
+    (selectedCategory.value === SCHEDULED_CATEGORY
+      ? item.nextAppearanceDt
+      : item.category?.toLowerCase() === selectedCategory.value?.toLowerCase());
 
   const filteredDocuments = computed(() =>
     props.documents.filter(filterByCategory)
@@ -235,8 +246,13 @@
     return filteredAndSorted;
   });
 
-  const categoryCount = (type: any): number =>
-    props.documents.filter((doc) => doc.category === type.value).length;
+  const categoryCount = (category: string): number =>
+    category === SCHEDULED_CATEGORY
+      ? props.documents.filter((doc) => doc.nextAppearanceDt).length
+      : props.documents.filter((doc) => doc.category === category).length;
+
+  const categoryTitle = (category: string): string =>
+    category === CSR_CATEGORY ? CSR_CATEGORY_DESC : category;
 
   onMounted(async () => {
     try {
@@ -279,7 +295,7 @@
         documents.push({
           documentType,
           documentData,
-          groupKeyOne: documentData.fileNumberText,
+          groupKeyOne: documentData.fileNumberText!,
           groupKeyTwo: '',
           documentName:
             item.documentTypeDescription +

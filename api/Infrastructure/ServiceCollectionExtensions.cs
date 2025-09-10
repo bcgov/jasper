@@ -62,6 +62,7 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped<IDocumentMerger, DocumentMerger>();
             services.AddScoped<IDocumentRetriever, DocumentRetriever>();
+            services.AddScoped<IDocumentConverter, DocumentConverter>();
             services.AddScoped<IDocumentStrategy, FileStrategy>();
             services.AddScoped<IDocumentStrategy, ROPStrategy>();
             services.AddScoped<IDocumentStrategy, ReportStrategy>();

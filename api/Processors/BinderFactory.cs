@@ -41,7 +41,7 @@ public class BinderFactory(
         if (!isValid)
         {
             _logger.LogError("Court Class: {courtClass} is invalid.", courtClass);
-            throw new ArgumentException("Unable to determine which BinderProcessor to load");
+            throw new ArgumentException("Unable to determine which processor to load");
         }
 
         switch (courtClassCode)
@@ -51,9 +51,10 @@ public class BinderFactory(
             case CourtClassCd.L:
             case CourtClassCd.M:
                 return new JudicialBinderProcessor(_filesClient, _currentUser, _basicValidator, dto);
-            //case CourtClassCd.A:
-            //case CourtClassCd.Y:
-            //case CourtClassCd.T:
+            case CourtClassCd.A:
+            case CourtClassCd.Y:
+            case CourtClassCd.T:
+                return new KeyDocumentsBinderProcessor(_filesClient, _currentUser, _basicValidator, dto);
             default:
                 throw new NotSupportedException("Unsupported processor");
         }

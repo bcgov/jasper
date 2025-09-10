@@ -1,4 +1,6 @@
-﻿namespace Scv.Api.Models;
+﻿using Scv.Api.Documents;
+
+namespace Scv.Api.Models;
 
 public class BinderDocumentDto
 {
@@ -7,4 +9,6 @@ public class BinderDocumentDto
     /// Zero-based integer to determine sorting order
     /// </summary>
     public int Order { get; set; }
+    public DocumentType DocumentType { get; set; }
+    public string FileName { get; set; }
 }

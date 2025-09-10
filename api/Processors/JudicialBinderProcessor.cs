@@ -40,6 +40,7 @@ public class JudicialBinderProcessor : BinderProcessorBase
 
         // Add labels specific to Judicial Binder
         this.Binder.Labels.Add(LabelConstants.COURT_CLASS_CD, fileDetail.CourtClassCd.ToString());
+        this.Binder.Labels.Add(LabelConstants.JUDGE_ID, this.CurrentUser.UserId());
     }
 
     public override async Task<OperationResult> ValidateAsync()
@@ -51,6 +52,15 @@ public class JudicialBinderProcessor : BinderProcessorBase
         }
 
         var errors = new List<string>();
+
+        // Validate current user is accessing own binder
+        var judgeId = this.Binder.Labels.GetValue(LabelConstants.JUDGE_ID);
+        if (judgeId != this.CurrentUser.UserId())
+        {
+            errors.Add("Current user does not have access to this binder.");
+            return OperationResult.Failure([.. errors]);
+        }
+
         var fileId = this.Binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
         var fileDetail = await _filesClient.FilesCivilGetAsync(
             this.CurrentUser.AgencyCode(),

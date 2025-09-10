@@ -181,7 +181,8 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     siteMinderLogoutUrl            = "",
     includeSiteMinderHeaders       = "",
     mtlsCert                       = "",
-    allowedIpRanges                = ""
+    allowedIpRanges                = "",
+    keyDocsBinderRefreshHours      = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

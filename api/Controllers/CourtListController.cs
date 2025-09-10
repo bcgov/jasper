@@ -67,5 +67,23 @@ namespace Scv.Api.Controllers
 
             return new FileStreamResult(pdfStream, "application/pdf");
         }
+
+        /// <summary>
+        /// Creates a document bundle for the selected appearances from Court List.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("document-bundle")]
+        public async Task<IActionResult> CreateDocumentBundle([FromBody] CourtListDocumentBundleRequest request)
+        {
+            var result = await _courtListService.ProcessCourtListDocumentBundle(request);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { error = result.Errors });
+            }
+            return Ok(result);
+        }
+
     }
 }

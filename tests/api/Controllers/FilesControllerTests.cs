@@ -105,7 +105,8 @@ namespace tests.api.Controllers
                 locationService,
                 new CachingService(),
                 principal,
-                fileServices.LogFactory);
+                fileServices.LogFactory,
+                new Mock<IDocumentConverter>().Object);
 
             var mockDocumentMerger = new Mock<IDocumentMerger>();
 

@@ -8,6 +8,7 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Documents;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Criminal.AppearanceDetail;
@@ -35,13 +36,14 @@ namespace Scv.Api.Services.Files
         private readonly string _requestAgencyIdentifierId;
         private readonly string _requestPartId;
         private readonly ClaimsPrincipal _currentUser;
+        private readonly IDocumentConverter _documentConverter;
 
         #endregion
 
         #region Constructor
 
         public CriminalFilesService(IConfiguration configuration, FileServicesClient filesClient, IMapper mapper, LookupService lookupService, LocationService locationService, IAppCache cache,
-            ClaimsPrincipal user)
+            ClaimsPrincipal user, IDocumentConverter documentConverter)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -53,6 +55,7 @@ namespace Scv.Api.Services.Files
             _requestPartId = user.ParticipantId();
             _cache = cache;
             _currentUser = user;
+            _documentConverter = documentConverter;
         }
 
         #endregion Constructor
@@ -223,7 +226,7 @@ namespace Scv.Api.Services.Files
                 Adjudicator = await PopulateAppearanceDetailAdjudicator(appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 JustinCounsel = await PopulateAppearanceDetailJustinCounsel(criminalParticipant, appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 Charges = await PopulateCharges(appearanceCount.ApprCount),
-                Documents = await GetCriminalDocuments(accusedFile),
+                Documents = await _documentConverter.GetCriminalDocuments(accusedFile),
                 CourtLevelCd = detail.CourtLevelCd
             };
             return appearanceDetail;
@@ -283,42 +286,8 @@ namespace Scv.Api.Services.Files
 
         private async Task<List<CriminalDocument>> PopulateDetailDocuments(CriminalFileContent criminalFileContent)
         {
-            var documents = await Task.WhenAll(criminalFileContent.AccusedFile.Select(async ac => await GetCriminalDocuments(ac)));
+            var documents = await Task.WhenAll(criminalFileContent.AccusedFile.Select(async ac => await _documentConverter.GetCriminalDocuments(ac)));
             return [.. documents.SelectMany(docs => docs)];
-        }
-
-        private async Task<ICollection<CriminalDocument>> GetCriminalDocuments(CfcAccusedFile ac)
-        {
-            var criminalDocuments = _mapper.Map<List<CriminalDocument>>(ac.Document);
-
-            //Create ROPs.
-            if (ac.Appearance != null && ac.Appearance.Count != 0)
-            {
-                criminalDocuments.Insert(0, new CriminalDocument
-                {
-                    DocumentTypeDescription = "Record of Proceedings",
-                    ImageId = ac.PartId,
-                    Category = "rop",
-                    PartId = ac.PartId,
-                    HasFutureAppearance = ac.Appearance?.Any(a =>
-                        a?.AppearanceDate != null && DateTime.Parse(a.AppearanceDate) >= DateTime.Today)
-                });
-            }
-
-            //Populate extra fields.
-            foreach (var document in criminalDocuments)
-            {
-                document.Category = string.IsNullOrEmpty(document.Category)
-                    ? await _lookupService.GetDocumentCategory(document.DocmFormId, document.DocmClassification)
-                    : document.Category;
-                document.DocumentTypeDescription = document.DocmFormDsc;
-                document.PartId = string.IsNullOrEmpty(ac.PartId) ? null : ac.PartId;
-                document.DocmId = string.IsNullOrEmpty(document.DocmId) ? null : document.DocmId;
-                document.ImageId = string.IsNullOrEmpty(document.ImageId) ? null : document.ImageId;
-                document.HasFutureAppearance = ac.Appearance?.Any(a =>
-                    a?.AppearanceDate != null && DateTime.Parse(a.AppearanceDate) >= DateTime.Today);
-            }
-            return criminalDocuments;
         }
 
         private async Task<ICollection<CriminalWitness>> PopulateDetailWitnesses(RedactedCriminalFileDetailResponse detail)

@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Documents;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
@@ -69,7 +70,10 @@ public class CourtListServiceTests : ServiceTestBase
             mockSearchDateClient.Object,
             mockReportClient.Object,
             cachingService,
-            new ClaimsPrincipal(identity));
+            new ClaimsPrincipal(identity),
+            new Mock<IBinderService>().Object,
+            new Mock<IDocumentConverter>().Object,
+            new Mock<IDocumentMerger>().Object);
 
         return (
             courtListService,

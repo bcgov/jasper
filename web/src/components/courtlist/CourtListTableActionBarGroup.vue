@@ -9,15 +9,6 @@
         :selectionPrependText="courtClass + ' file/s'"
       >
         <template #default>
-          <!-- Hide temporarily until opening Key docs and Judicial Binder is implemented.
-          <v-btn
-            size="large"
-            class="mx-2"
-            :prepend-icon="mdiFileDocumentMultipleOutline"
-            style="letter-spacing: 0.001rem"
-          >
-            View document bundle
-          </v-btn> -->
           <v-btn
             size="large"
             class="mx-2"
@@ -27,6 +18,16 @@
             @click="() => onViewApprCaseDetails(group)"
           >
             View case details
+          </v-btn>
+          <v-btn
+            size="large"
+            class="mx-2"
+            :prepend-icon="mdiFileDocumentOutline"
+            style="letter-spacing: 0.001rem"
+            data-testid="view-key-documents"
+            @click="() => onViewKeyDocuments(group)"
+          >
+            View key documents
           </v-btn>
         </template>
       </ActionBar>
@@ -45,10 +46,10 @@
     selected: CourtListAppearance[];
   }>();
 
-  const emit =
-    defineEmits<
-      (e: 'view-case-details', appearances: CourtListAppearance[]) => void
-    >();
+  const emit = defineEmits<{
+    (e: 'view-case-details', appearances: CourtListAppearance[]): void;
+    (e: 'view-key-documents', appearances: CourtListAppearance[]): void;
+  }>();
 
   const groupedSelections = computed(() => {
     const groups: Record<string, CourtListAppearance[]> = {};
@@ -64,5 +65,8 @@
 
   const onViewApprCaseDetails = (appearances: CourtListAppearance[]) => {
     emit('view-case-details', appearances);
+  };
+  const onViewKeyDocuments = (appearances: CourtListAppearance[]) => {
+    emit('view-key-documents', appearances);
   };
 </script>

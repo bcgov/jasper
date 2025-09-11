@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
-using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
@@ -215,8 +216,6 @@ namespace Scv.Api.Services
                 var binders = await InitializeBindersToMerge(request);
 
                 var requests = GeneratePdfDocumentRequests(binders, correlationId);
-
-                _logger.LogInformation(JsonSerializer.Serialize(requests, new JsonSerializerOptions { WriteIndented = true }));
 
                 var response = await _documentMerger.MergeDocuments(requests);
 
@@ -494,7 +493,16 @@ namespace Scv.Api.Services
                     continue;
                 }
 
-                // See if we have a binder(s) for this file/participant/appearance
+                var isCriminal = courtClassCd is CourtClassCd.A or CourtClassCd.T or CourtClassCd.Y;
+                var isCivil = courtClassCd is CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M;
+                if (!isCriminal && !isCivil)
+                {
+                    _logger.LogWarning("CourtClassCd: {CourtClassCd} is not recognized for FileId: {FileId}, " +
+                        "ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId} and is skipped.", courtClassCd, fileId, participantId, appearanceId);
+                    continue;
+                }
+
+                // See if we have binder(s) for this file/participant/appearance
                 var binderResult = await _binderService.GetByLabels(new Dictionary<string, string>
                 {
                     { LabelConstants.PHYSICAL_FILE_ID, fileId },
@@ -509,7 +517,8 @@ namespace Scv.Api.Services
                     continue;
                 }
 
-                if (binderResult.Payload.Count == 0)
+
+                if (binderResult.Payload.Count == 0 && isCriminal)
                 {
                     var binder = await this.CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
                     binders.Add(binder);
@@ -518,7 +527,8 @@ namespace Scv.Api.Services
                 }
                 else
                 {
-                    var existingBinders = await GetKeyDocumentsBinders(binderResult.Payload);
+                    // Key Documents binders need to be checked and possibly refreshed
+                    var existingBinders = isCriminal ? await GetKeyDocumentsBinders(binderResult.Payload) : binderResult.Payload;
                     binders.AddRange(existingBinders);
                     _logger.LogInformation("Reused {Count} existing binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId}",
                         existingBinders.Count, fileId, participantId, appearanceId);
@@ -621,9 +631,12 @@ namespace Scv.Api.Services
                         CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
                         CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
                         FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
+                        AppearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID),
                         IsCriminal = true,
                         CorrelationId = correlationId.ToString(),
-                        DocumentId = d.DocumentId
+                        DocumentId = d.DocumentType == DocumentType.File
+                            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
+                            : d.DocumentId
                     }
                 });
                 bundleRequests.AddRange(binderDocRequests);

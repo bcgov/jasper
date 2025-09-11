@@ -54,7 +54,7 @@ public class BinderFactory(
             case CourtClassCd.A:
             case CourtClassCd.Y:
             case CourtClassCd.T:
-                return new KeyDocumentsBinderProcessor(_filesClient, _currentUser, _basicValidator, dto);
+                return new KeyDocumentsBinderProcessor(_currentUser, _basicValidator, dto);
             default:
                 throw new NotSupportedException("Unsupported processor");
         }

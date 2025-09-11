@@ -46,8 +46,6 @@ public abstract class BinderProcessorBase(
 
     public virtual async Task<OperationResult> ValidateAsync()
     {
-        var errors = new List<string>();
-
         var context = new ValidationContext<BinderDto>(this.Binder);
         if (this.Binder.Id != null)
         {

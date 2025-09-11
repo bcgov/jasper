@@ -18,7 +18,12 @@
         :loading="loading"
       >
         <v-tabs-window-item value="documents">
-          <ScheduledDocuments :documents="details.document" />
+          <ScheduledDocuments 
+            :documents="details.document" 
+            :fileId 
+            :fileNumberTxt="details.fileNumberTxt" 
+            :courtLevel="details.courtLevelCd" 
+            :agencyId="details.agencyId" />
         </v-tabs-window-item>
         <v-tabs-window-item value="binder"> Binder </v-tabs-window-item>
 

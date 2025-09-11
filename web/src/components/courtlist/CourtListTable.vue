@@ -29,6 +29,7 @@
             :fileId="item.justinNo"
             :appearanceId="item.appearanceId"
             :partId="item.profPartId"
+            :courtClass="item.courtClassCd"
           />
           <CivilAppearanceDetails
             v-else

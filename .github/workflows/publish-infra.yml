@@ -71,7 +71,7 @@ jobs:
           sarif_file: tfsec.sarif
   
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-skip-session-tagging: true
           aws-region: ${{ vars.AWS_REGION }}

@@ -2,8 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import CivilAppearanceDetails from 'CMP/civil/CivilAppearanceDetails.vue';
 import { FilesService } from '@/services/FilesService';
+import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/services/FilesService');
+
+beforeEach(() => {
+    setActivePinia(createPinia());
+});
 
 describe('CivilAppearanceDetails.vue', () => {
   let wrapper: any;

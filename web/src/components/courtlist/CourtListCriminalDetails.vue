@@ -20,11 +20,11 @@
               {{ formatCategory(item) }}
             </template>
             <template v-slot:item.docmFormDsc="{ item }">
-              <a v-if="item.imageId" href="javascript:void(0)">
-                {{ formatType(item) }}
-              </a>
+                <a v-if="item.imageId" href="javascript:void(0)" @click="openDocument(item)">
+                  {{ formatType(item) }}
+                </a>
               <span v-else>
-                {{ formatType(item) }}
+                  {{ formatType(item) }}
               </span>
             </template>
           </v-data-table-virtual>
@@ -55,15 +55,21 @@
     documentType,
   } from '@/types/criminal/jsonTypes';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+  import { beautifyDate } from '@/filters';
   import { inject, onMounted, ref } from 'vue';
+  import shared from '@/components/shared';
+  import { CourtDocumentType, DocumentData } from '@/types/shared';
+  import { useCommonStore } from '@/stores';
 
   const props = defineProps<{
     fileId: string;
     appearanceId: string;
     partId: string;
+    courtClass: string;
   }>();
 
   const filesService = inject<FilesService>('filesService');
+  const commonStore = useCommonStore();
   const details = ref<CriminalAppearanceDetails>(
     {} as CriminalAppearanceDetails
   );
@@ -120,6 +126,32 @@
     item.category === 'rop'
       ? 'Record of Proceedings'
       : item.documentTypeDescription;
+
+  
+  const openDocument = (document: documentType) => {
+    const isRop = document.category?.toLowerCase() === 'rop';
+    const locationName = commonStore.courtRoomsAndLocations.filter(
+      (location) => location.agencyIdentifierCd == details.value.agencyId)[0]?.name;
+    const documentData: DocumentData = {
+        courtClass: props.courtClass,
+        courtLevel:
+          details.value.courtLevelCd.toString(),
+        dateFiled: beautifyDate(document.issueDate),
+        documentId: document.imageId,
+        documentDescription:
+          isRop
+            ? 'Record of Proceedings'
+            : document.documentTypeDescription,
+        fileId: props.fileId,
+        fileNumberText:
+          details.value.fileNumberTxt,
+        partId: document.partId,
+        profSeqNo: details.value.profSeqNo,
+        location: locationName,
+        isCriminal: true,
+      };
+    shared.openDocumentsPdf(isRop ? CourtDocumentType.ROP : CourtDocumentType.Criminal, documentData);
+  };
 </script>
 
 <style scoped>

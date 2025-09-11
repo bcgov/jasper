@@ -139,6 +139,7 @@
   <CourtListTableActionBarGroup
     :selected
     @view-case-details="viewCaseDetails"
+    @view-key-documents="viewKeyDocuments"
   />
 </template>
 
@@ -168,7 +169,8 @@
     mdiNotebookEditOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed, ref, inject } from 'vue';
+  import { CourtListDocumentBundleRequest, CourtListAppearanceDocumentRequest, FilesService } from '@/services/FilesService';
 
   const selected = ref<CourtListAppearance[]>([]);
 
@@ -187,6 +189,11 @@
     data: CourtListAppearance[];
     search: string;
   }>();
+
+  const filesService = inject<FilesService>('filesService');
+  if (!filesService) {
+    throw new Error('HttpService is not available!');
+  }
 
   const data = computed(() =>
     props.data.map((item) => ({
@@ -340,6 +347,28 @@
     }
 
     return [];
+  };
+
+  const viewKeyDocuments = async (appearances: CourtListAppearance[]) => {
+    if (appearances.length === 0) {
+      return;
+    }
+
+    var requests = [] as CourtListDocumentBundleRequest[];
+
+    const appearanceRequests = new Set(appearances.map((app) => ({
+      fileId: app.courtFileNumber,
+      appearanceId: app.appearanceId,
+      participantId: app.profPartId,
+      courtClassCd: app.courtClassCd,
+    } as CourtListAppearanceDocumentRequest)));
+
+    requests.push({appearances: Array.from(appearanceRequests)});
+
+    var response = await filesService.generateCourtListPdf(requests);
+
+    console.log(requests);
+    console.log(response);
   };
 
   const viewCaseDetails = (selectedItems: CourtListAppearance[]) => {

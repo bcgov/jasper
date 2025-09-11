@@ -483,7 +483,7 @@ namespace Scv.Api.Services
                     continue;
                 }
 
-                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd);
+                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd.Value);
                 if (!isValidCourtClass)
                 {
                     _logger.LogWarning(
@@ -557,22 +557,24 @@ namespace Scv.Api.Services
             out string fileId,
             out string participantId,
             out string appearanceId,
-            out CourtClassCd courtClassCd)
+            out CourtClassCd? courtClassCd)
         {
             fileId = apprRequest.FileId;
             participantId = apprRequest.ParticipantId;
             appearanceId = apprRequest.AppearanceId;
-            courtClassCd = apprRequest.CourtClassCd;
+            courtClassCd = null;
 
-            if (string.IsNullOrWhiteSpace(fileId) ||
-                string.IsNullOrWhiteSpace(participantId) ||
-                string.IsNullOrWhiteSpace(appearanceId))
+            if (string.IsNullOrWhiteSpace(fileId)
+                || string.IsNullOrWhiteSpace(participantId)
+                || string.IsNullOrWhiteSpace(appearanceId)
+                || !Enum.TryParse(apprRequest.CourtClassCd, out CourtClassCd parsedCourtClassCd))
             {
                 _logger.LogWarning(
-                    "FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId} are required; skipped.",
-                    fileId, participantId, appearanceId);
+                    "FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}, CourtClassCode {CourtClassCd} are required and should be valid; skipped.",
+                    fileId, participantId, appearanceId, apprRequest.CourtClassCd);
                 return false;
             }
+            courtClassCd = parsedCourtClassCd;
             return true;
         }
 
@@ -674,24 +676,29 @@ namespace Scv.Api.Services
             var bundleRequests = new List<PdfDocumentRequest>();
             foreach (var binder in binders)
             {
-                var binderDocRequests = binder.Documents.Select(d => new PdfDocumentRequest
-                {
-                    Type = d.DocumentType,
-                    Data = new PdfDocumentRequestDetails
+                var binderDocRequests = binder.Documents
+                    // Excludes DocumentType.File documents where the FileName = DocumentId.
+                    // This means that there is no document to view.
+                    .Where(d => d.DocumentType != DocumentType.File
+                        || d.FileName != d.DocumentId)
+                    .Select(d => new PdfDocumentRequest
                     {
-                        PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
-                        ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
-                        CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
-                        CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
-                        FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
-                        AppearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID),
-                        IsCriminal = true,
-                        CorrelationId = correlationId.ToString(),
-                        DocumentId = d.DocumentType == DocumentType.File
-                            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
-                            : d.DocumentId
-                    }
-                });
+                        Type = d.DocumentType,
+                        Data = new PdfDocumentRequestDetails
+                        {
+                            PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
+                            ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
+                            CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
+                            CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
+                            FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
+                            AppearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID),
+                            IsCriminal = true,
+                            CorrelationId = correlationId.ToString(),
+                            DocumentId = d.DocumentType == DocumentType.File
+                                ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
+                                : d.DocumentId
+                        }
+                    });
                 bundleRequests.AddRange(binderDocRequests);
             }
             return [.. bundleRequests];

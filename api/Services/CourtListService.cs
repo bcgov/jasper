@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -217,8 +216,6 @@ namespace Scv.Api.Services
                 var binders = await InitializeBindersToMerge(request);
 
                 var requests = GeneratePdfDocumentRequests(binders, correlationId);
-
-                _logger.LogInformation(JsonSerializer.Serialize(requests, new JsonSerializerOptions { WriteIndented = true }));
 
                 var response = await _documentMerger.MergeDocuments(requests);
 
@@ -679,24 +676,29 @@ namespace Scv.Api.Services
             var bundleRequests = new List<PdfDocumentRequest>();
             foreach (var binder in binders)
             {
-                var binderDocRequests = binder.Documents.Select(d => new PdfDocumentRequest
-                {
-                    Type = d.DocumentType,
-                    Data = new PdfDocumentRequestDetails
+                var binderDocRequests = binder.Documents
+                    // Excludes DocumentType.File documents where the FileName = DocumentId.
+                    // This means that there is no document to view.
+                    .Where(d => d.DocumentType != DocumentType.File
+                        || d.FileName != d.DocumentId)
+                    .Select(d => new PdfDocumentRequest
                     {
-                        PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
-                        ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
-                        CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
-                        CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
-                        FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
-                        AppearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID),
-                        IsCriminal = true,
-                        CorrelationId = correlationId.ToString(),
-                        DocumentId = d.DocumentType == DocumentType.File
-                            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
-                            : d.DocumentId
-                    }
-                });
+                        Type = d.DocumentType,
+                        Data = new PdfDocumentRequestDetails
+                        {
+                            PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
+                            ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
+                            CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
+                            CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
+                            FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
+                            AppearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID),
+                            IsCriminal = true,
+                            CorrelationId = correlationId.ToString(),
+                            DocumentId = d.DocumentType == DocumentType.File
+                                ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
+                                : d.DocumentId
+                        }
+                    });
                 bundleRequests.AddRange(binderDocRequests);
             }
             return [.. bundleRequests];

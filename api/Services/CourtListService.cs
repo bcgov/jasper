@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -216,6 +217,8 @@ namespace Scv.Api.Services
                 var binders = await InitializeBindersToMerge(request);
 
                 var requests = GeneratePdfDocumentRequests(binders, correlationId);
+
+                _logger.LogInformation(JsonSerializer.Serialize(requests, new JsonSerializerOptions { WriteIndented = true }));
 
                 var response = await _documentMerger.MergeDocuments(requests);
 
@@ -483,7 +486,7 @@ namespace Scv.Api.Services
                     continue;
                 }
 
-                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd);
+                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd.GetValueOrDefault());
                 if (!isValidCourtClass)
                 {
                     _logger.LogWarning(
@@ -557,22 +560,24 @@ namespace Scv.Api.Services
             out string fileId,
             out string participantId,
             out string appearanceId,
-            out CourtClassCd courtClassCd)
+            out CourtClassCd? courtClassCd)
         {
             fileId = apprRequest.FileId;
             participantId = apprRequest.ParticipantId;
             appearanceId = apprRequest.AppearanceId;
-            courtClassCd = apprRequest.CourtClassCd;
+            courtClassCd = null;
 
-            if (string.IsNullOrWhiteSpace(fileId) ||
-                string.IsNullOrWhiteSpace(participantId) ||
-                string.IsNullOrWhiteSpace(appearanceId))
+            if (string.IsNullOrWhiteSpace(fileId)
+                || string.IsNullOrWhiteSpace(participantId)
+                || string.IsNullOrWhiteSpace(appearanceId)
+                || !Enum.TryParse(apprRequest.CourtClassCd, out CourtClassCd parsedCourtClassCd))
             {
                 _logger.LogWarning(
-                    "FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId} are required; skipped.",
-                    fileId, participantId, appearanceId);
+                    "FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}, CourtClassCode {CourtClassCd} are required and should be valid; skipped.",
+                    fileId, participantId, appearanceId, apprRequest.CourtClassCd);
                 return false;
             }
+            courtClassCd = parsedCourtClassCd;
             return true;
         }
 

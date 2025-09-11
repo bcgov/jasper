@@ -1,10 +1,12 @@
+import {
+  GeneratePdfRequest,
+  GeneratePdfResponse,
+} from '@/components/documents/models/GeneratePdf';
+import { Binder } from '@/types';
 import { CivilAppearanceDetails } from '@/types/civil/jsonTypes/index';
 import { CourtFileSearchResponse } from '@/types/courtFileSearch';
 import { CriminalAppearanceDetails } from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
-import { GeneratePdfResponse, GeneratePdfRequest } from '@/components/documents/models/GeneratePdf';
-import { ApiResponse } from '@/types/ApiResponse';
-import { Binder } from '@/types';
 
 export class FilesService {
   private httpService: HttpService;
@@ -56,11 +58,6 @@ export class FilesService {
       `${this.baseUrl}/document/generate-pdf`,
       requestData
     );
-  }
-
-  async generateCourtListPdf(bundleRequest: CourtListDocumentBundleRequest[]): Promise<ApiResponse<CourtListDocumentBundleResponse>> {
-    // mock for now
-    return {} as ApiResponse<CourtListDocumentBundleResponse>;
   }
 
   // Coming soon...

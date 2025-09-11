@@ -149,6 +149,11 @@
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
+  import { CourtListService } from '@/services';
+  import {
+    CourtListAppearanceDocumentRequest,
+    CourtListDocumentBundleRequest,
+  } from '@/services/FilesService';
   import { useCourtFileSearchStore } from '@/stores';
   import {
     CourtClassEnum,
@@ -169,8 +174,7 @@
     mdiNotebookEditOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
-  import { computed, ref, inject } from 'vue';
-  import { CourtListDocumentBundleRequest, CourtListAppearanceDocumentRequest, FilesService } from '@/services/FilesService';
+  import { computed, inject, ref } from 'vue';
 
   const selected = ref<CourtListAppearance[]>([]);
 
@@ -190,8 +194,8 @@
     search: string;
   }>();
 
-  const filesService = inject<FilesService>('filesService');
-  if (!filesService) {
+  const courtListService = inject<CourtListService>('courtListService');
+  if (!courtListService) {
     throw new Error('HttpService is not available!');
   }
 
@@ -354,20 +358,26 @@
       return;
     }
 
-    var requests = [] as CourtListDocumentBundleRequest[];
+    const appearanceRequests = new Set(
+      appearances.map(
+        (app) =>
+          ({
+            fileId: app.justinNo,
+            appearanceId: app.appearanceId,
+            participantId: app.profPartId,
+            courtClassCd: app.courtClassCd,
+          }) as CourtListAppearanceDocumentRequest
+      )
+    );
 
-    const appearanceRequests = new Set(appearances.map((app) => ({
-      fileId: app.courtFileNumber,
-      appearanceId: app.appearanceId,
-      participantId: app.profPartId,
-      courtClassCd: app.courtClassCd,
-    } as CourtListAppearanceDocumentRequest)));
+    const request = {
+      appearances: Array.from(appearanceRequests),
+    } as CourtListDocumentBundleRequest;
 
-    requests.push({appearances: Array.from(appearanceRequests)});
+    console.log(request);
 
-    var response = await filesService.generateCourtListPdf(requests);
+    var response = await courtListService.generateCourtListPdf(request);
 
-    console.log(requests);
     console.log(response);
   };
 

@@ -517,7 +517,6 @@ namespace Scv.Api.Services
                     continue;
                 }
 
-
                 if (binderResult.Payload.Count == 0 && isCriminal)
                 {
                     var binder = await this.CreateKeyDocumentsBinder(fileId, participantId, appearanceId);

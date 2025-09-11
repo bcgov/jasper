@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -214,6 +215,8 @@ namespace Scv.Api.Services
                 var binders = await InitializeBindersToMerge(request);
 
                 var requests = GeneratePdfDocumentRequests(binders, correlationId);
+
+                _logger.LogInformation(JsonSerializer.Serialize(requests, new JsonSerializerOptions { WriteIndented = true }));
 
                 var response = await _documentMerger.MergeDocuments(requests);
 
@@ -481,6 +484,7 @@ namespace Scv.Api.Services
                 var fileId = appearance.FileId;
                 var participantId = appearance.ParticipantId;
                 var appearanceId = appearance.AppearanceId;
+                var courtClassCd = appearance.CourtClassCd;
                 if (string.IsNullOrWhiteSpace(fileId)
                     || string.IsNullOrWhiteSpace(participantId)
                     || string.IsNullOrWhiteSpace(appearanceId))
@@ -496,6 +500,7 @@ namespace Scv.Api.Services
                     { LabelConstants.PHYSICAL_FILE_ID, fileId },
                     { LabelConstants.APPEARANCE_ID, appearanceId },
                     { LabelConstants.PARTICIPANT_ID, participantId },
+                    { LabelConstants.COURT_CLASS_CD, courtClassCd.ToString() }
                 });
                 if (!binderResult.Succeeded)
                 {

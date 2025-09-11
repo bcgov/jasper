@@ -77,6 +77,11 @@ namespace Scv.Api.Controllers
         [Route("document-bundle")]
         public async Task<IActionResult> CreateDocumentBundle([FromBody] CourtListDocumentBundleRequest request)
         {
+            if (request == null || request.Appearances == null || request.Appearances.Count == 0)
+            {
+                return BadRequest("Invalid request.");
+            }
+
             var result = await _courtListService.ProcessCourtListDocumentBundle(request);
             if (!result.Succeeded)
             {

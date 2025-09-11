@@ -474,11 +474,6 @@ namespace Scv.Api.Services
 
         private async Task<List<BinderDto>> InitializeBindersToMerge(CourtListDocumentBundleRequest request)
         {
-            if (request?.Appearances == null || request.Appearances.Count == 0)
-            {
-                return [];
-            }
-
             var binders = new List<BinderDto>();
 
             foreach (var appearance in request.Appearances)
@@ -516,25 +511,7 @@ namespace Scv.Api.Services
 
                 if (isCriminal)
                 {
-                    if (binderResult.Payload.Count == 0)
-                    {
-                        var newBinder = await CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
-                        if (newBinder != null)
-                        {
-                            binders.Add(newBinder);
-                            _logger.LogInformation(
-                                "Created new key documents binder for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
-                                fileId, participantId, appearanceId);
-                        }
-                    }
-                    else
-                    {
-                        var refreshed = await GetKeyDocumentsBinders(binderResult.Payload);
-                        binders.AddRange(refreshed);
-                        _logger.LogInformation(
-                            "Reused {Count} existing (possibly refreshed) binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
-                            refreshed.Count, fileId, participantId, appearanceId);
-                    }
+                    binders.AddRange(await InitializeKeyDocumentBinders(binderResult.Payload, fileId, participantId, appearanceId));
                 }
                 else if (isCivil)
                 {
@@ -543,6 +520,33 @@ namespace Scv.Api.Services
                         "Reused {Count} existing civil binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
                         binderResult.Payload.Count, fileId, participantId, appearanceId);
                 }
+            }
+
+            return binders;
+        }
+
+        private async Task<List<BinderDto>> InitializeKeyDocumentBinders(List<BinderDto> existingBinders, string fileId, string participantId, string appearanceId)
+        {
+            var binders = new List<BinderDto>();
+
+            if (existingBinders.Count == 0)
+            {
+                var newBinder = await CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
+                if (newBinder != null)
+                {
+                    binders.Add(newBinder);
+                    _logger.LogInformation(
+                        "Created new key documents binder for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                        fileId, participantId, appearanceId);
+                }
+            }
+            else
+            {
+                var refreshed = await GetKeyDocumentsBinders(existingBinders);
+                binders.AddRange(refreshed);
+                _logger.LogInformation(
+                    "Reused {Count} existing (possibly refreshed) binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                    refreshed.Count, fileId, participantId, appearanceId);
             }
 
             return binders;

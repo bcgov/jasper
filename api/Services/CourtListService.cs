@@ -647,7 +647,7 @@ namespace Scv.Api.Services
 
             foreach (var binder in existingBinders)
             {
-                var age = DateTime.UtcNow - binder.UpdatedDate;
+                var age = DateTime.UtcNow - binder.UpdatedDate.GetValueOrDefault();
                 if (age.TotalHours >= refreshHours)
                 {
                     // Create new document binder if its older than the refreshHours to ensure documents are up to date

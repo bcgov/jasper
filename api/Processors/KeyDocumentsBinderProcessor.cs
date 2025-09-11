@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentValidation;
@@ -42,13 +43,9 @@ public class KeyDocumentsBinderProcessor(
 
         var labels = this.Binder.Labels ?? [];
 
-        foreach (var key in requiredKeys)
-        {
-            if (!labels.ContainsKey(key))
-            {
-                errors.Add($"Missing label: {key}");
-            }
-        }
+        errors.AddRange(requiredKeys
+            .Where(key => !labels.ContainsKey(key))
+            .Select(key => $"Missing label: {key}"));
 
         return errors.Count != 0
             ? OperationResult.Failure([.. errors])

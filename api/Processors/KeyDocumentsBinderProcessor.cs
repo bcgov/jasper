@@ -34,8 +34,6 @@ public class KeyDocumentsBinderProcessor(
         var requiredKeys = new[]
         {
             LabelConstants.PARTICIPANT_ID,
-            LabelConstants.PROF_SEQ_NUMBER,
-            LabelConstants.COURT_LEVEL_CD,
             LabelConstants.COURT_CLASS_CD,
             LabelConstants.APPEARANCE_ID,
             LabelConstants.PHYSICAL_FILE_ID

@@ -25,8 +25,6 @@ public class BinderMapping : IRegister
             .Map(dest => dest.DocumentType, src => (DocumentType)src.DocumentType);
 
         config.NewConfig<CriminalDocument, BinderDocumentDto>()
-            // TODO: Look for another unique id that can differentiate
-            // the saved document in the binder if ImageId is null
             .Map(dest => dest.DocumentId, src =>
                 string.IsNullOrWhiteSpace(src.ImageId)
                     ? src.DocumentTypeDescription

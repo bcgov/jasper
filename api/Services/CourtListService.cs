@@ -468,74 +468,117 @@ namespace Scv.Api.Services
             return courtList;
         }
 
-        #endregion Criminal
-
-        #endregion Populating Methods
+        #endregion
 
         #region Document Bundle Methods
 
         private async Task<List<BinderDto>> InitializeBindersToMerge(CourtListDocumentBundleRequest request)
         {
+            if (request?.Appearances == null || request.Appearances.Count == 0)
+            {
+                return [];
+            }
+
             var binders = new List<BinderDto>();
 
             foreach (var appearance in request.Appearances)
             {
-                var fileId = appearance.FileId;
-                var participantId = appearance.ParticipantId;
-                var appearanceId = appearance.AppearanceId;
-                var courtClassCd = appearance.CourtClassCd;
-                if (string.IsNullOrWhiteSpace(fileId)
-                    || string.IsNullOrWhiteSpace(participantId)
-                    || string.IsNullOrWhiteSpace(appearanceId))
+                if (!TryValidateAppearance(appearance, out var fileId, out var participantId, out var appearanceId, out var courtClassCd))
                 {
-                    _logger.LogWarning("FileId: {FileId}, ParticipantId: {ParticipantId} and AppearanceId: " +
-                        "{AppearanceId} are required for each appearance and is skipped.", fileId, participantId, appearanceId);
                     continue;
                 }
 
-                var isCriminal = courtClassCd is CourtClassCd.A or CourtClassCd.T or CourtClassCd.Y;
-                var isCivil = courtClassCd is CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M;
-                if (!isCriminal && !isCivil)
+                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd);
+                if (!isValidCourtClass)
                 {
-                    _logger.LogWarning("CourtClassCd: {CourtClassCd} is not recognized for FileId: {FileId}, " +
-                        "ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId} and is skipped.", courtClassCd, fileId, participantId, appearanceId);
+                    _logger.LogWarning(
+                        "CourtClassCd: {CourtClassCd} is not recognized for FileId: {FileId}, ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId} and is skipped.",
+                        courtClassCd, fileId, participantId, appearanceId);
                     continue;
                 }
 
-                // See if we have binder(s) for this file/participant/appearance
+                // Get existing binders for this appearance
                 var binderResult = await _binderService.GetByLabels(new Dictionary<string, string>
-                {
+                     {
                     { LabelConstants.PHYSICAL_FILE_ID, fileId },
                     { LabelConstants.APPEARANCE_ID, appearanceId },
                     { LabelConstants.PARTICIPANT_ID, participantId },
                     { LabelConstants.COURT_CLASS_CD, courtClassCd.ToString() }
                 });
+
                 if (!binderResult.Succeeded)
                 {
-                    _logger.LogWarning("Something went wrong when pulling the binder for FileId: {FileId}, " +
-                        "ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId} and is skipped", fileId, participantId, appearanceId);
+                    _logger.LogWarning(
+                        "Error retrieving binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}. Skipped.",
+                        fileId, participantId, appearanceId);
                     continue;
                 }
 
-                if (binderResult.Payload.Count == 0 && isCriminal)
+                if (isCriminal)
                 {
-                    var binder = await this.CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
-                    binders.Add(binder);
-                    _logger.LogInformation("Created new key documents binder for FileId: {FileId}, ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId}",
-                        fileId, participantId, appearanceId);
+                    if (binderResult.Payload.Count == 0)
+                    {
+                        var newBinder = await CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
+                        if (newBinder != null)
+                        {
+                            binders.Add(newBinder);
+                            _logger.LogInformation(
+                                "Created new key documents binder for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                                fileId, participantId, appearanceId);
+                        }
+                    }
+                    else
+                    {
+                        var refreshed = await GetKeyDocumentsBinders(binderResult.Payload);
+                        binders.AddRange(refreshed);
+                        _logger.LogInformation(
+                            "Reused {Count} existing (possibly refreshed) binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                            refreshed.Count, fileId, participantId, appearanceId);
+                    }
                 }
-                else
+                else if (isCivil)
                 {
-                    // Key Documents binders need to be checked and possibly refreshed
-                    var existingBinders = isCriminal ? await GetKeyDocumentsBinders(binderResult.Payload) : binderResult.Payload;
-                    binders.AddRange(existingBinders);
-                    _logger.LogInformation("Reused {Count} existing binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId}",
-                        existingBinders.Count, fileId, participantId, appearanceId);
+                    binders.AddRange(binderResult.Payload);
+                    _logger.LogInformation(
+                        "Reused {Count} existing civil binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                        binderResult.Payload.Count, fileId, participantId, appearanceId);
                 }
             }
 
             return binders;
         }
+
+        private bool TryValidateAppearance(
+            CourtListAppearanceDocumentRequest apprRequest,
+            out string fileId,
+            out string participantId,
+            out string appearanceId,
+            out CourtClassCd courtClassCd)
+        {
+            fileId = apprRequest.FileId;
+            participantId = apprRequest.ParticipantId;
+            appearanceId = apprRequest.AppearanceId;
+            courtClassCd = apprRequest.CourtClassCd;
+
+            if (string.IsNullOrWhiteSpace(fileId) ||
+                string.IsNullOrWhiteSpace(participantId) ||
+                string.IsNullOrWhiteSpace(appearanceId))
+            {
+                _logger.LogWarning(
+                    "FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId} are required; skipped.",
+                    fileId, participantId, appearanceId);
+                return false;
+            }
+            return true;
+        }
+
+        private static (bool isCriminal, bool isCivil, bool isValidCourtClass) GetCourtClassFlags(CourtClassCd courtClassCd)
+        {
+            bool isCriminal = courtClassCd is CourtClassCd.A or CourtClassCd.T or CourtClassCd.Y;
+            bool isCivil = courtClassCd is CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M;
+            return (isCriminal, isCivil, isCriminal || isCivil);
+        }
+
 
         private async Task<BinderDto> CreateKeyDocumentsBinder(string fileId, string participantId, string appearanceId)
         {
@@ -554,7 +597,11 @@ namespace Scv.Api.Services
 
             // Filter documents for the participant
             var accusedFile = fileContent?.AccusedFile.FirstOrDefault(af => af.MdocJustinNo == fileId && af.PartId == participantId);
-            var documents = accusedFile?.Document;
+            if (accusedFile == null)
+            {
+                _logger.LogWarning("No accused file found for fileId {FileId} and participantId {ParticipantId}.", fileId, participantId);
+                return null;
+            }
 
             // Prepare Key Documents
             var allDocuments = await _documentConverter.GetCriminalDocuments(accusedFile);
@@ -604,7 +651,10 @@ namespace Scv.Api.Services
                     var participantId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID);
                     var appearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID);
                     var refreshedBinder = await CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
-                    binders.Add(refreshedBinder);
+                    if (refreshedBinder != null)
+                    {
+                        binders.Add(refreshedBinder);
+                    }
                 }
                 else
                 {
@@ -642,6 +692,8 @@ namespace Scv.Api.Services
             }
             return [.. bundleRequests];
         }
+
+        #endregion Document Bundle Methods
 
         #endregion
 

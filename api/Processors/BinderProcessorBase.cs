@@ -61,8 +61,6 @@ public abstract class BinderProcessorBase(
             return OperationResult.Failure([.. basicValidation.Errors.Select(e => e.ErrorMessage)]);
         }
 
-        return errors.Count != 0
-            ? OperationResult.Failure([.. errors])
-            : OperationResult.Success();
+        return OperationResult.Success();
     }
 }

@@ -37,12 +37,12 @@
 
   const selectedDate = defineModel<Date>('selectedDate');
   const calendarView = defineModel<string>('calendarView');
+  const isCalendarLoading = defineModel<boolean>('isCalendarLoading');
 
   if (!selectedDate.value) {
     throw new Error('selectedDate is required');
   }
 
-  const isCalendarLoading = ref(true);
   const calendarRef = ref();
   const calendarData = ref<CalendarDay[]>([]);
   const presiders = ref<Presider[]>([]);

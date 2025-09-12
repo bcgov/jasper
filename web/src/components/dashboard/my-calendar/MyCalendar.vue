@@ -54,12 +54,12 @@
   }>();
 
   const selectedDate = defineModel<Date>('selectedDate')!;
+  const isCalendarLoading = defineModel<boolean>('isCalendarLoading');
 
   if (!selectedDate.value) {
     throw new Error('selectedDate is required');
   }
 
-  const isCalendarLoading = ref(true);
   const calendarData = ref<CalendarDay[]>([]);
   const expandedDate = ref<string | null>(null);
   const calendarRef = ref();

@@ -12,9 +12,25 @@
       </a>
     </div>
     <div class="d-flex align-center centered">
-      <h3 data-testid="title" class="m-0">
-        Schedule for {{ formatDateInstanceToMMMYYYY(selectedDate!) }}
-      </h3>
+      <div class="d-flex align-center">
+        <v-icon
+          class="previous cursor-pointer"
+          :icon="mdiChevronLeft"
+          size="32"
+          @click.stop="() => previous(calendarView)"
+          :disabled="isCalendarLoading"
+        />
+        <h3 data-testid="title" class="m-0">
+          Schedule for {{ formatDateInstanceToMMMYYYY(selectedDate!) }}
+        </h3>
+        <v-icon
+          class="next cursor-pointer"
+          :icon="mdiChevronRight"
+          size="32"
+          @click.stop="() => next(calendarView)"
+          :disabled="isCalendarLoading"
+        />
+      </div>
       <div class="d-flex align-center centered">
         <!-- Month picker for My Calendar -->
         <v-menu
@@ -24,19 +40,26 @@
           class="mr-3"
         >
           <template v-slot:activator="{ props }">
-            <v-icon :icon="mdiChevronDown" v-bind="props" class="mr-3" />
+            <v-icon
+              :icon="mdiChevronDown"
+              v-bind="props"
+              class="mr-3"
+              :disabled="isCalendarLoading"
+            />
           </template>
           <div class="d-flex flex-column month-picker">
             <div class="d-flex flex-row justify-center mt-3">
               <v-icon
                 :icon="mdiChevronLeft"
                 data-testid="previous-button"
-                @click.stop="previousYear"
+                @click.stop="() => previous('')"
+                :disabled="isCalendarLoading"
               />
               <span class="mx-3">{{ selectedYear }}</span>
               <v-icon
+                :disabled="isCalendarLoading"
                 :icon="mdiChevronRight"
-                @click.stop="nextYear"
+                @click.stop="() => next('')"
                 data-testid="next-button"
               />
             </div>
@@ -59,6 +82,7 @@
           label=""
           density="compact"
           v-model="selectedDate"
+          :disabled="isCalendarLoading"
         >
           <template v-slot:default="">
             <v-icon :icon="mdiCalendarMonthOutline" />
@@ -71,6 +95,7 @@
           data-testid="today-button"
           @click="today"
           density="comfortable"
+          :disabled="isCalendarLoading"
         ></v-btn-secondary>
         <!-- Calendar View Picker for Court Calendar -->
         <v-menu
@@ -80,7 +105,12 @@
           location="bottom end"
         >
           <template #activator="{ props }">
-            <v-btn v-bind="props" variant="outlined" density="default">
+            <v-btn
+              v-bind="props"
+              variant="outlined"
+              density="default"
+              :disabled="isCalendarLoading"
+            >
               <component
                 class="mr-2"
                 :is="currentOption?.icon"
@@ -132,11 +162,14 @@
     mdiChevronRight,
     mdiDotsHorizontal,
   } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
+  import { DateTime } from 'luxon';
 
   const selectedDate = defineModel<Date>('selectedDate');
   const isCourtCalendar = defineModel<boolean>('isCourtCalendar');
   const calendarView = defineModel<string>('calendarView');
+
+  const props = defineProps<{ isCalendarLoading: boolean }>();
 
   const viewMode = ref<'months' | 'year' | 'month' | undefined>('months');
   const selectedYear = ref(
@@ -147,6 +180,7 @@
   const selectedMonth = ref(
     selectedDate.value ? selectedDate.value.getMonth() : new Date().getMonth()
   );
+  const isLocalDisabled = ref(true);
 
   const options = [
     { label: 'Month', value: CalendarViewEnum.MonthView, icon: MonthIcon },
@@ -165,30 +199,43 @@
     menuOpen.value = false;
   };
 
-  const updateViewMode = (mode) => {
-    viewMode.value = mode === 'year' ? 'year' : 'months';
+  const updateViewMode = (mode) =>
+    (viewMode.value = mode === 'year' ? 'year' : 'months');
+
+  const setDate = (date: Date) => {
+    selectedYear.value = date.getFullYear();
+    selectedMonth.value = date.getMonth();
+    selectedDate.value = date;
   };
 
-  const previousYear = () => {
-    selectedYear.value--;
-    selectedDate.value = new Date(selectedYear.value, selectedMonth.value, 1);
+  const changeDate = (offset: number, viewMode: CalendarViewEnum) => {
+    let newDateTime = DateTime.fromJSDate(selectedDate.value);
+
+    switch (viewMode) {
+      case CalendarViewEnum.WeekView:
+        newDateTime = newDateTime.plus({ weeks: offset });
+        break;
+      case CalendarViewEnum.TwoWeekView:
+        newDateTime = newDateTime.plus({ weeks: offset * 2 });
+        break;
+      case CalendarViewEnum.MonthView:
+        newDateTime = newDateTime.plus({ months: offset });
+        break;
+      default:
+        newDateTime = newDateTime.plus({ years: offset });
+        break;
+    }
+
+    setDate(newDateTime.toJSDate());
   };
 
-  const nextYear = () => {
-    selectedYear.value++;
-    selectedDate.value = new Date(selectedYear.value, selectedMonth.value, 1);
-  };
+  const previous = (viewMode: CalendarViewEnum) => changeDate(-1, viewMode);
+  const next = (viewMode: CalendarViewEnum) => changeDate(1, viewMode);
 
-  const updateMonth = (month) => {
-    selectedMonth.value = month;
-    selectedDate.value = new Date(selectedYear.value, month, 1);
-  };
+  const today = () => setDate(new Date());
 
-  const today = () => {
-    const currentDate = new Date();
-    selectedYear.value = currentDate.getFullYear();
-    selectedMonth.value = currentDate.getMonth();
-    selectedDate.value = currentDate;
+  const updateMonth = (month: number) => {
+    setDate(new Date(selectedYear.value, month, 1));
   };
 </script>
 <style scoped>
@@ -267,5 +314,10 @@
   .two-week-svg {
     width: 22px;
     height: 22px;
+  }
+
+  .previous:hover,
+  .next:hover {
+    opacity: 0.8;
   }
 </style>

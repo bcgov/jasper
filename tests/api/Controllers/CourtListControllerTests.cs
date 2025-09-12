@@ -23,6 +23,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Controllers;
+using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
@@ -151,7 +152,10 @@ namespace tests.api.Controllers
                 mockPCSSSearchDateClient.Object,
                 mockPCSSReportServicesClient.Object,
                 cachingService,
-                principal);
+                principal,
+                new Mock<IBinderService>().Object,
+                new Mock<IDocumentConverter>().Object,
+                new Mock<IDocumentMerger>().Object);
 
             return mockCourtListService;
         }

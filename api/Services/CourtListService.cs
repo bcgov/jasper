@@ -483,7 +483,7 @@ namespace Scv.Api.Services
                     continue;
                 }
 
-                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd.GetValueOrDefault());
+                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd.Value);
                 if (!isValidCourtClass)
                 {
                     _logger.LogWarning(

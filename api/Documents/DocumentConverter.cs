@@ -24,6 +24,7 @@ public class DocumentConverter(IMapper mapper, LookupService lookupService) : ID
             criminalDocuments.Insert(0, new CriminalDocument
             {
                 DocumentTypeDescription = "Record of Proceedings",
+                DocmFormDsc = "Record of Proceedings",
                 ImageId = ac.PartId,
                 Category = "rop",
                 PartId = ac.PartId,

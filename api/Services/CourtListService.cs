@@ -3,23 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Exceptions;
+using Scv.Api.Helpers.Documents;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Infrastructure;
+using Scv.Api.Models;
 using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Models.Criminal.CourtList;
 using Scv.Api.Models.Criminal.Detail;
+using Scv.Api.Models.Document;
+using Scv.Db.Contants;
 
 namespace Scv.Api.Services
 {
@@ -38,6 +45,10 @@ namespace Scv.Api.Services
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
         private readonly string _requestPartId;
+        private readonly IBinderService _binderService;
+        private readonly IDocumentConverter _documentConverter;
+        private readonly IConfiguration _configuration;
+        private readonly IDocumentMerger _documentMerger;
 
         #endregion Variables
 
@@ -53,7 +64,10 @@ namespace Scv.Api.Services
             SearchDateClient searchDateClient,
             ReportServicesClient reportServiceClient,
             IAppCache cache,
-            ClaimsPrincipal user)
+            ClaimsPrincipal user,
+            IBinderService binderService,
+            IDocumentConverter documentConverter,
+            IDocumentMerger documentMerger)
         {
             _logger = logger;
             _filesClient = filesClient;
@@ -69,6 +83,11 @@ namespace Scv.Api.Services
             _applicationCode = user.ApplicationCode();
             _requestAgencyIdentifierId = user.AgencyCode();
             _requestPartId = user.ParticipantId();
+            _binderService = binderService;
+            _documentConverter = documentConverter;
+            _configuration = configuration;
+            _documentMerger = documentMerger;
+
         }
 
         #endregion Constructor
@@ -155,16 +174,65 @@ namespace Scv.Api.Services
                 request.ReportType);
         }
 
-        #region Helpers
-
-        private void CheckIfValidUser(string responseMessage)
+        public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetCourtListAppearances(string locationId, int judgeId, string roomCode, DateTime date)
         {
-            if (responseMessage == null) return;
-            if (responseMessage.Contains("Not a valid user"))
-                throw new NotAuthorizedException("No active assignment found for PartId in AgencyId");
-            if (responseMessage.Contains("Agency supplied does not match Appliation Code"))
-                throw new NotAuthorizedException("Agency supplied does not match Application Code");
+            var results = await _searchDateClient.GetCourtListAppearancesAsync(int.Parse(locationId), date.ToString("dd-MMM-yyyy"), judgeId, roomCode, null);
+            return results;
         }
+
+        public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetJudgeCourtListAppearances(int judgeId, DateTime date)
+        {
+            var results = await _searchDateClient.GetJudgeCourtListAppearancesAsync(judgeId, date.ToString("dd-MMM-yyyy"));
+            if (results?.Items is null)
+                return results;
+            // Remove adjudicator entries that do not match judgeId
+            var anyToRemove = results.Items
+                .SelectMany(rslt => rslt.CourtRoomDetails)
+                .SelectMany(crd => crd.AdjudicatorDetails)
+                .FirstOrDefault(dtl => dtl.AdjudicatorId != judgeId);
+            if (anyToRemove is null)
+                return results;
+
+            // In the very rare case two judges are assignment the same location, court room and date
+            // we need to remove the irrelevant adjudicator data
+            foreach (var result in results.Items)
+            {
+                // Should only at most be one match
+                result.CourtActivityDetails?.Remove(result.CourtActivityDetails.FirstOrDefault(dtl => dtl.CourtSittingCd == anyToRemove.AmPm));
+                _ = result.CourtRoomDetails.FirstOrDefault(a => a.AdjudicatorDetails.Remove(anyToRemove));
+                result.Appearances = [.. result.Appearances?.Where(app => !app.AppearanceTm.Contains(anyToRemove.AmPm))];
+            }
+
+            return results;
+        }
+
+        public async Task<OperationResult<CourtListDocumentBundleResponse>> ProcessCourtListDocumentBundle(CourtListDocumentBundleRequest request)
+        {
+            var correlationId = Guid.NewGuid();
+            _logger.LogInformation("Processing {Count} appearances for CorrectionId: {CorreclationId} to create document bundle.", request.Appearances.Count, correlationId);
+
+            try
+            {
+                var binders = await InitializeBindersToMerge(request);
+
+                var requests = GeneratePdfDocumentRequests(binders, correlationId);
+
+                var response = await _documentMerger.MergeDocuments(requests);
+
+                return OperationResult<CourtListDocumentBundleResponse>.Success(new CourtListDocumentBundleResponse
+                {
+                    Binders = binders,
+                    PdfResponse = response
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Something went wrong during the document bundling/merging process: {Error}", ex.Message);
+                return OperationResult<CourtListDocumentBundleResponse>.Failure("Something went wrong during the document bundling/merging process.");
+            }
+        }
+
+        #region Helpers
 
         #region Fetching Methods
 
@@ -400,42 +468,245 @@ namespace Scv.Api.Services
             return courtList;
         }
 
-        public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetCourtListAppearances(string locationId, int judgeId, string roomCode, DateTime date)
-        {
-            var results = await _searchDateClient.GetCourtListAppearancesAsync(int.Parse(locationId), date.ToString("dd-MMM-yyyy"), judgeId, roomCode, null);
-            return results;
-        }
+        #endregion
 
-        public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetJudgeCourtListAppearances(int judgeId, DateTime date)
-        {
-            var results = await _searchDateClient.GetJudgeCourtListAppearancesAsync(judgeId, date.ToString("dd-MMM-yyyy"));
-            if (results?.Items is null)
-                return results;
-            // Remove adjudicator entries that do not match judgeId
-            var anyToRemove = results.Items
-                .SelectMany(rslt => rslt.CourtRoomDetails)
-                .SelectMany(crd => crd.AdjudicatorDetails)
-                .FirstOrDefault(dtl => dtl.AdjudicatorId != judgeId);
-            if (anyToRemove is null)
-                return results;
+        #region Document Bundle Methods
 
-            // In the very rare case two judges are assignment the same location, court room and date
-            // we need to remove the irrelevant adjudicator data
-            foreach (var result in results.Items)
+        private async Task<List<BinderDto>> InitializeBindersToMerge(CourtListDocumentBundleRequest request)
+        {
+            var binders = new List<BinderDto>();
+
+            foreach (var appearance in request.Appearances)
             {
-                // Should only at most be one match
-                result.CourtActivityDetails?.Remove(result.CourtActivityDetails.FirstOrDefault(dtl => dtl.CourtSittingCd == anyToRemove.AmPm));
-                _ = result.CourtRoomDetails.FirstOrDefault(a => a.AdjudicatorDetails.Remove(anyToRemove));
-                result.Appearances = [.. result.Appearances?.Where(app => !app.AppearanceTm.Contains(anyToRemove.AmPm))];
+                if (!TryValidateAppearance(appearance, out var fileId, out var participantId, out var appearanceId, out var courtClassCd))
+                {
+                    continue;
+                }
+
+                var (isCriminal, isCivil, isValidCourtClass) = GetCourtClassFlags(courtClassCd.Value);
+                if (!isValidCourtClass)
+                {
+                    _logger.LogWarning(
+                        "CourtClassCd: {CourtClassCd} is not recognized for FileId: {FileId}, ParticipantId: {ParticipantId} and AppearanceId: {AppearanceId} and is skipped.",
+                        courtClassCd, fileId, participantId, appearanceId);
+                    continue;
+                }
+
+                // Get existing binders for this appearance
+                var binderResult = await _binderService.GetByLabels(new Dictionary<string, string>
+                     {
+                    { LabelConstants.PHYSICAL_FILE_ID, fileId },
+                    { LabelConstants.APPEARANCE_ID, appearanceId },
+                    { LabelConstants.PARTICIPANT_ID, participantId },
+                    { LabelConstants.COURT_CLASS_CD, courtClassCd.ToString() }
+                });
+
+                if (!binderResult.Succeeded)
+                {
+                    _logger.LogWarning(
+                        "Error retrieving binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}. Skipped.",
+                        fileId, participantId, appearanceId);
+                    continue;
+                }
+
+                if (isCriminal)
+                {
+                    binders.AddRange(await InitializeKeyDocumentBinders(binderResult.Payload, fileId, participantId, appearanceId));
+                }
+                else if (isCivil)
+                {
+                    binders.AddRange(binderResult.Payload);
+                    _logger.LogInformation(
+                        "Reused {Count} existing civil binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                        binderResult.Payload.Count, fileId, participantId, appearanceId);
+                }
             }
 
-            return results;
+            return binders;
+        }
+
+        private async Task<List<BinderDto>> InitializeKeyDocumentBinders(List<BinderDto> existingBinders, string fileId, string participantId, string appearanceId)
+        {
+            var binders = new List<BinderDto>();
+
+            if (existingBinders.Count == 0)
+            {
+                var newBinder = await CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
+                if (newBinder != null)
+                {
+                    binders.Add(newBinder);
+                    _logger.LogInformation(
+                        "Created new key documents binder for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                        fileId, participantId, appearanceId);
+                }
+            }
+            else
+            {
+                var refreshed = await GetKeyDocumentsBinders(existingBinders);
+                binders.AddRange(refreshed);
+                _logger.LogInformation(
+                    "Reused {Count} existing (possibly refreshed) binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
+                    refreshed.Count, fileId, participantId, appearanceId);
+            }
+
+            return binders;
+        }
+
+        private bool TryValidateAppearance(
+            CourtListAppearanceDocumentRequest apprRequest,
+            out string fileId,
+            out string participantId,
+            out string appearanceId,
+            out CourtClassCd? courtClassCd)
+        {
+            fileId = apprRequest.FileId;
+            participantId = apprRequest.ParticipantId;
+            appearanceId = apprRequest.AppearanceId;
+            courtClassCd = null;
+
+            if (string.IsNullOrWhiteSpace(fileId)
+                || string.IsNullOrWhiteSpace(participantId)
+                || string.IsNullOrWhiteSpace(appearanceId)
+                || !Enum.TryParse(apprRequest.CourtClassCd, out CourtClassCd parsedCourtClassCd))
+            {
+                _logger.LogWarning(
+                    "FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}, CourtClassCode {CourtClassCd} are required and should be valid; skipped.",
+                    fileId, participantId, appearanceId, apprRequest.CourtClassCd);
+                return false;
+            }
+            courtClassCd = parsedCourtClassCd;
+            return true;
+        }
+
+        private static (bool isCriminal, bool isCivil, bool isValidCourtClass) GetCourtClassFlags(CourtClassCd courtClassCd)
+        {
+            bool isCriminal = courtClassCd is CourtClassCd.A or CourtClassCd.T or CourtClassCd.Y;
+            bool isCivil = courtClassCd is CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M;
+            return (isCriminal, isCivil, isCriminal || isCivil);
         }
 
 
-        #endregion Criminal
+        private async Task<BinderDto> CreateKeyDocumentsBinder(string fileId, string participantId, string appearanceId)
+        {
+            // Retrieve documents for the file
+            async Task<CriminalFileContent> FileContent() => await _filesClient.FilesCriminalFilecontentAsync(
+                    _requestAgencyIdentifierId,
+                    _requestPartId,
+                    _applicationCode,
+                    null,
+                    null,
+                    null,
+                    null,
+                    fileId);
+            var fileContentTask = _cache.GetOrAddAsync($"CriminalFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
+            var fileContent = await fileContentTask;
 
-        #endregion Populating Methods
+            // Filter documents for the participant
+            var accusedFile = fileContent?.AccusedFile.FirstOrDefault(af => af.MdocJustinNo == fileId && af.PartId == participantId);
+            if (accusedFile == null)
+            {
+                _logger.LogWarning("No accused file found for fileId {FileId} and participantId {ParticipantId}.", fileId, participantId);
+                return null;
+            }
+
+            // Prepare Key Documents
+            var allDocuments = await _documentConverter.GetCriminalDocuments(accusedFile);
+            var keyDocuments = _mapper.Map<List<BinderDocumentDto>>(KeyDocumentResolver.GetCriminalKeyDocuments(allDocuments));
+
+            // Prepare Binder
+            var binderDto = new BinderDto
+            {
+                Labels = new Dictionary<string, string>
+                {
+                    { LabelConstants.PARTICIPANT_ID, participantId },
+                    { LabelConstants.PROF_SEQ_NUMBER, accusedFile.ProfSeqNo },
+                    { LabelConstants.COURT_LEVEL_CD, accusedFile.CourtLevelCd },
+                    { LabelConstants.COURT_CLASS_CD, accusedFile.CourtClassCd },
+                    { LabelConstants.APPEARANCE_ID, appearanceId },
+                    { LabelConstants.PHYSICAL_FILE_ID, fileId },
+                },
+                Documents = keyDocuments
+            };
+
+            var binder = await _binderService.AddAsync(binderDto);
+            if (!binder.Succeeded)
+            {
+                _logger.LogError("Failed to create key documents binder for fileId {FileId} and participantId {ParticipantId}. Errors: {Errors}",
+                    fileId, participantId, string.Join(", ", binder.Errors));
+            }
+
+            return binder.Payload;
+        }
+
+        private async Task<List<BinderDto>> GetKeyDocumentsBinders(List<BinderDto> existingBinders)
+        {
+            // Normally, the file id, participant id and appearance id label combination
+            // would result to one binder only but we're handling it as multiple in case
+            // the requirement changes in the future.
+            var binders = new List<BinderDto>();
+            var refreshHoursConfig = _configuration.GetNonEmptyValue("KEY_DOCS_BINDER_REFRESH_HOURS");
+            int.TryParse(refreshHoursConfig, out int refreshHours);
+
+            foreach (var binder in existingBinders)
+            {
+                var age = DateTime.UtcNow - binder.UpdatedDate.GetValueOrDefault();
+                if (age.TotalHours >= refreshHours)
+                {
+                    // Create new document binder if its older than the refreshHours to ensure documents are up to date
+                    var fileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
+                    var participantId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID);
+                    var appearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID);
+                    var refreshedBinder = await CreateKeyDocumentsBinder(fileId, participantId, appearanceId);
+                    if (refreshedBinder != null)
+                    {
+                        binders.Add(refreshedBinder);
+                    }
+                }
+                else
+                {
+                    binders.Add(binder);
+                }
+            }
+
+            return binders;
+        }
+
+        private static PdfDocumentRequest[] GeneratePdfDocumentRequests(List<BinderDto> binders, Guid correlationId)
+        {
+            var bundleRequests = new List<PdfDocumentRequest>();
+            foreach (var binder in binders)
+            {
+                var binderDocRequests = binder.Documents
+                    // Excludes DocumentType.File documents where the FileName = DocumentId.
+                    // This means that there is no document to view.
+                    .Where(d => d.DocumentType != DocumentType.File
+                        || d.FileName != d.DocumentId)
+                    .Select(d => new PdfDocumentRequest
+                    {
+                        Type = d.DocumentType,
+                        Data = new PdfDocumentRequestDetails
+                        {
+                            PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
+                            ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
+                            CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
+                            CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
+                            FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
+                            AppearanceId = binder.Labels.GetValue(LabelConstants.APPEARANCE_ID),
+                            IsCriminal = true,
+                            CorrelationId = correlationId.ToString(),
+                            DocumentId = d.DocumentType == DocumentType.File
+                                ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
+                                : d.DocumentId
+                        }
+                    });
+                bundleRequests.AddRange(binderDocRequests);
+            }
+            return [.. bundleRequests];
+        }
+
+        #endregion Document Bundle Methods
+
+        #endregion
 
         #endregion Helpers
     }

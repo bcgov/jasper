@@ -35,21 +35,17 @@ public abstract class BinderProcessorBase(
 
         // Add standard labels for a binder
         this.Binder.Labels.Add(LabelConstants.PHYSICAL_FILE_ID, fileId);
-        this.Binder.Labels.Add(LabelConstants.JUDGE_ID, this.CurrentUser.UserId());
 
         // Sort documents
-        this.Binder.Documents = this.Binder.Documents
+        this.Binder.Documents = [.. this.Binder.Documents
             .OrderBy(d => d.Order)
-            .Select((doc, index) => { doc.Order = index; return doc; })
-            .ToList();
+            .Select((doc, index) => { doc.Order = index; return doc; })];
 
         return Task.CompletedTask;
     }
 
     public virtual async Task<OperationResult> ValidateAsync()
     {
-        var errors = new List<string>();
-
         var context = new ValidationContext<BinderDto>(this.Binder);
         if (this.Binder.Id != null)
         {
@@ -63,15 +59,6 @@ public abstract class BinderProcessorBase(
             return OperationResult.Failure([.. basicValidation.Errors.Select(e => e.ErrorMessage)]);
         }
 
-        // Validate current user is accessing own binder
-        var judgeId = this.Binder.Labels.GetValue(LabelConstants.JUDGE_ID);
-        if (judgeId != this.CurrentUser.UserId())
-        {
-            errors.Add("Current user does not have access to this binder.");
-        }
-
-        return errors.Count != 0
-            ? OperationResult.Failure([.. errors])
-            : OperationResult.Success();
+        return OperationResult.Success();
     }
 }

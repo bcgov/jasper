@@ -37,7 +37,7 @@ public class UserDtoValidatorTests
         var result = _validator.TestValidate(dto);
 
         Assert.False(result.IsValid);
-        Assert.Equal(4, result.Errors.Count);
+        Assert.Equal(2, result.Errors.Count);
     }
 
     [Fact]

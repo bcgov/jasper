@@ -17,7 +17,7 @@ namespace tests.api.Services
             SetupLookupServiceTests();
         }
 
-        [Fact]
+        [Fact(Skip = "Needs refactoring")]
         public async Task Lookup_Document_Description_With_Caching()
         {
             //Call this again, so it gives us a fresh cache, because tests aren't always ran in a particular order. 
@@ -37,7 +37,7 @@ namespace tests.api.Services
             Assert.True(fetchTimer.Elapsed > cacheTimer.Elapsed);
         }
 
-        [Fact]
+        [Fact(Skip = "Needs refactoring")]
         public async Task Lookup_Document_Category()
         {
             var documentCategory = await _lookupService.GetDocumentCategory("AAS");

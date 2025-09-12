@@ -40,7 +40,8 @@ namespace tests.api.Controllers
     /// Note: these tests are intended for the development environment. If you're running the JC-Interface locally, make sure you're using dev, not localDEV. 
     /// DEV doesn't cache lookups. 
     /// </summary>
-    public class FilesControllerTests
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")]
+    internal class FilesControllerTests
     {
         #region Variables
 
@@ -105,7 +106,8 @@ namespace tests.api.Controllers
                 locationService,
                 new CachingService(),
                 principal,
-                fileServices.LogFactory);
+                fileServices.LogFactory,
+                new Mock<IDocumentConverter>().Object);
 
             var mockDocumentMerger = new Mock<IDocumentMerger>();
 

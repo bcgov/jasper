@@ -89,6 +89,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/components/documents/NutrientContainer.vue'),
   },
   {
+    path: '/bundle-viewer',
+    name: 'BundleContainer',
+    component: () => import('@/components/documents/bundles/BundleContainer.vue'),
+  },
+  {
     path: '/request-access',
     name: 'RequestAccess',
     component: () => import('@/components/dashboard/RequestAccess.vue'),

@@ -73,21 +73,3 @@ export class FilesService {
   //   );
   // }
 }
-
-export interface CourtListDocumentBundleRequest {
-  appearances: CourtListAppearanceDocumentRequest[];
-}
-
-export interface CourtListAppearanceDocumentRequest {
-  fileId: string;
-  appearanceId: string;
-  participantId: string;
-  courtClassCd: string;
-}
-
-export interface CourtListDocumentBundleResponse {
-  binders: Binder[];
-  pdfDocumentResponse: GeneratePdfResponse[];
-  participantId: string;
-  courtClassCd: string;
-}

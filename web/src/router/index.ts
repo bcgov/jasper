@@ -83,16 +83,21 @@ const routes: RouteRecordRaw[] = [
     component: () =>
       import('@/components/courtfilesearch/CourtFileSearchView.vue'),
   },
-  {
-    path: '/pdf-viewer',
-    name: 'NutrientContainer',
-    component: () => import('@/components/documents/NutrientContainer.vue'),
+    {
+    path: '/file-viewer',
+    name: 'GenericContainer',
+    component: () => import('@/components/documents/GenericContainer.vue'),
   },
-  {
-    path: '/bundle-viewer',
-    name: 'BundleContainer',
-    component: () => import('@/components/documents/bundles/BundleContainer.vue'),
-  },
+  // {
+  //   path: '/pdf-viewer',
+  //   name: 'NutrientContainerGeneric',
+  //   component: () => import('@/components/documents/NutrientContainerGeneric.vue'),
+  // },
+  // {
+  //   path: '/bundle-viewer',
+  //   name: 'BundleContainerGeneric',
+  //   component: () => import('@/components/documents/bundles/BundleContainerGeneric.vue'),
+  // },
   {
     path: '/request-access',
     name: 'RequestAccess',

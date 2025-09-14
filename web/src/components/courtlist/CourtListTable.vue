@@ -153,7 +153,7 @@
   import {
     CourtListAppearanceDocumentRequest,
     CourtListDocumentBundleRequest,
-  } from '@/services/FilesService';
+  } from '@/types/courtlist/jsonTypes';
   import { useCourtFileSearchStore } from '@/stores';
   import {
     CourtClassEnum,
@@ -174,6 +174,7 @@
     mdiNotebookEditOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
+  import shared from '@/components/shared';
   import { computed, inject, ref } from 'vue';
 
   const selected = ref<CourtListAppearance[]>([]);
@@ -358,27 +359,24 @@
       return;
     }
 
-    const appearanceRequests = new Set(
       appearances.map(
         (app) =>
           ({
-            fileId: app.justinNo,
+            fileId: app.justinNo, 
             appearanceId: app.appearanceId,
             participantId: app.profPartId,
             courtClassCd: app.courtClassCd,
           }) as CourtListAppearanceDocumentRequest
-      )
-    );
+      );
 
-    const request = {
-      appearances: Array.from(appearanceRequests),
-    } as CourtListDocumentBundleRequest;
+    // const request = {
+    //   appearances: Array.from(appearanceRequests),
+    // } as CourtListDocumentBundleRequest;
 
-    console.log(request);
+    shared.openCourtListKeyDocuments(appearances);
+    //console.log(request);
 
-    var response = await courtListService.generateCourtListPdf(request);
-
-    console.log(response);
+    //var response = await courtListService.generateCourtListPdf(request);
   };
 
   const viewCaseDetails = (selectedItems: CourtListAppearance[]) => {

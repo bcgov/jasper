@@ -3,7 +3,7 @@ import { courtListType } from '@/types/courtlist/jsonTypes';
 import {
   CourtListDocumentBundleRequest,
   CourtListDocumentBundleResponse,
-} from './FilesService';
+} from '@/types/courtlist/jsonTypes';
 import { HttpService } from './HttpService';
 
 export class CourtListService {

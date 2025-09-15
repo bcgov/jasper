@@ -110,7 +110,7 @@ public class KeyDocumentsBinderProcessor : BinderProcessorBase
 
     private async Task<List<BinderDocumentDto>> GetDocuments()
     {
-        var fileId = this.Binder.Labels.GetValue(LabelConstants.JUDGE_ID);
+        var fileId = this.Binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
         var participantId = this.Binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID);
 
         async Task<CriminalFileContent> FileContent() => await _filesClient.FilesCriminalFilecontentAsync(

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -15,11 +14,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
-using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
-using Scv.Db.Contants;
 using Xunit;
 
 namespace tests.api.Services;
@@ -28,10 +25,6 @@ public class CourtListServiceTests : ServiceTestBase
     private readonly Mock<IConfiguration> _mockConfig;
     private readonly Faker _faker;
     private readonly IMapper _mapper;
-    private readonly Mock<IBinderService> _binderService;
-    private readonly Mock<IDocumentConverter> _documentConverter;
-    private readonly Mock<IDocumentMerger> _documentMerger;
-    private readonly Dictionary<string, string> _mockLabels;
 
     public CourtListServiceTests()
     {
@@ -47,26 +40,11 @@ public class CourtListServiceTests : ServiceTestBase
         mockRefreshHoursSection.Setup(s => s.Value).Returns("12");
 
         _mockConfig.Setup(c => c.GetSection("Caching:FileExpiryMinutes")).Returns(mockFileExpirySection.Object);
-        _mockConfig.Setup(c => c.GetSection("KEY_DOCS_BINDER_REFRESH_HOURS")).Returns(mockRefreshHoursSection.Object);
 
         // IMapper setup
         var config = new TypeAdapterConfig();
         config.Apply(new BinderMapping());
         _mapper = new Mapper(config);
-
-        _binderService = new Mock<IBinderService>();
-        _documentConverter = new Mock<IDocumentConverter>();
-        _documentMerger = new Mock<IDocumentMerger>();
-
-        _mockLabels = new Dictionary<string, string>
-        {
-            { LabelConstants.PHYSICAL_FILE_ID, _faker.Random.Int().ToString() },
-            { LabelConstants.PARTICIPANT_ID, _faker.Random.Float().ToString() },
-            { LabelConstants.APPEARANCE_ID, _faker.Random.Float().ToString() },
-            { LabelConstants.COURT_CLASS_CD, CourtClassCd.A.ToString() }
-        };
-
-
     }
 
     private (
@@ -102,10 +80,7 @@ public class CourtListServiceTests : ServiceTestBase
             mockSearchDateClient.Object,
             mockReportClient.Object,
             cachingService,
-            new ClaimsPrincipal(identity),
-            _binderService.Object,
-            _documentConverter.Object,
-            _documentMerger.Object);
+            new ClaimsPrincipal(identity));
 
         return (
             courtListService,

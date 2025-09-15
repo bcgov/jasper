@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
-using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
@@ -38,10 +37,6 @@ namespace Scv.Api.Services
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
         private readonly string _requestPartId;
-        private readonly IBinderService _binderService;
-        private readonly IDocumentConverter _documentConverter;
-        private readonly IConfiguration _configuration;
-        private readonly IDocumentMerger _documentMerger;
 
         #endregion Variables
 
@@ -57,10 +52,7 @@ namespace Scv.Api.Services
             SearchDateClient searchDateClient,
             ReportServicesClient reportServiceClient,
             IAppCache cache,
-            ClaimsPrincipal user,
-            IBinderService binderService,
-            IDocumentConverter documentConverter,
-            IDocumentMerger documentMerger)
+            ClaimsPrincipal user)
         {
             _logger = logger;
             _filesClient = filesClient;
@@ -76,10 +68,6 @@ namespace Scv.Api.Services
             _applicationCode = user.ApplicationCode();
             _requestAgencyIdentifierId = user.AgencyCode();
             _requestPartId = user.ParticipantId();
-            _binderService = binderService;
-            _documentConverter = documentConverter;
-            _configuration = configuration;
-            _documentMerger = documentMerger;
 
         }
 

@@ -258,8 +258,7 @@ public class BinderService(
             var binderDocRequests = binder.Documents
                 // Excludes DocumentType.File documents where the FileName = DocumentId.
                 // This means that there is no document to view.
-                .Where(d => d.DocumentType != DocumentType.File
-                    || d.FileName != d.DocumentId)
+                .Where(d => d.DocumentType != DocumentType.File || d.DocumentId != null)
                 .Select(d => new PdfDocumentRequest
                 {
                     Type = d.DocumentType,

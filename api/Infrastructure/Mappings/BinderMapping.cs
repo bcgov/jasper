@@ -27,7 +27,7 @@ public class BinderMapping : IRegister
         config.NewConfig<CriminalDocument, BinderDocumentDto>()
             .Map(dest => dest.DocumentId, src =>
                 string.IsNullOrWhiteSpace(src.ImageId)
-                    ? src.DocumentTypeDescription
+                    ? null
                     : src.ImageId)
             .Map(dest => dest.FileName, src => src.DocumentTypeDescription)
             .Map(dest => dest.DocumentType, src =>

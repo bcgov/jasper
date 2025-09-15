@@ -6,6 +6,7 @@ using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Processors;
 using Scv.Api.Services;
@@ -44,6 +45,7 @@ public class BinderServiceTests
             mapper,
             logger.Object,
             _mockBinderRepo.Object,
-            _mockBinderFactory.Object);
+            _mockBinderFactory.Object,
+            new Mock<IDocumentMerger>().Object);
     }
 }

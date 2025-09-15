@@ -30,6 +30,7 @@ public class KeyDocumentsBinderProcessorTests
     public void PreProcessAsync_Should_Not_Clear_Labels()
     {
         var processor = new KeyDocumentsBinderProcessor(
+            null,
             _mockUser,
             _mockValidator.Object,
             new BinderDto
@@ -38,7 +39,8 @@ public class KeyDocumentsBinderProcessorTests
                 {
                     { "TEST_KEY", "TEST_VALUE" }
                 }
-            });
+            },
+            null, null, null, null, null);
 
         Assert.Single(processor.Binder.Labels);
     }
@@ -48,6 +50,7 @@ public class KeyDocumentsBinderProcessorTests
     {
 
         var processor = new KeyDocumentsBinderProcessor(
+            null,
             _mockUser,
             _mockValidator.Object,
             new BinderDto
@@ -56,7 +59,8 @@ public class KeyDocumentsBinderProcessorTests
                 {
                     { "TEST_KEY", "TEST_VALUE" }
                 }
-            });
+            },
+            null, null, null, null, null);
         var result = await processor.ValidateAsync();
 
         Assert.False(result.Succeeded);
@@ -74,6 +78,7 @@ public class KeyDocumentsBinderProcessorTests
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         var processor = new KeyDocumentsBinderProcessor(
+            null,
             _mockUser,
             _mockValidator.Object,
             new BinderDto
@@ -85,7 +90,8 @@ public class KeyDocumentsBinderProcessorTests
                     { LabelConstants.APPEARANCE_ID, "" },
                     { LabelConstants.PHYSICAL_FILE_ID, "" }
                 }
-            });
+            },
+            null, null, null, null, null);
         var result = await processor.ValidateAsync();
 
         Assert.True(result.Succeeded);

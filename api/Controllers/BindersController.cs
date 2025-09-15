@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -61,5 +62,22 @@ public class BindersController(IBinderService binderService) : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpPost]
+    [Route("bundle")]
+    public async Task<IActionResult> CreateDocumentBundle([FromBody] List<Dictionary<string, string>> request)
+    {
+        if (request == null || request.Count == 0)
+        {
+            return BadRequest("Invalid request.");
+        }
+
+        var result = await _binderService.CreateDocumentBundle(request);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { error = result.Errors });
+        }
+        return Ok(result);
     }
 }

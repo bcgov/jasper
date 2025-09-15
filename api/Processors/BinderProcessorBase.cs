@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -15,6 +15,7 @@ public interface IBinderProcessor
     public BinderDto Binder { get; }
     Task<OperationResult> ValidateAsync();
     Task PreProcessAsync();
+    Task<OperationResult> ProcessAsync();
 }
 
 public abstract class BinderProcessorBase(
@@ -42,6 +43,11 @@ public abstract class BinderProcessorBase(
             .Select((doc, index) => { doc.Order = index; return doc; })];
 
         return Task.CompletedTask;
+    }
+
+    public virtual Task<OperationResult> ProcessAsync()
+    {
+        throw new NotImplementedException();
     }
 
     public virtual async Task<OperationResult> ValidateAsync()

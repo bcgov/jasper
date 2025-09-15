@@ -206,7 +206,7 @@ namespace Scv.Api.Services
             return results;
         }
 
-        public async Task<OperationResult<CourtListDocumentBundleResponse>> ProcessCourtListDocumentBundle(CourtListDocumentBundleRequest request)
+        public async Task<OperationResult<DocumentBundleResponse>> ProcessCourtListDocumentBundle(CourtListDocumentBundleRequest request)
         {
             var correlationId = Guid.NewGuid();
             _logger.LogInformation("Processing {Count} appearances for CorrectionId: {CorreclationId} to create document bundle.", request.Appearances.Count, correlationId);
@@ -217,19 +217,19 @@ namespace Scv.Api.Services
                 if (binders.Count == 0)
                 {
                     _logger.LogWarning("Something went wrong while initializing the binders. CorrelationId: {CorreclationId}", correlationId);
-                    return OperationResult<CourtListDocumentBundleResponse>.Failure("No binders to process.");
+                    return OperationResult<DocumentBundleResponse>.Failure("No binders to process.");
                 }
 
                 var requests = GeneratePdfDocumentRequests(binders, correlationId);
                 if (requests.Length == 0)
                 {
                     _logger.LogWarning("No binders to merge. CorrelationId: {CorreclationId}", correlationId);
-                    return OperationResult<CourtListDocumentBundleResponse>.Failure("No documents found to merge.");
+                    return OperationResult<DocumentBundleResponse>.Failure("No documents found to merge.");
                 }
 
                 var response = await _documentMerger.MergeDocuments(requests);
 
-                return OperationResult<CourtListDocumentBundleResponse>.Success(new CourtListDocumentBundleResponse
+                return OperationResult<DocumentBundleResponse>.Success(new DocumentBundleResponse
                 {
                     Binders = binders,
                     PdfResponse = response
@@ -238,7 +238,7 @@ namespace Scv.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Something went wrong during the document bundling/merging process: {Error}", ex.Message);
-                return OperationResult<CourtListDocumentBundleResponse>.Failure("Something went wrong during the document bundling/merging process.");
+                return OperationResult<DocumentBundleResponse>.Failure("Something went wrong during the document bundling/merging process.");
             }
         }
 

@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
+using LazyCache;
+using MapsterMapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Scv.Api.Documents;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Db.Contants;
@@ -20,13 +24,21 @@ public class BinderFactory(
     FileServicesClient filesClient,
     ClaimsPrincipal currentUser,
     ILogger<BinderFactory> logger,
-    IValidator<BinderDto> basicValidator
+    IValidator<BinderDto> basicValidator,
+    IAppCache cache,
+    IConfiguration configuration,
+    IDocumentConverter documentConverter,
+    IMapper mapper
     ) : IBinderFactory
 {
     private readonly FileServicesClient _filesClient = filesClient;
     private readonly ClaimsPrincipal _currentUser = currentUser;
     private readonly ILogger<BinderFactory> _logger = logger;
     private readonly IValidator<BinderDto> _basicValidator = basicValidator;
+    private readonly IAppCache _cache = cache;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly IDocumentConverter _documentConverter = documentConverter;
+    private readonly IMapper _mapper = mapper;
 
     public IBinderProcessor Create(Dictionary<string, string> labels)
     {
@@ -54,7 +66,16 @@ public class BinderFactory(
             case CourtClassCd.A:
             case CourtClassCd.Y:
             case CourtClassCd.T:
-                return new KeyDocumentsBinderProcessor(_currentUser, _basicValidator, dto);
+                return new KeyDocumentsBinderProcessor(
+                    _filesClient,
+                    _currentUser,
+                    _basicValidator,
+                    dto,
+                    _cache,
+                    _logger,
+                    _configuration,
+                    _documentConverter,
+                    _mapper);
             default:
                 throw new NotSupportedException("Unsupported processor");
         }

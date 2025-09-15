@@ -33,5 +33,4 @@ public static class LabelConstants
     /// The court level code of a case.
     /// </summary>
     public const string COURT_LEVEL_CD = "courtLevelCd";
-
 }

@@ -12,7 +12,7 @@ using Scv.Api.Processors;
 using Scv.Db.Contants;
 using Xunit;
 
-namespace Scv.Api.Tests.Processors;
+namespace tests.api.Processors;
 
 public class BinderFactoryTests
 {
@@ -22,7 +22,7 @@ public class BinderFactoryTests
     {
         var httpClient = new HttpClient();
         var filesClient = new FileServicesClient(httpClient);
-        var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "test") }, "mock"));
+        var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "test")], "mock"));
 
         loggerMock ??= new Mock<ILogger<BinderFactory>>();
 
@@ -31,7 +31,7 @@ public class BinderFactoryTests
             .Setup(v => v.Validate(It.IsAny<ValidationContext<BinderDto>>()))
             .Returns(new ValidationResult());
 
-        return new BinderFactory(filesClient, user, loggerMock.Object, validatorMock.Object);
+        return new BinderFactory(filesClient, user, loggerMock.Object, validatorMock.Object, null, null, null, null);
     }
 
     private static Dictionary<string, string> Labels(string courtClass) =>
@@ -100,7 +100,7 @@ public class BinderFactoryTests
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((o, _) => o.ToString()!.Contains("invalid", StringComparison.OrdinalIgnoreCase)),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
     }
 
@@ -112,7 +112,7 @@ public class BinderFactoryTests
         var dto = new BinderDto
         {
             Labels = Labels("A"),
-            Documents = new List<BinderDocumentDto>()
+            Documents = []
         };
 
         var processor = factory.Create(dto);

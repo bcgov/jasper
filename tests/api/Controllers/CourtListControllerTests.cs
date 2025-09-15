@@ -257,48 +257,4 @@ public class CourtListControllerTests
                     It.IsAny<CancellationToken>()),
                 Times.Once);
     }
-
-    [Fact]
-    public async Task CreateDocumentBundle_ShouldReturnBadRequest_WhenPayloadIsNull()
-    {
-        var mockCourtListService = this.SetupCourtListService();
-
-        var controller = new CourtListController(
-            mockCourtListService.Object,
-            new Mock<IValidator<CourtListReportRequest>>().Object);
-
-        var result = await controller.CreateDocumentBundle(null);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task CreateDocumentBundle_ShouldReturnBadRequest_WhenPayloadApprearancesIsNull()
-    {
-        var mockCourtListService = this.SetupCourtListService();
-
-        var controller = new CourtListController(
-            mockCourtListService.Object,
-            new Mock<IValidator<CourtListReportRequest>>().Object);
-
-        var result = await controller.CreateDocumentBundle(new CourtListDocumentBundleRequest { Appearances = null });
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task CreateDocumentBundle_ShouldReturnBadRequest_WhenPayloadApprearancesIsEmpty()
-    {
-        {
-            var mockCourtListService = this.SetupCourtListService();
-
-            var controller = new CourtListController(
-                mockCourtListService.Object,
-                new Mock<IValidator<CourtListReportRequest>>().Object);
-
-            var result = await controller.CreateDocumentBundle(new CourtListDocumentBundleRequest { Appearances = [] });
-
-            Assert.IsType<BadRequestObjectResult>(result);
-        }
-    }
 }

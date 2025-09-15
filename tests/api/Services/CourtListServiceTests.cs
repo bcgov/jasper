@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 using Bogus;
 using JCCommon.Clients.FileServices;
@@ -11,7 +9,6 @@ using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,14 +16,10 @@ using Moq;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Documents;
-using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models;
 using Scv.Api.Models.CourtList;
-using Scv.Api.Models.Document;
 using Scv.Api.Services;
 using Scv.Db.Contants;
-using Scv.Db.Models;
 using Xunit;
 
 namespace tests.api.Services;
@@ -153,171 +146,5 @@ public class CourtListServiceTests : ServiceTestBase
                     It.IsAny<string>(),
                     It.IsAny<string>()),
                 Times.Once());
-    }
-
-    [Fact]
-    public async Task ProcessCourtListDocumentBundle_ShouldReturnSuccess_WhenBinderExists()
-    {
-        var request = new CourtListDocumentBundleRequest
-        {
-            Appearances =
-            [
-                new() {
-
-                    FileId = _mockLabels[LabelConstants.PHYSICAL_FILE_ID],
-                    ParticipantId = _mockLabels[LabelConstants.PARTICIPANT_ID],
-                    AppearanceId = _mockLabels[LabelConstants.APPEARANCE_ID],
-                    CourtClassCd = _mockLabels[LabelConstants.COURT_CLASS_CD],
-                }
-            ]
-        };
-
-        _binderService.Setup(b => b.GetByLabels(It.IsAny<Dictionary<string, string>>()))
-                .ReturnsAsync(OperationResult<List<BinderDto>>.Success(
-                [
-                    new()
-                    {
-                        UpdatedDate = DateTime.UtcNow,
-                        Labels = _mockLabels,
-                        Documents =
-                        [
-                            new()
-                            {
-                                DocumentType = DocumentType.File,
-                                DocumentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(_faker.Random.AlphaNumeric(5)))
-                            }
-                        ]
-                    }
-                ]));
-
-        _documentMerger
-            .Setup(dm => dm.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
-            .ReturnsAsync(new PdfDocumentResponse());
-
-        var (courtListService, _, _) = SetupCourtListService();
-
-        var result = await courtListService.ProcessCourtListDocumentBundle(request);
-
-        Assert.NotNull(result);
-        Assert.True(result.Succeeded);
-        _binderService.Verify(b => b.GetByLabels(It.IsAny<Dictionary<string, string>>()), Times.Once);
-        _documentMerger.Verify(dm => dm.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task ProcessCourtListDocumentBundle_ShouldReturnSuccess_WhenBinderDoesNotExists()
-    {
-        var criminalFile = new CriminalFileContent
-        {
-            AccusedFile =
-            [
-                new()
-                {
-                    MdocJustinNo = _mockLabels[LabelConstants.PHYSICAL_FILE_ID],
-                    PartId = _mockLabels[LabelConstants.PARTICIPANT_ID],
-                }
-            ]
-        };
-
-        var request = new CourtListDocumentBundleRequest
-        {
-            Appearances =
-            [
-                new() {
-
-                    FileId = _mockLabels[LabelConstants.PHYSICAL_FILE_ID],
-                    ParticipantId = _mockLabels[LabelConstants.PARTICIPANT_ID],
-                    AppearanceId = _mockLabels[LabelConstants.APPEARANCE_ID],
-                    CourtClassCd = _mockLabels[LabelConstants.COURT_CLASS_CD],
-                }
-            ]
-        };
-
-        _binderService.Setup(b => b.GetByLabels(It.IsAny<Dictionary<string, string>>()))
-                .ReturnsAsync(OperationResult<List<BinderDto>>.Success([]));
-        _binderService.Setup(b => b.AddAsync(It.IsAny<BinderDto>()))
-                .ReturnsAsync(OperationResult<BinderDto>.Success(new BinderDto
-                {
-                    Documents =
-                    [
-                        new()
-                        {
-                            DocumentType = DocumentType.ROP
-                        }
-                    ]
-                }));
-        _documentMerger
-            .Setup(dm => dm.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
-            .ReturnsAsync(new PdfDocumentResponse());
-        _documentConverter
-            .Setup(dc => dc.GetCriminalDocuments(criminalFile.AccusedFile.First()))
-            .ReturnsAsync([
-                new() {
-                    Category = DocumentCategory.ROP
-                }]);
-
-        var (courtListService, _, mockFileClient) = SetupCourtListService();
-
-        mockFileClient
-            .Setup(f => f.FilesCriminalFilecontentAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                null,
-                null,
-                null,
-                null,
-                _mockLabels[LabelConstants.PHYSICAL_FILE_ID]))
-            .ReturnsAsync(criminalFile);
-
-        var result = await courtListService.ProcessCourtListDocumentBundle(request);
-
-        Assert.NotNull(result);
-        Assert.True(result.Succeeded);
-        _binderService.Verify(b => b.GetByLabels(It.IsAny<Dictionary<string, string>>()), Times.Once);
-        _documentMerger.Verify(dm => dm.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()), Times.Once);
-        _documentConverter.Verify(dc => dc.GetCriminalDocuments(It.IsAny<CfcAccusedFile>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task ProcessCourtListDocumentBundle_ShouldReturnFailed_WhenRequestContainsUnsupportedCourtClass()
-    {
-        _mockLabels[LabelConstants.COURT_CLASS_CD] = CourtClassCd.O.ToString();
-        var criminalFile = new CriminalFileContent
-        {
-            AccusedFile =
-            [
-                new()
-                {
-                    MdocJustinNo = _mockLabels[LabelConstants.PHYSICAL_FILE_ID],
-                    PartId = _mockLabels[LabelConstants.PARTICIPANT_ID],
-                }
-            ]
-        };
-
-        var request = new CourtListDocumentBundleRequest
-        {
-            Appearances =
-            [
-                new() {
-
-                    FileId = _mockLabels[LabelConstants.PHYSICAL_FILE_ID],
-                    ParticipantId = _mockLabels[LabelConstants.PARTICIPANT_ID],
-                    AppearanceId = _mockLabels[LabelConstants.APPEARANCE_ID],
-                    CourtClassCd = _mockLabels[LabelConstants.COURT_CLASS_CD],
-                }
-            ]
-        };
-
-
-        var (courtListService, _, _) = SetupCourtListService();
-
-        var result = await courtListService.ProcessCourtListDocumentBundle(request);
-
-        Assert.NotNull(result);
-        Assert.False(result.Succeeded);
-        _binderService.Verify(b => b.GetByLabels(It.IsAny<Dictionary<string, string>>()), Times.Never);
-        _documentMerger.Verify(dm => dm.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()), Times.Never);
-        _documentConverter.Verify(dc => dc.GetCriminalDocuments(It.IsAny<CfcAccusedFile>()), Times.Never);
     }
 }

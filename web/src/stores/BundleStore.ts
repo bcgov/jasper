@@ -41,7 +41,10 @@ export const useBundleStore = defineStore('BundleStore', {
         bundle.binders.push(binder);
       }
     },
-    clearBundle(): void {
+    clearBundles(): void {
+      this.bundles.length = 0;
+      this.appearanceRequests = [];
+      this.request = {} as CourtListDocumentBundleRequest;
     },
   },
 });

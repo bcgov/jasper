@@ -1,6 +1,6 @@
 import { FilePDFStrategy } from './FilePDFStrategy';
 import { BundlePDFStrategy } from './BundlePDFStrategy';
-import { PDFViewerStrategy } from '@/components/documents/shared/GenericPDFViewer.vue';
+import { PDFViewerStrategy } from '@/components/documents/FileViewer.vue';
 
 export enum PDFViewerType {
   FILE = 'file',
@@ -20,7 +20,6 @@ export class PDFStrategyFactory {
   }
 }
 
-// Composable for easier use in components
 export function usePDFStrategy(type: PDFViewerType) {
   return PDFStrategyFactory.createStrategy(type);
 }

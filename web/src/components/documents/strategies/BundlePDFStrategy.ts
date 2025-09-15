@@ -1,4 +1,7 @@
-import { inject } from 'vue';
+import {
+  OutlineItem,
+  PDFViewerStrategy,
+} from '@/components/documents/FileViewer.vue';
 import { CourtListService } from '@/services';
 import { useBundleStore } from '@/stores';
 import { appearanceRequest } from '@/stores/BundleStore';
@@ -8,19 +11,21 @@ import {
   CourtListDocumentBundleRequest,
   CourtListDocumentBundleResponse,
 } from '@/types/courtlist/jsonTypes';
-import { PDFViewerStrategy, OutlineItem } from '@/components/documents/shared/GenericPDFViewer.vue';
+import { inject } from 'vue';
 
-export class BundlePDFStrategy implements PDFViewerStrategy<
-  Record<string, Record<string, appearanceRequest[]>>, // TRawData
-  CourtListDocumentBundleRequest, // TProcessedData
-  ApiResponse<CourtListDocumentBundleResponse> // TAPIResponse
-> {
-  private bundleStore = useBundleStore();
-  private courtListService: CourtListService;
+export class BundlePDFStrategy
+  implements
+    PDFViewerStrategy<
+      Record<string, Record<string, appearanceRequest[]>>,
+      CourtListDocumentBundleRequest,
+      ApiResponse<CourtListDocumentBundleResponse>
+    >
+{
+  private readonly bundleStore = useBundleStore();
+  private readonly courtListService: CourtListService;
   private count = 0;
 
   constructor() {
-    // Note: In a real implementation, you might want to inject this differently
     const service = inject<CourtListService>('courtListService');
     if (!service) {
       throw new Error('CourtListService is not available!');
@@ -34,7 +39,10 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
 
   getRawData(): Record<string, Record<string, appearanceRequest[]>> {
     const appearanceRequests = this.bundleStore.getAppearanceRequests;
-    const groupedRequests: Record<string, Record<string, appearanceRequest[]>> = {};
+    const groupedRequests: Record<
+      string,
+      Record<string, appearanceRequest[]>
+    > = {};
 
     appearanceRequests.forEach((req) => {
       const fileNumber = req.fileNumber;
@@ -52,12 +60,13 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
     return groupedRequests;
   }
 
-  processDataForAPI(rawData: Record<string, Record<string, appearanceRequest[]>>): CourtListDocumentBundleRequest {
-    const groupedAppearances = Object.values(rawData).flatMap(
-      (fileGroup) =>
-        Object.values(fileGroup).flatMap((appearances) =>
-          appearances.map((a) => a.appearance)
-        )
+  processDataForAPI(
+    rawData: Record<string, Record<string, appearanceRequest[]>>
+  ): CourtListDocumentBundleRequest {
+    const groupedAppearances = Object.values(rawData).flatMap((fileGroup) =>
+      Object.values(fileGroup).flatMap((appearances) =>
+        appearances.map((a) => a.appearance)
+      )
     );
 
     return {
@@ -65,20 +74,26 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
     } as unknown as CourtListDocumentBundleRequest;
   }
 
-  async generatePDF(processedData: CourtListDocumentBundleRequest): Promise<ApiResponse<CourtListDocumentBundleResponse>> {
+  async generatePDF(
+    processedData: CourtListDocumentBundleRequest
+  ): Promise<ApiResponse<CourtListDocumentBundleResponse>> {
     return await this.courtListService.generateCourtListPdf(processedData);
   }
 
-  extractBase64PDF(apiResponse: ApiResponse<CourtListDocumentBundleResponse>): string {
+  extractBase64PDF(
+    apiResponse: ApiResponse<CourtListDocumentBundleResponse>
+  ): string {
     return apiResponse.payload.pdfResponse.base64Pdf;
   }
 
-  extractPageRanges(apiResponse: ApiResponse<CourtListDocumentBundleResponse>): Array<{ start: number; end?: number }> | undefined {
+  extractPageRanges(
+    apiResponse: ApiResponse<CourtListDocumentBundleResponse>
+  ): Array<{ start: number; end?: number }> | undefined {
     return apiResponse.payload.pdfResponse.pageRanges;
   }
 
   createOutline(
-    rawData: Record<string, Record<string, appearanceRequest[]>>, 
+    rawData: Record<string, Record<string, appearanceRequest[]>>,
     apiResponse: ApiResponse<CourtListDocumentBundleResponse>
   ): OutlineItem[] {
     this.count = 0; // Reset counter
@@ -93,7 +108,7 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
     apiResponse: ApiResponse<CourtListDocumentBundleResponse>
   ): OutlineItem {
     const children: OutlineItem[] = [];
-    
+
     Object.entries(userGroup).forEach(([name, docs]) => {
       const secondGroup = this.makeSecondGroup(name, docs, apiResponse);
       if (secondGroup) {
@@ -109,20 +124,20 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
   }
 
   private makeSecondGroup(
-    memberName: string, 
-    docs: appearanceRequest[], 
+    memberName: string,
+    docs: appearanceRequest[],
     apiResponse: ApiResponse<CourtListDocumentBundleResponse>
   ): OutlineItem | null {
     const fileIds = docs.map((d) => d.appearance.fileId);
     const partIds = docs.map((d) => d.appearance.participantId);
-    
+
     let binders = apiResponse.payload.binders.filter(
       (b) =>
         b.labels &&
         fileIds.some((id) => b.labels.physicalFileId === id) &&
         partIds.some((pid) => b.labels.participantId === pid)
     );
-    
+
     if (!binders) {
       return null;
     }
@@ -141,13 +156,18 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
   }
 
   private makeDocElement(
-    doc: BinderDocument, 
+    doc: BinderDocument,
     apiResponse: ApiResponse<CourtListDocumentBundleResponse>
   ): OutlineItem {
     console.log(doc);
     return {
       title: doc.fileName ?? doc.documentType,
-      pageIndex: apiResponse.payload.pdfResponse.pageRanges?.[this.count++]?.start,
+      pageIndex:
+        apiResponse.payload.pdfResponse.pageRanges?.[this.count++]?.start,
     };
+  }
+
+  cleanup(): void {
+    this.bundleStore.clearBundles();
   }
 }

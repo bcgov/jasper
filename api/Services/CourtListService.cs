@@ -214,8 +214,18 @@ namespace Scv.Api.Services
             try
             {
                 var binders = await InitializeBindersToMerge(request);
+                if (binders.Count == 0)
+                {
+                    _logger.LogWarning("Something went wrong while initializing the binders. CorrelationId: {CorreclationId}", correlationId);
+                    return OperationResult<CourtListDocumentBundleResponse>.Failure("No binders to process.");
+                }
 
                 var requests = GeneratePdfDocumentRequests(binders, correlationId);
+                if (requests.Length == 0)
+                {
+                    _logger.LogWarning("No binders to merge. CorrelationId: {CorreclationId}", correlationId);
+                    return OperationResult<CourtListDocumentBundleResponse>.Failure("No documents found to merge.");
+                }
 
                 var response = await _documentMerger.MergeDocuments(requests);
 
@@ -494,7 +504,7 @@ namespace Scv.Api.Services
 
                 // Get existing binders for this appearance
                 var binderResult = await _binderService.GetByLabels(new Dictionary<string, string>
-                     {
+                {
                     { LabelConstants.PHYSICAL_FILE_ID, fileId },
                     { LabelConstants.APPEARANCE_ID, appearanceId },
                     { LabelConstants.PARTICIPANT_ID, participantId },
@@ -515,7 +525,8 @@ namespace Scv.Api.Services
                 }
                 else if (isCivil)
                 {
-                    binders.AddRange(binderResult.Payload);
+                    // Skip Civil binders for this iteration.
+                    //binders.AddRange(binderResult.Payload);
                     _logger.LogInformation(
                         "Reused {Count} existing civil binder(s) for FileId: {FileId}, ParticipantId: {ParticipantId}, AppearanceId: {AppearanceId}.",
                         binderResult.Payload.Count, fileId, participantId, appearanceId);

@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 // Declare NutrientViewer global
 declare global {
@@ -41,8 +41,8 @@ export interface PDFViewerStrategy<TRawData = any, TProcessedData = any, TAPIRes
   // Create outline structure from raw data and API response
   createOutline(rawData: TRawData, apiResponse: TAPIResponse): OutlineItem[];
   
-  // Optional cleanup function
-  cleanup?(): void;
+  // Cleanup function
+  cleanup(): void;
 }
 
 export interface OutlineItem {

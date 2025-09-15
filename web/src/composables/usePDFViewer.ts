@@ -1,6 +1,5 @@
 import { ref } from 'vue';
 
-// Type declarations for NutrientViewer (should ideally be in a .d.ts file)
 declare global {
   const NutrientViewer: any;
 }

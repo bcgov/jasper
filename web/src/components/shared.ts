@@ -140,7 +140,6 @@ export default {
   ): void {
     if (!appearances.length) return;
     const bundleStore = useBundleStore();
-    const correlationId = uuidv4();
     var appearanceRequests = appearances.map(
         (app) =>
           ({
@@ -161,8 +160,8 @@ export default {
     bundleStore.appearanceRequests = appearanceRequests;
 
     const newWindow = window.open('/file-viewer?type=bundle', 'file-viewer');
-    
-    this.replaceWindowTitle(newWindow, "123");
+    const caseNumbers = Array.from(new Set(appearances.map(d => d.courtFileNumber))).join(', ');
+    this.replaceWindowTitle(newWindow, caseNumbers);
   },
 
   generateFileName(

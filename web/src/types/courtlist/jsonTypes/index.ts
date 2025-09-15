@@ -569,11 +569,13 @@ export interface courtListType {
     additionalProp3: {}
   } 
 
+  // remove
 export interface CourtListDocumentBundleRequest {
   appearances: CourtListAppearanceDocumentRequest[];
 }
 
 export interface CourtListAppearanceDocumentRequest {
+  //physicalFileId
   fileId: string;
   appearanceId: string;
   participantId: string;

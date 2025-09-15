@@ -42,7 +42,7 @@ export class CourtListService {
     bundleRequest: CourtListDocumentBundleRequest
   ): Promise<ApiResponse<CourtListDocumentBundleResponse>> {
     return this.httpService.post<ApiResponse<CourtListDocumentBundleResponse>>(
-      `api/courtlist/document-bundle`,
+      `api/courtlist/document-bundle`, //api/binders/bundle
       bundleRequest
     );
   }

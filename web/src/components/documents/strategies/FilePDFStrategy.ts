@@ -3,19 +3,18 @@ import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { FilesService } from '@/services/FilesService';
 import { usePDFViewerStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
-import { PDFViewerStrategy, OutlineItem } from '@/components/documents/shared/GenericPDFViewer.vue';
+import { PDFViewerStrategy, OutlineItem } from '@/components/documents/FileViewer.vue';
 
 export class FilePDFStrategy implements PDFViewerStrategy<
-  Record<string, Record<string, StoreDocument[]>>, // TRawData
-  StoreDocument[], // TProcessedData 
-  GeneratePdfResponse // TAPIResponse
+  Record<string, Record<string, StoreDocument[]>>,
+  StoreDocument[],
+  GeneratePdfResponse 
 > {
   private pdfStore = usePDFViewerStore();
   private filesService: FilesService;
   private pageIndex = 0;
 
   constructor() {
-    // Note: In a real implementation, you might want to inject this differently
     const service = inject<FilesService>('filesService');
     if (!service) {
       throw new Error('FilesService is not available!');

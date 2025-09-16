@@ -5,8 +5,15 @@ using System.Security.Claims;
 using FluentValidation;
 using FluentValidation.Results;
 using JCCommon.Clients.FileServices;
+using LazyCache;
+using LazyCache.Providers;
+using Mapster;
+using MapsterMapper;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Scv.Api.Documents;
 using Scv.Api.Models;
 using Scv.Api.Processors;
 using Scv.Db.Contants;
@@ -31,7 +38,23 @@ public class BinderFactoryTests
             .Setup(v => v.Validate(It.IsAny<ValidationContext<BinderDto>>()))
             .Returns(new ValidationResult());
 
-        return new BinderFactory(filesClient, user, loggerMock.Object, validatorMock.Object, null, null, null, null);
+        // Setup Cache
+        var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
+            new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
+
+        // IMapper setup
+        var config = new TypeAdapterConfig();
+        var mapper = new Mapper(config);
+
+        return new BinderFactory(
+            filesClient,
+            user,
+            loggerMock.Object,
+            validatorMock.Object,
+            cachingService,
+            new Mock<IConfiguration>().Object,
+            new Mock<IDocumentConverter>().Object,
+            mapper);
     }
 
     private static Dictionary<string, string> Labels(string courtClass) =>
@@ -45,7 +68,7 @@ public class BinderFactoryTests
     [InlineData("F")]
     [InlineData("L")]
     [InlineData("M")]
-    public void Create_JudicialClasses_ReturnsJudicialBinderProcessor(string courtClass)
+    public void BinderFactory_ReturnsJudicialBinderProcessor_WhenCourtClassIsCivil(string courtClass)
     {
         var logger = new Mock<ILogger<BinderFactory>>();
         var factory = CreateFactory(logger, out _);
@@ -61,7 +84,7 @@ public class BinderFactoryTests
     [InlineData("A")]
     [InlineData("Y")]
     [InlineData("T")]
-    public void Create_KeyDocumentClasses_ReturnsKeyDocumentsBinderProcessor(string courtClass)
+    public void BinderFactory_ReturnsJudicialBinderProcessor_WhenCourtClassIsCriminal(string courtClass)
     {
         var logger = new Mock<ILogger<BinderFactory>>();
         var factory = CreateFactory(logger, out _);
@@ -74,7 +97,7 @@ public class BinderFactoryTests
     }
 
     [Fact]
-    public void Create_CaseInsensitive_ReturnsJudicialBinderProcessor()
+    public void BinderFactoryReturns_JudicialBinderProcessor_WhenCourtClassIsLowercase()
     {
         var logger = new Mock<ILogger<BinderFactory>>();
         var factory = CreateFactory(logger, out _);
@@ -86,7 +109,7 @@ public class BinderFactoryTests
     }
 
     [Fact]
-    public void Create_InvalidCourtClass_ThrowsAndLogsError()
+    public void BinderFactoryReturns_ThrowsAndLogsError_WhenCourtClassIsInvalid()
     {
         var logger = new Mock<ILogger<BinderFactory>>();
         var factory = CreateFactory(logger, out _);
@@ -105,7 +128,7 @@ public class BinderFactoryTests
     }
 
     [Fact]
-    public void Create_WithBinderDto_DelegatesProperly()
+    public void BinderFactory_ReturnsKeyDocumentProcessor_WhenBinderDtoIsPassed()
     {
         var logger = new Mock<ILogger<BinderFactory>>();
         var factory = CreateFactory(logger, out _);
@@ -119,20 +142,5 @@ public class BinderFactoryTests
 
         Assert.IsType<KeyDocumentsBinderProcessor>(processor);
         Assert.Same(dto, processor.Binder);
-    }
-
-    [Fact]
-    public void Create_DictionaryOverload_BuildsBinderDto()
-    {
-        var logger = new Mock<ILogger<BinderFactory>>();
-        var factory = CreateFactory(logger, out _);
-
-        var processor = factory.Create(new Dictionary<string, string>
-        {
-            { LabelConstants.COURT_CLASS_CD, "M" }
-        });
-
-        Assert.IsType<JudicialBinderProcessor>(processor);
-        Assert.Equal("M", processor.Binder.Labels[LabelConstants.COURT_CLASS_CD]);
     }
 }

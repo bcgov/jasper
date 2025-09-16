@@ -28,8 +28,7 @@ public class BinderFactory(
     IAppCache cache,
     IConfiguration configuration,
     IDocumentConverter documentConverter,
-    IMapper mapper
-    ) : IBinderFactory
+    IMapper mapper) : IBinderFactory
 {
     private readonly FileServicesClient _filesClient = filesClient;
     private readonly ClaimsPrincipal _currentUser = currentUser;

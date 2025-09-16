@@ -140,11 +140,10 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('inserts "Scheduled" option when a document has a next appearance date', async () => {
-    expect(wrapper.vm.documentCategories).toEqual([
-      'Scheduled',
-      mockDocuments[0].category,
-      mockDocuments[1].category,
-      mockDocuments[2].category,
-    ]);
+    expect(wrapper.vm.documentCategories[0]).toEqual('Scheduled');
+  });
+
+  it(`renames 'CSR' to 'Court Summary' in the document categories`, async () => {
+    expect(wrapper.vm.documentCategories).toContain('Court Summary');
   });
 });

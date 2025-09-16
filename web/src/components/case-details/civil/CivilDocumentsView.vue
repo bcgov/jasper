@@ -12,9 +12,7 @@
         <template v-slot:item="{ props: itemProps, item }">
           <v-list-item
             v-bind="itemProps"
-            :title="
-              categoryTitle(item.title) + ' (' + categoryCount(item.raw) + ')'
-            "
+            :title="`${item.title} (${categoryCount(item.raw)})`"
           ></v-list-item>
         </template>
       </v-select>
@@ -154,7 +152,12 @@
   const enableViewTogether = computed<boolean>(
     () => selectedItems.value.filter((d) => d.imageId).length > 1
   );
-  const selectedCategory = ref<string>();
+  const scheduledDocuments = props.documents.filter(
+    (doc) => doc.nextAppearanceDt
+  );
+  const selectedCategory = ref<string>(
+    scheduledDocuments.length > 0 ? SCHEDULED_CATEGORY : ''
+  );
   const isBinderLoading = ref(true);
   const rolesLoading = ref(false);
   const roles = ref<LookupCode[]>();
@@ -202,24 +205,36 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
-  const scheduledDocuments = props.documents.filter(
-    (doc) => doc.nextAppearanceDt
-  );
-
   const documentCategories = ref<string[]>(
     (scheduledDocuments.length > 0 ? [SCHEDULED_CATEGORY] : []).concat(
       Array.from(
         new Set(
-          props.documents.filter((d) => d.category).map((doc) => doc.category)
+          props.documents
+            .filter((d) => d.category)
+            .map((doc) =>
+              doc.category === CSR_CATEGORY ? CSR_CATEGORY_DESC : doc.category
+            )
         )
       )
     )
   );
-  const filterByCategory = (item: civilDocumentType) =>
-    !selectedCategory.value ||
-    (selectedCategory.value === SCHEDULED_CATEGORY
-      ? item.nextAppearanceDt
-      : item.category?.toLowerCase() === selectedCategory.value?.toLowerCase());
+
+  const filterByCategory = (item: civilDocumentType) => {
+    const category = selectedCategory.value?.toLowerCase();
+    if (!category) {
+      return true;
+    }
+
+    if (category === SCHEDULED_CATEGORY.toLowerCase()) {
+      return !!item.nextAppearanceDt;
+    }
+
+    if (category === CSR_CATEGORY_DESC.toLowerCase()) {
+      return item.category === CSR_CATEGORY;
+    }
+
+    return item.category?.toLowerCase() === category;
+  };
 
   const filteredDocuments = computed(() =>
     props.documents.filter(filterByCategory)
@@ -237,26 +252,27 @@
     const documentsMaps = new Map(
       props.documents.map((d) => [d.civilDocumentId, d])
     );
-    const filteredAndSorted = binderDocumentIds
+    return binderDocumentIds
       .map((id) => documentsMaps.get(id))
       .filter(
         (item): item is (typeof props.documents)[number] => item !== undefined
-      )
-      .filter(filterByCategory);
-    return filteredAndSorted;
+      );
   });
 
-  const categoryCount = (category: string): number =>
-    category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()
-      ? props.documents.filter((doc) => doc.nextAppearanceDt).length
-      : props.documents.filter(
-          (doc) => doc.category?.toLowerCase() === category.toLowerCase()
-        ).length;
+  const categoryCount = (category: string): number => {
+    if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
+      return props.documents.filter((doc) => doc.nextAppearanceDt).length;
+    }
 
-  const categoryTitle = (category: string): string =>
-    category.toLowerCase() === CSR_CATEGORY.toLowerCase()
-      ? CSR_CATEGORY_DESC
-      : category;
+    if (category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase()) {
+      return props.documents.filter((doc) => doc.category === CSR_CATEGORY)
+        .length;
+    }
+
+    return props.documents.filter(
+      (doc) => doc.category?.toLowerCase() === category.toLowerCase()
+    ).length;
+  };
 
   onMounted(async () => {
     try {

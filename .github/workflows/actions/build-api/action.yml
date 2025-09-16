@@ -20,7 +20,7 @@ runs:
 
     - run: dotnet format --verify-no-changes --severity info
       shell: bash
-      working-directory: ${{ inputs.working_directory }}
+      working-directory: ${{ inputs.working_directory }}/api
       continue-on-error: true
 
     - run: dotnet restore
@@ -29,8 +29,8 @@ runs:
 
     - run: dotnet build --configuration Release --no-restore
       shell: bash
-      working-directory: ${{ inputs.working_directory }}
+      working-directory: ${{ inputs.working_directory }}/api
 
     - run: dotnet test --no-restore --verbosity normal
       shell: bash
-      working-directory: ${{ inputs.working_directory }}/../tests
+      working-directory: ${{ inputs.working_directory }}/tests

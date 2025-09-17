@@ -5,13 +5,13 @@ on:
     branches:
       - master
     paths:
-      - "api/**"
-      - "db/**"
+      - 'api/**'
+      - 'db/**'
 
   workflow_dispatch:
 
 env:
-  WORKING_DIRECTORY: ./api
+  WORKING_DIRECTORY: .
   IMAGE_NAME: api
   GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
 

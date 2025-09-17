@@ -6,6 +6,7 @@ using Bogus;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using LazyCache.Providers;
+using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
@@ -22,7 +24,7 @@ public class CourtListServiceTests : ServiceTestBase
 {
     private readonly Mock<IConfiguration> _mockConfig;
     private readonly Faker _faker;
-    private readonly Mock<IMapper> _mapper;
+    private readonly IMapper _mapper;
 
     public CourtListServiceTests()
     {
@@ -30,17 +32,25 @@ public class CourtListServiceTests : ServiceTestBase
 
         // IConfiguration setup
         _mockConfig = new Mock<IConfiguration>();
-        var mockSection = new Mock<IConfigurationSection>();
-        mockSection.Setup(s => s.Value).Returns(_faker.Random.Number().ToString());
-        _mockConfig.Setup(c => c.GetSection("Caching:FileExpiryMinutes")).Returns(mockSection.Object);
+
+        var mockFileExpirySection = new Mock<IConfigurationSection>();
+        mockFileExpirySection.Setup(s => s.Value).Returns(_faker.Random.Number().ToString());
+
+        var mockRefreshHoursSection = new Mock<IConfigurationSection>();
+        mockRefreshHoursSection.Setup(s => s.Value).Returns("12");
+
+        _mockConfig.Setup(c => c.GetSection("Caching:FileExpiryMinutes")).Returns(mockFileExpirySection.Object);
 
         // IMapper setup
-        _mapper = new Mock<IMapper>();
+        var config = new TypeAdapterConfig();
+        config.Apply(new BinderMapping());
+        _mapper = new Mapper(config);
     }
 
     private (
         CourtListService courtListService,
-        Mock<ReportServicesClient> mockReportClient
+        Mock<ReportServicesClient> mockReportClient,
+        Mock<FileServicesClient> mockFileClient
         ) SetupCourtListService()
     {
         // Setup Service Clients
@@ -59,11 +69,12 @@ public class CourtListServiceTests : ServiceTestBase
         // Setup ClaimsPrincipal
         var identity = new ClaimsIdentity([], "mock");
 
+
         var courtListService = new CourtListService(
             _mockConfig.Object,
             new Mock<ILogger<CourtListService>>().Object,
             mockFileClient.Object,
-            _mapper.Object,
+            _mapper,
             null,
             null,
             mockSearchDateClient.Object,
@@ -73,14 +84,15 @@ public class CourtListServiceTests : ServiceTestBase
 
         return (
             courtListService,
-            mockReportClient
+            mockReportClient,
+            mockFileClient
         );
     }
 
     [Fact]
     public async Task GenerateReport_ShouldReturnStream()
     {
-        var (courtListService, mockReportClient) = SetupCourtListService();
+        var (courtListService, mockReportClient, _) = SetupCourtListService();
         var fakeContentDisposition = $"inline; filename={Path.GetRandomFileName()}";
 
         mockReportClient

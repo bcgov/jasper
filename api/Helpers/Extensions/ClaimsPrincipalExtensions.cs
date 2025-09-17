@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scv.Api.Models.AccessControlManagement;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -52,6 +53,10 @@ namespace Scv.Api.Helpers.Extensions
         public static bool IsSupremeUser(this ClaimsPrincipal claimsPrincipal)
         => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.IsSupremeUser) &&
            claimsPrincipal.FindFirstValue(CustomClaimTypes.IsSupremeUser).Equals("true", StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsActive(this ClaimsPrincipal claimsPrincipal)
+        => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.IsActive) &&
+           claimsPrincipal.FindFirstValue(CustomClaimTypes.IsActive).Equals("true", StringComparison.OrdinalIgnoreCase);
 
         public static string ExternalRole(this ClaimsPrincipal claimsPrincipal) =>
            claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalRole);
@@ -129,5 +134,11 @@ namespace Scv.Api.Helpers.Extensions
 
         public static string ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalJudgeId);
+
+        // Check if any of the user's claims have meaningfully changed compared to the current user data
+        public static bool HasChanged(this ClaimsPrincipal claimsPrincipal, UserDto currentUser)
+            => claimsPrincipal.IsActive() != currentUser.IsActive ||
+            !claimsPrincipal.Roles().Order().SequenceEqual(currentUser.Roles.Order()) ||
+            !claimsPrincipal.Permissions().Order().SequenceEqual(currentUser.Permissions.Order());
     }
 }

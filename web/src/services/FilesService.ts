@@ -1,8 +1,11 @@
+import {
+  GeneratePdfRequest,
+  GeneratePdfResponse,
+} from '@/components/documents/models/GeneratePdf';
 import { CivilAppearanceDetails } from '@/types/civil/jsonTypes/index';
 import { CourtFileSearchResponse } from '@/types/courtFileSearch';
 import { CriminalAppearanceDetails } from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
-import { GeneratePdfResponse, GeneratePdfRequest } from '@/components/documents/models/GeneratePdf';
 
 export class FilesService {
   private httpService: HttpService;

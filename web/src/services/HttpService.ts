@@ -1,6 +1,11 @@
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { CustomAxiosConfig } from '@/types';
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import { CustomAPIError } from '@/types/ApiResponse';
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import redirectHandlerService from './RedirectHandlerService';
 
 export interface IHttpService {
@@ -62,16 +67,21 @@ export class HttpService implements IHttpService {
 
   private handleError(error: any) {
     console.error(error);
-    console.log('User unauthenticated.');
 
     if (error.config?.skipErrorHandler) {
       // Component handles the error
-      return Promise.reject(new Error(error));
+      return Promise.reject(
+        new CustomAPIError<AxiosError>(error.message, error)
+      );
     }
 
     // todo: check for a 403 and handle it
     if (error.response && error.response.status === 401) {
       redirectHandlerService.handleUnauthorized(window.location.href);
+    } else if (error.response && error.response.status === 409) {
+      window.location.replace(
+        `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
+      );
     } else {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
@@ -80,7 +90,7 @@ export class HttpService implements IHttpService {
         'Error'
       );
     }
-    return Promise.reject(new Error(error));
+    return Promise.reject(new CustomAPIError<AxiosError>(error.message, error));
   }
 
   public async get<T>(

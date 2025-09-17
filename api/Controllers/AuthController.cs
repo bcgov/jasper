@@ -52,10 +52,10 @@ namespace Scv.Api.Controllers
             var forwardedPort = HttpContext.Request.Headers["X-Forwarded-Port"];
 
             //We are always sending X-Forwarded-Port, only time we aren't is when we are hitting the API directly. 
-            var baseUri = HttpContext.Request.Headers.ContainsKey("X-Forwarded-Host") ? $"{HttpContext.Request.Headers["X-Base-Href"]}logout" : "/api";
+            var baseUri = HttpContext.Request.Headers.ContainsKey("X-Forwarded-Host") ? $"{HttpContext.Request.Headers["X-Base-Href"]}" : "/api";
 
             var applicationUrl = $"{XForwardedForHelper.BuildUrlString(forwardedHost, forwardedPort, baseUri)}";
-            var keycloakLogoutUrl = $"{logoutUrl}?post_logout_redirect_uri={applicationUrl}";
+            var keycloakLogoutUrl = $"{logoutUrl}?post_logout_redirect_uri={applicationUrl}"; //TODO: add id_token_hint using id_token, currently removed in AuthenticationServiceCollectionExtension
             var siteMinderLogoutUrl = $"{Configuration.GetNonEmptyValue("SiteMinderLogoutUrl")}?returl={keycloakLogoutUrl}&retnow=1";
             return Redirect(siteMinderLogoutUrl);
         }
@@ -131,6 +131,8 @@ namespace Scv.Api.Controllers
                 AgencyCode = HttpContext.User.AgencyCode(),
                 UserId = HttpContext.User.UserId(),
                 JudgeId = HttpContext.User.JudgeId(),
+                Email = HttpContext.User.Email(),
+                IsActive = HttpContext.User.IsActive(),
                 DateTime.UtcNow
             }));
         }

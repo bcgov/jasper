@@ -2,6 +2,8 @@ import { Binder } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { IHttpService } from './HttpService';
 import { ServiceBase } from './ServiceBase';
+import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 
 export class BinderService extends ServiceBase {
   constructor(httpService: IHttpService) {
@@ -46,5 +48,14 @@ export class BinderService extends ServiceBase {
     return this.httpService.delete(`api/binders/${binderId}`, {}, 'json', {
       skipErrorHandler: true,
     });
+  }
+
+  async generateBinderPDF(
+    bundleRequest: DocumentBundleRequest
+  ): Promise<ApiResponse<DocumentBundleResponse>> {
+    return this.httpService.post<ApiResponse<DocumentBundleResponse>>(
+      `api/binders/bundle`,
+      bundleRequest.appearances
+    );
   }
 }

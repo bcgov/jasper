@@ -20,6 +20,7 @@ export interface DocumentData {
   roomCode?: string;
   reportType?: string;
   isCriminal?: boolean;
+  additionsList?: string;
 }
 
 export enum CourtDocumentType {

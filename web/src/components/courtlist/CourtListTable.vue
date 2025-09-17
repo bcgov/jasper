@@ -29,6 +29,7 @@
             :fileId="item.justinNo"
             :appearanceId="item.appearanceId"
             :partId="item.profPartId"
+            :courtClass="item.courtClassCd"
           />
           <CivilAppearanceDetails
             v-else
@@ -138,6 +139,7 @@
   <CourtListTableActionBarGroup
     :selected
     @view-case-details="viewCaseDetails"
+    @view-key-documents="viewKeyDocuments"
   />
 </template>
 
@@ -147,6 +149,7 @@
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
+  import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
   import { useCourtFileSearchStore } from '@/stores';
   import {
     CourtClassEnum,
@@ -167,6 +170,7 @@
     mdiNotebookEditOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
+  import shared from '@/components/shared';
   import { computed, ref } from 'vue';
 
   const selected = ref<CourtListAppearance[]>([]);
@@ -339,6 +343,24 @@
     }
 
     return [];
+  };
+
+  const viewKeyDocuments = async (appearances: CourtListAppearance[]) => {
+    if (appearances.length === 0) {
+      return;
+    }
+
+      appearances.map(
+        (app) =>
+          ({
+            physicalFileId: app.justinNo, 
+            appearanceId: app.appearanceId,
+            participantId: app.profPartId,
+            courtClassCd: app.courtClassCd,
+          }) as AppearanceDocumentRequest
+      );
+
+    shared.openCourtListKeyDocuments(appearances);
   };
 
   const viewCaseDetails = (selectedItems: CourtListAppearance[]) => {

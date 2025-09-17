@@ -64,16 +64,16 @@ module "rds" {
 }
 
 module "mongodb" {
-  source              = "../../modules/MongoDocDB"
-  environment         = var.environment
-  data_subnets_ids    = module.subnets.data_subnets_ids
-  kms_key_id          = module.initial.kms_key_arn
-  app_sg_id           = data.aws_security_group.app_sg.id
+  source                    = "../../modules/MongoDocDB"
+  environment               = var.environment
+  data_subnets_ids          = module.subnets.data_subnets_ids
+  kms_key_id                = module.initial.kms_key_arn
+  app_sg_id                 = data.aws_security_group.app_sg.id
   delete_protection_enabled = var.delete_protection_enabled
-  mongo_node_count    = var.mongo_node_count
-  mongo_instance_type = var.mongo_instance_type
-  mongousername       = var.mongousername
-  app_name            = var.app_name
+  mongo_node_count          = var.mongo_node_count
+  mongo_instance_type       = var.mongo_instance_type
+  mongousername             = var.mongousername
+  app_name                  = var.app_name
 }
 
 # Create IAM Roles/Policies
@@ -242,6 +242,10 @@ module "ecs_api_td" {
     {
       name  = "AWS_API_GATEWAY_URL"
       value = "${module.apigw.apigw_invoke_url}"
+    },
+    {
+      name  = "DEFAULT_USERS"
+      value = "${module.secrets_manager.default_users}"
     }
   ]
   secret_env_variables = module.secrets_manager.api_secrets

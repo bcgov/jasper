@@ -7,6 +7,7 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
@@ -39,7 +40,8 @@ namespace Scv.Api.Services.Files
             LocationService locationService,
             IAppCache cache,
             ClaimsPrincipal claimsPrincipal,
-            ILoggerFactory factory)
+            ILoggerFactory factory,
+            IDocumentConverter documentConverter)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -54,7 +56,7 @@ namespace Scv.Api.Services.Files
                 _cache,
                 claimsPrincipal,
                 factory.CreateLogger<CivilFilesService>());
-            Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal);
+            Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal, documentConverter);
 
             _applicationCode = claimsPrincipal.ApplicationCode();
             _requestAgencyIdentifierId = claimsPrincipal.AgencyCode();

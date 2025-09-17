@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.FileDetailServices;
+using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
 using Scv.Api.Models.Document;
@@ -154,7 +155,8 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
             locationService.Object,
             _cachingService,
             mockUser,
-            mockLoggerFactory.Object);
+            mockLoggerFactory.Object,
+            new Mock<IDocumentConverter>().Object);
 
         return _service;
     }

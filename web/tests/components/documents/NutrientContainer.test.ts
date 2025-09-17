@@ -1,135 +1,86 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount, flushPromises } from '@vue/test-utils';
-import NutrientContainer from 'CMP/documents/NutrientContainer.vue';
-import { setActivePinia, createPinia } from 'pinia'
-import { FilesService } from '@/services/FilesService';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { shallowMount } from '@vue/test-utils';
+import NutrientContainer from '@/components/documents/NutrientContainer.vue';
 
-const mockDocuments = [{ test: "1" }, { test: "2" }, { test: "3" }];
-const mockGroupedDocuments = {
-    "20111101-1": {
-        "John Johnson": [
-            {
-                "request": {
-                    "type": 0,
-                    "data": {
-                    }
-                },
-                "caseNumber": "123",
-                "memberName": "John Johnson",
-                "documentName": "Information"
-            }
-        ],
-        "Elmer Fudd": [
-            {
-                "request": {
-                    "type": 0,
-                    "data": {
-                    }
-                },
-                "caseNumber": "123",
-                "memberName": "Elmer Fudd",
-                "documentName": "Information"
-            }
-        ]
-    }
-};
-const mockLoad = vi.fn().mockImplementation(() => ({setDocumentOutline: vi.fn().mockImplementation(() => ({}))}));
-const mockUnload = vi.fn();
-let filesService: any;
-let mockResponse: any = {
-  base64Pdf: 'testBase64String',
-};
+// Mocks
+vi.mock('@/components/documents/FileViewer.vue', () => ({
+  default: { name: 'FileViewer', template: '<div />', props: ['strategy'] },
+}));
 
-// Mock store
-vi.mock('@/stores/PDFViewerStore', () => {
+vi.mock('@/components/documents/strategies/PDFStrategyFactory', () => {
+  const PDFViewerType = {
+    BUNDLE: 'BUNDLE',
+    FILE: 'FILE',
+  };
+  const mockUsePDFStrategy = vi.fn();
   return {
-    usePDFViewerStore: vi.fn(() => ({
-      get documents() {
-        return mockDocuments;
-      },
-      get groupedDocuments() {
-        return mockGroupedDocuments;
-      },
-      clearDocuments: vi.fn(),
-    })),
+    PDFViewerType,
+    usePDFStrategy: mockUsePDFStrategy,
+    mockUsePDFStrategy,
   };
 });
-vi.mock('@/services/FilesService');
 
-globalThis.NutrientViewer = {
-  ViewState: vi.fn().mockImplementation(() => ({})),
-  SidebarMode: { THUMBNAILS: 'thumbnails' },
-  Immutable: {
-    List: vi.fn().mockImplementation((items: any[]) => items),
-  },
-  Actions: {
-    GoToAction: vi.fn().mockImplementation(() => ({})),
-  },
-  OutlineElement: vi.fn().mockImplementation(() => ({})),
-  load: mockLoad,
-  unload: mockUnload
-};
+// Get PDFViewerType and mockUsePDFStrategy from the mocked module
+import { PDFViewerType, usePDFStrategy, mockUsePDFStrategy } from '@/components/documents/strategies/PDFStrategyFactory';
+// Use the mock reference for testing
+// mockUsePDFStrategy is already a vi.fn() mock function from the mock definition
+
+vi.mock('vue-router', () => ({
+  useRoute: vi.fn(),
+}));
+
+import { useRoute } from 'vue-router';
 
 describe('NutrientContainer.vue', () => {
-  let wrapper: any;
-
   beforeEach(() => {
-    vi.clearAllMocks();
-    setActivePinia(createPinia());
-    filesService = {
-      generatePdf: vi.fn().mockResolvedValue(mockResponse)
-    };
-
-    // Mock global fetch to avoid real network requests
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
-      blob: () => Promise.resolve(new Blob([new ArrayBuffer(8)], { type: 'application/pdf' })),
-    });
-
-    // Mock NutrientViewer.load to resolve with a fake instance
-    (globalThis.NutrientViewer.load as any).mockImplementation(({ document }: { document?: string | ArrayBuffer } = {}) => {
-      const mergedInstance = {
-        totalPageCount: typeof document !== 'string' && document instanceof ArrayBuffer ? 3 : 2,
-        exportPDFWithOperations: vi.fn().mockResolvedValue('mergedDocument'),
-        setDocumentOutline: vi.fn()
-      };
-      return Promise.resolve(mergedInstance);
-    });
-
-    wrapper = mount(NutrientContainer, {
-      global: {
-        stubs: ['v-progress-linear', 'v-skeleton-loader'],
-        provide: {
-          filesService
-        }
-      },
-    });
+    mockUsePDFStrategy.mockReset();
+    (useRoute as any).mockReset();
   });
 
-  afterEach(() => {
-    wrapper.unmount();
+  it('uses BUNDLE strategy when type is bundle', () => {
+    (useRoute as any).mockReturnValue({ query: { type: 'bundle' } });
+    mockUsePDFStrategy.mockReturnValue('bundle-strategy');
+    const wrapper = shallowMount(NutrientContainer);
+    expect(mockUsePDFStrategy).toHaveBeenCalledWith(PDFViewerType.BUNDLE);
+    expect(wrapper.findComponent({ name: 'FileViewer' }).props('strategy')).toBe('bundle-strategy');
   });
 
-  it('does not render loaders when fully mounted', async () => {
-    await flushPromises();
-    expect(wrapper.findComponent({ name: 'v-progress-linear' }).exists()).toBe(false);
-    expect(wrapper.findComponent({ name: 'v-skeleton-loader' }).exists()).toBe(false);
+  it('uses FILE strategy when type is nutrient', () => {
+    (useRoute as any).mockReturnValue({ query: { type: 'nutrient' } });
+    mockUsePDFStrategy.mockReturnValue('file-strategy');
+    const wrapper = shallowMount(NutrientContainer);
+    expect(mockUsePDFStrategy).toHaveBeenCalledWith(PDFViewerType.FILE);
+    expect(wrapper.findComponent({ name: 'FileViewer' }).props('strategy')).toBe('file-strategy');
   });
 
-  it('unloads NutrientViewer on unmount', async () => {
-    await flushPromises();
-    wrapper.unmount();
-    expect(mockUnload).toHaveBeenCalled();
+  it('uses FILE strategy when type is file', () => {
+    (useRoute as any).mockReturnValue({ query: { type: 'file' } });
+    mockUsePDFStrategy.mockReturnValue('file-strategy');
+    const wrapper = shallowMount(NutrientContainer);
+    expect(mockUsePDFStrategy).toHaveBeenCalledWith(PDFViewerType.FILE);
   });
 
-  it('expect load to be called with correct b64 content', () => {
-    expect(globalThis.NutrientViewer.load).toHaveBeenCalledWith(
-      expect.objectContaining({ document: `data:application/pdf;base64,${mockResponse.base64Pdf}` })
-    );
+  it('uses FILE strategy when type is pdf', () => {
+    (useRoute as any).mockReturnValue({ query: { type: 'pdf' } });
+    mockUsePDFStrategy.mockReturnValue('file-strategy');
+    const wrapper = shallowMount(NutrientContainer);
+    expect(mockUsePDFStrategy).toHaveBeenCalledWith(PDFViewerType.FILE);
   });
 
-  it('shows pdf-container after loading', async () => {
-    await flushPromises();
-    expect(wrapper.find('.pdf-container').isVisible()).toBe(true);
+  it('throws error for unknown type', () => {
+    (useRoute as any).mockReturnValue({ query: { type: 'unknown' } });
+    mockUsePDFStrategy.mockReturnValue('file-strategy');
+    // Error is thrown inside computed, so mounting will throw
+    expect(() => shallowMount(NutrientContainer)).toThrow('Unknown PDF viewer type: unknown');
+  });
+
+  it('uses FILE strategy and warns when type is missing', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    (useRoute as any).mockReturnValue({ query: {} });
+    mockUsePDFStrategy.mockReturnValue('file-strategy');
+    const wrapper = shallowMount(NutrientContainer);
+    expect(mockUsePDFStrategy).toHaveBeenCalledWith(PDFViewerType.FILE);
+    expect(warnSpy).toHaveBeenCalledWith('Could not determine PDF viewer type');
+    warnSpy.mockRestore();
   });
 });

@@ -17,14 +17,13 @@ export const usePDFViewerStore = defineStore('PDFViewerStore', {
     addDocument(document: StoreDocument): void {
       this.storedDocuments.push(document);
 
-      if (document.caseNumber) {
-        // Group documents by caseNumber, then by memberName
+      if (document.groupKeyOne) {
         const grouped = this.documents.reduce(
           (acc, doc) => {
-            if (!acc[doc.caseNumber]) acc[doc.caseNumber] = {};
-            if (!acc[doc.caseNumber][doc.memberName])
-              acc[doc.caseNumber][doc.memberName] = [];
-            acc[doc.caseNumber][doc.memberName].push(doc);
+            if (!acc[doc.groupKeyOne]) acc[doc.groupKeyOne] = {};
+            if (!acc[doc.groupKeyOne][doc.groupKeyTwo])
+              acc[doc.groupKeyOne][doc.groupKeyTwo] = [];
+            acc[doc.groupKeyOne][doc.groupKeyTwo].push(doc);
             return acc;
           },
           {} as Record<string, Record<string, StoreDocument[]>>
@@ -41,7 +40,7 @@ export const usePDFViewerStore = defineStore('PDFViewerStore', {
 
 export type StoreDocument = {
   request: GeneratePdfRequest;
-  caseNumber: string;
-  memberName: string;
+  groupKeyOne: string;
+  groupKeyTwo: string;
   documentName: string;
 };

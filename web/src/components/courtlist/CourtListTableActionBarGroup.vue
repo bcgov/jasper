@@ -9,15 +9,6 @@
         :selectionPrependText="courtClass + ' file/s'"
       >
         <template #default>
-          <!-- Hide temporarily until opening Key docs and Judicial Binder is implemented.
-          <v-btn
-            size="large"
-            class="mx-2"
-            :prepend-icon="mdiFileDocumentMultipleOutline"
-            style="letter-spacing: 0.001rem"
-          >
-            View document bundle
-          </v-btn> -->
           <v-btn
             size="large"
             class="mx-2"
@@ -27,6 +18,17 @@
             @click="() => onViewApprCaseDetails(group)"
           >
             View case details
+          </v-btn>
+          <v-btn
+            v-if="courtClass == 'Criminal - Adult'"
+            size="large"
+            class="mx-2"
+            :prepend-icon="mdiFileDocumentMultipleOutline"
+            style="letter-spacing: 0.001rem"
+            data-testid="view-key-documents"
+            @click="() => onViewKeyDocuments(group)"
+          >
+            View key documents
           </v-btn>
         </template>
       </ActionBar>
@@ -38,17 +40,20 @@
   import ActionBar from '@/components/shared/table/ActionBar.vue';
   import { CourtListAppearance } from '@/types/courtlist';
   import { getCourtClassLabel } from '@/utils/utils';
-  import { mdiFileDocumentOutline } from '@mdi/js';
+  import {
+    mdiFileDocumentMultipleOutline,
+    mdiFileDocumentOutline,
+  } from '@mdi/js';
   import { computed } from 'vue';
 
   const props = defineProps<{
     selected: CourtListAppearance[];
   }>();
 
-  const emit =
-    defineEmits<
-      (e: 'view-case-details', appearances: CourtListAppearance[]) => void
-    >();
+  const emit = defineEmits<{
+    (e: 'view-case-details', appearances: CourtListAppearance[]): void;
+    (e: 'view-key-documents', appearances: CourtListAppearance[]): void;
+  }>();
 
   const groupedSelections = computed(() => {
     const groups: Record<string, CourtListAppearance[]> = {};
@@ -59,10 +64,14 @@
       }
       groups[group].push(item);
     }
+
     return groups;
   });
 
   const onViewApprCaseDetails = (appearances: CourtListAppearance[]) => {
     emit('view-case-details', appearances);
+  };
+  const onViewKeyDocuments = (appearances: CourtListAppearance[]) => {
+    emit('view-key-documents', appearances);
   };
 </script>

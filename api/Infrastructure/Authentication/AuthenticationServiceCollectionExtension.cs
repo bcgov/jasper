@@ -330,6 +330,8 @@ namespace Scv.Api.Infrastructure.Authentication
                 // UserId's value refers to the id in the User collection from MongoDb.
                 claims.Add(new Claim(CustomClaimTypes.UserId, userDto.Id));
 
+                claims.Add(new Claim(CustomClaimTypes.IsActive, userDto.IsActive.ToString()));
+
                 // Add Roles and Permissions as claims if available
                 var permissionsClaims = userDto.Permissions.Select(p => new Claim(CustomClaimTypes.Permission, p));
                 claims.AddRange(permissionsClaims);

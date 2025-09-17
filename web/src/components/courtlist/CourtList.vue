@@ -227,9 +227,9 @@
     const documents: Array<{
       documentType: DocumentRequestType;
       documentData: Record<string, any>;
-      memberName: string;
+      groupKeyTwo: string;
       documentName: any;
-      caseNumber: string;
+      groupKeyOne: string;
     }> = [];
     uniqueMap.forEach((value) => {
       let documentData: Record<string, any> = {
@@ -241,6 +241,7 @@
       };
       if (value.division === DivisionEnum.R) {
         documentData.reportType = reportType;
+        documentData.isCriminal = true;
       } else if (value.division === DivisionEnum.I) {
         documentData.additionsList = reportType === 'Additions' ? 'Y' : 'N';
       }
@@ -248,9 +249,9 @@
       documents.push({
         documentType: DocumentRequestType.Report,
         documentData,
-        memberName: value.courtRoom,
-        documentName: documentData.reportType || documentData.date,
-        caseNumber: value.locationName,
+        groupKeyTwo: value.courtRoom,
+        documentName: reportType,
+        groupKeyOne: value.locationName,
       });
     });
     shared.openDocumentsPdfV2(documents);

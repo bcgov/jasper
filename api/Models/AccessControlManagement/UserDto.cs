@@ -9,6 +9,7 @@ public class UserDto : BaseDto
     public string LastName { get; set; }
     public string Email { get; set; }
     public bool IsActive { get; set; }
+    public bool? IsPendingRegistration { get; set; }
     public Guid? ADId { get; set; }
     public string ADUsername { get; set; }
     /// <summary>

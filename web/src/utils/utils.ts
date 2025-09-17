@@ -8,6 +8,7 @@ import { civilApprDetailType } from '@/types/civil/jsonTypes';
 import { CourtClassEnum, LookupCode } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
+import _ from 'underscore';
 import { inject } from 'vue';
 import { LocationQueryValue } from 'vue-router';
 
@@ -312,4 +313,8 @@ export const parseQueryStringToString = (
     return value[0] ?? fallback;
   }
   return value ?? fallback;
+};
+
+export const isPositiveInteger = (value) => {
+  return _.isNumber(value) && value > 0;
 };

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Threading.Tasks;
-using LazyCache;
+﻿using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.PersonServices;
@@ -11,12 +6,18 @@ using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
 
 public interface IUserService : ICrudService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
+    Task<UserDto> GetByIdWithPermissionsAsync(string userId);
 }
 
 public class UserService(
@@ -26,9 +27,7 @@ public class UserService(
     IRepositoryBase<User> userRepo,
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
-    IPermissionRepository permissionRepo,
-    PersonServicesClient personClient,
-    LocationService locationService
+    IPermissionRepository permissionRepo
 ) : CrudServiceBase<IRepositoryBase<User>, User, UserDto>(
         cache,
         mapper,
@@ -38,8 +37,6 @@ public class UserService(
     private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
     private readonly IRepositoryBase<Role> _roleRepo = roleRepo;
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
-    private readonly PersonServicesClient _personClient = personClient;
-    private readonly LocationService _locationService = locationService;
 
     public override string CacheName => "GetUsersAsync";
 
@@ -75,16 +72,29 @@ public class UserService(
     public async Task<UserDto> GetWithPermissionsAsync(string email)
     {
         var result = await this.Repo.FindAsync(u => u.Email == email);
-
-        // Check if user exists
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {email} is not found", email);
+            this.Logger.LogInformation("User with email: {Email} is not found", email.Replace(Environment.NewLine, ""));
             return null;
         }
 
-        var user = this.Mapper.Map<UserDto>(result.Single());
+        return await PopulateUserPermissionsAndRolesAsync(this.Mapper.Map<UserDto>(result.Single()));
+    }
 
+    public async Task<UserDto> GetByIdWithPermissionsAsync(string userId)
+    {
+        var user = await GetByIdAsync(userId);
+        if (user == null)
+        {
+            this.Logger.LogInformation("User with id: {UserId} is not found", userId);
+            return null;
+        }
+
+        return await PopulateUserPermissionsAndRolesAsync(user);
+    }
+
+    private async Task<UserDto> PopulateUserPermissionsAndRolesAsync(UserDto user)
+    {
         // Find user's groups
         if (user.GroupIds.Count == 0)
         {

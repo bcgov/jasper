@@ -3,8 +3,13 @@ import { FilesService } from '@/services/FilesService';
 import { mount, flushPromises } from '@vue/test-utils';
 import CourtListCriminalDetails from 'CMP/courtlist/CourtListCriminalDetails.vue';
 import { nextTick } from 'vue';
+import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/services/FilesService');
+
+beforeEach(() => {
+    setActivePinia(createPinia());
+});
 
 describe('CourtListCriminalDetails.vue', () => {
     let filesService: any;

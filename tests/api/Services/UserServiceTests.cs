@@ -99,9 +99,7 @@ public class UserServiceTests : ServiceTestBase
             _mockUserRepo.Object,
             _mockGroupRepo.Object,
             _mockRoleRepo.Object,
-            _mockPermissionRepo.Object,
-            mockPersonServiceClient.Object,
-            mockLocationService.Object);
+            _mockPermissionRepo.Object);
     }
 
     [Fact]

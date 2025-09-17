@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Hangfire;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -29,6 +26,10 @@ using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Jobs;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace Scv.Api
 {
@@ -76,10 +77,12 @@ namespace Scv.Api
                 }
             );
 
+            services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationRedirectMiddlewareResultHandler>();
+
             services.AddMapster();
             services.AddNutrient();
             services.AddJasperDb(Configuration);
-            services.AddHangfire(Configuration);
+            //services.AddHangfire(Configuration);
 
             #region Cors
 
@@ -207,31 +210,28 @@ namespace Scv.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // Remove checking when the "real" mongo db has been configured
-            var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-            var dbName = Configuration.GetValue<string>("MONGODB_NAME");
-            if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(dbName))
-            {
-                app.UseHangfireDashboard("/hangfire", new DashboardOptions
-                {
-                    Authorization = [new HangFireDashboardAuthorizationFilter()]
-                });
+            // var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            // var dbName = Configuration.GetValue<string>("MONGODB_NAME");
+            // if (!string.IsNullOrWhiteSpace(connectionString) && !string.IsNullOrWhiteSpace(dbName))
+            // {
+            //     app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            //     {
+            //         Authorization = [new HangFireDashboardAuthorizationFilter()]
+            //     });
 
-                #region Setup Jobs
-                using (var scope = app.ApplicationServices.CreateScope())
-                {
-                    var provider = scope.ServiceProvider;
-                    var allJobs = provider.GetServices<IRecurringJob>();
+            //     #region Setup Jobs
+            //     using (var scope = app.ApplicationServices.CreateScope())
+            //     {
+            //         var provider = scope.ServiceProvider;
+            //         var allJobs = provider.GetServices<IRecurringJob>();
 
-                    Console.WriteLine("JOBS");
-
-                    foreach (var job in allJobs)
-                    {
-                        RecurringJobHelper.AddOrUpdate(job);
-                    }
-                }
-                #endregion Setup Jobs
-            }
+            //         foreach (var job in allJobs)
+            //         {
+            //             RecurringJobHelper.AddOrUpdate(job);
+            //         }
+            //     }
+            //     #endregion Setup Jobs
+            // }
 
             app.UseEndpoints(endpoints =>
             {

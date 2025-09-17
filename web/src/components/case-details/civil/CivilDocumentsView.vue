@@ -1,18 +1,18 @@
 <template>
   <v-row>
     <v-col cols="6" />
-    <v-col cols="3" class="ml-auto" v-if="documentTypes.length > 1">
+    <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
       <v-select
-        v-model="selectedType"
+        v-model="selectedCategory"
         label="Documents"
         placeholder="All documents"
         hide-details
-        :items="documentTypes"
+        :items="documentCategories"
       >
         <template v-slot:item="{ props: itemProps, item }">
           <v-list-item
             v-bind="itemProps"
-            :title="item.title + ' (' + typeCount(item.raw) + ')'"
+            :title="`${item.title} (${categoryCount(item.raw)})`"
           ></v-list-item>
         </template>
       </v-select>
@@ -142,13 +142,22 @@
     throw new Error('Service is undefined.');
   }
 
+  const SCHEDULED_CATEGORY = 'Scheduled';
+  const CSR_CATEGORY = 'CSR';
+  const CSR_CATEGORY_DESC = 'Court Summary';
+
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
   const showActionbar = computed<boolean>(() => selectedItems.value.length > 1);
   const enableViewTogether = computed<boolean>(
     () => selectedItems.value.filter((d) => d.imageId).length > 1
   );
-  const selectedType = ref<string>();
+  const scheduledDocuments = props.documents.filter(
+    (doc) => doc.nextAppearanceDt
+  );
+  const selectedCategory = ref<string>(
+    scheduledDocuments.length > 0 ? SCHEDULED_CATEGORY : ''
+  );
   const isBinderLoading = ref(true);
   const rolesLoading = ref(false);
   const roles = ref<LookupCode[]>();
@@ -196,20 +205,39 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
-  const documentTypes = ref<any[]>([
-    ...new Map(
-      props.documents.map((doc) => [
-        doc.documentTypeCd,
-        { title: doc.documentTypeDescription, value: doc.documentTypeCd },
-      ])
-    ).values(),
-  ]);
-  const filterByType = (item: civilDocumentType) =>
-    !selectedType.value ||
-    item.documentTypeCd?.toLowerCase() === selectedType.value?.toLowerCase();
+  const documentCategories = ref<string[]>(
+    (scheduledDocuments.length > 0 ? [SCHEDULED_CATEGORY] : []).concat(
+      Array.from(
+        new Set(
+          props.documents
+            .filter((d) => d.category)
+            .map((doc) =>
+              doc.category === CSR_CATEGORY ? CSR_CATEGORY_DESC : doc.category
+            )
+        )
+      )
+    )
+  );
+
+  const filterByCategory = (item: civilDocumentType) => {
+    const category = selectedCategory.value?.toLowerCase();
+    if (!category) {
+      return true;
+    }
+
+    if (category === SCHEDULED_CATEGORY.toLowerCase()) {
+      return !!item.nextAppearanceDt;
+    }
+
+    if (category === CSR_CATEGORY_DESC.toLowerCase()) {
+      return item.category === CSR_CATEGORY;
+    }
+
+    return item.category?.toLowerCase() === category;
+  };
 
   const filteredDocuments = computed(() =>
-    props.documents.filter(filterByType)
+    props.documents.filter(filterByCategory)
   );
 
   const binderDocuments = computed(() => {
@@ -224,17 +252,27 @@
     const documentsMaps = new Map(
       props.documents.map((d) => [d.civilDocumentId, d])
     );
-    const filteredAndSorted = binderDocumentIds
+    return binderDocumentIds
       .map((id) => documentsMaps.get(id))
       .filter(
         (item): item is (typeof props.documents)[number] => item !== undefined
-      )
-      .filter(filterByType);
-    return filteredAndSorted;
+      );
   });
 
-  const typeCount = (type: any): number =>
-    props.documents.filter((doc) => doc.documentTypeCd === type.value).length;
+  const categoryCount = (category: string): number => {
+    if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
+      return props.documents.filter((doc) => doc.nextAppearanceDt).length;
+    }
+
+    if (category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase()) {
+      return props.documents.filter((doc) => doc.category === CSR_CATEGORY)
+        .length;
+    }
+
+    return props.documents.filter(
+      (doc) => doc.category?.toLowerCase() === category.toLowerCase()
+    ).length;
+  };
 
   onMounted(async () => {
     try {
@@ -262,7 +300,8 @@
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
-      memberName: string;
+      groupKeyOne: string;
+      groupKeyTwo: string;
       documentName: string;
     }[] = [];
     items
@@ -276,7 +315,8 @@
         documents.push({
           documentType,
           documentData,
-          memberName: '',
+          groupKeyOne: documentData.fileNumberText!,
+          groupKeyTwo: '',
           documentName:
             item.documentTypeDescription +
             ' - ' +
@@ -317,7 +357,10 @@
       return;
     }
     currentBinder.value.documents = currentBinder.value?.documents.filter(
-      (d) => !selectedBinderItems.value.find((item) => item === d.documentId)
+      (d) =>
+        !selectedBinderItems.value.find(
+          (item) => item.civilDocumentId === d.documentId
+        )
     );
     selectedBinderItems.value = [];
     await saveBinder();

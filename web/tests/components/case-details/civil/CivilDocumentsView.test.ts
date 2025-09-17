@@ -35,7 +35,7 @@ describe('CivilDocumentsView.vue', () => {
   const mockDocuments = [
     {
       civilDocumentId: '1',
-      documentTypeCd: 'CSR',
+      category: 'CSR',
       documentTypeDescription: 'Civil Document 1',
       filedDt: '2023-01-01',
       filedBy: [{ roleTypeCode: 'Role1' }],
@@ -46,12 +46,22 @@ describe('CivilDocumentsView.vue', () => {
     },
     {
       civilDocumentId: '2',
-      documentTypeCd: 'DOC',
+      category: 'ROP',
       documentTypeDescription: 'Civil Document 2',
       filedDt: '2023-02-01',
       filedBy: [{ roleTypeCode: 'Role2' }],
       issue: [{ issueTypeDesc: 'Issue2' }],
       documentSupport: [{ actCd: 'Act2' }],
+    },
+    {
+      civilDocumentId: '3',
+      category: 'Pleadings',
+      documentTypeDescription: 'Civil Document 3',
+      filedDt: '2023-02-01',
+      nextAppearanceDt: '2023-03-01',
+      filedBy: [{ roleTypeCode: 'Role3' }],
+      issue: [{ issueTypeDesc: 'Issue3' }],
+      documentSupport: [{ actCd: 'Act3' }],
     },
   ];
   beforeEach(() => {
@@ -81,7 +91,7 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('filters documents by selected type', async () => {
-    wrapper.vm.selectedType = 'CSR';
+    wrapper.vm.selectedCategory = 'CSR';
 
     expect(wrapper.vm.filteredDocuments).toEqual([mockDocuments[0]]);
   });
@@ -127,5 +137,13 @@ describe('CivilDocumentsView.vue', () => {
     await nextTick();
 
     expect(wrapper.vm.selectedBinderItems).toEqual([]);
+  });
+
+  it('inserts "Scheduled" option when a document has a next appearance date', async () => {
+    expect(wrapper.vm.documentCategories[0]).toEqual('Scheduled');
+  });
+
+  it(`renames 'CSR' to 'Court Summary' in the document categories`, async () => {
+    expect(wrapper.vm.documentCategories).toContain('Court Summary');
   });
 });

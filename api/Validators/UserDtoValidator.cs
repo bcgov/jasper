@@ -10,10 +10,6 @@ public class UserDtoValidator : BaseDtoValidator<UserDto>
 
     public UserDtoValidator() : base()
     {
-        RuleFor(r => r.FirstName)
-            .NotEmpty().WithMessage("First name is required.");
-        RuleFor(r => r.LastName)
-            .NotEmpty().WithMessage("Last name is required.");
         RuleFor(r => r.Email)
             .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Email is required.")

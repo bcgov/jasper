@@ -1,5 +1,7 @@
 import { csrRequestsInfoType } from '../civil';
 import { ropRequestsInfoType } from '../criminal';
+import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
+import { Binder } from '@/types';
 
 export interface InputNamesType {
   lastName: string;
@@ -68,12 +70,15 @@ export interface CourtRoomsInfo {
 export interface UserInfo {
   userType: string;
   enableArchive: boolean;
-  role: string;
+  roles: string[];
   subRole: string;
   isSupremeUser: string;
+  isPendingRegistration?: boolean;
+  isActive: boolean;
   agencyCode: string;
   userId: string;
   judgeId: number;
+  email: string;
 }
 
 export interface LookupCode {
@@ -132,4 +137,16 @@ export enum CalendarViewEnum {
   MonthView = 'dayGridMonth',
   TwoWeekView = 'dayGridTwoWeek',
   WeekView = 'dayGridWeek',
+}
+
+export interface AppearanceDocumentRequest {
+  physicalFileId: string;
+  appearanceId: string;
+  participantId: string;
+  courtClassCd: string;
+}
+
+export interface DocumentBundleResponse {
+  binders: Binder[];
+  pdfResponse: GeneratePdfResponse;
 }

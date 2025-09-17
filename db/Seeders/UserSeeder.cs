@@ -37,7 +37,8 @@ namespace Scv.Db.Seeders
                         LastName = userObj["LastName"],
                         Email = userObj["Email"],
                         IsActive = true,
-                        GroupIds = [groups.First(g => g.Name == userObj["Group"]).Id]
+                        IsPendingRegistration = false,
+                        GroupIds = [groups.First(g => g.Name == userObj["Group"]).Id],
                     };
                     users.Add(newUser);
                 }

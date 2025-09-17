@@ -1,0 +1,93 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RequestAccess.vue > renders correctly (snapshot) 1`] = `
+<v-container
+  class="home"
+  fluid=""
+>
+  <v-row justify="center">
+    <v-col
+      cols="12"
+      lg="4"
+      md="8"
+    >
+      <v-card
+        class="
+          access-body
+          text-center
+        "
+        elevation="2"
+        style="padding: 1rem;"
+      >
+        <img
+          alt="logo"
+          class="logo"
+          src="/src/assets/jasper-logo.svg"
+          width="63"
+        />
+        <v-row justify="center">
+          <h2 class="mt-4">
+            Request Access To JASPER:
+          </h2>
+        </v-row>
+        <v-row justify="center">
+          <v-col
+            cols="12"
+            md="8"
+            sm="10"
+            xs="10"
+          >
+            <v-text-field
+              class="email-input"
+              disabled="true"
+              hint="This email is associated to the account you logged in with, it will be used to create your account."
+              id="email"
+              label="Email"
+              modelvalue="test@example.com"
+              persistent-hint=""
+              type="email"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row justify="center">
+          <v-btn
+            class="
+              px-5
+              py-2
+            "
+            color="primary"
+            disabled="true"
+          >
+            Submit Your Request
+          </v-btn>
+        </v-row>
+        <v-row
+          class="my-4"
+          justify="center"
+        >
+          <v-col
+            cols="12"
+            xs="12"
+          >
+            <!-- v-if -->
+            <!-- v-if -->
+            <v-alert
+              border="start"
+              class="
+                mx-auto
+                px-5
+                shared-badge
+              "
+              type="warning"
+            >
+              Warning, you do not have valid access to JASPER.
+              <br />
+              Please contact the JASPER admin to correct your account.
+            </v-alert>
+          </v-col>
+        </v-row>
+      </v-card>
+    </v-col>
+  </v-row>
+</v-container>
+`;

@@ -4,8 +4,6 @@ using System.Reflection;
 using GdPicture14;
 using Hangfire;
 using Hangfire.Mongo;
-using Hangfire.Mongo.Migration.Strategies;
-using Hangfire.Mongo.Migration.Strategies.Backup;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -233,14 +231,10 @@ namespace Scv.Api.Infrastructure
                     .UseRecommendedSerializerSettings()
                     .UseMongoStorage(mongoClient, dbName, new MongoStorageOptions
                     {
-                        MigrationOptions = new MongoMigrationOptions
-                        {
-                            MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                            BackupStrategy = new CollectionMongoBackupStrategy(),
-                        },
+                        ByPassMigration = true,
                         CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection,
                         Prefix = "hangfire.mongo",
-                        CheckConnection = true
+                        CheckConnection = true,
                     });
             });
             services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");

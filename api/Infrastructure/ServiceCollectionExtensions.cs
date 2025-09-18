@@ -4,6 +4,7 @@ using System.Reflection;
 using GdPicture14;
 using Hangfire;
 using Hangfire.Mongo;
+using Hangfire.Mongo.UtcDateTime;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -223,7 +224,6 @@ namespace Scv.Api.Infrastructure
             services.AddHangfire((sp, config) =>
             {
                 var mongoClient = sp.GetRequiredService<IMongoClient>();
-                var dbName = configuration.GetValue<string>("HANGFIRE_DB") ?? "hangfire";
 
                 config
                     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
@@ -233,8 +233,9 @@ namespace Scv.Api.Infrastructure
                     {
                         ByPassMigration = true,
                         CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection,
-                        Prefix = "hangfire.mongo",
+                        Prefix = "hangfire",
                         CheckConnection = true,
+                        UtcDateTimeStrategies = [new AggregationUtcDateTimeStrategy()]
                     });
             });
             services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");

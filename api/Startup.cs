@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
@@ -15,8 +16,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -220,15 +223,16 @@ namespace Scv.Api
                 });
 
                 #region Setup Jobs
-                using (var scope = app.ApplicationServices.CreateScope())
-                {
-                    var provider = scope.ServiceProvider;
-                    var allJobs = provider.GetServices<IRecurringJob>();
+                using var scope = app.ApplicationServices.CreateScope();
+                var provider = scope.ServiceProvider;
+                var allJobs = provider.GetServices<IRecurringJob>();
+                var logger = provider.GetRequiredService<ILogger>();
 
-                    foreach (var job in allJobs)
-                    {
-                        RecurringJobHelper.AddOrUpdate(job);
-                    }
+                logger.LogInformation("Setting up {JobCount} recurring jobs", allJobs?.Count() ?? 0);
+
+                foreach (var job in allJobs)
+                {
+                    RecurringJobHelper.AddOrUpdate(job);
                 }
                 #endregion Setup Jobs
             }

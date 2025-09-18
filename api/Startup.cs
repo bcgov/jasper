@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
@@ -16,10 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -228,6 +225,7 @@ namespace Scv.Api
 
                 foreach (var job in allJobs)
                 {
+                    Console.WriteLine($"Setting up {job.JobName}");
                     RecurringJobHelper.AddOrUpdate(job);
                 }
                 #endregion Setup Jobs

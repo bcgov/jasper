@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Hangfire;
@@ -26,10 +30,6 @@ using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Jobs;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 
 namespace Scv.Api
 {
@@ -82,7 +82,7 @@ namespace Scv.Api
             services.AddMapster();
             services.AddNutrient();
             services.AddJasperDb(Configuration);
-            //services.AddHangfire(Configuration);
+            services.AddHangfire(Configuration);
 
             #region Cors
 
@@ -210,28 +210,28 @@ namespace Scv.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-            // var dbName = Configuration.GetValue<string>("MONGODB_NAME");
-            // if (!string.IsNullOrWhiteSpace(connectionString) && !string.IsNullOrWhiteSpace(dbName))
-            // {
-            //     app.UseHangfireDashboard("/hangfire", new DashboardOptions
-            //     {
-            //         Authorization = [new HangFireDashboardAuthorizationFilter()]
-            //     });
+            var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
+            var dbName = Configuration.GetValue<string>("MONGODB_NAME");
+            if (!string.IsNullOrWhiteSpace(connectionString) && !string.IsNullOrWhiteSpace(dbName))
+            {
+                app.UseHangfireDashboard("/hangfire", new DashboardOptions
+                {
+                    Authorization = [new HangFireDashboardAuthorizationFilter()]
+                });
 
-            //     #region Setup Jobs
-            //     using (var scope = app.ApplicationServices.CreateScope())
-            //     {
-            //         var provider = scope.ServiceProvider;
-            //         var allJobs = provider.GetServices<IRecurringJob>();
+                #region Setup Jobs
+                using (var scope = app.ApplicationServices.CreateScope())
+                {
+                    var provider = scope.ServiceProvider;
+                    var allJobs = provider.GetServices<IRecurringJob>();
 
-            //         foreach (var job in allJobs)
-            //         {
-            //             RecurringJobHelper.AddOrUpdate(job);
-            //         }
-            //     }
-            //     #endregion Setup Jobs
-            // }
+                    foreach (var job in allJobs)
+                    {
+                        RecurringJobHelper.AddOrUpdate(job);
+                    }
+                }
+                #endregion Setup Jobs
+            }
 
             app.UseEndpoints(endpoints =>
             {

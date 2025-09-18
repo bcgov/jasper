@@ -3,8 +3,7 @@ using System.Net.Http;
 using System.Reflection;
 using GdPicture14;
 using Hangfire;
-using Hangfire.Mongo;
-using Hangfire.Mongo.UtcDateTime;
+using Hangfire.PostgreSql;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -214,32 +213,19 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration configuration)
         {
             // Remove checking when the "real" mongo db has been configured
-            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-            var dbName = configuration.GetValue<string>("MONGODB_NAME");
-            if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(dbName))
+            var connectionString = configuration.GetValue<string>("DatabaseConnectionString");
+            if (string.IsNullOrEmpty(connectionString))
             {
                 return services;
             }
 
-            services.AddHangfire((sp, config) =>
-            {
-                var mongoClient = sp.GetRequiredService<IMongoClient>();
-
-                config
-                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                    .UseSimpleAssemblyNameTypeSerializer()
-                    .UseRecommendedSerializerSettings()
-                    .UseMongoStorage(mongoClient, dbName, new MongoStorageOptions
+            services.AddHangfire(config => config
+                .UsePostgreSqlStorage(c => c
+                    .UseNpgsqlConnection(connectionString), new PostgreSqlStorageOptions
                     {
-                        ByPassMigration = true,
-                        CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection,
-                        Prefix = "hangfire",
-                        CheckConnection = true,
-                        UtcDateTimeStrategies = [new AggregationUtcDateTimeStrategy()]
-                    });
-            });
-            services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");
-
+                        SchemaName = "hangfire"
+                    }));
+            services.AddHangfireServer();
             return services;
         }
 

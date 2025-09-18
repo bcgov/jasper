@@ -210,9 +210,8 @@ namespace Scv.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            var connectionString = Configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-            var dbName = Configuration.GetValue<string>("MONGODB_NAME");
-            if (!string.IsNullOrWhiteSpace(connectionString) && !string.IsNullOrWhiteSpace(dbName))
+            var connectionString = Configuration.GetValue<string>("DatabaseConnectionString");
+            if (!string.IsNullOrWhiteSpace(connectionString))
             {
                 app.UseHangfireDashboard("/hangfire", new DashboardOptions
                 {

@@ -225,7 +225,6 @@ namespace Scv.Api
 
                 foreach (var job in allJobs)
                 {
-                    Console.WriteLine($"Setting up {job.JobName}");
                     RecurringJobHelper.AddOrUpdate(job);
                 }
                 #endregion Setup Jobs

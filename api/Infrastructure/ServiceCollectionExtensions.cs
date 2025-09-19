@@ -212,7 +212,6 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration configuration)
         {
-            // Remove checking when the "real" mongo db has been configured
             var connectionString = configuration.GetValue<string>("DatabaseConnectionString");
             if (string.IsNullOrEmpty(connectionString))
             {

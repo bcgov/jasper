@@ -88,3 +88,23 @@ resource "aws_lb_listener_rule" "api_path_lr" {
   }
 }
 
+# Hangfire Listener Rule
+resource "aws_lb_listener_rule" "hangfire_lr" {
+  listener_arn = aws_lb_listener.https_listener.arn
+  priority     = 50
+
+  condition {
+    path_pattern {
+      values = ["/hangfire", "/hangfire/*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = var.tg_api_arn
+  }
+
+  tags = {
+    Name = "${var.app_name}-hangfire-lr-${var.environment}"
+  }
+}

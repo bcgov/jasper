@@ -6,15 +6,15 @@ on:
     branches:
       - master
     paths:
-      - "infrastructure/**"
+      - 'infrastructure/**'
 
   # Manual trigger via GH Actions UI
   workflow_dispatch:
     inputs:
       environment:
-        description: "Select target environment"
+        description: 'Select target environment'
         required: true
-        default: "dev"
+        default: 'dev'
         type: choice
         options:
           - dev
@@ -57,19 +57,19 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v5
-  
+
       - name: tfsec
         uses: aquasecurity/tfsec-sarif-action@v0.1.4
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars"
-  
+          tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
+
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: tfsec.sarif
-  
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -78,17 +78,17 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           role-duration-seconds: 1800
           role-session-name: ci-deployment
-  
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.12.1
-          
+          terraform_version: 1.13.1
+
       - name: Terraform Init
         id: init
         run: |
           terraform init -input=false -backend-config=backend.tfvars -var-file=${{ env.environment }}.tfvars
-        working-directory: ${{ env.WORKING_DIRECTORY }}  
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
       - name: Terraform Plan (Initial Stack)
         id: plan-initial
@@ -104,8 +104,8 @@ jobs:
       - name: Terraform Apply (Initial Stack)
         run: |
           terraform apply -target=module.initial --auto-approve -input=false -var-file=${{ env.environment }}.tfvars
-        working-directory: ${{ env.WORKING_DIRECTORY }}       
-        
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
       - name: Log in to the GHCR
         uses: docker/login-action@v3
         with:
@@ -145,7 +145,7 @@ jobs:
         run: |
           IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
           REPOSITORY_NAME=${{ vars.APP_NAME }}-app-repo-${{ env.environment }}
-          
+
           IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
 
           if [ -z "$IMAGE_EXISTS" ]; then
@@ -155,7 +155,7 @@ jobs:
             echo "Image with tag $IMAGE_TAG already exists."
             echo "exists=true" >> $GITHUB_OUTPUT
           fi
-          
+
       - name: Push dummy image to App ECR
         if: steps.app-ecr-check.outputs.exists == 'false'
         shell: bash
@@ -170,7 +170,7 @@ jobs:
         run: |
           IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
           REPOSITORY_NAME=${{ vars.APP_NAME }}-lambda-repo-${{ env.environment }}
-          
+
           IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
 
           if [ -z "$IMAGE_EXISTS" ]; then
@@ -195,7 +195,7 @@ jobs:
           terraform plan -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
-  
+
       - name: Terraform Plan (Main) Status
         if: steps.plan-main.outcome == 'failure'
         run: exit 1
@@ -203,4 +203,4 @@ jobs:
       - name: Terraform Apply (Main Stack)
         run: |
           terraform apply --auto-approve -input=false -var-file=${{ env.environment }}.tfvars
-        working-directory: ${{ env.WORKING_DIRECTORY }}        
+        working-directory: ${{ env.WORKING_DIRECTORY }}

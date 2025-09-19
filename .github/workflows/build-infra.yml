@@ -6,15 +6,15 @@ on:
     branches:
       - master
     paths:
-      - "infrastructure/**"
+      - 'infrastructure/**'
 
   # Manual trigger via GH Actions UI
   workflow_dispatch:
     inputs:
       environment:
-        description: "Select target environment"
+        description: 'Select target environment'
         required: true
-        default: "dev"
+        default: 'dev'
         type: choice
         options:
           - dev
@@ -52,19 +52,19 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v5
-  
+
       - name: tfsec
         uses: aquasecurity/tfsec-sarif-action@v0.1.4
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars"
-  
+          tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
+
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: tfsec.sarif
-  
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -73,36 +73,36 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           role-duration-seconds: 1800
           role-session-name: ci-deployment
-  
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.12.1
-          
+          terraform_version: 1.13.1
+
       - name: Terraform Init
         id: init
         run: |
           terraform init -input=false -backend-config=backend.tfvars -var-file=${{ env.environment }}.tfvars
         working-directory: ${{ env.WORKING_DIRECTORY }}
-  
+
       - name: Terraform Plan (Initial Stack)
         id: plan-initial
         run: |
           terraform plan -target=module.initial -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
-  
+
       - name: Terraform Plan (Initial) Status
         if: steps.plan-initial.outcome == 'failure'
         run: exit 1
-  
+
       - name: Terraform Plan (Main Stack)
         id: plan-main
         run: |
           terraform plan -no-color -input=false -var-file=${{ env.environment }}.tfvars
         continue-on-error: true
         working-directory: ${{ env.WORKING_DIRECTORY }}
-  
+
       - name: Terraform Plan (Main) Status
         if: steps.plan-main.outcome == 'failure'
         run: exit 1

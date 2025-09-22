@@ -50,7 +50,7 @@
     "vue-month-picker": "^1.7.2",
     "vue-router": "^4.5.1",
     "vuedraggable": "^4.1.0",
-    "vuetify": "3.7.6"
+    "vuetify": "3.10.2"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",

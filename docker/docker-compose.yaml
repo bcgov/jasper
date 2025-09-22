@@ -42,6 +42,10 @@ services:
       - AuthorizerKey=${AuthorizerKey}
       - AWS_API_GATEWAY_API_KEY=${AWS_API_GATEWAY_API_KEY}
       - AWS_API_GATEWAY_URL=${AWS_API_GATEWAY_URL}
+      - AZURE__CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE__CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE__SERVICE_ACCOUNT=${AZURE_SERVICE_ACCOUNT}
+      - AZURE__TENANT_ID=${AZURE_TENANT_ID}
       - DatabaseConnectionString=${DatabaseConnectionString}
       - DataProtectionKeyEncryptionKey=${DataProtectionKeyEncryptionKey}
       - DEFAULT_USERS=${DEFAULT_USERS}

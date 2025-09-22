@@ -27,7 +27,6 @@ using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Middleware;
-using Scv.Api.Jobs;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
 
@@ -83,6 +82,7 @@ namespace Scv.Api
             services.AddNutrient();
             services.AddJasperDb(Configuration);
             services.AddHangfire(Configuration);
+            services.AddGraphService(Configuration);
 
             #region Cors
 

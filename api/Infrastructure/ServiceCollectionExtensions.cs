@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Reflection;
+using Azure.Identity;
 using GdPicture14;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -15,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Scv.Api.Documents;
@@ -130,6 +132,24 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
             services.AddScoped<IPermissionRepository, PermissionRepository>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddGraphService(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddSingleton<GraphServiceClient>(sp =>
+            {
+                var clientId = configuration.GetNonEmptyValue("AZURE:CLIENT_ID");
+                var tenantId = configuration.GetNonEmptyValue("AZURE:TENANT_ID");
+                var clientSecret = configuration.GetNonEmptyValue("AZURE:CLIENT_SECRET");
+
+                var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+
+                return new GraphServiceClient(credential);
+            });
+
+            services.AddScoped<IEmailService, EmailService>();
 
             return services;
         }

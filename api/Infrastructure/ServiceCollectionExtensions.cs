@@ -229,6 +229,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
+                services.AddTransient<IRecurringJob, SyncReservedJudgementsJob>();
             }
 
             return services;

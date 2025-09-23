@@ -286,3 +286,54 @@ resource "aws_secretsmanager_secret_version" "dars_secret_value" {
     ignore_changes = [secret_string]
   }
 }
+
+resource "aws_secretsmanager_secret" "azure_secret" {
+  name       = "external/${var.app_name}-azure-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "azure_secret_value" {
+  secret_id = aws_secretsmanager_secret.azure_secret.id
+  secret_string = jsonencode({
+    clientId       = "",
+    clientSecret   = ""
+    tenantId       = "",
+    serviceAccount = ""
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+resource "aws_secretsmanager_secret" "jobs_secret" {
+  name       = "external/${var.app_name}-jobs-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "jobs_secret_value" {
+  secret_id = aws_secretsmanager_secret.jobs_secret.id
+  secret_string = jsonencode({
+    syncReservedJudgementsSchedule = "",
+    syncDocumentCategoriesSchedule = ""
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+resource "aws_secretsmanager_secret" "reserved_judgements_secret" {
+  name       = "external/${var.app_name}-reserved-judgements-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "reserved_judgements_secret_value" {
+  secret_id = aws_secretsmanager_secret.reserved_judgements_secret.id
+  secret_string = jsonencode({
+    attachmentName = "",
+    sender         = "",
+    subject        = ""
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}

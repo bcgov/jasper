@@ -9,9 +9,11 @@ aws_secret_format="external/jasper-X-secret-$AWS_SECRET_PREFIX$VAULT_SECRET_ENV"
 secret_keys="\
   aspnet_core \
   auth \
+  azure \
   dars \
   database \
   file_services_client \
+  jobs \
   keycloak \
   location_services_client \
   lookup_services_client \
@@ -19,6 +21,7 @@ secret_keys="\
   mtls_cert \
   pcss \
   request \
+  reserved_judgements \
   splunk \
   user_services_client"
 

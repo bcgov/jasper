@@ -4,6 +4,7 @@ namespace Scv.Api.Models;
 
 public class ReservedJudgementDto : BaseDto
 {
+    public int? JudgeId { get; set; }
     public DateTime AppearanceDate { get; set; }
     public string CourtClass { get; set; }
     public string FileNumber { get; set; }

@@ -7,6 +7,7 @@ namespace Scv.Db.Models;
 [Collection(CollectionNameConstants.RESERVED_JUDGEMENTS)]
 public class ReservedJudgement : EntityBase
 {
+    public int? JudgeId { get; set; }
     public DateTime AppearanceDate { get; set; }
     public string CourtClass { get; set; }
     public string CourtFileNumber { get; set; }

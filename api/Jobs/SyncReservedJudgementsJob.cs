@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DnsClient.Internal;
@@ -10,7 +11,9 @@ using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Db.Models;
 
 namespace Scv.Api.Jobs;
 
@@ -21,12 +24,14 @@ public class SyncReservedJudgementsJob(
     ILogger<SyncReservedJudgementsJob> logger,
     IEmailService emailService,
     ICsvParser csvParser,
-    IDashboardService dashboardService)
+    IDashboardService dashboardService,
+    ICrudService<ReservedJudgementDto> rjService)
     : RecurringJobBase<SyncReservedJudgementsJob>(configuration, cache, mapper, logger)
 {
     private readonly IEmailService _emailService = emailService;
     private readonly ICsvParser _csvParser = csvParser;
     private readonly IDashboardService _dashboardService = dashboardService;
+    private readonly ICrudService<ReservedJudgementDto> _rjService = rjService;
 
     public override string JobName => nameof(SyncReservedJudgementsJob);
 
@@ -37,49 +42,65 @@ public class SyncReservedJudgementsJob(
     {
         try
         {
-            this.Logger.LogInformation("Starting to download today's reserved judgements.");
+            this.Logger.LogInformation("Starting to process today's reserved judgements.");
 
-            // Fetch and download the email
-            var mailbox = this.Configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
-            var subject = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SUBJECT");
-            var filename = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:FILENAME");
-            var fromEmail = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SENDER");
-
-            var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, fromEmail);
-
-            if (!messages.Any())
+            var newRJs = await GetNewReservedJudgements();
+            if (newRJs.Length != 0)
             {
-                this.Logger.LogWarning("No email found with subject: {Subject}", subject);
-                return;
+                this.Logger.LogInformation("Deleting existing reserved judgements in the db.");
+                var existingRJs = await _rjService.GetAllAsync();
+                await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
             }
-
-            var recentMessage = messages.FirstOrDefault();
-            var attachments = await _emailService.GetAttachmentsAsStreamsAsync(mailbox, recentMessage.Id);
-            if (attachments.Count == 0 || !attachments.ContainsKey(filename))
-            {
-                this.Logger.LogWarning("No attachment found with filename: {Filename}", filename);
-                return;
-            }
-
-            this.Logger.LogInformation("Parsing the CSV file content.");
-            var parsedRJs = _csvParser.Parse<ReservedJudgement>(attachments.FirstOrDefault().Value);
-
-            // Get judge info from the db and map to the RJs
-
 
             this.Logger.LogInformation("Saving the new reserved judgements in the db.");
-            // Delete existing RJs in the database
-
-            // Add new RJs to the database
+            var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs);
+            await _rjService.AddRangeAsync(newRJsDtos);
 
             this.Logger.LogInformation("Successfuly processed today's reserved judgements.");
-
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Error occured while downloading the today's reserved judgements.");
             throw;
         }
+    }
+
+    private async Task<ReservedJudgement[]> GetNewReservedJudgements()
+    {
+        var mailbox = this.Configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
+        var subject = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SUBJECT");
+        var filename = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:FILENAME");
+        var fromEmail = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SENDER");
+
+        var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, fromEmail);
+
+        if (!messages.Any())
+        {
+            this.Logger.LogWarning("No email found with subject: {Subject}", subject);
+            return [];
+        }
+
+        var recentMessage = messages.FirstOrDefault();
+        var attachments = await _emailService.GetAttachmentsAsStreamsAsync(mailbox, recentMessage.Id);
+        if (attachments.Count == 0 || !attachments.ContainsKey(filename))
+        {
+            this.Logger.LogWarning("No attachment found with filename: {Filename}", filename);
+            return [];
+        }
+
+        this.Logger.LogInformation("Parsing the CSV file content.");
+        var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.FirstOrDefault().Value);
+
+        var newRJsTask = this.Mapper.Map<List<ReservedJudgement>>(parsedRJs).Select(async rj =>
+        {
+            // JudgeId is not provided in the CSV so we need to retrieved it based on the name on best effort.
+            rj.JudgeId = await DeriveJudgeId(rj.AdjudicatorLastNameFirstName);
+            return rj;
+        });
+
+        var newRJs = await Task.WhenAll(newRJsTask);
+
+        return newRJs;
     }
 
     private async Task<int?> DeriveJudgeId(string adjudicatorName)

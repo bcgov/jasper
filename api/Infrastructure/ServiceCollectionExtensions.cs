@@ -44,6 +44,7 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
+using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 
 namespace Scv.Api.Infrastructure
 {
@@ -119,6 +120,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<RoleSeeder>();
             services.AddScoped<GroupSeeder>();
             services.AddScoped<UserSeeder>();
+            services.AddScoped<GroupAliasSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -182,12 +184,16 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
+            services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddSingleton<JCUserService>();
@@ -208,6 +214,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
+                services.AddScoped<IGroupService, GroupService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
             }
 

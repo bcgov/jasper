@@ -8,6 +8,7 @@ public static class CollectionNameConstants
     public const string BINDERS = "binders";
     public const string DOCUMENT_CATEGORIES = "document_categories";
     public const string GROUPS = "groups";
+    public const string GROUP_ALIASES = "group_aliases";
     public const string PERMISSIONS = "permissions";
     public const string ROLES = "roles";
     public const string TAGS = "tags";

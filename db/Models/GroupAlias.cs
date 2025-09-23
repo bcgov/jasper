@@ -8,12 +8,19 @@ namespace Scv.Db.Models
     public class GroupAlias : EntityBase
     {
         public const string REGIONAL_ADMINISTRATIVE_JUDGE = "Regional Administrative Judge";
+        public const string RAJ_WITH_CC_VIEW = "RAJ with CC View";
         public const string JUDGE = "Judge";
         public const string JUDGE_NO_CLDC = "Judge - No CLDC";
+        public const string JUDGE_WITH_COURT_LIST = "Judge with Court List";
+        public const string JUDGE_TRAINING_ROLE = "Judge Training Role";
+        public const string SENIOR_JUDGE = "Senior Judge";
+        public const string SENIOR_JUDGE_COURT_LIST = "Senior Judge - Court List";
+        public const string JUDGE_JJ_OUTLOOK_INTEGRATION = "Judge/JJ Outlook Integration";
         public const string USER_ROLE_ADMIN = "User Role Admin";
         public const string PRODUCT_MANAGER = "Product Manager";
         public const string OCJ_HELP_DESK = "OCJ Help Desk";
         public const string CHIEF_JUDGE_ACJ = "Chief Judge/ACJs";
+
 
         public static readonly List<GroupAlias> ALL_GROUP_ALIASES =
         [
@@ -51,5 +58,5 @@ namespace Scv.Db.Models
 
         public string GroupId { get; set; }
 
-        }
+    }
 }

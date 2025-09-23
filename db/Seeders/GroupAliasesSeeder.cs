@@ -23,9 +23,15 @@ namespace Scv.Db.Seeders
                 [GroupAlias.CHIEF_JUDGE_ACJ] = Group.JUDICIARY,
                 [GroupAlias.REGIONAL_ADMINISTRATIVE_JUDGE] = Group.JUDICIARY,
                 [GroupAlias.JUDGE_NO_CLDC] = Group.JUDICIARY,
+                [GroupAlias.JUDGE_WITH_COURT_LIST] = Group.JUDICIARY,
+                [GroupAlias.JUDGE_JJ_OUTLOOK_INTEGRATION] = Group.JUDICIARY,
+                [GroupAlias.SENIOR_JUDGE_COURT_LIST] = Group.JUDICIARY,
+                [GroupAlias.SENIOR_JUDGE] = Group.JUDICIARY,
                 [GroupAlias.PRODUCT_MANAGER] = Group.TRAINING_AND_ADMIN,
                 [GroupAlias.OCJ_HELP_DESK] = Group.TRAINING_AND_ADMIN,
                 [GroupAlias.USER_ROLE_ADMIN] = Group.TRAINING_AND_ADMIN,
+                [GroupAlias.JUDGE_TRAINING_ROLE] = Group.TRAINING_AND_ADMIN,
+                [GroupAlias.RAJ_WITH_CC_VIEW] = Group.TRAINING_AND_ADMIN,
             };
 
             foreach (var alias in aliases)

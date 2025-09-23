@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
@@ -16,20 +15,21 @@ public interface IEmailService
         string mailbox,
         string subjectPattern,
         string fromEmail,
-        string csvFilenamePattern = null);
-    Task<Dictionary<string, MemoryStream>> GetCsvAttachmentsAsStreamsAsync(string mailbox, string messageId);
+        string filenamePattern = null,
+        string fileExtension = ".csv");
+    Task<Dictionary<string, MemoryStream>> GetAttachmentsAsStreamsAsync(string mailbox, string messageId, string fileExtension = ".csv");
 }
 
-public class EmailService(ILogger<EmailService> logger, GraphServiceClient graphServiceClient) : IEmailService
+public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
 {
-    private readonly ILogger<EmailService> _logger = logger;
     private readonly GraphServiceClient _graphServiceClient = graphServiceClient;
 
     public async Task<IEnumerable<Message>> GetFilteredEmailsAsync(
         string mailbox,
         string subjectPattern,
         string fromEmail,
-        string csvFilenamePattern = null)
+        string filenamePattern = null,
+        string fileExtension = ".csv")
     {
         var filters = new List<string> { "hasAttachments eq true" };
 
@@ -54,22 +54,22 @@ public class EmailService(ILogger<EmailService> logger, GraphServiceClient graph
                 config.QueryParameters.Select = ["id", "subject", "from", "receivedDateTime", "hasAttachments"];
                 config.QueryParameters.Expand = ["attachments"];
                 config.QueryParameters.Orderby = ["receivedDateTime desc"];
-                config.QueryParameters.Top = 100;
+                config.QueryParameters.Top = 5;
             });
 
         return response.Value.Where(msg =>
             msg.Attachments?.Any(att =>
-                att is FileAttachment fileAtt &&
-                fileAtt.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase) &&
-                (string.IsNullOrEmpty(csvFilenamePattern) ||
-                 Regex.IsMatch(fileAtt.Name, csvFilenamePattern, RegexOptions.IgnoreCase))
+                att is FileAttachment fileAtt
+                && (string.IsNullOrWhiteSpace(fileExtension) || fileAtt.Name.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase))
+                && (string.IsNullOrEmpty(filenamePattern) || Regex.IsMatch(fileAtt.Name, filenamePattern, RegexOptions.IgnoreCase))
             ) == true
         );
     }
 
-    public async Task<Dictionary<string, MemoryStream>> GetCsvAttachmentsAsStreamsAsync(
+    public async Task<Dictionary<string, MemoryStream>> GetAttachmentsAsStreamsAsync(
         string mailbox,
-        string messageId)
+        string messageId,
+        string fileExtension = ".csv")
     {
         var message = await _graphServiceClient
             .Users[mailbox]
@@ -78,7 +78,7 @@ public class EmailService(ILogger<EmailService> logger, GraphServiceClient graph
 
         return message.Attachments?
             .OfType<FileAttachment>()
-            .Where(att => att.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            .Where(att => (string.IsNullOrWhiteSpace(fileExtension) || att.Name.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase)))
             .ToDictionary(
                 att => att.Name,
                 att => new MemoryStream(att.ContentBytes))

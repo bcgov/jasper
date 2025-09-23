@@ -20,40 +20,36 @@ public class SyncDocumentCategoriesJob(
     ILogger<SyncDocumentCategoriesJob> logger,
     ConfigurationServicesClient configClient,
     IRepositoryBase<DocumentCategory> dcRepo)
-    : IRecurringJob
+    : RecurringJobBase<SyncDocumentCategoriesJob>(configuration, cache, mapper, logger)
 {
-    private readonly IConfiguration _configuration = configuration;
-    private readonly IAppCache _cache = cache;
-    private readonly IMapper _mapper = mapper;
-    private readonly ILogger<SyncDocumentCategoriesJob> _logger = logger;
     private readonly ConfigurationServicesClient _configClient = configClient;
     private readonly IRepositoryBase<DocumentCategory> _dcRepo = dcRepo;
 
-    public const string DEFAULT_SCHEDULE = "0 7 * * *"; // 7AM UTC / 12AM PST
+    public override string JobName => nameof(SyncDocumentCategoriesJob);
 
-    public string JobName => nameof(SyncDocumentCategoriesJob);
+    public override string CronSchedule =>
+        this.Configuration.GetValue<string>("JOBS:SYNC_DOCUMENT_CATEGORIES_SCHEDULE") ?? base.CronSchedule;
 
-    public string CronSchedule => _configuration.GetValue<string>("JobSchedule:SyncDocumentCategories") ?? DEFAULT_SCHEDULE;
 
-    public async Task Execute()
+    public override async Task Execute()
     {
         try
         {
-            _logger.LogInformation("Starting to sync document categories.");
+            this.Logger.LogInformation("Starting to sync document categories.");
 
             // Pulled this logic out of DocumentCategoryService because it depends on IRepositoryBase,
             // which requires MongoDB credentials. That complicates conditional registration
             // during startup. Once MongoDB is properly set up, this should go back into
             // DocumentCategoryService so all related transactions live in one place.
 
-            var configData = await _cache.GetOrAddAsync(
+            var configData = await this.Cache.GetOrAddAsync(
                 "ExternalConfig",
                 async () => await _configClient.GetAllAsync());
 
             var externalDocumentCategories = configData
                 .Where(c => DocumentCategory.ALL_DOCUMENT_CATEGORIES.Contains(c.Key));
 
-            var categories = _mapper.Map<List<DocumentCategory>>(externalDocumentCategories);
+            var categories = this.Mapper.Map<List<DocumentCategory>>(externalDocumentCategories);
 
             foreach (var category in categories)
             {
@@ -61,7 +57,7 @@ public class SyncDocumentCategoriesJob(
                 if (categoryEntity == null)
                 {
                     await _dcRepo.AddAsync(category);
-                    _logger.LogInformation("{Name} category added.", category.Name);
+                    this.Logger.LogInformation("{Name} category added.", category.Name);
                     continue;
                 }
 
@@ -70,15 +66,15 @@ public class SyncDocumentCategoriesJob(
                 {
                     category.Adapt(categoryEntity);
                     await _dcRepo.UpdateAsync(categoryEntity);
-                    _logger.LogInformation("{Name} category updated.", category.Name);
+                    this.Logger.LogInformation("{Name} category updated.", category.Name);
                 }
             }
 
-            _logger.LogInformation("Document categories has been synced successfully.");
+            this.Logger.LogInformation("Document categories has been synced successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occured while syncing the document categories.");
+            this.Logger.LogError(ex, "Error occured while syncing the document categories.");
             throw;
         }
     }

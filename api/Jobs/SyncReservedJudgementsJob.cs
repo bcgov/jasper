@@ -25,13 +25,15 @@ public class SyncReservedJudgementsJob(
     IEmailService emailService,
     ICsvParser csvParser,
     IDashboardService dashboardService,
-    ICrudService<ReservedJudgementDto> rjService)
+    ICrudService<ReservedJudgementDto> rjService,
+    CourtListService courtListService)
     : RecurringJobBase<SyncReservedJudgementsJob>(configuration, cache, mapper, logger)
 {
     private readonly IEmailService _emailService = emailService;
     private readonly ICsvParser _csvParser = csvParser;
     private readonly IDashboardService _dashboardService = dashboardService;
     private readonly ICrudService<ReservedJudgementDto> _rjService = rjService;
+    private readonly CourtListService _courtListService = courtListService;
 
     public override string JobName => nameof(SyncReservedJudgementsJob);
 
@@ -91,13 +93,8 @@ public class SyncReservedJudgementsJob(
         this.Logger.LogInformation("Parsing the CSV file content.");
         var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.FirstOrDefault().Value);
 
-        var newRJsTask = this.Mapper.Map<List<ReservedJudgement>>(parsedRJs).Select(async rj =>
-        {
-            // JudgeId is not provided in the CSV so we need to retrieved it based on the name on best effort.
-            rj.JudgeId = await DeriveJudgeId(rj.AdjudicatorLastNameFirstName);
-            return rj;
-        });
-
+        this.Logger.LogInformation("Populating other info.");
+        var newRJsTask = this.Mapper.Map<List<ReservedJudgement>>(parsedRJs).Select(async rj => await PopulateMissingInfo(rj));
         var newRJs = await Task.WhenAll(newRJsTask);
 
         return newRJs;
@@ -130,5 +127,34 @@ public class SyncReservedJudgementsJob(
             && char.ToUpperInvariant(j.FirstName.Trim()[0]) == targetInitial);
 
         return judge?.UserId;
+    }
+
+    private async Task<ReservedJudgement> PopulateMissingInfo(ReservedJudgement rj)
+    {
+        // JudgeId is not provided in the CSV so we need to retrieved it based on the name on best effort.
+        var judgeId = await DeriveJudgeId(rj.AdjudicatorLastNameFirstName);
+        if (!judgeId.HasValue)
+        {
+            return rj;
+        }
+
+        // Retrieve other info from court list.
+        var courtList = await _courtListService.GetJudgeCourtListAppearances(judgeId.Value, rj.AppearanceDate);
+        var appearance = courtList.Items
+            .SelectMany(i => i.Appearances)
+            .FirstOrDefault(a => a.CourtFileNumber == rj.CourtFileNumber
+                && a.AslFeederAdjudicators.Any(asl => asl.JudiciaryPersonId == rj.JudgeId));
+        if (appearance == null)
+        {
+            return rj;
+        }
+
+        rj.JudgeId = judgeId.Value;
+        rj.StyleOfCause = appearance.StyleOfCause;
+        rj.Reason = appearance.AppearanceReasonDsc;
+        rj.CourtClass = appearance.CourtClassCd;
+        // Due Date = ??
+
+        return rj;
     }
 }

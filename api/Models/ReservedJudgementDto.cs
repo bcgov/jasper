@@ -18,4 +18,7 @@ public class ReservedJudgementDto : BaseDto
     public char RJOutstandingYesNoCode { get; set; }
     public int AgeInDays { get; set; }
     public DateTime? UpdatedDate { get; set; }
+
+    public string StyleOfCause { get; set; }
+    public string Reason { get; set; }
 }

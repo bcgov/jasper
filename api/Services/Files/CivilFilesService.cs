@@ -58,9 +58,10 @@ namespace Scv.Api.Services.Files
             _locationService = locationService;
             _mapper = mapper;
             _cache = cache;
-            _applicationCode = user.ApplicationCode();
-            _requestAgencyIdentifierId = user.AgencyCode();
-            _requestPartId = user.ParticipantId();
+            _applicationCode = user?.ApplicationCode() ?? configuration.GetNonEmptyValue("Request:ApplicationCd");
+            _requestAgencyIdentifierId = user?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
+            _requestPartId = user?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
+
             _logger = logger;
             _filterOutDocumentTypes = configuration.GetNonEmptyValue("ExcludeDocumentTypeCodesForCounsel").Split(",").ToList();
             _currentUser = user;

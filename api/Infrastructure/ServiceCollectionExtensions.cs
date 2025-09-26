@@ -204,7 +204,7 @@ namespace Scv.Api.Infrastructure
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
-            services.AddTransient(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
+            services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();

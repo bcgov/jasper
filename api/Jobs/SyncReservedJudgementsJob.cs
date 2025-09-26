@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DnsClient.Internal;
+using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -12,8 +13,11 @@ using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
+using Scv.Api.Models.Search;
 using Scv.Api.Services;
+using Scv.Api.Services.Files;
 using Scv.Db.Models;
+using static PCSSCommon.Models.ActivityClassUsage;
 
 namespace Scv.Api.Jobs;
 
@@ -26,7 +30,9 @@ public class SyncReservedJudgementsJob(
     ICsvParser csvParser,
     IDashboardService dashboardService,
     ICrudService<ReservedJudgementDto> rjService,
-    CourtListService courtListService)
+    CourtListService courtListService,
+    FilesService filesService,
+    LocationService locationService)
     : RecurringJobBase<SyncReservedJudgementsJob>(configuration, cache, mapper, logger)
 {
     private readonly IEmailService _emailService = emailService;
@@ -34,6 +40,9 @@ public class SyncReservedJudgementsJob(
     private readonly IDashboardService _dashboardService = dashboardService;
     private readonly ICrudService<ReservedJudgementDto> _rjService = rjService;
     private readonly CourtListService _courtListService = courtListService;
+    private readonly CriminalFilesService _criminalFilesService = filesService.Criminal;
+    private readonly CivilFilesService _civilFilesService = filesService.Civil;
+    private readonly LocationService _locationService = locationService;
 
     public override string JobName => nameof(SyncReservedJudgementsJob);
 
@@ -62,7 +71,7 @@ public class SyncReservedJudgementsJob(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error occured while downloading the today's reserved judgements.");
+            this.Logger.LogError(ex, "Error occured while processing the today's reserved judgements.");
             throw;
         }
     }
@@ -94,7 +103,7 @@ public class SyncReservedJudgementsJob(
         var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.FirstOrDefault().Value);
 
         this.Logger.LogInformation("Populating other info.");
-        var newRJsTask = this.Mapper.Map<List<ReservedJudgement>>(parsedRJs).Select(async rj => await PopulateMissingInfo(rj));
+        var newRJsTask = parsedRJs.Select(crj => PopulateMissingInfo(crj));
         var newRJs = await Task.WhenAll(newRJsTask);
 
         return newRJs;
@@ -126,35 +135,102 @@ public class SyncReservedJudgementsJob(
             string.Equals(j.LastName.Trim(), lastName.Trim(), StringComparison.OrdinalIgnoreCase)
             && char.ToUpperInvariant(j.FirstName.Trim()[0]) == targetInitial);
 
-        return judge?.UserId;
+        return judge?.PersonId;
     }
 
-    private async Task<ReservedJudgement> PopulateMissingInfo(ReservedJudgement rj)
+    private async Task<ReservedJudgement> PopulateMissingInfo(CsvReservedJudgement crj)
     {
+        var rj = this.Mapper.Map<ReservedJudgement>(crj);
+
         // JudgeId is not provided in the CSV so we need to retrieved it based on the name on best effort.
-        var judgeId = await DeriveJudgeId(rj.AdjudicatorLastNameFirstName);
+        var judgeId = await DeriveJudgeId(crj.AdjudicatorLastNameFirstName);
         if (!judgeId.HasValue)
         {
+            this.Logger.LogWarning("Could not derive JudgeId for adjudicator name: {AdjudicatorName}", crj.AdjudicatorLastNameFirstName);
             return rj;
         }
 
         // Retrieve other info from court list.
-        var courtList = await _courtListService.GetJudgeCourtListAppearances(judgeId.Value, rj.AppearanceDate);
+        var courtList = await _courtListService.GetJudgeCourtListAppearances(judgeId.Value, crj.AppearanceDate);
         var appearance = courtList.Items
             .SelectMany(i => i.Appearances)
-            .FirstOrDefault(a => a.CourtFileNumber == rj.CourtFileNumber
-                && a.AslFeederAdjudicators.Any(asl => asl.JudiciaryPersonId == rj.JudgeId));
+            .FirstOrDefault(a => a.CourtFileNumber == crj.CourtFileNumber
+                && a.AslFeederAdjudicators.Any(asl => asl.JudiciaryPersonId == judgeId));
         if (appearance == null)
         {
+            this.Logger.LogWarning("Could not find appearance for JudgeId: {JudgeId}, CourtFileNumber: {CourtFileNumber}, AppearanceDate: {AppearanceDate}",
+                judgeId.Value, crj.CourtFileNumber, crj.AppearanceDate);
             return rj;
         }
 
+        rj.AppearanceId = appearance.AppearanceId;
+        rj.PhysicalFileId = appearance.PhysicalFileId;
+        rj.PartId = appearance.ProfPartId;
         rj.JudgeId = judgeId.Value;
         rj.StyleOfCause = appearance.StyleOfCause;
         rj.Reason = appearance.AppearanceReasonDsc;
+
+        // Replace the CourtClass from court list as it is what the app is accustomed to.
         rj.CourtClass = appearance.CourtClassCd;
-        // Due Date = ??
+
+        // Use Court File Search endpoint to determine the next appearance date.
+        rj.DueDate = await PopulateNextAppearanceDate(appearance, crj.FacilityDescription);
 
         return rj;
+    }
+
+    private async Task<string> PopulateNextAppearanceDate(PcssCounsel.ActivityAppearanceDetail appearance, string facilityCode)
+    {
+        var locations = await _locationService.GetLocations();
+
+        var locationCode = locations
+            .FirstOrDefault(l => string.Equals(l.AgencyIdentifierCd, facilityCode, StringComparison.OrdinalIgnoreCase))
+            ?.Code;
+
+        if (string.IsNullOrWhiteSpace(locationCode))
+        {
+            this.Logger.LogWarning("Could not find location code for facility code: {FacilityCode}", facilityCode);
+            return string.Empty;
+        }
+
+
+        FileSearchResponse response = null;
+        Enum.TryParse(appearance.CourtClassCd, ignoreCase: true, out CourtClassCd courtClassCd);
+
+        if (string.Equals(appearance.CourtDivisionCd, CourtCalendarDetailAppearanceCourtDivisionCd.R.ToString()))
+        {
+            response = await _criminalFilesService.SearchAsync(new FilesCriminalQuery
+            {
+                CourtClass = courtClassCd,
+                FileNumberTxt = appearance.CourtFileNumber,
+                SearchMode = SearchMode.FILENO,
+                FileHomeAgencyId = locationCode
+            });
+
+        }
+        else if (string.Equals(appearance.CourtDivisionCd, CourtCalendarDetailAppearanceCourtDivisionCd.I.ToString()))
+        {
+            response = await _civilFilesService.SearchAsync(new FilesCivilQuery
+            {
+                CourtClass = courtClassCd,
+                FileNumber = appearance.CourtFileNumber,
+                SearchMode = SearchMode.FILENO,
+                FileHomeAgencyId = locationCode
+            });
+        }
+
+        if (response == null || response.FileDetail.Count == 0)
+        {
+            this.Logger.LogWarning("Could not find case details for FileNumber: {FileNumber}, CourtClass: {CourtClass}, Location: {LocationCode}",
+                appearance.CourtFileNumber, courtClassCd, locationCode);
+            return string.Empty;
+        }
+
+        if (response.FileDetail.Count > 1)
+        {
+            this.Logger.LogWarning("There should only be one case detail but search returned more than 1");
+        }
+
+        return response.FileDetail.FirstOrDefault().NextApprDt;
     }
 }

@@ -58,9 +58,9 @@ namespace Scv.Api.Services.Files
                 factory.CreateLogger<CivilFilesService>());
             Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal, documentConverter);
 
-            _applicationCode = claimsPrincipal.ApplicationCode();
-            _requestAgencyIdentifierId = claimsPrincipal.AgencyCode();
-            _requestPartId = claimsPrincipal.ParticipantId();
+            _applicationCode = claimsPrincipal?.ApplicationCode() ?? configuration.GetNonEmptyValue("Request:ApplicationCd");
+            _requestAgencyIdentifierId = claimsPrincipal?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
+            _requestPartId = claimsPrincipal?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
         }
 
         #endregion Constructor

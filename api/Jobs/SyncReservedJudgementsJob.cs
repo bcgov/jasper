@@ -239,6 +239,6 @@ public class SyncReservedJudgementsJob(
             this.Logger.LogWarning("There should only be one case detail but search returned more than 1");
         }
 
-        return response.FileDetail.FirstOrDefault().NextApprDt;
+        return response.FileDetail.FirstOrDefault()?.NextApprDt ?? string.Empty;
     }
 }

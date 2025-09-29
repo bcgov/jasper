@@ -70,7 +70,7 @@ public class SyncReservedJudgementsJob(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error occured while processing the today's reserved judgements: {Error}", ex.Message);
+            this.Logger.LogError(ex, "Error occured while processing the today's reserved judgements.");
             throw;
         }
     }

@@ -68,9 +68,8 @@ public class SyncReservedJudgementsJob(
 
             this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfuly processed {ValidRJsCount}.", newRJs.Length, newRJsDtos.Count);
         }
-        catch (Exception ex)
+        catch
         {
-            this.Logger.LogError(ex, "Error occured while processing the today's reserved judgements.");
             throw;
         }
     }

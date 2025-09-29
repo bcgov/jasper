@@ -23,7 +23,7 @@ using Xunit;
 namespace tests.api.Jobs;
 public class SyncDocumentCategoriesJobTests : ServiceTestBase
 {
-    private const string CONFIG_KEY = "JobSchedule:SyncDocumentCategories";
+    private const string CONFIG_KEY = "JOBS:SYNC_DOCUMENT_CATEGORIES_SCHEDULE";
 
     private readonly Faker _faker;
     private readonly Mock<ILogger<SyncDocumentCategoriesJob>> _logger;

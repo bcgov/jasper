@@ -227,7 +227,7 @@ public class SyncReservedJudgementsJob(
             });
         }
 
-        if (response == null || response.FileDetail.Count == 0)
+        if (response == null || response.FileDetail == null || response.FileDetail.Count == 0)
         {
             this.Logger.LogWarning("Could not find case details for FileNumber: {FileNumber}, CourtClass: {CourtClass}, Location: {LocationCode}",
                 appearance.CourtFileNumber, courtClassCd, locationCode);

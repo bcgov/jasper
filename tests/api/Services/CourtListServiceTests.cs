@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
@@ -67,7 +68,13 @@ public class CourtListServiceTests : ServiceTestBase
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
         // Setup ClaimsPrincipal
-        var identity = new ClaimsIdentity([], "mock");
+        var identity = new ClaimsIdentity(
+            [
+                new(CustomClaimTypes.ApplicationCode, "TESTAPP"),
+                new(CustomClaimTypes.JcAgencyCode, "TESTAGENCY"),
+                new(CustomClaimTypes.JcParticipantId, "TESTPART"),
+            ],
+            "mock");
 
 
         var courtListService = new CourtListService(

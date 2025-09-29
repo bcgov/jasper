@@ -65,9 +65,9 @@ namespace Scv.Api.Services
             _locationService = locationService;
             _searchDateClient = searchDateClient;
             _reportServiceClient = reportServiceClient;
-            _applicationCode = user.ApplicationCode();
-            _requestAgencyIdentifierId = user.AgencyCode();
-            _requestPartId = user.ParticipantId();
+            _applicationCode = user?.ApplicationCode() ?? configuration.GetNonEmptyValue("Request:ApplicationCd");
+            _requestAgencyIdentifierId = user?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
+            _requestPartId = user?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
 
         }
 

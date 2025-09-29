@@ -63,11 +63,11 @@ public class SyncReservedJudgementsJob(
                 await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
             }
 
-            this.Logger.LogInformation("Saving the new reserved judgements in the db.");
-            var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs);
+            this.Logger.LogInformation("Saving new reserved judgements in the db.");
+            var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs.Where(rj => rj.AppearanceId != null));
             await _rjService.AddRangeAsync(newRJsDtos);
 
-            this.Logger.LogInformation("Successfuly processed today's reserved judgements.");
+            this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfuly processed {ValidRJsCount}.", newRJs.Length, newRJsDtos.Count);
         }
         catch (Exception ex)
         {
@@ -80,7 +80,7 @@ public class SyncReservedJudgementsJob(
     {
         var mailbox = this.Configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
         var subject = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SUBJECT");
-        var filename = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:FILENAME");
+        var filename = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:ATTACHMENT_NAME");
         var fromEmail = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SENDER");
 
         var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, fromEmail);
@@ -92,7 +92,7 @@ public class SyncReservedJudgementsJob(
         }
 
         var recentMessage = messages.FirstOrDefault();
-        var attachments = await _emailService.GetAttachmentsAsStreamsAsync(mailbox, recentMessage.Id);
+        var attachments = await _emailService.GetAttachmentsAsStreamsAsync(mailbox, recentMessage.Id, filename);
         if (attachments.Count == 0 || !attachments.ContainsKey(filename))
         {
             this.Logger.LogWarning("No attachment found with filename: {Filename}", filename);
@@ -102,7 +102,7 @@ public class SyncReservedJudgementsJob(
         this.Logger.LogInformation("Parsing the CSV file content.");
         var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.FirstOrDefault().Value);
 
-        this.Logger.LogInformation("Populating other info.");
+        this.Logger.LogInformation("Populating missing info...");
         var newRJsTask = parsedRJs.Select(crj => PopulateMissingInfo(crj));
         var newRJs = await Task.WhenAll(newRJsTask);
 
@@ -146,12 +146,20 @@ public class SyncReservedJudgementsJob(
         var judgeId = await DeriveJudgeId(crj.AdjudicatorLastNameFirstName);
         if (!judgeId.HasValue)
         {
-            this.Logger.LogWarning("Could not derive JudgeId for adjudicator name: {AdjudicatorName}", crj.AdjudicatorLastNameFirstName);
+            this.Logger.LogWarning("Could not derive JudgeId for adjudicator name: {AdjudicatorName}, CourtFileNumber: {CourtFileNumber}",
+                crj.AdjudicatorLastNameFirstName, crj.CourtFileNumber);
             return rj;
         }
 
         // Retrieve other info from court list.
         var courtList = await _courtListService.GetJudgeCourtListAppearances(judgeId.Value, crj.AppearanceDate);
+        if (courtList == null || courtList.Items.Count == 0)
+        {
+            this.Logger.LogWarning("Could not find court list for JudgeId: {JudgeId}, AppearanceDate: {AppearanceDate}. CourtFileNumber: {CourtFileNumber}",
+                judgeId.Value, crj.AppearanceDate, crj.CourtFileNumber);
+            return rj;
+        }
+
         var appearance = courtList.Items
             .SelectMany(i => i.Appearances)
             .FirstOrDefault(a => a.CourtFileNumber == crj.CourtFileNumber
@@ -174,7 +182,7 @@ public class SyncReservedJudgementsJob(
         rj.CourtClass = appearance.CourtClassCd;
 
         // Use Court File Search endpoint to determine the next appearance date.
-        rj.DueDate = await PopulateNextAppearanceDate(appearance, crj.FacilityDescription);
+        rj.DueDate = await PopulateNextAppearanceDate(appearance, crj.FacilityCode);
 
         return rj;
     }

@@ -2,6 +2,7 @@ output "secrets_arn_list" {
   value = [
     aws_secretsmanager_secret.api_authorizer_secret.arn,
     aws_secretsmanager_secret.aspnet_core_secret.arn,
+    aws_secretsmanager_secret.auth_secret.arn,
     aws_secretsmanager_secret.azure_secret.arn,
     aws_secretsmanager_secret.dars_secret.arn,
     aws_secretsmanager_secret.database_secret.arn,

@@ -63,7 +63,6 @@ public class SyncReservedJudgementsJob(
                 await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
             }
 
-            this.Logger.LogInformation("Saving new reserved judgements in the db.");
             var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs.Where(rj => rj.AppearanceId != null));
             await _rjService.AddRangeAsync(newRJsDtos);
 
@@ -71,7 +70,7 @@ public class SyncReservedJudgementsJob(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error occured while processing the today's reserved judgements.");
+            this.Logger.LogError(ex, "Error occured while processing the today's reserved judgements: {Error}", ex.Message);
             throw;
         }
     }
@@ -91,7 +90,7 @@ public class SyncReservedJudgementsJob(
             return [];
         }
 
-        var recentMessage = messages.FirstOrDefault();
+        var recentMessage = messages.First();
         var attachments = await _emailService.GetAttachmentsAsStreamsAsync(mailbox, recentMessage.Id, filename);
         if (attachments.Count == 0 || !attachments.ContainsKey(filename))
         {
@@ -100,7 +99,7 @@ public class SyncReservedJudgementsJob(
         }
 
         this.Logger.LogInformation("Parsing the CSV file content.");
-        var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.FirstOrDefault().Value);
+        var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.First().Value);
 
         this.Logger.LogInformation("Populating missing info...");
         var newRJsTask = parsedRJs.Select(crj => PopulateMissingInfo(crj));

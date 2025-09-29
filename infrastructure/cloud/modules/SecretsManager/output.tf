@@ -1,20 +1,22 @@
 output "secrets_arn_list" {
   value = [
+    aws_secretsmanager_secret.api_authorizer_secret.arn,
     aws_secretsmanager_secret.aspnet_core_secret.arn,
-    aws_secretsmanager_secret.auth_secret.arn,
+    aws_secretsmanager_secret.azure_secret.arn,
+    aws_secretsmanager_secret.dars_secret.arn,
     aws_secretsmanager_secret.database_secret.arn,
     aws_secretsmanager_secret.file_services_client_secret.arn,
+    aws_secretsmanager_secret.jobs_secret.arn,
     aws_secretsmanager_secret.keycloak_secret.arn,
     aws_secretsmanager_secret.location_services_client_secret.arn,
     aws_secretsmanager_secret.lookup_services_client_secret.arn,
     aws_secretsmanager_secret.misc_secret.arn,
     aws_secretsmanager_secret.mtls_cert_secret.arn,
-    aws_secretsmanager_secret.request_secret.arn,
-    aws_secretsmanager_secret.splunk_secret.arn,
-    aws_secretsmanager_secret.user_services_client_secret.arn,
-    aws_secretsmanager_secret.api_authorizer_secret.arn,
     aws_secretsmanager_secret.pcss_secret.arn,
-    aws_secretsmanager_secret.dars_secret.arn
+    aws_secretsmanager_secret.request_secret.arn,
+    aws_secretsmanager_secret.reserved_judgements_secret.arn,
+    aws_secretsmanager_secret.splunk_secret.arn,
+    aws_secretsmanager_secret.user_services_client_secret.arn
   ]
 }
 

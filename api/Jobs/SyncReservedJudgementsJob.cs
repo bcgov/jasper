@@ -56,12 +56,15 @@ public class SyncReservedJudgementsJob(
             this.Logger.LogInformation("Starting to process today's reserved judgements.");
 
             var newRJs = await GetNewReservedJudgements();
-            if (newRJs.Length != 0)
+            if (newRJs.Length == 0)
             {
-                this.Logger.LogInformation("Deleting existing reserved judgements in the db.");
-                var existingRJs = await _rjService.GetAllAsync();
-                await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
+                this.Logger.LogInformation("No RJs have been processed");
+                return;
             }
+
+            this.Logger.LogInformation("Deleting existing reserved judgements in the db.");
+            var existingRJs = await _rjService.GetAllAsync();
+            await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
 
             var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs.Where(rj => rj.AppearanceId != null));
             await _rjService.AddRangeAsync(newRJsDtos);
@@ -187,18 +190,12 @@ public class SyncReservedJudgementsJob(
 
     private async Task<string> PopulateNextAppearanceDate(PcssCounsel.ActivityAppearanceDetail appearance, string facilityCode)
     {
-        var locations = await _locationService.GetLocations();
-
-        var locationCode = locations
-            .FirstOrDefault(l => string.Equals(l.AgencyIdentifierCd, facilityCode, StringComparison.OrdinalIgnoreCase))
-            ?.Code;
-
+        var locationCode = await _locationService.GetLocationCodeByAgencyIdentifierCd(facilityCode);
         if (string.IsNullOrWhiteSpace(locationCode))
         {
             this.Logger.LogWarning("Could not find location code for facility code: {FacilityCode}", facilityCode);
             return string.Empty;
         }
-
 
         FileSearchResponse response = null;
         Enum.TryParse(appearance.CourtClassCd, ignoreCase: true, out CourtClassCd courtClassCd);

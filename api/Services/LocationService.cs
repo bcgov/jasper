@@ -91,6 +91,15 @@ namespace Scv.Api.Services
 
         public virtual async Task<string> GetRegionName(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionNameByLocation-{code}", async () => (await _locationClient.LocationsRegionAsync(code))?.RegionName);
 
+        public async Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd)
+        {
+            var locations = await GetLocations();
+            return locations
+                .FirstOrDefault(loc =>
+                    loc.AgencyIdentifierCd.Equals(agencyIdentifierCd, StringComparison.OrdinalIgnoreCase))
+                ?.Code;
+        }
+
         #endregion Lookup Methods
 
         #region JC Methods

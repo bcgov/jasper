@@ -13,7 +13,10 @@ public abstract class RecurringJobBase<TJob>(
     ILogger<TJob> logger) : IRecurringJob
     where TJob : class
 {
-    public const string DEFAULT_SCHEDULE = "0 7 * * *"; // 7AM UTC / 12AM PST
+    /// <summary>
+    /// Recurring Job has been configured to PST timezone.
+    /// </summary>
+    public const string DEFAULT_SCHEDULE = "0 0 0 * * ?"; // 12AM PST
 
     public abstract string JobName { get; }
 

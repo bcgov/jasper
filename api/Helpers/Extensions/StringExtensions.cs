@@ -15,30 +15,28 @@ namespace Scv.Api.Helpers.Extensions
 
         public static (string lastName, string firstName) SplitFullNameToFirstAndLast(this string fullName, string delimiter = ",")
         {
-            if (string.IsNullOrWhiteSpace(fullName))
+            string lastName = fullName ?? string.Empty;
+            string firstName = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(fullName))
             {
-                return (fullName, "");
+                var parts = fullName.Split(delimiter, StringSplitOptions.TrimEntries);
+
+                if (parts.Length > 0)
+                {
+                    lastName = parts[0];
+
+                    if (parts.Length > 1)
+                    {
+                        firstName = parts.Length == 2
+                            ? parts[1]
+                            : string.Join(delimiter, parts, 1, parts.Length - 1);
+                    }
+                }
             }
 
-            var parts = fullName.Split(delimiter, StringSplitOptions.TrimEntries);
-
-            if (parts.Length == 0)
-            {
-                return (fullName, "");
-            }
-
-            if (parts.Length == 1)
-            {
-                return (parts[0], "");
-            }
-
-            if (parts.Length == 2)
-            {
-                return (parts[0], parts[1]);
-            }
-
-            var combinedFirst = string.Join(delimiter, parts, 1, parts.Length - 1);
-            return (parts[0], combinedFirst);
+            return (lastName, firstName);
         }
+
     }
 }

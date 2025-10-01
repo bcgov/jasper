@@ -101,7 +101,7 @@ public class StringExtensionsTests
 
         var (last, first) = fullName.SplitFullNameToFirstAndLast();
 
-        Assert.Null(last);
+        Assert.Equal(string.Empty, last);
         Assert.Equal(string.Empty, first);
     }
 

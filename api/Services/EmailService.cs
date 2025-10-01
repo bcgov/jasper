@@ -10,7 +10,7 @@ namespace Scv.Api.Services;
 
 public interface IEmailService
 {
-    Task<IEnumerable<Message>> GetFilteredEmailsAsync(string mailbox, string subjectPattern, string fromEmail);
+    Task<IEnumerable<Message>> GetFilteredEmailsAsync(string mailbox, string subjectPattern, string fromEmail, bool hasAttachment = true);
     Task<Dictionary<string, MemoryStream>> GetAttachmentsAsStreamsAsync(string mailbox, string messageId, string attachmentName);
 }
 
@@ -18,24 +18,41 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
 {
     private readonly GraphServiceClient _graphServiceClient = graphServiceClient;
 
-    public async Task<IEnumerable<Message>> GetFilteredEmailsAsync(string mailbox, string subjectPattern, string fromEmail)
+    public async Task<IEnumerable<Message>> GetFilteredEmailsAsync(string mailbox, string subjectPattern, string fromEmail, bool hasAttachment = true)
     {
+        var filterCriteria = new List<string> { $"receivedDateTime ge {DateTime.UtcNow.AddHours(-48):yyyy-MM-ddTHH:mm:ssZ}" };
+        var orderByCriteria = new List<string> { "receivedDateTime desc" };
+
+        if (hasAttachment)
+        {
+            filterCriteria.Add("hasAttachments eq true");
+            orderByCriteria.Add("hasAttachments desc");
+        }
+
+        if (!string.IsNullOrWhiteSpace(subjectPattern))
+        {
+            filterCriteria.Add($"startsWith(subject, '{subjectPattern.Replace("'", "''")}')");
+            orderByCriteria.Add("subject");
+        }
+
+        if (!string.IsNullOrWhiteSpace(fromEmail))
+        {
+            filterCriteria.Add($"from/emailAddress/address eq '{fromEmail.Replace("'", "''")}'");
+            orderByCriteria.Add("from/emailAddress/address");
+        }
+
         var response = await _graphServiceClient
             .Users[mailbox]
             .Messages
             .GetAsync(config =>
             {
+                config.QueryParameters.Filter = string.Join(" and ", filterCriteria);
                 config.QueryParameters.Select = ["id", "subject", "from", "receivedDateTime", "hasAttachments"];
-                config.QueryParameters.Orderby = ["receivedDateTime desc"];
-                config.QueryParameters.Top = 50;
+                config.QueryParameters.Orderby = [.. orderByCriteria];
+                config.QueryParameters.Top = 10;
             });
 
-        return response.Value
-            .Where(msg =>
-                (string.IsNullOrWhiteSpace(subjectPattern) || msg.Subject.Equals(subjectPattern, StringComparison.OrdinalIgnoreCase))
-                && (string.IsNullOrWhiteSpace(fromEmail) || msg.From.EmailAddress.Address.Equals(fromEmail, StringComparison.OrdinalIgnoreCase))
-                && msg.HasAttachments.GetValueOrDefault()
-            );
+        return response.Value;
     }
 
     public async Task<Dictionary<string, MemoryStream>> GetAttachmentsAsStreamsAsync(

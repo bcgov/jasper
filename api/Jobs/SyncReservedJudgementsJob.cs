@@ -62,7 +62,6 @@ public class SyncReservedJudgementsJob(
                 return;
             }
 
-            this.Logger.LogInformation("Deleting existing reserved judgements in the db.");
             var existingRJs = await _rjService.GetAllAsync();
             await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
 

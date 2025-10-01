@@ -20,6 +20,7 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
 
     public async Task<IEnumerable<Message>> GetFilteredEmailsAsync(string mailbox, string subjectPattern, string fromEmail, bool hasAttachment = true)
     {
+        // Only emails in the last 48 hours will be queried.
         var filterCriteria = new List<string> { $"receivedDateTime ge {DateTime.UtcNow.AddHours(-48):yyyy-MM-ddTHH:mm:ssZ}" };
         var orderByCriteria = new List<string> { "receivedDateTime desc" };
 

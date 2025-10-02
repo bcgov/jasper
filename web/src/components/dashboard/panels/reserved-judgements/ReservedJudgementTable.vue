@@ -6,7 +6,7 @@
     fixed-header
     :sort-by
   >
-    <template #item.courtClass="{ item }" >
+    <template #item.courtClass="{ item }">
       {{ getCourtClassLabel(item.courtClass) }}
     </template>
   </v-data-table-virtual>
@@ -15,8 +15,8 @@
 <script setup lang="ts">
   import { ReservedJudgement } from '@/types/ReservedJudgement';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
-  import { ref } from 'vue';
   import { getCourtClassLabel } from '@/utils/utils';
+  import { ref } from 'vue';
 
   defineProps<{
     data: ReservedJudgement[];
@@ -26,7 +26,7 @@
   const headers = ref([
     {
       title: 'FILE #',
-      key: 'fileNumber',
+      key: 'courtFileNumber',
     },
     {
       title: 'ACCUSED / PARTIES',

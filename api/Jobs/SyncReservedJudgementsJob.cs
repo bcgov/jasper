@@ -68,7 +68,7 @@ public class SyncReservedJudgementsJob(
             var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs.Where(rj => rj.AppearanceId != null));
             await _rjService.AddRangeAsync(newRJsDtos);
 
-            this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfuly processed {ValidRJsCount}.", newRJs.Length, newRJsDtos.Count);
+            this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfully processed {ValidRJsCount}.", newRJs.Length, newRJsDtos.Count);
         }
         catch (Exception ex)
         {
@@ -131,11 +131,18 @@ public class SyncReservedJudgementsJob(
 
         var targetInitial = char.ToUpperInvariant(firstName.Trim()[0]);
 
-        var judge = judges.FirstOrDefault(j =>
-            string.Equals(j.LastName.Trim(), lastName.Trim(), StringComparison.OrdinalIgnoreCase)
-            && char.ToUpperInvariant(j.FirstName.Trim()[0]) == targetInitial);
+        var filteredJudges = judges
+            .Where(j =>
+                string.Equals(j.LastName.Trim(), lastName.Trim(), StringComparison.OrdinalIgnoreCase)
+                && char.ToUpperInvariant(j.FirstName.Trim()[0]) == targetInitial)
+            .ToList();
 
-        return judge?.PersonId;
+        if (filteredJudges.Count > 1)
+        {
+            this.Logger.LogWarning("There is more than one judge who matches the adjudicator name: {FullName}", adjudicatorName);
+        }
+
+        return filteredJudges.FirstOrDefault()?.PersonId;
     }
 
     private async Task<ReservedJudgement> PopulateMissingInfo(CsvReservedJudgement crj)

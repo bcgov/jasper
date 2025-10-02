@@ -41,13 +41,16 @@
   import { ReservedJudgement } from '@/types/ReservedJudgement';
   import { computed, inject, ref, watch } from 'vue';
 
-  const expanded = ref([]);
+  const expanded = ref('');
   const judgementsLoading = ref(false);
   const reservedJudgements = ref<ReservedJudgement[]>([]);
   const RESERVED_JUDGEMENT = 'reserved-judgement';
   const reservedJudgementCount = computed(
     () => reservedJudgements.value.length
   );
+  const props = defineProps({
+    judgeId: { type: Number, default: null },
+  });
   const reservedJudgementService = inject<ReservedJudgementService>(
     'reservedJudgementService'
   );
@@ -55,19 +58,21 @@
     throw new Error('Service(s) is undefined.');
   }
 
-  watch(expanded, (newVal: string) => {
+  watch([expanded, () => props.judgeId], ([newVal, newJudgeId]) => {
     if (newVal == RESERVED_JUDGEMENT) {
       judgementsLoading.value = true;
       reservedJudgementService
-        .get()
+        .get({
+          judgeId: newJudgeId ?? '',
+        })
         .then((data: ReservedJudgement[]) => {
           reservedJudgements.value = data;
         })
-        .finally(() => {
-          judgementsLoading.value = false;
-        })
         .catch((err) => {
           console.error('Failed to load reserved judgements:', err);
+        })
+        .finally(() => {
+          judgementsLoading.value = false;
         });
     } else {
       reservedJudgements.value = [];

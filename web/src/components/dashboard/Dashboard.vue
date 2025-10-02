@@ -12,7 +12,7 @@
     :judgeId="judgeId"
   />
   <MyCalendar v-else :judgeId="judgeId" v-model:selectedDate="selectedDate" />
-  <DashboardPanels class="my-5" />
+  <DashboardPanels class="my-5" :judgeId="judgeId" />
 </template>
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';

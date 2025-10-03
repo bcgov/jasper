@@ -41,3 +41,20 @@ variable "ecs_td_arn" {
   description = "The ECS Task Definition ARN"
   type        = string
 }
+
+variable "ecs_cluster_name" {
+  description = "The ECS Cluster Name"
+  type        = string
+}
+
+variable "min_capacity" {
+  description = "Minimum number of tasks"
+  type        = number
+  default     = 1
+}
+
+variable "max_capacity" {
+  description = "Maximum number of tasks"
+  type        = number
+  default     = 10
+}

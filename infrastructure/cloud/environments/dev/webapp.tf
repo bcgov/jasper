@@ -255,30 +255,152 @@ module "ecs_api_td" {
 
 # Create Web ECS Service
 module "ecs_web_service" {
-  source         = "../../modules/ECS/Service"
-  environment    = var.environment
-  app_name       = var.app_name
-  name           = "web"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
-  ecs_td_arn     = module.ecs_web_td.ecs_td_arn
-  tg_arn         = module.tg_web.tg_arn
-  sg_id          = data.aws_security_group.app_sg.id
-  subnet_ids     = module.subnets.web_subnets_ids
-  port           = module.ecs_web_td.port
+  source           = "../../modules/ECS/Service"
+  environment      = var.environment
+  app_name         = var.app_name
+  name             = "web"
+  ecs_cluster_id   = module.ecs_cluster.ecs_cluster.id
+  ecs_td_arn       = module.ecs_web_td.ecs_td_arn
+  tg_arn           = module.tg_web.tg_arn
+  sg_id            = data.aws_security_group.app_sg.id
+  subnet_ids       = module.subnets.web_subnets_ids
+  port             = module.ecs_web_td.port
+  ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
 }
+
+# Create CloudWatch Alarms for Web ECS Service
+module "ecs_web_alarms" {
+  source       = "../../modules/Cloudwatch/Alarms"
+  environment  = var.environment
+  app_name     = var.app_name
+  namespace    = "AWS/ECS"
+  service_name = "web-ecs-service"
+  dimensions = {
+    ClusterName = module.ecs_cluster.ecs_cluster.name
+    ServiceName = module.ecs_web_service.service_name
+  }
+  alarm_configurations = [
+    {
+      name                = "cpu-high"
+      metric_name         = "CPUUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 75
+      evaluation_periods  = 3
+      period              = 300
+      statistic           = "Average"
+      description         = "CPU utilization sustained above 75% for 15 minutes"
+      alarm_actions       = [module.ecs_web_service.scale_up_policy_arn]
+    },
+    {
+      name                = "cpu-low"
+      metric_name         = "CPUUtilization"
+      comparison_operator = "LessThanThreshold"
+      threshold           = 25
+      evaluation_periods  = 6
+      period              = 300
+      statistic           = "Average"
+      description         = "CPU utilization below 25% for 30 minutes"
+      alarm_actions       = [module.ecs_web_service.scale_down_policy_arn]
+    },
+    {
+      name                = "memory-high"
+      metric_name         = "MemoryUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 85
+      evaluation_periods  = 2
+      period              = 300
+      statistic           = "Average"
+      description         = "Memory utilization above 85% for 10 minutes"
+      alarm_actions       = [module.ecs_web_service.scale_up_policy_arn]
+    },
+    {
+      name                = "memory-low"
+      metric_name         = "MemoryUtilization"
+      comparison_operator = "LessThanThreshold"
+      threshold           = 45
+      evaluation_periods  = 12
+      period              = 300
+      statistic           = "Average"
+      description         = "Memory utilization below 45% for 1 hour"
+      alarm_actions       = [module.ecs_web_service.scale_down_policy_arn]
+    }
+  ]
+}
+
 
 # Create Api ECS Service
 module "ecs_api_service" {
-  source         = "../../modules/ECS/Service"
-  environment    = var.environment
-  app_name       = var.app_name
-  name           = "api"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
-  ecs_td_arn     = module.ecs_api_td.ecs_td_arn
-  tg_arn         = module.tg_api.tg_arn
-  sg_id          = data.aws_security_group.app_sg.id
-  subnet_ids     = module.subnets.app_subnets_ids
-  port           = module.ecs_api_td.port
+  source           = "../../modules/ECS/Service"
+  environment      = var.environment
+  app_name         = var.app_name
+  name             = "api"
+  ecs_cluster_id   = module.ecs_cluster.ecs_cluster.id
+  ecs_td_arn       = module.ecs_api_td.ecs_td_arn
+  tg_arn           = module.tg_api.tg_arn
+  sg_id            = data.aws_security_group.app_sg.id
+  subnet_ids       = module.subnets.app_subnets_ids
+  port             = module.ecs_api_td.port
+  ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
+  max_capacity     = 1
+}
+
+# Create CloudWatch Alarms for Api ECS Service
+module "ecs_api_alarms" {
+  source       = "../../modules/Cloudwatch/Alarms"
+  environment  = var.environment
+  app_name     = var.app_name
+  namespace    = "AWS/ECS"
+  service_name = "api-ecs-service"
+  dimensions = {
+    ClusterName = module.ecs_cluster.ecs_cluster.name
+    ServiceName = module.ecs_api_service.service_name
+  }
+  alarm_configurations = [
+    {
+      name                = "cpu-high"
+      metric_name         = "CPUUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 75
+      evaluation_periods  = 3
+      period              = 300
+      statistic           = "Average"
+      description         = "CPU utilization sustained above 75% for 15 minutes"
+      alarm_actions       = [module.ecs_api_service.scale_up_policy_arn]
+    },
+    {
+      name                = "cpu-low"
+      metric_name         = "CPUUtilization"
+      comparison_operator = "LessThanThreshold"
+      threshold           = 25
+      evaluation_periods  = 6
+      period              = 300
+      statistic           = "Average"
+      description         = "CPU utilization below 25% for 30 minutes"
+      alarm_actions       = [module.ecs_api_service.scale_down_policy_arn]
+    },
+    {
+      name                = "memory-high"
+      metric_name         = "MemoryUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 85
+      evaluation_periods  = 2
+      period              = 300
+      statistic           = "Average"
+      description         = "Memory utilization above 85% for 10 minutes"
+      alarm_actions       = [module.ecs_api_service.scale_up_policy_arn]
+    },
+    {
+      name                = "memory-low"
+      metric_name         = "MemoryUtilization"
+      comparison_operator = "LessThanThreshold"
+      threshold           = 45
+      evaluation_periods  = 12
+      period              = 300
+      statistic           = "Average"
+      description         = "Memory utilization below 45% for 1 hour"
+      alarm_actions       = [module.ecs_api_service.scale_down_policy_arn]
+    }
+  ]
 }
 
 # WAF

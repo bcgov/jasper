@@ -258,6 +258,6 @@
         groupKeyOne: value.locationName,
       });
     };
-    shared.openDocumentsPdfV2(documents);
+    shared.openMergedDocuments(documents);
   };
 </script>

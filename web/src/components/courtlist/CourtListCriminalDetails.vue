@@ -7,30 +7,34 @@
         </v-card>
       </v-col>
     </v-row>
-        <v-card title="Key Documents" variant="flat">
-          <v-data-table-virtual
-            :items="details.keyDocuments"
-            :headers
-            :sortBy
-            density="compact"
+    <v-card title="Key Documents" variant="flat">
+      <v-data-table-virtual
+        :items="details.keyDocuments"
+        :headers
+        :sortBy
+        density="compact"
+      >
+        <template v-slot:item.docmClassification="{ item }">
+          {{ formatCategory(item) }}
+        </template>
+        <template v-slot:item.docmFormDsc="{ item }">
+          <a
+            v-if="item.imageId"
+            href="javascript:void(0)"
+            @click="openDocument(item)"
           >
-            <template v-slot:item.docmClassification="{ item }">
-              {{ formatCategory(item) }}
-            </template>
-            <template v-slot:item.docmFormDsc="{ item }">
-              <a v-if="item.imageId" href="javascript:void(0)" @click="openDocument(item)">
-                {{ formatType(item) }}
-              </a>
-              <span v-else>
-                {{ formatType(item) }}
-              </span>
-              <div v-if="item.category?.toLowerCase() === 'bail'">
-                  {{ item.docmDispositionDsc }}<span class="pl-2" />
-                  {{ formatDateToDDMMMYYYY(item.issueDate) }}
-              </div>
-            </template>
-          </v-data-table-virtual>
-        </v-card>
+            {{ formatType(item) }}
+          </a>
+          <span v-else>
+            {{ formatType(item) }}
+          </span>
+          <div v-if="item.category?.toLowerCase() === 'bail'">
+            {{ item.docmDispositionDsc }}<span class="pl-2" />
+            {{ formatDateToDDMMMYYYY(item.issueDate) }}
+          </div>
+        </template>
+      </v-data-table-virtual>
+    </v-card>
     <v-row>
       <v-col>
         <v-card title="Charges" variant="flat">
@@ -49,17 +53,17 @@
 
 <script setup lang="ts">
   import AppearanceMethods from '@/components/case-details/civil/appearances/AppearanceMethods.vue';
+  import shared from '@/components/shared';
+  import { beautifyDate } from '@/filters';
   import { FilesService } from '@/services/FilesService';
+  import { useCommonStore } from '@/stores';
   import {
     CriminalAppearanceDetails,
     documentType,
   } from '@/types/criminal/jsonTypes';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
-  import { beautifyDate } from '@/filters';
-  import { inject, onMounted, ref } from 'vue';
-  import shared from '@/components/shared';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
-  import { useCommonStore } from '@/stores';
+  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+  import { inject, onMounted, ref } from 'vue';
 
   const props = defineProps<{
     fileId: string;
@@ -127,30 +131,31 @@
       ? 'Record of Proceedings'
       : item.documentTypeDescription;
 
-  
   const openDocument = (document: documentType) => {
     const isRop = document.category?.toLowerCase() === 'rop';
     const locationName = commonStore.courtRoomsAndLocations.filter(
-      (location) => location.agencyIdentifierCd == details.value.agencyId)[0]?.name;
+      (location) => location.agencyIdentifierCd == details.value.agencyId
+    )[0]?.name;
     const documentData: DocumentData = {
-        courtClass: props.courtClass,
-        courtLevel:
-          details.value.courtLevelCd.toString(),
-        dateFiled: beautifyDate(document.issueDate),
-        documentId: document.imageId,
-        documentDescription:
-          isRop
-            ? 'Record of Proceedings'
-            : document.documentTypeDescription,
-        fileId: props.fileId,
-        fileNumberText:
-          details.value.fileNumberTxt,
-        partId: document.partId,
-        profSeqNo: details.value.profSeqNo,
-        location: locationName,
-        isCriminal: true,
-      };
-    shared.openDocumentsPdf(isRop ? CourtDocumentType.ROP : CourtDocumentType.Criminal, documentData);
+      courtClass: props.courtClass,
+      courtLevel: details.value.courtLevelCd.toString(),
+      dateFiled: beautifyDate(document.issueDate),
+      documentId: document.imageId,
+      documentDescription: isRop
+        ? 'Record of Proceedings'
+        : document.documentTypeDescription,
+      fileId: props.fileId,
+      fileNumberText: details.value.fileNumberTxt,
+      partId: document.partId,
+      profSeqNo: details.value.profSeqNo,
+      location: locationName,
+      isCriminal: true,
+      partyName: details.value.accused.fullName,
+    };
+    shared.openDocumentsPdf(
+      isRop ? CourtDocumentType.ROP : CourtDocumentType.Criminal,
+      documentData
+    );
   };
 </script>
 

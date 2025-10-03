@@ -92,7 +92,9 @@
           </v-col>
         </v-row>
         <v-row
-          v-if="type === 'keyDocuments' && item.category?.toLowerCase() === 'bail'"
+          v-if="
+            type === 'keyDocuments' && item.category?.toLowerCase() === 'bail'
+          "
           no-gutters
         >
           <v-col>
@@ -278,11 +280,12 @@
     },
   ];
 
-  const openIndividualDocument = (data: documentType) =>
+  const openIndividualDocument = (data: documentType) => {
     shared.openDocumentsPdf(
       getCriminalDocumentType(data),
       prepareCriminalDocumentData(data)
     );
+  };
 
   const openMergedDocuments = () => {
     const documents: {
@@ -303,12 +306,12 @@
         documents.push({
           documentType,
           documentData,
-          groupKeyOne: documentData.fileNumberText,
-          groupKeyTwo: item.fullName,
-          documentName: documentData.documentDescription || ''
+          groupKeyOne: documentData.fileNumberText || '',
+          groupKeyTwo: item.fullName || '',
+          documentName: documentData.documentDescription || '',
         });
       });
 
-    shared.openDocumentsPdfV2(documents);
+    shared.openMergedDocuments(documents);
   };
 </script>

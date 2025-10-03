@@ -323,7 +323,7 @@
             formatDateToDDMMMYYYY(item.filedDt),
         });
       });
-    shared.openDocumentsPdfV2(documents);
+    shared.openMergedDocuments(documents);
   };
 
   const loadBinder = async () => {

@@ -1,0 +1,48 @@
+variable "app_name" {
+  description = "The name of the application"
+  type        = string
+}
+
+variable "environment" {
+  description = "The environment to deploy the application to"
+  type        = string
+}
+
+variable "service_name" {
+  description = "The name of the service"
+  type        = string
+}
+
+variable "namespace" {
+  description = "CloudWatch namespace (e.g., AWS/ECS, AWS/Lambda, AWS/RDS)"
+  type        = string
+  default     = "AWS/ECS"
+}
+
+variable "dimensions" {
+  description = "CloudWatch dimensions for the alarms"
+  type        = map(string)
+  default     = {}
+}
+
+variable "tags" {
+  description = "Additional tags for the alarms"
+  type        = map(string)
+  default     = {}
+}
+
+variable "alarm_configurations" {
+  description = "List of alarm configurations"
+  type = list(object({
+    name                = string
+    metric_name         = string
+    comparison_operator = string
+    threshold           = number
+    evaluation_periods  = number
+    period              = number
+    statistic           = string
+    description         = string
+    alarm_actions       = list(string)
+  }))
+  default = []
+}

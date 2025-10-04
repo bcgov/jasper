@@ -7,12 +7,12 @@ output "service_name" {
   value       = aws_ecs_service.ecs_service.name
 }
 
-output "scale_up_policy_arn" {
-  description = "ARN of the scale up policy"
-  value       = aws_appautoscaling_policy.ecs_policy_up.arn
+output "cpu_target_tracking_policy_arn" {
+  description = "ARN of the CPU target tracking policy"
+  value       = aws_appautoscaling_policy.ecs_target_tracking_cpu.arn
 }
 
-output "scale_down_policy_arn" {
-  description = "ARN of the scale down policy"
-  value       = aws_appautoscaling_policy.ecs_policy_down.arn
+output "memory_target_tracking_policy_arn" {
+  description = "ARN of the memory target tracking policy"
+  value       = aws_appautoscaling_policy.ecs_target_tracking_memory.arn
 }

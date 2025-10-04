@@ -224,6 +224,16 @@ module "ecs_web_td" {
   log_group_name         = module.ecs_web_td_log_group.log_group.name
 }
 
+# SNS Topic for ECS Alerts
+module "sns_ecs_alerts" {
+  source          = "../../modules/SNS"
+  environment     = var.environment
+  app_name        = var.app_name
+  name            = "ecs-alerts"
+  purpose         = "ECS CloudWatch Alarm Notifications"
+  email_addresses = var.alert_recipients
+}
+
 # Create API ECS Task Definition
 module "ecs_api_td" {
   source                 = "../../modules/ECS/TaskDefinition"
@@ -266,6 +276,7 @@ module "ecs_web_service" {
   subnet_ids       = module.subnets.web_subnets_ids
   port             = module.ecs_web_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
+  max_capacity     = 1
 }
 
 # Create CloudWatch Alarms for Web ECS Service
@@ -284,49 +295,26 @@ module "ecs_web_alarms" {
       name                = "cpu-high"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 75
+      threshold           = 70
       evaluation_periods  = 3
       period              = 300
       statistic           = "Average"
-      description         = "CPU utilization sustained above 75% for 15 minutes"
-      alarm_actions       = [module.ecs_web_service.scale_up_policy_arn]
-    },
-    {
-      name                = "cpu-low"
-      metric_name         = "CPUUtilization"
-      comparison_operator = "LessThanThreshold"
-      threshold           = 25
-      evaluation_periods  = 6
-      period              = 300
-      statistic           = "Average"
-      description         = "CPU utilization below 25% for 30 minutes"
-      alarm_actions       = [module.ecs_web_service.scale_down_policy_arn]
+      description         = "CPU utilization sustained above 70% for 15 minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "memory-high"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 85
+      threshold           = 80
       evaluation_periods  = 2
       period              = 300
       statistic           = "Average"
-      description         = "Memory utilization above 85% for 10 minutes"
-      alarm_actions       = [module.ecs_web_service.scale_up_policy_arn]
-    },
-    {
-      name                = "memory-low"
-      metric_name         = "MemoryUtilization"
-      comparison_operator = "LessThanThreshold"
-      threshold           = 45
-      evaluation_periods  = 12
-      period              = 300
-      statistic           = "Average"
-      description         = "Memory utilization below 45% for 1 hour"
-      alarm_actions       = [module.ecs_web_service.scale_down_policy_arn]
+      description         = "Memory utilization above 80% for 10 minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
   ]
 }
-
 
 # Create Api ECS Service
 module "ecs_api_service" {
@@ -360,45 +348,23 @@ module "ecs_api_alarms" {
       name                = "cpu-high"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 75
+      threshold           = 70
       evaluation_periods  = 3
       period              = 300
       statistic           = "Average"
-      description         = "CPU utilization sustained above 75% for 15 minutes"
-      alarm_actions       = [module.ecs_api_service.scale_up_policy_arn]
-    },
-    {
-      name                = "cpu-low"
-      metric_name         = "CPUUtilization"
-      comparison_operator = "LessThanThreshold"
-      threshold           = 25
-      evaluation_periods  = 6
-      period              = 300
-      statistic           = "Average"
-      description         = "CPU utilization below 25% for 30 minutes"
-      alarm_actions       = [module.ecs_api_service.scale_down_policy_arn]
+      description         = "CPU utilization sustained above 70% for 15 minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "memory-high"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 85
+      threshold           = 80
       evaluation_periods  = 2
       period              = 300
       statistic           = "Average"
-      description         = "Memory utilization above 85% for 10 minutes"
-      alarm_actions       = [module.ecs_api_service.scale_up_policy_arn]
-    },
-    {
-      name                = "memory-low"
-      metric_name         = "MemoryUtilization"
-      comparison_operator = "LessThanThreshold"
-      threshold           = 45
-      evaluation_periods  = 12
-      period              = 300
-      statistic           = "Average"
-      description         = "Memory utilization below 45% for 1 hour"
-      alarm_actions       = [module.ecs_api_service.scale_down_policy_arn]
+      description         = "Memory utilization above 80% for 10 minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
   ]
 }

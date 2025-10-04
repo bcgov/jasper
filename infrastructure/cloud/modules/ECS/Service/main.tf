@@ -32,42 +32,42 @@ resource "aws_appautoscaling_target" "ecs_target" {
   service_namespace  = "ecs"
 }
 
-# Auto Scaling Policy - Scale Up
-resource "aws_appautoscaling_policy" "ecs_policy_up" {
-  name               = "${var.app_name}-${var.name}-scale-up-${var.environment}"
-  policy_type        = "StepScaling"
+# Target Tracking Scaling Policy - CPU
+resource "aws_appautoscaling_policy" "ecs_target_tracking_cpu" {
+  name               = "${var.app_name}-${var.name}-target-tracking-cpu-${var.environment}"
+  policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.ecs_target.resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
   service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
 
-  step_scaling_policy_configuration {
-    adjustment_type         = "ChangeInCapacity"
-    cooldown                = 60
-    metric_aggregation_type = "Maximum"
+  target_tracking_scaling_policy_configuration {
+    target_value = var.cpu_target_value
 
-    step_adjustment {
-      metric_interval_lower_bound = 0
-      scaling_adjustment          = 1
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
+
+    scale_out_cooldown = var.scale_out_cooldown
+    scale_in_cooldown  = var.scale_in_cooldown
   }
 }
 
-# Auto Scaling Policy - Scale Down
-resource "aws_appautoscaling_policy" "ecs_policy_down" {
-  name               = "${var.app_name}-${var.name}-scale-down-${var.environment}"
-  policy_type        = "StepScaling"
+# Target Tracking Scaling Policy - Memory
+resource "aws_appautoscaling_policy" "ecs_target_tracking_memory" {
+  name               = "${var.app_name}-${var.name}-target-tracking-memory-${var.environment}"
+  policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.ecs_target.resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
   service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
 
-  step_scaling_policy_configuration {
-    adjustment_type         = "ChangeInCapacity"
-    cooldown                = 60
-    metric_aggregation_type = "Maximum"
+  target_tracking_scaling_policy_configuration {
+    target_value = var.memory_target_value
 
-    step_adjustment {
-      metric_interval_upper_bound = 0
-      scaling_adjustment          = -1
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
     }
+
+    scale_out_cooldown = var.scale_out_cooldown
+    scale_in_cooldown  = var.scale_in_cooldown
   }
 }

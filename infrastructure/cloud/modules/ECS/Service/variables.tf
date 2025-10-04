@@ -58,3 +58,27 @@ variable "max_capacity" {
   type        = number
   default     = 10
 }
+
+variable "cpu_target_value" {
+  description = "Target CPU utilization percentage for autoscaling"
+  type        = number
+  default     = 70
+}
+
+variable "memory_target_value" {
+  description = "Target memory utilization percentage for autoscaling"
+  type        = number
+  default     = 80
+}
+
+variable "scale_out_cooldown" {
+  description = "Amount of time, in seconds, after a scale out activity completes before another scale out activity can start"
+  type        = number
+  default     = 300
+}
+
+variable "scale_in_cooldown" {
+  description = "Amount of time, in seconds, after a scale in activity completes before another scale in activity can start"
+  type        = number
+  default     = 300
+}

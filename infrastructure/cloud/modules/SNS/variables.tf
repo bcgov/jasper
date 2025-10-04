@@ -24,3 +24,8 @@ variable "email_addresses" {
   type        = list(string)
   default     = []
 }
+
+variable "kms_key_id" {
+  description = "The KMS Key ID"
+  type        = string
+}

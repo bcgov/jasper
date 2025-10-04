@@ -233,6 +233,7 @@ module "sns_ecs_alerts" {
   name            = "ecs-alerts"
   purpose         = "ECS CloudWatch Alarm Notifications"
   email_addresses = var.alert_recipients
+  kms_key_id      = module.initial.kms_key_arn
 }
 
 # Create API ECS Task Definition

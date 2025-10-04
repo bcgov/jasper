@@ -1,6 +1,7 @@
 # SNS Topic
 resource "aws_sns_topic" "topic" {
-  name = "${var.app_name}-${var.name}-${var.environment}"
+  name              = "${var.app_name}-${var.name}-${var.environment}"
+  kms_master_key_id = var.kms_key_id
 
   tags = {
     Name        = "${var.app_name}-${var.name}-${var.environment}"

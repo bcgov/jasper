@@ -1,6 +1,8 @@
 import CalendarToolbar from '@/components/dashboard/CalendarToolbar.vue';
+import { CalendarViewEnum } from '@/types/common';
 import { formatDateInstanceToMMMYYYY } from '@/utils/dateUtils';
 import { mount } from '@vue/test-utils';
+import { DateTime } from 'luxon';
 import { describe, expect, it } from 'vitest';
 
 describe('CalendarToolbar.vue', () => {
@@ -60,7 +62,7 @@ describe('CalendarToolbar.vue', () => {
       expect(wrapper.vm.selectedDate?.getDate()).toEqual(today.getDate());
     });
 
-    it('sets selectedDate to previous month when previous button is clicked', () => {
+    it('clicking previous button inside month picker should update the selectedDate to previous year', () => {
       const currentDate = new Date();
 
       const wrapper = mountComponent({
@@ -68,7 +70,7 @@ describe('CalendarToolbar.vue', () => {
         isCourtCalendar: false,
       });
 
-      const previousBtn = wrapper.find('[data-testid="previous-button"]');
+      const previousBtn = wrapper.find('[data-testid="previous-year"]');
       previousBtn.trigger('click');
 
       expect(wrapper.vm.selectedDate?.getFullYear()).toEqual(
@@ -77,10 +79,11 @@ describe('CalendarToolbar.vue', () => {
       expect(wrapper.vm.selectedDate?.getMonth()).toEqual(
         currentDate.getMonth()
       );
-      expect(wrapper.vm.selectedDate?.getDate()).toEqual(1);
+
+      expect(wrapper.vm.selectedDate?.getDate()).toEqual(currentDate.getDate());
     });
 
-    it('sets selectedDate to previous month when next button is clicked', () => {
+    it('clicking next button inside month picker should update the selectedDate to next year', () => {
       const currentDate = new Date();
 
       const wrapper = mountComponent({
@@ -88,7 +91,7 @@ describe('CalendarToolbar.vue', () => {
         isCourtCalendar: false,
       });
 
-      const previousBtn = wrapper.find('[data-testid="next-button"]');
+      const previousBtn = wrapper.find('[data-testid="next-year"]');
       previousBtn.trigger('click');
 
       expect(wrapper.vm.selectedDate?.getFullYear()).toEqual(
@@ -97,9 +100,56 @@ describe('CalendarToolbar.vue', () => {
       expect(wrapper.vm.selectedDate?.getMonth()).toEqual(
         currentDate.getMonth()
       );
-      expect(wrapper.vm.selectedDate?.getDate()).toEqual(1);
+      expect(wrapper.vm.selectedDate?.getDate()).toEqual(currentDate.getDate());
     });
   });
+
+  // Helper function to test date navigation
+  const testDateNavigation = (
+    buttonTestId: string,
+    offset: number,
+    direction: 'previous' | 'next',
+    calendarView: CalendarViewEnum = CalendarViewEnum.TwoWeekView
+  ) => {
+    const currentDate = new Date();
+
+    const wrapper = mountComponent({
+      selectedDate: currentDate,
+      isCourtCalendar: true,
+      calendarView,
+    });
+
+    const button = wrapper.find(`[data-testid="${buttonTestId}"]`);
+    button.trigger('click');
+
+    // Use the same logic as the component's changeDate function
+    let expectedDateTime = DateTime.fromJSDate(currentDate);
+
+    switch (calendarView) {
+      case CalendarViewEnum.WeekView:
+        expectedDateTime = expectedDateTime.plus({ weeks: offset });
+        break;
+      case CalendarViewEnum.TwoWeekView:
+        expectedDateTime = expectedDateTime.plus({ weeks: offset * 2 });
+        break;
+      case CalendarViewEnum.MonthView:
+        expectedDateTime = expectedDateTime.plus({ months: offset });
+        break;
+      default:
+        expectedDateTime = expectedDateTime.plus({ years: offset });
+        break;
+    }
+
+    const expectedDate = expectedDateTime.toJSDate();
+
+    expect(wrapper.vm.selectedDate?.getFullYear()).toEqual(
+      expectedDate.getFullYear()
+    );
+    expect(wrapper.vm.selectedDate?.getMonth()).toEqual(
+      expectedDate.getMonth()
+    );
+    expect(wrapper.vm.selectedDate?.getDate()).toEqual(expectedDate.getDate());
+  };
 
   describe('CourtCalendar tests', () => {
     it('renders common and CourtCalendar components when isCourtCalendar is true', () => {
@@ -128,6 +178,40 @@ describe('CalendarToolbar.vue', () => {
       expect(
         wrapper.find('[data-testid="calendar-view-picker"]').exists()
       ).toEqual(true);
+    });
+
+    it('clicking previous button while in 2-week view should update the selectedDate to previous 2 weeks', () => {
+      testDateNavigation(
+        'previous',
+        -1,
+        'previous',
+        CalendarViewEnum.TwoWeekView
+      );
+    });
+
+    it('clicking next button while in 2-week view should update the selectedDate to next 2 weeks', () => {
+      testDateNavigation('next', 1, 'next', CalendarViewEnum.TwoWeekView);
+    });
+
+    it('clicking previous button while in week view should update the selectedDate to previous week', () => {
+      testDateNavigation('previous', -1, 'previous', CalendarViewEnum.WeekView);
+    });
+
+    it('clicking next button while in week view should update the selectedDate to next week', () => {
+      testDateNavigation('next', 1, 'next', CalendarViewEnum.WeekView);
+    });
+
+    it('clicking previous button while in month view should update the selectedDate to previous month', () => {
+      testDateNavigation(
+        'previous',
+        -1,
+        'previous',
+        CalendarViewEnum.MonthView
+      );
+    });
+
+    it('clicking next button while in month view should update the selectedDate to next month', () => {
+      testDateNavigation('next', 1, 'next', CalendarViewEnum.MonthView);
     });
   });
 });

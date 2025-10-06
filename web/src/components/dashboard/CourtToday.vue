@@ -160,9 +160,7 @@
     text-decoration: none;
   }
 
-  .transparent-skeleton {
-    background-color: transparent;
-    --v-skeleton-loader-background: transparent;
-    box-shadow: none;
+  :deep(.transparent-skeleton) {
+    background: transparent !important;
   }
 </style>

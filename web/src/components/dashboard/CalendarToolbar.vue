@@ -15,6 +15,7 @@
       <div class="d-flex align-center">
         <v-icon
           class="previous cursor-pointer"
+          data-testid="previous"
           :icon="mdiChevronLeft"
           size="32"
           @click.stop="() => previous(calendarView)"
@@ -26,6 +27,7 @@
         <v-icon
           class="next cursor-pointer"
           :icon="mdiChevronRight"
+          data-testid="next"
           size="32"
           @click.stop="() => next(calendarView)"
           :disabled="isCalendarLoading"
@@ -51,16 +53,16 @@
             <div class="d-flex flex-row justify-center mt-3">
               <v-icon
                 :icon="mdiChevronLeft"
-                data-testid="previous-button"
-                @click.stop="() => previous('')"
+                data-testid="previous-year"
+                @click.stop="() => previous()"
                 :disabled="isCalendarLoading"
               />
               <span class="mx-3">{{ selectedYear }}</span>
               <v-icon
                 :disabled="isCalendarLoading"
                 :icon="mdiChevronRight"
-                @click.stop="() => next('')"
-                data-testid="next-button"
+                @click.stop="() => next()"
+                data-testid="next-year"
               />
             </div>
             <v-date-picker
@@ -162,14 +164,14 @@
     mdiChevronRight,
     mdiDotsHorizontal,
   } from '@mdi/js';
-  import { computed, ref, watch } from 'vue';
   import { DateTime } from 'luxon';
+  import { computed, ref } from 'vue';
 
   const selectedDate = defineModel<Date>('selectedDate');
   const isCourtCalendar = defineModel<boolean>('isCourtCalendar');
-  const calendarView = defineModel<string>('calendarView');
+  const calendarView = defineModel<CalendarViewEnum>('calendarView');
 
-  const props = defineProps<{ isCalendarLoading: boolean }>();
+  defineProps<{ isCalendarLoading: boolean }>();
 
   const viewMode = ref<'months' | 'year' | 'month' | undefined>('months');
   const selectedYear = ref(
@@ -180,7 +182,6 @@
   const selectedMonth = ref(
     selectedDate.value ? selectedDate.value.getMonth() : new Date().getMonth()
   );
-  const isLocalDisabled = ref(true);
 
   const options = [
     { label: 'Month', value: CalendarViewEnum.MonthView, icon: MonthIcon },
@@ -208,8 +209,8 @@
     selectedDate.value = date;
   };
 
-  const changeDate = (offset: number, viewMode: CalendarViewEnum) => {
-    let newDateTime = DateTime.fromJSDate(selectedDate.value);
+  const changeDate = (offset: number, viewMode?: CalendarViewEnum) => {
+    let newDateTime = DateTime.fromJSDate(selectedDate.value!);
 
     switch (viewMode) {
       case CalendarViewEnum.WeekView:
@@ -229,8 +230,8 @@
     setDate(newDateTime.toJSDate());
   };
 
-  const previous = (viewMode: CalendarViewEnum) => changeDate(-1, viewMode);
-  const next = (viewMode: CalendarViewEnum) => changeDate(1, viewMode);
+  const previous = (viewMode?: CalendarViewEnum) => changeDate(-1, viewMode);
+  const next = (viewMode?: CalendarViewEnum) => changeDate(1, viewMode);
 
   const today = () => setDate(new Date());
 
@@ -257,17 +258,13 @@
   }
 
   :deep(.v-date-picker-months) {
-    height: 10rem;
+    height: inherit;
   }
 
   :deep(.v-date-picker-months__content) {
-    border-bottom-left-radius: 1.25rem;
-    border-bottom-right-radius: 1.25rem;
     box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2);
     grid-template-columns: repeat(4, 1fr);
     grid-gap: 0;
-    padding-inline-start: 0;
-    padding-inline-end: 0;
   }
 
   :deep(.v-date-picker-months__content .v-btn) {
@@ -278,8 +275,9 @@
 
   :deep(.v-date-picker-months__content .v-btn:hover) {
     border-radius: 0px;
-    font-weight: bold;
     margin: 0.5rem;
+    color: var(--text-white-500);
+    background-color: var(--bg-blue-800) !important;
   }
 
   :deep(.v-date-picker-months__content .v-btn--active .v-btn__overlay) {
@@ -288,6 +286,7 @@
 
   :deep(.v-date-picker-months__content .v-btn--active) {
     border: 1px solid var(--border-blue-500);
+    background-color: var(--bg-blue-50) !important;
     border-radius: 0px;
     font-weight: bold;
   }
@@ -298,7 +297,6 @@
 
   .month-picker {
     box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2);
-    border-radius: 1.25rem;
     background-color: var(--bg-white-500);
   }
 

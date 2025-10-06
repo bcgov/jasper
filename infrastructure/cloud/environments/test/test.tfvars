@@ -12,4 +12,3 @@ delete_protection_enabled = false
 mongo_node_count    = 1
 mongo_instance_type = "db.t3.medium"
 mongousername       = "adminmongo"
-alert_recipients = [ "ronaldo.macapobre@quartech.com" ]

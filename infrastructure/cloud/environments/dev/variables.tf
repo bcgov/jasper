@@ -97,7 +97,7 @@ variable "mongousername" {
   type        = string
 }
 
-variable "alert_recipients" {
+variable "alarm_recipients" {
   description = "List of email addresses to receive alert email"
   type        = list(string)
 }

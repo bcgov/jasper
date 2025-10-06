@@ -232,7 +232,7 @@ module "sns_ecs_alerts" {
   app_name        = var.app_name
   name            = "ecs-alerts"
   purpose         = "ECS CloudWatch Alarm Notifications"
-  email_addresses = var.alert_recipients
+  email_addresses = var.alarm_recipients
   kms_key_id      = module.initial.kms_key_arn
 }
 

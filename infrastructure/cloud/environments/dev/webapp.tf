@@ -313,6 +313,17 @@ module "ecs_web_alarms" {
       statistic           = "Average"
       description         = "Memory utilization above 80% for 10 minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-high"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 1
+      evaluation_periods  = 1
+      period              = 60
+      statistic           = "Average"
+      description         = "Web service has scaled up."
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
   ]
 }
@@ -365,6 +376,17 @@ module "ecs_api_alarms" {
       period              = 300
       statistic           = "Average"
       description         = "Memory utilization above 80% for 10 minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-high"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 1
+      evaluation_periods  = 1
+      period              = 60
+      statistic           = "Average"
+      description         = "API service has scaled up."
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
   ]

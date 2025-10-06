@@ -297,22 +297,44 @@ module "ecs_web_alarms" {
       name                = "cpu-high"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 70
-      evaluation_periods  = 3
-      period              = 300
+      threshold           = var.alarm_cpu_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      period              = var.alarm_period
       statistic           = "Average"
-      description         = "CPU utilization sustained above 70% for 15 minutes"
+      description         = "CPU utilization sustained above ${var.alarm_cpu_threshold}% for ${var.alarm_evaluation_periods} minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "memory-high"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 80
-      evaluation_periods  = 2
-      period              = 300
+      threshold           = var.alarm_memory_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      period              = var.alarm_period
       statistic           = "Average"
-      description         = "Memory utilization above 80% for 10 minutes"
+      description         = "Memory utilization above ${var.alarm_memory_threshold}% for ${var.alarm_evaluation_periods} minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-high"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 1
+      evaluation_periods  = 1
+      period              = var.alarm_period
+      statistic           = "Average"
+      description         = "Web service has scaled up."
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-zero"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "LessThanThreshold"
+      threshold           = 1
+      evaluation_periods  = 1
+      period              = var.alarm_period
+      statistic           = "Average"
+      description         = "CRITICAL: Web service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
   ]
@@ -350,22 +372,44 @@ module "ecs_api_alarms" {
       name                = "cpu-high"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 70
-      evaluation_periods  = 3
-      period              = 300
+      threshold           = var.alarm_cpu_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      period              = var.alarm_period
       statistic           = "Average"
-      description         = "CPU utilization sustained above 70% for 15 minutes"
+      description         = "CPU utilization sustained above ${var.alarm_cpu_threshold}% for ${var.alarm_evaluation_periods} minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "memory-high"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 80
-      evaluation_periods  = 2
-      period              = 300
+      threshold           = var.alarm_memory_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      period              = var.alarm_period
       statistic           = "Average"
-      description         = "Memory utilization above 80% for 10 minutes"
+      description         = "Memory utilization above ${var.alarm_memory_threshold}% for ${var.alarm_evaluation_periods} minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-high"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = 1
+      evaluation_periods  = 1
+      period              = var.alarm_period
+      statistic           = "Average"
+      description         = "API service has scaled up."
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-zero"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "LessThanThreshold"
+      threshold           = 1
+      evaluation_periods  = 1
+      period              = var.alarm_period
+      statistic           = "Average"
+      description         = "CRITICAL: API service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
   ]

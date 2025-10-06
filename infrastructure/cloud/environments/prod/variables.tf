@@ -101,3 +101,24 @@ variable "alarm_recipients" {
   description = "List of email addresses to receive alert email"
   type        = list(string)
 }
+
+variable "alarm_cpu_threshold" {
+  description = "Alarm CPU threshold percentage"
+  type        = number
+}
+
+variable "alarm_memory_threshold" {
+  description = "Alarm memory threshold percentage"
+  type        = number
+}
+
+variable "alarm_evaluation_periods" {
+  description = "Alarm evaluation periods"
+  type        = number
+}
+
+variable "alarm_period" {
+  description = "Alarm period in seconds"
+  type        = number
+
+}

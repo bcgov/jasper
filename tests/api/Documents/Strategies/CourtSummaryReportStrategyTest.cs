@@ -111,6 +111,9 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
         var claims = new List<Claim>
         {
             new(CustomClaimTypes.JudgeId, 1.ToString()),
+            new(CustomClaimTypes.ApplicationCode, "TESTAPP"),
+            new(CustomClaimTypes.JcAgencyCode, "TESTAGENCY"),
+            new(CustomClaimTypes.JcParticipantId, "TESTPART"),
         };
 
         var identity = new ClaimsIdentity(claims, "HELLO");

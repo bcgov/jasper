@@ -18,7 +18,7 @@
           <AppearanceCharges :charges="details.charges" />
         </v-tabs-window-item>
         <v-tabs-window-item value="methods">
-          <AppearanceMethods :appearanceMethods="details.appearanceMethods" />
+          <CriminalAppearanceMethods :appearanceMethods="details.appearanceMethods" />
         </v-tabs-window-item>
         <v-tabs-window-item value="counsel">
           <AppearanceCounsel v-if="isPast" />
@@ -34,7 +34,7 @@
   import { inject, onMounted, ref } from 'vue';
   import AppearanceCharges from './AppearanceCharges.vue';
   import AppearanceCounsel from './AppearanceCounsel.vue';
-  import AppearanceMethods from './AppearanceMethods.vue';
+  import CriminalAppearanceMethods from './CriminalAppearanceMethods.vue';
 
   const props = defineProps<{
     fileId: string;

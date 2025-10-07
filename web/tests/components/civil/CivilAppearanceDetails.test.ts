@@ -65,6 +65,6 @@ describe('CivilAppearanceDetails.vue', () => {
   it('renders ScheduledParties component when "documents" tab is active', async () => {
     wrapper.vm.tab = 'parties';
     expect(wrapper.findComponent({name: 'ScheduledParties'}).exists()).toBe(true);
-    expect(wrapper.findComponent({name: 'AppearanceMethods'}).exists()).toBe(false);
+    expect(wrapper.findComponent({name: 'CivilAppearanceMethods'}).exists()).toBe(false);
   });
 });

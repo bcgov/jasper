@@ -20,7 +20,7 @@
             View case details
           </v-btn>
           <v-btn
-            v-if="courtClass == 'Criminal - Adult'"
+            v-if="isCourtClassLabelCriminal(courtClass)"
             size="large"
             class="mx-2"
             :prepend-icon="mdiFileDocumentMultipleOutline"
@@ -39,7 +39,7 @@
 <script setup lang="ts">
   import ActionBar from '@/components/shared/table/ActionBar.vue';
   import { CourtListAppearance } from '@/types/courtlist';
-  import { getCourtClassLabel } from '@/utils/utils';
+  import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
   import {
     mdiFileDocumentMultipleOutline,
     mdiFileDocumentOutline,

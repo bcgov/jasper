@@ -1,6 +1,6 @@
 import Dashboard from '@/components/dashboard/Dashboard.vue';
 import { useCommonStore } from '@/stores';
-import { mount } from '@vue/test-utils';
+import { mount, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
@@ -17,24 +17,26 @@ describe('Dashboard.vue', () => {
   });
 
   const mountComponent = () => {
-    return mount(Dashboard, {
+    return shallowMount(Dashboard, {
       global: {
         stubs: {
           CourtToday: true,
           CalendarToolbar: true,
           CourtCalendar: true,
           MyCalendar: true,
+          DashboardPanels: true,
         },
       },
     });
   };
 
-  it('renders CourtToday and MyCalendar as the default view for Dashboard component', () => {
+  it('renders CourtToday, MyCalendar and Panels as the default view for Dashboard component', () => {
     const wrapper = mountComponent();
 
     expect(wrapper.find('court-today-stub').exists()).toBe(true);
     expect(wrapper.find('calendar-toolbar-stub').exists()).toBe(true);
     expect(wrapper.find('my-calendar-stub').exists()).toBe(true);
+    expect(wrapper.find('dashboard-panels-stub').exists()).toBe(true);
     expect(wrapper.find('court-calendar-stub').exists()).toBe(false);
   });
 

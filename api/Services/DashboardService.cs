@@ -219,7 +219,11 @@ public class DashboardService(
         // This is a temp solution to retrieve list of users(judge) from external source. 
         var date = DateTime.Now.ToString("dd-MMM-yyyy");
         var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
-        var judges = await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
+
+        async Task<ICollection<PCSS.PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
+        var judicialListingTask = this.GetDataFromCache($"{JudicialListing}-{date}-{string.Join(",", locationsIds)}", JudicialListing);
+        var judges = await judicialListingTask;
+
         return judges.OrderBy(j => j.FullName);
     }
 

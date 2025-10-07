@@ -21,8 +21,10 @@ describe('CourtListCriminalDetails.vue', () => {
             {
             issueDate: '2024-06-01',
             docmFormDsc: 'Form A',
+            docmDispositionDsc: 'Disposition',
             docmClassification: 'Type 1',
             documentPageCount: 3,
+            category: 'bail',
             },
         ],
         charges: [
@@ -68,12 +70,12 @@ describe('CourtListCriminalDetails.vue', () => {
   });
 
   it('renders AppearanceMethods when appearanceMethods exist', () => {
-    expect(wrapper.findComponent({name: 'AppearanceMethods'}).exists()).toBe(true);
+    expect(wrapper.findComponent({name: 'CriminalAppearanceMethods'}).exists()).toBe(true);
   });
 
 it('does not render AppearanceMethods when no appearanceMethods', () => {
     mockDetails.appearanceMethods = [];
-        wrapper = mount(CourtListCriminalDetails, {
+    wrapper = mount(CourtListCriminalDetails, {
       global: {
         provide: {
           filesService,
@@ -86,7 +88,7 @@ it('does not render AppearanceMethods when no appearanceMethods', () => {
         seqNo: 'seq1',
       },
     });
-    expect(wrapper.findComponent({name: 'AppearanceMethods'}).exists()).toBe(false);
+    expect(wrapper.findComponent({name: 'CriminalAppearanceMethods'}).exists()).toBe(false);
   });
 
     it('renders key documents', () => {
@@ -97,4 +99,33 @@ it('does not render AppearanceMethods when no appearanceMethods', () => {
       expect(cards).toHaveLength(2);
       expect(cards[0].html()).toContain('Key Documents');
     });
+
+    it('renders bail document', async () => {
+      wrapper = mount(CourtListCriminalDetails, {
+        global: {
+          provide: {
+            filesService,
+          },
+          stubs: {
+              'v-data-table-virtual': {
+                 template: `
+                  <slot name="item.docmFormDsc" :item="items && items[0] ? items[0] : { category: 'bail' }"></slot>
+                `,
+                  props: ['headers', 'items', 'itemValue'],
+              }
+          },
+        },
+        props: {
+          fileId: 'file1',
+          appearanceId: 'app1',
+          partId: 'part1',
+          seqNo: 'seq1',
+        },
+    });
+
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Disposition');
+    expect(wrapper.text()).toContain('01-Jun-2024');
+  });
 });

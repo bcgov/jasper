@@ -1,4 +1,4 @@
-import { isPositiveInteger, parseQueryStringToString } from '@/utils/utils';
+import { isPositiveInteger, parseQueryStringToString, isCourtClassLabelCriminal } from '@/utils/utils';
 import { describe, expect, it } from 'vitest';
 
 describe('utils', () => {
@@ -56,6 +56,40 @@ describe('utils', () => {
 
       it('returns false for NaN', () => {
         expect(isPositiveInteger(NaN)).toBe(false);
+      });
+    });
+    
+    describe('isCourtClassLabelCriminal', () => {
+      it('returns true for "Criminal - Adult"', () => {
+        expect(isCourtClassLabelCriminal('Criminal - Adult')).toBe(true);
+      });
+
+      it('returns true for "Youth"', () => {
+        expect(isCourtClassLabelCriminal('Youth')).toBe(true);
+      });
+
+      it('returns true for "Tickets"', () => {
+        expect(isCourtClassLabelCriminal('Tickets')).toBe(true);
+      });
+
+      it('returns false for "Small Claims"', () => {
+        expect(isCourtClassLabelCriminal('Small Claims')).toBe(false);
+      });
+
+      it('returns false for "Family"', () => {
+        expect(isCourtClassLabelCriminal('Family')).toBe(false);
+      });
+
+      it('returns false for "Unknown"', () => {
+        expect(isCourtClassLabelCriminal('Unknown')).toBe(false);
+      });
+
+      it('returns false for empty string', () => {
+        expect(isCourtClassLabelCriminal('')).toBe(false);
+      });
+
+      it('returns false for unrelated label', () => {
+        expect(isCourtClassLabelCriminal('Civil')).toBe(false);
       });
     });
   });

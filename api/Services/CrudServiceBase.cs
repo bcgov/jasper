@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
@@ -16,9 +17,11 @@ public interface ICrudService<TDto> where TDto : BaseDto
     Task<List<TDto>> GetAllAsync();
     Task<TDto> GetByIdAsync(string id);
     Task<OperationResult<TDto>> AddAsync(TDto dto);
+    Task<OperationResult<TDto>> AddRangeAsync(List<TDto> dtos);
     Task<OperationResult<TDto>> ValidateAsync(TDto dto, bool isEdit = false);
     Task<OperationResult<TDto>> UpdateAsync(TDto dto);
     Task<OperationResult> DeleteAsync(string id);
+    Task<OperationResult> DeleteRangeAsync(List<string> ids);
 }
 
 public abstract class CrudServiceBase<TRepo, TEntity, TDto>(
@@ -69,6 +72,25 @@ public abstract class CrudServiceBase<TRepo, TEntity, TDto>(
         }
     }
 
+    public virtual async Task<OperationResult<TDto>> AddRangeAsync(List<TDto> dtos)
+    {
+        try
+        {
+            var entities = Mapper.Map<List<TEntity>>(dtos);
+
+            await Repo.AddRangeAsync(entities);
+
+            InvalidateCache(CacheName);
+
+            return OperationResult<TDto>.Success(Mapper.Map<TDto>(entities));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error when adding data: {Message}", ex.Message);
+            return OperationResult<TDto>.Failure("Error when adding data.");
+        }
+    }
+
     public abstract Task<OperationResult<TDto>> ValidateAsync(TDto dto, bool isEdit = false);
 
     public virtual async Task<OperationResult<TDto>> UpdateAsync(TDto dto)
@@ -112,6 +134,34 @@ public abstract class CrudServiceBase<TRepo, TEntity, TDto>(
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Error deleting data: {message}", ex.Message);
+            return OperationResult.Failure("Error when deleting data.");
+        }
+    }
+
+    public virtual async Task<OperationResult> DeleteRangeAsync(List<string> ids)
+    {
+        try
+        {
+            var existingEntities = new List<TEntity>();
+            var tasks = ids.Select(Repo.GetByIdAsync);
+            var entities = await Task.WhenAll(tasks);
+            existingEntities.AddRange(entities.Where(ent => ent != null));
+
+            if (existingEntities.Count == 0)
+            {
+                var err = new List<string> { $"No entities found." };
+                return OperationResult.Failure([.. err]);
+            }
+
+            await Repo.DeleteRangeAsync(existingEntities);
+
+            InvalidateCache(CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting data: {Message}", ex.Message);
             return OperationResult.Failure("Error when deleting data.");
         }
     }

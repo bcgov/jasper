@@ -1,8 +1,9 @@
 import CourtCalendar from '@/components/dashboard/court-calendar/CourtCalendar.vue';
 import { DashboardService } from '@/services';
 import { CalendarViewEnum } from '@/types/common';
-import { flushPromises, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 
 vi.mock('@/services');
 
@@ -22,8 +23,10 @@ describe('CourtCalendar.vue', () => {
   const mountComponent = () => {
     return mount(CourtCalendar, {
       props: {
+        judgeId: 1,
         selectedDate: new Date(),
         calendarView: CalendarViewEnum.TwoWeekView,
+        isCalendarLoading: true,
       },
       global: {
         provide: {
@@ -33,22 +36,23 @@ describe('CourtCalendar.vue', () => {
     });
   };
 
-  it('renders CourtCalendarToolbar and FullCalendar', async () => {
-    const wrapper = mountComponent();
-
-    await flushPromises();
-
-    expect(wrapper.find('.fc').exists()).toBeTruthy();
-  });
-
-  it('shows v-skeleton-loader briefly before FullCalendar', async () => {
-    const wrapper = mountComponent();
+  it('renders skeleton loader when isCalendarLoading is true while FullCalendar is hidden', async () => {
+    const wrapper: any = mountComponent();
 
     expect(wrapper.find('v-skeleton-loader').exists()).toBeTruthy();
+    expect(wrapper.find('.fc').exists()).toBeFalsy();
+  });
 
-    await flushPromises();
+  it('renders FullCalendar when isCalendarLoading is false while skeleton loader is hidden', async () => {
+    const wrapper: any = mountComponent();
 
-    expect(wrapper.find('.fc').exists()).toBeTruthy();
+    expect(wrapper.find('v-skeleton-loader').exists()).toBeTruthy();
+    expect(wrapper.find('.fc').exists()).toBeFalsy();
+
+    wrapper.vm.isCalendarLoading = false;
+    await nextTick();
+
     expect(wrapper.find('v-skeleton-loader').exists()).toBeFalsy();
+    expect(wrapper.find('.fc').exists()).toBeTruthy();
   });
 });

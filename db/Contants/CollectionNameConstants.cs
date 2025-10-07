@@ -12,4 +12,5 @@ public static class CollectionNameConstants
     public const string ROLES = "roles";
     public const string TAGS = "tags";
     public const string USERS = "users";
+    public const string RESERVED_JUDGEMENTS = "reserved_judgements";
 }

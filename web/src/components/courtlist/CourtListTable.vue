@@ -48,14 +48,14 @@
       <tr>
         <td class="pa-0" style="height: 1rem" :colspan="columns.length">
           <v-banner
-            :class="bannerClasses[item.value] || 'table-banner'"
+            :class="bannerClasses[getGroupDisplayName(item.value)] || 'table-banner'"
             :ref="
               () => {
                 if (!isGroupOpen(item)) toggleGroup(item);
               }
             "
           >
-            {{ item.value }}
+            {{ getGroupDisplayName(item.value) }}
           </v-banner>
         </td>
       </tr>
@@ -146,11 +146,12 @@
 <script setup lang="ts">
   import CivilAppearanceDetails from '@/components/civil/CivilAppearanceDetails.vue';
   import CourtListTableActionBarGroup from '@/components/courtlist/CourtListTableActionBarGroup.vue';
+  import shared from '@/components/shared';
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
-  import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
   import { useCourtFileSearchStore } from '@/stores';
+  import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
   import {
     CourtClassEnum,
     DivisionEnum,
@@ -170,35 +171,55 @@
     mdiNotebookEditOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
-  import shared from '@/components/shared';
   import { computed, ref } from 'vue';
 
   const selected = ref<CourtListAppearance[]>([]);
-
   const sortBy = ref([
     { key: 'appearanceSequenceNumber', order: 'asc' },
   ] as const);
-
   const groupBy = ref([
     {
-      key: 'courtClass',
-      order: 'asc' as const,
+      key: 'courtClassSort',
+      order: 'asc',
     },
-  ]);
+  ] as const);
 
   const props = defineProps<{
     data: CourtListAppearance[];
     search: string;
   }>();
 
+  const courtClassOrder = [
+    'Criminal - Adult',
+    'Tickets',
+    'Youth',
+    'Family',
+    'Small Claims'
+  ];
+
   const data = computed(() =>
-    props.data.map((item) => ({
-      ...item,
-      courtClass: getCourtClassLabel(item.courtClassCd),
-    }))
+    props.data
+      .map((item) => {
+        const courtClass = getCourtClassLabel(item.courtClassCd);
+        const orderIndex = courtClassOrder.indexOf(courtClass);
+        const sortOrder = orderIndex === -1 ? 99 : orderIndex;
+        
+        return {
+          ...item,
+          courtClass,
+          courtClassSort: `${sortOrder.toString().padStart(2, '0')}-${courtClass}`,
+          groupOrder: item.courtClassCd
+        };
+      })
+      .sort((a, b) => {
+        const aIndex = courtClassOrder.indexOf(a.courtClass);
+        const bIndex = courtClassOrder.indexOf(b.courtClass);
+        const aOrder = aIndex === -1 ? 99 : aIndex;
+        const bOrder = bIndex === -1 ? 99 : bIndex;
+        return aOrder - bOrder;
+      })
   );
   const courtFileSearchStore = useCourtFileSearchStore();
-
   const headers = ref([
     { key: 'data-table-expand' },
     { key: 'data-table-group' },
@@ -350,15 +371,15 @@
       return;
     }
 
-      appearances.map(
-        (app) =>
-          ({
-            physicalFileId: app.justinNo, 
-            appearanceId: app.appearanceId,
-            participantId: app.profPartId,
-            courtClassCd: app.courtClassCd,
-          }) as AppearanceDocumentRequest
-      );
+    appearances.map(
+      (app) =>
+        ({
+          physicalFileId: app.justinNo,
+          appearanceId: app.appearanceId,
+          participantId: app.profPartId,
+          courtClassCd: app.courtClassCd,
+        }) as AppearanceDocumentRequest
+    );
 
     shared.openCourtListKeyDocuments(appearances);
   };
@@ -399,5 +420,10 @@
     });
 
     window.open(caseDetailUrl);
+  };
+
+  const getGroupDisplayName = (sortableValue: string) => {
+    // Extract the court class name from the sortable key (format: "00-Criminal - Adult")
+    return sortableValue.split('-').slice(1).join('-');
   };
 </script>

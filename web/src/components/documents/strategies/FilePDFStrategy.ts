@@ -1,9 +1,9 @@
-import { inject } from 'vue';
+import { OutlineItem, PDFViewerStrategy } from '@/components/documents/FileViewer.vue';
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { FilesService } from '@/services/FilesService';
 import { usePDFViewerStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
-import { PDFViewerStrategy, OutlineItem } from '@/components/documents/FileViewer.vue';
+import { inject } from 'vue';
 
 export class FilePDFStrategy implements PDFViewerStrategy<
   Record<string, Record<string, StoreDocument[]>>,
@@ -70,7 +70,7 @@ export class FilePDFStrategy implements PDFViewerStrategy<
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
     const children: OutlineItem[] = [];
-    
+    const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start
     Object.entries(userGroup).forEach(([name, docs]) => {
       if (name !== '') {
         children.push(this.makeSecondGroup(name, docs, apiResponse));
@@ -83,6 +83,7 @@ export class FilePDFStrategy implements PDFViewerStrategy<
       title: groupKey,
       isExpanded: true,
       children,
+      pageIndex
     };
   }
 
@@ -91,10 +92,12 @@ export class FilePDFStrategy implements PDFViewerStrategy<
     docs: StoreDocument[], 
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
+    const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start
     return {
       title: memberName,
       isExpanded: true,
       children: docs.map((doc) => this.makeDocElement(doc, apiResponse)),
+      pageIndex
     };
   }
 

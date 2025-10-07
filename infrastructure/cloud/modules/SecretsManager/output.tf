@@ -1,20 +1,23 @@
 output "secrets_arn_list" {
   value = [
+    aws_secretsmanager_secret.api_authorizer_secret.arn,
     aws_secretsmanager_secret.aspnet_core_secret.arn,
     aws_secretsmanager_secret.auth_secret.arn,
+    aws_secretsmanager_secret.azure_secret.arn,
+    aws_secretsmanager_secret.dars_secret.arn,
     aws_secretsmanager_secret.database_secret.arn,
     aws_secretsmanager_secret.file_services_client_secret.arn,
+    aws_secretsmanager_secret.jobs_secret.arn,
     aws_secretsmanager_secret.keycloak_secret.arn,
     aws_secretsmanager_secret.location_services_client_secret.arn,
     aws_secretsmanager_secret.lookup_services_client_secret.arn,
     aws_secretsmanager_secret.misc_secret.arn,
     aws_secretsmanager_secret.mtls_cert_secret.arn,
-    aws_secretsmanager_secret.request_secret.arn,
-    aws_secretsmanager_secret.splunk_secret.arn,
-    aws_secretsmanager_secret.user_services_client_secret.arn,
-    aws_secretsmanager_secret.api_authorizer_secret.arn,
     aws_secretsmanager_secret.pcss_secret.arn,
-    aws_secretsmanager_secret.dars_secret.arn
+    aws_secretsmanager_secret.request_secret.arn,
+    aws_secretsmanager_secret.reserved_judgements_secret.arn,
+    aws_secretsmanager_secret.splunk_secret.arn,
+    aws_secretsmanager_secret.user_services_client_secret.arn
   ]
 }
 
@@ -27,6 +30,10 @@ output "api_secrets" {
     ["Auth__UserPassword", "${aws_secretsmanager_secret.auth_secret.arn}:userPassword::"],
     ["Auth__AllowSiteMinderUserType", "${aws_secretsmanager_secret.auth_secret.arn}:allowSiteMinderUserType::"],
     ["AuthorizerKey", "${aws_secretsmanager_secret.api_authorizer_secret.arn}:verifyKey::"],
+    ["AZURE__CLIENT_ID", "${aws_secretsmanager_secret.azure_secret.arn}:clientId::"],
+    ["AZURE__CLIENT_SECRET", "${aws_secretsmanager_secret.azure_secret.arn}:clientSecret::"],
+    ["AZURE__SERVICE_ACCOUNT", "${aws_secretsmanager_secret.azure_secret.arn}:serviceAccount::"],
+    ["AZURE__TENANT_ID", "${aws_secretsmanager_secret.azure_secret.arn}:tenantId::"],
     ["DARS__Username", "${aws_secretsmanager_secret.dars_secret.arn}:username::"],
     ["DARS__Password", "${aws_secretsmanager_secret.dars_secret.arn}:password::"],
     ["DARS__Url", "${aws_secretsmanager_secret.dars_secret.arn}:baseUrl::"],
@@ -35,6 +42,8 @@ output "api_secrets" {
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
     ["FileServicesClient__Password", "${aws_secretsmanager_secret.file_services_client_secret.arn}:password::"],
     ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl::"],
+    ["JOBS__SYNC_DOCUMENT_CATEGORIES_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncDocumentCategoriesSchedule::"],
+    ["JOBS__SYNC_RESERVED_JUDGEMENTS_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncReservedJudgementsSchedule::"],
     ["Keycloak__Audience", "${aws_secretsmanager_secret.keycloak_secret.arn}:audience::"],
     ["Keycloak__Authority", "${aws_secretsmanager_secret.keycloak_secret.arn}:authority::"],
     ["Keycloak__Client", "${aws_secretsmanager_secret.keycloak_secret.arn}:client::"],
@@ -59,6 +68,9 @@ output "api_secrets" {
     ["Request__AgencyIdentifierId", "${aws_secretsmanager_secret.request_secret.arn}:agencyIdentifierId::"],
     ["Request__GetUserLoginDefaultAgencyId", "${aws_secretsmanager_secret.request_secret.arn}:getUserLoginDefaultAgencyId::"],
     ["Request__PartId", "${aws_secretsmanager_secret.request_secret.arn}:partId::"],
+    ["RESERVED_JUDGEMENTS__ATTACHMENT_NAME", "${aws_secretsmanager_secret.reserved_judgements_secret.arn}:attachmentName::"],
+    ["RESERVED_JUDGEMENTS__SENDER", "${aws_secretsmanager_secret.reserved_judgements_secret.arn}:sender::"],
+    ["RESERVED_JUDGEMENTS__SUBJECT", "${aws_secretsmanager_secret.reserved_judgements_secret.arn}:subject::"],
     ["SiteMinderLogoutUrl", "${aws_secretsmanager_secret.misc_secret.arn}:siteMinderLogoutUrl::"],
     ["SplunkCollectorId", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorId::"],
     ["SplunkCollectorUrl", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorUrl::"],

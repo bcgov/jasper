@@ -34,7 +34,7 @@
           v-if="details.appearanceMethod?.length"
           value="methods"
         >
-          <AppearanceMethods :appearanceMethod="details.appearanceMethod" />
+          <CivilAppearanceMethods :appearanceMethod="details.appearanceMethod" />
         </v-tabs-window-item>
       </v-skeleton-loader>
     </v-tabs-window>
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-  import AppearanceMethods from '@/components/case-details/civil/appearances/AppearanceMethods.vue';
+  import CivilAppearanceMethods from '@/components/case-details/civil/appearances/CivilAppearanceMethods.vue';
   import ScheduledDocuments from '@/components/case-details/civil/appearances/ScheduledDocuments.vue';
   import ScheduledParties from '@/components/case-details/civil/appearances/ScheduledParties.vue';
   import { FilesService } from '@/services/FilesService';

@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
-import AppearanceMethods from 'CMP/case-details/civil/appearances/AppearanceMethods.vue';
+import CivilAppearanceMethods from 'CMP/case-details/civil/appearances/CivilAppearanceMethods.vue';
 
-describe('AppearanceMethods.vue', () => {
+describe('CivilAppearanceMethods.vue', () => {
   it('renders correctly when appearanceMethod has data', () => {
     const appearanceMethod = [
       { roleTypeDesc: 'Plaintiff', appearanceMethodDesc: 'In Person' },
       { roleTypeDesc: 'Defendant', appearanceMethodDesc: 'Video Conference' },
     ];
 
-    const wrapper = mount(AppearanceMethods, {
+    const wrapper = mount(CivilAppearanceMethods, {
       props: { appearanceMethod },
     });
 
@@ -20,7 +20,7 @@ describe('AppearanceMethods.vue', () => {
   it('does not render anything when appearanceMethod is empty', () => {
     const appearanceMethod: any[] = [];
 
-    const wrapper = mount(AppearanceMethods, {
+    const wrapper = mount(CivilAppearanceMethods, {
       props: { appearanceMethod },
     });
 
@@ -34,7 +34,7 @@ describe('AppearanceMethods.vue', () => {
       { roleTypeDesc: 'Witness', appearanceMethodDesc: 'Phone' },
     ];
 
-    const wrapper = mount(AppearanceMethods, {
+    const wrapper = mount(CivilAppearanceMethods, {
       props: { appearanceMethod },
     });
 

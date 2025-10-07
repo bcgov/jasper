@@ -1,4 +1,4 @@
-import { shallowMount } from '@vue/test-utils';
+import { shallowMount, flushPromises } from '@vue/test-utils';
 import DocumentsView from 'CMP/case-details/criminal/CriminalDocumentsView.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -16,9 +16,10 @@ describe('CriminalDocumentsView.vue', () => {
       {
         issueDate: '2023-01-01',
         documentTypeDescription: 'Type A',
-        category: 'rop',
+        category: 'bail',
         documentPageCount: 5,
         imageId: '123',
+        docmDispositionDsc: 'Disposition',
       };
     mockParticipantOne = {
       fullName: 'John Doe',
@@ -40,6 +41,7 @@ describe('CriminalDocumentsView.vue', () => {
           category: 'other',
           documentPageCount: 3,
           imageId: '456',
+          docmDispositionDsc: 'Disposition',
         },
       ],
     };
@@ -127,11 +129,11 @@ describe('CriminalDocumentsView.vue', () => {
   });
 
   it('filters documents by category', async () => {
-    wrapper.vm.selectedCategory = 'ROP';
+    wrapper.vm.selectedCategory = 'bail';
 
     const documents = wrapper.vm.documents;
     expect(documents).toHaveLength(1);
-    expect(documents[0].category).toBe('rop');
+    expect(documents[0].category).toBe('bail');
   });
 
   it.each([
@@ -175,4 +177,33 @@ describe('CriminalDocumentsView.vue', () => {
 
      expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(false);
   });
+
+  it('renders bail document', async () => {
+    mockParticipants[0].keyDocuments.push(mockDocumentOne);
+        wrapper = shallowMount(DocumentsView, {
+          global: {
+            stubs: {
+                'v-data-table-virtual': {
+                    template: `
+                        <slot name="item.documentTypeDescription" :item="items && items[0] ? items[0] : { category: 'bail' }"></slot>
+                        `,
+                    props: ['headers', 'items', 'itemValue', 'columns'],
+                    methods: {
+                        isGroupOpen: () => true,
+                        toggleGroup: () => {},
+                    },
+                },
+              'v-banner': true,
+              'v-card-text': true
+            },
+          },
+         props: {
+            participants: mockParticipants,
+      },
+      });
+      await flushPromises();
+  
+      expect(wrapper.text()).toContain('Disposition');
+      expect(wrapper.text()).toContain('01-Jan-2023');
+    });
 });

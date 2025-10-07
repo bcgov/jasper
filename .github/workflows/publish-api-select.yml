@@ -1,0 +1,115 @@
+name: Deploy API to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      branch:
+        description: 'Branch to deploy from'
+        required: true
+        default: 'master'
+        type: string
+
+env:
+  WORKING_DIRECTORY: .
+  IMAGE_NAME: api
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+
+jobs:
+  build:
+    name: Build, Create and Push Image
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
+
+    strategy:
+      matrix:
+        dotnet-major-version: [9]
+        dotnet-minor-version: [0]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Build API codebase
+        uses: ./.github/workflows/actions/build-api
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          dotnet_version: ${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short SHA
+        id: short_sha
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Setup Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Image to ghcr.io
+        id: build_image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ./docker/api/Dockerfile.release
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          build-args: |
+            dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
+
+  deploy2env:
+    name: Deploy to ENV
+    needs: build
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Deploy to ${{ env.ENVIRONMENT }}
+        uses: ./.github/workflows/actions/deploy-app
+        with:
+          environment: ${{ env.ENVIRONMENT }}
+          aws_account: ${{ vars.AWS_ACCOUNT }}
+          region: ${{ vars.AWS_REGION }}
+          app_name: ${{ vars.APP_NAME }}
+          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+          image_name: ${{ env.IMAGE_NAME  }}
+          tier_name: api
+          short_sha: ${{ needs.build.outputs.short_sha }}

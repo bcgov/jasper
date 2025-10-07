@@ -1,0 +1,124 @@
+name: Deploy Web to Environment
+
+on:
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      branch:
+        description: 'Branch to deploy from'
+        required: true
+        default: 'master'
+        type: string
+
+env:
+  WORKING_DIRECTORY: ./web
+  WEB_IMAGE_NAME: web
+  WEB_RUNTIME_IMAGE_NAME: web-runtime
+  WEB_ARTIFACTS_IMAGE_NAME: web-artifacts
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+  WEB_BASE_HREF: /
+
+jobs:
+  build:
+    name: Build, Create and Push Image
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
+
+    strategy:
+      matrix:
+        node-major-version: [22]
+        node-minor-version: [x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Building Web codebase
+        uses: ./.github/workflows/actions/build-web
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          node_version: ${{ matrix.node-major-version }}.${{ matrix.node-minor-version }}
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short SHA
+        id: short_sha
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+
+      - name: Setup ${{ env.WEB_IMAGE_NAME }} Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GITHUB_IMAGE_REPO }}/${{ env.WEB_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Build ${{ env.WEB_IMAGE_NAME }} image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ./docker/web/Dockerfile.release
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NODE_VERSION=${{ matrix.node-major-version }}
+            WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}
+            NGINX_RUNTIME_SRC=../../docker/nginx-runtime
+            VUE_ON_NGINX_SRC=../../docker/vue-on-nginx
+            WEB_SRC=../../web
+
+  deploy2env:
+    name: Deploy to ENV
+    needs: build
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Deploy to ${{ env.ENVIRONMENT }}
+        uses: ./.github/workflows/actions/deploy-app
+        with:
+          environment: ${{ env.ENVIRONMENT }}
+          aws_account: ${{ vars.AWS_ACCOUNT }}
+          region: ${{ vars.AWS_REGION }}
+          app_name: ${{ vars.APP_NAME }}
+          aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+          ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
+          image_name: ${{ env.WEB_IMAGE_NAME }}
+          tier_name: web
+          short_sha: ${{ needs.build.outputs.short_sha }}

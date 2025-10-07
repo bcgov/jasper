@@ -4,14 +4,22 @@
     v-model:selectedDate="selectedDate"
     v-model:isCourtCalendar="isCourtCalendar"
     v-model:calendarView="calendarView"
+    :isCalendarLoading="isCalendarLoading"
   />
   <CourtCalendar
     v-if="isCourtCalendar"
     v-model:selectedDate="selectedDate"
     v-model:calendarView="calendarView"
+    v-model:isCalendarLoading="isCalendarLoading"
     :judgeId="judgeId"
   />
-  <MyCalendar v-else :judgeId="judgeId" v-model:selectedDate="selectedDate" />
+  <MyCalendar
+    v-else
+    :judgeId="judgeId"
+    v-model:selectedDate="selectedDate"
+    v-model:isCalendarLoading="isCalendarLoading"
+  />
+  <DashboardPanels class="my-5" :judgeId="judgeId" />
 </template>
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';
@@ -21,12 +29,14 @@
   import CourtCalendar from './court-calendar/CourtCalendar.vue';
   import CourtToday from './CourtToday.vue';
   import MyCalendar from './my-calendar/MyCalendar.vue';
+  import DashboardPanels from './panels/DashboardPanels.vue';
 
   const commonStore = useCommonStore();
   const judgeId = ref(commonStore.userInfo?.judgeId);
   const isCourtCalendar = ref(false);
   const selectedDate = ref(new Date());
   const calendarView = ref(CalendarViewEnum.MonthView);
+  const isCalendarLoading = ref(true);
 
   watch(
     () => commonStore.userInfo?.judgeId,

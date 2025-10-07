@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect } from 'vitest'
-import AppearanceMethods from 'CMP/case-details/criminal/appearances/AppearanceMethods.vue'
+import CriminalAppearanceMethods from 'CMP/case-details/criminal/appearances/CriminalAppearanceMethods.vue'
 
-describe('AppearanceMethods.vue', () => {
+describe('CriminalAppearanceMethods.vue', () => {
   it('renders appearance methods when provided', () => {
     const appearanceMethods = [
       {
@@ -14,7 +14,7 @@ describe('AppearanceMethods.vue', () => {
         appearanceMethodDesc: 'Video Conference'
       }
     ]
-    const wrapper = mount(AppearanceMethods, {
+    const wrapper = mount(CriminalAppearanceMethods, {
       props: { appearanceMethods }
     })
     expect(wrapper.text()).toContain('Defendant appearing by In Person')
@@ -26,7 +26,7 @@ describe('AppearanceMethods.vue', () => {
     { method: null },
     { method: [] },
   ])('renders default text when appearanceMethods is falsy', ({ method }) => {
-    const wrapper = mount(AppearanceMethods, {
+    const wrapper = mount(CriminalAppearanceMethods, {
       props: { appearanceMethods: method }
     })
     expect(wrapper.text()).toContain('No appearance methods.')

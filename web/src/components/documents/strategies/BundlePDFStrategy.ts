@@ -7,9 +7,9 @@ import { useBundleStore } from '@/stores';
 import { appearanceRequest } from '@/stores/BundleStore';
 import { ApiResponse } from '@/types/ApiResponse';
 import { BinderDocument } from '@/types/BinderDocument';
+import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 import { inject } from 'vue';
-import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
 
 export class BundlePDFStrategy
   implements
@@ -78,9 +78,7 @@ export class BundlePDFStrategy
     return await this.binderService.generateBinderPDF(processedData);
   }
 
-  extractBase64PDF(
-    apiResponse: ApiResponse<DocumentBundleResponse>
-  ): string {
+  extractBase64PDF(apiResponse: ApiResponse<DocumentBundleResponse>): string {
     return apiResponse.payload.pdfResponse.base64Pdf;
   }
 
@@ -139,7 +137,8 @@ export class BundlePDFStrategy
     if (!binders) {
       return null;
     }
-
+    const pageIndex =
+      apiResponse.payload.pdfResponse.pageRanges?.[this.count]?.start;
     const children = binders.flatMap((binder) =>
       binder.documents
         .filter((doc) => !isNaN(parseFloat(doc.documentId)))
@@ -150,6 +149,7 @@ export class BundlePDFStrategy
       title: memberName,
       isExpanded: true,
       children,
+      pageIndex,
     };
   }
 

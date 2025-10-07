@@ -13,10 +13,16 @@ public static class RecurringJobHelper
         if (!string.IsNullOrWhiteSpace(job.CronSchedule)
             && !disabled.Any(e => e.Equals(job.CronSchedule, StringComparison.OrdinalIgnoreCase)))
         {
+            var options = new RecurringJobOptions
+            {
+                TimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Vancouver")
+            };
+
             RecurringJob.AddOrUpdate(
                 job.JobName,
                 () => job.Execute(),
-                job.CronSchedule);
+                job.CronSchedule,
+                options);
         }
         else
         {

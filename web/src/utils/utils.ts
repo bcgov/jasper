@@ -300,6 +300,22 @@ export const getCourtClassLabel = (courtClassCd: string): string => {
 };
 
 /**
+ * Determines if the provided court class label corresponds to a criminal court class.
+ * @param courtClassLabel The court class label
+ * @returns Whether the court class is criminal
+ */
+export const isCourtClassLabelCriminal = (courtClassLabel: string): boolean => {
+  switch (courtClassLabel) {
+    case 'Criminal - Adult':
+    case 'Youth':
+    case 'Tickets':
+      return true;
+    default:
+      return false;
+  }
+};
+
+/**
  * Parses QueryString to string
  * @param value The query string param
  * @param fallback The fallback param when parsing fails

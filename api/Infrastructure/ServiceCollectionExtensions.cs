@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Net.Http;
 using System.Reflection;
+using Azure.Identity;
 using GdPicture14;
 using Hangfire;
-using Hangfire.Mongo;
-using Hangfire.Mongo.Migration.Strategies;
-using Hangfire.Mongo.Migration.Strategies.Backup;
+using Hangfire.PostgreSql;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -17,9 +16,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Scv.Api.Documents;
+using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
@@ -27,6 +28,7 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
+using Scv.Api.Models;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
@@ -134,6 +136,24 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
+        public static IServiceCollection AddGraphService(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddSingleton<GraphServiceClient>(sp =>
+            {
+                var clientId = configuration.GetNonEmptyValue("AZURE:CLIENT_ID");
+                var tenantId = configuration.GetNonEmptyValue("AZURE:TENANT_ID");
+                var clientSecret = configuration.GetNonEmptyValue("AZURE:CLIENT_SECRET");
+
+                var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+
+                return new GraphServiceClient(credential);
+            });
+
+            services.AddScoped<IEmailService, EmailService>();
+
+            return services;
+        }
+
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();
@@ -184,7 +204,7 @@ namespace Scv.Api.Infrastructure
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
-            services.AddTransient(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
+            services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
@@ -196,6 +216,7 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
+            services.AddScoped<ICsvParser, CsvParser>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -203,10 +224,12 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<PermissionDto>, PermissionService>();
                 services.AddScoped<ICrudService<RoleDto>, RoleService>();
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
+                services.AddScoped<ICrudService<ReservedJudgementDto>, ReservedJudgementService>();
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
+                services.AddTransient<IRecurringJob, SyncReservedJudgementsJob>();
             }
 
             return services;
@@ -214,37 +237,19 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration configuration)
         {
-            // Remove checking when the "real" mongo db has been configured
-            var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
-            var dbName = configuration.GetValue<string>("MONGODB_NAME");
-            if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(dbName))
+            var connectionString = configuration.GetValue<string>("DatabaseConnectionString");
+            if (string.IsNullOrEmpty(connectionString))
             {
                 return services;
             }
 
-            services.AddHangfire((sp, config) =>
-            {
-                var mongoClient = sp.GetRequiredService<IMongoClient>();
-                var dbName = configuration.GetValue<string>("HANGFIRE_DB") ?? "hangfire";
-
-                config
-                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                    .UseSimpleAssemblyNameTypeSerializer()
-                    .UseRecommendedSerializerSettings()
-                    .UseMongoStorage(mongoClient, dbName, new MongoStorageOptions
+            services.AddHangfire(config => config
+                .UsePostgreSqlStorage(c => c
+                    .UseNpgsqlConnection(connectionString), new PostgreSqlStorageOptions
                     {
-                        MigrationOptions = new MongoMigrationOptions
-                        {
-                            MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                            BackupStrategy = new CollectionMongoBackupStrategy(),
-                        },
-                        CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection,
-                        Prefix = "hangfire.mongo",
-                        CheckConnection = true
-                    });
-            });
-            services.AddHangfireServer(options => options.ServerName = "Hangfire.Mongo");
-
+                        SchemaName = "hangfire"
+                    }));
+            services.AddHangfireServer();
             return services;
         }
 

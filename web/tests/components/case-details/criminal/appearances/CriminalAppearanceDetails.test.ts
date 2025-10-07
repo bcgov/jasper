@@ -57,7 +57,7 @@ describe('CriminalAppearanceDetails.vue', () => {
 
   it('renders AppearanceMethods component when "methods" tab is active', async () => {
     wrapper.vm.tab = 'methods';
-    expect(wrapper.findComponent({name: 'AppearanceMethods'}).exists()).toBe(true);
+    expect(wrapper.findComponent({name: 'CriminalAppearanceMethods'}).exists()).toBe(true);
   });
 
   it('renders AppearanceCounsel component when "counsel" tab is active', async () => {

@@ -120,5 +120,29 @@ variable "alarm_evaluation_periods" {
 variable "alarm_period" {
   description = "Alarm period in seconds"
   type        = number
+}
 
+variable "alarm_task_threshold" {
+  description = "Alarm ECS task count threshold"
+  type        = number
+}
+
+variable "alarm_task_evaluation_periods" {
+  description = "Alarm ECS task evaluation periods"
+  type        = number
+}
+
+variable "alarm_task_period" {
+  description = "Alarm ECS task period in seconds"
+  type        = number
+}
+
+variable "web_ecs_max_capacity" {
+  description = "The maximum number of ECS tasks for the web service"
+  type        = number
+}
+
+variable "api_ecs_max_capacity" {
+  description = "The maximum number of ECS tasks for the API service"
+  type        = number
 }

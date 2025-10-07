@@ -277,7 +277,7 @@ module "ecs_web_service" {
   subnet_ids       = module.subnets.web_subnets_ids
   port             = module.ecs_web_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
-  max_capacity     = 1
+  max_capacity     = var.web_ecs_max_capacity
 }
 
 # Create CloudWatch Alarms for Web ECS Service
@@ -318,9 +318,9 @@ module "ecs_web_alarms" {
       name                = "task-count-high"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 1
-      evaluation_periods  = 1
-      period              = var.alarm_period
+      threshold           = var.alarm_task_threshold
+      evaluation_periods  = var.alarm_task_evaluation_periods
+      period              = var.alarm_task_period
       statistic           = "Average"
       description         = "Web service has scaled up."
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
@@ -329,9 +329,9 @@ module "ecs_web_alarms" {
       name                = "task-count-zero"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
-      threshold           = 1
-      evaluation_periods  = 1
-      period              = var.alarm_period
+      threshold           = var.alarm_task_threshold
+      evaluation_periods  = var.alarm_task_evaluation_periods
+      period              = var.alarm_task_period
       statistic           = "Average"
       description         = "CRITICAL: Web service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
@@ -352,7 +352,7 @@ module "ecs_api_service" {
   subnet_ids       = module.subnets.app_subnets_ids
   port             = module.ecs_api_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
-  max_capacity     = 1
+  max_capacity     = var.api_ecs_max_capacity
 }
 
 # Create CloudWatch Alarms for Api ECS Service
@@ -393,9 +393,9 @@ module "ecs_api_alarms" {
       name                = "task-count-high"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = 1
-      evaluation_periods  = 1
-      period              = var.alarm_period
+      threshold           = var.alarm_task_threshold
+      evaluation_periods  = var.alarm_task_evaluation_periods
+      period              = var.alarm_task_period
       statistic           = "Average"
       description         = "API service has scaled up."
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
@@ -404,9 +404,9 @@ module "ecs_api_alarms" {
       name                = "task-count-zero"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
-      threshold           = 1
-      evaluation_periods  = 1
-      period              = var.alarm_period
+      threshold           = var.alarm_task_threshold
+      evaluation_periods  = var.alarm_task_evaluation_periods
+      period              = var.alarm_task_period
       statistic           = "Average"
       description         = "CRITICAL: API service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]

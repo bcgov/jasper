@@ -257,6 +257,10 @@ module "ecs_api_td" {
     {
       name  = "AWS_API_GATEWAY_URL"
       value = "${module.apigw.apigw_invoke_url}"
+    },
+    {
+      name  = "DEFAULT_USERS"
+      value = "${module.secrets_manager.default_users}"
     }
   ]
   secret_env_variables = module.secrets_manager.api_secrets

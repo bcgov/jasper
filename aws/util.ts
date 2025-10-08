@@ -66,5 +66,5 @@ export const sanitizeQueryStringParams = (
 export const replaceWithWildcard = (value: string): string => {
   // Replaces everything after the API Gateway stage in the ARN with a wildcard (`/*`)
   // to take advantage of authorizer's caching capability
-  return value.replace(/^([^/]+\/\w+)(?:\/.*)?$/, "$1/*");
+  return value.replace(/^([^/]+\/[^/]+)(?:\/.*)?$/, "$1/*");
 };

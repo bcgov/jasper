@@ -80,6 +80,50 @@ describe("replaceWithWildcard", () => {
         "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/stage/GET",
         "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/stage/*",
       ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/other-stage/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/other-stage/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/dev-env/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/dev-env/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/some-other-stage/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/some-other-stage/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/some-other-stage-1/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/some-other-stage-1/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/lz-dev/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/lz-dev/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/staging_v2/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/staging_v2/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/test.env/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/test.env/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/prod-2024/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/prod-2024/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/dev_test-123.staging/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/dev_test-123.staging/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/v1/POST/resource/123",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/v1/*",
+      ],
+      [
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/PRODUCTION/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/PRODUCTION/*",
+      ],
     ],
   ];
 

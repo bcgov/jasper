@@ -222,6 +222,8 @@ module "ecs_web_td" {
   secret_env_variables   = module.secrets_manager.web_secrets
   kms_key_arn            = module.initial.kms_key_arn
   log_group_name         = module.ecs_web_td_log_group.log_group.name
+  cpu                    = var.web_ecs_config.cpu
+  memory_size            = var.web_ecs_config.memory_size
 }
 
 # SNS Topic for ECS Alerts
@@ -262,6 +264,8 @@ module "ecs_api_td" {
   secret_env_variables = module.secrets_manager.api_secrets
   kms_key_arn          = module.initial.kms_key_arn
   log_group_name       = module.ecs_api_td_log_group.log_group.name
+  cpu                  = var.api_ecs_config.cpu
+  memory_size          = var.api_ecs_config.memory_size
 }
 
 # Create Web ECS Service
@@ -277,7 +281,7 @@ module "ecs_web_service" {
   subnet_ids       = module.subnets.web_subnets_ids
   port             = module.ecs_web_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
-  max_capacity     = var.web_ecs_max_capacity
+  max_capacity     = var.web_ecs_config.max_capacity
 }
 
 # Create CloudWatch Alarms for Web ECS Service
@@ -296,31 +300,31 @@ module "ecs_web_alarms" {
       name                = "cpu-high"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_cpu_threshold
-      evaluation_periods  = var.alarm_evaluation_periods
-      period              = var.alarm_period
+      threshold           = var.alarm_config.cpu_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
       statistic           = "Average"
-      description         = "CPU utilization sustained above ${var.alarm_cpu_threshold}% for ${var.alarm_evaluation_periods} minutes"
+      description         = "CPU utilization sustained above ${var.alarm_config.cpu_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "memory-high"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_memory_threshold
-      evaluation_periods  = var.alarm_evaluation_periods
-      period              = var.alarm_period
+      threshold           = var.alarm_config.memory_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
       statistic           = "Average"
-      description         = "Memory utilization above ${var.alarm_memory_threshold}% for ${var.alarm_evaluation_periods} minutes"
+      description         = "Memory utilization above ${var.alarm_config.memory_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "task-count-high"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_task_threshold
-      evaluation_periods  = var.alarm_task_evaluation_periods
-      period              = var.alarm_task_period
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
       statistic           = "Average"
       description         = "Web service has scaled up."
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
@@ -329,9 +333,9 @@ module "ecs_web_alarms" {
       name                = "task-count-zero"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
-      threshold           = var.alarm_task_threshold
-      evaluation_periods  = var.alarm_task_evaluation_periods
-      period              = var.alarm_task_period
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
       statistic           = "Average"
       description         = "CRITICAL: Web service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
@@ -352,7 +356,7 @@ module "ecs_api_service" {
   subnet_ids       = module.subnets.app_subnets_ids
   port             = module.ecs_api_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
-  max_capacity     = var.api_ecs_max_capacity
+  max_capacity     = var.api_ecs_config.max_capacity
 }
 
 # Create CloudWatch Alarms for Api ECS Service
@@ -371,31 +375,31 @@ module "ecs_api_alarms" {
       name                = "cpu-high"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_cpu_threshold
-      evaluation_periods  = var.alarm_evaluation_periods
-      period              = var.alarm_period
+      threshold           = var.alarm_config.cpu_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
       statistic           = "Average"
-      description         = "CPU utilization sustained above ${var.alarm_cpu_threshold}% for ${var.alarm_evaluation_periods} minutes"
+      description         = "CPU utilization sustained above ${var.alarm_config.cpu_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "memory-high"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_memory_threshold
-      evaluation_periods  = var.alarm_evaluation_periods
-      period              = var.alarm_period
+      threshold           = var.alarm_config.memory_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
       statistic           = "Average"
-      description         = "Memory utilization above ${var.alarm_memory_threshold}% for ${var.alarm_evaluation_periods} minutes"
+      description         = "Memory utilization above ${var.alarm_config.memory_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     },
     {
       name                = "task-count-high"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_task_threshold
-      evaluation_periods  = var.alarm_task_evaluation_periods
-      period              = var.alarm_task_period
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
       statistic           = "Average"
       description         = "API service has scaled up."
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
@@ -404,9 +408,9 @@ module "ecs_api_alarms" {
       name                = "task-count-zero"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
-      threshold           = var.alarm_task_threshold
-      evaluation_periods  = var.alarm_task_evaluation_periods
-      period              = var.alarm_task_period
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
       statistic           = "Average"
       description         = "CRITICAL: API service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]

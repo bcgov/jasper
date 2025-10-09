@@ -12,12 +12,22 @@ delete_protection_enabled     = false
 mongo_node_count              = 1
 mongo_instance_type           = "db.t3.medium"
 mongousername                 = "adminmongo"
-web_ecs_max_capacity          = 1
-api_ecs_max_capacity          = 1
-alarm_cpu_threshold           = 70
-alarm_memory_threshold        = 80
-alarm_evaluation_periods      = 3
-alarm_period                  = 60
-alarm_task_threshold          = 1
-alarm_task_evaluation_periods = 1
-alarm_task_period             = 30
+web_ecs_config = {
+  max_capacity = 1
+  cpu          = 256
+  memory_size  = 512
+}
+api_ecs_config = {
+  max_capacity = 1
+  cpu          = 1024
+  memory_size  = 2048
+}
+alarm_config = {
+  cpu_threshold           = 70
+  memory_threshold        = 80
+  evaluation_periods      = 3
+  period                  = 60
+  task_threshold          = 1
+  task_evaluation_periods = 1
+  task_period             = 10
+}

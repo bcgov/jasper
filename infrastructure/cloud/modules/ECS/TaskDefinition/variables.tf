@@ -20,13 +20,11 @@ variable "name" {
 variable "cpu" {
   description = "The ECS Task Definition CPU"
   type        = number
-  default     = 256
 }
 
 variable "memory_size" {
   description = "The ECS Task Definition Memory Size"
   type        = number
-  default     = 512
 }
 
 variable "ecs_execution_role_arn" {

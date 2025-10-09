@@ -98,51 +98,37 @@ variable "mongousername" {
 }
 
 variable "alarm_recipients" {
-  description = "List of email addresses to receive alert email"
+  description = "List of email addresses to receive alarm notifications"
   type        = list(string)
 }
 
-variable "alarm_cpu_threshold" {
-  description = "Alarm CPU threshold percentage"
-  type        = number
+variable "alarm_config" {
+  description = "CloudWatch alarm configuration"
+  type = object({
+    cpu_threshold           = number
+    memory_threshold        = number
+    evaluation_periods      = number
+    period                  = number
+    task_threshold          = number
+    task_evaluation_periods = number
+    task_period             = number
+  })
 }
 
-variable "alarm_memory_threshold" {
-  description = "Alarm memory threshold percentage"
-  type        = number
+variable "web_ecs_config" {
+  description = "ECS configuration for the web service"
+  type = object({
+    max_capacity = number
+    cpu          = number
+    memory_size  = number
+  })
 }
 
-variable "alarm_evaluation_periods" {
-  description = "Alarm evaluation periods"
-  type        = number
-}
-
-variable "alarm_period" {
-  description = "Alarm period in seconds"
-  type        = number
-}
-
-variable "alarm_task_threshold" {
-  description = "Alarm ECS task count threshold"
-  type        = number
-}
-
-variable "alarm_task_evaluation_periods" {
-  description = "Alarm ECS task evaluation periods"
-  type        = number
-}
-
-variable "alarm_task_period" {
-  description = "Alarm ECS task period in seconds"
-  type        = number
-}
-
-variable "web_ecs_max_capacity" {
-  description = "The maximum number of ECS tasks for the web service"
-  type        = number
-}
-
-variable "api_ecs_max_capacity" {
-  description = "The maximum number of ECS tasks for the API service"
-  type        = number
+variable "api_ecs_config" {
+  description = "ECS configuration for the API service"
+  type = object({
+    max_capacity = number
+    cpu          = number
+    memory_size  = number
+  })
 }

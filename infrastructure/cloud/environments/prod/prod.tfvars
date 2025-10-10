@@ -29,5 +29,5 @@ alarm_config = {
   period                  = 60
   task_threshold          = 1
   task_evaluation_periods = 1
-  task_period             = 10
+  task_period             = 30
 }

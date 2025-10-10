@@ -41,6 +41,50 @@ resource "aws_kms_key_policy" "kms_key_policy" {
         }
         Action   = "kms:*"
         Resource = "*"
+      },
+
+      # Allow CloudWatch Alarms and Metrics to use the key
+      {
+        Sid    = "AllowCloudWatchAlarmsAndMetricsUsage"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudwatch.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = var.account_id
+          }
+          StringLike = {
+            "aws:SourceArn" = "arn:aws:cloudwatch:${var.region}:${var.account_id}:alarm:*"
+          }
+        }
+      },
+
+      # Allow SNS to use the key for encrypted topics
+      {
+        Sid    = "AllowSNSUsage"
+        Effect = "Allow"
+        Principal = {
+          Service = "sns.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = var.account_id
+          }
+          StringLike = {
+            "aws:SourceArn" = "arn:aws:sns:${var.region}:${var.account_id}:${var.app_name}-*"
+          }
+        }
       }
     ]
   })

@@ -11,7 +11,7 @@ resource "aws_cloudwatch_metric_alarm" "alarm" {
   comparison_operator = each.value.comparison_operator
   evaluation_periods  = each.value.evaluation_periods
   metric_name         = each.value.metric_name
-  namespace           = var.namespace
+  namespace           = each.value.namespace
   period              = each.value.period
   statistic           = each.value.statistic
   threshold           = each.value.threshold

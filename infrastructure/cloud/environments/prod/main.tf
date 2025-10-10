@@ -222,6 +222,8 @@ module "ecs_web_td" {
   secret_env_variables   = module.secrets_manager.web_secrets
   kms_key_arn            = module.initial.kms_key_arn
   log_group_name         = module.ecs_web_td_log_group.log_group.name
+  cpu                    = var.web_ecs_config.cpu
+  memory_size            = var.web_ecs_config.memory_size
 }
 
 # SNS Topic for ECS Alerts
@@ -287,7 +289,6 @@ module "ecs_web_alarms" {
   source       = "../../modules/Cloudwatch/Alarms"
   environment  = var.environment
   app_name     = var.app_name
-  namespace    = "AWS/ECS"
   service_name = "web-ecs-service"
   dimensions = {
     ClusterName = module.ecs_cluster.ecs_cluster.name
@@ -296,6 +297,7 @@ module "ecs_web_alarms" {
   alarm_configurations = [
     {
       name                = "cpu-high"
+      namespace           = "AWS/ECS"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
       threshold           = var.alarm_config.cpu_threshold
@@ -307,6 +309,7 @@ module "ecs_web_alarms" {
     },
     {
       name                = "memory-high"
+      namespace           = "AWS/ECS"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
       threshold           = var.alarm_config.memory_threshold
@@ -318,6 +321,7 @@ module "ecs_web_alarms" {
     },
     {
       name                = "task-count-high"
+      namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
       threshold           = var.alarm_config.task_threshold
@@ -329,12 +333,13 @@ module "ecs_web_alarms" {
     },
     {
       name                = "task-count-zero"
+      namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
       threshold           = var.alarm_config.task_threshold
       evaluation_periods  = var.alarm_config.task_evaluation_periods
       period              = var.alarm_config.task_period
-      statistic           = "Average"
+      statistic           = "Minimum"
       description         = "CRITICAL: Web service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }
@@ -362,7 +367,6 @@ module "ecs_api_alarms" {
   source       = "../../modules/Cloudwatch/Alarms"
   environment  = var.environment
   app_name     = var.app_name
-  namespace    = "AWS/ECS"
   service_name = "api-ecs-service"
   dimensions = {
     ClusterName = module.ecs_cluster.ecs_cluster.name
@@ -371,6 +375,7 @@ module "ecs_api_alarms" {
   alarm_configurations = [
     {
       name                = "cpu-high"
+      namespace           = "AWS/ECS"
       metric_name         = "CPUUtilization"
       comparison_operator = "GreaterThanThreshold"
       threshold           = var.alarm_config.cpu_threshold
@@ -382,6 +387,7 @@ module "ecs_api_alarms" {
     },
     {
       name                = "memory-high"
+      namespace           = "AWS/ECS"
       metric_name         = "MemoryUtilization"
       comparison_operator = "GreaterThanThreshold"
       threshold           = var.alarm_config.memory_threshold
@@ -393,6 +399,7 @@ module "ecs_api_alarms" {
     },
     {
       name                = "task-count-high"
+      namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
       threshold           = var.alarm_config.task_threshold
@@ -404,12 +411,13 @@ module "ecs_api_alarms" {
     },
     {
       name                = "task-count-zero"
+      namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
       threshold           = var.alarm_config.task_threshold
       evaluation_periods  = var.alarm_config.task_evaluation_periods
       period              = var.alarm_config.task_period
-      statistic           = "Average"
+      statistic           = "Minimum"
       description         = "CRITICAL: API service has no running tasks - service is down"
       alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
     }

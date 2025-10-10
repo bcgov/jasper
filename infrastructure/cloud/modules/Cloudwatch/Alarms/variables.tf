@@ -13,12 +13,6 @@ variable "service_name" {
   type        = string
 }
 
-variable "namespace" {
-  description = "CloudWatch namespace (e.g., AWS/ECS, AWS/Lambda, AWS/RDS)"
-  type        = string
-  default     = "AWS/ECS"
-}
-
 variable "dimensions" {
   description = "CloudWatch dimensions for the alarms"
   type        = map(string)
@@ -35,6 +29,7 @@ variable "alarm_configurations" {
   description = "List of alarm configurations"
   type = list(object({
     name                = string
+    namespace           = string
     metric_name         = string
     comparison_operator = string
     threshold           = number

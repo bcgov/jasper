@@ -74,25 +74,61 @@ variable "lambda_memory_size" {
 }
 
 
-variable delete_protection_enabled {
+variable "delete_protection_enabled" {
   description = "Flag to enable or disable deletion protection for the DocDB cluster"
   type        = bool
   default     = true
 }
 
-variable mongo_node_count {
+variable "mongo_node_count" {
   description = "Number of instances in the DocDB cluster"
   type        = number
   default     = 1
 }
 
-variable mongo_instance_type {
+variable "mongo_instance_type" {
   description = "Instance type for the DocDB instances"
   type        = string
   default     = "db.t3.medium"
 }
 
-variable mongousername {
+variable "mongousername" {
   description = "Username for the MongoDB admin user"
   type        = string
+}
+
+variable "alarm_recipients" {
+  description = "List of email addresses to receive alarm notifications"
+  type        = list(string)
+}
+
+variable "alarm_config" {
+  description = "CloudWatch alarm configuration"
+  type = object({
+    cpu_threshold           = number
+    memory_threshold        = number
+    evaluation_periods      = number
+    period                  = number
+    task_threshold          = number
+    task_evaluation_periods = number
+    task_period             = number
+  })
+}
+
+variable "web_ecs_config" {
+  description = "ECS configuration for the web service"
+  type = object({
+    max_capacity = number
+    cpu          = number
+    memory_size  = number
+  })
+}
+
+variable "api_ecs_config" {
+  description = "ECS configuration for the API service"
+  type = object({
+    max_capacity = number
+    cpu          = number
+    memory_size  = number
+  })
 }

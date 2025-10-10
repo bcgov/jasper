@@ -35,6 +35,7 @@ jobs:
       TF_VAR_kms_key_name: ${{ vars.KMS_KEY_NAME }}
       TF_VAR_vpc_id: ${{ vars.VPC_ID }}
       TF_VAR_lambda_memory_size: ${{ vars.LAMBDA_MEMORY_SIZE }}
+      TF_VAR_alarm_recipients: ${{ vars.ALARM_RECIPIENTS }}
     permissions:
       id-token: write
       actions: read

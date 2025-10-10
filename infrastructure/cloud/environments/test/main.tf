@@ -222,6 +222,19 @@ module "ecs_web_td" {
   secret_env_variables   = module.secrets_manager.web_secrets
   kms_key_arn            = module.initial.kms_key_arn
   log_group_name         = module.ecs_web_td_log_group.log_group.name
+  cpu                    = var.web_ecs_config.cpu
+  memory_size            = var.web_ecs_config.memory_size
+}
+
+# SNS Topic for ECS Alerts
+module "sns_ecs_alerts" {
+  source          = "../../modules/SNS"
+  environment     = var.environment
+  app_name        = var.app_name
+  name            = "ecs-alerts"
+  purpose         = "ECS CloudWatch Alarm Notifications"
+  email_addresses = var.alarm_recipients
+  kms_key_id      = module.initial.kms_key_arn
 }
 
 # Create API ECS Task Definition
@@ -251,34 +264,164 @@ module "ecs_api_td" {
   secret_env_variables = module.secrets_manager.api_secrets
   kms_key_arn          = module.initial.kms_key_arn
   log_group_name       = module.ecs_api_td_log_group.log_group.name
+  cpu                  = var.api_ecs_config.cpu
+  memory_size          = var.api_ecs_config.memory_size
 }
 
 # Create Web ECS Service
 module "ecs_web_service" {
-  source         = "../../modules/ECS/Service"
-  environment    = var.environment
-  app_name       = var.app_name
-  name           = "web"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
-  ecs_td_arn     = module.ecs_web_td.ecs_td_arn
-  tg_arn         = module.tg_web.tg_arn
-  sg_id          = data.aws_security_group.app_sg.id
-  subnet_ids     = module.subnets.web_subnets_ids
-  port           = module.ecs_web_td.port
+  source           = "../../modules/ECS/Service"
+  environment      = var.environment
+  app_name         = var.app_name
+  name             = "web"
+  ecs_cluster_id   = module.ecs_cluster.ecs_cluster.id
+  ecs_td_arn       = module.ecs_web_td.ecs_td_arn
+  tg_arn           = module.tg_web.tg_arn
+  sg_id            = data.aws_security_group.app_sg.id
+  subnet_ids       = module.subnets.web_subnets_ids
+  port             = module.ecs_web_td.port
+  ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
+  max_capacity     = var.web_ecs_config.max_capacity
+}
+
+# Create CloudWatch Alarms for Web ECS Service
+module "ecs_web_alarms" {
+  source       = "../../modules/Cloudwatch/Alarms"
+  environment  = var.environment
+  app_name     = var.app_name
+  service_name = "web-ecs-service"
+  dimensions = {
+    ClusterName = module.ecs_cluster.ecs_cluster.name
+    ServiceName = module.ecs_web_service.service_name
+  }
+  alarm_configurations = [
+    {
+      name                = "cpu-high"
+      namespace           = "AWS/ECS"
+      metric_name         = "CPUUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.alarm_config.cpu_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
+      statistic           = "Average"
+      description         = "CPU utilization sustained above ${var.alarm_config.cpu_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "memory-high"
+      namespace           = "AWS/ECS"
+      metric_name         = "MemoryUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.alarm_config.memory_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
+      statistic           = "Average"
+      description         = "Memory utilization above ${var.alarm_config.memory_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-high"
+      namespace           = "ECS/ContainerInsights"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
+      statistic           = "Average"
+      description         = "Web service has scaled up."
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-zero"
+      namespace           = "ECS/ContainerInsights"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "LessThanThreshold"
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
+      statistic           = "Minimum"
+      description         = "CRITICAL: Web service has no running tasks - service is down"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    }
+  ]
 }
 
 # Create Api ECS Service
 module "ecs_api_service" {
-  source         = "../../modules/ECS/Service"
-  environment    = var.environment
-  app_name       = var.app_name
-  name           = "api"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
-  ecs_td_arn     = module.ecs_api_td.ecs_td_arn
-  tg_arn         = module.tg_api.tg_arn
-  sg_id          = data.aws_security_group.app_sg.id
-  subnet_ids     = module.subnets.app_subnets_ids
-  port           = module.ecs_api_td.port
+  source           = "../../modules/ECS/Service"
+  environment      = var.environment
+  app_name         = var.app_name
+  name             = "api"
+  ecs_cluster_id   = module.ecs_cluster.ecs_cluster.id
+  ecs_td_arn       = module.ecs_api_td.ecs_td_arn
+  tg_arn           = module.tg_api.tg_arn
+  sg_id            = data.aws_security_group.app_sg.id
+  subnet_ids       = module.subnets.app_subnets_ids
+  port             = module.ecs_api_td.port
+  ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
+  max_capacity     = var.api_ecs_config.max_capacity
+}
+
+# Create CloudWatch Alarms for Api ECS Service
+module "ecs_api_alarms" {
+  source       = "../../modules/Cloudwatch/Alarms"
+  environment  = var.environment
+  app_name     = var.app_name
+  service_name = "api-ecs-service"
+  dimensions = {
+    ClusterName = module.ecs_cluster.ecs_cluster.name
+    ServiceName = module.ecs_api_service.service_name
+  }
+  alarm_configurations = [
+    {
+      name                = "cpu-high"
+      namespace           = "AWS/ECS"
+      metric_name         = "CPUUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.alarm_config.cpu_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
+      statistic           = "Average"
+      description         = "CPU utilization sustained above ${var.alarm_config.cpu_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "memory-high"
+      namespace           = "AWS/ECS"
+      metric_name         = "MemoryUtilization"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.alarm_config.memory_threshold
+      evaluation_periods  = var.alarm_config.evaluation_periods
+      period              = var.alarm_config.period
+      statistic           = "Average"
+      description         = "Memory utilization above ${var.alarm_config.memory_threshold}% for ${var.alarm_config.evaluation_periods} minutes"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-high"
+      namespace           = "ECS/ContainerInsights"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
+      statistic           = "Average"
+      description         = "API service has scaled up."
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    },
+    {
+      name                = "task-count-zero"
+      namespace           = "ECS/ContainerInsights"
+      metric_name         = "RunningTaskCount"
+      comparison_operator = "LessThanThreshold"
+      threshold           = var.alarm_config.task_threshold
+      evaluation_periods  = var.alarm_config.task_evaluation_periods
+      period              = var.alarm_config.task_period
+      statistic           = "Minimum"
+      description         = "CRITICAL: API service has no running tasks - service is down"
+      alarm_actions       = [module.sns_ecs_alerts.sns_topic_arn]
+    }
+  ]
 }
 
 # WAF

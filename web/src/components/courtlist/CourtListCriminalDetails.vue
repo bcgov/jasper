@@ -86,11 +86,11 @@
     throw new Error('Files service is undefined.');
   }
   const chargeHeaders = ref([
-    { title: 'COUNT', key: 'printSeqNo' },
-    { title: 'CRIMINAL CODE', key: 'statuteSectionDsc' },
-    { title: 'DESCRIPTION', key: 'statuteDsc' },
+    { title: 'COUNT', key: 'countPrintSequenceNumber' },
+    { title: 'CRIMINAL CODE', key: 'chargeStatuteCode' },
+    { title: 'DESCRIPTION', key: 'chargeStatuteDescription' },
     { title: 'LAST RESULTS', key: 'appearanceResultDesc' },
-    { title: 'PLEA', key: '' }, // Awaiting more info on clAppearanceCount
+    { title: 'PLEA', key: 'pleaCode' },
     { title: 'FINDINGS', key: 'findingDsc' },
   ]);
 

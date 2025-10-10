@@ -226,7 +226,7 @@ namespace Scv.Api.Services.Files
                 Prosecutor = await PopulateAppearanceDetailProsecutor(appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 Adjudicator = await PopulateAppearanceDetailAdjudicator(appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 JustinCounsel = await PopulateAppearanceDetailJustinCounsel(criminalParticipant, appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
-                Charges = await PopulateCharges(appearanceCount.ApprCount),
+                Charges = await PopulateCharges(appearanceCount.ApprCount, targetCourtList.AppearanceCount),
                 Documents = await _documentConverter.GetCriminalDocuments(accusedFile),
                 CourtLevelCd = detail.CourtLevelCd
             };
@@ -479,17 +479,19 @@ namespace Scv.Api.Services.Files
             return await _filesClient.FilesRecordOfProceedingsAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, partId, profSequenceNumber, courtLevelCode, courtClassCode);
         }
 
-        private async Task<ICollection<CriminalCharges>> PopulateCharges(ICollection<CriminalAppearanceCount> appearanceCount)
+        private async Task<ICollection<CriminalCharges>> PopulateCharges(ICollection<CriminalAppearanceCount> appearanceCount, ICollection<ClAppearanceCount> clAppearanceCounts)
         {
+            // add mapping for AppearanceCount to CriminalCharges for PLEA
             var charges = _mapper.Map<ICollection<CriminalCharges>>(appearanceCount);
-            //Populate charges or counts extra fields.
-            foreach (var charge in charges)
+            var chargesTwo = _mapper.Map<ICollection<CriminalCharges>>(clAppearanceCounts);
+            foreach (var charge in chargesTwo)
             {
-                charge.AppearanceReasonDsc = await _lookupService.GetCriminalAppearanceReasonsDescription(charge.AppearanceReasonCd);
-                charge.AppearanceResultDesc = await _lookupService.GetCriminalAppearanceResultsDescription(charge.AppearanceResultCd);
-                charge.FindingDsc = await _lookupService.GetFindingDescription(charge.FindingCd);
+                //charge.Plea = 
+                charge.AppearanceReasonDsc = await _lookupService.GetCriminalAppearanceReasonsDescription(charge.AppearanceReasonCode);
+                charge.AppearanceResultDesc = await _lookupService.GetCriminalAppearanceResultsDescription(charge.AppearanceReasonCode);
+                charge.FindingDsc = await _lookupService.GetFindingDescription(charge.FindingCode);
             }
-            return charges;
+            return chargesTwo;
         }
 
         private async Task<ICollection<CriminalAppearanceMethod>> PopulateAppearanceMethods(ICollection<JCCommon.Clients.FileServices.CriminalAppearanceMethod> appearanceMethods)

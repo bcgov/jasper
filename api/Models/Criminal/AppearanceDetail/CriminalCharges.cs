@@ -3,7 +3,7 @@
     /// <summary>
     /// Adds extra fields to criminalAppearanceCount.
     /// </summary>
-    public class CriminalCharges : JCCommon.Clients.FileServices.CriminalAppearanceCount
+    public class CriminalCharges : JCCommon.Clients.FileServices.ClAppearanceCount
     {
         public string AppearanceReasonDsc { get; set; }
         public string AppearanceResultDesc { get; set; }

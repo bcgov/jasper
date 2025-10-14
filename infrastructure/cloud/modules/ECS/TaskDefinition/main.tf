@@ -14,7 +14,6 @@ resource "aws_ecs_task_definition" "ecs_td" {
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
 
-
   container_definitions = jsonencode([
     {
       name      = "${var.app_name}-${var.name}-container-${var.environment}"

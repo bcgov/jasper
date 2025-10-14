@@ -1,7 +1,9 @@
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using Bogus;
-using DocumentFormat.OpenXml.Spreadsheet;
 using FluentValidation;
-using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -12,12 +14,6 @@ using Scv.Api.Helpers;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace tests.api.Controllers
@@ -320,7 +316,7 @@ namespace tests.api.Controllers
         public async Task RequestAccess_ReturnsBadRequest_WhenUserIdNull()
         {
             // Arrange
-            var claims = new List<Claim>{};
+            var claims = new List<Claim> { };
 
             var controller = CreateControllerWithContext(claims);
 

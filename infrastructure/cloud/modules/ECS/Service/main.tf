@@ -3,7 +3,7 @@ resource "aws_ecs_service" "ecs_service" {
   cluster         = var.ecs_cluster_id
   task_definition = var.ecs_td_arn
   launch_type     = "FARGATE"
-  desired_count   = var.min_capacity
+  desired_count   = var.max_capacity
 
   network_configuration {
     subnets          = var.subnet_ids

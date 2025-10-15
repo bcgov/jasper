@@ -281,6 +281,7 @@ module "ecs_web_service" {
   subnet_ids       = module.subnets.web_subnets_ids
   port             = module.ecs_web_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
+  min_capacity     = var.web_ecs_config.min_capacity
   max_capacity     = var.web_ecs_config.max_capacity
 }
 
@@ -324,7 +325,7 @@ module "ecs_web_alarms" {
       namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_config.task_threshold
+      threshold           = var.alarm_config.task_count_high_threshold
       evaluation_periods  = var.alarm_config.task_evaluation_periods
       period              = var.alarm_config.task_period
       statistic           = "Average"
@@ -336,7 +337,7 @@ module "ecs_web_alarms" {
       namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
-      threshold           = var.alarm_config.task_threshold
+      threshold           = var.alarm_config.task_count_low_threshold
       evaluation_periods  = var.alarm_config.task_evaluation_periods
       period              = var.alarm_config.task_period
       statistic           = "Minimum"
@@ -359,6 +360,7 @@ module "ecs_api_service" {
   subnet_ids       = module.subnets.app_subnets_ids
   port             = module.ecs_api_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
+  min_capacity     = var.api_ecs_config.min_capacity
   max_capacity     = var.api_ecs_config.max_capacity
 }
 
@@ -402,7 +404,7 @@ module "ecs_api_alarms" {
       namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "GreaterThanThreshold"
-      threshold           = var.alarm_config.task_threshold
+      threshold           = var.alarm_config.task_count_high_threshold
       evaluation_periods  = var.alarm_config.task_evaluation_periods
       period              = var.alarm_config.task_period
       statistic           = "Average"
@@ -414,7 +416,7 @@ module "ecs_api_alarms" {
       namespace           = "ECS/ContainerInsights"
       metric_name         = "RunningTaskCount"
       comparison_operator = "LessThanThreshold"
-      threshold           = var.alarm_config.task_threshold
+      threshold           = var.alarm_config.task_count_low_threshold
       evaluation_periods  = var.alarm_config.task_evaluation_periods
       period              = var.alarm_config.task_period
       statistic           = "Minimum"

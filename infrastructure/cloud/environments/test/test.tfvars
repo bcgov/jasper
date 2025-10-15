@@ -13,21 +13,24 @@ mongo_node_count              = 1
 mongo_instance_type           = "db.t3.medium"
 mongousername                 = "adminmongo"
 web_ecs_config = {
+  min_capacity = 1
   max_capacity = 1
   cpu          = 256
   memory_size  = 512
 }
 api_ecs_config = {
+  min_capacity = 1
   max_capacity = 1
   cpu          = 1024
   memory_size  = 2048
 }
 alarm_config = {
-  cpu_threshold           = 70
-  memory_threshold        = 80
-  evaluation_periods      = 3
-  period                  = 60
-  task_threshold          = 1
-  task_evaluation_periods = 1
-  task_period             = 30
+  cpu_threshold             = 70
+  memory_threshold          = 80
+  evaluation_periods        = 3
+  period                    = 60
+  task_count_low_threshold  = 1
+  task_count_high_threshold = 1
+  task_evaluation_periods   = 1
+  task_period               = 30
 }

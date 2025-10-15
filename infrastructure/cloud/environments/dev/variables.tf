@@ -105,19 +105,21 @@ variable "alarm_recipients" {
 variable "alarm_config" {
   description = "CloudWatch alarm configuration"
   type = object({
-    cpu_threshold           = number
-    memory_threshold        = number
-    evaluation_periods      = number
-    period                  = number
-    task_threshold          = number
-    task_evaluation_periods = number
-    task_period             = number
+    cpu_threshold             = number
+    memory_threshold          = number
+    evaluation_periods        = number
+    period                    = number
+    task_count_low_threshold  = number
+    task_count_high_threshold = number
+    task_evaluation_periods   = number
+    task_period               = number
   })
 }
 
 variable "web_ecs_config" {
   description = "ECS configuration for the web service"
   type = object({
+    min_capacity = number
     max_capacity = number
     cpu          = number
     memory_size  = number
@@ -127,6 +129,7 @@ variable "web_ecs_config" {
 variable "api_ecs_config" {
   description = "ECS configuration for the API service"
   type = object({
+    min_capacity = number
     max_capacity = number
     cpu          = number
     memory_size  = number

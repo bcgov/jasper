@@ -41,7 +41,8 @@ namespace Scv.Api.Services.Files
             IAppCache cache,
             ClaimsPrincipal claimsPrincipal,
             ILoggerFactory factory,
-            IDocumentConverter documentConverter)
+            IDocumentConverter documentConverter,
+            IBinderService binderService)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -55,7 +56,8 @@ namespace Scv.Api.Services.Files
                 locationService,
                 _cache,
                 claimsPrincipal,
-                factory.CreateLogger<CivilFilesService>());
+                factory.CreateLogger<CivilFilesService>(),
+                binderService);
             Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal, documentConverter);
 
             _applicationCode = claimsPrincipal?.ApplicationCode() ?? configuration.GetNonEmptyValue("Request:ApplicationCd");

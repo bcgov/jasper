@@ -42,9 +42,13 @@
       show-expand
       variant="hover"
     >
-    <template
-      v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }"
-    >
+      <template
+        v-slot:item.data-table-expand="{
+          internalItem,
+          isExpanded,
+          toggleExpand,
+        }"
+      >
         <v-icon
           color="primary"
           :icon="isExpanded(internalItem) ? mdiChevronUp : mdiChevronDown"
@@ -58,6 +62,7 @@
               v-if="!isCriminal"
               :fileId="fileNumber"
               :appearanceId="item.appearanceId"
+              :courtClassCd="courtClassCd"
             />
             <CriminalAppearanceDetails
               v-else
@@ -120,8 +125,8 @@
 </template>
 
 <script setup lang="ts">
-  import CivilAppearanceDetails from '@/components/civil/CivilAppearanceDetails.vue';
   import CriminalAppearanceDetails from '@/components/case-details/criminal/appearances/CriminalAppearanceDetails.vue';
+  import CivilAppearanceDetails from '@/components/civil/CivilAppearanceDetails.vue';
   import AppearanceStatusChip from '@/components/shared/AppearanceStatusChip.vue';
   import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
   import { ApprDetailType } from '@/types/shared';
@@ -138,6 +143,7 @@
     appearances: ApprDetailType[];
     isCriminal: boolean;
     fileNumber: string;
+    courtClassCd: string;
   }>();
 
   const pastHeaders = [

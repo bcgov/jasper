@@ -261,7 +261,7 @@ namespace Scv.Api.Services.Files
             return detail;
         }
 
-        public async Task<CivilAppearanceDetail> DetailedAppearanceAsync(string fileId, string appearanceId, bool isVcUser = false)
+        public async Task<CivilAppearanceDetail> DetailedAppearanceAsync(string fileId, string appearanceId, bool isVcUser = false, bool includeJudicialBinder = false)
         {
             async Task<CivilFileDetailResponse> FileDetails() => await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
             async Task<CivilFileContent> FileContent() => await _filesClient.FilesCivilFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
@@ -328,8 +328,7 @@ namespace Scv.Api.Services.Files
                 Adjudicator = await PopulateDetailedAppearanceAdjudicator(previousAppearance, appearanceMethods),
                 //AdjudicatorComment = previousAppearance?.AdjudicatorComment,
                 CourtLevelCd = detail.CourtLevelCd,
-                // Retrieve user's binder documents.
-                BinderDocuments = await PopulateBinderDocuments(detail, fileContentCivilFile)
+                BinderDocuments = includeJudicialBinder ? await PopulateBinderDocuments(detail, fileContentCivilFile) : []
             };
 
             return detailedAppearance;

@@ -85,7 +85,8 @@
     try {
       const response = await filesService.civilAppearanceDetails(
         props.fileId,
-        props.appearanceId
+        props.appearanceId,
+        true
       );
       details.value = response;
     } catch (error) {

@@ -159,7 +159,8 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
             _cachingService,
             mockUser,
             mockLoggerFactory.Object,
-            new Mock<IDocumentConverter>().Object);
+            new Mock<IDocumentConverter>().Object,
+            new Mock<IBinderService>().Object);
 
         return _service;
     }
@@ -179,7 +180,7 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
             CourtLevelCd = "P",
             CourtClassCd = "Y"
         };
-        var strategy = new CourtSummaryReportStrategy(_service);
+        var strategy = new CourtSummaryReportStrategy(null, null);
         var resultStream = await strategy.Invoke(documentRequest);
 
         Assert.NotNull(resultStream);
@@ -191,7 +192,7 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
     [Fact]
     public void Type_ReturnsCourtSummary()
     {
-        var strategy = new CourtSummaryReportStrategy(_service);
+        var strategy = new CourtSummaryReportStrategy(null, null);
 
         var type = strategy.Type;
 

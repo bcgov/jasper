@@ -161,7 +161,8 @@ public class ROPStrategyTest : ServiceTestBase
             _cachingService,
             mockUser,
             mockLoggerFactory.Object,
-            new Mock<IDocumentConverter>().Object);
+            new Mock<IDocumentConverter>().Object,
+            new Mock<IBinderService>().Object);
 
         return _service;
     }
@@ -181,7 +182,7 @@ public class ROPStrategyTest : ServiceTestBase
             CourtLevelCd = "P",
             CourtClassCd = "Y"
         };
-        var strategy = new ROPStrategy(_service);
+        var strategy = new ROPStrategy(null, null);
         var resultStream = await strategy.Invoke(documentRequest);
 
         Assert.NotNull(resultStream);
@@ -193,7 +194,7 @@ public class ROPStrategyTest : ServiceTestBase
     [Fact]
     public void Type_ReturnsROP()
     {
-        var strategy = new ROPStrategy(_service);
+        var strategy = new ROPStrategy(null, null);
 
         var type = strategy.Type;
 

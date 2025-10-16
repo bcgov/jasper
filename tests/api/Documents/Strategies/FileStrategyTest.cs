@@ -24,7 +24,7 @@ public class FileStrategyTest : ServiceTestBase
     public FileStrategyTest()
     {
         _fakeContentBytes = Encoding.UTF8.GetBytes(_fakeContent);
-        this.SetupFileServiceClient();
+        SetupFileServiceClient();
     }
 
     private void SetupFileServiceClient()

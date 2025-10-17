@@ -1,17 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { FilesService } from '@/services/FilesService';
 import { mount } from '@vue/test-utils';
 import CivilAppearanceDetails from 'CMP/civil/CivilAppearanceDetails.vue';
-import { FilesService } from '@/services/FilesService';
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/services/FilesService');
 
 beforeEach(() => {
-    setActivePinia(createPinia());
+  setActivePinia(createPinia());
 });
 
 describe('CivilAppearanceDetails.vue', () => {
-  let wrapper: any;
   let filesService: any;
 
   const mockDetails = {
@@ -22,27 +21,30 @@ describe('CivilAppearanceDetails.vue', () => {
     party: [{ id: 1, name: 'Party 1' }],
   };
 
-  beforeEach(() => {
-    filesService = {
-      civilAppearanceDetails: vi.fn().mockResolvedValue([
-        mockDetails
-      ])
-    };
-    (FilesService as any).mockReturnValue(filesService);
-    wrapper = mount(CivilAppearanceDetails, {
+  const mountComponent = (showBinder = true) => {
+    return mount(CivilAppearanceDetails, {
       global: {
         provide: {
-          filesService
-        }
+          filesService,
+        },
       },
       props: {
         fileId: '123',
         appearanceId: '456',
+        showBinder,
       },
     });
+  };
+
+  beforeEach(() => {
+    filesService = {
+      civilAppearanceDetails: vi.fn().mockResolvedValue([mockDetails]),
+    };
+    (FilesService as any).mockReturnValue(filesService);
   });
 
   it('renders the tabs correctly', () => {
+    const wrapper = mountComponent();
     const tabs = wrapper.findAll('v-tab');
     expect(tabs.length).toBe(3);
     expect(tabs[0].text()).toBe('Scheduled Documents');
@@ -51,20 +53,48 @@ describe('CivilAppearanceDetails.vue', () => {
   });
 
   it('calls appearance details api with correct parameters', async () => {
+    mountComponent();
     expect(filesService.civilAppearanceDetails).toHaveBeenCalledWith(
       '123',
-      '456'
+      '456',
+      true
     );
   });
 
   it('renders ScheduledDocuments component when "documents" tab is active', async () => {
+    const wrapper: any = mountComponent();
     wrapper.vm.tab = 'documents';
-    expect(wrapper.findComponent({name: 'ScheduledDocuments'}).exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'ScheduledDocuments' }).exists()).toBe(
+      true
+    );
   });
 
   it('renders ScheduledParties component when "documents" tab is active', async () => {
+    const wrapper: any = mountComponent();
     wrapper.vm.tab = 'parties';
-    expect(wrapper.findComponent({name: 'ScheduledParties'}).exists()).toBe(true);
-    expect(wrapper.findComponent({name: 'CivilAppearanceMethods'}).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'ScheduledParties' }).exists()).toBe(
+      true
+    );
+    expect(
+      wrapper.findComponent({ name: 'CivilAppearanceMethods' }).exists()
+    ).toBe(false);
+  });
+
+  it('renders JudicialBinder component when "binder" tab active and showBinder is true', async () => {
+    const wrapper: any = mountComponent();
+    wrapper.vm.tab = 'binder';
+    expect(wrapper.findComponent({ name: 'JudicialBinder' }).exists()).toBe(
+      true
+    );
+    expect(wrapper.find('[data-testid="binder-tab"]').exists()).toBe(true);
+    expect(
+      wrapper.findComponent({ name: 'CivilAppearanceMethods' }).exists()
+    ).toBe(false);
+  });
+
+  it('hides JudicialBinder tab when showBinder is false', async () => {
+    const wrapper: any = mountComponent(false);
+
+    expect(wrapper.find('[data-testid="binder-tab"]').exists()).toBe(false);
   });
 });

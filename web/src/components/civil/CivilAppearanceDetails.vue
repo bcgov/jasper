@@ -2,6 +2,7 @@
   <v-tabs v-model="tab" align-tabs="start" slider-color="primary">
     <v-tab value="documents">Scheduled Documents</v-tab>
     <v-tab
+      data-testid="binder-tab"
       v-if="showBinder"
       :disabled="!details || details.binderDocuments?.length === 0"
       value="binder"
@@ -31,7 +32,7 @@
             :agencyId="details.agencyId"
           />
         </v-tabs-window-item>
-        <v-tabs-window-item value="binder">
+        <v-tabs-window-item v-if="showBinder" value="binder">
           <JudicialBinder :documents="details.binderDocuments" />
         </v-tabs-window-item>
 
@@ -63,13 +64,14 @@
     defineProps<{
       fileId: string;
       appearanceId: string;
-      courtClassCd: string;
       showBinder?: boolean;
     }>(),
     {
       showBinder: false,
     }
   );
+
+  console.log('showBinder prop value:', props.showBinder);
 
   const filesService = inject<FilesService>('filesService');
   const tab = ref('documents');

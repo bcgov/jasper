@@ -35,7 +35,6 @@
             v-else
             :fileId="item.physicalFileId"
             :appearanceId="item.appearanceId"
-            :courtClassCd="item.courtClassCd"
             :showBinder="true"
           />
         </td>

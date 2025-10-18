@@ -5,15 +5,24 @@ using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.WebUtilities;
+using Newtonsoft.Json.Serialization;
+using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents.Strategies;
 
-public class FileStrategy(FileServicesClient filesClient, ClaimsPrincipal currentUser) : IDocumentStrategy
+public class FileStrategy : IDocumentStrategy
 {
-    private readonly FileServicesClient _filesClient = filesClient;
-    private readonly ClaimsPrincipal _currentUser = currentUser;
+    private readonly FileServicesClient _filesClient;
+    private readonly ClaimsPrincipal _currentUser;
+
+    public FileStrategy(FileServicesClient filesClient, ClaimsPrincipal currentUser)
+    {
+        _filesClient = filesClient;
+        _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
+        _currentUser = currentUser;
+    }
 
     public DocumentType Type => DocumentType.File;
 

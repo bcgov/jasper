@@ -59,6 +59,7 @@ export interface CourtRoomsJsonInfoType {
   active: boolean;
   courtRooms: CourtRoomsInfo[];
   infoLink: string;
+  agencyIdentifierCd: string;
 }
 
 export interface CourtRoomsInfo {

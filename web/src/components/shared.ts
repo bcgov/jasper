@@ -1,14 +1,22 @@
 import { useBundleStore, usePDFViewerStore } from '@/stores';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
+import { civilDocumentType } from '@/types/civil/jsonTypes';
+import { CourtRoomsJsonInfoType } from '@/types/common';
 import { CourtListAppearance } from '@/types/courtlist';
 import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import {
   CourtDocumentType,
+  DataTableHeader,
   DocumentData,
   DocumentRequestType,
 } from '@/types/shared';
+import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 import { splunkLog } from '@/utils/utils';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  getCivilDocumentType,
+  prepareCivilDocumentData,
+} from './documents/DocumentUtils';
 
 export default {
   convertToBase64Url(inputText: string): string {
@@ -180,7 +188,7 @@ export default {
     documentData: DocumentData
   ): string {
     const locationAbbreviation = (
-      documentData.location.match(/[A-Z]/g) || []
+      documentData.location?.match(/[A-Z]/g) || []
     ).join('');
     switch (documentType) {
       case CourtDocumentType.Civil:
@@ -252,5 +260,57 @@ export default {
       console.error(e);
     }
     return newWindow;
+  },
+
+  getBaseCivilDocumentTableHeaders(): DataTableHeader[] {
+    return [
+      {
+        title: 'SEQ',
+        key: 'fileSeqNo',
+      },
+      {
+        title: 'DOCUMENT TYPE',
+        key: 'documentTypeDescription',
+      },
+      {
+        title: 'ACT',
+        key: 'activity',
+      },
+      {
+        title: 'DATE FILED',
+        key: 'filedDt',
+        value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
+        sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
+          new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
+      },
+      {
+        title: 'FILED BY',
+        key: 'filedBy',
+      },
+      {
+        title: 'ISSUES',
+        key: 'issue',
+      },
+    ];
+  },
+
+  openCivilDocument(
+    document: civilDocumentType,
+    fileId: string,
+    fileNumberTxt: string,
+    courtLevel: string,
+    agencyId: string,
+    locations: CourtRoomsJsonInfoType[]
+  ): void {
+    const documentData = prepareCivilDocumentData(document);
+    documentData.fileId = fileId;
+    documentData.fileNumberText ||= fileNumberTxt;
+    documentData.courtLevel ||= courtLevel;
+    documentData.location ||= locations.find(
+      (location) => location.agencyIdentifierCd == agencyId
+    )?.name;
+
+    const documentType = getCivilDocumentType(document);
+    this.openDocumentsPdf(documentType, documentData);
   },
 };

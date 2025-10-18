@@ -5,7 +5,7 @@
       <a
         v-if="item.imageId"
         href="javascript:void(0)"
-        @click="openIndividualDocument(item)"
+        @click="openDocument(item)"
       >
         {{ item.documentTypeDescription }}
       </a>
@@ -37,53 +37,30 @@
   </v-data-table-virtual>
 </template>
 <script setup lang="ts">
-  import {
-    getCivilDocumentType,
-    prepareCivilDocumentData,
-  } from '@/components/documents/DocumentUtils';
   import shared from '@/components/shared';
+  import { useCommonStore } from '@/stores';
   import { civilDocumentType } from '@/types/civil/jsonTypes';
   import { Anchor } from '@/types/common';
-  import { DataTableHeader } from '@/types/shared';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
   const props = defineProps<{
     documents: civilDocumentType[];
+    fileId: string;
+    fileNumberTxt: string;
+    courtLevel: string;
+    agencyId: string;
   }>();
 
-  const headers: DataTableHeader[] = [
-    {
-      title: 'SEQ',
-      key: 'fileSeqNo',
-    },
-    {
-      title: 'DOCUMENT TYPE',
-      key: 'documentTypeDescription',
-    },
-    {
-      title: 'ACT',
-      key: 'activity',
-    },
-    {
-      title: 'DATE FILED',
-      key: 'filedDt',
-      value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
-      sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-        new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
-    },
-    {
-      title: 'FILED BY',
-      key: 'filedBy',
-    },
-    {
-      title: 'ISSUES',
-      key: 'issue',
-    },
-  ];
+  const headers = shared.getBaseCivilDocumentTableHeaders();
+  const commonStore = useCommonStore();
 
-  const openIndividualDocument = (data: civilDocumentType) =>
-    shared.openDocumentsPdf(
-      getCivilDocumentType(data),
-      prepareCivilDocumentData(data)
+  const openDocument = (document: civilDocumentType) => {
+    shared.openCivilDocument(
+      document,
+      props.fileId,
+      props.fileNumberTxt,
+      props.courtLevel,
+      props.agencyId,
+      commonStore.courtRoomsAndLocations
     );
+  };
 </script>

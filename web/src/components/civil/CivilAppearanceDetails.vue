@@ -4,7 +4,7 @@
     <v-tab
       data-testid="binder-tab"
       v-if="showBinder"
-      :disabled="!details || details.binderDocuments?.length === 0"
+      :disabled="loading || !details || details.binderDocuments?.length === 0"
       value="binder"
       >Judicial Binder</v-tab
     >
@@ -33,7 +33,11 @@
           />
         </v-tabs-window-item>
         <v-tabs-window-item v-if="showBinder" value="binder">
-          <JudicialBinder :documents="details.binderDocuments" />
+          <JudicialBinder :documents="details.binderDocuments"
+            :fileId
+            :fileNumberTxt="details.fileNumberTxt"
+            :courtLevel="details.courtLevelCd"
+            :agencyId="details.agencyId" />
         </v-tabs-window-item>
 
         <v-tabs-window-item value="parties">
@@ -70,8 +74,6 @@
       showBinder: false,
     }
   );
-
-  console.log('showBinder prop value:', props.showBinder);
 
   const filesService = inject<FilesService>('filesService');
   const tab = ref('documents');

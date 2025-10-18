@@ -29,16 +29,12 @@
 </template>
 
 <script setup lang="ts">
-  import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import shared from '@/components/shared';
-  import {
-    getCivilDocumentType,
-    prepareCivilDocumentData,
-  } from '@/components/documents/DocumentUtils';
-  import { civilDocumentType } from '@/types/civil/jsonTypes/index';
-  import { Anchor } from '@/types/common';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
-  import { useCommonStore } from '@/stores';
+import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
+import { useCommonStore } from '@/stores';
+import { civilDocumentType } from '@/types/civil/jsonTypes/index';
+import { Anchor } from '@/types/common';
+import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
   const props = defineProps<{
     documents: civilDocumentType[];
@@ -67,16 +63,14 @@
   ];
 
   const openDocument = (document: civilDocumentType) => {
-    const documentData = prepareCivilDocumentData(document);
-    documentData.fileId = props.fileId;
-    documentData.fileNumberText ||= props.fileNumberTxt;
-    documentData.courtLevel ||= props.courtLevel;
-    documentData.location ||= commonStore.courtRoomsAndLocations.find(
-      (location) => location.agencyIdentifierCd == props.agencyId
-    )?.name;
-    const documentType = getCivilDocumentType(document);
-
-    shared.openDocumentsPdf(documentType, documentData);
+    shared.openCivilDocument(
+      document,
+      props.fileId,
+      props.fileNumberTxt,
+      props.courtLevel,
+      props.agencyId,
+      commonStore.courtRoomsAndLocations
+    );
   };
 </script>
 

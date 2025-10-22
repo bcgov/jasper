@@ -72,7 +72,7 @@
     container: '.pdf-container',
     licenseKey: import.meta.env.VITE_NUTRIENT_FE_LICENSE_KEY,
   };
-
+  console.log(import.meta.env.VITE_NUTRIENT_FE_LICENSE_KEY);
   const loadNutrient = async () => {
     loading.value = true;
     emptyStore.value = false;

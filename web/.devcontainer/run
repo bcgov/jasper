@@ -193,6 +193,7 @@ echo "IgnoreInvalidHeaders = ${IgnoreInvalidHeaders}"
 echo "API_URL = ${API_URL}"
 echo "HTTP_BASIC = ${HTTP_BASIC}"
 echo "WEB_BASE_HREF = ${WEB_BASE_HREF}"
+echo "VITE_NUTRIENT_FE_LICENSE_KEY = ${VITE_NUTRIENT_FE_LICENSE_KEY}"
 
 REPLACE_VARS="
   RealIpFrom IpFilterRules AdditionalRealIpFromRules IgnoreInvalidHeaders

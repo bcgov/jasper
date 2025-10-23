@@ -13,7 +13,7 @@ public class CustomExceptionHandler(ILogger<CustomExceptionHandler> logger) : IE
     {
         var exceptionMessage = exception.Message;
         logger.LogError(
-            "Error Message: {exceptionMessage}, Time of occurrence {time}",
+            "Error Message: {ExceptionMessage}, Time of occurrence {Time}",
             exceptionMessage, DateTime.UtcNow);
         return ValueTask.FromResult(false);
     }

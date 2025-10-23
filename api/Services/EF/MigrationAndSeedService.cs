@@ -90,7 +90,7 @@ namespace Scv.Api.Services.EF
             catch (Exception ex)
             {
                 Logger.LogCritical(ex, "Database migration failed on startup.");
-                throw; // Re-throw to prevent application from starting with broken database
+                throw new InvalidOperationException("Database migration failed on startup.", ex);
             }
         }
 

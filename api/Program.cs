@@ -29,7 +29,7 @@ namespace Scv.Api
             catch (Exception ex)
             {
                 logger.LogCritical(ex, "Application terminated unexpectedly");
-                throw;
+                throw new ApplicationException("Application terminated unexpectedly. See inner exception for details.", ex);
             }
         }
 
@@ -48,11 +48,11 @@ namespace Scv.Api
 
                 logger.LogInformation("Database migrations and seeding completed successfully");
             }
-            catch (TimeoutException)
+            catch (TimeoutException ex)
             {
-                logger.LogCritical("Database migrations timed out after 5 minutes");
+                logger.LogCritical(ex, "Database migrations timed out after 5 minutes");
                 throw new InvalidOperationException(
-                    "Database migrations and seeding timed out. Check database connectivity.");
+                    "Database migrations and seeding timed out. Check database connectivity.", ex);
             }
         }
 

@@ -12,9 +12,14 @@ namespace Scv.Api.Controllers;
 [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
 [Route("api/[controller]")]
 [ApiController]
-public class ReservedJudgementsController(ICrudService<ReservedJudgementDto> judgementService) : ControllerBase
+public class ReservedJudgementsController : ControllerBase
 {
-    private readonly ICrudService<ReservedJudgementDto> _judgementService = judgementService;
+    private readonly ICrudService<ReservedJudgementDto> _judgementService;
+
+    public ReservedJudgementsController(ICrudService<ReservedJudgementDto> judgementService)
+    {
+        _judgementService = judgementService;
+    }
 
     [HttpGet]
     public async Task<ActionResult> GetReservedJudgements(int? judgeId = null)

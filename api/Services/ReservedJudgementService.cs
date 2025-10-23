@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
@@ -23,4 +25,16 @@ public class ReservedJudgementService(
 
     public override Task<OperationResult<ReservedJudgementDto>> ValidateAsync(ReservedJudgementDto dto, bool isEdit = false)
         => Task.FromResult(OperationResult<ReservedJudgementDto>.Success(dto));
+
+    public override async Task<List<ReservedJudgementDto>> GetAllAsync()
+    {
+        var rjs = await base.GetAllAsync();
+
+        // RJs with a Reason should be listed first as they are Scheduled Decisions
+        return [.. rjs
+            .OrderByDescending(rj => !string.IsNullOrWhiteSpace(rj.Reason))
+            .ThenBy(rj => rj.DueDate)
+            .ThenBy(rj => rj.FileNumber)
+        ];
+    }
 }

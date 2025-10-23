@@ -112,7 +112,7 @@ namespace Scv.Api.Services.EF
                 {
                     lastFile = file;
                     Logger.LogInformation($"Executing File: {file}");
-                    await db.Database.ExecuteSqlRawAsync(File.ReadAllText(file));
+                    await db.Database.ExecuteSqlRawAsync(await File.ReadAllTextAsync(file));
                 }
                 await transaction.CommitAsync();
                 Logger.LogInformation($"Executing files successful.");

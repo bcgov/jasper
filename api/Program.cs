@@ -29,7 +29,7 @@ namespace Scv.Api
             catch (Exception ex)
             {
                 logger.LogCritical(ex, "Application terminated unexpectedly");
-                throw new ApplicationException("Application terminated unexpectedly. See inner exception for details.", ex);
+                throw new InvalidOperationException("Application terminated unexpectedly. See inner exception for details.", ex);
             }
         }
 

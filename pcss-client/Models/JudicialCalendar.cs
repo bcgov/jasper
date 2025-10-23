@@ -113,32 +113,6 @@ public class JudicialCalendarDay
     }
 
 }
-public class Case
-{
-    //Both
-    public string FileNumberTxt { get; set; }
-    public int LocationId { get; set; }
-    public string LocationNm { get; set; }
-
-    public string NextApprDt { get; set; }
-    public string CourtDivisionCd { get; set; }
-    public List<Participant> Participants { get; set; }
-
-    //Criminal Only
-    public int? JustinNo { get; set; }
-    public double? ProfPartId { get; set; }
-    public double? ProfSeqNo { get; set; }
-
-    //Civil Only
-    public double? PhysicalFileId { get; set; }
-    public double? CivilDocumentId { get; set; }
-}
-
-public class Participant
-{
-    public string FullName { get; set; }
-    public List<Charge> Charges { get; set; }
-}
 
 public class HaveJudgeResponse
 {

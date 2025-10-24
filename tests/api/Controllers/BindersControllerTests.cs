@@ -6,10 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Api.Services;
 using Scv.Db.Contants;
 using Xunit;
+using Scv.Core.Infrastructure;
 
 namespace tests.api.Controllers;
 public class BindersControllerTests

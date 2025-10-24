@@ -1,5 +1,4 @@
-﻿using Hangfire.Mongo.Dto;
-using IdentityModel.Client;
+﻿using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -16,11 +15,11 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
-using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using System;
 using System.Collections.Generic;
@@ -30,6 +29,8 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Scv.Core.Helpers.Extensions;
+using Scv.Api.Infrastructure.Options;
 
 namespace Scv.Api.Infrastructure.Authentication
 {
@@ -38,6 +39,7 @@ namespace Scv.Api.Infrastructure.Authentication
         public static IServiceCollection AddScvAuthentication(this IServiceCollection services,
             IWebHostEnvironment env, IConfiguration configuration)
         {
+            services.Configure<KeycloakOptions>(configuration.GetSection("TDKeycloak"));
             services.AddAuthentication(options =>
             {
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -329,6 +331,11 @@ namespace Scv.Api.Infrastructure.Authentication
             var groupService = context.HttpContext.RequestServices.GetRequiredService<IGroupService>();
 
             UserItem matchingUser = null;
+            if (context.Principal.UserGuid() == null)
+            {
+                logger.LogInformation("No GUID claim found for user with email {Email}. Cannot look up user in PCSS.", userDto.Email);
+                return userDto;
+            }
             try
             {
                 logger.LogInformation("Requesting user information from PCSS."); //TODO: only do this for ProvJud users.

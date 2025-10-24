@@ -9,6 +9,7 @@ import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
+import { TransitoryDocumentsService } from './TransitoryDocumentsService';
 import { UserService } from './UserService';
 
 export function registerRouter(app: App) {
@@ -23,6 +24,9 @@ export function registerRouter(app: App) {
   const binderService = new BinderService(httpService);
   const userService = new UserService(httpService);
   const caseService = new CaseService(httpService);
+  const transitoryDocumentsService = new TransitoryDocumentsService(
+    httpService
+  );
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -35,6 +39,7 @@ export function registerRouter(app: App) {
   app.provide('binderService', binderService);
   app.provide('userService', userService);
   app.provide('caseService', caseService);
+  app.provide('transitoryDocumentsService', transitoryDocumentsService);
 }
 
 export * from './AuthService';
@@ -46,4 +51,5 @@ export * from './FilesService';
 export * from './LocationService';
 export * from './LookupService';
 export * from './RedirectHandlerService';
+export * from './TransitoryDocumentsService';
 export * from './UserService';

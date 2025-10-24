@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: jasper-retag-image-run
+spec:
+  pipelineRef:
+    name: jasper-retag-image
+  params:
+    - name: tag
+      value: 'SOURCE_TAG' # source tag in GHCR
+    - name: environment
+      value: 'ENVIRONMENT' # dev | test | prod

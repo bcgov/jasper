@@ -3,14 +3,16 @@ using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models;
+using Scv.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Scv.Core.Infrastructure;
+using Scv.Core.Services;
 
 namespace Scv.Api.Services;
 

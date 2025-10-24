@@ -4,6 +4,7 @@ using System;
 using Bogus;
 using Scv.Api.Helpers;
 using Xunit;
+using Scv.Core.Helpers;
 
 namespace tests.api.Helpers
 {

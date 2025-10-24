@@ -11,9 +11,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Scv.Api.Helpers.Exceptions;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Exceptions;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models;
 
 namespace Scv.Api.Infrastructure.Middleware
 {
@@ -175,7 +176,7 @@ namespace Scv.Api.Infrastructure.Middleware
 
             if (!context.Response.HasStarted)
             {
-                var result = JsonSerializer.Serialize(new Models.ErrorResponseModel(_env, ex, message), _options.JsonSerializerOptions);
+                var result = JsonSerializer.Serialize(new ErrorResponseModel(_env, ex, message), _options.JsonSerializerOptions);
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)code;
                 await context.Response.WriteAsync(result);

@@ -3,10 +3,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentValidation;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Db.Contants;
+using Scv.Core.Infrastructure;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Processors;
 

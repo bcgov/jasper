@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Db.Contants;
+using Scv.Core.Infrastructure;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Helpers.ContractResolver;
 
 namespace Scv.Api.Processors;
 

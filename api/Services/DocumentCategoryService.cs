@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using PCSSCommon.Clients.ConfigurationServices;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Db.Models;
 
 namespace Scv.Api.Services;

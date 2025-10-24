@@ -6,8 +6,9 @@ using JCCommon.Clients.FileServices;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Constants;
 using Scv.Api.Helpers.ContractResolver;
+using Scv.Models.Document;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Document;
+using Scv.Models;
 
 namespace Scv.Api.Documents.Strategies;
 

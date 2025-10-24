@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Xunit;
-using Scv.Api.Models.Location;
-using LocationModel = Scv.Api.Models.Location.Location;
-using LocationsModel = Scv.Api.Models.Location.Locations;
+using Scv.Models.Location;
+using LocationModel = Scv.Models.Location.Location;
+using LocationsModel = Scv.Models.Location.Locations;
 
 namespace tests.api.Models.Locations;
 

@@ -6,6 +6,7 @@ using Scv.Api.Controllers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
@@ -48,6 +49,10 @@ namespace Scv.Api.Infrastructure.Authorization
                 {
                     context.Fail(new AuthorizationFailureReason(this, "User claims changed since last authentication."));
                     return;
+                }
+                if (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))
+                {
+                    context.Succeed(requirement);
                 }
             }
 

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Controllers
 {

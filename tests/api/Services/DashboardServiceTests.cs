@@ -17,7 +17,7 @@ using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Calendar;
+using Scv.Models.Calendar;
 using Scv.Api.Services;
 using Xunit;
 using static PCSSCommon.Models.ActivityClassUsage;

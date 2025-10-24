@@ -21,13 +21,12 @@ using MongoDB.Driver;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
@@ -45,6 +44,10 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
+using TdDocumentsServices = TDCommon.Clients.DocumentsServices;
+using Scv.Core.Infrastructure.Handler;
+using Scv.Core.Services;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Infrastructure
 {
@@ -66,6 +69,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentStrategy, ROPStrategy>();
             services.AddScoped<IDocumentStrategy, ReportStrategy>();
             services.AddScoped<IDocumentStrategy, CourtSummaryReportStrategy>();
+            services.AddScoped<IDocumentStrategy, TransitoryDocumentStrategy>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
@@ -192,6 +196,14 @@ namespace Scv.Api.Infrastructure
                 .AddHttpClient<PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
+            // Transitory Documents
+            services
+                .AddHttpClient<TdDocumentsServices.TransitoryDocumentsClient>(client => { ConfigureHttpClient(client, configuration, "TD"); })
+                .AddHttpMessageHandler<TimingHandler>();
+
+            // Keycloak
+            services.AddHttpClient("keycloak").AddHttpMessageHandler<TimingHandler>(); ;
+
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
@@ -200,9 +212,11 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
+            services.AddScoped<TransitoryDocumentsService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
+            services.AddSingleton<IKeycloakTokenService, TdKeycloakTokenService>();
 
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
@@ -219,6 +233,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddScoped<IGroupService, GroupService>();
+                services.AddScoped<IKeycloakTokenService, TdKeycloakTokenService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
 
@@ -257,7 +272,7 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
-        private static void ConfigureHttpClient(HttpClient client, IConfiguration configuration, string prefix, int timeoutInSecs = 100)
+        public static void ConfigureHttpClient(HttpClient client, IConfiguration configuration, string prefix, int timeoutInSecs = 100)
         {
             var apigwUrl = configuration.GetValue<string>("AWS_API_GATEWAY_URL");
             var apigwKey = configuration.GetValue<string>("AWS_API_GATEWAY_API_KEY");

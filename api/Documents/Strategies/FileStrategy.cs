@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json.Serialization;
+using Scv.Models.Document;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Document;
+using Scv.Models;
 
 namespace Scv.Api.Documents.Strategies;
 

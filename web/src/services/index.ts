@@ -1,6 +1,7 @@
 import { App } from 'vue';
 import { AuthService } from './AuthService';
 import { BinderService } from './BinderService';
+import { CaseService } from './CaseService';
 import { CourtListService } from './CourtListService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
@@ -8,7 +9,6 @@ import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
 import { UserService } from './UserService';
-import { ReservedJudgementService } from './ReservedJudgementService';
 
 export function registerRouter(app: App) {
   const httpService = new HttpService(import.meta.env.BASE_URL);
@@ -20,7 +20,7 @@ export function registerRouter(app: App) {
   const courtListService = new CourtListService(httpService);
   const binderService = new BinderService(httpService);
   const userService = new UserService(httpService);
-  const reservedJudgementService = new ReservedJudgementService(httpService);
+  const caseService = new CaseService(httpService);
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -31,11 +31,12 @@ export function registerRouter(app: App) {
   app.provide('courtListService', courtListService);
   app.provide('binderService', binderService);
   app.provide('userService', userService);
-  app.provide('reservedJudgementService', reservedJudgementService);
+  app.provide('caseService', caseService);
 }
 
 export * from './AuthService';
 export * from './BinderService';
+export * from './CaseService';
 export * from './CourtListService';
 export * from './DashboardService';
 export * from './FilesService';

@@ -1,11 +1,8 @@
 using System;
-using MongoDB.EntityFrameworkCore;
-using Scv.Db.Contants;
 
-namespace Scv.Db.Models;
+namespace Scv.Api.Models;
 
-[Collection(CollectionNameConstants.RESERVED_JUDGEMENTS)]
-public class ReservedJudgement : EntityBase
+public class CaseDto : BaseDto
 {
     public string AppearanceId { get; set; }
     public DateTime AppearanceDate { get; set; }
@@ -19,4 +16,5 @@ public class ReservedJudgement : EntityBase
     public string Reason { get; set; }
     public string DueDate { get; set; }
     public string PartId { get; set; }
+    public DateTime? UpdatedDate { get; set; }
 }

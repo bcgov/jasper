@@ -13,13 +13,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ReservedJudgement } from '@/types/ReservedJudgement';
+  import { Case } from '@/types';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassLabel } from '@/utils/utils';
   import { ref } from 'vue';
 
   defineProps<{
-    data: ReservedJudgement[];
+    data: Case[];
   }>();
   const sortBy = ref([{ key: 'cc', order: 'desc' }] as const);
 
@@ -39,7 +39,7 @@
     {
       title: 'DECISION DATE',
       key: 'dueDate',
-      value: (item: ReservedJudgement) =>
+      value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.dueDate)),
     },
     {
@@ -49,13 +49,13 @@
     {
       title: 'LAST APPEARANCE',
       key: 'appearanceDate',
-      value: (item: ReservedJudgement) =>
+      value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.appearanceDate)),
     },
     {
       title: 'DUE DATE',
       key: 'dueDate',
-      value: (item: ReservedJudgement) =>
+      value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.dueDate)),
     },
     {

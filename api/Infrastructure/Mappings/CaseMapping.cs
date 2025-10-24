@@ -1,22 +1,20 @@
 using System;
 using System.Globalization;
 using Mapster;
-using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Models;
-using Scv.Db.Models;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
-public class ReservedJudgementMapping : IRegister
+public class CaseMapping : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.NewConfig<CsvReservedJudgement, ReservedJudgement>();
-        config.NewConfig<ReservedJudgement, ReservedJudgementDto>()
+        config.NewConfig<CsvReservedJudgement, Db.Models.Case>();
+        config.NewConfig<Db.Models.Case, CaseDto>()
             .Map(dest => dest.UpdatedDate, src => src.Upd_Dtm);
-        config.NewConfig<Case, ReservedJudgementDto>()
+        config.NewConfig<PCSSCommon.Models.Case, CaseDto>()
             .Ignore(dest => dest.Id)
             .Map(dest => dest.AppearanceId, src => src.NextApprId.ToString())
             .Map(dest => dest.AppearanceDate, src => DateTime.ParseExact(
@@ -32,7 +30,7 @@ public class ReservedJudgementMapping : IRegister
                 src.NextApprDt,
                 PCSSCommonConstants.DATE_FORMAT,
                 CultureInfo.InvariantCulture));
-        config.NewConfig<ReservedJudgementDto, ReservedJudgement>()
+        config.NewConfig<CaseDto, Db.Models.Case>()
              .Ignore(dest => dest.Id);
     }
 }

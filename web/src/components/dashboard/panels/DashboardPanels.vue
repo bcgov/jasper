@@ -37,13 +37,14 @@
 
 <script setup lang="ts">
   import ReservedJudgementTable from '@/components/dashboard/panels/reserved-judgements/ReservedJudgementTable.vue';
-  import { ReservedJudgementService } from '@/services/ReservedJudgementService';
-  import { ReservedJudgement } from '@/types/ReservedJudgement';
+  import { CaseService } from '@/services';
+  import { AssignedCaseResponse, Case } from '@/types';
+  import { ApiResponse } from '@/types/ApiResponse';
   import { computed, inject, ref, watch } from 'vue';
 
   const expanded = ref('');
   const judgementsLoading = ref(false);
-  const reservedJudgements = ref<ReservedJudgement[]>([]);
+  const reservedJudgements = ref<Case[]>([]);
   const RESERVED_JUDGEMENT = 'reserved-judgement';
   const reservedJudgementCount = computed(
     () => reservedJudgements.value.length
@@ -51,22 +52,20 @@
   const props = defineProps({
     judgeId: { type: Number, default: null },
   });
-  const reservedJudgementService = inject<ReservedJudgementService>(
-    'reservedJudgementService'
-  );
-  if (!reservedJudgementService) {
+  const caseService = inject<CaseService>('caseService');
+  if (!caseService) {
     throw new Error('Service(s) is undefined.');
   }
 
   watch([expanded, () => props.judgeId], ([newVal, newJudgeId]) => {
     if (newVal == RESERVED_JUDGEMENT) {
       judgementsLoading.value = true;
-      reservedJudgementService
-        .get({
+      caseService
+        .getAssignedCases({
           judgeId: newJudgeId ?? '',
         })
-        .then((data: ReservedJudgement[]) => {
-          reservedJudgements.value = data;
+        .then((response: ApiResponse<AssignedCaseResponse>) => {
+          reservedJudgements.value = response.payload.reservedJudgments;
         })
         .catch((err) => {
           console.error('Failed to load reserved judgements:', err);

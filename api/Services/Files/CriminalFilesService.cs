@@ -10,17 +10,19 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Criminal.AppearanceDetail;
-using Scv.Api.Models.Criminal.Appearances;
-using Scv.Api.Models.Criminal.Detail;
-using Scv.Api.Models.Search;
+using Scv.Models.Criminal.AppearanceDetail;
+using Scv.Models.Criminal.Appearances;
+using Scv.Models.Criminal.Detail;
+using Scv.Models.Search;
 using Scv.Db.Models;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
-using CriminalAppearanceMethod = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
+using CriminalAppearanceMethod = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
+using CriminalWitness = Scv.Models.Criminal.Detail.CriminalWitness;
 using CriminalParticipant = Scv.Api.Models.Criminal.Detail.CriminalParticipant;
-using CriminalWitness = Scv.Api.Models.Criminal.Detail.CriminalWitness;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Api.Models.Criminal.Detail;
 
 namespace Scv.Api.Services.Files
 {

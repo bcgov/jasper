@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Mapster;
 using PCSSCommon.Models;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;

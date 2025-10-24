@@ -12,14 +12,16 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Scv.Api.Documents;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models;
-using Scv.Api.Models.Document;
+using Scv.Models;
+using Scv.Models.Document;
 using Scv.Api.Processors;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Core.Services;
+using Scv.Core.Infrastructure;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Services;
 

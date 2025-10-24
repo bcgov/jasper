@@ -11,6 +11,7 @@ import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
 import { TimebankService } from './TimebankService';
+import { TransitoryDocumentsService } from './TransitoryDocumentsService';
 import { UserService } from './UserService';
 import { QuickLinkService } from './QuickLinkService';
 
@@ -29,6 +30,9 @@ export function registerRouter(app: App) {
   const timebankService = new TimebankService(httpService);
   const darsService = new DarsService(httpService);
   const quickLinkService = new QuickLinkService(httpService);
+  const transitoryDocumentsService = new TransitoryDocumentsService(
+    httpService
+  );
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -42,6 +46,7 @@ export function registerRouter(app: App) {
   app.provide('userService', userService);
   app.provide('caseService', caseService);
   app.provide('timebankService', timebankService);
+  app.provide('transitoryDocumentsService', transitoryDocumentsService);
   app.provide('darsService', darsService);
   app.provide('quickLinkService', quickLinkService);
 }
@@ -57,5 +62,6 @@ export * from './LocationService';
 export * from './LookupService';
 export * from './RedirectHandlerService';
 export * from './TimebankService';
+export * from './TransitoryDocumentsService';
 export * from './UserService';
 export * from './QuickLinkService';

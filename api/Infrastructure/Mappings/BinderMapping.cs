@@ -2,9 +2,9 @@
 using JCCommon.Clients.FileServices;
 using Mapster;
 using Scv.Api.Documents;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Models.Criminal.Detail;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;

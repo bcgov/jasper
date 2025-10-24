@@ -8,10 +8,10 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Documents;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Api.Services;
 using Scv.Db.Contants;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Processors;
 

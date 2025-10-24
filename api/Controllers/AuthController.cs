@@ -11,9 +11,11 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Models.auth;
+using Scv.Models.auth;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Scv.Db.Models.Auth;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Controllers
 {

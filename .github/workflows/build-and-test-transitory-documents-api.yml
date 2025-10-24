@@ -1,0 +1,32 @@
+name: Build and Test transitory documents api
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'transitory-documents-api/**'
+
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: .
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        dotnet-major-version: [9]
+        dotnet-minor-version: [0]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Building Web codebase
+        uses: ./.github/workflows/actions/build-transitory-documents-api
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          dotnet_version: ${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;

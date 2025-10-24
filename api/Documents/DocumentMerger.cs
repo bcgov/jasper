@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GdPicture14;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Models.Document;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents;
 

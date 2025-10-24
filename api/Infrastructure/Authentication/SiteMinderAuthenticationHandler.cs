@@ -9,8 +9,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.JCUserService;
+using Scv.Models.JCUserService;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Helpers;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

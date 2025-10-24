@@ -8,9 +8,10 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
+using Scv.Models.Document;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Document;
+using Scv.Models;
 
 namespace Scv.Api.Documents.Strategies;
 

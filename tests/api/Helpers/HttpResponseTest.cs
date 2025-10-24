@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Xunit;
 
 namespace tests.api.Helpers

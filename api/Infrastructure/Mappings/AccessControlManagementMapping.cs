@@ -1,6 +1,6 @@
 ﻿using Mapster;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;

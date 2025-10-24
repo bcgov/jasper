@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Location;
+using Scv.Models.Location;
 using Scv.Api.Services;
 
 namespace Scv.Api.Controllers

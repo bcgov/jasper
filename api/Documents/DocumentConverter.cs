@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using MapsterMapper;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Models.Criminal.Detail;
 using Scv.Api.Services;
 
 namespace Scv.Api.Documents;

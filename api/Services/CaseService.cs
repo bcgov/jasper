@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
@@ -33,12 +34,11 @@ public class CaseService(
     public const string CONTINUATION_APPR_REASON_CD = "CNT";
     public const string ADDTL_CNT_TIME_APPR_REASON_CD = "ACT";
 
-    public static readonly HashSet<string> ContinuationReasonCodes = new(StringComparer.OrdinalIgnoreCase)
-    {
+    public static readonly ImmutableArray<string> ContinuationReasonCodes = [
         DECISION_APPR_REASON_CD,
         CONTINUATION_APPR_REASON_CD,
         ADDTL_CNT_TIME_APPR_REASON_CD
-    };
+    ];
 
     public override Task<OperationResult<CaseDto>> ValidateAsync(CaseDto dto, bool isEdit = false)
         => Task.FromResult(OperationResult<CaseDto>.Success(dto));
@@ -77,7 +77,7 @@ public class CaseService(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error retrieving assigned cases for judge {judgeId}: {message}", judgeId, ex.Message);
+            this.Logger.LogError(ex, "Error retrieving assigned cases for judge {JudgeId}: {Message}", judgeId, ex.Message);
             return OperationResult<CaseResponse>.Failure("Error retrieving assigned cases.");
         }
     }

@@ -197,7 +197,7 @@ resource "aws_secretsmanager_secret" "nutrient_secret" {
 resource "aws_secretsmanager_secret_version" "nutrient_secret_value" {
   secret_id = aws_secretsmanager_secret.nutrient_secret.id
   secret_string = jsonencode({
-    viteNutrientFeLicenseKey = "",
+    nutrientFeLicenseKey = "",
     nutrientBeLicenseKey = "",
   })
   lifecycle {

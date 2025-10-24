@@ -9,7 +9,6 @@ services:
       - RealIpFrom=${RealIpFrom}
       - WEB_BASE_HREF=${WEB_BASE_HREF}
       - IncludeSiteminderHeaders=${IncludeSiteminderHeaders}
-      - VITE_NUTRIENT_FE_LICENSE_KEY=${VITE_NUTRIENT_FE_LICENSE_KEY}
     ports:
       - 8080:8080
     depends_on:
@@ -25,7 +24,6 @@ services:
       - NPM_CONFIG_LOGLEVEL=notice
       - VITE_PORT=1339
       - CHOKIDAR_USEPOLLING=true
-      - VITE_NUTRIENT_FE_LICENSE_KEY=${VITE_NUTRIENT_FE_LICENSE_KEY}
     ports:
       - '8080:1339'
     volumes:
@@ -95,6 +93,7 @@ services:
       - UserServicesClient__Url=${UserServicesClientUrl}
       - UserServicesClient__Username=${UserServicesClientUsername}
       - NUTRIENT_BE_LICENSE_KEY=${NUTRIENT_BE_LICENSE_KEY}
+      - NUTRIENT_FE_LICENSE_KEY=${NUTRIENT_FE_LICENSE_KEY}
 
     ports:
       - 5000:5000

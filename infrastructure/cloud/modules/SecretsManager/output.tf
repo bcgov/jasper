@@ -61,6 +61,7 @@ output "api_secrets" {
     ["MONGODB_CONNECTION_STRING", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbConnectionString::"],
     ["MONGODB_NAME", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbName::"],
     ["NUTRIENT_BE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientBeLicenseKey::"],
+    ["NUTRIENT_FE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientFeLicenseKey::"],
     ["PCSS__Username", "${aws_secretsmanager_secret.pcss_secret.arn}:username::"],
     ["PCSS__Password", "${aws_secretsmanager_secret.pcss_secret.arn}:password::"],
     ["PCSS__Url", "${aws_secretsmanager_secret.pcss_secret.arn}:baseUrl::"],
@@ -79,8 +80,7 @@ output "api_secrets" {
     ["SplunkToken", "${aws_secretsmanager_secret.splunk_secret.arn}:token::"],
     ["UserServicesClient__Username", "${aws_secretsmanager_secret.user_services_client_secret.arn}:username::"],
     ["UserServicesClient__Password", "${aws_secretsmanager_secret.user_services_client_secret.arn}:password::"],
-    ["UserServicesClient__Url", "${aws_secretsmanager_secret.user_services_client_secret.arn}:baseUrl::"],
-    ["VITE_NUTRIENT_FE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:viteNutrientFeLicenseKey::"]
+    ["UserServicesClient__Url", "${aws_secretsmanager_secret.user_services_client_secret.arn}:baseUrl::"]
   ]
 }
 
@@ -91,7 +91,6 @@ output "web_secrets" {
     ["IpFilterRules", "${aws_secretsmanager_secret.misc_secret.arn}:ipFilterRules::"],
     ["RealIpFrom", "${aws_secretsmanager_secret.misc_secret.arn}:realIpFrom::"],
     ["USE_SELF_SIGNED_SSL", "${aws_secretsmanager_secret.misc_secret.arn}:useSelfSignedSsl::"],
-    ["VITE_NUTRIENT_FE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:viteNutrientFeLicenseKey::"],
     ["WEB_BASE_HREF", "${aws_secretsmanager_secret.misc_secret.arn}:webBaseHref::"]
   ]
 }

@@ -1,4 +1,5 @@
 import {
+  ApplicationInfo,
   CourtRoomsJsonInfoType,
   IconStyleType,
   LookupCode,
@@ -16,6 +17,7 @@ export const useCommonStore = defineStore('CommonStore', {
   state: () => ({
     displayName: '',
     userInfo: null as UserInfo | null,
+    appInfo: null as ApplicationInfo | null,
     time: '',
     duration: '',
     statusStyle: '',

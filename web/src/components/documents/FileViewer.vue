@@ -11,6 +11,7 @@
 </template>
 
 <script setup lang="ts">
+  import { useCommonStore } from '@/stores';
   import { onMounted, onUnmounted, ref } from 'vue';
 
   // Declare NutrientViewer global
@@ -65,12 +66,12 @@
   }
 
   const props = defineProps<Props>();
-
+  const commonStore = useCommonStore();
   const loading = ref(false);
   const emptyStore = ref(false);
   const configuration = {
     container: '.pdf-container',
-    licenseKey: import.meta.env.VITE_NUTRIENT_FE_LICENSE_KEY,
+    licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
   };
 
   const loadNutrient = async () => {

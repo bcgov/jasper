@@ -1,4 +1,5 @@
 import { beautifyDate } from '@/filters';
+import { ApplicationService } from '@/services/ApplicationService';
 import { AuthService } from '@/services/AuthService';
 import { LookupService } from '@/services/LookupService';
 import { useCommonStore } from '@/stores';
@@ -16,19 +17,25 @@ export const SessionManager = {
   getSettings: async function () {
     const commonStore = useCommonStore();
     const authService = inject<AuthService>('authService');
-
-    if (commonStore.userInfo) {
-      return true;
-    }
+    const appService = inject<ApplicationService>('applicationService');
 
     try {
-      const userInfo = await authService?.getUserInfo();
+      const [userInfo, appInfo] = await Promise.all([
+        authService?.getUserInfo(),
+        appService?.getApplicationInfo()
+      ]);
+      let succeeded = true;
       if (!userInfo) {
         console.error('User info not available.');
-        return false;
+        succeeded = false;
       }
-      commonStore.userInfo = userInfo;
-      return true;
+      if(!appInfo) {
+        console.error('Application info not available.');
+        succeeded = false;
+      }
+      commonStore.userInfo = userInfo ?? null;
+      commonStore.appInfo = appInfo ?? null;
+      return succeeded;
     } catch (error) {
       console.log(error);
       return false;

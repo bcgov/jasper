@@ -2,13 +2,13 @@ import { App } from 'vue';
 import { ApplicationService } from './ApplicationService';
 import { AuthService } from './AuthService';
 import { BinderService } from './BinderService';
+import { CaseService } from './CaseService';
 import { CourtListService } from './CourtListService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
-import { ReservedJudgementService } from './ReservedJudgementService';
 import { UserService } from './UserService';
 
 export function registerRouter(app: App) {
@@ -22,7 +22,7 @@ export function registerRouter(app: App) {
   const courtListService = new CourtListService(httpService);
   const binderService = new BinderService(httpService);
   const userService = new UserService(httpService);
-  const reservedJudgementService = new ReservedJudgementService(httpService);
+  const caseService = new CaseService(httpService);
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -34,11 +34,12 @@ export function registerRouter(app: App) {
   app.provide('courtListService', courtListService);
   app.provide('binderService', binderService);
   app.provide('userService', userService);
-  app.provide('reservedJudgementService', reservedJudgementService);
+  app.provide('caseService', caseService);
 }
 
 export * from './AuthService';
 export * from './BinderService';
+export * from './CaseService';
 export * from './CourtListService';
 export * from './DashboardService';
 export * from './FilesService';

@@ -52,8 +52,8 @@ services:
       - FileServicesClient__Password=${FileServicesClientPassword}
       - FileServicesClient__Url=${FileServicesClientUrl}
       - FileServicesClient__Username=${FileServicesClientUsername}
+      - JOBS__SYNC_ASSIGNED_CASES_SCHEDULE=${JOBS_SYNC_ASSIGNED_CASES_SCHEDULE}
       - JOBS__SYNC_DOCUMENT_CATEGORIES_SCHEDULE=${JOBS_SYNC_DOCUMENT_CATEGORIES_SCHEDULE}
-      - JOBS__SYNC_RESERVED_JUDGEMENTS_SCHEDULE=${JOBS_SYNC_RESERVED_JUDGEMENTS_SCHEDULE}
       - KEY_DOCS_BINDER_REFRESH_HOURS=${KEY_DOCS_BINDER_REFRESH_HOURS}
       - Keycloak__Audience=${KeycloakAudience}
       - Keycloak__Authority=${KeycloakAuthority}

@@ -330,7 +330,7 @@ resource "aws_secretsmanager_secret" "jobs_secret" {
 resource "aws_secretsmanager_secret_version" "jobs_secret_value" {
   secret_id = aws_secretsmanager_secret.jobs_secret.id
   secret_string = jsonencode({
-    syncReservedJudgementsSchedule = "",
+    syncAssignedCasesSchedule      = "",
     syncDocumentCategoriesSchedule = ""
   })
   lifecycle {

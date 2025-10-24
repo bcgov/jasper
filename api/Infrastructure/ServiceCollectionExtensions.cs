@@ -27,7 +27,6 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
-using Scv.Api.Models;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
@@ -209,12 +208,12 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<PermissionDto>, PermissionService>();
                 services.AddScoped<ICrudService<RoleDto>, RoleService>();
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
-                services.AddScoped<ICrudService<ReservedJudgementDto>, ReservedJudgementService>();
+                services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
-                services.AddTransient<IRecurringJob, SyncReservedJudgementsJob>();
+                services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }

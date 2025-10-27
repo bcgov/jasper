@@ -3559,8 +3559,8 @@ public partial class Case
     [Newtonsoft.Json.JsonProperty("styleOfCause", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public string StyleOfCause { get; set; }
 
-    [Newtonsoft.Json.JsonProperty("ageInDays", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-    public int? AgeInDays { get; set; }
+    [Newtonsoft.Json.JsonProperty("caseAgeDays", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? CaseAgeDays { get; set; }
 
     [Newtonsoft.Json.JsonProperty("justinNo", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public int? JustinNo { get; set; }

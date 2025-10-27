@@ -62,8 +62,8 @@ public class CaseService(
                 .OrderBy(c => c.StyleOfCause);
 
             var scheduledContinuations = judgeCases
-                .Where(c => !string.IsNullOrWhiteSpace(c.Reason)
-                    && ContinuationReasonCodes.Contains(c.Reason))
+                .Where(c => ContinuationReasonCodes
+                    .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase)))
                 .OrderBy(c => c.StyleOfCause);
 
             var response = new CaseResponse

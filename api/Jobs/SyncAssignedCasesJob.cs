@@ -218,11 +218,11 @@ public class SyncAssignedCasesJob(
             return;
         }
 
-        var scheduledData = scheduledCases.Select(c => PopulateMissingInfoForScheduledCase(c));
+        var scheduledData = scheduledCases.Select(c => PopulateMissingInfoForScheduledCase(c)).ToList();
 
         await _caseService.AddRangeAsync([.. scheduledData]);
 
-        this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Count());
+        this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Count);
     }
 
     private CaseDto PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)

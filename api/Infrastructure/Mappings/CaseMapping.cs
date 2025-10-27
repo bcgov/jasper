@@ -26,10 +26,8 @@ public class CaseMapping : IRegister
             .Map(dest => dest.FileNumber, src => $"{src.CourtClassCd}-{src.FileNumberTxt}")
             .Map(dest => dest.Reason, src => src.NextApprReason)
             .Map(dest => dest.PartId, src => src.ProfPartId)
-            .Map(dest => dest.DueDate, src => DateTime.ParseExact(
-                src.NextApprDt,
-                PCSSCommonConstants.DATE_FORMAT,
-                CultureInfo.InvariantCulture));
+            .Map(dest => dest.DueDate, src => src.NextApprDt)
+            .Map(dest => dest.AgeInDays, src => src.CaseAgeDays);
         config.NewConfig<CaseDto, Db.Models.Case>()
              .Ignore(dest => dest.Id);
     }

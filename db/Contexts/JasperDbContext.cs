@@ -13,7 +13,7 @@ namespace Scv.Db.Contexts
         public DbSet<User> Users { get; init; }
         public DbSet<Binder> Binders { get; set; }
         public DbSet<DocumentCategory> DocumentCategories { get; set; }
-        public DbSet<Case> ReservedJudgements { get; set; }
+        public DbSet<Case> Cases { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

@@ -1,16 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using LazyCache;
+﻿using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Scv.Api.Infrastructure;
+using Scv.Api.Models;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
+
+public interface IGroupService
+{
+    Task<OperationResult<IEnumerable<GroupDto>>> GetGroupsByAliases(IEnumerable<string> aliases);
+}
 
 public class GroupService(
     IAppCache cache,
@@ -18,17 +25,45 @@ public class GroupService(
     ILogger<GroupService> logger,
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
-    IRepositoryBase<User> userRepo
+    IRepositoryBase<User> userRepo,
+    IRepositoryBase<GroupAlias> groupAliasRepo
     ) : CrudServiceBase<IRepositoryBase<Group>, Group, GroupDto>(
         cache,
         mapper,
         logger,
-        groupRepo)
+        groupRepo), IGroupService
 {
     private readonly IRepositoryBase<Role> _roleRepo = roleRepo;
     private readonly IRepositoryBase<User> _userRepo = userRepo;
+    private readonly IRepositoryBase<GroupAlias> _groupAliasRepo = groupAliasRepo;
 
     public override string CacheName => "GetGroupsAsync";
+
+    public async Task<OperationResult<IEnumerable<GroupDto>>> GetGroupsByAliases(IEnumerable<string> aliases)
+    {
+        var errors = new List<string>();
+        var groupAliases = await this._groupAliasRepo.FindAsync(ga => aliases.Contains(ga.Name));
+        Logger.LogDebug("Found {GroupAliases} in JASPER based on input aliases: {Aliases}", JsonConvert.SerializeObject(groupAliases), aliases);
+
+        if (!groupAliases.Any())
+        {
+            errors.Add("Group alias not found.");
+        }
+        else
+        {
+            var groupIds = groupAliases.Select(ga => ga.GroupId).Distinct().Where(g => g != null).ToArray();
+            var groups = await this.Repo.FindAsync(g => groupIds.Contains(g.Id));
+
+            if (groupIds.Count() != groups.Count())
+            {
+                Logger.LogError("One or more group aliases do not have a corresponding group.");
+                // this is a non-fatal error, but indicates an issue with one or more aliases.
+            }
+
+            return OperationResult<IEnumerable<GroupDto>>.Success(this.Mapper.Map<IEnumerable<GroupDto>>(groups));
+        }
+        return OperationResult<IEnumerable<GroupDto>>.Failure([.. errors]);
+    }
 
     public override async Task<OperationResult<GroupDto>> ValidateAsync(GroupDto dto, bool isEdit = false)
     {

@@ -149,7 +149,7 @@ public class CaseServiceTests
         Assert.True(result.Succeeded);
         Assert.Equal(3, result.Payload.ReservedJudgments.Count);
         Assert.Empty(result.Payload.ScheduledContinuations);
-        Assert.Equal(cases.OrderBy(c => c.StyleOfCause).First().StyleOfCause, result.Payload.ReservedJudgments[0].StyleOfCause);
+        Assert.Equal(cases.OrderBy(c => c.DueDate).First().StyleOfCause, result.Payload.ReservedJudgments[0].StyleOfCause);
     }
 
     [Fact]

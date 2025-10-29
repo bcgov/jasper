@@ -18,7 +18,6 @@ namespace Scv.Api.Services
 
         private readonly ILogger<DarsService> _logger;
         private readonly LogNotesServicesClient _logNotesServicesClient;
-        private readonly IAppCache _cache;
         private readonly IMapper _mapper;
         private readonly string _logsheetBaseUrl;
         private readonly LocationService _locationService;
@@ -37,7 +36,6 @@ namespace Scv.Api.Services
             IAppCache cache)
         {
             _logger = logger;
-            _cache = cache;
             _mapper = mapper;
             _logNotesServicesClient = logNotesServicesClient;
             _logsheetBaseUrl = configuration.GetNonEmptyValue("DARS:LogsheetUrl");
@@ -48,13 +46,14 @@ namespace Scv.Api.Services
 
         public async Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, int locationId, string courtRoomCd)
         {
+            _logger.LogInformation("DarsApiSearch called for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
             var darsResult = await _logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: locationId);
+            _logger.LogInformation("DarsApiSearch returned {ResultCount} results for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", darsResult?.Count() ?? 0, locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
             var mappedResults = _mapper.Map<IEnumerable<DarsSearchResults>>(darsResult).ToList();
 
             // Append the base URL to each result's Url property
             foreach (var result in mappedResults)
             {
-                var locations = await _locationService.GetLocations();
                 if (!string.IsNullOrWhiteSpace(result.Url) && !string.IsNullOrWhiteSpace(_logsheetBaseUrl))
                 {
                     result.Url = $"{_logsheetBaseUrl.TrimEnd('/')}/{result.Url.TrimStart('/')}"; // remap the url returned from DARS - to point to the base url hosting the logsheet
@@ -67,7 +66,7 @@ namespace Scv.Api.Services
 
         // only return result for each room, preferring CCD json, then FLS, then CCD html.
         // Note: multiple logsheets should be returned if there are multiple (FLS only) logsheets. CODE ORIGINALLY FROM PCSS.
-        private List<DarsSearchResults> GetResultPerRoom(List<DarsSearchResults> allResults)
+        private static List<DarsSearchResults> GetResultPerRoom(List<DarsSearchResults> allResults)
         {
             var resultsForRoom = allResults.GroupBy(result => result.CourtRoomCd);
             List<DarsSearchResults> filteredResults = new List<DarsSearchResults>(allResults.Count);

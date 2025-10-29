@@ -80,6 +80,9 @@
         <v-icon
           v-if="item.appearanceStatusCd === 'SCHD'"
           :icon="mdiHeadphones"
+          class="cursor-pointer"
+          :data-testid="`dars-button-${item.appearanceId}`"
+          @click="openDarsModal(item)"
         />
       </template>
       <template v-slot:item.appearanceReasonCd="{ value, item }">
@@ -121,11 +124,20 @@
     >
     </v-data-table-virtual>
   </div>
+
+  <!-- DARS Access Modal -->
+  <DarsAccessModal
+    v-model="showDarsModal"
+    :prefillDate="darsModalData.date"
+    :prefillLocationId="darsModalData.locationId"
+    :prefillRoom="darsModalData.room"
+  />
 </template>
 
 <script setup lang="ts">
   import CriminalAppearanceDetails from '@/components/case-details/criminal/appearances/CriminalAppearanceDetails.vue';
   import CivilAppearanceDetails from '@/components/civil/CivilAppearanceDetails.vue';
+  import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
   import AppearanceStatusChip from '@/components/shared/AppearanceStatusChip.vue';
   import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
   import { ApprDetailType } from '@/types/shared';
@@ -217,6 +229,24 @@
   const selectedAccused = ref<string>();
   const sortBy = ref([{ key: 'appearanceDt', order: 'desc' }] as const);
   const now = new Date();
+
+  // DARS modal state
+  const showDarsModal = ref(false);
+  const darsModalData = ref({
+    date: null as Date | null,
+    locationId: null as number | null,
+    room: '',
+  });
+
+  const openDarsModal = (item: ApprDetailType) => {
+    // Parse the date string to Date object
+    darsModalData.value = {
+      date: new Date(item.appearanceDt),
+      locationId: item.locationId ? Number.parseInt(item.locationId, 10) : null,
+      room: item.courtRoomCd || '',
+    };
+    showDarsModal.value = true;
+  };
 
   const filterByAccused = (appearance: criminalApprDetailType) =>
     !selectedAccused.value ||

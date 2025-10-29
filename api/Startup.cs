@@ -107,7 +107,7 @@ namespace Scv.Api
 
             #region Setup Services
 
-            services.AddHttpClientsAndScvServices(Configuration);
+            services.AddHttpClientsAndScvServices(Configuration, CurrentEnvironment);
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 

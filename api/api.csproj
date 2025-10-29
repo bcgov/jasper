@@ -39,6 +39,7 @@
     <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\dars-client\dars-client.csproj" />
     <ProjectReference Include="..\db\db.csproj" />
     <ProjectReference Include="..\jc-interface-client\jc-interface-client.csproj" />
     <ProjectReference Include="..\pcss-client\pcss-client.csproj" />

@@ -44,6 +44,8 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
+using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Scv.Api.Infrastructure
 {
@@ -138,7 +140,7 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
-        public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
         {
             services.AddTransient<TimingHandler>();
 
@@ -186,6 +188,9 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<LogNotesServices.LogNotesServicesClient>(client => { ConfigureHttpClient(client, configuration, "DARS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
@@ -194,6 +199,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<LocationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
+            services.AddScoped<DarsService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();

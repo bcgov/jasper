@@ -38,7 +38,10 @@
               isRemote,
               showDars,
               restrictions,
+              activityCode,
+              locationId,
             } in activities"
+            :key="`${activityCode} - ${period}`"
           >
             <div class="d-flex justify-space-between">
               <div class="d-flex align-center">
@@ -68,6 +71,8 @@
                   v-if="showDars"
                   data-testid="dars"
                   :icon="mdiHeadphones"
+                  class="cursor-pointer"
+                  @click="openDarsModal(locationId, roomCode)"
                 />
                 <v-icon
                   data-testid="activity-remote-icon"
@@ -102,12 +107,21 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- DARS Access Modal -->
+  <DarsAccessModal
+    v-model="showDarsModal"
+    :prefillDate="darsModalData.date"
+    :prefillLocationId="darsModalData.locationId"
+    :prefillRoom="darsModalData.room"
+  />
 </template>
 <script setup lang="ts">
+  import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
   import { CalendarDay, CalendarDayActivity } from '@/types';
   import { parseDDMMMYYYYToDate } from '@/utils/dateUtils';
   import { mdiHeadphones, mdiListBoxOutline, mdiVideo } from '@mdi/js';
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
 
   const props = defineProps<{
     expandedDate: string | null;
@@ -115,10 +129,32 @@
     close: () => void;
   }>();
 
+  // DARS modal state
+  const showDarsModal = ref(false);
+  const darsModalData = ref({
+    date: null as Date | null,
+    locationId: null as number | null,
+    room: '',
+  });
+
+  const openDarsModal = (locationId: number | undefined, roomCode: string) => {
+    // Parse the date from the day.date string (format: DD MMM YYYY)
+    const parsedDate = parseDDMMMYYYYToDate(props.day.date);
+    darsModalData.value = {
+      date: parsedDate || new Date(),
+      locationId: locationId || null,
+      room: roomCode || '',
+    };
+    showDarsModal.value = true;
+  };
+
   const cleanActivityClassDescription = (
-    activityClassDescription: string
+    activityClassDescription: string | undefined
   ): string => {
-    return activityClassDescription.trim().replace(/\s+/g, '-').toLowerCase();
+    return (activityClassDescription || '')
+      .trim()
+      .replaceAll(/\s+/g, '-')
+      .toLowerCase();
   };
 
   const dayNumberText = computed(() => {

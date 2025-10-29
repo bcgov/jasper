@@ -288,6 +288,7 @@ namespace Scv.Api.Services.Files
                 tasks.Add(Task.Run(async () => appearance.AppearanceStatusDsc = await _lookupService.GetCriminalAppearanceStatusDescription(appearance.AppearanceStatusCd.ToString())));
                 tasks.Add(Task.Run(async () => appearance.CourtLocationId = await _locationService.GetLocationAgencyIdentifier(appearance.CourtAgencyId)));
                 tasks.Add(Task.Run(async () => appearance.CourtLocation = await _locationService.GetLocationName(appearance.CourtAgencyId)));
+                appearance.LocationId = await _locationService.GetLocationId(appearance.CourtAgencyId);
             }
 
             await Task.WhenAll(tasks);

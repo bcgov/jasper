@@ -370,6 +370,7 @@ namespace Scv.Api.Services.Files
                 appearance.AppearanceStatusDsc = await _lookupService.GetCivilAppearanceStatusDescription(appearance.AppearanceStatusCd.ToString());
                 appearance.CourtLocationId = await _locationService.GetLocationAgencyIdentifier(appearance.CourtAgencyId);
                 appearance.CourtLocation = await _locationService.GetLocationName(appearance.CourtAgencyId);
+                appearance.LocationId = await _locationService.GetLocationId(appearance.CourtAgencyId);
                 appearance.DocumentTypeDsc = await _lookupService.GetDocumentDescriptionAsync(appearance.DocumentTypeCd);
             }
             return civilAppearances;

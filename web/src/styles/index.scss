@@ -245,6 +245,10 @@ $indicator-thickness: 0.2em;
 //   height: 3.5rem; /* Footer height */
 // }
 
+html {
+  overflow-y: auto !important;
+}
+
 html,
 body,
 .custom-select .b-form-input {

@@ -29,14 +29,12 @@
 </template>
 
 <script setup lang="ts">
-  import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import shared from '@/components/shared';
-  import { civilDocumentType } from '@/types/civil/jsonTypes/index';
-  import { beautifyDate } from '@/filters';
-  import { Anchor } from '@/types/common';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
-  import { CourtDocumentType, DocumentData } from '@/types/shared';
-  import { useCommonStore } from '@/stores';
+import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
+import { useCommonStore } from '@/stores';
+import { civilDocumentType } from '@/types/civil/jsonTypes/index';
+import { Anchor } from '@/types/common';
+import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
   const props = defineProps<{
     documents: civilDocumentType[];
@@ -45,6 +43,8 @@
     courtLevel: string;
     agencyId: string;
   }>();
+
+  const commonStore = useCommonStore();
 
   const headers = [
     { title: 'SEQ', key: 'fileSeqNo' },
@@ -61,25 +61,16 @@
     { title: 'RESULTS', key: 'runtime' },
     { title: 'ISSUES', key: 'issue' },
   ];
-  const commonStore = useCommonStore();
 
   const openDocument = (document: civilDocumentType) => {
-    const locationName = commonStore.courtRoomsAndLocations.filter(
-        (location) => location.agencyIdentifierCd == props.agencyId)[0]?.name;
-      const isCsr = document.category?.toLowerCase() === 'csr';
-      const documentData: DocumentData = {
-        dateFiled: beautifyDate(document.DateGranted),
-        documentId: document.civilDocumentId,
-        documentDescription: document.documentTypeDescription,
-        fileId: props.fileId,
-        fileNumberText: props.fileNumberTxt,
-        courtLevel: props.courtLevel,
-        partId: document.partId,
-        profSeqNo: document.fileSeqNo,
-        location: locationName,
-        isCriminal: false,
-      };
-    shared.openDocumentsPdf(isCsr ? CourtDocumentType.CSR : CourtDocumentType.Civil, documentData);
+    shared.openCivilDocument(
+      document,
+      props.fileId,
+      props.fileNumberTxt,
+      props.courtLevel,
+      props.agencyId,
+      commonStore.courtRoomsAndLocations
+    );
   };
 </script>
 

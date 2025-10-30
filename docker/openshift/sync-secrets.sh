@@ -19,6 +19,7 @@ secret_keys="\
   lookup_services_client \
   misc \
   mtls_cert \
+  nutrient \
   pcss \
   request \
   reserved_judgements \

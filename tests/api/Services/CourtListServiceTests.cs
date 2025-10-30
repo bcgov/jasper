@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Bogus;
@@ -14,11 +15,13 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
+using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
+using static PCSSCommon.Models.ActivityClassUsage;
 
 namespace tests.api.Services;
 public class CourtListServiceTests : ServiceTestBase
@@ -51,7 +54,8 @@ public class CourtListServiceTests : ServiceTestBase
     private (
         CourtListService courtListService,
         Mock<ReportServicesClient> mockReportClient,
-        Mock<FileServicesClient> mockFileClient
+        Mock<FileServicesClient> mockFileClient,
+        Mock<SearchDateClient> mockSearchDateClient
         ) SetupCourtListService()
     {
         // Setup Service Clients
@@ -92,14 +96,15 @@ public class CourtListServiceTests : ServiceTestBase
         return (
             courtListService,
             mockReportClient,
-            mockFileClient
+            mockFileClient,
+            mockSearchDateClient
         );
     }
 
     [Fact]
     public async Task GenerateReport_ShouldReturnStream()
     {
-        var (courtListService, mockReportClient, _) = SetupCourtListService();
+        var (courtListService, mockReportClient, _, _) = SetupCourtListService();
         var fakeContentDisposition = $"inline; filename={Path.GetRandomFileName()}";
 
         mockReportClient
@@ -128,5 +133,106 @@ public class CourtListServiceTests : ServiceTestBase
                     It.IsAny<string>(),
                     It.IsAny<string>()),
                 Times.Once());
+    }
+
+    [Fact]
+    public async Task GetJudgeCourtListAppearances_ShouldReturnApiResponse_When_Items_IsNull()
+    {
+        var (courtListService, _, _, mockSearchDateClient) = SetupCourtListService();
+        var mockResult = new ActivityClassUsage.ActivityAppearanceResultsCollection
+        {
+            Items = null
+        };
+        mockSearchDateClient
+            .Setup(s => s.GetJudgeCourtListAppearancesAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(mockResult);
+
+        var result = await courtListService.GetJudgeCourtListAppearances(_faker.Random.Int(), DateTime.Now);
+
+        Assert.Equal(mockResult, result);
+    }
+
+    [Fact]
+    public async Task GetJudgeCourtListAppearances_ShouldReturnDataRelatedToJudgeId()
+    {
+        var (courtListService, _, _, mockSearchDateClient) = SetupCourtListService();
+
+        var mockJudgeId = _faker.Random.Int();
+        var mockAmPm = _faker.Lorem.Word();
+        var mockResult = new ActivityClassUsage.ActivityAppearanceResultsCollection
+        {
+            Items =
+            [
+                new ActivityClassUsage.ActivityAppearanceResults
+                {
+                    Appearances =
+                    [
+                        new PcssCounsel.ActivityAppearanceDetail
+                        {
+                            AppearanceTm = mockAmPm
+                        },
+                        new PcssCounsel.ActivityAppearanceDetail
+                        {
+                            AppearanceTm = mockAmPm
+                        },
+                        new PcssCounsel.ActivityAppearanceDetail
+                        {
+                            AppearanceTm = _faker.Lorem.Word()
+                        }
+                    ],
+                    CourtActivityDetails =
+                    [
+                        new ActivityClassUsage.CourtActivityDetail
+                        {
+                            CourtSittingCd = mockAmPm
+                        },
+                        new ActivityClassUsage.CourtActivityDetail
+                        {
+                            CourtSittingCd = _faker.Lorem.Word()
+                        },
+                        new ActivityClassUsage.CourtActivityDetail
+                        {
+                            CourtSittingCd = _faker.Lorem.Word()
+                        },
+                    ],
+                    CourtRoomDetails =
+                    [
+                        new ActivityClassUsage.CourtRoomDetail
+                        {
+                            AdjudicatorDetails =
+                            [
+                                new ActivityClassUsage.AdjudicatorDetail
+                                {
+                                    AdjudicatorId = mockJudgeId,
+                                    AmPm = mockAmPm
+                                },
+                                new ActivityClassUsage.AdjudicatorDetail
+                                {
+                                    AdjudicatorId = _faker.Random.Int()
+                                },
+                                 new ActivityClassUsage.AdjudicatorDetail
+                                {
+                                    AdjudicatorId = _faker.Random.Int()
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        mockSearchDateClient
+            .Setup(s => s.GetJudgeCourtListAppearancesAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(mockResult);
+
+        var result = await courtListService.GetJudgeCourtListAppearances(mockJudgeId, DateTime.Now);
+
+        var first = result.Items.First();
+        Assert.Equal(2, first.Appearances.Count);
+        Assert.Single(first.CourtActivityDetails);
+        Assert.Single(first.CourtRoomDetails.SelectMany(crd => crd.AdjudicatorDetails));
     }
 }

@@ -111,4 +111,68 @@ describe('DocumentUtils', () => {
       expect(DocumentUtils.getCivilDocumentType(data)).toBe(CourtDocumentType.Civil);
     });
   });
+
+  describe('formatDocumentCategory', () => {
+    it('should return "Report" for PSR category', () => {
+      const document = { category: 'PSR' } as any;
+      expect(DocumentUtils.formatDocumentCategory(document)).toBe('Report');
+    });
+
+    it('should return "ROP" for rop category', () => {
+      const document = { category: 'rop' } as any;
+      expect(DocumentUtils.formatDocumentCategory(document)).toBe('ROP');
+    });
+
+    it('should return original category for other categories', () => {
+      const document = { category: 'INITIATING' } as any;
+      expect(DocumentUtils.formatDocumentCategory(document)).toBe('INITIATING');
+    });
+
+    it('should handle undefined category', () => {
+      const document = {} as any;
+      expect(DocumentUtils.formatDocumentCategory(document)).toBeUndefined();
+    });
+
+    it('should handle null category', () => {
+      const document = { category: null, docmClassification: null } as any;
+      expect(DocumentUtils.formatDocumentCategory(document)).toBeNull();
+    });
+
+    it('should default to docmClassification when category is null', () => {
+      const document = { category: null, docmClassification: 'test' } as any;
+      expect(DocumentUtils.formatDocumentCategory(document)).toBe('test');
+    });
+  });
+
+  describe('formatDocumentType', () => {
+    it('should return "Record of Proceedings" for rop category', () => {
+      const document = { 
+        category: 'rop',
+        documentTypeDescription: 'Some other description'
+      } as any;
+      expect(DocumentUtils.formatDocumentType(document)).toBe('Record of Proceedings');
+    });
+
+    it('should return documentTypeDescription for non-rop categories', () => {
+      const document = { 
+        category: 'PSR',
+        documentTypeDescription: 'Pre-sentence Report'
+      } as any;
+      expect(DocumentUtils.formatDocumentType(document)).toBe('Pre-sentence Report');
+    });
+
+    it('should return documentTypeDescription for undefined category', () => {
+      const document = { 
+        documentTypeDescription: 'Some Document Type'
+      } as any;
+      expect(DocumentUtils.formatDocumentType(document)).toBe('Some Document Type');
+    });
+
+    it('should handle undefined documentTypeDescription', () => {
+      const document = { 
+        category: 'OTHER'
+      } as any;
+      expect(DocumentUtils.formatDocumentType(document)).toBeUndefined();
+    });
+  });
 });

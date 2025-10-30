@@ -38,6 +38,7 @@
         v-model:filesFilter="selectedFilesFilter"
         v-model:AMPMFilter="selectedAMPMFilter"
         v-model:search="search"
+        :isFuture
       />
       <template
         v-for="pairing in filteredTablePairings"
@@ -58,7 +59,6 @@
 <script setup lang="ts">
   import shared from '@/components/shared';
   import { CourtListService } from '@/services';
-  import { usePDFViewerStore } from '@/stores';
   import { DivisionEnum } from '@/types/common';
   import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
@@ -89,7 +89,6 @@
   const selectedFilesFilter = ref();
   const selectedAMPMFilter = ref();
   const documentUrls = ref<string[]>([]);
-  const pdfStore = usePDFViewerStore();
   const cardTablePairings = ref<
     {
       card: CourtListCardInfo;
@@ -106,6 +105,12 @@
       appearance.appearanceStatusCd === 'SCHD',
   };
   const showDialog = ref(false);
+  // We ignore the time portion of the date for comparison as we only care about the day
+  const isFuture = computed(
+    () =>
+      appliedDate.value !== null &&
+      appliedDate.value.setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0)
+  );
 
   const filterByAMPM = (pairing: any) =>
     !selectedAMPMFilter.value || pairing.card.amPM === selectedAMPMFilter.value;
@@ -182,7 +187,7 @@
 
     // We always want AM pairings to appear before PM pairings
     cardTablePairings.value.sort((a, b) =>
-      a.card.amPM.localeCompare(b.card.amPM)
+      a.card.amPM?.localeCompare(b.card.amPM)
     );
   };
 

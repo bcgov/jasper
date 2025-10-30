@@ -1,5 +1,5 @@
 <template>
-  <v-tooltip :text="text" location="top">
+  <v-tooltip :text :location interactive>
     <template v-slot:activator="{ props }">
       <v-icon v-bind="props" :icon="icon" color="primary" size="large" />
     </template>
@@ -10,5 +10,7 @@
   defineProps<{
     icon: string;
     text: string;
+    location?: 'top' | 'bottom' | 'start' | 'end' | 'left' | 'right';
+    interactive?: boolean;
   }>();
 </script>

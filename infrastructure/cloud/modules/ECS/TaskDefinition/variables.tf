@@ -20,13 +20,11 @@ variable "name" {
 variable "cpu" {
   description = "The ECS Task Definition CPU"
   type        = number
-  default     = 256
 }
 
 variable "memory_size" {
   description = "The ECS Task Definition Memory Size"
   type        = number
-  default     = 512
 }
 
 variable "ecs_execution_role_arn" {
@@ -66,4 +64,16 @@ variable "kms_key_arn" {
 variable "log_group_name" {
   description = "The Cloudwatch Log Group Name"
   type        = string
+}
+
+variable "efs_volume_config" {
+  description = "EFS volume configuration for persistent storage"
+  type = object({
+    name            = string
+    file_system_id  = string
+    root_directory  = optional(string)
+    access_point_id = optional(string)
+    container_path  = string
+  })
+  default = null
 }

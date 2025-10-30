@@ -28,7 +28,8 @@ public class DocumentCategory : EntityBase
 
     public static readonly List<string> KEY_DOCUMENT_CATEGORIES = [
         INITIATING,
-        ROP
+        ROP,
+        PSR
     ];
 
     public string Name { get; set; }

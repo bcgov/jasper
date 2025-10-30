@@ -3504,4 +3504,89 @@ public partial class PcssConfiguration
 
 }
 
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
+public partial class Case
+{
+
+    [Newtonsoft.Json.JsonProperty("judgeId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? JudgeId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("lastApprDt", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string LastApprDt { get; set; }
+
+    /// <summary>
+    /// The PCSS appearance id.
+    /// </summary>
+    [Newtonsoft.Json.JsonProperty("pcssNextApprId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? PcssNextApprId { get; set; }
+
+    /// <summary>
+    /// The JUSTIN/CIES appearance id.
+    /// </summary>
+    [Newtonsoft.Json.JsonProperty("nextApprId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public double? NextApprId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("nextApprDt", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string NextApprDt { get; set; }
+
+    /// <summary>
+    /// The reason for the next appearance
+    /// </summary>
+    [Newtonsoft.Json.JsonProperty("nextApprReason", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string NextApprReason { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("fileNumberTxt", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string FileNumberTxt { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("locationId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? LocationId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("locationNm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string LocationNm { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("courtDivisionCd", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string CourtDivisionCd { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("courtClassCd", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string CourtClassCd { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("participants", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.Collections.Generic.ICollection<Participant> Participants { get; set; }
+
+    /// <summary>
+    /// The style of cause for the case. Style of cause refers to the official title or heading of a legal case.
+    /// </summary>
+    [Newtonsoft.Json.JsonProperty("styleOfCause", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string StyleOfCause { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("caseAgeDays", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? CaseAgeDays { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("justinNo", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? JustinNo { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("profPartId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public double? ProfPartId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("profSeqNo", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public double? ProfSeqNo { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("physicalFileId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public double? PhysicalFileId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("civilDocumentId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public double? CivilDocumentId { get; set; }
+}
+
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
+public partial class Participant
+{
+
+    [Newtonsoft.Json.JsonProperty("fullName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string FullName { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("charges", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.Collections.Generic.ICollection<Charge> Charges { get; set; }
+}
+
 #pragma warning restore 8618

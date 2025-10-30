@@ -287,6 +287,8 @@ export interface CriminalCharges extends CriminalAppearanceCount {
   appearanceReasonDsc: string;
   appearanceResultDesc: string;
   findingDsc: string;
+  pleaCode: string;
+  pleaDate: Date | null;
 }
 
 export interface CfcDocument {

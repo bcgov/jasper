@@ -2,81 +2,88 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DnsClient.Internal;
-using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using PCSSCommon.Clients.JudicialCalendarServices;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
-using Scv.Api.Models.Search;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
-using Scv.Db.Models;
-using static PCSSCommon.Models.ActivityClassUsage;
 
 namespace Scv.Api.Jobs;
 
-public class SyncReservedJudgementsJob(
+public class SyncAssignedCasesJob(
     IConfiguration configuration,
     IAppCache cache,
     IMapper mapper,
-    ILogger<SyncReservedJudgementsJob> logger,
+    ILogger<SyncAssignedCasesJob> logger,
     IEmailService emailService,
     ICsvParser csvParser,
     IDashboardService dashboardService,
-    ICrudService<ReservedJudgementDto> rjService,
+    ICaseService caseService,
     CourtListService courtListService,
     FilesService filesService,
-    LocationService locationService)
-    : RecurringJobBase<SyncReservedJudgementsJob>(configuration, cache, mapper, logger)
+    LocationService locationService,
+    JudicialCalendarServicesClient jcServiceClient)
+    : RecurringJobBase<SyncAssignedCasesJob>(configuration, cache, mapper, logger)
 {
     private readonly IEmailService _emailService = emailService;
     private readonly ICsvParser _csvParser = csvParser;
     private readonly IDashboardService _dashboardService = dashboardService;
-    private readonly ICrudService<ReservedJudgementDto> _rjService = rjService;
+    private readonly ICaseService _caseService = caseService;
     private readonly CourtListService _courtListService = courtListService;
     private readonly CriminalFilesService _criminalFilesService = filesService.Criminal;
     private readonly CivilFilesService _civilFilesService = filesService.Civil;
     private readonly LocationService _locationService = locationService;
+    private readonly JudicialCalendarServicesClient _jcServiceClient = jcServiceClient;
 
-    public override string JobName => nameof(SyncReservedJudgementsJob);
+    public override string JobName => nameof(SyncAssignedCasesJob);
 
     public override string CronSchedule =>
-        this.Configuration.GetValue<string>("JOBS:SYNC_RESERVED_JUDGEMENTS_SCHEDULE") ?? base.CronSchedule;
+        this.Configuration.GetValue<string>("JOBS:SYNC_ASSIGNED_CASES_SCHEDULE") ?? base.CronSchedule;
 
     public override async Task Execute()
     {
         try
         {
-            this.Logger.LogInformation("Starting to process today's reserved judgements.");
+            // Delete all existing cases before processing new ones.
+            var existingCases = await _caseService.GetAllAsync();
+            await _caseService.DeleteRangeAsync([.. existingCases.Select(rj => rj.Id)]);
 
-            var newRJs = await GetNewReservedJudgements();
-            if (newRJs.Length == 0)
-            {
-                this.Logger.LogInformation("No RJs have been processed");
-                return;
-            }
-
-            var existingRJs = await _rjService.GetAllAsync();
-            await _rjService.DeleteRangeAsync([.. existingRJs.Select(rj => rj.Id)]);
-
-            var newRJsDtos = this.Mapper.Map<List<ReservedJudgementDto>>(newRJs.Where(rj => rj.AppearanceId != null));
-            await _rjService.AddRangeAsync(newRJsDtos);
-
-            this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfully processed {ValidRJsCount}.", newRJs.Length, newRJsDtos.Count);
+            await this.ProcessReservedJudgements();
+            await this.ProcessScheduledCases();
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException("Error occurred while processing today's reserved judgements.", ex);
+            throw new InvalidOperationException("Error occurred while processing today's cases.", ex);
         }
     }
 
-    private async Task<ReservedJudgement[]> GetNewReservedJudgements()
+    #region Reserved Judgements Methods
+
+    private async Task ProcessReservedJudgements()
+    {
+        this.Logger.LogInformation("Starting to process today's reserved judgements.");
+
+        var newRJs = await GetNewReservedJudgements();
+        if (newRJs.Length == 0)
+        {
+            this.Logger.LogInformation("No RJs have been processed");
+            return;
+        }
+
+        var newRJsDtos = this.Mapper.Map<List<CaseDto>>(newRJs.Where(rj => rj.AppearanceId != null));
+        await _caseService.AddRangeAsync(newRJsDtos);
+
+        this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfully processed {ValidRJsCount}.", newRJs.Length, newRJsDtos.Count);
+    }
+
+    private async Task<Db.Models.Case[]> GetNewReservedJudgements()
     {
         var mailbox = this.Configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
         var subject = this.Configuration.GetNonEmptyValue("RESERVED_JUDGEMENTS:SUBJECT");
@@ -103,7 +110,7 @@ public class SyncReservedJudgementsJob(
         var parsedRJs = _csvParser.Parse<CsvReservedJudgement>(attachments.First().Value);
 
         this.Logger.LogInformation("Populating missing info...");
-        var newRJsTask = parsedRJs.Select(crj => PopulateMissingInfo(crj));
+        var newRJsTask = parsedRJs.Select(crj => PopulateMissingInfoForRJ(crj));
         var newRJs = await Task.WhenAll(newRJsTask);
 
         return newRJs;
@@ -145,9 +152,9 @@ public class SyncReservedJudgementsJob(
         return filteredJudges.FirstOrDefault()?.PersonId;
     }
 
-    private async Task<ReservedJudgement> PopulateMissingInfo(CsvReservedJudgement crj)
+    private async Task<Db.Models.Case> PopulateMissingInfoForRJ(CsvReservedJudgement crj)
     {
-        var rj = this.Mapper.Map<ReservedJudgement>(crj);
+        var rj = this.Mapper.Map<Db.Models.Case>(crj);
 
         // JudgeId is not provided in the CSV so we need to retrieved it based on the name on best effort.
         var judgeId = await DeriveJudgeId(crj.AdjudicatorLastNameFirstName);
@@ -183,63 +190,66 @@ public class SyncReservedJudgementsJob(
         rj.PartId = appearance.ProfPartId;
         rj.JudgeId = judgeId.Value;
         rj.StyleOfCause = appearance.StyleOfCause;
-        rj.Reason = appearance.AppearanceReasonDsc;
 
         // Replace the CourtClass from court list as it is what the app is accustomed to.
         rj.CourtClass = appearance.CourtClassCd;
 
-        // Use Court File Search endpoint to determine the next appearance date.
-        rj.DueDate = await PopulateNextAppearanceDate(appearance, crj.FacilityCode);
+        // No Reason and Due Date for Reserved Judgements.
+        rj.Reason = null;
+        rj.DueDate = null;
 
         return rj;
     }
 
-    private async Task<string> PopulateNextAppearanceDate(PcssCounsel.ActivityAppearanceDetail appearance, string facilityCode)
+    #endregion Reserved Judgements Methods
+
+    #region Scheduled Cases (Decisions and Continuations) Methods
+
+    private async Task ProcessScheduledCases()
     {
-        var locationCode = await _locationService.GetLocationCodeByAgencyIdentifierCd(facilityCode);
-        if (string.IsNullOrWhiteSpace(locationCode))
+        this.Logger.LogInformation("Starting to process scheduled decisions and continuations.");
+
+        var apprReasonCodes = string.Join(",", CaseService.ContinuationReasonCodes);
+
+        var scheduledCases = await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes);
+        if (scheduledCases.Count == 0)
         {
-            this.Logger.LogWarning("Could not find location code for facility code: {FacilityCode}", facilityCode);
-            return string.Empty;
+            this.Logger.LogInformation("No Scheduled Cases found.");
+            return;
         }
 
-        FileSearchResponse response = null;
-        Enum.TryParse(appearance.CourtClassCd, ignoreCase: true, out CourtClassCd courtClassCd);
+        var scheduledData = scheduledCases.Select(c => PopulateMissingInfoForScheduledCase(c)).ToList();
 
-        if (string.Equals(appearance.CourtDivisionCd, CourtCalendarDetailAppearanceCourtDivisionCd.R.ToString()))
-        {
-            response = await _criminalFilesService.SearchAsync(new FilesCriminalQuery
-            {
-                CourtClass = courtClassCd,
-                FileNumberTxt = appearance.CourtFileNumber,
-                SearchMode = SearchMode.FILENO,
-                FileHomeAgencyId = locationCode
-            });
+        await _caseService.AddRangeAsync([.. scheduledData]);
 
-        }
-        else if (string.Equals(appearance.CourtDivisionCd, CourtCalendarDetailAppearanceCourtDivisionCd.I.ToString()))
-        {
-            response = await _civilFilesService.SearchAsync(new FilesCivilQuery
-            {
-                CourtClass = courtClassCd,
-                FileNumber = appearance.CourtFileNumber,
-                SearchMode = SearchMode.FILENO,
-                FileHomeAgencyId = locationCode
-            });
-        }
-
-        if (response == null || response.FileDetail == null || response.FileDetail.Count == 0)
-        {
-            this.Logger.LogWarning("Could not find case details for FileNumber: {FileNumber}, CourtClass: {CourtClass}, Location: {LocationCode}",
-                appearance.CourtFileNumber, courtClassCd, locationCode);
-            return string.Empty;
-        }
-
-        if (response.FileDetail.Count > 1)
-        {
-            this.Logger.LogWarning("There should only be one case detail but search returned more than 1");
-        }
-
-        return response.FileDetail.FirstOrDefault()?.NextApprDt ?? string.Empty;
+        this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Count);
     }
+
+    private CaseDto PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)
+    {
+        var caseDto = this.Mapper.Map<CaseDto>(@case);
+
+        if (!string.IsNullOrWhiteSpace(@case.StyleOfCause))
+        {
+            return caseDto;
+        }
+
+        if (@case.Participants.Count == 0)
+        {
+            this.Logger.LogWarning("No participants found for CourtFileNumber: {CourtFileNumber}, AppearanceDate: {AppearanceDate}. Style of Cause cannot be populated.",
+                caseDto.CourtFileNumber, caseDto.AppearanceDate);
+            return caseDto;
+        }
+
+        var firstParticipant = @case.Participants.First();
+        var participantCount = @case.Participants.Count - 1;
+
+        caseDto.StyleOfCause = participantCount > 0
+            ? $"{firstParticipant.FullName} and {participantCount} other(s)"
+            : firstParticipant.FullName;
+
+        return caseDto;
+    }
+
+    #endregion Scheduled Cases (Decisions and Continuations) Methods
 }

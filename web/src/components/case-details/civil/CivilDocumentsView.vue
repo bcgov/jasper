@@ -165,33 +165,7 @@
   const courtClassCdStyle = getCourtClassStyle(props.courtClassCd);
 
   const headers: DataTableHeader[] = [
-    {
-      title: 'SEQ',
-      key: 'fileSeqNo',
-    },
-    {
-      title: 'DOCUMENT TYPE',
-      key: 'documentTypeDescription',
-    },
-    {
-      title: 'ACT',
-      key: 'activity',
-    },
-    {
-      title: 'DATE FILED',
-      key: 'filedDt',
-      value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
-      sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-        new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
-    },
-    {
-      title: 'FILED BY',
-      key: 'filedBy',
-    },
-    {
-      title: 'ISSUES',
-      key: 'issue',
-    },
+    ...shared.getBaseCivilDocumentTableHeaders(),
     {
       title: 'ACTIONS',
       key: 'binderMenu',

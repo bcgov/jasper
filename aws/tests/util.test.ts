@@ -117,7 +117,7 @@ describe("replaceWithWildcard", () => {
         "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/dev_test-123.staging/*",
       ],
       [
-        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/v1/GET",
+        "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/v1/POST/resource/123",
         "arn:aws:execute-api:ap-southeast-1:444455556666:abcd1234/v1/*",
       ],
       [

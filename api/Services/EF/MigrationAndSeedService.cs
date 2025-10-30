@@ -27,7 +27,7 @@ namespace Scv.Api.Services.EF
 
         public async Task ExecuteMigrationsAndSeeds()
         {
-            this.ExecuteSCVMigrationsAndSeeds();
+            await this.ExecuteSCVMigrationsAndSeeds();
             await this.ExecuteJasperMigrationsAndSeeds();
         }
 
@@ -62,7 +62,7 @@ namespace Scv.Api.Services.EF
 
         #region SCV Migrations and Seeds
 
-        private void ExecuteSCVMigrationsAndSeeds()
+        private async Task ExecuteSCVMigrationsAndSeeds()
         {
             try
             {
@@ -79,20 +79,22 @@ namespace Scv.Api.Services.EF
                 Logger.LogInformation($"Pending {pending.Count} Migrations.");
                 Logger.LogDebug($"{string.Join(", ", pending)}");
 
-                db.Database.Migrate();
+                // Use async migration with timeout
+                await db.Database.MigrateAsync();
                 Logger.LogInformation("Migration(s) complete.");
 
                 if (applied.Count != 0) return;
 
-                ExecuteSeedScripts(db, environment);
+                await ExecuteSeedScripts(db, environment);
             }
             catch (Exception ex)
             {
                 Logger.LogCritical(ex, "Database migration failed on startup.");
+                throw new InvalidOperationException("Database migration failed on startup.", ex);
             }
         }
 
-        private void ExecuteSeedScripts(DbContext db, IWebHostEnvironment environment)
+        private async Task ExecuteSeedScripts(DbContext db, IWebHostEnvironment environment)
         {
             var seedPath = environment.IsDevelopment() ? Path.Combine("docker", "seed") : "data";
             var dbSqlPath = environment.IsDevelopment() ? Path.Combine("db", "sql") : Path.Combine("src", "db", "sql");
@@ -100,7 +102,7 @@ namespace Scv.Api.Services.EF
             var dbPath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, dbSqlPath);
             Logger.LogInformation($"Fresh database detected. Loading SQL from paths: {dbPath} and then {path}");
 
-            var transaction = db.Database.BeginTransaction();
+            using var transaction = await db.Database.BeginTransactionAsync();
             var lastFile = "";
             try
             {
@@ -110,15 +112,15 @@ namespace Scv.Api.Services.EF
                 {
                     lastFile = file;
                     Logger.LogInformation($"Executing File: {file}");
-                    db.Database.ExecuteSqlRaw(File.ReadAllText(file));
+                    await db.Database.ExecuteSqlRawAsync(await File.ReadAllTextAsync(file));
                 }
-                transaction.Commit();
+                await transaction.CommitAsync();
                 Logger.LogInformation($"Executing files successful.");
             }
             catch (Exception e)
             {
                 Logger.LogError(e, $"Error while executing {lastFile}. Rolling back all files.");
-                transaction.Rollback();
+                await transaction.RollbackAsync();
             }
         }
 

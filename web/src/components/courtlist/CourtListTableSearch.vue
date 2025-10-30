@@ -57,19 +57,31 @@
 </template>
 <script setup lang="ts">
   import { mdiMagnify, mdiMenu } from '@mdi/js';
-  import { inject } from 'vue';
+  import { inject, watch } from 'vue';
   import ActionButtons from '../shared/Form/ActionButtons.vue';
+  const props = defineProps<{
+    isFuture: boolean;
+  }>();
   const selectedFiles = defineModel<string>('filesFilter');
   const selectedAMPM = defineModel<string>('AMPMFilter');
   const search = defineModel<string>('search');
-
-  const reset = () => {
-    selectedFiles.value = undefined;
+  const onMenuClicked = inject<(value: string) => void>('menuClicked')!;
+  const setDefaultFilters = () => {
+    selectedFiles.value = props.isFuture ? 'To be called' : 'Complete';
     selectedAMPM.value = undefined;
     search.value = undefined;
   };
+  const reset = () => {
+    setDefaultFilters();
+  };
 
-  const onMenuClicked = inject<(value: string) => void>('menuClicked')!;
+  watch(
+    () => props.isFuture,
+    () => {
+      reset();
+    },
+    { immediate: true }
+  );
 
   const menuItems = [{ title: 'Print Court List', value: 'print' }];
 </script>

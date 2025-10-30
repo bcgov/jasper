@@ -74,7 +74,7 @@
         </tr>
       </template>
       <template v-slot:item.category="{ item }">
-        {{ formatCategory(item) }}
+        {{ formatDocumentCategory(item) }}
       </template>
       <template v-slot:item.documentTypeDescription="{ item }">
         <v-row>
@@ -84,10 +84,10 @@
               href="javascript:void(0)"
               @click="openIndividualDocument(item)"
             >
-              {{ formatType(item) }}
+              {{ formatDocumentType(item) }}
             </a>
             <span v-else>
-              {{ formatType(item) }}
+              {{ formatDocumentType(item) }}
             </span>
           </v-col>
         </v-row>
@@ -121,6 +121,8 @@
   import {
     getCriminalDocumentType,
     prepareCriminalDocumentData,
+    formatDocumentCategory,
+    formatDocumentType
   } from '@/components/documents/DocumentUtils';
   import shared from '@/components/shared';
   import NameFilter from '@/components/shared/Form/NameFilter.vue';
@@ -148,13 +150,6 @@
   const keyDocumentsSortBy = ref([{ key: 'category', order: 'desc' }] as const);
   const selectedCategory = ref<string>();
   const selectedAccused = ref<string>();
-
-  const formatCategory = (item: documentType) =>
-    item.category === 'rop' ? 'ROP' : item.category;
-  const formatType = (item: documentType) =>
-    item.category === 'rop'
-      ? 'Record of Proceedings'
-      : item.documentTypeDescription;
 
   const filterByCategory = (item: any) =>
     !selectedCategory.value ||
@@ -207,7 +202,7 @@
 
   const categoryCount = (category: string): number => {
     return unfilteredDocuments.value.filter(
-      (doc) => formatCategory(doc) === category
+      (doc) => formatDocumentCategory(doc) === category
     ).length;
   };
 
@@ -215,7 +210,7 @@
     ...new Set(
       unfilteredDocuments.value
         ?.filter((doc) => doc.category)
-        .map((doc) => formatCategory(doc)) || []
+        .map((doc) => formatDocumentCategory(doc)) || []
     ),
   ]);
 
@@ -265,10 +260,9 @@
       title: 'CATEGORY',
       key: 'category',
       sortRaw: (a: documentType, b: documentType) => {
-        const order = ['Initiating', 'BAIL', 'ROP'];
+        const order = ['Initiating', 'rop', 'Bail', 'PSR'];
         const getOrder = (cat: string) => {
-          const formatted = cat === 'rop' ? 'ROP' : cat;
-          const idx = order.indexOf(formatted);
+          const idx = order.indexOf(cat);
           return idx === -1 ? order.length : idx;
         };
         return getOrder(b.category) - getOrder(a.category);

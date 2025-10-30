@@ -13,6 +13,7 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.lookup_services_client_secret.arn,
     aws_secretsmanager_secret.misc_secret.arn,
     aws_secretsmanager_secret.mtls_cert_secret.arn,
+    aws_secretsmanager_secret.nutrient_secret.arn,
     aws_secretsmanager_secret.pcss_secret.arn,
     aws_secretsmanager_secret.request_secret.arn,
     aws_secretsmanager_secret.reserved_judgements_secret.arn,
@@ -42,8 +43,8 @@ output "api_secrets" {
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
     ["FileServicesClient__Password", "${aws_secretsmanager_secret.file_services_client_secret.arn}:password::"],
     ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl::"],
+    ["JOBS__SYNC_ASSIGNED_CASES_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncAssignedCasesSchedule::"],
     ["JOBS__SYNC_DOCUMENT_CATEGORIES_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncDocumentCategoriesSchedule::"],
-    ["JOBS__SYNC_RESERVED_JUDGEMENTS_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncReservedJudgementsSchedule::"],
     ["Keycloak__Audience", "${aws_secretsmanager_secret.keycloak_secret.arn}:audience::"],
     ["Keycloak__Authority", "${aws_secretsmanager_secret.keycloak_secret.arn}:authority::"],
     ["Keycloak__Client", "${aws_secretsmanager_secret.keycloak_secret.arn}:client::"],
@@ -59,6 +60,8 @@ output "api_secrets" {
     ["LookupServicesClient__Url", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:baseUrl::"],
     ["MONGODB_CONNECTION_STRING", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbConnectionString::"],
     ["MONGODB_NAME", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbName::"],
+    ["NUTRIENT_BE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientBeLicenseKey::"],
+    ["NUTRIENT_FE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientFeLicenseKey::"],
     ["PCSS__Username", "${aws_secretsmanager_secret.pcss_secret.arn}:username::"],
     ["PCSS__Password", "${aws_secretsmanager_secret.pcss_secret.arn}:password::"],
     ["PCSS__Url", "${aws_secretsmanager_secret.pcss_secret.arn}:baseUrl::"],
@@ -84,11 +87,11 @@ output "api_secrets" {
 output "web_secrets" {
   value = [
     ["API_URL", "${aws_secretsmanager_secret.misc_secret.arn}:apiUrl::"],
-    ["USE_SELF_SIGNED_SSL", "${aws_secretsmanager_secret.misc_secret.arn}:useSelfSignedSsl::"],
+    ["IncludeSiteminderHeaders", "${aws_secretsmanager_secret.misc_secret.arn}:includeSiteMinderHeaders::"],
     ["IpFilterRules", "${aws_secretsmanager_secret.misc_secret.arn}:ipFilterRules::"],
     ["RealIpFrom", "${aws_secretsmanager_secret.misc_secret.arn}:realIpFrom::"],
-    ["WEB_BASE_HREF", "${aws_secretsmanager_secret.misc_secret.arn}:webBaseHref::"],
-    ["IncludeSiteminderHeaders", "${aws_secretsmanager_secret.misc_secret.arn}:includeSiteMinderHeaders::"]
+    ["USE_SELF_SIGNED_SSL", "${aws_secretsmanager_secret.misc_secret.arn}:useSelfSignedSsl::"],
+    ["WEB_BASE_HREF", "${aws_secretsmanager_secret.misc_secret.arn}:webBaseHref::"]
   ]
 }
 

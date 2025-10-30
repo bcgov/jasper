@@ -1,7 +1,7 @@
-import { csrRequestsInfoType } from '../civil';
-import { ropRequestsInfoType } from '../criminal';
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { Binder } from '@/types';
+import { csrRequestsInfoType } from '../civil';
+import { ropRequestsInfoType } from '../criminal';
 
 export interface InputNamesType {
   lastName: string;
@@ -59,12 +59,18 @@ export interface CourtRoomsJsonInfoType {
   active: boolean;
   courtRooms: CourtRoomsInfo[];
   infoLink: string;
+  agencyIdentifierCd: string;
 }
 
 export interface CourtRoomsInfo {
   room: string;
   locationId: string;
   type: string;
+}
+
+export interface ApplicationInfo {
+  nutrientFeLicenseKey: string;
+  environment: string;
 }
 
 export interface UserInfo {

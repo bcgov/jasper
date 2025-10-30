@@ -189,6 +189,23 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
   }
 }
 
+resource "aws_secretsmanager_secret" "nutrient_secret" {
+  name       = "external/${var.app_name}-nutrient-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "nutrient_secret_value" {
+  secret_id = aws_secretsmanager_secret.nutrient_secret.id
+  secret_string = jsonencode({
+    nutrientFeLicenseKey = "",
+    nutrientBeLicenseKey = "",
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+
 data "aws_secretsmanager_secret_version" "current_misc_secret_value" {
   secret_id = aws_secretsmanager_secret.misc_secret.id
 }
@@ -313,7 +330,7 @@ resource "aws_secretsmanager_secret" "jobs_secret" {
 resource "aws_secretsmanager_secret_version" "jobs_secret_value" {
   secret_id = aws_secretsmanager_secret.jobs_secret.id
   secret_string = jsonencode({
-    syncReservedJudgementsSchedule = "",
+    syncAssignedCasesSchedule      = "",
     syncDocumentCategoriesSchedule = ""
   })
   lifecycle {

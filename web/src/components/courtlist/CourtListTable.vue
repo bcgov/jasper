@@ -35,6 +35,7 @@
             v-else
             :fileId="item.physicalFileId"
             :appearanceId="item.appearanceId"
+            :showBinder="true"
           />
         </td>
       </tr>
@@ -48,7 +49,9 @@
       <tr>
         <td class="pa-0" style="height: 1rem" :colspan="columns.length">
           <v-banner
-            :class="bannerClasses[getGroupDisplayName(item.value)] || 'table-banner'"
+            :class="
+              bannerClasses[getGroupDisplayName(item.value)] || 'table-banner'
+            "
             :ref="
               () => {
                 if (!isGroupOpen(item)) toggleGroup(item);
@@ -131,9 +134,13 @@
         <span v-html="renderTooltip(value)"></span>
       </v-tooltip>
     </template>
-    <template v-slot:item.actions>
-      <v-icon :icon="mdiNotebookEditOutline" size="large" />
-      <v-icon :icon="mdiFileDocumentEditOutline" size="large" />
+    <template v-slot:item.actions="{ item }">
+      <TooltipIcon
+        v-if="item.scheduleNoteTxt"
+        location="start"
+        :text="item.scheduleNoteTxt"
+        :icon="mdiNotebookOutline"
+      />
     </template>
   </v-data-table-virtual>
   <CourtListTableActionBarGroup
@@ -166,9 +173,8 @@
     mdiChevronDown,
     mdiChevronUp,
     mdiCircleHalfFull,
-    mdiFileDocumentEditOutline,
     mdiHomeOutline,
-    mdiNotebookEditOutline,
+    mdiNotebookOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
   import { computed, ref } from 'vue';
@@ -194,7 +200,7 @@
     'Tickets',
     'Youth',
     'Family',
-    'Small Claims'
+    'Small Claims',
   ];
 
   const data = computed(() =>
@@ -203,12 +209,12 @@
         const courtClass = getCourtClassLabel(item.courtClassCd);
         const orderIndex = courtClassOrder.indexOf(courtClass);
         const sortOrder = orderIndex === -1 ? 99 : orderIndex;
-        
+
         return {
           ...item,
           courtClass,
           courtClassSort: `${sortOrder.toString().padStart(2, '0')}-${courtClass}`,
-          groupOrder: item.courtClassCd
+          groupOrder: item.courtClassCd,
         };
       })
       .sort((a, b) => {

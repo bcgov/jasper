@@ -194,6 +194,7 @@ export interface CivilAppearanceDetails {
   adjudicator: Record<string, unknown>;
   party: PartyDetails[];
   document: civilDocumentType[];
+  binderDocuments: civilDocumentType[];
   appearanceMethod: Record<string, unknown>[];
   courtLevelCd: string;
 }

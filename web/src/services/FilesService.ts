@@ -8,7 +8,7 @@ import { CriminalAppearanceDetails } from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
 
 export class FilesService {
-  private httpService: HttpService;
+  private readonly httpService: HttpService;
   private readonly baseUrl: string = 'api/files';
 
   constructor(httpService: HttpService) {
@@ -33,10 +33,11 @@ export class FilesService {
 
   async civilAppearanceDetails(
     fileId: string,
-    appearanceId: string
+    appearanceId: string,
+    includeJudicialBinder: boolean = false
   ): Promise<CivilAppearanceDetails> {
     return this.httpService.get<any>(
-      `${this.baseUrl}/civil/${fileId}/appearance-detail/${appearanceId}`
+      `${this.baseUrl}/civil/${fileId}/appearance-detail/${appearanceId}?includeJudicialBinder=${includeJudicialBinder}`
     );
   }
 

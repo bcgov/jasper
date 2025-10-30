@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using GdPicture14;
-using Microsoft.AspNetCore.WebUtilities;
 using Scv.Api.Models.Document;
-using Scv.Api.Services.Files;
 
 namespace Scv.Api.Documents;
 
@@ -31,7 +28,7 @@ public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMer
         var documentStreams = await Task.WhenAll(retrieveTasks);
 
         streamsToMerge.AddRange(documentStreams);
-        
+
         MemoryStream outputStream = new();
 
         var mergeResult = gdpictureConverter.CombineToPDF(streamsToMerge, outputStream, PdfConformance.PDF);

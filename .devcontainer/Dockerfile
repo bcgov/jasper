@@ -3,9 +3,9 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y \
-            curl \
-            tar \
-            wget && \
+    curl \
+    tar \
+    wget && \
     apt-get clean
 
 # ==========================================================================================================================

@@ -48,6 +48,12 @@ variable "region" {
   type        = string
 }
 
+variable "efs_file_system_arn" {
+  description = "The EFS File System ARN for crash dumps"
+  type        = string
+  default     = ""
+}
+
 variable "vpc_id" {
   description = "The default VPC Id"
   type        = string

@@ -10,6 +10,7 @@ using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
 using PCSS = PCSSCommon.Models;
@@ -55,9 +56,9 @@ public class DashboardService(
     {
         try
         {
-            var currentDate = DateTime.Now.ToString(DATE_FORMAT);
+            var currentDate = DateTime.Now.ToClientTimezone().ToString(DATE_FORMAT);
             async Task<PCSS.JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, currentDate, currentDate);
-            var todayScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{currentDate}-{currentDate}", TodaysSchedule);
+            var todayScheduleTask = GetDataFromCache($"{CacheName}-{judgeId}-{currentDate}-{currentDate}", TodaysSchedule);
             var todaySchedule = await todayScheduleTask;
 
             var days = await GetDays(todaySchedule);

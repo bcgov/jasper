@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Scv.Api.Infrastructure.Handler
 {
@@ -28,6 +28,7 @@ namespace Scv.Api.Infrastructure.Handler
 
             _logger.LogInformation($"Starting request {guid} - {request.RequestUri.AbsoluteUri}");
             var response = await base.SendAsync(request, cancellationToken);
+            sw.Stop();
             _logger.LogInformation($"Finished request {guid} - {request.RequestUri.AbsoluteUri} in {sw.ElapsedMilliseconds}ms");
 
             return response;

@@ -165,25 +165,43 @@ namespace Scv.Api.Services
         {
             var results = await _searchDateClient.GetJudgeCourtListAppearancesAsync(judgeId, date.ToString("dd-MMM-yyyy"));
             if (results?.Items is null)
-                return results;
-            // Remove adjudicator entries that do not match judgeId
-            var anyToRemove = results.Items
-                .SelectMany(rslt => rslt.CourtRoomDetails)
-                .SelectMany(crd => crd.AdjudicatorDetails)
-                .FirstOrDefault(dtl => dtl.AdjudicatorId != judgeId);
-            if (anyToRemove is null)
-                return results;
-
-            // In the very rare case two judges are assignment the same location, court room and date
-            // we need to remove the irrelevant adjudicator data
-            foreach (var result in results.Items)
             {
-                // Should only at most be one match
-                result.CourtActivityDetails?.Remove(result.CourtActivityDetails.FirstOrDefault(dtl => dtl.CourtSittingCd == anyToRemove.AmPm));
-                _ = result.CourtRoomDetails.FirstOrDefault(a => a.AdjudicatorDetails.Remove(anyToRemove));
-                result.Appearances = [.. result.Appearances?.Where(app => !app.AppearanceTm.Contains(anyToRemove.AmPm))];
+                return results;
             }
 
+            var filteredItems = new List<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResults>();
+
+            foreach (var item in results.Items)
+            {
+                // Find a matching judgeId in the adjudicator details
+                var adjudicator = item.CourtRoomDetails
+                    ?.SelectMany(crd => crd.AdjudicatorDetails)
+                    .FirstOrDefault(ad => ad.AdjudicatorId == judgeId);
+                if (adjudicator == null)
+                {
+                    continue;
+                }
+
+                // Filter CourtActivityDetails for the judge's session (AM/PM)
+                item.CourtActivityDetails = item.CourtActivityDetails
+                    ?.Where(cad => cad.CourtSittingCd == adjudicator.AmPm)
+                    .ToArray() ?? [];
+
+                // Filter adjudicator details to only include the matching judge
+                foreach (var courtRoom in item.CourtRoomDetails)
+                {
+                    courtRoom.AdjudicatorDetails = [.. courtRoom.AdjudicatorDetails.Where(adjud => adjud.AdjudicatorId == judgeId)];
+                }
+
+                // Filter matching appearances for the judge's session (AM/PM)
+                item.Appearances = item.Appearances
+                    ?.Where(app => app.AppearanceTm.EndsWith(adjudicator.AmPm))
+                    .ToArray() ?? [];
+
+                filteredItems.Add(item);
+            }
+
+            results.Items = [.. filteredItems];
             return results;
         }
 

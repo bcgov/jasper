@@ -26,8 +26,8 @@ using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
-using Scv.Api.Jobs;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
 
@@ -47,6 +47,9 @@ namespace Scv.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddExceptionHandler<CustomExceptionHandler>();
+            services.AddProblemDetails();
+
             services.AddLogging(options =>
             {
                 options.Services.Configure<SimpleConsoleFormatterOptions>(c =>
@@ -66,10 +69,12 @@ namespace Scv.Api
 
             services.AddDbContext<ScvDbContext>(options =>
                 {
-                    options.UseNpgsql(Configuration.GetNonEmptyValue("DatabaseConnectionString"), npg =>
+                    var connectionString = Configuration.GetNonEmptyValue("DatabaseConnectionString");
+
+                    options.UseNpgsql(connectionString, npg =>
                     {
                         npg.MigrationsAssembly("db");
-                        npg.EnableRetryOnFailure(5, TimeSpan.FromSeconds(1), null);
+                        npg.EnableRetryOnFailure(3, TimeSpan.FromSeconds(2), null);
                     }).UseSnakeCaseNamingConvention();
 
                     if (CurrentEnvironment.IsDevelopment())
@@ -80,8 +85,9 @@ namespace Scv.Api
             services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationRedirectMiddlewareResultHandler>();
 
             services.AddMapster();
-            services.AddNutrient();
+            services.AddNutrient(Configuration);
             services.AddJasperDb(Configuration);
+
             services.AddHangfire(Configuration);
             services.AddGraphService(Configuration);
 
@@ -153,11 +159,16 @@ namespace Scv.Api
             #endregion Swagger
 
             services.AddLazyCache();
+            
+            services.AddHttpContextAccessor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Use the new exception handler
+            app.UseExceptionHandler();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -218,17 +229,6 @@ namespace Scv.Api
                 {
                     Authorization = [new HangFireDashboardAuthorizationFilter()]
                 });
-
-                #region Setup Jobs
-                using var scope = app.ApplicationServices.CreateScope();
-                var provider = scope.ServiceProvider;
-                var allJobs = provider.GetServices<IRecurringJob>();
-
-                foreach (var job in allJobs)
-                {
-                    RecurringJobHelper.AddOrUpdate(job);
-                }
-                #endregion Setup Jobs
             }
 
             app.UseEndpoints(endpoints =>

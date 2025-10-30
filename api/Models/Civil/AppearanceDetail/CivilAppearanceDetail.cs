@@ -1,5 +1,6 @@
-﻿using JCCommon.Clients.FileServices;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using JCCommon.Clients.FileServices;
+using Scv.Api.Models.Civil.Detail;
 
 namespace Scv.Api.Models.Civil.AppearanceDetail
 {
@@ -16,12 +17,12 @@ namespace Scv.Api.Models.Civil.AppearanceDetail
         public string AppearanceReasonCd { get; set; }
         public string AppearanceReasonDesc { get; set; }
         public CivilAdjudicator Adjudicator { get; set; }
-        
+
         /// <summary>
         /// Extended object. 
         /// </summary>
         public ICollection<CivilAppearanceDetailParty> Party { get; set; }
-        
+
         /// <summary>
         /// Extended document object.
         /// </summary>
@@ -31,6 +32,11 @@ namespace Scv.Api.Models.Civil.AppearanceDetail
         /// Extended object.
         /// </summary>
         public ICollection<CivilAppearanceMethod> AppearanceMethod { get; set; }
-        public CivilFileDetailResponseCourtLevelCd CourtLevelCd { get;set; }
+        public CivilFileDetailResponseCourtLevelCd CourtLevelCd { get; set; }
+
+        /// <summary>
+        /// Current user's binder documents.
+        /// </summary>
+        public IList<CivilDocument> BinderDocuments { get; set; }
     }
 }

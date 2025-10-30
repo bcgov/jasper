@@ -18,19 +18,19 @@ COPY ["db/db.csproj", "db/"]
 COPY ["jc-interface-client/jc-interface-client.csproj", "jc-interface-client/"]
 COPY ["pcss-client/pcss-client.csproj", "pcss-client/"]
 RUN dotnet restore api/api.csproj
-RUN dotnet restore db/db.csproj
-RUN dotnet restore jc-interface-client/jc-interface-client.csproj
-RUN dotnet restore pcss-client/pcss-client.csproj
 COPY . .
 RUN dotnet build "api/api.csproj" -c Release
 # build
 FROM build AS publish
-RUN dotnet publish "api/api.csproj" -c Release -o /app/publish --runtime linux-musl-x64 --no-self-contained
+RUN dotnet publish "api/api.csproj" -c Release -o /app/publish \
+    --runtime linux-musl-x64 --no-self-contained
 
 FROM base AS final
 
-# Download and install the AWS CA bundle
-RUN apt-get update && apt-get --no-install-recommends install -y curl ca-certificates \
+# Download and install the AWS CA bundle and debugging tools
+RUN apt-get update && apt-get --no-install-recommends install -y \
+    ca-certificates \
+    curl \
     && curl https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /usr/local/share/ca-certificates/aws-rds.crt \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*

@@ -29,25 +29,26 @@ export const prepareCriminalDocumentData = (data) => {
       criminalFileStore.criminalFileInformation.detailsData
         .homeLocationAgencyName,
     isCriminal: true,
+    partyName: data.fullName,
   };
   return documentData;
 };
 
-export const prepareCivilDocumentData = (data) => {
+export const prepareCivilDocumentData = (data: civilDocumentType) => {
   const civilFileStore = useCivilFileStore();
   const documentData: DocumentData = {
     appearanceDate: beautifyDate(data.lastAppearanceDt),
     appearanceId:
       data.appearanceId ?? data.civilDocumentId,
     dateFiled: beautifyDate(data.filedDt),
-    documentDescription: data.documentTypeCd,
+    documentDescription: data.documentTypeDescription,
     documentId: data.civilDocumentId,
-    fileId: civilFileStore.civilFileInformation.fileNumber,
-    fileNumberText: civilFileStore.civilFileInformation.detailsData.fileNumberTxt,
-    courtClass: civilFileStore.civilFileInformation.detailsData.courtClassCd,
-    courtLevel: civilFileStore.civilFileInformation.detailsData.courtLevelCd,
+    fileId: civilFileStore.civilFileInformation?.fileNumber,
+    fileNumberText: civilFileStore.civilFileInformation?.detailsData?.fileNumberTxt,
+    courtClass: civilFileStore.civilFileInformation?.detailsData?.courtClassCd,
+    courtLevel: civilFileStore.civilFileInformation?.detailsData?.courtLevelCd,
     location:
-      civilFileStore.civilFileInformation.detailsData.homeLocationAgencyName,
+      civilFileStore.civilFileInformation?.detailsData?.homeLocationAgencyName,
     isCriminal: false,
   };
   return documentData;
@@ -68,3 +69,17 @@ export const getCivilDocumentType = (
     ? CourtDocumentType.CSR
     : CourtDocumentType.Civil;
 };
+
+export const formatDocumentCategory = (document: documentType) => {
+  let category = document.category ?? document.docmClassification;
+  if(category === 'PSR')
+    category = 'Report';
+  else if(category === 'rop')
+    category = 'ROP';
+  return category;
+};
+
+export const formatDocumentType = (document: documentType) =>
+  document.category === 'rop'
+    ? 'Record of Proceedings'
+    : document.documentTypeDescription;

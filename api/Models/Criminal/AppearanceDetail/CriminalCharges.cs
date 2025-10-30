@@ -1,4 +1,6 @@
-﻿namespace Scv.Api.Models.Criminal.AppearanceDetail
+﻿using System;
+
+namespace Scv.Api.Models.Criminal.AppearanceDetail
 {
     /// <summary>
     /// Adds extra fields to criminalAppearanceCount.
@@ -8,5 +10,7 @@
         public string AppearanceReasonDsc { get; set; }
         public string AppearanceResultDesc { get; set; }
         public string FindingDsc { get; set; }
+        public string PleaCode { get; set; }
+        public DateTime? PleaDate { get; set; }
     }
 }

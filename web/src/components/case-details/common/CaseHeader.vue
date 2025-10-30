@@ -62,6 +62,7 @@
           "
           :isCriminal="isCriminal"
           :fileNumber="fileId"
+          :courtClassCd="courtClassCd!"
         />
       </v-window-item>
       <v-window-item value="sentence">

@@ -17,7 +17,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
@@ -28,7 +27,6 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
-using Scv.Api.Models;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
@@ -55,12 +53,10 @@ namespace Scv.Api.Infrastructure
         const string X_ORIGIN_VERIFY_HEADER = "x-origin-verify";
         const string X_TARGET_APP = "x-target-app";
 
-        public static void AddNutrient(this IServiceCollection services)
+        public static void AddNutrient(this IServiceCollection services, IConfiguration configuration)
         {
             LicenseManager licenseManager = new();
-            // For now, use the trial license.
-            // https://www.nutrient.io/sdk/dotnet/getting-started/integrate/#activating-the-trial-license
-            licenseManager.RegisterKEY("");
+            licenseManager.RegisterKEY(configuration.GetValue<string>("NUTRIENT_BE_LICENSE_KEY"));
 
             services.AddScoped<IDocumentMerger, DocumentMerger>();
             services.AddScoped<IDocumentRetriever, DocumentRetriever>();
@@ -100,20 +96,8 @@ namespace Scv.Api.Infrastructure
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
                 var client = new MongoClient(settings);
 
-                try
-                {
-                    var database = client.GetDatabase(dbName);
-                    database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
-                    logger.LogInformation("MongoDB connection established successfully.");
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to connect to MongoDB.");
-                    throw new InvalidOperationException("Failed to establish MongoDB connection.", ex);
-                }
-
+                logger.LogInformation("MongoDB client configured successfully.");
                 return client;
-
             });
             services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(dbName));
 
@@ -224,12 +208,14 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<PermissionDto>, PermissionService>();
                 services.AddScoped<ICrudService<RoleDto>, RoleService>();
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
-                services.AddScoped<ICrudService<ReservedJudgementDto>, ReservedJudgementService>();
+                services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
-                services.AddTransient<IRecurringJob, SyncReservedJudgementsJob>();
+                services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
+
+                services.AddHostedService<HangfireJobRegistrationService>();
             }
 
             return services;
@@ -247,9 +233,20 @@ namespace Scv.Api.Infrastructure
                 .UsePostgreSqlStorage(c => c
                     .UseNpgsqlConnection(connectionString), new PostgreSqlStorageOptions
                     {
-                        SchemaName = "hangfire"
+                        SchemaName = "hangfire",
+                        QueuePollInterval = TimeSpan.FromSeconds(15),
+                        JobExpirationCheckInterval = TimeSpan.FromMinutes(30),
+                        CountersAggregateInterval = TimeSpan.FromMinutes(5),
+                        PrepareSchemaIfNecessary = true,
+                        EnableTransactionScopeEnlistment = true
                     }));
-            services.AddHangfireServer();
+
+            services.AddHangfireServer(options =>
+            {
+                options.WorkerCount = Math.Max(1, Environment.ProcessorCount / 4);
+                options.SchedulePollingInterval = TimeSpan.FromSeconds(30);
+            });
+
             return services;
         }
 
@@ -264,7 +261,7 @@ namespace Scv.Api.Infrastructure
             // Defaults to BC Gov API if any config setting is missing
             if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
             {
-                Console.WriteLine($"Redirecting traffic to: {configuration.GetNonEmptyValue($"{prefix}:Url")}");
+                Console.WriteLine($"Redirecting traffic to: {configuration.GetNonEmptyValue($"{prefix}:Url")} for {prefix}");
                 client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
                     configuration.GetNonEmptyValue($"{prefix}:Username"),
                     configuration.GetNonEmptyValue($"{prefix}:Password"));
@@ -273,7 +270,7 @@ namespace Scv.Api.Infrastructure
             // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.
             else
             {
-                Console.WriteLine($"Redirecting traffic to: {apigwUrl}");
+                Console.WriteLine($"Redirecting traffic to: {apigwUrl} for {prefix}");
                 client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
                 client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
                 client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);

@@ -136,24 +136,6 @@ describe('CriminalDocumentsView.vue', () => {
     expect(documents[0].category).toBe('bail');
   });
 
-  it.each([
-    ['rop', 'ROP'],
-    ['other', 'other'],
-  ])('formats category correctly', (input, expected) => {
-    const formattedCategory = wrapper.vm.formatCategory({
-      category: input,
-    });
-    expect(formattedCategory).toBe(expected);
-  });
-
-  it.each([
-    [{ category: 'rop', documentTypeDescription: '' }, 'Record of Proceedings'],
-    [{ category: 'other', documentTypeDescription: 'Other' }, 'Other'],
-  ])('formats document type correctly for %o', (input, expected) => {
-    const formattedType = wrapper.vm.formatType(input);
-    expect(formattedType).toBe(expected);
-  });
-
   it('renders action-bar when two or more documents with imageIds are selected', async () => {
     wrapper.vm.selectedItems = [mockParticipantOne.document[0], mockParticipantTwo.document[0]];
 

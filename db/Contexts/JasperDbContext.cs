@@ -13,7 +13,7 @@ namespace Scv.Db.Contexts
         public DbSet<User> Users { get; init; }
         public DbSet<Binder> Binders { get; set; }
         public DbSet<DocumentCategory> DocumentCategories { get; set; }
-        public DbSet<ReservedJudgement> ReservedJudgements { get; set; }
+        public DbSet<Case> Cases { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -43,7 +43,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
             modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
             modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
-            modelBuilder.Entity<ReservedJudgement>(rj => rj.HasKey(r => r.Id));
+            modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
         }
     }
 }

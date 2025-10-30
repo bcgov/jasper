@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Constants;
+using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
@@ -20,12 +21,11 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.archive;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Criminal.Detail;
-using Scv.Api.Models.Search;
 using Scv.Api.Models.Document;
+using Scv.Api.Models.Search;
 using Scv.Api.Services.Files;
 using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
-using Scv.Api.Documents;
 
 namespace Scv.Api.Controllers
 {
@@ -108,10 +108,11 @@ namespace Scv.Api.Controllers
         /// </summary>
         /// <param name="fileId"></param>
         /// <param name="appearanceId"></param>
+        /// <param name="includeJudicialBinder">Flag to indicate whether the user's judicial binder will be included in the response.</param>
         /// <returns>CivilAppearanceDetail</returns>
         [HttpGet]
         [Route("civil/{fileId}/appearance-detail/{appearanceId}")]
-        public async Task<ActionResult<CivilAppearanceDetail>> GetCivilAppearanceDetails(string fileId, string appearanceId)
+        public async Task<ActionResult<CivilAppearanceDetail>> GetCivilAppearanceDetails(string fileId, string appearanceId, bool includeJudicialBinder = false)
         {
             if (User.IsVcUser())
             {
@@ -125,7 +126,7 @@ namespace Scv.Api.Controllers
                     return Forbid();
             }
 
-            var civilAppearanceDetail = await _civilFilesService.DetailedAppearanceAsync(fileId, appearanceId, User.IsVcUser());
+            var civilAppearanceDetail = await _civilFilesService.DetailedAppearanceAsync(fileId, appearanceId, User.IsVcUser(), includeJudicialBinder);
             if (civilAppearanceDetail == null)
                 throw new NotFoundException("Couldn't find appearance detail with the provided file id and appearance id.");
 

@@ -218,15 +218,11 @@ namespace Scv.Api.Services.Files
                 FileNumberTxt = detail.FileNumberTxt,
                 AppearanceMethods = await PopulateAppearanceMethods(appearanceMethods.AppearanceMethod),
                 AppearanceDt = targetAppearance.AppearanceDt,
-                //AppearanceNote = appearanceFromAccused.AppearanceNote?.ReturnNullIfEmpty(),
-                //JudgesRecommendation = appearanceFromAccused.JudgesRecommendation,
                 EstimatedTimeHour = appearanceFromAccused.EstimatedTimeHour?.ReturnNullIfEmpty(),
                 EstimatedTimeMin = appearanceFromAccused.EstimatedTimeMin?.ReturnNullIfEmpty(),
                 Accused = await PopulateAppearanceCriminalAccused(criminalParticipant.FullName, appearanceFromAccused, attendanceMethods, partId, appearanceMethods.AppearanceMethod),
-                Prosecutor = await PopulateAppearanceDetailProsecutor(appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
-                Adjudicator = await PopulateAppearanceDetailAdjudicator(appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
                 JustinCounsel = await PopulateAppearanceDetailJustinCounsel(criminalParticipant, appearanceFromAccused, attendanceMethods, appearanceMethods.AppearanceMethod),
-                Charges = await PopulateCharges(appearanceCount.ApprCount),
+                Charges = await PopulateCharges(appearanceCount.ApprCount, targetCourtList?.AppearanceCount, targetAppearance.AppearanceDt),
                 Documents = await _documentConverter.GetCriminalDocuments(accusedFile),
                 CourtLevelCd = detail.CourtLevelCd
             };
@@ -243,14 +239,18 @@ namespace Scv.Api.Services.Files
         {
             var criminalFileIdAppearances = await _filesClient.FilesCriminalAppearancesAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, future, history, fileId);
             var criminalAppearances = _mapper.Map<CriminalFileAppearances>(criminalFileIdAppearances);
+
+            var tasks = new List<Task>();
             foreach (var appearance in criminalAppearances.ApprDetail)
             {
-                appearance.AppearanceReasonDsc = await _lookupService.GetCriminalAppearanceReasonsDescription(appearance.AppearanceReasonCd);
-                appearance.AppearanceResultDsc = await _lookupService.GetCriminalAppearanceResultsDescription(appearance.AppearanceResultCd);
-                appearance.AppearanceStatusDsc = await _lookupService.GetCriminalAppearanceStatusDescription(appearance.AppearanceStatusCd.ToString());
-                appearance.CourtLocationId = await _locationService.GetLocationAgencyIdentifier(appearance.CourtAgencyId);
-                appearance.CourtLocation = await _locationService.GetLocationName(appearance.CourtAgencyId);
+                tasks.Add(Task.Run(async () => appearance.AppearanceReasonDsc = await _lookupService.GetCriminalAppearanceReasonsDescription(appearance.AppearanceReasonCd)));
+                tasks.Add(Task.Run(async () => appearance.AppearanceResultDsc = await _lookupService.GetCriminalAppearanceResultsDescription(appearance.AppearanceResultCd)));
+                tasks.Add(Task.Run(async () => appearance.AppearanceStatusDsc = await _lookupService.GetCriminalAppearanceStatusDescription(appearance.AppearanceStatusCd.ToString())));
+                tasks.Add(Task.Run(async () => appearance.CourtLocationId = await _locationService.GetLocationAgencyIdentifier(appearance.CourtAgencyId)));
+                tasks.Add(Task.Run(async () => appearance.CourtLocation = await _locationService.GetLocationName(appearance.CourtAgencyId)));
             }
+
+            await Task.WhenAll(tasks);
             return criminalAppearances;
         }
 
@@ -293,12 +293,15 @@ namespace Scv.Api.Services.Files
 
         private async Task<ICollection<CriminalWitness>> PopulateDetailWitnesses(RedactedCriminalFileDetailResponse detail)
         {
+            var tasks = new List<Task>();
             foreach (var witness in detail.Witness)
             {
-                witness.AgencyCd = await _lookupService.GetAgencyLocationCode(witness.AgencyId);
-                witness.AgencyDsc = await _lookupService.GetAgencyLocationDescription(witness.AgencyId);
-                witness.WitnessTypeDsc = await _lookupService.GetWitnessRoleTypeDescription(witness.WitnessTypeCd);
+                tasks.Add(Task.Run(async () => witness.AgencyCd = await _lookupService.GetAgencyLocationCode(witness.AgencyId)));
+                tasks.Add(Task.Run(async () => witness.AgencyDsc = await _lookupService.GetAgencyLocationDescription(witness.AgencyId)));
+                tasks.Add(Task.Run(async () => witness.WitnessTypeDsc = await _lookupService.GetWitnessRoleTypeDescription(witness.WitnessTypeCd)));
             }
+
+            await Task.WhenAll(tasks);
             return detail.Witness;
         }
 
@@ -391,16 +394,23 @@ namespace Scv.Api.Services.Files
             var partyAppearanceMethod = appearanceFromAccused?.PartyAppearanceMethod.FirstOrDefault(pam => pam.PartyRole == "ACC");
             var attendanceMethod = attendanceMethods?.FirstOrDefault(am => am.RoleType == "ACC");
             var appearanceMethod = appearanceMethods?.FirstOrDefault(am => am.RoleTypeCd == "ACC");
+
+            var partyAppearanceMethodDescTask = _lookupService.GetCriminalAccusedAttend(partyAppearanceMethod?.PartyAppearanceMethod);
+            var attendanceMethodDescTask = _lookupService.GetCriminalAssetsDescriptions(attendanceMethod?.AttendanceMethodCd);
+            var appearanceMethodDescTask = _lookupService.GetCriminalAssetsDescriptions(appearanceMethod?.AppearanceMethodCd);
+
+            await Task.WhenAll(partyAppearanceMethodDescTask, attendanceMethodDescTask, appearanceMethodDescTask);
+
             return new CriminalAccused
             {
                 FullName = fullName,
                 PartId = partId, //partyAppearanceMethod, doesn't always have a partId on DEV at least.
                 PartyAppearanceMethod = partyAppearanceMethod?.PartyAppearanceMethod,
-                PartyAppearanceMethodDesc = await _lookupService.GetCriminalAccusedAttend(partyAppearanceMethod?.PartyAppearanceMethod),
+                PartyAppearanceMethodDesc = await partyAppearanceMethodDescTask,
                 AttendanceMethodCd = attendanceMethod?.AttendanceMethodCd,
-                AttendanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(attendanceMethod?.AttendanceMethodCd),
+                AttendanceMethodDesc = await attendanceMethodDescTask,
                 AppearanceMethodCd = appearanceMethod?.AppearanceMethodCd,
-                AppearanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(appearanceMethod?.AppearanceMethodCd)
+                AppearanceMethodDesc = await appearanceMethodDescTask
             };
         }
 
@@ -479,16 +489,37 @@ namespace Scv.Api.Services.Files
             return await _filesClient.FilesRecordOfProceedingsAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, partId, profSequenceNumber, courtLevelCode, courtClassCode);
         }
 
-        private async Task<ICollection<CriminalCharges>> PopulateCharges(ICollection<CriminalAppearanceCount> appearanceCount)
+        private async Task<ICollection<CriminalCharges>> PopulateCharges(ICollection<CriminalAppearanceCount> appearanceCount, ICollection<ClAppearanceCount> clAppearanceCounts, string appearanceDate)
         {
             var charges = _mapper.Map<ICollection<CriminalCharges>>(appearanceCount);
-            //Populate charges or counts extra fields.
+            var tasks = new List<Task>();
             foreach (var charge in charges)
             {
-                charge.AppearanceReasonDsc = await _lookupService.GetCriminalAppearanceReasonsDescription(charge.AppearanceReasonCd);
-                charge.AppearanceResultDesc = await _lookupService.GetCriminalAppearanceResultsDescription(charge.AppearanceResultCd);
-                charge.FindingDsc = await _lookupService.GetFindingDescription(charge.FindingCd);
+                var matchingAppearanceCount = clAppearanceCounts?.FirstOrDefault(ac => ac.CountPrintSequenceNumber == charge.PrintSeqNo);
+                if (matchingAppearanceCount is null)
+                    continue;
+
+                bool hasAppearanceDt = DateTime.TryParse(appearanceDate, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime appearanceDt);
+                bool hasPleaDt = DateTime.TryParse(matchingAppearanceCount.PleaDate, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime pleaDt);
+
+                // We compare the appearance and plea dates to prevent using backward propagated pleas
+                if (hasAppearanceDt && hasPleaDt && appearanceDt < pleaDt)
+                {
+                    charge.PleaCode = null;
+                    charge.PleaDate = null;
+                }
+                else
+                {
+                    charge.PleaCode = matchingAppearanceCount.PleaCode;
+                    charge.PleaDate = hasPleaDt ? pleaDt : null;
+                }
+
+                tasks.Add(Task.Run(async () => charge.AppearanceReasonDsc = await _lookupService.GetCriminalAppearanceReasonsDescription(charge.AppearanceReasonCd)));
+                tasks.Add(Task.Run(async () => charge.AppearanceResultDesc = await _lookupService.GetCriminalAppearanceResultsDescription(charge.AppearanceResultCd)));
+                tasks.Add(Task.Run(async () => charge.FindingDsc = await _lookupService.GetFindingDescription(charge.FindingCd)));
             }
+
+            await Task.WhenAll(tasks);
             return charges;
         }
 
@@ -496,11 +527,15 @@ namespace Scv.Api.Services.Files
         {
             var criminalAppearanceMethods = _mapper.Map<ICollection<CriminalAppearanceMethod>>(appearanceMethods);
             //Populate appearance methods extra fields.
+
+            var tasks = new List<Task>();
             foreach (var appearanceMethod in criminalAppearanceMethods)
             {
-                appearanceMethod.AppearanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(appearanceMethod.AppearanceMethodCd);
-                appearanceMethod.RoleTypeDsc = await _lookupService.GetCriminalParticipantRoleDescription(appearanceMethod.RoleTypeCd);
+                tasks.Add(Task.Run(async () => appearanceMethod.AppearanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(appearanceMethod.AppearanceMethodCd)));
+                tasks.Add(Task.Run(async () => appearanceMethod.RoleTypeDsc = await _lookupService.GetCriminalParticipantRoleDescription(appearanceMethod.RoleTypeCd)));
             }
+
+            await Task.WhenAll(tasks);
             return criminalAppearanceMethods;
         }
 

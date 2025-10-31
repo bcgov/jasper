@@ -185,6 +185,7 @@
   };
 
   const getJudgeHomeLocation = () => {
+    // Judge Home Location is only applicable for ROOM_SCHEDULE
     if (schedule.value === MY_SCHEDULE) {
       return null;
     }

@@ -162,6 +162,7 @@
     async (newVal) => {
       judgeId.value = newVal;
       selectedCourtLocation.value = getJudgeHomeLocation();
+      selectedCourtRoom.value = '';
       searchForCourtList();
     }
   );
@@ -184,6 +185,11 @@
   };
 
   const getJudgeHomeLocation = () => {
+    // Judge Home Location is only applicable for ROOM_SCHEDULE
+    if (schedule.value === MY_SCHEDULE) {
+      return null;
+    }
+
     return (
       locationsAndCourtRooms.value?.find(
         (l) =>
@@ -217,10 +223,7 @@
     setupAutoRefresh();
   };
   const scheduleChanged = () => {
-    selectedCourtLocation.value = null;
-    if (schedule.value === ROOM_SCHEDULE) {
-      selectedCourtLocation.value = getJudgeHomeLocation();
-    }
+    selectedCourtLocation.value = getJudgeHomeLocation();
     selectedCourtRoom.value = '';
     errors.isMissingLocation = false;
     errors.isMissingRoom = false;

@@ -28,7 +28,11 @@
               activityDisplayCode,
               roomCode,
               showDars,
+              period,
+              activityCode,
+              locationId,
             } in activities"
+            :key="`${activityCode}-${period}`"
           >
             <v-tooltip :text="activityDescription">
               <template #activator="{ props }">
@@ -52,26 +56,58 @@
               data-testid="dars"
               size="16"
               :icon="mdiHeadphones"
+              class="cursor-pointer"
+              @click="openDarsModal(locationId, roomCode)"
             />
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- DARS Access Modal -->
+  <DarsAccessModal
+    v-model="showDarsModal"
+    :prefillDate="darsModalData.date"
+    :prefillLocationId="darsModalData.locationId"
+    :prefillRoom="darsModalData.room"
+  />
 </template>
 <script setup lang="ts">
+  import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
   import { CalendarDayActivity } from '@/types';
   import { mdiHeadphones } from '@mdi/js';
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
 
   const props = defineProps<{
     activities: CalendarDayActivity[];
+    date?: Date;
   }>();
+
+  // DARS modal state
+  const showDarsModal = ref(false);
+  const darsModalData = ref({
+    date: null as Date | null,
+    locationId: null as number | null,
+    room: '',
+  });
+
+  const openDarsModal = (locationId: number | undefined, roomCode: string) => {
+    darsModalData.value = {
+      date: props.date || new Date(),
+      locationId: locationId || null,
+      room: roomCode || '',
+    };
+    showDarsModal.value = true;
+  };
 
   const cleanActivityClassDescription = (
     activityClassDescription: string
   ): string => {
-    return activityClassDescription.trim().replace(/\s+/g, '-').toLowerCase();
+    return activityClassDescription
+      .trim()
+      .replaceAll(/\s+/g, '-')
+      .toLowerCase();
   };
 
   const groupedData = computed<[string, [string, CalendarDayActivity[]][]][]>(

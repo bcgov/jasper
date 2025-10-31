@@ -78,6 +78,10 @@ services:
       - PCSS__Password=${PCSS_PASSWORD}
       - PCSS__Url=${PCSS_URL}
       - PCSS__Username=${PCSS_USERNAME}
+      - DARS__Password=${DARS_PASSWORD}
+      - DARS__Url=${DARS_URL}
+      - DARS__Username=${DARS_USERNAME}
+      - DARS__LogsheetUrl=${DARS_LOGSHEET_URL}
       - Request__AgencyIdentifierId=${RequestAgencyIdentifierId}
       - Request__ApplicationCd=${RequestApplicationCd}
       - Request__GetUserLoginDefaultAgencyId=${RequestGetUserLoginDefaultAgencyId}
@@ -102,6 +106,7 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-..}/db/:/opt/app-root/src/db
       - ${LOCAL_WORKSPACE_FOLDER-..}/jc-interface-client/:/opt/app-root/src/jc-interface-client
       - ${LOCAL_WORKSPACE_FOLDER-..}/pcss-client/:/opt/app-root/src/pcss-client
+      - ${LOCAL_WORKSPACE_FOLDER-..}/dars-client/:/opt/app-root/src/dars-client
       - api-dev-bin:/opt/app-root/src/api/bin
       - api-dev-obj:/opt/app-root/src/api/obj
       - ${LOCAL_WORKSPACE_FOLDER-.}/seed:/opt/app-root/data

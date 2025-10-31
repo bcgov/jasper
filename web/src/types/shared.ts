@@ -35,10 +35,10 @@ export enum CourtDocumentType {
 }
 
 export enum DocumentRequestType {
-    File,
-    ROP,
-    Report,
-    CourtSummary
+  File,
+  ROP,
+  Report,
+  CourtSummary,
 }
 
 export interface FileDetailsType {
@@ -77,6 +77,7 @@ export interface ApprDetailType {
   appearanceTm: string;
   appearanceReasonCd: string;
   courtAgencyId: string;
+  locationId?: string;
   courtRoomCd: string;
   judgeFullNm: string;
   judgeInitials: string;

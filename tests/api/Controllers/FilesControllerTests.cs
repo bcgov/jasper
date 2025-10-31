@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using DARSCommon.Clients.LogNotesServices;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;

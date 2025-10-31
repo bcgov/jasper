@@ -8,6 +8,11 @@ import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+
+// Initialize Pinia before tests
+const pinia = createPinia();
+setActivePinia(pinia);
 
 describe('MyCalendarDayExpanded.vue', () => {
   it('renders all fields in the expanded panel', () => {
@@ -147,5 +152,50 @@ describe('MyCalendarDayExpanded.vue', () => {
     expect(darsEl.exists()).toBe(false);
     expect(roomEl.exists()).toBe(false);
     expect(restrictionsEl.exists()).toBe(false);
+  });
+
+  it('displays DarsAccessModal with correct data when dars button is clicked', async () => {
+    const date = faker.date.anytime();
+    const formattedDate = formatDateInstanceToDDMMMYYYY(date);
+    const mockLocation = faker.location.city();
+    const mockRoomCode = faker.location.buildingNumber();
+
+    const wrapper = mount(MyCalendarDayExpanded, {
+      global: {
+        stubs: {
+          teleport: true, // Disable the Teleport behavior
+        },
+      },
+      props: {
+        expandedDate: formattedDate,
+        day: {
+          date: formattedDate,
+          showCourtList: true,
+          activities: [
+            {
+              locationName: mockLocation,
+              roomCode: mockRoomCode,
+              showDars: true,
+            } as CalendarDayActivity,
+          ] as CalendarDayActivity[],
+        } as CalendarDay,
+        close: vi.fn(),
+      },
+    });
+
+    // Simulate clicking the DARS button
+    await wrapper.find('[data-testid="dars"]').trigger('click');
+
+    // Find the modal within the wrapper
+    const modalWrapper = wrapper.findComponent({ name: 'DarsAccessModal' });
+
+    expect(modalWrapper.exists()).toBe(true); // Ensure the modal is rendered
+    expect(modalWrapper.props('modelValue')).toBe(true);
+    const midnightDate = new Date(date.toDateString()); // Normalize to midnight
+    expect(modalWrapper.props('prefillDate')?.toISOString()).toEqual(
+      midnightDate.toISOString()
+    );
+    expect(modalWrapper.props('prefillLocationId')).toBe(null); // No locationId provided
+    expect(modalWrapper.props('prefillRoom')).toBe(mockRoomCode);
   });
 });

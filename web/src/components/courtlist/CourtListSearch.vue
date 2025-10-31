@@ -137,7 +137,7 @@
     isMissingRoom: false,
     isMissingLocation: false,
   });
-  const selectedCourtLocation = ref<LocationInfo>();
+  const selectedCourtLocation = ref<LocationInfo | null>();
   const courtListService = inject<CourtListService>('courtListService');
   const locationsAndCourtRooms = ref<LocationInfo[]>();
   const locationsService = inject<LocationService>('locationService');
@@ -159,8 +159,9 @@
 
   watch(
     () => commonStore.userInfo?.judgeId,
-    async (newVal: number) => {
+    async (newVal) => {
       judgeId.value = newVal;
+      selectedCourtLocation.value = getJudgeHomeLocation();
       searchForCourtList();
     }
   );
@@ -182,6 +183,15 @@
     isLocationDataMounted.value = true;
   };
 
+  const getJudgeHomeLocation = () => {
+    return (
+      locationsAndCourtRooms.value?.find(
+        (l) =>
+          l.locationId === commonStore.userInfo?.judgeHomeLocationId?.toString()
+      ) || null
+    );
+  };
+
   const getCourtListDetails = async () => {
     isDataReady.value = false;
     isMounted.value = false;
@@ -192,7 +202,7 @@
         : null,
       selectedCourtRoom?.value,
       shortHandDate.value,
-      judgeId.value
+      judgeId.value!
     );
 
     if (data) {
@@ -207,7 +217,10 @@
     setupAutoRefresh();
   };
   const scheduleChanged = () => {
-    selectedCourtLocation.value = undefined;
+    selectedCourtLocation.value = null;
+    if (schedule.value === ROOM_SCHEDULE) {
+      selectedCourtLocation.value = getJudgeHomeLocation();
+    }
     selectedCourtRoom.value = '';
     errors.isMissingLocation = false;
     errors.isMissingRoom = false;

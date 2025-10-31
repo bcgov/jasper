@@ -191,4 +191,166 @@ describe('CourtListSearch.vue', () => {
       undefined
     );
   });
+
+  describe('getJudgeHomeLocation', () => {
+    it('returns judge home location when it exists in locations list', () => {
+      wrapper.vm.locationsAndCourtRooms = [
+        {
+          locationId: '1',
+          name: 'Location 1',
+          shortName: 'L1',
+          code: 'LOC1',
+          courtRooms: [{ room: 'Room 1' }],
+        },
+        {
+          locationId: '2',
+          name: 'Location 2',
+          shortName: 'L2',
+          code: 'LOC2',
+          courtRooms: [{ room: 'Room 2' }],
+        },
+        {
+          locationId: '3',
+          name: 'Judge Home Location',
+          shortName: 'JHL',
+          code: 'JHL',
+          courtRooms: [{ room: 'Room 3' }],
+        },
+      ];
+
+      commonStore.userInfo = {
+        judgeHomeLocationId: 3,
+        judgeId: 123,
+      };
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toEqual({
+        locationId: '3',
+        name: 'Judge Home Location',
+        shortName: 'JHL',
+        code: 'JHL',
+        courtRooms: [{ room: 'Room 3' }],
+      });
+    });
+
+    it('returns null when judge home location does not exist in locations list', () => {
+      wrapper.vm.locationsAndCourtRooms = [
+        {
+          locationId: '1',
+          name: 'Location 1',
+          shortName: 'L1',
+          code: 'LOC1',
+          courtRooms: [{ room: 'Room 1' }],
+        },
+        {
+          locationId: '2',
+          name: 'Location 2',
+          shortName: 'L2',
+          code: 'LOC2',
+          courtRooms: [{ room: 'Room 2' }],
+        },
+      ];
+
+      commonStore.userInfo = {
+        judgeHomeLocationId: 999,
+        judgeId: 123,
+      };
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toBeNull();
+    });
+
+    it('returns null when locationsAndCourtRooms is empty', () => {
+      wrapper.vm.locationsAndCourtRooms = [];
+
+      commonStore.userInfo = {
+        judgeHomeLocationId: 3,
+        judgeId: 123,
+      };
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toBeNull();
+    });
+
+    it('returns null when locationsAndCourtRooms is undefined', () => {
+      wrapper.vm.locationsAndCourtRooms = undefined;
+
+      commonStore.userInfo = {
+        judgeHomeLocationId: 3,
+        judgeId: 123,
+      };
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toBeNull();
+    });
+
+    it('returns null when userInfo is undefined', () => {
+      wrapper.vm.locationsAndCourtRooms = [
+        {
+          locationId: '1',
+          name: 'Location 1',
+          shortName: 'L1',
+          code: 'LOC1',
+          courtRooms: [{ room: 'Room 1' }],
+        },
+      ];
+
+      commonStore.userInfo = undefined;
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toBeNull();
+    });
+
+    it('returns null when judgeHomeLocationId is undefined', () => {
+      wrapper.vm.locationsAndCourtRooms = [
+        {
+          locationId: '1',
+          name: 'Location 1',
+          shortName: 'L1',
+          code: 'LOC1',
+          courtRooms: [{ room: 'Room 1' }],
+        },
+      ];
+
+      commonStore.userInfo = {
+        judgeId: 123,
+      };
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toBeNull();
+    });
+
+    it('correctly converts judgeHomeLocationId to string for comparison', () => {
+      wrapper.vm.locationsAndCourtRooms = [
+        {
+          locationId: '42',
+          name: 'String Location',
+          shortName: 'SL',
+          code: 'SL',
+          courtRooms: [{ room: 'Room 42' }],
+        },
+      ];
+
+      commonStore.userInfo = {
+        judgeHomeLocationId: 42, // Number
+        judgeId: 123,
+      };
+
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toEqual({
+        locationId: '42',
+        name: 'String Location',
+        shortName: 'SL',
+        code: 'SL',
+        courtRooms: [{ room: 'Room 42' }],
+      });
+    });
+  });
 });

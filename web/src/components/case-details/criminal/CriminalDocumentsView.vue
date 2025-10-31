@@ -93,7 +93,9 @@
         </v-row>
         <v-row
           v-if="
-            type === 'keyDocuments' && item.category?.toLowerCase() === 'bail'
+            type === 'keyDocuments' &&
+            item.category?.toLowerCase() === 'bail' &&
+            item.docmDispositionDsc?.toLowerCase() === 'perfected'
           "
           no-gutters
         >
@@ -119,10 +121,10 @@
 </template>
 <script setup lang="ts">
   import {
+    formatDocumentCategory,
+    formatDocumentType,
     getCriminalDocumentType,
     prepareCriminalDocumentData,
-    formatDocumentCategory,
-    formatDocumentType
   } from '@/components/documents/DocumentUtils';
   import shared from '@/components/shared';
   import NameFilter from '@/components/shared/Form/NameFilter.vue';

@@ -223,6 +223,7 @@ describe('CourtListSearch.vue', () => {
         judgeId: 123,
       };
 
+      wrapper.vm.schedule = 'room_schedule';
       const result = wrapper.vm.getJudgeHomeLocation();
 
       expect(result).toEqual({
@@ -342,6 +343,7 @@ describe('CourtListSearch.vue', () => {
         judgeId: 123,
       };
 
+      wrapper.vm.schedule = 'room_schedule';
       const result = wrapper.vm.getJudgeHomeLocation();
 
       expect(result).toEqual({
@@ -351,6 +353,28 @@ describe('CourtListSearch.vue', () => {
         code: 'SL',
         courtRooms: [{ room: 'Room 42' }],
       });
+    });
+
+    it('correctly converts judgeHomeLocationId to string for comparison', () => {
+      wrapper.vm.locationsAndCourtRooms = [
+        {
+          locationId: '42',
+          name: 'String Location',
+          shortName: 'SL',
+          code: 'SL',
+          courtRooms: [{ room: 'Room 42' }],
+        },
+      ];
+
+      commonStore.userInfo = {
+        judgeHomeLocationId: 42, // Number
+        judgeId: 123,
+      };
+
+      wrapper.vm.schedule = 'my_schedule';
+      const result = wrapper.vm.getJudgeHomeLocation();
+
+      expect(result).toBeNull();
     });
   });
 });

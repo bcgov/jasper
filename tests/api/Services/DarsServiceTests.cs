@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bogus;
 using DARSCommon.Clients.LogNotesServices;
-using DARSCommon.Models;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
@@ -14,7 +13,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Location;
 using Scv.Api.Services;
 using Xunit;
 
@@ -90,9 +88,7 @@ public class DarsServiceTests : ServiceTestBase
             _mockConfig.Object,
             _mockLogger.Object,
             mockLogNotesClient.Object,
-            locationService,
-            _mapper,
-            _cache);
+            _mapper);
 
         return (darsService, mockLogNotesClient);
     }

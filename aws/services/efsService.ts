@@ -13,7 +13,7 @@ export class EFSService {
     try {
       await fs.mkdir(this.efsPath, { recursive: true });
 
-      const name = fileName || `${uuidv4()}.bin`;
+      const name = fileName || `${uuidv4()}.pdf`;
       const filePath = path.join(this.efsPath, name);
 
       await fs.writeFile(filePath, data);

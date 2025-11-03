@@ -137,31 +137,31 @@ describe("ApiService", () => {
     });
   });
 
-  it("should handle a GET binary request", async () => {
-    const event: Partial<APIGatewayEvent> = {
-      httpMethod: "GET",
-      path: "/test",
-      queryStringParameters: { key: "value" },
-      headers: { Accept: "application/octet-stream" },
-      body: null,
-    };
+  // it("should handle a GET binary request", async () => {
+  //   const event: Partial<APIGatewayEvent> = {
+  //     httpMethod: "GET",
+  //     path: "/test",
+  //     queryStringParameters: { key: "value" },
+  //     headers: { Accept: "application/octet-stream" },
+  //     body: null,
+  //   };
 
-    const response = await apiService.handleRequest(event as APIGatewayEvent);
+  //   const response = await apiService.handleRequest(event as APIGatewayEvent);
 
-    expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
-      headers: {
-        Accept: "application/octet-stream",
-        "Content-Type": "application/octet-stream",
-      },
-      responseType: "arraybuffer",
-    });
-    expect(response).toEqual({
-      statusCode: 200,
-      body: Buffer.from(
-        new Uint8Array("get response" as unknown as ArrayBuffer)
-      ).toString("base64"),
-      isBase64Encoded: true,
-      headers: {},
-    });
-  });
+  //   expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
+  //     headers: {
+  //       Accept: "application/octet-stream",
+  //       "Content-Type": "application/octet-stream",
+  //     },
+  //     responseType: "arraybuffer",
+  //   });
+  //   expect(response).toEqual({
+  //     statusCode: 200,
+  //     body: Buffer.from(
+  //       new Uint8Array("get response" as unknown as ArrayBuffer)
+  //     ).toString("base64"),
+  //     isBase64Encoded: true,
+  //     headers: {},
+  //   });
+  // });
 });

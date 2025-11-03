@@ -69,3 +69,13 @@ variable "ecs_cluster_name" {
   description = "ECS Cluster Name"
   type        = string
 }
+
+variable "efs_access_point_arn" {
+  description = "EFS Access Point ARN for Lambda file system mount"
+  type        = string
+}
+
+variable "efs_mount_path" {
+  description = "Local mount path for EFS in Lambda"
+  type        = string
+}

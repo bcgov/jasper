@@ -43,4 +43,6 @@ resource "aws_efs_access_point" "access_point" {
     Name        = "${var.app_name}-${var.name}-efs-ap-${var.environment}"
     Environment = var.environment
   }
+
+  depends_on = [aws_efs_mount_target.mount_target]
 }

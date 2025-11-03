@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Scv.Core.Helpers.Exceptions
+﻿namespace Scv.Core.Helpers.Exceptions
 {
     /// <summary>
     /// NotFoundException class, provides a way to handle not found exceptions so that they are returned by the middleware in a standardized way.

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Scv.Models.CourtList;
+﻿namespace Scv.Models.CourtList;
 
 public class CourtListReportRequest
 {

@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-
 namespace Scv.TdApi.Infrastructure.Options
 {
     public sealed class CorrectionMappingOptions

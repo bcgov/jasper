@@ -1,3 +1,4 @@
+using Scv.Models;
 using System;
 
 namespace Scv.Api.Models;

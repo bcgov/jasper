@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
-
-namespace Scv.Models.Criminal.AppearanceDetail
+﻿namespace Scv.Models.Criminal.AppearanceDetail
 {
     public class CriminalAccused
     {

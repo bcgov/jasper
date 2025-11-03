@@ -1,5 +1,4 @@
 ﻿using JCCommon.Clients.FileServices;
-using System;
 
 namespace Scv.Models.Search
 {

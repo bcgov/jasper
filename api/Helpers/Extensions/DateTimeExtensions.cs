@@ -1,6 +1,6 @@
-using System;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace Scv.Api.Helpers.Extensions;
 
@@ -25,7 +25,7 @@ public static class DateTimeExtensions
     private static HttpContext GetCurrentHttpContext()
     {
         if (_serviceProvider == null) return null;
-        
+
         var httpContextAccessor = _serviceProvider.GetService<IHttpContextAccessor>();
         return httpContextAccessor?.HttpContext;
     }

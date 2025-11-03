@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using Scv.Models.CourtList;
 using Scv.Models.Criminal.Detail;
 
@@ -31,6 +30,6 @@ namespace Scv.Models.Criminal.CourtList
         public ICollection<CrownWitness> Crown { get; set; }
         public new ICollection<ScheduledAppearance> ScheduledAppearance { get; set; }
         public new ICollection<HearingRestriction> HearingRestriction { get; set; }
-        public string CourtLevelCd { get;set;}
+        public string CourtLevelCd { get; set; }
     }
 }

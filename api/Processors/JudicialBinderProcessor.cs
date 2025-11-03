@@ -1,15 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using FluentValidation;
+using JCCommon.Clients.FileServices;
+using Newtonsoft.Json.Serialization;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
+using Scv.Db.Contants;
+using Scv.Models;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using FluentValidation;
-using JCCommon.Clients.FileServices;
-using Newtonsoft.Json.Serialization;
-using Scv.Models;
-using Scv.Db.Contants;
-using Scv.Core.Infrastructure;
-using Scv.Core.Helpers.Extensions;
-using Scv.Core.Helpers.ContractResolver;
 
 namespace Scv.Api.Processors;
 

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +7,6 @@ using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers;
-
 using Scv.Api.Helpers.Extensions;
 using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
@@ -21,6 +14,12 @@ using Scv.Models.Civil.CourtList;
 using Scv.Models.CourtList;
 using Scv.Models.Criminal.CourtList;
 using Scv.Models.Criminal.Detail;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {

@@ -1,9 +1,9 @@
+using Scv.Db.Models;
+using Scv.Models.Criminal.Detail;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Scv.Db.Models;
-using Scv.Models.Criminal.Detail;
 
 namespace Scv.Api.Helpers;
 
@@ -54,7 +54,7 @@ public static class KeyDocumentResolver
             .Concat(otherKeyDocs)
             .Concat(bailDoc != null ? [bailDoc] : Array.Empty<CriminalDocument>());
     }
-    
+
     public static IOrderedEnumerable<T> OrderByDescendingIssueDate<T>(this IEnumerable<T> source) where T : CriminalDocument
     {
         return source.OrderByDescending(d => DateTime.TryParse(d.IssueDate, CultureInfo.InvariantCulture, out var date) ? date : DateTime.MinValue);

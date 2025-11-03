@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Scv.TdApi.Infrastructure.FileSystem
 {
     /// <summary>
@@ -21,8 +15,8 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Collection of file information objects</returns>
         Task<IReadOnlyList<SmbFileInfo>> ListFilesAsync(
-            string path, 
-            string? roomFilter = null, 
+            string path,
+            string? roomFilter = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

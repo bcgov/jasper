@@ -19,7 +19,7 @@ namespace Scv.Models.Criminal.Appearances
         public string CourtLocation { get; set; }
         [AdaptIgnore]
         [JsonIgnore]
-        public new string OutOfTownJudgeTxt { get;set; }
+        public new string OutOfTownJudgeTxt { get; set; }
         [AdaptIgnore]
         [JsonIgnore]
         public new string SupplementalEquipmentTxt { get; set; }

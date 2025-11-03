@@ -71,23 +71,8 @@ build-all() {
   build-web
   build-web-dev
   build-api
-  build-api-dev
   build-transitory-documents-api
   build-transitory-documents-api-dev
-}
-
-build-api-dev() {
-  #
-  # api
-  #
-  echo -e "\n\n===================================================================================================="
-  echo -e "Building api image using docker ..."
-  echo -e "----------------------------------------------------------------------------------------------------"
-  docker build \
-    -t "${COMPOSE_PROJECT_NAME}-api" \
-    -f './api/Dockerfile.dev' '..'
-
-  echo -e "===================================================================================================="
 }
 
 build-api() {
@@ -99,7 +84,7 @@ build-api() {
   echo -e "----------------------------------------------------------------------------------------------------"
   docker build \
     -t "${COMPOSE_PROJECT_NAME}-api" \
-    -f './api/Dockerfile.release' '..'
+    -f './api/Dockerfile.dev' '..'
 
   echo -e "===================================================================================================="
 }

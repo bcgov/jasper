@@ -16,12 +16,10 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Models;
 using Scv.Api.Services.EF;
@@ -50,7 +48,6 @@ namespace Scv.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddExceptionHandler<CustomExceptionHandler>();
             services.AddProblemDetails();
 
             services.AddLogging(options =>
@@ -164,7 +161,7 @@ namespace Scv.Api
             #endregion Swagger
 
             services.AddLazyCache();
-            
+
             services.AddHttpContextAccessor();
         }
 

@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Scv.Models.Region;
 
 public class Regions : IList<Region>

@@ -1,9 +1,8 @@
-﻿using System;
-using Mapster;
-using Scv.Api.Documents;
+﻿using Mapster;
+using Scv.Db.Models;
 using Scv.Models;
 using Scv.Models.Criminal.Detail;
-using Scv.Db.Models;
+using System;
 
 namespace Scv.Api.Infrastructure.Mappings;
 

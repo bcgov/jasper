@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Scv.Models.Document;
+﻿using Scv.Models.Document;
 
 namespace Scv.Models;
 

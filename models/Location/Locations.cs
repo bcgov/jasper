@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Scv.Models.Location;
 
 public class Locations : IList<Location>

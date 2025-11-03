@@ -2,9 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
-using Scv.Core.Services;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Controllers;
 

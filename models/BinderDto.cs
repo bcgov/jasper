@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Scv.Models;
+﻿namespace Scv.Models;
 
 public class BinderDto : BaseDto
 {

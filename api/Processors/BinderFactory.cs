@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using FluentValidation;
+﻿using FluentValidation;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Documents;
-using Scv.Models;
-using Scv.Db.Contants;
 using Scv.Core.Helpers.Extensions;
+using Scv.Db.Contants;
+using Scv.Models;
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace Scv.Api.Processors;
 

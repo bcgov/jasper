@@ -1,5 +1,6 @@
-﻿using Scv.Core.Services;
+﻿using Scv.Api.Services;
 using Scv.Models.AccessControlManagement;
+using System.Threading.Tasks;
 
 public interface IUserService : ICrudService<UserDto>
 {

@@ -9,6 +9,8 @@ using Scv.Api.Helpers;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
 using Xunit;
 
 namespace tests.api.Controllers;

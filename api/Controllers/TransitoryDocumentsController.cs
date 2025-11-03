@@ -19,7 +19,7 @@ namespace Scv.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class TransitoryDocumentsController(
-        TransitoryDocumentsService transitiveDocumentsService,
+        ITransitoryDocumentsService transitiveDocumentsService,
         IKeycloakTokenService service,
         IDocumentMerger documentMerger, IOptions<TdApiOptions> tdApiOptions) : ControllerBase
     {

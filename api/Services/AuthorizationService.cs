@@ -1,14 +1,8 @@
-﻿using DocumentFormat.OpenXml.InkML;
-using LazyCache;
-using Microsoft.AspNetCore.Authorization;
+﻿using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using PCSSCommon.Clients;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
-using Scv.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;

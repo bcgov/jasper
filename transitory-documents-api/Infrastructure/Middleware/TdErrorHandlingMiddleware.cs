@@ -1,11 +1,11 @@
 ﻿
-using System.Net;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
+using System.Net;
+using System.Text.Json;
 
 namespace Scv.TdApi.Infrastructure.Middleware
 {

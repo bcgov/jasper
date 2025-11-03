@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Scv.TdApi.Infrastructure.Options;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Scv.TdApi.Infrastructure.Authorization
 {

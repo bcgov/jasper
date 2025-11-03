@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Scv.Models.Location;
+﻿namespace Scv.Models.Location;
 
 public class Location
 {

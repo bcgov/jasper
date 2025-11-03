@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Scv.Core.Helpers
+﻿namespace Scv.Core.Helpers
 {
     public static class XForwardedForHelper
     {

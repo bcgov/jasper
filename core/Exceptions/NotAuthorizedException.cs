@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Scv.Core.Helpers.Exceptions
+﻿namespace Scv.Core.Helpers.Exceptions
 {
     /// <summary>
     /// NotAuthorizedException class, provides a way to throw an exception when a user is not authorized to perform an action.

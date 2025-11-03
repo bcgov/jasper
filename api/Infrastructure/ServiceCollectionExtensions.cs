@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Http;
-using System.Reflection;
-using Azure.Identity;
+﻿using Azure.Identity;
 using GdPicture14;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -25,15 +22,20 @@ using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Jobs;
-using Scv.Models;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure.Handler;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
+using Scv.Models.AccessControlManagement;
+using System;
+using System.Net.Http;
+using System.Reflection;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
+using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
 using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
@@ -43,11 +45,7 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
-using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using TdDocumentsServices = TDCommon.Clients.DocumentsServices;
-using Scv.Core.Infrastructure.Handler;
-using Scv.Core.Services;
-using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Infrastructure
 {
@@ -212,7 +210,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
-            services.AddScoped<TransitoryDocumentsService>();
+            services.AddScoped<ITransitoryDocumentsService, TransitoryDocumentsService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();

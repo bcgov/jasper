@@ -7,7 +7,7 @@
           {{ props.roomCd }} {{
         }}</v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn :icon="mdiClose" @click="close"></v-btn>
+        <v-btn :icon="mdiClose" @click="close" title="close"></v-btn>
       </v-toolbar>
 
       <v-card-text>
@@ -56,12 +56,23 @@
           >
             <template v-slot:item.fileName="{ item }">
               <a
+                v-if="isSupportedByNutrient(item)"
                 href="#"
-                @click.prevent="downloadFile(item)"
+                @click.prevent="openInNutrient(item)"
                 class="text-primary"
               >
                 {{ item.fileName }}
               </a>
+              <span v-else>{{ item.fileName }}</span>
+            </template>
+            <template v-slot:item.actions="{ item }">
+              <v-btn
+                :icon="mdiDownload"
+                variant="text"
+                size="small"
+                @click="downloadFile(item)"
+                title="Download file"
+              ></v-btn>
             </template>
             <template v-slot:item.sizeBytes="{ item }">
               {{ formatFileSize(item.sizeBytes) }}
@@ -85,6 +96,7 @@
         :prepend-icon="mdiFileDocumentOutline"
         style="letter-spacing: 0.001rem"
         @click="handleViewDocuments"
+        data-testid="view-documents"
       >
         View documents
       </v-btn>
@@ -103,7 +115,7 @@
   import ActionBar from '@/components/shared/table/ActionBar.vue';
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
   import { FileMetadataDto } from '@/types/transitory-documents';
-  import { mdiClose, mdiFileDocumentOutline } from '@mdi/js';
+  import { mdiClose, mdiDownload, mdiFileDocumentOutline } from '@mdi/js';
   import { inject, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
 
@@ -138,6 +150,12 @@
     { title: 'Extension', key: 'extension', sortable: true },
     { title: 'Created', key: 'createdUtc', sortable: true },
     { title: 'Size', key: 'sizeBytes', sortable: true },
+    {
+      title: 'Actions',
+      key: 'actions',
+      sortable: false,
+      align: 'center' as const,
+    },
   ];
 
   const formatFileSize = (bytes: number): string => {
@@ -182,6 +200,30 @@
 
   const isPdf = (item: FileMetadataDto): boolean => {
     return item.extension?.toLowerCase() === '.pdf';
+  };
+
+  const isSupportedByNutrient = (item: FileMetadataDto): boolean => {
+    const ext = item.extension?.toLowerCase();
+    return ext === '.pdf' || ext === '.doc' || ext === '.docx';
+  };
+
+  const openInNutrient = async (item: FileMetadataDto) => {
+    try {
+      // Store single file in session storage
+      sessionStorage.setItem('transitoryDocuments', JSON.stringify([item]));
+
+      // Open in new tab
+      const route = router.resolve({
+        name: 'NutrientContainer',
+        query: { type: 'transitory-bundle' },
+      });
+      window.open(route.href, '_blank');
+    } catch (e) {
+      downloadError.value = true;
+      downloadErrorMessage.value =
+        'Failed to open document in viewer. Please try again.';
+      console.error('Error opening document in viewer:', e);
+    }
   };
 
   const downloadFile = async (item: FileMetadataDto) => {

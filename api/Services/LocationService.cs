@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using JCCommon.Clients.LocationServices;
+﻿using JCCommon.Clients.LocationServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
 using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Models.Location;
-using Scv.Models.WorkArea;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
@@ -92,6 +90,8 @@ namespace Scv.Api.Services
         public async Task<string> GetLocationAgencyIdentifier(string code) => FindShortDescriptionFromCode(await GetLocations(), code);
 
         public virtual async Task<string> GetRegionName(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionNameByLocation-{code}", async () => (await _locationClient.LocationsRegionAsync(code))?.RegionName);
+
+        public virtual async Task<Region> GetRegion(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionByLocation-{code}", async () => (await _locationClient.LocationsRegionAsync(code)));
 
         public async Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd)
         {

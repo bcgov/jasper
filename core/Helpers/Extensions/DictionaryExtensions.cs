@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Scv.Core.Helpers.Extensions;
+﻿namespace Scv.Core.Helpers.Extensions;
 
 public static class DictionaryExtensions
 {

@@ -22,6 +22,7 @@ using Scv.Api.Jobs;
 using Scv.Api.Models;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Core.Infrastructure;
 using tests.api.Fixtures;
 using Xunit;
 using GraphModel = Microsoft.Graph.Models;

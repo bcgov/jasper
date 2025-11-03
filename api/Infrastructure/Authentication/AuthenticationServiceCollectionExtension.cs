@@ -17,10 +17,12 @@ using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Models.AccessControlManagement;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
 using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,8 +31,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Scv.Core.Helpers.Extensions;
-using Scv.Api.Infrastructure.Options;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

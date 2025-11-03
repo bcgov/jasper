@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Scv.Models;
+﻿using Scv.Models.TransitoryDocuments;
 using Scv.TdApi.Models;
 
 namespace Scv.TdApi.Services
 {
     public interface ISharedDriveFileService
     {
+        /// <summary>
+        /// Finds files in the shared drive based on region code, agency identifier, room code, and date.
+        /// </summary>
+        /// <returns>List of file metadata</returns>
         IReadOnlyList<FileMetadataDto> FindFilesAsync(
-            string region,
-            string location,
-            string roomCd,
-            DateOnly date);
+            TransitoryDocumentSearchRequest request);
 
         Task<Scv.Models.FileStreamResponse> OpenFileAsync(string absolutePath);
     }

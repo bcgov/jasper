@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Scv.Core.Helpers.Exceptions;
-using System;
 
 namespace Scv.Core.Helpers.Extensions
 {

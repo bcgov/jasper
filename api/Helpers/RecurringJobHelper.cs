@@ -1,7 +1,7 @@
-﻿using System;
-using System.Linq;
-using Hangfire;
+﻿using Hangfire;
 using Scv.Api.Jobs;
+using System;
+using System.Linq;
 
 namespace Scv.Api.Helpers;
 

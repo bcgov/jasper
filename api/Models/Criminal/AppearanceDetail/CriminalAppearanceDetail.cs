@@ -36,6 +36,6 @@ public class CriminalAppearanceDetail
     public string EstimatedTimeMin { get; set; }
     public IEnumerable<CriminalDocument> Documents { get; set; }
     public IEnumerable<CriminalDocument> KeyDocuments => KeyDocumentResolver.GetCriminalKeyDocuments(Documents);
-    
+
     public CriminalFileDetailResponseCourtLevelCd CourtLevelCd { get; set; }
 }

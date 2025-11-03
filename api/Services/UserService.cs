@@ -1,18 +1,15 @@
 ﻿using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using PCSSCommon.Clients.PersonServices;
-using Scv.Api.Infrastructure;
-using Scv.Models.AccessControlManagement;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
-using Scv.Core.Services;
-using Scv.Core.Infrastructure;
 
 namespace Scv.Api.Services;
 

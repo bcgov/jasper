@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -11,17 +6,22 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Db.Contants;
+using Scv.Db.Models;
 using Scv.Models.Civil.AppearanceDetail;
 using Scv.Models.Civil.Appearances;
 using Scv.Models.Civil.CourtList;
 using Scv.Models.Civil.Detail;
 using Scv.Models.Search;
-using Scv.Db.Contants;
-using Scv.Db.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using CivilAppearanceDetail = Scv.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
-using Scv.Core.Helpers.Extensions;
-using Scv.Core.Helpers.ContractResolver;
 
 namespace Scv.Api.Services.Files
 {

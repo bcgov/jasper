@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Scv.Models.Document;
 
 public class PdfDocumentResponse

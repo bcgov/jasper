@@ -1,8 +1,5 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace Scv.Core.Helpers.ContractResolver
@@ -16,7 +13,7 @@ namespace Scv.Core.Helpers.ContractResolver
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
             var jsonProp = base.CreateProperty(member, memberSerialization);
-            jsonProp.Required = Required.Default;          
+            jsonProp.Required = Required.Default;
             return jsonProp;
         }
     }

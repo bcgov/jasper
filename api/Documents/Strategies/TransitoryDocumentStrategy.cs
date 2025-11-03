@@ -1,14 +1,14 @@
-using System.IO;
-using System.Threading.Tasks;
 using Scv.Api.Services;
 using Scv.Models;
 using Scv.Models.Document;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Documents.Strategies;
 
-public class TransitoryDocumentStrategy(TransitoryDocumentsService transitoryDocumentsService) : IDocumentStrategy
+public class TransitoryDocumentStrategy(ITransitoryDocumentsService transitoryDocumentsService) : IDocumentStrategy
 {
-    private readonly TransitoryDocumentsService _transitoryDocumentsService = transitoryDocumentsService;
+    private readonly ITransitoryDocumentsService _transitoryDocumentsService = transitoryDocumentsService;
 
     public DocumentType Type => DocumentType.TransitoryDocument;
 

@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using MongoDB.EntityFrameworkCore;
+﻿using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
+using System.Collections.Generic;
 
 namespace Scv.Db.Models;
 

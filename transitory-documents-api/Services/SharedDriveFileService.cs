@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 using Scv.Models;
+using Scv.Models.TransitoryDocuments;
 using Scv.TdApi.Infrastructure.FileSystem;
 using Scv.TdApi.Infrastructure.Options;
 using Scv.TdApi.Models;
@@ -29,87 +30,41 @@ namespace Scv.TdApi.Services
         }
 
         public IReadOnlyList<FileMetadataDto> FindFilesAsync(
-            string region,
-            string location,
-            string roomCd,
-            DateOnly date)
+            TransitoryDocumentSearchRequest request)
         {
-            try
+            ArgumentNullException.ThrowIfNull(request);
+
+            _logger.LogInformation(
+                "Finding files for regionCode: {RegionCode}, agencyIdentifierCd: {AgencyIdentifierCd}, room: {Room}, date: {Date}",
+                request?.RegionCode, request?.AgencyIdentifierCd, request?.RoomCd, request.Date);
+
+            // Apply correction mappings: use regionCode/agencyIdentifierCd as target, get replacement folder name
+            var regionFolderName = _correctionMappingOptions.RegionMappings
+                .FirstOrDefault(m => string.Equals(request.RegionCode, m.Target, StringComparison.OrdinalIgnoreCase))
+                ?.Replacement ?? request.RegionName;
+
+            var locationFolderName = _correctionMappingOptions.LocationMappings
+                .FirstOrDefault(m => string.Equals(request.AgencyIdentifierCd, m.Target, StringComparison.OrdinalIgnoreCase))
+                ?.Replacement ?? request.LocationShortName;
+
+            _logger.LogDebug(
+                "Mapped regionCode '{RegionCode}' to folder '{RegionFolder}', agencyIdentifierCd '{AgencyIdentifierCd}' to folder '{LocationFolder}'",
+                request.RegionCode, regionFolderName, request.AgencyIdentifierCd, locationFolderName);
+
+
+            var locationPath = Path.Combine(regionFolderName, locationFolderName).Replace('\\', '/');
+            var candidateDatePaths = GetCandidateDatePaths(locationPath, request.Date);
+            var allFiles = new ConcurrentDictionary<string, FileMetadataDto>(StringComparer.OrdinalIgnoreCase);
+
+            Parallel.ForEach(candidateDatePaths, async datePath =>
             {
-                _logger.LogInformation(
-                    "Finding files for region: {Region}, location: {Location}, room: {Room}, date: {Date}",
-                    region, location, roomCd, date);
+            _logger.LogInformation("Searching date path: {Path}", datePath);
+                await ProcessDateFolder(datePath, request.RoomCd, allFiles);
+            });
 
-                region = _correctionMappingOptions.RegionMappings
-                    .FirstOrDefault(m => string.Equals(m.Target, region, StringComparison.OrdinalIgnoreCase))
-                    ?.Replacement ?? region;
-
-                location = _correctionMappingOptions.LocationMappings
-                    .FirstOrDefault(m => string.Equals(m.Target, location, StringComparison.OrdinalIgnoreCase))
-                    ?.Replacement ?? location;
-
-                var locationPath = Path.Combine(region, location).Replace('\\', '/');
-                var candidateDatePaths = GetCandidateDatePaths(locationPath, date);
-                var allFiles = new ConcurrentDictionary<string, FileMetadataDto>(StringComparer.OrdinalIgnoreCase);
-
-                Parallel.ForEach(candidateDatePaths, datePath =>
-                {
-                    ProcessDateFolder(datePath, roomCd, allFiles);
-                });
-
-                var results = OrderResults(allFiles.Values);
-                _logger.LogInformation("Found {Count} files", results.Count);
-                return results;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to find files");
-                throw;
-            }
-        }
-
-        private void ProcessDateFolder(string datePath, string roomCd, ConcurrentDictionary<string, FileMetadataDto> allFiles)
-        {
-            _logger.LogDebug("Processing date folder: {Path}", datePath);
-
-            var files = _fileSystemClient.ListFilesAsync(datePath, roomFilter: roomCd).GetAwaiter().GetResult();
-            
-            if (files.Count == 0)
-            {
-                _logger.LogDebug("No files found in date folder: {Path}", datePath);
-                return;
-            }
-
-            _logger.LogDebug("Retrieved {Count} files from {Path}", files.Count, datePath);
-
-            foreach (var file in files)
-            {
-                var dto = CreateFileMetadataDto(file);
-                if (!allFiles.ContainsKey(dto.AbsolutePath))
-                {
-                    allFiles[dto.AbsolutePath] = dto;
-                }
-            }
-        }
-
-        private FileMetadataDto CreateFileMetadataDto(SmbFileInfo file)
-        {
-            return new FileMetadataDto(
-                FileName: file.FileName,
-                Extension: file.Extension,
-                SizeBytes: file.SizeBytes,
-                CreatedUtc: file.CreatedUtc,
-                AbsolutePath: file.FullPath,
-                MatchedRoomFolder: file.RelativeDirectory?.Split('/', '\\').FirstOrDefault()
-            );
-        }
-
-        private List<string> GetCandidateDatePaths(string locationPath, DateOnly date)
-        {
-            return _options.DateFolderFormats
-                .Select(format => Path.Combine(locationPath, date.ToString(format)).Replace('\\', '/'))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var results = OrderResults(allFiles.Values);
+            _logger.LogInformation("Found {Count} files", results.Count);
+            return results;
         }
 
         public async Task<FileStreamResponse> OpenFileAsync(string absolutePath)
@@ -133,21 +88,63 @@ namespace Scv.TdApi.Services
 
                 var response = new FileStreamResponse(stream, fileName, contentType);
 
-                _logger.LogInformation("Successfully opened file: {FileName}, size: {Size} bytes", 
+                _logger.LogInformation("Successfully opened file: {FileName}, size: {Size} bytes",
                     fileName, response.SizeBytes);
 
                 return response;
             }
-            catch (FileNotFoundException)
+            catch (IOException ex)
             {
-                _logger.LogWarning("File not found: {Path}", absolutePath);
-                throw;
+                _logger.LogWarning(ex, "File not found: {Path}", absolutePath);
+                throw new IOException($"Error opening file at path '{absolutePath}'. See inner exception for details.", ex);
             }
-            catch (Exception ex)
+
+        }
+
+        private async Task ProcessDateFolder(string datePath, string? roomCd, ConcurrentDictionary<string, FileMetadataDto> allFiles)
+        {
+            _logger.LogDebug("Processing date folder: {Path}", datePath);
+
+            var files = await _fileSystemClient.ListFilesAsync(datePath, roomFilter: roomCd);
+
+            if (files.Count == 0)
             {
-                _logger.LogError(ex, "Failed to open file: {Path}", absolutePath);
-                throw;
+                _logger.LogDebug("No files found in date folder: {Path}", datePath);
+                return;
             }
+
+            _logger.LogDebug("Retrieved {Count} files from {Path}", files.Count, datePath);
+
+            foreach (var file in files)
+            {
+                _logger.LogDebug("Processing file: {FileName} at {FullPath} relative directory {RelativeDirectory}", file.FileName, file.FullPath, file.RelativeDirectory);
+                var dto = CreateFileMetadataDto(file);
+                if (!allFiles.ContainsKey(dto.AbsolutePath))
+                {
+                    allFiles[dto.AbsolutePath] = dto;
+                }
+            }
+        }
+
+        private FileMetadataDto CreateFileMetadataDto(SmbFileInfo file)
+        {
+            return new FileMetadataDto()
+            {
+                FileName = file.FileName,
+                Extension = file.Extension,
+                SizeBytes = file.SizeBytes,
+                CreatedUtc = file.CreatedUtc,
+                AbsolutePath = file.FullPath,
+                MatchedRoomFolder = file.RelativeDirectory?.Split(Path.DirectorySeparatorChar).FirstOrDefault()
+            };
+        }
+
+        private List<string> GetCandidateDatePaths(string locationPath, DateOnly date)
+        {
+            return _options.DateFolderFormats
+                .Select(format => Path.Combine(locationPath, date.ToString(format)).Replace('\\', '/'))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private IReadOnlyList<FileMetadataDto> OrderResults(IEnumerable<FileMetadataDto> results)

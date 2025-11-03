@@ -268,7 +268,6 @@ namespace Scv.Api.Infrastructure
             // Defaults to BC Gov API if any config setting is missing
             if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
             {
-                Console.WriteLine($"Redirecting traffic to: {configuration.GetNonEmptyValue($"{prefix}:Url")} for {prefix}");
                 client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
                     configuration.GetNonEmptyValue($"{prefix}:Username"),
                     configuration.GetNonEmptyValue($"{prefix}:Password"));
@@ -277,7 +276,6 @@ namespace Scv.Api.Infrastructure
             // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.
             else
             {
-                Console.WriteLine($"Redirecting traffic to: {apigwUrl} for {prefix}");
                 client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
                 client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
                 client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);

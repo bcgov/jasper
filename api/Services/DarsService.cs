@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
-using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -12,55 +11,42 @@ using Scv.Api.Helpers;
 
 namespace Scv.Api.Services
 {
-    public class DarsService
+    public interface IDarsService
     {
-        #region Variables
+        Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, int locationId, string courtRoomCd);
+    }
+    public class DarsService(
+        IConfiguration configuration,
+        ILogger<DarsService> logger,
+        LogNotesServicesClient logNotesServicesClient,
+        IMapper mapper) : IDarsService
+    {
 
-        private readonly ILogger<DarsService> _logger;
-        private readonly LogNotesServicesClient _logNotesServicesClient;
-        private readonly IMapper _mapper;
-        private readonly string _logsheetBaseUrl;
-        private readonly LocationService _locationService;
+        #region Variables
+        private readonly string _logsheetBaseUrl = configuration.GetNonEmptyValue("DARS:LogsheetUrl");
 
         #endregion Variables
 
-        #region Constructor
-
-        public DarsService(
-            IConfiguration configuration,
-            ILogger<DarsService> logger,
-            LogNotesServicesClient logNotesServicesClient,
-            LocationService locationService,
-
-            IMapper mapper,
-            IAppCache cache)
-        {
-            _logger = logger;
-            _mapper = mapper;
-            _logNotesServicesClient = logNotesServicesClient;
-            _logsheetBaseUrl = configuration.GetNonEmptyValue("DARS:LogsheetUrl");
-            _locationService = locationService;
-        }
-
-        #endregion Constructor
-
         public async Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, int locationId, string courtRoomCd)
         {
-            _logger.LogInformation("DarsApiSearch called for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
-            var darsResult = await _logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: locationId);
-            _logger.LogInformation("DarsApiSearch returned {ResultCount} results for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", darsResult?.Count() ?? 0, locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
-            var mappedResults = _mapper.Map<IEnumerable<DarsSearchResults>>(darsResult).ToList();
+            logger.LogInformation("DarsApiSearch called for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
+            var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: locationId);
+            logger.LogInformation("DarsApiSearch returned {ResultCount} results for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", darsResult?.Count() ?? 0, locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
+            var mappedResults = mapper.Map<IEnumerable<DarsSearchResults>>(darsResult).ToList();
 
-            // Append the base URL to each result's Url property
-            foreach (var result in mappedResults)
-            {
-                if (!string.IsNullOrWhiteSpace(result.Url) && !string.IsNullOrWhiteSpace(_logsheetBaseUrl))
+            // Use LINQ's Select to append the base URL to each result's Url property
+            var resultsWithUrl = mappedResults
+                .Select(result =>
                 {
-                    result.Url = $"{_logsheetBaseUrl.TrimEnd('/')}/{result.Url.TrimStart('/')}"; // remap the url returned from DARS - to point to the base url hosting the logsheet
-                }
-            }
+                    if (!string.IsNullOrWhiteSpace(result.Url) && !string.IsNullOrWhiteSpace(_logsheetBaseUrl))
+                    {
+                        result.Url = $"{_logsheetBaseUrl.TrimEnd('/')}/{result.Url.TrimStart('/')}";
+                    }
+                    return result;
+                })
+                .ToList();
 
-            var darsResultsPerRoom = GetResultPerRoom(mappedResults);
+            var darsResultsPerRoom = GetResultPerRoom(resultsWithUrl);
             return darsResultsPerRoom;
         }
 

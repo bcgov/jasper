@@ -15,7 +15,7 @@ namespace Scv.Api.Controllers
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("api/[controller]")]
     [ApiController]
-    public class DarsController(DarsService darsService, ILogger<DarsController> logger) : ControllerBase
+    public class DarsController(IDarsService darsService, ILogger<DarsController> logger) : ControllerBase
     {
         /// <summary>
         /// Search for DARS audio recordings by date, location, and court room.

@@ -140,7 +140,7 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
-        public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
+        public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();
 
@@ -216,6 +216,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();

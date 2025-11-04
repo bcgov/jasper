@@ -29,14 +29,14 @@ namespace Scv.TdApi.Services
             _correctionMappingOptions = correctionMappingOptions?.Value ?? throw new ArgumentNullException(nameof(correctionMappingOptions));
         }
 
-        public IReadOnlyList<FileMetadataDto> FindFilesAsync(
+        public async Task<IReadOnlyList<FileMetadataDto>> FindFilesAsync(
             TransitoryDocumentSearchRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
 
             _logger.LogInformation(
                 "Finding files for regionCode: {RegionCode}, agencyIdentifierCd: {AgencyIdentifierCd}, room: {Room}, date: {Date}",
-                request?.RegionCode, request?.AgencyIdentifierCd, request?.RoomCd, request.Date);
+                request.RegionCode, request.AgencyIdentifierCd, request.RoomCd, request.Date);
 
             // Apply correction mappings: use regionCode/agencyIdentifierCd as target, get replacement folder name
             var regionFolderName = _correctionMappingOptions.RegionMappings
@@ -56,11 +56,14 @@ namespace Scv.TdApi.Services
             var candidateDatePaths = GetCandidateDatePaths(locationPath, request.Date);
             var allFiles = new ConcurrentDictionary<string, FileMetadataDto>(StringComparer.OrdinalIgnoreCase);
 
-            Parallel.ForEach(candidateDatePaths, async datePath =>
+            // Process all date paths in parallel and await completion
+            var tasks = candidateDatePaths.Select(async datePath =>
             {
-            _logger.LogInformation("Searching date path: {Path}", datePath);
+                _logger.LogInformation("Searching date path: {Path}", datePath);
                 await ProcessDateFolder(datePath, request.RoomCd, allFiles);
             });
+
+            await Task.WhenAll(tasks);
 
             var results = OrderResults(allFiles.Values);
             _logger.LogInformation("Found {Count} files", results.Count);

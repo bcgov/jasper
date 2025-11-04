@@ -133,18 +133,18 @@ public class SharedDriveFileServiceTests
     #region FindFilesAsync Tests
 
     [Fact]
-    public void FindFilesAsync_ThrowsArgumentNullException_WhenRequestIsNull()
+    public async Task FindFilesAsync_ThrowsArgumentNullException_WhenRequestIsNull()
     {
         // Arrange
         var service = CreateService();
 
         // Act & Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => service.FindFilesAsync(null));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => service.FindFilesAsync(null));
         exception.ParamName.Should().Be("request");
     }
 
     [Fact]
-    public void FindFilesAsync_ReturnsEmptyList_WhenNoFilesFound()
+    public async Task FindFilesAsync_ReturnsEmptyList_WhenNoFilesFound()
     {
         // Arrange
         var service = CreateService();
@@ -155,7 +155,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().NotBeNull();
@@ -163,7 +163,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_ReturnsFiles_WhenFilesExist()
+    public async Task FindFilesAsync_ReturnsFiles_WhenFilesExist()
     {
         // Arrange
         var service = CreateService();
@@ -180,7 +180,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(files);
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().NotBeNull();
@@ -190,7 +190,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_AppliesRegionMapping_WhenMappingExists()
+    public async Task FindFilesAsync_AppliesRegionMapping_WhenMappingExists()
     {
         // Arrange
         _defaultCorrectionMappingOptions.RegionMappings = new List<CorrectionMapping>
@@ -206,7 +206,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -218,7 +218,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_AppliesLocationMapping_WhenMappingExists()
+    public async Task FindFilesAsync_AppliesLocationMapping_WhenMappingExists()
     {
         // Arrange
         _defaultCorrectionMappingOptions.LocationMappings = new List<CorrectionMapping>
@@ -234,7 +234,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -246,7 +246,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_UsesDefaultNames_WhenNoMappingExists()
+    public async Task FindFilesAsync_UsesDefaultNames_WhenNoMappingExists()
     {
         // Arrange
         var service = CreateService();
@@ -257,7 +257,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -269,7 +269,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_IsCaseInsensitive_ForRegionMapping()
+    public async Task FindFilesAsync_IsCaseInsensitive_ForRegionMapping()
     {
         // Arrange
         _defaultCorrectionMappingOptions.RegionMappings = new List<CorrectionMapping>
@@ -286,7 +286,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -298,7 +298,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_IsCaseInsensitive_ForLocationMapping()
+    public async Task FindFilesAsync_IsCaseInsensitive_ForLocationMapping()
     {
         // Arrange
         _defaultCorrectionMappingOptions.LocationMappings = new List<CorrectionMapping>
@@ -315,7 +315,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -327,7 +327,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_OrdersFilesByRoomFirst()
+    public async Task FindFilesAsync_OrdersFilesByRoomFirst()
     {
         // Arrange
         var service = CreateService();
@@ -344,7 +344,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(files);
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().HaveCount(2);
@@ -353,7 +353,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_OrdersFilesByRoomFolder_ThenByFileName()
+    public async Task FindFilesAsync_OrdersFilesByRoomFolder_ThenByFileName()
     {
         // Arrange
         var service = CreateService();
@@ -371,7 +371,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(files);
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().HaveCount(3);
@@ -384,7 +384,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_RemovesDuplicatesByAbsolutePath()
+    public async Task FindFilesAsync_RemovesDuplicatesByAbsolutePath()
     {
         // Arrange
         var service = CreateService();
@@ -397,14 +397,14 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo> { duplicateFile });
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().HaveCount(1);
     }
 
     [Fact]
-    public void FindFilesAsync_SearchesMultipleDateFormats()
+    public async Task FindFilesAsync_SearchesMultipleDateFormats()
     {
         // Arrange
         _defaultSharedDriveOptions.DateFolderFormats = new List<string>
@@ -422,7 +422,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -431,7 +431,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_RemovesDuplicateDatePaths()
+    public async Task FindFilesAsync_RemovesDuplicateDatePaths()
     {
         // Arrange
         _defaultSharedDriveOptions.DateFolderFormats = new List<string>
@@ -448,7 +448,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -457,7 +457,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_PassesRoomCdToFileSystemClient()
+    public async Task FindFilesAsync_PassesRoomCdToFileSystemClient()
     {
         // Arrange
         var service = CreateService();
@@ -470,7 +470,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(
@@ -479,7 +479,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_CreatesCorrectFileMetadata()
+    public async Task FindFilesAsync_CreatesCorrectFileMetadata()
     {
         // Arrange
         var service = CreateService();
@@ -501,7 +501,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo> { smbFile });
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().HaveCount(1);
@@ -515,7 +515,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_ExtractsFirstSegmentFromRelativeDirectory()
+    public async Task FindFilesAsync_ExtractsFirstSegmentFromRelativeDirectory()
     {
         // Arrange
         var service = CreateService();
@@ -536,7 +536,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo> { smbFile });
 
         // Act
-        var result = service.FindFilesAsync(request);
+        var result = await service.FindFilesAsync(request);
 
         // Assert
         result.Should().HaveCount(1);
@@ -544,7 +544,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public void FindFilesAsync_ReplacesBackslashWithForwardSlash_InDatePaths()
+    public async Task FindFilesAsync_ReplacesBackslashWithForwardSlash_InDatePaths()
     {
         // Arrange
         var service = CreateService();
@@ -555,7 +555,7 @@ public class SharedDriveFileServiceTests
             .ReturnsAsync(new List<SmbFileInfo>());
 
         // Act
-        service.FindFilesAsync(request);
+        await service.FindFilesAsync(request);
 
         // Assert
         _mockFileSystemClient.Verify(

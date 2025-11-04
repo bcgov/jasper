@@ -40,10 +40,10 @@ namespace tests.tdApi.Tests.Controllers
         #region Search Tests
 
         [Fact]
-        public void Search_ReturnsBadRequest_WhenRequestIsNull()
+        public async Task Search_ReturnsBadRequest_WhenRequestIsNull()
         {
             // Act
-            var result = _controller.Search(null);
+            var result = await _controller.Search(null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -52,7 +52,7 @@ namespace tests.tdApi.Tests.Controllers
         }
 
         [Fact]
-        public void Search_ReturnsOk_WithFilesList_WhenFilesFound()
+        public async Task Search_ReturnsOk_WithFilesList_WhenFilesFound()
         {
             // Arrange
             var request = CreateValidSearchRequest();
@@ -63,10 +63,10 @@ namespace tests.tdApi.Tests.Controllers
             };
 
             _mockService.Setup(s => s.FindFilesAsync(request))
-                       .Returns(expectedFiles);
+                       .ReturnsAsync(expectedFiles);
 
             // Act
-            var result = _controller.Search(request);
+            var result = await _controller.Search(request);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -78,17 +78,17 @@ namespace tests.tdApi.Tests.Controllers
         }
 
         [Fact]
-        public void Search_ReturnsOk_WithEmptyList_WhenNoFilesFound()
+        public async Task Search_ReturnsOk_WithEmptyList_WhenNoFilesFound()
         {
             // Arrange
             var request = CreateValidSearchRequest();
             var expectedFiles = new List<FileMetadataDto>();
 
             _mockService.Setup(s => s.FindFilesAsync(request))
-                       .Returns(expectedFiles);
+                       .ReturnsAsync(expectedFiles);
 
             // Act
-            var result = _controller.Search(request);
+            var result = await _controller.Search(request);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -99,7 +99,7 @@ namespace tests.tdApi.Tests.Controllers
         }
 
         [Fact]
-        public void Search_HandlesRequestWithNullRoomCd()
+        public async Task Search_HandlesRequestWithNullRoomCd()
         {
             // Arrange
             var request = new TransitoryDocumentSearchRequest
@@ -113,10 +113,10 @@ namespace tests.tdApi.Tests.Controllers
             };
 
             _mockService.Setup(s => s.FindFilesAsync(request))
-                       .Returns(new List<FileMetadataDto>());
+                       .ReturnsAsync(new List<FileMetadataDto>());
 
             // Act
-            var result = _controller.Search(request);
+            var result = await _controller.Search(request);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

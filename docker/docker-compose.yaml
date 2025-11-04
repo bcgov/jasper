@@ -80,8 +80,6 @@ services:
       - PCSS__Url=${PCSS_URL}
       - PCSS__Username=${PCSS_USERNAME}
       - TD__Url=${TD_URL}
-      - TD__Username=${TD_USERNAME}
-      - TD__Password=${TD_PASSWORD}
       - Request__AgencyIdentifierId=${RequestAgencyIdentifierId}
       - Request__ApplicationCd=${RequestApplicationCd}
       - Request__GetUserLoginDefaultAgencyId=${RequestGetUserLoginDefaultAgencyId}

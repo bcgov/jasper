@@ -9,7 +9,7 @@ namespace Scv.TdApi.Services
         /// Finds files in the shared drive based on region code, agency identifier, room code, and date.
         /// </summary>
         /// <returns>List of file metadata</returns>
-        IReadOnlyList<FileMetadataDto> FindFilesAsync(
+        Task<IReadOnlyList<FileMetadataDto>> FindFilesAsync(
             TransitoryDocumentSearchRequest request);
 
         Task<Scv.Models.FileStreamResponse> OpenFileAsync(string absolutePath);

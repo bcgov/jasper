@@ -226,6 +226,8 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 _logger.LogDebug("Establishing new SMB connection to {Server}\\{Share}", _options.SmbServer, _options.SmbShareName);
 
                 var client = _clientFactory.CreateClient();
+                ISMBFileStore? fileStore = null;
+                var connectionSucceeded = false;
 
                 try
                 {
@@ -242,28 +244,28 @@ namespace Scv.TdApi.Infrastructure.FileSystem
 
                     if (loginStatus != NTStatus.STATUS_SUCCESS)
                     {
-                        client.Disconnect();
                         throw new IOException($"SMB login failed with status: {loginStatus}");
                     }
 
-                    var fileStore = client.TreeConnect(_options.SmbShareName!, out var treeConnectStatus);
+                    fileStore = client.TreeConnect(_options.SmbShareName!, out var treeConnectStatus);
                     if (treeConnectStatus != NTStatus.STATUS_SUCCESS)
                     {
-                        client.Logoff();
-                        client.Disconnect();
                         throw new IOException($"Failed to connect to share '{_options.SmbShareName}' with status: {treeConnectStatus}");
                     }
 
                     _logger.LogDebug("Successfully established SMB connection");
+                    connectionSucceeded = true;
                     return new SmbConnection(client, fileStore, _logger);
                 }
-                finally
+                catch
                 {
-                    // If any exception occurs, ensure the client is disconnected to avoid leaks.
-                    if (client.IsConnected)
+                    // Only disconnect if we failed to create the connection successfully
+                    // If successful, SmbConnection will handle disposal
+                    if (!connectionSucceeded && client.IsConnected)
                     {
                         client.Disconnect();
                     }
+                    throw;
                 }
             }, cancellationToken);
         }
@@ -468,17 +470,18 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         {
             _logger.LogDebug("Opening SMB file: {Path}", smbPath);
 
-            var status = fileStore.CreateFile(
-                out var fileHandle,
-                out _,
-                smbPath,
-                desiredAccess,
-                SMBLibrary.FileAttributes.Normal,
-                ShareAccess.Read,
-                CreateDisposition.FILE_OPEN,
-                createOptions,
-                null);
+                var status = fileStore.CreateFile(
+                    out var fileHandle,
+                    out _,
+                    smbPath,
+                    desiredAccess,
+                    SMBLibrary.FileAttributes.Normal,
+                    ShareAccess.Read,
+                    CreateDisposition.FILE_OPEN,
+                    createOptions,
+                    null);
 
+            _logger.LogDebug("Opened SMB file: {Path} with status: {Status}", smbPath, status);
             if (status != NTStatus.STATUS_SUCCESS)
             {
                 if (status == NTStatus.STATUS_OBJECT_NAME_NOT_FOUND ||

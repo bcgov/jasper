@@ -38,7 +38,7 @@ namespace Scv.TdApi.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status403Forbidden)]
-        public IActionResult Search([FromBody] TransitoryDocumentSearchRequest request)
+        public async Task<IActionResult> Search([FromBody] TransitoryDocumentSearchRequest request)
         {
             if (request == null)
             {
@@ -49,7 +49,7 @@ namespace Scv.TdApi.Controllers
                 "File search requested - RegionCode: {RegionCode}, RegionName: {RegionName}, AgencyIdentifierCd: {AgencyIdentifierCd}, LocationShortName: {LocationShortName}, Room: {Room}, Date: {Date}",
                 request.RegionCode, request.RegionName, request.AgencyIdentifierCd, request.LocationShortName, request.RoomCd, request.Date);
 
-            var foundFiles = _sharedDriveFileService.FindFilesAsync(
+            var foundFiles = await _sharedDriveFileService.FindFilesAsync(
                 request);
 
             _logger.LogInformation(

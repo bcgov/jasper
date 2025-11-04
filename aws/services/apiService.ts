@@ -71,36 +71,85 @@ export class ApiService {
     }
   }
 
+  private buildAxiosConfig(
+    headers: Record<string, string>,
+    isBinary: boolean
+  ): AxiosRequestConfig {
+    return {
+      headers: {
+        ...headers,
+        "Content-Type": isBinary
+          ? "application/octet-stream"
+          : "application/json",
+      },
+      responseType: isBinary ? "arraybuffer" : "json",
+    };
+  }
+
+  private sanitizeResponseHeaders(headers: Record<string, unknown>): {
+    [header: string]: string | number | boolean;
+  } {
+    return Object.fromEntries(
+      Object.entries(headers)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, String(value)])
+    ) as { [header: string]: string | number | boolean };
+  }
+
+  private async handleBinaryResponse(
+    response: AxiosResponse<unknown>,
+    responseHeaders: { [header: string]: string | number | boolean }
+  ): Promise<APIGatewayProxyResult> {
+    const binaryBuffer = Buffer.from(
+      new Uint8Array(response.data as ArrayBuffer)
+    );
+    const fileSizeInMB = binaryBuffer.length / (1024 * 1024);
+
+    if (fileSizeInMB > 6) {
+      // File is too large for API Gateway, save to EFS
+      const filePath = await this.saveBinaryToEfs(response);
+      responseHeaders["X-EFS-File-Path"] = filePath;
+
+      return {
+        statusCode: response.status,
+        headers: responseHeaders,
+        body: JSON.stringify({
+          message: "File saved to EFS due to size limit",
+          filePath,
+          fileSize: binaryBuffer.length,
+        }),
+        isBase64Encoded: false,
+      };
+    }
+
+    // File is small enough, return directly as base64
+    return {
+      statusCode: response.status,
+      headers: responseHeaders,
+      body: binaryBuffer.toString("base64"),
+      isBase64Encoded: true,
+    };
+  }
+
+  private buildJsonResponse(
+    response: AxiosResponse<unknown>,
+    responseHeaders: { [header: string]: string | number | boolean }
+  ): APIGatewayProxyResult {
+    return {
+      statusCode: response.status,
+      headers: responseHeaders,
+      body: JSON.stringify(response.data),
+      isBase64Encoded: false,
+    };
+  }
+
   public async handleRequest(
     event: APIGatewayEvent
   ): Promise<APIGatewayProxyResult> {
     try {
       const method = event.httpMethod.toUpperCase();
-      const body = event.body ? JSON.parse(event.body) : {};
-      const queryString = sanitizeQueryStringParams(
-        event.queryStringParameters || {}
-      );
-      const headers = sanitizeHeaders(event.headers);
 
-      const url = `${event.path}?${queryString}`;
-
-      console.log(`${method} ${url}`);
-
-      // Determine if request expects a binary response
-      const isBinary =
-        headers && headers["Accept"]?.startsWith("application/octet-stream");
-
-      const axiosConfig: AxiosRequestConfig = {
-        headers: {
-          ...headers,
-          "Content-Type": isBinary
-            ? "application/octet-stream"
-            : "application/json",
-        },
-        responseType: isBinary ? "arraybuffer" : "json",
-      };
-
-      // Check if method is allowed
+      // Validate HTTP method
       if (!["GET", "POST", "PUT"].includes(method)) {
         return {
           statusCode: 405,
@@ -108,6 +157,22 @@ export class ApiService {
         };
       }
 
+      // Parse request
+      const body = event.body ? JSON.parse(event.body) : {};
+      const queryString = sanitizeQueryStringParams(
+        event.queryStringParameters || {}
+      );
+      const headers = sanitizeHeaders(event.headers);
+      const url = `${event.path}?${queryString}`;
+
+      console.log(`${method} ${url}`);
+
+      // Determine response type
+      const isBinary =
+        headers && headers["Accept"]?.startsWith("application/octet-stream");
+
+      // Execute request
+      const axiosConfig = this.buildAxiosConfig(headers, isBinary);
       const response = await this.executeHttpRequest(
         method,
         url,
@@ -117,29 +182,14 @@ export class ApiService {
 
       console.log(`Response status: ${response.status}`);
 
-      // Ensure headers are properly typed
-      const responseHeaders = Object.fromEntries(
-        Object.entries(response.headers)
-          .filter(([, value]) => value !== undefined) // Use `[, value]` to ignore unused key
-          .map(([key, value]) => [key, String(value)]) // Ensure all values are strings
-      ) as { [header: string]: string | number | boolean };
+      // Build response
+      const responseHeaders = this.sanitizeResponseHeaders(response.headers);
 
-      // Binary data is saved in EFS to avoid API Gateway size limits. ECS service can retrieve it from there.
       if (isBinary) {
-        const filePath = await this.saveBinaryToEfs(response);
-        responseHeaders["X-EFS-File-Path"] = filePath;
+        return await this.handleBinaryResponse(response, responseHeaders);
       }
 
-      return {
-        statusCode: response.status,
-        headers: responseHeaders,
-        body: isBinary
-          ? Buffer.from(new Uint8Array(response.data as ArrayBuffer)).toString(
-              "base64"
-            )
-          : JSON.stringify(response.data),
-        isBase64Encoded: !!isBinary,
-      };
+      return this.buildJsonResponse(response, responseHeaders);
     } catch (error) {
       console.error("Error handling request:", {
         method: event?.httpMethod,

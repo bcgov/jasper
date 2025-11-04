@@ -25,9 +25,8 @@ export const handler = async (
 
   const apiService = new ApiService(credentialsSecret);
   await apiService.initialize();
+  
   const result = await apiService.handleRequest(event);
-
-  console.log(result);
 
   return result;
 };

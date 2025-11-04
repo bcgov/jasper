@@ -15,6 +15,7 @@
 
 namespace JCCommon.Clients.FileServices
 {
+    using System;
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.10.0 (NJsonSchema v10.6.10.0 (Newtonsoft.Json v12.0.0.0))")]
@@ -524,6 +525,11 @@ namespace JCCommon.Clients.FileServices
                         else
                         if (status_ == 200 || status_ == 206)
                         {
+                            if (response_.Headers.TryGetValues("X-EFS-File-Path", out var efsFilePath))
+                            {
+                                Console.WriteLine(efsFilePath);
+                            }
+
                             var responseStream_ = response_.Content == null ? System.IO.Stream.Null : await response_.Content.ReadAsStreamAsync().ConfigureAwait(false);
                             var fileResponse_ = new FileResponse(status_, headers_, responseStream_, null, response_);
                             disposeClient_ = false; disposeResponse_ = false; // response and client are disposed by FileResponse

@@ -529,10 +529,10 @@ namespace JCCommon.Clients.FileServices
                         {
                             System.IO.Stream responseStream_;
 
-                            if (response_.Headers.TryGetValues("X-EFS-File-Path", out var efsFilePath) && efsFilePath.Any())
+                            if (response_.Headers.TryGetValues("X-EFS-File-Path", out var efsFilePathHeaders) && efsFilePathHeaders.Any())
                             {
                                 Console.WriteLine("File is too large, downloading from EFS");
-                                responseStream_ = FileDownloader.DownloadDocument(efsFilePath.First());
+                                responseStream_ = FileDownloader.DownloadDocument(efsFilePathHeaders.First());
                             }
                             else
                             {

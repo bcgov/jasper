@@ -34,7 +34,7 @@ public class FileStrategy : IDocumentStrategy
 
         documentRequest.CorrelationId ??= Guid.NewGuid().ToString();
 
-        var response = await _filesClient.FilesDocumentAsync(
+        using var response = await _filesClient.FilesDocumentAsync(
             _currentUser.AgencyCode(),
             _currentUser.ParticipantId(),
             _currentUser.ApplicationCode(),

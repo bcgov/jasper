@@ -531,12 +531,9 @@ namespace JCCommon.Clients.FileServices
 
                             if (response_.Headers.TryGetValues("X-EFS-File-Path", out var efsFilePathHeaders) && efsFilePathHeaders.Any())
                             {
-                                Console.WriteLine("File is too large, downloading from EFS");
-                                var memStream = new System.IO.MemoryStream();
-                                using var stream = FileDownloader.DownloadDocument(efsFilePathHeaders.First());
-                                await stream.CopyToAsync(memStream, cancellationToken).ConfigureAwait(false);
-                                memStream.Position = 0;
-                                responseStream_ = memStream;
+                                Console.WriteLine("File is too large, reading from EFS");
+                                // FileDownloader uses FileOptions.DeleteOnClose, so file will be auto-deleted
+                                responseStream_ = FileDownloader.DownloadDocument(efsFilePathHeaders.First());
                             }
                             else
                             {

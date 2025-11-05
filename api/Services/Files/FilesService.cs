@@ -73,12 +73,11 @@ namespace Scv.Api.Services.Files
 
         public async Task<FileResponse> DocumentAsync(string documentId, bool isCriminal, string physicalFileId, string correlationId = null, bool flatten = true)
         {
-            if (correlationId == null)
-            {
-                correlationId = Guid.NewGuid().ToString();
-            }
+            correlationId ??= Guid.NewGuid().ToString();
 
-            return await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten, correlationId);
+            using var response = await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten, correlationId);
+
+            return response;
         }
 
         #endregion Courtlist & Document

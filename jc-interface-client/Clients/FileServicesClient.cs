@@ -527,12 +527,13 @@ namespace JCCommon.Clients.FileServices
                         else
                         if (status_ == 200 || status_ == 206)
                         {
-                            System.IO.Stream responseStream_;
+                            System.IO.Stream responseStream_ = null;
 
                             if (response_.Headers.TryGetValues("X-EFS-File-Path", out var efsFilePathHeaders) && efsFilePathHeaders.Any())
                             {
                                 Console.WriteLine("File is too large, downloading from EFS");
-                                responseStream_ = FileDownloader.DownloadDocument(efsFilePathHeaders.First());
+                                using var stream = FileDownloader.DownloadDocument(efsFilePathHeaders.First());
+                                await stream.CopyToAsync(responseStream_);
                             }
                             else
                             {

@@ -79,7 +79,7 @@ public class FileStrategyTest : ServiceTestBase
             FileId = fakeFileId,
             CorrelationId = fakeCorrelationId
         };
-        var strategy = new FileStrategy(_mockFileServicesClient.Object, _mockUser, null);
+        var strategy = new FileStrategy(_mockFileServicesClient.Object, _mockUser);
         var resultStream = await strategy.Invoke(documentRequest);
 
         Assert.NotNull(resultStream);
@@ -91,7 +91,7 @@ public class FileStrategyTest : ServiceTestBase
     [Fact]
     public void Type_ReturnsFile()
     {
-        var strategy = new FileStrategy(_mockFileServicesClient.Object, _mockUser, null);
+        var strategy = new FileStrategy(_mockFileServicesClient.Object, _mockUser);
 
         var type = strategy.Type;
 

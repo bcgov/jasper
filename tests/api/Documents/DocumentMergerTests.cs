@@ -16,7 +16,7 @@ public class DocumentMergerTest : ServiceTestBase
     public async Task MergeDocuments_ThrowsInvalidOperationException_WhenStreamUnreadable()
     {
         var retrieverMock = new Mock<IDocumentRetriever>();
-        var merger = new DocumentMerger(retrieverMock.Object, null);
+        var merger = new DocumentMerger(retrieverMock.Object);
         var docId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("doc1"));
         var request = new PdfDocumentRequest
         {

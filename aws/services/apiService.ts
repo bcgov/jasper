@@ -5,6 +5,10 @@ import { EFSService } from "./efsService";
 import { HttpService, IHttpService } from "./httpService";
 import { SecretsManagerService } from "./secretsManagerService";
 
+type ResponseHeaders = {
+  [header: string]: string | number | boolean;
+};
+
 export class ApiService {
   protected httpService: IHttpService;
   protected smService: SecretsManagerService;
@@ -73,19 +77,19 @@ export class ApiService {
     };
   }
 
-  private sanitizeResponseHeaders(headers: Record<string, unknown>): {
-    [header: string]: string | number | boolean;
-  } {
+  private sanitizeResponseHeaders(
+    headers: Record<string, unknown>
+  ): ResponseHeaders {
     return Object.fromEntries(
       Object.entries(headers)
         .filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
-    ) as { [header: string]: string | number | boolean };
+    ) as ResponseHeaders;
   }
 
   private async handleBinaryResponse(
     response: AxiosResponse<unknown>,
-    responseHeaders: { [header: string]: string | number | boolean }
+    responseHeaders: ResponseHeaders
   ): Promise<APIGatewayProxyResult> {
     const binaryBuffer = Buffer.from(
       new Uint8Array(response.data as ArrayBuffer)
@@ -124,7 +128,7 @@ export class ApiService {
 
   private buildJsonResponse(
     response: AxiosResponse<unknown>,
-    responseHeaders: { [header: string]: string | number | boolean }
+    responseHeaders: ResponseHeaders
   ): APIGatewayProxyResult {
     return {
       statusCode: response.status,

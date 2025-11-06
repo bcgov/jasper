@@ -20,7 +20,9 @@ secret_keys="\
   pcss \
   request \
   splunk \
-  user_services_client"
+  user_services_client \
+  keycloak_td \
+  smb"
 
 echo "Syncing secrets..."
 

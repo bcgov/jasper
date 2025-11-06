@@ -75,7 +75,7 @@ namespace Scv.Api.Services.Files
         {
             correlationId ??= Guid.NewGuid().ToString();
 
-            using var response = await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten, correlationId);
+            var response = await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten, correlationId);
 
             return response;
         }

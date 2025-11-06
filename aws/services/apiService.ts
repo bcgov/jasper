@@ -27,27 +27,14 @@ export class ApiService {
     await this.httpService.init(credentialsSecret, mtlsSecret);
   }
 
-  private async saveBinaryToEfs(
+  private async saveBinaryToEFS(
     response: AxiosResponse<unknown>
   ): Promise<string> {
     const binaryData = Buffer.from(
       new Uint8Array(response.data as ArrayBuffer)
     );
 
-    // Extract filename from Content-Disposition header if available
-    const contentDisposition = response.headers["content-disposition"];
-    let fileName: string | undefined;
-
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(
-        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
-      );
-      if (filenameMatch && filenameMatch[1]) {
-        fileName = filenameMatch[1].replaceAll(/['"]/g, "");
-      }
-    }
-
-    const filePath = await this.efsService.saveFile(binaryData, fileName);
+    const filePath = await this.efsService.saveFile(binaryData);
     console.log(`Binary file saved to EFS: ${filePath}`);
 
     return filePath;
@@ -103,12 +90,16 @@ export class ApiService {
     const binaryBuffer = Buffer.from(
       new Uint8Array(response.data as ArrayBuffer)
     );
-    const fileSizeInMB = binaryBuffer.length / (1024 * 1024);
+    const fileSizeInBytes = binaryBuffer.length;
 
-    if (fileSizeInMB > 6) {
-      // File is too large for API Gateway, save to EFS
-      const filePath = await this.saveBinaryToEfs(response);
+    // Lambda 6MB limit. 4.5MB threshold accounts for base64 encoding overhead (~33%)
+    const MAX_SAFE_SIZE_BYTES = 4.5 * 1024 * 1024;
+
+    if (fileSizeInBytes > MAX_SAFE_SIZE_BYTES) {
+      // File is too large for Lambda response, save to EFS
+      const filePath = await this.saveBinaryToEFS(response);
       responseHeaders["X-EFS-File-Path"] = filePath;
+      responseHeaders["X-File-Size"] = fileSizeInBytes.toString();
 
       return {
         statusCode: response.status,
@@ -116,7 +107,7 @@ export class ApiService {
         body: JSON.stringify({
           message: "File saved to EFS due to size limit",
           filePath,
-          fileSize: binaryBuffer.length,
+          fileSize: fileSizeInBytes,
         }),
         isBase64Encoded: false,
       };

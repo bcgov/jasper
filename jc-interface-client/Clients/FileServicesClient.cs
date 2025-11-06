@@ -529,10 +529,11 @@ namespace JCCommon.Clients.FileServices
                         {
                             System.IO.Stream responseStream_;
 
+                            // Handle large files differently - they are stored in EFS and a header is returned with the file path
                             if (response_.Headers.TryGetValues("X-EFS-File-Path", out var efsFilePathHeaders) && efsFilePathHeaders.Any())
                             {
                                 Console.WriteLine("File is too large, reading from EFS");
-                                // FileDownloader uses FileOptions.DeleteOnClose, so file will be auto-deleted
+                                // FileDownloader uses FileOptions.DeleteOnClose, so file will be auto-deleted when the stream is closed
                                 responseStream_ = FileDownloader.DownloadDocument(efsFilePathHeaders.First());
                             }
                             else

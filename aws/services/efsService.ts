@@ -9,12 +9,12 @@ export class EFSService {
     this.efsPath = process.env.EFS_MOUNT_PATH || "/mnt/efs";
   }
 
-  public async saveFile(data: Buffer, fileName?: string): Promise<string> {
+  public async saveFile(data: Buffer): Promise<string> {
+    const fileName = `${uuidv4()}.pdf`;
     try {
       await fs.mkdir(this.efsPath, { recursive: true });
 
-      const name = fileName || `${uuidv4()}.pdf`;
-      const filePath = path.join(this.efsPath, name);
+      const filePath = path.join(this.efsPath, fileName);
 
       await fs.writeFile(filePath, data);
 
@@ -25,19 +25,6 @@ export class EFSService {
       console.error("Error saving file to EFS:", {
         error: error instanceof Error ? error.message : String(error),
         fileName,
-      });
-      throw error;
-    }
-  }
-
-  public async deleteFile(filePath: string): Promise<void> {
-    try {
-      await fs.unlink(filePath);
-      console.log(`File deleted from EFS: ${filePath}`);
-    } catch (error) {
-      console.error("Error deleting file from EFS:", {
-        error: error instanceof Error ? error.message : String(error),
-        filePath,
       });
       throw error;
     }

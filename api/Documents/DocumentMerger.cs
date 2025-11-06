@@ -4,12 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using GdPicture14;
+using Microsoft.Extensions.Logging;
 using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents;
 
-public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMerger
+public class DocumentMerger(IDocumentRetriever documentRetriever, Logger<DocumentMerger> logger) : IDocumentMerger
 {
+    private readonly Logger<DocumentMerger> _logger = logger;
+
     /// <summary>
     /// Merges multiple PDF documents into a single PDF document in base64 format.
     /// </summary>
@@ -25,18 +28,21 @@ public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMer
         var retrieveTasks = documentRequests
             .Select(documentRetriever.Retrieve);
 
+        _logger.LogInformation("Retrieve streams to merge");
         var documentStreams = await Task.WhenAll(retrieveTasks);
 
         streamsToMerge.AddRange(documentStreams);
 
         MemoryStream outputStream = new();
 
+        _logger.LogInformation("Merging documents");
         var mergeResult = gdpictureConverter.CombineToPDF(streamsToMerge, outputStream, PdfConformance.PDF);
         if (mergeResult != GdPictureStatus.OK)
         {
             throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
         }
 
+        _logger.LogInformation("Populating page ranges");
         // Calculate page counts and ranges
         var pageRanges = new List<PageRange>();
         int currentPage = 0;
@@ -53,11 +59,17 @@ public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMer
 
         outputStream.Position = 0;
 
+        _logger.LogInformation("All info received.");
+
+
         var response = new PdfDocumentResponse
         {
             Base64Pdf = Convert.ToBase64String(outputStream.ToArray()),
             PageRanges = pageRanges
         };
+
+        _logger.LogInformation("Done.");
+
 
         return response;
     }

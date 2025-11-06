@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
@@ -16,12 +17,14 @@ public class FileStrategy : IDocumentStrategy
 {
     private readonly FileServicesClient _filesClient;
     private readonly ClaimsPrincipal _currentUser;
+    private readonly Logger<FileStrategy> _logger;
 
-    public FileStrategy(FileServicesClient filesClient, ClaimsPrincipal currentUser)
+    public FileStrategy(FileServicesClient filesClient, ClaimsPrincipal currentUser, Logger<FileStrategy> logger)
     {
         _filesClient = filesClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
         _currentUser = currentUser;
+        _logger = logger;
     }
 
     public DocumentType Type => DocumentType.File;
@@ -44,7 +47,11 @@ public class FileStrategy : IDocumentStrategy
             true,
             documentRequest.CorrelationId);
 
+        _logger.LogInformation("Copying stream to memory");
+
         await response.Stream.CopyToAsync(documentResponseStreamCopy);
+
+        _logger.LogInformation("Copied!");
 
         return documentResponseStreamCopy;
     }

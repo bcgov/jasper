@@ -127,11 +127,11 @@ describe("replaceWithWildcard", () => {
     ],
   ];
 
-  testCases.forEach((row) => {
-    row.forEach(([input, expected]) => {
+  for (const row of testCases) {
+    for (const [input, expected] of row) {
       it(`should convert '${input}' to '${expected}'`, () => {
         expect(replaceWithWildcard(input)).toBe(expected);
       });
-    });
-  });
+    }
+  }
 });

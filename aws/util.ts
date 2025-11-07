@@ -35,7 +35,7 @@ export const sanitizeHeaders = (
 export const sanitizeQueryStringParams = (
   params: Record<string, unknown>
 ): string => {
-  Object.keys(params).forEach((key) => {
+  for (const key of Object.keys(params)) {
     const value = params[key];
 
     // Check if the value JSON array
@@ -54,7 +54,7 @@ export const sanitizeQueryStringParams = (
         console.warn(`Failed to parse ${key}: ${value}`, error);
       }
     }
-  });
+  }
 
   const queryString = qs.stringify(params, { encode: true });
 

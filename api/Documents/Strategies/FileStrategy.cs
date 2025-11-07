@@ -44,11 +44,7 @@ public class FileStrategy : IDocumentStrategy
             true,
             documentRequest.CorrelationId);
 
-        Console.WriteLine("Copying stream to memory");
-
         await response.Stream.CopyToAsync(documentResponseStreamCopy);
-
-        Console.WriteLine("Copied!");
 
         return documentResponseStreamCopy;
     }

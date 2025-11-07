@@ -25,21 +25,18 @@ public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMer
         var retrieveTasks = documentRequests
             .Select(documentRetriever.Retrieve);
 
-        Console.WriteLine("Retrieve streams to merge");
         var documentStreams = await Task.WhenAll(retrieveTasks);
 
         streamsToMerge.AddRange(documentStreams);
 
         MemoryStream outputStream = new();
 
-        Console.WriteLine("Merging documents");
         var mergeResult = gdpictureConverter.CombineToPDF(streamsToMerge, outputStream, PdfConformance.PDF);
         if (mergeResult != GdPictureStatus.OK)
         {
             throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
         }
 
-        Console.WriteLine("Populating page ranges");
         // Calculate page counts and ranges
         var pageRanges = new List<PageRange>();
         int currentPage = 0;
@@ -56,17 +53,11 @@ public class DocumentMerger(IDocumentRetriever documentRetriever) : IDocumentMer
 
         outputStream.Position = 0;
 
-        Console.WriteLine("All info received.");
-
-
         var response = new PdfDocumentResponse
         {
             Base64Pdf = Convert.ToBase64String(outputStream.ToArray()),
             PageRanges = pageRanges
         };
-
-        Console.WriteLine("Done.");
-
 
         return response;
     }

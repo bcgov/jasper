@@ -9,13 +9,12 @@ export class EFSService {
     this.efsPath = process.env.EFS_MOUNT_PATH || "/mnt/efs";
   }
 
-  public async saveFile(data: Buffer): Promise<string> {
+  async saveFile(data: Buffer): Promise<string> {
     const fileName = `${uuidv4()}.pdf`;
     try {
-      await fs.mkdir(this.efsPath, { recursive: true });
-
       const filePath = path.join(this.efsPath, fileName);
 
+      await fs.mkdir(this.efsPath, { recursive: true });
       await fs.writeFile(filePath, data);
 
       console.log(`File saved to EFS: ${filePath}`);

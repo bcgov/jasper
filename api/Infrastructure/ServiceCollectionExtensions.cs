@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net.Http;
 using System.Reflection;
+using Amazon;
+using Amazon.Lambda;
 using Azure.Identity;
 using GdPicture14;
 using Hangfire;
@@ -138,6 +140,22 @@ namespace Scv.Api.Infrastructure
             });
 
             services.AddScoped<IEmailService, EmailService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddAWSConfig(this IServiceCollection services, IConfiguration configuration)
+        {
+            var region = configuration.GetValue<string>("AWS_REGION");
+
+            if (!string.IsNullOrWhiteSpace(region))
+            {
+                // For deployed environments
+                services.AddSingleton<IAmazonLambda>(sp =>
+                    new AmazonLambdaClient(RegionEndpoint.GetBySystemName(region)));
+
+                services.AddScoped<ILambdaInvokerService, LambdaInvokerService>();
+            }
 
             return services;
         }

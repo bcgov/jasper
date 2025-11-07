@@ -88,6 +88,7 @@ namespace Scv.Api
             services.AddNutrient(Configuration);
             services.AddJasperDb(Configuration);
 
+            services.AddAWSConfig(Configuration);
             services.AddHangfire(Configuration);
             services.AddGraphService(Configuration);
 
@@ -159,7 +160,7 @@ namespace Scv.Api
             #endregion Swagger
 
             services.AddLazyCache();
-            
+
             services.AddHttpContextAccessor();
         }
 
@@ -168,7 +169,7 @@ namespace Scv.Api
         {
             // Configure DateTimeExtensions to use the service provider
             Helpers.Extensions.DateTimeExtensions.Configure(app.ApplicationServices);
-            
+
             // Use the new exception handler
             app.UseExceptionHandler();
 

@@ -177,6 +177,13 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "rds:DescribeDBSecurityGroups"
         ],
         "Resource" : "arn:aws:rds:${var.region}:${var.account_id}:db:${var.app_name}-postgres-db-${var.environment}"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "lambda:InvokeFunction"
+        ],
+        "Resource" : "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.app_name}-get-assigned-cases-request-lambda-${var.environment}"
       }
     ]
   })
@@ -344,22 +351,6 @@ resource "aws_iam_policy" "lambda_role_policy" {
         "Resource" : [
           "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.app_name}-*-repo-${var.environment}"
         ]
-      },
-      {
-        "Action" : [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:AttachNetworkInterface",
-          "ec2:DetachNetworkInterface"
-        ],
-        "Effect" : "Allow",
-        "Resource" : "arn:aws:ec2:${var.region}:*:network-interface/*",
-        "Condition" : {
-          "ArnLikeIfExists" : {
-            "ec2:Vpc" : "arn:aws:ec2:${var.region}:*:vpc/${var.vpc_id}"
-          }
-        }
       }
     ]
   })
@@ -368,6 +359,11 @@ resource "aws_iam_policy" "lambda_role_policy" {
 resource "aws_iam_role_policy_attachment" "lambda_role_policy_attachment" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_role_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 #

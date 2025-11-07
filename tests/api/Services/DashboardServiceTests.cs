@@ -613,7 +613,7 @@ public class DashboardServiceTests : ServiceTestBase
             [
                 new JudicialCalendarDay
                 {
-                    Date = currentDate.ToString(DashboardService.DATE_FORMAT),
+                    Date = currentDate.ToClientTimezone().ToString(DashboardService.DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
 

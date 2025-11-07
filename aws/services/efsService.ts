@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
+import { detectFileExtension } from "../util";
 
 export class EFSService {
   private efsPath: string;
@@ -10,7 +11,8 @@ export class EFSService {
   }
 
   async saveFile(data: Buffer): Promise<string> {
-    const fileName = `${uuidv4()}.pdf`;
+    const extension = detectFileExtension(data);
+    const fileName = `${uuidv4()}${extension}`;
     try {
       const filePath = path.join(this.efsPath, fileName);
 

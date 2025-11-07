@@ -14,6 +14,10 @@ vi.mock("uuid", () => ({
   v4: vi.fn(() => "test-uuid-1234"),
 }));
 
+vi.mock("../../util", () => ({
+  detectFileExtension: vi.fn(() => ".pdf"),
+}));
+
 describe("EFSService", () => {
   let efsService: EFSService;
   const mockEfsPath = "/mnt/efs";

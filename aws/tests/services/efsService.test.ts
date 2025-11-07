@@ -20,8 +20,10 @@ describe("EFSService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (fs.mkdir as any).mockResolvedValue(undefined);
-    (fs.writeFile as any).mockResolvedValue(undefined);
+    // @ts-expect-error - Mocked function
+    fs.mkdir.mockResolvedValue(undefined);
+    // @ts-expect-error - Mocked function
+    fs.writeFile.mockResolvedValue(undefined);
     process.env.EFS_MOUNT_PATH = mockEfsPath;
     efsService = new EFSService();
   });
@@ -52,7 +54,8 @@ describe("EFSService", () => {
 
     it("should throw when mkdir fails", async () => {
       const mockError = new Error("Permission denied");
-      (fs.mkdir as any).mockRejectedValue(mockError);
+      // @ts-expect-error - Mocked function
+      fs.mkdir.mockRejectedValue(mockError);
       await expect(efsService.saveFile(Buffer.from("x"))).rejects.toThrow(
         "Permission denied"
       );
@@ -60,7 +63,8 @@ describe("EFSService", () => {
 
     it("should throw when writeFile fails", async () => {
       const mockError = new Error("Disk full");
-      (fs.writeFile as any).mockRejectedValue(mockError);
+      // @ts-expect-error - Mocked function
+      fs.writeFile.mockRejectedValue(mockError);
       await expect(efsService.saveFile(Buffer.from("x"))).rejects.toThrow(
         "Disk full"
       );

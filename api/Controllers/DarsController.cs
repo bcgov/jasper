@@ -31,11 +31,12 @@ namespace Scv.Api.Controllers
         [ProducesResponseType(500)]
         public async Task<IActionResult> Search(DateTime date, int locationId, string courtRoomCd)
         {
+            var sanitizedCourtRoomCd = courtRoomCd?.Replace(Environment.NewLine, "").Trim();
             logger.LogInformation(
                 "DARS search requested - Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
                 date,
                 locationId,
-                courtRoomCd
+                sanitizedCourtRoomCd
             );
 
             // Validate input parameters
@@ -47,7 +48,7 @@ namespace Scv.Api.Controllers
 
             try
             {
-                var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+                var result = await darsService.DarsApiSearch(date, locationId, sanitizedCourtRoomCd);
 
                 if (result == null || !result.Any())
                 {
@@ -55,7 +56,7 @@ namespace Scv.Api.Controllers
                         "No DARS recordings found for Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
                         date,
                         locationId,
-                        courtRoomCd
+                        sanitizedCourtRoomCd
                     );
                     return NotFound();
                 }
@@ -65,7 +66,7 @@ namespace Scv.Api.Controllers
                     result.Count(),
                     date,
                     locationId,
-                    courtRoomCd
+                    sanitizedCourtRoomCd
                 );
 
                 return Ok(result);
@@ -77,7 +78,7 @@ namespace Scv.Api.Controllers
                     "DARS API exception while searching - Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}, Status: {StatusCode}",
                     date,
                     locationId,
-                    courtRoomCd,
+                    sanitizedCourtRoomCd,
                     ex.StatusCode
                 );
 

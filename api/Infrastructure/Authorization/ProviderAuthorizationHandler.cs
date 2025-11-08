@@ -2,11 +2,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.IdentityModel.Tokens;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Services;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 
@@ -57,7 +59,9 @@ namespace Scv.Api.Infrastructure.Authorization
                 return;
             }
 
-            if (user.Identity.AuthenticationType == SiteMinderAuthenticationHandler.SiteMinder)
+            // authorize siteminder users, and Federated (ie. provjud) users that have at least one group assigned.
+            if (user.Identity.AuthenticationType == SiteMinderAuthenticationHandler.SiteMinder
+                || (user.Identity.AuthenticationType == TokenValidationParameters.DefaultAuthenticationType && user.Groups().Count > 0))
             {
                 context.Succeed(requirement);
                 return;

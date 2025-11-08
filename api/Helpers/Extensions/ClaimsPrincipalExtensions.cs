@@ -158,8 +158,20 @@ namespace Scv.Api.Helpers.Extensions
         public static bool CanViewOthersSchedule(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.Groups && c.Value == "jasper-view-others-schedule");
 
-        public static string UserGuid(this ClaimsPrincipal claimsPrincipal)
+        public static string IdirUserGuid(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.UserGuid);
+
+        public static string ProvjudUserGuid(this ClaimsPrincipal claimsPrincipal)
+        {
+            var base64Guid = claimsPrincipal.FindFirstValue(CustomClaimTypes.ProvjudUserGuid);
+            if (string.IsNullOrWhiteSpace(base64Guid))
+            {
+                return null;
+            }
+            byte[] decodedBytes = Convert.FromBase64String(base64Guid);
+            string hex = Convert.ToHexStringLower(decodedBytes);
+            return hex;
+        }
 
         public static string ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalJudgeId);

@@ -42,7 +42,7 @@ namespace Scv.Db.Seeders
                 }
                 else
                 {
-                    this.Logger.LogInformation("\tGroup for {name} Group alias is missing...", alias.Name);
+                    this.Logger.LogInformation("\tGroup for {Name} Group alias is missing...", alias.Name);
                 }
             }
 
@@ -53,12 +53,12 @@ namespace Scv.Db.Seeders
                 var ga = await context.GroupAliases.AsQueryable().FirstOrDefaultAsync(g => g.Name == alias.Name);
                 if (ga == null)
                 {
-                    this.Logger.LogInformation("\tGroup alias {name} does not exist, adding it...", alias.Name);
+                    this.Logger.LogInformation("\tGroup alias {Name} does not exist, adding it...", alias.Name);
                     await context.GroupAliases.AddAsync(alias);
                 }
                 else
                 {
-                    this.Logger.LogInformation("\tUpdating from group {group} to group {newGroup} for alias for {name}...", ga.GroupId, alias?.GroupId, alias.Name);
+                    this.Logger.LogInformation("\tUpdating from group {Group} to group {NewGroup} for alias for {Name}...", ga.GroupId, alias?.GroupId, alias.Name);
                     ga.GroupId = alias.GroupId;
 
                 }

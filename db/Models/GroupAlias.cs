@@ -17,9 +17,9 @@ namespace Scv.Db.Models
         public const string SENIOR_JUDGE_COURT_LIST = "Senior Judge - Court List";
         public const string JUDGE_JJ_OUTLOOK_INTEGRATION = "Judge/JJ Outlook Integration";
         public const string USER_ROLE_ADMIN = "User Role Admin";
-        public const string PRODUCT_MANAGER = "Product Manager";
+        public const string PRODUCT_MANAGER = "Product Manager/OCJ JCM";
         public const string OCJ_HELP_DESK = "OCJ Help Desk";
-        public const string CHIEF_JUDGE_ACJ = "Chief Judge/ACJs";
+        public const string CHIEF_JUDGE_ACJ = "Chief Judge/ACJ";
 
 
         public static readonly List<GroupAlias> ALL_GROUP_ALIASES =

@@ -181,7 +181,7 @@ public class LocationServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task GetLocations_ShouldIgnorePCSSLocationWhenNeitherJustinAgenOrLocationSNmExists()
+    public async Task GetLocations_ShouldReturnEmptyListWhenNeitherJustinAgenOrLocationSNmExists()
     {
         var mockJCLocations = new List<CodeValue>(
             [
@@ -206,11 +206,7 @@ public class LocationServiceTests : ServiceTestBase
         var result = await locationService.GetLocations();
 
         Assert.NotNull(result);
-        Assert.Single(result);
-
-        var location = result.Single();
-        Assert.Null(location.LocationId);
-        Assert.Empty(location.CourtRooms);
+        Assert.Empty(result);
     }
 
     [Fact]

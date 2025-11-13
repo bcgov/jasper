@@ -10,6 +10,7 @@ import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
+import { TimebankService } from './TimebankService';
 import { UserService } from './UserService';
 
 export function registerRouter(app: App) {
@@ -24,6 +25,7 @@ export function registerRouter(app: App) {
   const binderService = new BinderService(httpService);
   const userService = new UserService(httpService);
   const caseService = new CaseService(httpService);
+  const timebankService = new TimebankService(httpService);
   const darsService = new DarsService(httpService);
 
   app.provide('httpService', httpService);
@@ -37,6 +39,7 @@ export function registerRouter(app: App) {
   app.provide('binderService', binderService);
   app.provide('userService', userService);
   app.provide('caseService', caseService);
+  app.provide('timebankService', timebankService);
   app.provide('darsService', darsService);
 }
 
@@ -50,4 +53,5 @@ export * from './FilesService';
 export * from './LocationService';
 export * from './LookupService';
 export * from './RedirectHandlerService';
+export * from './TimebankService';
 export * from './UserService';

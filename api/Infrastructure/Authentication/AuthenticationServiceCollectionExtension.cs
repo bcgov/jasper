@@ -296,7 +296,7 @@ namespace Scv.Api.Infrastructure.Authentication
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
                     {
-                        logger.LogError("Error creating new user in SCV database: {Errors}", string.Join(", ", result.Errors));
+                        logger.LogError("Error creating new user in JASPER database: {Errors}", string.Join(", ", result.Errors));
                         return null;
                     }
                     userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;

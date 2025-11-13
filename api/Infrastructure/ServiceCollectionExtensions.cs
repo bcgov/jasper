@@ -45,6 +45,7 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
 using Microsoft.AspNetCore.Hosting;
 
 namespace Scv.Api.Infrastructure
@@ -191,6 +192,14 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<LogNotesServices.LogNotesServicesClient>(client => { ConfigureHttpClient(client, configuration, "DARS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSTimebankServices.TimebankServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>()
+                .ConfigureHttpClient((sp, client) =>
+                {
+                    // Configure the TimebankServicesClient after creation
+                    // This is a workaround since we can't use the UpdateJsonSerializerSettings partial method
+                });
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
@@ -205,6 +214,7 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JudicialCalendarService>();
 
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<ITimebankService, TimebankService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
             services.AddScoped<ICsvParser, CsvParser>();
 

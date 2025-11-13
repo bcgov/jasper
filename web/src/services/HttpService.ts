@@ -104,6 +104,10 @@ export class HttpService implements IHttpService {
         params: queryParams,
         ...config,
       });
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return null as T;
+      }
       return response.data;
     } catch (error) {
       console.error('Error in GET request: ', error);

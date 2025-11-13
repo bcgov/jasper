@@ -12,6 +12,18 @@
 
     <v-divider></v-divider>
 
+    <v-list-item
+      v-if="canViewCourtCalendar"
+      color="primary"
+      rounded="shaped"
+      @click="openTimebankModal"
+    >
+      <template v-slot:prepend>
+        <v-icon :icon="mdiCalendarClock"></v-icon>
+      </template>
+      <v-list-item-title>My Timebank</v-list-item-title>
+    </v-list-item>
+
     <v-list-item color="primary" rounded="shaped">
       <template v-slot:prepend>
         <v-icon :icon="mdiWeatherNight"></v-icon>
@@ -22,25 +34,53 @@
       </template>
     </v-list-item>
   </v-navigation-drawer>
+
+  <TimebankModal
+    v-if="showTimebankModal && userJudgeId"
+    v-model="showTimebankModal"
+    :judge-id="userJudgeId"
+  />
 </template>
 
 <script setup lang="ts">
-  import { useCommonStore } from '@/stores';
+  import { useCommonStore } from '@/stores/CommonStore';
   import { useThemeStore } from '@/stores/ThemeStore';
   import { UserInfo } from '@/types/common';
-  import { mdiAccountCircle, mdiCloseCircle, mdiWeatherNight } from '@mdi/js';
-  import { ref, watch } from 'vue';
+  import {
+    mdiAccountCircle,
+    mdiCalendarClock,
+    mdiCloseCircle,
+    mdiWeatherNight,
+  } from '@mdi/js';
+  import { computed, ref, watch } from 'vue';
+  import TimebankModal from './TimebankModal.vue';
 
   const model = defineModel<boolean>();
   const themeStore = useThemeStore();
+  const commonStore = useCommonStore();
   const theme = ref(themeStore.state);
   const isDark = ref(theme.value === 'dark');
+  const showTimebankModal = ref(false);
+
+  const canViewCourtCalendar = computed(() => {
+    // Check if user has permission to view court calendar
+    // For now, we check if userInfo exists (logged in user)
+    return commonStore.userInfo !== null;
+  });
+
+  const userJudgeId = computed(() => {
+    return commonStore.userInfo?.judgeId;
+  });
 
   const commonStore = useCommonStore();
   const userName = ref<string>(commonStore.userInfo?.userTitle || '');
 
   function toggleDark() {
     themeStore.changeState(theme.value === 'dark' ? 'light' : 'dark');
+  }
+
+  function openTimebankModal() {
+    showTimebankModal.value = true;
   }
 
   watch(

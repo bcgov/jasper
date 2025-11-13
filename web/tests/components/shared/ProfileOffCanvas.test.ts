@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ProfileOffCanvas from 'CMP/shared/ProfileOffCanvas.vue';
+import { createPinia, setActivePinia } from 'pinia';
 
 vi.mock('SRC/stores/ThemeStore', () => ({
   useThemeStore: () => ({
@@ -18,9 +19,12 @@ vi.mock('@/stores', () => ({
 
 describe('ProfileOffCanvas.vue', () => {
   let wrapper;
+  let pinia: any;
 
   beforeEach(() => {
-    wrapper = mount(ProfileOffCanvas);
+    pinia = createPinia();
+    setActivePinia(pinia);
+    wrapper = mount(ProfileOffCanvas, { global: { plugins: [pinia] } });
   });
 
   it('renders the component', () => {
@@ -45,5 +49,3 @@ describe('ProfileOffCanvas.vue', () => {
   //   expect(themeStore.changeState).toHaveBeenCalledWith('dark');
   // });
 });
-
-

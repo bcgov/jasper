@@ -15,6 +15,8 @@ using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Xunit;
+using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
+using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Services;
 
@@ -24,7 +26,7 @@ public class DarsServiceTests : ServiceTestBase
     private readonly Mock<ILogger<DarsService>> _mockLogger;
     private readonly Faker _faker;
     private readonly IMapper _mapper;
-    private readonly IAppCache _cache;
+    private readonly CachingService _cachingService;
 
     public DarsServiceTests()
     {
@@ -34,10 +36,10 @@ public class DarsServiceTests : ServiceTestBase
         var mockDarsSection = new Mock<IConfigurationSection>();
         mockDarsSection.Setup(s => s.Value).Returns("https://logsheet.example.com");
         _mockConfig.Setup(c => c.GetSection("DARS:LogsheetUrl")).Returns(mockDarsSection.Object);
-        
-        var mockCachingSection = new Mock<IConfigurationSection>();
-        mockCachingSection.Setup(s => s.Value).Returns("60");
-        _mockConfig.Setup(c => c.GetSection("Caching:LocationExpiryMinutes")).Returns(mockCachingSection.Object);
+
+        var mockSection = new Mock<IConfigurationSection>();
+        mockSection.Setup(s => s.Value).Returns(_faker.Random.Number().ToString());
+        _mockConfig.Setup(c => c.GetSection("Caching:LocationExpiryMinutes")).Returns(mockSection.Object);
 
         _mockLogger = new Mock<ILogger<DarsService>>();
 
@@ -45,15 +47,70 @@ public class DarsServiceTests : ServiceTestBase
         config.Apply(new DarsMapping());
         config.Apply(new LocationMapping());
         _mapper = new Mapper(config);
-    
-        _cache = new CachingService(new Lazy<ICacheProvider>(() =>
+
+        // Setup Cache
+        _cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
     }
 
+    private Mock<LocationService> SetupLocationService(Dictionary<string, string> locationIdToAgencyIdMap = null)
+    {
+        var mockJCLocationClient = new Mock<JCCommon.Clients.LocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockPCSSLocationClient = new Mock<PCSSLocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockPCSSLookupClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, this.HttpClient);
+
+        mockJCLocationClient
+            .Setup(c => c.LocationsGetAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(() => []);
+        mockJCLocationClient
+            .Setup(c => c.LocationsRoomsGetAsync())
+            .ReturnsAsync([]);
+
+        mockPCSSLocationClient
+            .Setup(c => c.GetLocationsAsync())
+            .ReturnsAsync(() => []);
+
+        mockPCSSLookupClient
+            .Setup(c => c.GetCourtRoomsAsync())
+            .ReturnsAsync(() => []);
+
+        var mockLocationService = new Mock<LocationService>(
+            MockBehavior.Strict,
+            _mockConfig.Object,
+            mockJCLocationClient.Object,
+            mockPCSSLocationClient.Object,
+            mockPCSSLookupClient.Object,
+            _cachingService,
+            _mapper);
+
+        // Setup GetAgencyIdentifierCdByLocationId based on the provided map
+        if (locationIdToAgencyIdMap != null && locationIdToAgencyIdMap.Any())
+        {
+            foreach (var kvp in locationIdToAgencyIdMap)
+            {
+                mockLocationService
+                    .Setup(s => s.GetAgencyIdentifierCdByLocationId(kvp.Key))
+                    .ReturnsAsync(kvp.Value);
+            }
+        }
+        else
+        {
+            // Default setup returns null for any location ID
+            mockLocationService
+                .Setup(s => s.GetAgencyIdentifierCdByLocationId(It.IsAny<string>()))
+                .ReturnsAsync((string)null);
+        }
+
+        return mockLocationService;
+    }
+
     private (DarsService darsService,
-        Mock<LogNotesServicesClient> mockLogNotesClient
+        Mock<LogNotesServicesClient> mockLogNotesClient,
+        Mock<LocationService> mockLocationService
     ) SetupDarsService(
-        ICollection<Lognotes> darsResults)
+        ICollection<Lognotes> darsResults,
+        int? locationId = null,
+        string agencyIdentifierCd = null)
     {
         var mockLogNotesClient = new Mock<LogNotesServicesClient>(MockBehavior.Strict, this.HttpClient);
         mockLogNotesClient
@@ -66,31 +123,26 @@ public class DarsServiceTests : ServiceTestBase
                 It.IsAny<System.Threading.CancellationToken>()))
             .ReturnsAsync(darsResults);
 
-        var mockJCLocationClient = new Mock<JCCommon.Clients.LocationServices.LocationServicesClient>(MockBehavior.Loose, this.HttpClient);
-        var mockPCSSLocationClient = new Mock<PCSSCommon.Clients.LocationServices.LocationServicesClient>(MockBehavior.Loose, this.HttpClient);
-        var mockPCSSLookupClient = new Mock<PCSSCommon.Clients.LookupServices.LookupServicesClient>(MockBehavior.Loose, this.HttpClient);
+        Dictionary<string, string> locationIdToAgencyIdMap = null;
+        if (locationId.HasValue)
+        {
+            var effectiveAgencyIdentifierCd = agencyIdentifierCd ?? locationId.Value.ToString();
+            locationIdToAgencyIdMap = new Dictionary<string, string>
+            {
+                { locationId.Value.ToString(), effectiveAgencyIdentifierCd }
+            };
+        }
 
-        mockJCLocationClient.Setup(c => c.LocationsGetAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<JCCommon.Clients.LocationServices.CodeValue>());
-        
-        mockPCSSLocationClient.Setup(c => c.GetLocationsAsync())
-            .ReturnsAsync(new List<PCSSCommon.Models.Location>());
-
-        var locationService = new LocationService(
-            _mockConfig.Object,
-            mockJCLocationClient.Object,
-            mockPCSSLocationClient.Object,
-            mockPCSSLookupClient.Object,
-            _cache,
-            _mapper);
+        var mockLocationService = SetupLocationService(locationIdToAgencyIdMap);
 
         var darsService = new DarsService(
             _mockConfig.Object,
             _mockLogger.Object,
             mockLogNotesClient.Object,
+            mockLocationService.Object,
             _mapper);
 
-        return (darsService, mockLogNotesClient);
+        return (darsService, mockLogNotesClient, mockLocationService);
     }
 
     [Fact]
@@ -117,7 +169,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, mockLogNotesClient) = SetupDarsService(mockLognotes);
+        var (darsService, mockLogNotesClient, mockLocationService) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -131,13 +183,82 @@ public class DarsServiceTests : ServiceTestBase
         Assert.Equal(locationId, firstResult.LocationId);
         Assert.Equal(courtRoomCd, firstResult.CourtRoomCd);
 
+        // Verify that LocationService was called with the correct locationId
+        mockLocationService.Verify(s => s.GetAgencyIdentifierCdByLocationId(locationId.ToString()), Times.Once());
+
+        // Verify that DARS API was called with the agencyIdentifierCd (which is the same as locationId in our test)
         mockLogNotesClient.Verify(c => c.GetBaseAsync(
             null,
-            locationId,
+            locationId,  // This is the agencyIdentifierCd converted to int
             courtRoomCd,
             It.IsAny<DateTimeOffset?>(),
             null,
             It.IsAny<System.Threading.CancellationToken>()), Times.Once());
+    }
+
+    [Fact]
+    public async Task DarsApiSearch_ShouldReturnEmptyResults_WhenLocationNotFound()
+    {
+        // Arrange
+        var date = _faker.Date.Recent();
+        var locationId = _faker.Random.Int(1, 100);
+        var courtRoomCd = _faker.Random.AlphaNumeric(5);
+
+        var mockLognotes = new List<Lognotes>();
+
+        var (darsService, mockLogNotesClient, mockLocationService) = SetupDarsService(mockLognotes);
+
+        // Act
+        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+
+        // Verify that LocationService was called
+        mockLocationService.Verify(s => s.GetAgencyIdentifierCdByLocationId(locationId.ToString()), Times.Once());
+
+        // Verify that DARS API was NOT called
+        mockLogNotesClient.Verify(c => c.GetBaseAsync(
+            It.IsAny<string>(),
+            It.IsAny<int?>(),
+            It.IsAny<string>(),
+            It.IsAny<DateTimeOffset?>(),
+            It.IsAny<string>(),
+            It.IsAny<System.Threading.CancellationToken>()), Times.Never());
+    }
+
+    [Fact]
+    public async Task DarsApiSearch_ShouldReturnEmptyResults_WhenAgencyIdentifierNotNumeric()
+    {
+        // Arrange
+        var date = _faker.Date.Recent();
+        var locationId = _faker.Random.Int(1, 100);
+        var courtRoomCd = _faker.Random.AlphaNumeric(5);
+        var nonNumericAgencyId = "ABC123";
+
+        var mockLognotes = new List<Lognotes>();
+
+        var (darsService, mockLogNotesClient, mockLocationService) = SetupDarsService(mockLognotes, locationId, nonNumericAgencyId);
+
+        // Act
+        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+
+        // Verify that LocationService was called
+        mockLocationService.Verify(s => s.GetAgencyIdentifierCdByLocationId(locationId.ToString()), Times.Once());
+
+        // Verify that DARS API was NOT called
+        mockLogNotesClient.Verify(c => c.GetBaseAsync(
+            It.IsAny<string>(),
+            It.IsAny<int?>(),
+            It.IsAny<string>(),
+            It.IsAny<DateTimeOffset?>(),
+            It.IsAny<string>(),
+            It.IsAny<System.Threading.CancellationToken>()), Times.Never());
     }
 
     [Fact]
@@ -176,7 +297,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -225,7 +346,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -272,7 +393,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -308,7 +429,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -357,7 +478,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         var result = await darsService.DarsApiSearch(date, locationId, null);
 
@@ -392,7 +513,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -413,7 +534,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>();
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -447,7 +568,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -484,7 +605,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
@@ -521,7 +642,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _) = SetupDarsService(mockLognotes);
+        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
 
         // Act
         var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);

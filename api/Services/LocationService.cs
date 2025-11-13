@@ -106,6 +106,15 @@ namespace Scv.Api.Services
                 ?.Code;
         }
 
+        public virtual async Task<string> GetAgencyIdentifierCdByLocationId(string locationId)
+        {
+            var locations = await GetLocations();
+            return locations
+                .FirstOrDefault(loc =>
+                    loc.LocationId == locationId)
+                ?.AgencyIdentifierCd;
+        }
+
         #endregion Lookup Methods
 
         #region JC Methods

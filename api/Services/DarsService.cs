@@ -19,6 +19,7 @@ namespace Scv.Api.Services
         IConfiguration configuration,
         ILogger<DarsService> logger,
         LogNotesServicesClient logNotesServicesClient,
+        LocationService locationService,
         IMapper mapper) : IDarsService
     {
 
@@ -30,8 +31,28 @@ namespace Scv.Api.Services
         public async Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, int locationId, string courtRoomCd)
         {
             logger.LogInformation("DarsApiSearch called for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
-            var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: locationId);
-            logger.LogInformation("DarsApiSearch returned {ResultCount} results for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", darsResult?.Count() ?? 0, locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
+
+            // Get locations to find the agencyIdentifierCd for the locationId
+            string agencyIdentifierCd = await locationService.GetAgencyIdentifierCdByLocationId(locationId.ToString());
+
+            if (agencyIdentifierCd == null)
+            {
+                logger.LogWarning("Location not found for LocationId: {LocationId}", locationId);
+                return [];
+            }
+
+            if (!int.TryParse(agencyIdentifierCd, out var agencyIdentifier))
+            {
+                logger.LogWarning("Unable to parse agencyIdentifierCd '{AgencyIdentifierCd}' to int for LocationId: {LocationId}", agencyIdentifierCd, locationId);
+                return [];
+            }
+
+            logger.LogInformation("Calling DARS API with AgencyIdentifier: {AgencyIdentifier} (from LocationId: {LocationId}), CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
+                agencyIdentifier, locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
+
+            var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier);
+            logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
+                darsResult?.Count ?? 0, agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
             var mappedResults = mapper.Map<IEnumerable<DarsSearchResults>>(darsResult).ToList();
 
             // Use LINQ's Select to append the base URL to each result's Url property

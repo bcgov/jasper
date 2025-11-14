@@ -143,7 +143,7 @@ public class LocationsTest
     }
 
     [Fact]
-    public void Create_ShouldExcludeInactiveLocations()
+    public void Create_ShouldIncludeInactiveLocations()
     {
         var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", false, []);
         var pcssLocation = LocationModel.Create("PCSSName", "JCLocationId", "PCSSLocationId", true, []);
@@ -152,11 +152,11 @@ public class LocationsTest
 
         var result = LocationsModel.Create(jcLocations, pcssLocations);
 
-        Assert.Empty(result);
+        Assert.Single(result);
     }
 
     [Fact]
-    public void Create_ShouldExcludeLocations_WhenActiveIsNull()
+    public void Create_ShouldIncludeLocations_WhenActiveIsNull()
     {
         var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", null, []);
         var pcssLocation = LocationModel.Create("PCSSName", "JCLocationId", "PCSSLocationId", true, []);
@@ -165,6 +165,6 @@ public class LocationsTest
 
         var result = LocationsModel.Create(jcLocations, pcssLocations);
 
-        Assert.Empty(result);
+        Assert.Single(result);
     }
 }

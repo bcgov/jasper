@@ -17,6 +17,7 @@ using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
@@ -149,7 +150,7 @@ public class CourtListServiceTests : ServiceTestBase
                 It.IsAny<string>()))
             .ReturnsAsync(mockResult);
 
-        var result = await courtListService.GetJudgeCourtListAppearances(_faker.Random.Int(), DateTime.Now);
+        var result = await courtListService.GetJudgeCourtListAppearances(_faker.Random.Int(), DateTime.Now.ToClientTimezone());
 
         Assert.Equal(mockResult, result);
     }
@@ -228,7 +229,7 @@ public class CourtListServiceTests : ServiceTestBase
                 It.IsAny<string>()))
             .ReturnsAsync(mockResult);
 
-        var result = await courtListService.GetJudgeCourtListAppearances(mockJudgeId, DateTime.Now);
+        var result = await courtListService.GetJudgeCourtListAppearances(mockJudgeId, DateTime.Now.ToClientTimezone());
 
         var first = result.Items.First();
         Assert.Equal(2, first.Appearances.Count);

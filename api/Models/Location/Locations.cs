@@ -65,7 +65,7 @@ public class Locations : IList<Location>
                 var match = jcLocations.SingleOrDefault(jc => jc.LocationId == pcss.Code || jc.Code == pcss.Name);
                 return match != null ? Location.Create(match, pcss) : null;
             })
-            .Where(loc => loc?.Active.GetValueOrDefault() == true)
+            .Where(loc => loc != null)
             .OrderBy(loc => loc.ShortName)
             .ToList();
 

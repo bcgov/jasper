@@ -30,13 +30,14 @@
               "
               :judges="judges"
             />
-            <v-btn
-              class="ma-2"
-              @click.stop="profile = true"
-              :icon="mdiAccountCircle"
-              size="x-large"
-              style="font-size: 1.5rem"
-            />
+            <v-btn spaced="end" size="x-large" @click.stop="profile = true" class="text-subtitle-1">
+              <span class="text-left">
+                <div class="mb-1">{{ judgeName }}</div>
+              </span>
+              <template #append>
+                <v-icon :icon="mdiAccountCircle" size="32" />
+              </template>
+            </v-btn>
           </div>
         </v-tabs>
       </v-app-bar>
@@ -59,14 +60,15 @@
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
   import { DashboardService } from './services';
-  import { useCommonStore } from './stores/CommonStore';
   import { useDarsStore } from './stores/DarsStore';
   import { useThemeStore } from './stores/ThemeStore';
   import { PersonSearchItem } from './types';
+  import { UserInfo } from '@/types/common';
+  import { useCommonStore } from '@/stores';
 
   const themeStore = useThemeStore();
-  const darsStore = useDarsStore();
   const commonStore = useCommonStore();
+  const darsStore = useDarsStore();
   const theme = ref(themeStore.state);
   const profile = ref(false);
 
@@ -90,6 +92,20 @@
       } else {
         selectedTab.value = newPath;
       }
+    }
+  );
+
+  const judgeName = ref<string>(
+    commonStore.userInfo?.judgeName || ''
+  );
+
+  watch(
+    () => commonStore.userInfo,
+    (newUserInfo: UserInfo | null) => {
+      if (!newUserInfo) {
+        return;
+      }
+      judgeName.value = newUserInfo.judgeName || '';
     }
   );
 </script>

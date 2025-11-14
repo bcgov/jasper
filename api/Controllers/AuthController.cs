@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -134,6 +135,8 @@ namespace Scv.Api.Controllers
                 JudgeHomeLocationId = HttpContext.User.JudgeHomeLocationId(),
                 Email = HttpContext.User.Email(),
                 IsActive = HttpContext.User.IsActive(),
+                FirstName = HttpContext.User.FirstName(),
+                LastName = HttpContext.User.LastName(),
                 DateTime.UtcNow
             }));
         }

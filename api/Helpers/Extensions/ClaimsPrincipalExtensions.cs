@@ -73,6 +73,15 @@ namespace Scv.Api.Helpers.Extensions
         public static string Email(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(ClaimTypes.Email);
 
+        public static string FullName(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue("name");
+
+        public static string FirstName(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue("given_name");
+
+        public static string LastName(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue("family_name");
+
         public static bool HasPermissions(
             this ClaimsPrincipal claimsPrincipal,
             List<string> requiredPermissions,

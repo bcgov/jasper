@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isOpen" max-width="1000" persistent>
+  <v-dialog v-model="darsStore.isModalVisible" max-width="1000" persistent>
     <v-card>
       <v-card-title class="d-flex justify-space-between align-center">
         <span>DARS Access</span>
@@ -27,13 +27,11 @@
                 :items="locations"
                 return-object
                 item-title="shortName"
-                item-value="locationId"
                 label="Location"
-                :loading="!isLocationDataLoaded"
+                :loading="isLoadingLocations"
                 placeholder="Select a location"
                 :rules="[(v) => !!v || 'Location is required']"
                 :disabled="isSearching"
-                @update:modelValue="handleLocationChange"
                 required
               />
             </v-col>
@@ -123,34 +121,38 @@
 </template>
 
 <script setup lang="ts">
-  import { LocationService } from '@/services';
   import { DarsService, type DarsLogNote } from '@/services/DarsService';
+  import { LocationService } from '@/services/LocationService';
+  import { useCommonStore } from '@/stores/CommonStore';
   import { useDarsStore } from '@/stores/DarsStore';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
   import type { LocationInfo } from '@/types/courtlist';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { mdiClose } from '@mdi/js';
-  import { inject, onMounted, ref, watch } from 'vue';
+  import { computed, inject, ref, watch } from 'vue';
 
-  const props = defineProps<{
-    modelValue: boolean;
-    prefillDate?: Date | null;
-    prefillLocationId?: number | null;
-    prefillRoom?: string;
-  }>();
-
-  const emit = defineEmits<{
-    'update:modelValue': [value: boolean];
-  }>();
-
-  const isOpen = ref(props.modelValue);
+  const snackbarStore = useSnackbarStore();
+  const commonStore = useCommonStore();
+  const darsStore = useDarsStore();
   const formRef = ref();
   const isSearching = ref(false);
-  const isLocationDataLoaded = ref(false);
-  const locations = ref<LocationInfo[]>([]);
   const searchResults = ref<DarsLogNote[]>([]);
-  const snackbarStore = useSnackbarStore();
-  const darsStore = useDarsStore();
+  const isLoadingLocations = ref(false);
+  const currentLocation = ref<LocationInfo | null>(null);
+
+  const locations = computed<LocationInfo[]>(() => {
+    return commonStore.courtRoomsAndLocations
+      .filter((location) => location.active)
+      .map((location) => ({
+        name: location.name,
+        shortName: location.shortName,
+        code: location.code,
+        locationId: location.locationId,
+        active: location.active,
+        courtRooms: location.courtRooms,
+        agencyIdentifierCd: location.agencyIdentifierCd,
+      }));
+  });
 
   const searchParams = {
     get date() {
@@ -160,10 +162,17 @@
       darsStore.searchDate = value;
     },
     get location() {
-      return darsStore.searchLocation;
+      return currentLocation.value;
     },
     set location(value: LocationInfo | null) {
-      darsStore.searchLocation = value;
+      const newLocationId = value?.locationId || null;
+      const currentLocationId = darsStore.searchLocationId;
+
+      if (String(newLocationId) !== String(currentLocationId)) {
+        currentLocation.value = value;
+        darsStore.searchRoom = ''; // Clear room when location changes
+        darsStore.searchLocationId = newLocationId;
+      }
     },
     get room() {
       return darsStore.searchRoom;
@@ -174,58 +183,70 @@
   };
 
   const darsService = inject<DarsService>('darsService');
-  const locationService = inject<LocationService>('locationService');
+  const locationsService = inject<LocationService>('locationService');
+
+  const LOCATION_LOAD_ERROR =
+    'Failed to load court locations. Please try again.';
+  const NO_RECORDINGS_MESSAGE =
+    'No audio recordings found for the specified criteria.';
+  const SEARCH_ERROR_MESSAGE =
+    'An error occurred while searching for recordings.';
+
+  const preloadLocations = async () => {
+    if (
+      commonStore.courtRoomsAndLocations.length === 0 &&
+      !isLoadingLocations.value
+    ) {
+      isLoadingLocations.value = true;
+      try {
+        const locationsData = await locationsService?.getLocations(true);
+        if (locationsData?.length) {
+          commonStore.setCourtRoomsAndLocations(locationsData);
+        }
+      } catch (error) {
+        console.error('Failed to load locations:', error);
+        snackbarStore.showSnackbar(
+          LOCATION_LOAD_ERROR,
+          'error',
+          'Loading Error'
+        );
+      } finally {
+        isLoadingLocations.value = false;
+      }
+    }
+  };
 
   watch(
-    () => props.modelValue,
+    () => darsStore.isModalVisible,
     (newValue) => {
-      isOpen.value = newValue;
       if (newValue) {
-        if (
-          props.prefillDate !== undefined ||
-          props.prefillLocationId !== undefined ||
-          props.prefillRoom !== undefined
-        ) {
-          applyPrefillData();
-          // TODO: if desired, kick-off search automatically here.
-        }
-        // Always clear search results when opening
+        preloadLocations();
         searchResults.value = [];
       }
     }
   );
 
-  watch(isOpen, (newValue) => {
-    if (!newValue) {
-      searchResults.value = [];
-      emit('update:modelValue', false);
-    }
-  });
+  const updateCurrentLocation = () => {
+    const locationId = darsStore.searchLocationId;
+    const newLocation = locationId
+      ? locations.value.find(
+          (loc) => String(loc.locationId) === String(locationId)
+        ) || null
+      : null;
 
-  onMounted(async () => {
-    await loadLocations();
-  });
-
-  const loadLocations = async () => {
-    try {
-      isLocationDataLoaded.value = false;
-      locations.value = (await locationService?.getLocations(true)) || [];
-      isLocationDataLoaded.value = true;
-    } catch (error) {
-      console.error('Error loading locations:', error);
-      snackbarStore.showSnackbar(
-        'Failed to load locations. Please try again.',
-        'error',
-        'Error'
-      );
-      isLocationDataLoaded.value = true;
+    if (
+      String(newLocation?.locationId) !==
+      String(currentLocation.value?.locationId)
+    ) {
+      currentLocation.value = newLocation;
     }
   };
 
-  const handleLocationChange = () => {
-    // Reset room when location changes
-    darsStore.searchRoom = '';
-  };
+  watch(() => darsStore.searchLocationId, updateCurrentLocation, {
+    immediate: true,
+  });
+
+  watch(() => locations.value, updateCurrentLocation);
 
   const formatDateTime = (dateTime: string): string => {
     try {
@@ -235,14 +256,31 @@
     }
   };
 
-  const handleSearch = async () => {
-    // Validate form
-    const { valid } = await formRef.value.validate();
-    if (!valid) {
-      return;
+  const handleSearchResults = (results: DarsLogNote[]) => {
+    if (!results?.length) {
+      snackbarStore.showSnackbar(
+        NO_RECORDINGS_MESSAGE,
+        'warning',
+        'No Results'
+      );
+      return [];
     }
 
-    if (!searchParams.date || !searchParams.location) {
+    if (results.length === 1) {
+      window.open(results[0].url, '_blank', 'noopener,noreferrer');
+      snackbarStore.showSnackbar(
+        'Opening audio recording in new tab.',
+        'success',
+        'Success'
+      );
+    }
+
+    return results;
+  };
+
+  const handleSearch = async () => {
+    const { valid } = await formRef.value.validate();
+    if (!valid || !searchParams.date || !searchParams.location) {
       return;
     }
 
@@ -253,49 +291,22 @@
       const dateString = searchParams.date.toISOString().split('T')[0];
       const results = await darsService?.search(
         dateString,
-        Number.parseInt(searchParams.location.locationId, 10),
+        searchParams.location.agencyIdentifierCd,
         searchParams.room
       );
 
-      if (!results || results.length === 0) {
-        snackbarStore.showSnackbar(
-          'No audio recordings found for the specified criteria.',
-          'warning',
-          'No Results'
-        );
-        searchResults.value = [];
-      } else if (results.length === 1) {
-        window.open(results[0].url, '_blank', 'noopener,noreferrer');
-        snackbarStore.showSnackbar(
-          'Opening audio recording in new tab.',
-          'success',
-          'Success'
-        );
-        // Still show the result in the list for reference
-        searchResults.value = results;
-      } else {
-        // Multiple results - show in list
-        searchResults.value = results;
-      }
+      searchResults.value = handleSearchResults(results || []);
     } catch (error: any) {
       console.error('Error searching DARS:', error);
 
-      // Handle 404 specifically
-      if (error.response?.status === 404 || error.status === 404) {
-        snackbarStore.showSnackbar(
-          'No audio recordings found for the specified criteria.',
-          'warning',
-          'No Results'
-        );
-      } else {
-        const errorMessage =
-          error.message || 'An error occurred while searching for recordings.';
-        snackbarStore.showSnackbar(
-          `Error: ${errorMessage}`,
-          'error',
-          'Search Failed'
-        );
-      }
+      const isNotFound = error.response?.status === 404 || error.status === 404;
+      const message = isNotFound
+        ? NO_RECORDINGS_MESSAGE
+        : `Error: ${error.message || SEARCH_ERROR_MESSAGE}`;
+      const type = isNotFound ? 'warning' : 'error';
+      const title = isNotFound ? 'No Results' : 'Search Failed';
+
+      snackbarStore.showSnackbar(message, type, title);
       searchResults.value = [];
     } finally {
       isSearching.value = false;
@@ -308,38 +319,8 @@
     formRef.value?.resetValidation();
   };
 
-  const applyPrefillData = () => {
-    // Only apply prefill data if explicitly provided
-    // Otherwise, keep the existing search criteria
-    if (props.prefillDate !== undefined && props.prefillDate !== null) {
-      darsStore.searchDate = props.prefillDate;
-    }
-
-    if (
-      props.prefillLocationId !== undefined &&
-      props.prefillLocationId !== null
-    ) {
-      // Find the matching location from the loaded locations (in order to populate list of rooms)
-      const matchingLocation = locations.value.find(
-        (loc) => Number.parseInt(loc.locationId, 10) === props.prefillLocationId
-      );
-      if (matchingLocation) {
-        darsStore.searchLocation = matchingLocation;
-      }
-    }
-
-    if (
-      props.prefillRoom !== undefined &&
-      props.prefillRoom !== null &&
-      props.prefillRoom !== ''
-    ) {
-      darsStore.searchRoom = props.prefillRoom;
-    }
-  };
-
   const close = () => {
-    isOpen.value = false;
-    emit('update:modelValue', false);
+    darsStore.closeModal();
   };
 </script>
 

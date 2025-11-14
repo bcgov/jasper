@@ -54,6 +54,7 @@ export interface ArchiveInfoType {
 
 export interface CourtRoomsJsonInfoType {
   name: string;
+  shortName: string;
   code: string;
   locationId: string;
   active: boolean;

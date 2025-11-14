@@ -17,7 +17,7 @@
           <v-btn
             class="v-tab underline-on-hover"
             value="dars"
-            @click="showDarsModal = true"
+            @click="darsStore.openModal()"
             >DARS</v-btn
           >
           <v-spacer></v-spacer>
@@ -43,7 +43,7 @@
       <v-main>
         <router-view />
       </v-main>
-      <DarsAccessModal v-model="showDarsModal" />
+      <DarsAccessModal v-model="darsStore.isModalVisible" />
       <snackbar />
     </v-app>
   </v-theme-provider>
@@ -59,10 +59,14 @@
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
   import { DashboardService } from './services';
+  import { useCommonStore } from './stores/CommonStore';
+  import { useDarsStore } from './stores/DarsStore';
   import { useThemeStore } from './stores/ThemeStore';
   import { PersonSearchItem } from './types';
 
   const themeStore = useThemeStore();
+  const darsStore = useDarsStore();
+  const commonStore = useCommonStore();
   const theme = ref(themeStore.state);
   const profile = ref(false);
 
@@ -88,9 +92,6 @@
       }
     }
   );
-
-  // DARS modal state
-  const showDarsModal = ref(false);
 </script>
 
 <style>

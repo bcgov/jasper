@@ -21,7 +21,7 @@ namespace Scv.Api.Controllers
         /// Search for DARS audio recordings by date, location, and court room.
         /// </summary>
         /// <param name="date">The date to search for recordings</param>
-        /// <param name="locationId">The location ID</param>
+        /// <param name="agencyIdentifierCd">The location ID</param>
         /// <param name="courtRoomCd">The court room code</param>
         /// <returns>A collection of audio recording log notes</returns>
         [HttpGet("search")]
@@ -29,33 +29,32 @@ namespace Scv.Api.Controllers
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> Search(DateTime date, int locationId, string courtRoomCd)
+        public async Task<IActionResult> Search(DateTime date, string agencyIdentifierCd, string courtRoomCd)
         {
             var sanitizedCourtRoomCd = courtRoomCd?.Replace(Environment.NewLine, "").Trim();
             logger.LogInformation(
                 "DARS search requested - Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
                 date,
-                locationId,
+                agencyIdentifierCd,
                 sanitizedCourtRoomCd
             );
 
-            // Validate input parameters
-            if (locationId <= 0)
+            if (string.IsNullOrWhiteSpace(agencyIdentifierCd))
             {
-                logger.LogWarning("Invalid locationId provided: {LocationId}", locationId);
-                return BadRequest("LocationId must be greater than 0.");
+                logger.LogWarning("Invalid agencyIdentifierCd provided: {AgencyIdentifierCd}", agencyIdentifierCd);
+                return BadRequest("agencyIdentifierCd must be non-empty.");
             }
 
             try
             {
-                var result = await darsService.DarsApiSearch(date, locationId, sanitizedCourtRoomCd);
+                var result = await darsService.DarsApiSearch(date, agencyIdentifierCd, sanitizedCourtRoomCd);
 
                 if (result == null || !result.Any())
                 {
                     logger.LogInformation(
                         "No DARS recordings found for Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
                         date,
-                        locationId,
+                        agencyIdentifierCd,
                         sanitizedCourtRoomCd
                     );
                     return NotFound();
@@ -65,7 +64,7 @@ namespace Scv.Api.Controllers
                     "Found {Count} DARS recording(s) for Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
                     result.Count(),
                     date,
-                    locationId,
+                    agencyIdentifierCd,
                     sanitizedCourtRoomCd
                 );
 
@@ -77,7 +76,7 @@ namespace Scv.Api.Controllers
                     ex,
                     "DARS API exception while searching - Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}, Status: {StatusCode}",
                     date,
-                    locationId,
+                    agencyIdentifierCd,
                     sanitizedCourtRoomCd,
                     ex.StatusCode
                 );

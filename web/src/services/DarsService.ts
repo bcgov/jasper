@@ -2,7 +2,7 @@ import { HttpService } from './HttpService';
 
 export interface DarsLogNote {
   date: string;
-  locationId: number | null;
+  agencyIdentifierCd: number | null;
   courtRoomCd: string;
   url: string;
   fileName: string;
@@ -14,12 +14,12 @@ export class DarsService {
 
   async search(
     date: string,
-    locationId: number,
+    agencyIdentifierCd: string,
     courtRoomCd: string
   ): Promise<DarsLogNote[]> {
     return this.httpService.get<DarsLogNote[]>('api/Dars/search', {
       date,
-      locationId,
+      agencyIdentifierCd,
       courtRoomCd,
     });
   }

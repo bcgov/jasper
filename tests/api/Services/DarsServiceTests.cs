@@ -4,19 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bogus;
 using DARSCommon.Clients.LogNotesServices;
-using LazyCache;
-using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Xunit;
-using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
-using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Services;
 
@@ -26,7 +21,6 @@ public class DarsServiceTests : ServiceTestBase
     private readonly Mock<ILogger<DarsService>> _mockLogger;
     private readonly Faker _faker;
     private readonly IMapper _mapper;
-    private readonly CachingService _cachingService;
 
     public DarsServiceTests()
     {
@@ -47,70 +41,12 @@ public class DarsServiceTests : ServiceTestBase
         config.Apply(new DarsMapping());
         config.Apply(new LocationMapping());
         _mapper = new Mapper(config);
-
-        // Setup Cache
-        _cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
-            new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
-    }
-
-    private Mock<LocationService> SetupLocationService(Dictionary<string, string> locationIdToAgencyIdMap = null)
-    {
-        var mockJCLocationClient = new Mock<JCCommon.Clients.LocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
-        var mockPCSSLocationClient = new Mock<PCSSLocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
-        var mockPCSSLookupClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, this.HttpClient);
-
-        mockJCLocationClient
-            .Setup(c => c.LocationsGetAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
-            .ReturnsAsync(() => []);
-        mockJCLocationClient
-            .Setup(c => c.LocationsRoomsGetAsync())
-            .ReturnsAsync([]);
-
-        mockPCSSLocationClient
-            .Setup(c => c.GetLocationsAsync())
-            .ReturnsAsync(() => []);
-
-        mockPCSSLookupClient
-            .Setup(c => c.GetCourtRoomsAsync())
-            .ReturnsAsync(() => []);
-
-        var mockLocationService = new Mock<LocationService>(
-            MockBehavior.Strict,
-            _mockConfig.Object,
-            mockJCLocationClient.Object,
-            mockPCSSLocationClient.Object,
-            mockPCSSLookupClient.Object,
-            _cachingService,
-            _mapper);
-
-        // Setup GetAgencyIdentifierCdByLocationId based on the provided map
-        if (locationIdToAgencyIdMap != null && locationIdToAgencyIdMap.Any())
-        {
-            foreach (var kvp in locationIdToAgencyIdMap)
-            {
-                mockLocationService
-                    .Setup(s => s.GetAgencyIdentifierCdByLocationId(kvp.Key))
-                    .ReturnsAsync(kvp.Value);
-            }
-        }
-        else
-        {
-            // Default setup returns null for any location ID
-            mockLocationService
-                .Setup(s => s.GetAgencyIdentifierCdByLocationId(It.IsAny<string>()))
-                .ReturnsAsync((string)null);
-        }
-
-        return mockLocationService;
     }
 
     private (DarsService darsService,
-        Mock<LogNotesServicesClient> mockLogNotesClient,
-        Mock<LocationService> mockLocationService
+        Mock<LogNotesServicesClient> mockLogNotesClient
     ) SetupDarsService(
-        ICollection<Lognotes> darsResults,
-        int? locationId = null,
-        string agencyIdentifierCd = null)
+        ICollection<Lognotes> darsResults)
     {
         var mockLogNotesClient = new Mock<LogNotesServicesClient>(MockBehavior.Strict, this.HttpClient);
         mockLogNotesClient
@@ -123,26 +59,14 @@ public class DarsServiceTests : ServiceTestBase
                 It.IsAny<System.Threading.CancellationToken>()))
             .ReturnsAsync(darsResults);
 
-        Dictionary<string, string> locationIdToAgencyIdMap = null;
-        if (locationId.HasValue)
-        {
-            var effectiveAgencyIdentifierCd = agencyIdentifierCd ?? locationId.Value.ToString();
-            locationIdToAgencyIdMap = new Dictionary<string, string>
-            {
-                { locationId.Value.ToString(), effectiveAgencyIdentifierCd }
-            };
-        }
-
-        var mockLocationService = SetupLocationService(locationIdToAgencyIdMap);
 
         var darsService = new DarsService(
             _mockConfig.Object,
             _mockLogger.Object,
             mockLogNotesClient.Object,
-            mockLocationService.Object,
             _mapper);
 
-        return (darsService, mockLogNotesClient, mockLocationService);
+        return (darsService, mockLogNotesClient);
     }
 
     [Fact]
@@ -150,7 +74,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -161,7 +85,7 @@ public class DarsServiceTests : ServiceTestBase
                 Key = _faker.Random.AlphaNumeric(10),
                 Url = "path/to/logsheet.json",
                 Region = _faker.Address.State(),
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -169,10 +93,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, mockLogNotesClient, mockLocationService) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, mockLogNotesClient) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -180,16 +104,13 @@ public class DarsServiceTests : ServiceTestBase
         var firstResult = result.First();
         Assert.Equal("https://logsheet.example.com/path/to/logsheet.json", firstResult.Url);
         Assert.Equal("logsheet.json", firstResult.FileName);
-        Assert.Equal(locationId, firstResult.LocationId);
+        Assert.Equal(agencyIdentifierCd, firstResult.LocationId);
         Assert.Equal(courtRoomCd, firstResult.CourtRoomCd);
 
-        // Verify that LocationService was called with the correct locationId
-        mockLocationService.Verify(s => s.GetAgencyIdentifierCdByLocationId(locationId.ToString()), Times.Once());
-
-        // Verify that DARS API was called with the agencyIdentifierCd (which is the same as locationId in our test)
+        // Verify that DARS API was called with the agencyIdentifierCd (which is the same as agencyIdentifierCd in our test)
         mockLogNotesClient.Verify(c => c.GetBaseAsync(
             null,
-            locationId,  // This is the agencyIdentifierCd converted to int
+            agencyIdentifierCd,  // This is the agencyIdentifierCd converted to int
             courtRoomCd,
             It.IsAny<DateTimeOffset?>(),
             null,
@@ -197,76 +118,11 @@ public class DarsServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task DarsApiSearch_ShouldReturnEmptyResults_WhenLocationNotFound()
-    {
-        // Arrange
-        var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
-        var courtRoomCd = _faker.Random.AlphaNumeric(5);
-
-        var mockLognotes = new List<Lognotes>();
-
-        var (darsService, mockLogNotesClient, mockLocationService) = SetupDarsService(mockLognotes);
-
-        // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result);
-
-        // Verify that LocationService was called
-        mockLocationService.Verify(s => s.GetAgencyIdentifierCdByLocationId(locationId.ToString()), Times.Once());
-
-        // Verify that DARS API was NOT called
-        mockLogNotesClient.Verify(c => c.GetBaseAsync(
-            It.IsAny<string>(),
-            It.IsAny<int?>(),
-            It.IsAny<string>(),
-            It.IsAny<DateTimeOffset?>(),
-            It.IsAny<string>(),
-            It.IsAny<System.Threading.CancellationToken>()), Times.Never());
-    }
-
-    [Fact]
-    public async Task DarsApiSearch_ShouldReturnEmptyResults_WhenAgencyIdentifierNotNumeric()
-    {
-        // Arrange
-        var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
-        var courtRoomCd = _faker.Random.AlphaNumeric(5);
-        var nonNumericAgencyId = "ABC123";
-
-        var mockLognotes = new List<Lognotes>();
-
-        var (darsService, mockLogNotesClient, mockLocationService) = SetupDarsService(mockLognotes, locationId, nonNumericAgencyId);
-
-        // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result);
-
-        // Verify that LocationService was called
-        mockLocationService.Verify(s => s.GetAgencyIdentifierCdByLocationId(locationId.ToString()), Times.Once());
-
-        // Verify that DARS API was NOT called
-        mockLogNotesClient.Verify(c => c.GetBaseAsync(
-            It.IsAny<string>(),
-            It.IsAny<int?>(),
-            It.IsAny<string>(),
-            It.IsAny<DateTimeOffset?>(),
-            It.IsAny<string>(),
-            It.IsAny<System.Threading.CancellationToken>()), Times.Never());
-    }
-
-    [Fact]
     public async Task DarsApiSearch_ShouldPreferCcdJsonOverOthers()
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -275,7 +131,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_ccd.html",
                 Url = "path/to/logsheet_ccd.html",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -287,7 +143,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_ccd.json",
                 Url = "path/to/logsheet_ccd.json",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -297,10 +153,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -315,7 +171,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -324,7 +180,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_fls_1.pdf",
                 Url = "path/to/logsheet_fls_1.pdf",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -336,7 +192,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_fls_2.pdf",
                 Url = "path/to/logsheet_fls_2.pdf",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -346,10 +202,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -362,7 +218,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -371,7 +227,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_ccd.html",
                 Url = "path/to/logsheet_ccd.html",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -383,7 +239,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_fls.pdf",
                 Url = "path/to/logsheet_fls.pdf",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -393,10 +249,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -410,7 +266,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -419,7 +275,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_ccd.html",
                 Url = "path/to/logsheet_ccd.html",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -429,10 +285,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -446,7 +302,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd1 = "ROOM1";
         var courtRoomCd2 = "ROOM2";
 
@@ -456,7 +312,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_room1.json",
                 Url = "path/to/logsheet_room1.json",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd1,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -468,7 +324,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet_room2.json",
                 Url = "path/to/logsheet_room2.json",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd2,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -478,9 +334,9 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
-        var result = await darsService.DarsApiSearch(date, locationId, null);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), null);
 
         // Assert
         Assert.NotNull(result);
@@ -494,7 +350,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -503,7 +359,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet.json",
                 Url = null,
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -513,10 +369,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -529,15 +385,15 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>();
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -549,7 +405,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -558,7 +414,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet.json",
                 Url = "/path/to/logsheet.json",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -568,10 +424,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -586,7 +442,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
 
         var mockLognotes = new List<Lognotes>
@@ -595,7 +451,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = null,
                 Url = "path/to/logsheet",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = _faker.Address.City(),
                 Room = courtRoomCd,
                 DateTime = date.ToString("yyyy-MM-dd"),
@@ -605,10 +461,10 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
@@ -621,7 +477,7 @@ public class DarsServiceTests : ServiceTestBase
     {
         // Arrange
         var date = _faker.Date.Recent();
-        var locationId = _faker.Random.Int(1, 100);
+        var agencyIdentifierCd = _faker.Random.Int(1, 100);
         var courtRoomCd = _faker.Random.AlphaNumeric(5);
         var expectedDateTime = date.ToString("yyyy-MM-dd");
         var expectedLocationName = _faker.Address.City();
@@ -632,7 +488,7 @@ public class DarsServiceTests : ServiceTestBase
             {
                 FileName = "logsheet.json",
                 Url = "path/to/logsheet.json",
-                Location = locationId,
+                Location = agencyIdentifierCd,
                 LocationName = expectedLocationName,
                 Room = courtRoomCd,
                 DateTime = expectedDateTime,
@@ -642,17 +498,17 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var (darsService, _, _) = SetupDarsService(mockLognotes, locationId);
+        var (darsService, _) = SetupDarsService(mockLognotes);
 
         // Act
-        var result = await darsService.DarsApiSearch(date, locationId, courtRoomCd);
+        var result = await darsService.DarsApiSearch(date, agencyIdentifierCd.ToString(), courtRoomCd);
 
         // Assert
         Assert.NotNull(result);
         Assert.Single(result);
         var firstResult = result.First();
         Assert.Equal(expectedDateTime, firstResult.Date);
-        Assert.Equal(locationId, firstResult.LocationId);
+        Assert.Equal(agencyIdentifierCd, firstResult.LocationId);
         Assert.Equal(courtRoomCd, firstResult.CourtRoomCd);
         Assert.Equal("logsheet.json", firstResult.FileName);
         Assert.Contains("https://logsheet.example.com/path/to/logsheet.json", firstResult.Url);

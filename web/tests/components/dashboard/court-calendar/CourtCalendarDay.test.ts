@@ -1,10 +1,10 @@
 import CourtCalendarDay from '@/components/dashboard/court-calendar/CourtCalendarDay.vue';
-import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
 import { CalendarDayActivity } from '@/types';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
+import { useDarsStore } from '@/stores/DarsStore';
 
 const pinia = createPinia();
 setActivePinia(pinia);
@@ -69,6 +69,9 @@ describe('CourtCalendarDay.vue', () => {
       props: {
         activities: mockActivities,
       },
+      global: {
+        plugins: [pinia],
+      },
     });
 
     expect(wrapper.find('[data-testid="short-name"]').text()).toBe(
@@ -89,8 +92,8 @@ describe('CourtCalendarDay.vue', () => {
     ).toBe(1);
   });
 
-  it('displays DarsAccessModal with correct data when dars button is clicked', async () => {
-    const mockDate = new Date();
+  it('opens DARS modal with correct data when dars button is clicked', async () => {
+    const mockDate = new Date('2023-10-15'); // Define the mock date for this test
 
     const wrapper = mount(CourtCalendarDay, {
       props: {
@@ -98,26 +101,21 @@ describe('CourtCalendarDay.vue', () => {
         date: mockDate, // Pass consistent date prop
       },
       global: {
-        stubs: {
-          DarsAccessModal: false, // Remove stub to test actual behavior
-        },
+        plugins: [pinia],
       },
     });
+
+    const darsStore = useDarsStore();
 
     // Simulate clicking the DARS button
     await wrapper.find('[data-testid="dars"]').trigger('click');
 
-    // Find the modal within the wrapper
-    const modalWrapper = wrapper.findComponent(DarsAccessModal);
-
-    expect(modalWrapper.exists()).toBe(true); // Ensure the modal is rendered
-    expect(modalWrapper.props('modelValue')).toBe(true);
-    expect(modalWrapper.props('prefillLocationId')).toBe(
-      mockActivities[0].locationId
+    // Check that the store state was updated correctly
+    expect(darsStore.isModalVisible).toBe(true);
+    expect(darsStore.searchLocationId).toBe(
+      mockActivities[0].locationId?.toString()
     );
-    expect(modalWrapper.props('prefillRoom')).toBe(mockActivities[0].roomCode);
-
-    const prefillDate = modalWrapper.props('prefillDate');
-    expect(prefillDate?.toISOString()).toEqual(mockDate.toISOString());
+    expect(darsStore.searchRoom).toBe(mockActivities[0].roomCode);
+    expect(darsStore.searchDate?.toISOString()).toEqual(mockDate.toISOString());
   });
 });

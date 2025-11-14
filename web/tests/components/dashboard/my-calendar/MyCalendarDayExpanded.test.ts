@@ -9,8 +9,8 @@ import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
+import { useDarsStore } from '@/stores/DarsStore';
 
-// Initialize Pinia before tests
 const pinia = createPinia();
 setActivePinia(pinia);
 
@@ -38,6 +38,7 @@ describe('MyCalendarDayExpanded.vue', () => {
 
     const wrapper = mount(MyCalendarDayExpanded, {
       global: {
+        plugins: [pinia],
         stubs: {
           teleport: true, // Disable the Teleport behavior
         },
@@ -110,6 +111,7 @@ describe('MyCalendarDayExpanded.vue', () => {
 
     const wrapper = mount(MyCalendarDayExpanded, {
       global: {
+        plugins: [pinia],
         stubs: {
           teleport: true, // Disable the Teleport behavior
         },
@@ -154,7 +156,7 @@ describe('MyCalendarDayExpanded.vue', () => {
     expect(restrictionsEl.exists()).toBe(false);
   });
 
-  it('displays DarsAccessModal with correct data when dars button is clicked', async () => {
+  it('opens DARS modal with correct data when dars button is clicked', async () => {
     const date = faker.date.anytime();
     const formattedDate = formatDateInstanceToDDMMMYYYY(date);
     const mockLocation = faker.location.city();
@@ -162,8 +164,9 @@ describe('MyCalendarDayExpanded.vue', () => {
 
     const wrapper = mount(MyCalendarDayExpanded, {
       global: {
+        plugins: [pinia],
         stubs: {
-          teleport: true, // Disable the Teleport behavior
+          teleport: true,
         },
       },
       props: {
@@ -183,19 +186,16 @@ describe('MyCalendarDayExpanded.vue', () => {
       },
     });
 
-    // Simulate clicking the DARS button
+    const darsStore = useDarsStore();
+
     await wrapper.find('[data-testid="dars"]').trigger('click');
 
-    // Find the modal within the wrapper
-    const modalWrapper = wrapper.findComponent({ name: 'DarsAccessModal' });
-
-    expect(modalWrapper.exists()).toBe(true); // Ensure the modal is rendered
-    expect(modalWrapper.props('modelValue')).toBe(true);
-    const midnightDate = new Date(date.toDateString()); // Normalize to midnight
-    expect(modalWrapper.props('prefillDate')?.toISOString()).toEqual(
+    expect(darsStore.isModalVisible).toBe(true);
+    const midnightDate = new Date(date.toDateString());
+    expect(darsStore.searchDate?.toISOString()).toEqual(
       midnightDate.toISOString()
     );
-    expect(modalWrapper.props('prefillLocationId')).toBe(null); // No locationId provided
-    expect(modalWrapper.props('prefillRoom')).toBe(mockRoomCode);
+    expect(darsStore.searchLocationId).toBe(null);
+    expect(darsStore.searchRoom).toBe(mockRoomCode);
   });
 });

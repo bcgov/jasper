@@ -13,13 +13,12 @@ namespace Scv.Api.Services
 {
     public interface IDarsService
     {
-        Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, int locationId, string courtRoomCd);
+        Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);
     }
     public class DarsService(
         IConfiguration configuration,
         ILogger<DarsService> logger,
         LogNotesServicesClient logNotesServicesClient,
-        LocationService locationService,
         IMapper mapper) : IDarsService
     {
 
@@ -28,27 +27,24 @@ namespace Scv.Api.Services
 
         #endregion Variables
 
-        public async Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, int locationId, string courtRoomCd)
+        public async Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd)
         {
-            logger.LogInformation("DarsApiSearch called for LocationId: {LocationId}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
-
-            // Get locations to find the agencyIdentifierCd for the locationId
-            string agencyIdentifierCd = await locationService.GetAgencyIdentifierCdByLocationId(locationId.ToString());
+            logger.LogInformation("DarsApiSearch called for AgencyIdentifierCd: {AgencyIdentifierCd}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", agencyIdentifierCd, courtRoomCd, date.ToString("yyyy-MM-dd"));
 
             if (agencyIdentifierCd == null)
             {
-                logger.LogWarning("Location not found for LocationId: {LocationId}", locationId);
+                logger.LogWarning("Location not found for AgencyIdentifierCd: {AgencyIdentifierCd}", agencyIdentifierCd);
                 return [];
             }
 
             if (!int.TryParse(agencyIdentifierCd, out var agencyIdentifier))
             {
-                logger.LogWarning("Unable to parse agencyIdentifierCd '{AgencyIdentifierCd}' to int for LocationId: {LocationId}", agencyIdentifierCd, locationId);
+                logger.LogWarning("Unable to parse agencyIdentifierCd '{AgencyIdentifierCd}'", agencyIdentifierCd);
                 return [];
             }
 
-            logger.LogInformation("Calling DARS API with AgencyIdentifier: {AgencyIdentifier} (from LocationId: {LocationId}), CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
-                agencyIdentifier, locationId, courtRoomCd, date.ToString("yyyy-MM-dd"));
+            logger.LogInformation("Calling DARS API with AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
+                agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
 
             var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier);
             logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 

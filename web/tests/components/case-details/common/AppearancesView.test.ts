@@ -1,3 +1,4 @@
+import { useDarsStore } from '@/stores/DarsStore';
 import { mount } from '@vue/test-utils';
 import AppearancesView from 'CMP/case-details/common/AppearancesView.vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -51,7 +52,12 @@ describe('AppearancesView.vue', () => {
   });
 
   it('renders default card and table if no appearances are provided', () => {
-    const wrapper = mount(AppearancesView, { props: { appearances: [] } });
+    const wrapper = mount(AppearancesView, {
+      props: { appearances: [] },
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     const card = wrapper.find('v-card');
     expect(card.exists()).toBe(true);
@@ -61,9 +67,14 @@ describe('AppearancesView.vue', () => {
 
   it('renders only past appearances', () => {
     props.appearances[1].appearanceDt = '1999-10-01';
-    const wrapper = mount(AppearancesView, { props });
+    const wrapper = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+      },
+    });
 
-    expect(wrapper.findAll('v-card').length).toBe(2);
+    expect(wrapper.findAll('v-card').length).toBe(1);
     expect(
       wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
     ).toBe('Past Appearances');
@@ -71,16 +82,26 @@ describe('AppearancesView.vue', () => {
 
   it('renders only future appearances', () => {
     props.appearances[0].appearanceDt = '3030-10-01';
-    const wrapper = mount(AppearancesView, { props });
+    const wrapper = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+      },
+    });
 
-    expect(wrapper.findAll('v-card').length).toBe(2);
+    expect(wrapper.findAll('v-card').length).toBe(1);
     expect(
       wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
     ).toBe('Future Appearances');
   });
 
   it('renders both past and future appearances', () => {
-    const wrapper = mount(AppearancesView, { props });
+    const wrapper = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     expect(
       wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
@@ -91,7 +112,12 @@ describe('AppearancesView.vue', () => {
   });
 
   it('filters appearances by selected accused', () => {
-    const wrapper: any = mount(AppearancesView, { props });
+    const wrapper: any = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     wrapper.vm.selectedAccused = 'Doe, John';
     const appearances = wrapper.vm.pastAppearances.concat(
@@ -101,7 +127,12 @@ describe('AppearancesView.vue', () => {
   });
 
   it('renders correct table headers for criminal appearances', () => {
-    const wrapper: any = mount(AppearancesView, { props });
+    const wrapper: any = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     const expectedHeaderKeys = [
       'data-table-expand',
@@ -121,7 +152,12 @@ describe('AppearancesView.vue', () => {
 
   it('renders correct table headers for civil appearances', () => {
     props.isCriminal = false;
-    const wrapper: any = mount(AppearancesView, { props });
+    const wrapper: any = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     const expectedHeaderKeys = [
       'data-table-expand',
@@ -145,16 +181,25 @@ describe('AppearancesView.vue', () => {
     'renders appearances filters based on isCriminal prop',
     ({ isCriminal, shouldExist }) => {
       props.isCriminal = isCriminal;
-      const wrapper = mount(AppearancesView, { props });
+      const wrapper = mount(AppearancesView, {
+        props,
+        global: {
+          plugins: [pinia],
+        },
+      });
 
       expect(wrapper.find('NameFilter').exists()).toBe(shouldExist);
     }
   );
 
-  it('displays DarsAccessModal with correct data when DARS button is clicked', async () => {
+  it('opens DARS modal with correct data when DARS button is clicked', async () => {
+    // Ensure the first appearance has 'SCHD' status so the DARS button appears
+    props.appearances[0].appearanceStatusCd = 'SCHD';
+
     const wrapper = mount(AppearancesView, {
       props,
       global: {
+        plugins: [pinia],
         stubs: {
           // Simple stub that renders items and the DARS slot
           'v-data-table-virtual': {
@@ -175,18 +220,15 @@ describe('AppearancesView.vue', () => {
       },
     });
 
-    // Simulate clicking the DARS button for the first appearance
+    const darsStore = useDarsStore();
+
     await wrapper.find('[data-testid="dars-button-1"]').trigger('click');
 
-    // Find the modal within the wrapper
-    const modalWrapper = wrapper.findComponent({ name: 'DarsAccessModal' });
-
-    expect(modalWrapper.exists()).toBe(true); // Ensure the modal is rendered
-    expect(modalWrapper.props('modelValue')).toBe(true);
-    expect(modalWrapper.props('prefillDate')?.toISOString()).toBe(
+    expect(darsStore.isModalVisible).toBe(true);
+    expect(darsStore.searchDate?.toISOString()).toBe(
       '2023-10-01T00:00:00.000Z'
     );
-    expect(modalWrapper.props('prefillLocationId')).toBe(null); // No locationId provided
-    expect(modalWrapper.props('prefillRoom')).toBe('101');
+    expect(darsStore.searchLocationId).toBe(null);
+    expect(darsStore.searchRoom).toBe('101');
   });
 });

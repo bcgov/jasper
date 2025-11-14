@@ -64,41 +64,26 @@
       </div>
     </div>
   </div>
-
-  <!-- DARS Access Modal -->
-  <DarsAccessModal
-    v-model="showDarsModal"
-    :prefillDate="darsModalData.date"
-    :prefillLocationId="darsModalData.locationId"
-    :prefillRoom="darsModalData.room"
-  />
 </template>
 <script setup lang="ts">
-  import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
   import { CalendarDayActivity } from '@/types';
   import { mdiHeadphones } from '@mdi/js';
   import { computed, ref } from 'vue';
+  import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{
     activities: CalendarDayActivity[];
     date?: Date;
   }>();
 
-  // DARS modal state
-  const showDarsModal = ref(false);
-  const darsModalData = ref({
-    date: null as Date | null,
-    locationId: null as number | null,
-    room: '',
-  });
+  const darsStore = useDarsStore();
 
   const openDarsModal = (locationId: number | undefined, roomCode: string) => {
-    darsModalData.value = {
-      date: props.date || new Date(),
-      locationId: locationId || null,
-      room: roomCode || '',
-    };
-    showDarsModal.value = true;
+    darsStore.openModal(
+      props.date || new Date(),
+      locationId?.toString() || null,
+      roomCode || ''
+    );
   };
 
   const cleanActivityClassDescription = (

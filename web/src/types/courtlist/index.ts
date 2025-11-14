@@ -7,6 +7,7 @@ export interface LocationInfo {
   code: string;
   locationId: string;
   active?: boolean;
+  agencyIdentifierCd: string;
   courtRooms: CourtRoomsInfo[];
 }
 

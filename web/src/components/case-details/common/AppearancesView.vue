@@ -124,21 +124,13 @@
     >
     </v-data-table-virtual>
   </div>
-
-  <!-- DARS Access Modal -->
-  <DarsAccessModal
-    v-model="showDarsModal"
-    :prefillDate="darsModalData.date"
-    :prefillLocationId="darsModalData.locationId"
-    :prefillRoom="darsModalData.room"
-  />
 </template>
 
 <script setup lang="ts">
   import CriminalAppearanceDetails from '@/components/case-details/criminal/appearances/CriminalAppearanceDetails.vue';
   import CivilAppearanceDetails from '@/components/civil/CivilAppearanceDetails.vue';
-  import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
   import AppearanceStatusChip from '@/components/shared/AppearanceStatusChip.vue';
+  import { useDarsStore } from '@/stores/DarsStore';
   import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
   import { ApprDetailType } from '@/types/shared';
   import {
@@ -232,22 +224,15 @@
   const sortBy = ref([{ key: 'appearanceDt', order: 'desc' }] as const);
   const now = new Date();
 
-  // DARS modal state
-  const showDarsModal = ref(false);
-  const darsModalData = ref({
-    date: null as Date | null,
-    locationId: null as number | null,
-    room: '',
-  });
+  const darsStore = useDarsStore();
 
   const openDarsModal = (item: ApprDetailType) => {
     // Parse the date string to Date object
-    darsModalData.value = {
-      date: new Date(item.appearanceDt),
-      locationId: item.locationId ? Number.parseInt(item.locationId, 10) : null,
-      room: item.courtRoomCd || '',
-    };
-    showDarsModal.value = true;
+    darsStore.openModal(
+      new Date(item.appearanceDt),
+      item.locationId || null,
+      item.courtRoomCd || ''
+    );
   };
 
   const filterByAccused = (appearance: criminalApprDetailType) =>

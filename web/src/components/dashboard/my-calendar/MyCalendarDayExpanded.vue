@@ -107,21 +107,13 @@
       </div>
     </div>
   </Teleport>
-
-  <!-- DARS Access Modal -->
-  <DarsAccessModal
-    v-model="showDarsModal"
-    :prefillDate="darsModalData.date"
-    :prefillLocationId="darsModalData.locationId"
-    :prefillRoom="darsModalData.room"
-  />
 </template>
 <script setup lang="ts">
-  import DarsAccessModal from '@/components/dashboard/DarsAccessModal.vue';
   import { CalendarDay, CalendarDayActivity } from '@/types';
   import { parseDDMMMYYYYToDate } from '@/utils/dateUtils';
   import { mdiHeadphones, mdiListBoxOutline, mdiVideo } from '@mdi/js';
   import { computed, ref } from 'vue';
+  import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{
     expandedDate: string | null;
@@ -129,23 +121,16 @@
     close: () => void;
   }>();
 
-  // DARS modal state
-  const showDarsModal = ref(false);
-  const darsModalData = ref({
-    date: null as Date | null,
-    locationId: null as number | null,
-    room: '',
-  });
+  const darsStore = useDarsStore();
 
   const openDarsModal = (locationId: number | undefined, roomCode: string) => {
     // Parse the date from the day.date string (format: DD MMM YYYY)
     const parsedDate = parseDDMMMYYYYToDate(props.day.date);
-    darsModalData.value = {
-      date: parsedDate || new Date(),
-      locationId: locationId || null,
-      room: roomCode || '',
-    };
-    showDarsModal.value = true;
+    darsStore.openModal(
+      parsedDate || new Date(),
+      locationId?.toString() || null,
+      roomCode || ''
+    );
   };
 
   const cleanActivityClassDescription = (

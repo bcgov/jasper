@@ -6,12 +6,12 @@ dotenv.config({ path: ".env.test" });
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node",
-    include: ["**/*.test.ts"],
+    include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: ["**/*.ts"],
+      include: ["services/**/*.ts", "lambdas/**/*.ts"],
     },
+    isolate: false, // Reuse environment for faster execution
   },
 });

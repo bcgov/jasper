@@ -1,20 +1,21 @@
 <template>
-  <v-skeleton-loader class="p-3" type="card" :loading="loading">
-    <v-row v-if="details.appearanceMethods?.length">
-      <v-col>
-        <v-card title="Appearance Methods" variant="flat">
-          <v-card-text>
-            <CriminalAppearanceMethods :appearanceMethods="details.appearanceMethods" />
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-card title="Key Documents" variant="flat">
+  <v-row v-if="details.appearanceMethods?.length">
+    <v-col>
+      <v-card title="Appearance Methods" variant="flat">
+        <v-card-text>
+          <CriminalAppearanceMethods :appearanceMethods="details.appearanceMethods" />
+        </v-card-text>
+      </v-card>
+    </v-col>
+  </v-row>
+  <v-card title="Key Documents" variant="flat">
+    <v-skeleton-loader class="p-3" type="card" :max-height="125" :loading="documentsLoading">
       <v-data-table-virtual
-        :items="details.keyDocuments"
+        :items="documents.keyDocuments"
         :headers
         :sortBy
         density="compact"
+        class="p-2"
       >
         <template v-slot:item.docmClassification="{ item }">
           {{ formatDocumentCategory(item) }}
@@ -30,46 +31,48 @@
           <span v-else>
             {{ formatDocumentType(item) }}
           </span>
-          <div v-if="item.category?.toLowerCase() === 'bail'">
+          <div v-if="
+            item.category?.toLowerCase() === 'bail' &&
+            item.docmDispositionDsc?.toLowerCase() === 'perfected'
+          ">
             {{ item.docmDispositionDsc }}<span class="pl-2" />
             {{ formatDateToDDMMMYYYY(item.issueDate) }}
           </div>
         </template>
       </v-data-table-virtual>
-    </v-card>
-    <v-row>
-      <v-col>
-        <v-card title="Charges" variant="flat">
-          <v-data-table-virtual
-            :items="details.charges"
-            :headers="chargeHeaders"
-            style="background-color: rgba(248, 211, 119, 0.52)"
-            density="compact"
-          >
-              <template v-slot:item.lastResults="{ value, item }">
-                <v-tooltip :text="item.appearanceResultDesc" location="top">
-                  <template v-slot:activator="{ props }">
-                    <span v-bind="props" class="has-tooltip">{{ item.appearanceResultCd }}</span>
-                  </template>
-                </v-tooltip>
-              </template>
-                <template v-slot:item.pleaCode="{ value, item }">
-                  <v-row>
-                    <v-col>
-                      {{ value }}
-                    </v-col>
-                  </v-row>
-                  <v-row v-if="item.pleaDate" no-gutters>
-                    <v-col>
-                      {{ formatDateInstanceToDDMMMYYYY(new Date(item.pleaDate)) }}
-                    </v-col>
-                  </v-row>
-              </template>
-          </v-data-table-virtual>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-skeleton-loader>
+    </v-skeleton-loader>
+  </v-card>
+  <v-card title="Charges" variant="flat">
+    <v-skeleton-loader class="p-3" :max-height="125" type="card" :loading="detailsLoading">
+      <v-data-table-virtual
+        :items="details.charges"
+        :headers="chargeHeaders"
+        style="background-color: rgba(248, 211, 119, 0.52)"
+        density="compact"
+        class="p-2"
+      >
+        <template v-slot:item.lastResults="{ value, item }">
+          <v-tooltip :text="item.appearanceResultDesc" location="top">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props" class="has-tooltip">{{ item.appearanceResultCd }}</span>
+            </template>
+          </v-tooltip>
+        </template>
+        <template v-slot:item.pleaCode="{ value, item }">
+          <v-row>
+            <v-col>
+              {{ value }}
+            </v-col>
+          </v-row>
+          <v-row v-if="item.pleaDate" no-gutters>
+            <v-col>
+              {{ formatDateInstanceToDDMMMYYYY(new Date(item.pleaDate)) }}
+            </v-col>
+          </v-row>
+        </template>
+      </v-data-table-virtual>
+    </v-skeleton-loader>
+  </v-card>
 </template>
 
 <script setup lang="ts">
@@ -81,6 +84,7 @@
   import { useCommonStore } from '@/stores';
   import {
     CriminalAppearanceDetails,
+    CriminalAppearanceDocuments,
     documentType,
   } from '@/types/criminal/jsonTypes';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
@@ -99,7 +103,11 @@
   const details = ref<CriminalAppearanceDetails>(
     {} as CriminalAppearanceDetails
   );
-  const loading = ref(false);
+  const documents = ref<CriminalAppearanceDocuments>(
+    {} as CriminalAppearanceDocuments
+  );
+  const detailsLoading = ref(false);
+  const documentsLoading = ref(false);
   const sortBy = ref([{ key: 'docmClassification', order: 'desc' }] as const);
   if (!filesService) {
     throw new Error('Files service is undefined.');
@@ -135,14 +143,26 @@
     { title: 'PAGES', key: 'documentPageCount' },
   ]);
 
-  onMounted(async () => {
-    loading.value = true;
-    details.value = await filesService.criminalAppearanceDetails(
+  onMounted(() => {
+    documentsLoading.value = true;
+    detailsLoading.value = true;
+    filesService.criminalAppearanceDocuments(
+      props.fileId,
+      props.partId
+    ).then(result => {
+      documents.value = result;
+    }).finally(() => {
+      documentsLoading.value = false;
+    });
+    filesService.criminalAppearanceDetails(
       props.fileId,
       props.appearanceId,
       props.partId
-    );
-    loading.value = false;
+    ).then(result => {
+      details.value = result;
+    }).finally(() => {
+      detailsLoading.value = false;
+    });
   });
 
   const openDocument = (document: documentType) => {

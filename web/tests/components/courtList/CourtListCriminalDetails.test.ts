@@ -26,19 +26,21 @@ beforeEach(() => {
 describe('CourtListCriminalDetails.vue', () => {
     let filesService: any;
     let wrapper: ReturnType<typeof mount>;
-
+    const mockDocuments = {
+      keyDocuments: [
+        {
+          issueDate: '2024-06-01',
+          docmFormDsc: 'Form A',
+          docmDispositionDsc: 'Perfected',
+          docmClassification: 'Type 1',
+          documentPageCount: 3,
+          category: 'bail',
+        },
+      ],
+    };
     const mockDetails = {
         appearanceMethods: [{ method: 'In Person' }],
-        keyDocuments: [
-            {
-            issueDate: '2024-06-01',
-            docmFormDsc: 'Form A',
-            docmDispositionDsc: 'Disposition',
-            docmClassification: 'Type 1',
-            documentPageCount: 3,
-            category: 'bail',
-            },
-        ],
+
         charges: [
             {
             printSeqNo: 1,
@@ -55,7 +57,8 @@ describe('CourtListCriminalDetails.vue', () => {
 
   beforeEach(async () => {
     filesService = {
-      criminalAppearanceDetails: vi.fn().mockResolvedValue(mockDetails)
+      criminalAppearanceDetails: vi.fn().mockResolvedValue(mockDetails),
+      criminalAppearanceDocuments: vi.fn().mockResolvedValue(mockDocuments),
     };
     (FilesService as any).mockReturnValue(filesService);
     
@@ -149,7 +152,7 @@ it('does not render AppearanceMethods when no appearanceMethods', () => {
 
     await flushPromises();
 
-    expect(wrapper.text()).toContain('Disposition');
+    expect(wrapper.text()).toContain('Perfected');
     expect(wrapper.text()).toContain('01-Jun-2024');
   });
 
@@ -244,8 +247,11 @@ it('does not render AppearanceMethods when no appearanceMethods', () => {
   it('shows loading skeleton while fetching data', async () => {
     const slowFilesService = {
       criminalAppearanceDetails: vi.fn().mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockDetails), 100))
-      )
+        new Promise(resolve => setTimeout(() => resolve(mockDetails), 100)),
+      ),
+      criminalAppearanceDocuments: vi.fn().mockImplementation(() => 
+        new Promise(resolve => setTimeout(() => resolve(mockDocuments), 100)),
+      ),
     };
 
     const loadingWrapper = mount(CourtListCriminalDetails, {
@@ -264,7 +270,7 @@ it('does not render AppearanceMethods when no appearanceMethods', () => {
 
     // Should show loading initially
     expect(loadingWrapper.find('v-skeleton-loader').attributes('loading')).toBeDefined();
-    
+    expect(loadingWrapper.findAll('v-skeleton-loader').length).toBe(2);
     await flushPromises();
     await new Promise(resolve => setTimeout(resolve, 150));
     

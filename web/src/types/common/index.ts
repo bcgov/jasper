@@ -84,6 +84,7 @@ export interface UserInfo {
   agencyCode: string;
   userId: string;
   judgeId: number;
+  judgeHomeLocationId: number;
   email: string;
 }
 

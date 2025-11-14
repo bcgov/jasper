@@ -31,6 +31,6 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_directory }}
 
-    - run: npm run test --if-present
+    - run: npm run test:run
       shell: bash
       working-directory: ${{ inputs.working_directory }}

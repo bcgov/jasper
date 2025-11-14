@@ -1,6 +1,7 @@
 import * as qs from "qs";
 import { describe, expect, it, vi } from "vitest";
 import {
+  detectFileExtension,
   replaceWithWildcard,
   sanitizeHeaders,
   sanitizeQueryStringParams,
@@ -127,11 +128,71 @@ describe("replaceWithWildcard", () => {
     ],
   ];
 
-  testCases.forEach((row) => {
-    row.forEach(([input, expected]) => {
+  for (const row of testCases) {
+    for (const [input, expected] of row) {
       it(`should convert '${input}' to '${expected}'`, () => {
         expect(replaceWithWildcard(input)).toBe(expected);
       });
-    });
+    }
+  }
+});
+
+describe("detectFileExtension", () => {
+  it("should detect PDF files by magic bytes", () => {
+    // PDF starts with %PDF (hex: 25 50 44 46)
+    const pdfBuffer = Buffer.from([
+      0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34,
+    ]);
+    expect(detectFileExtension(pdfBuffer)).toBe(".pdf");
+  });
+
+  it("should detect PDF with minimal buffer", () => {
+    const pdfBuffer = Buffer.from([0x25, 0x50, 0x44, 0x46]);
+    expect(detectFileExtension(pdfBuffer)).toBe(".pdf");
+  });
+
+  it("should return .bin for non-PDF files", () => {
+    // JPEG magic bytes (FF D8 FF)
+    const jpegBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+    expect(detectFileExtension(jpegBuffer)).toBe(".bin");
+  });
+
+  it("should return .bin for PNG files", () => {
+    // PNG magic bytes (89 50 4E 47)
+    const pngBuffer = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+    expect(detectFileExtension(pngBuffer)).toBe(".bin");
+  });
+
+  it("should return .bin for buffers smaller than 4 bytes", () => {
+    const smallBuffer = Buffer.from([0x25, 0x50]);
+    expect(detectFileExtension(smallBuffer)).toBe(".bin");
+  });
+
+  it("should return .bin for empty buffer", () => {
+    const emptyBuffer = Buffer.from([]);
+    expect(detectFileExtension(emptyBuffer)).toBe(".bin");
+  });
+
+  it("should return .bin for text files", () => {
+    const textBuffer = Buffer.from("Hello World");
+    expect(detectFileExtension(textBuffer)).toBe(".bin");
+  });
+
+  it("should return .bin for ZIP/DOCX files", () => {
+    // ZIP magic bytes (50 4B 03 04)
+    const zipBuffer = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+    expect(detectFileExtension(zipBuffer)).toBe(".bin");
+  });
+
+  it("should handle PDF with different versions", () => {
+    // PDF-1.7
+    const pdf17Buffer = Buffer.from("%PDF-1.7\n", "ascii");
+    expect(detectFileExtension(pdf17Buffer)).toBe(".pdf");
+
+    // PDF-2.0
+    const pdf20Buffer = Buffer.from("%PDF-2.0\n", "ascii");
+    expect(detectFileExtension(pdf20Buffer)).toBe(".pdf");
   });
 });

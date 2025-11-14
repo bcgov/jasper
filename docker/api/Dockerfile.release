@@ -20,8 +20,10 @@ COPY ["models/", "models/"]
 COPY ["jc-interface-client/", "jc-interface-client/"]
 COPY ["pcss-client/", "pcss-client/"]
 COPY ["transitory-documents-client/", "transitory-documents-client/"]
+COPY ["dars-client/dars-client.csproj", "dars-client/"]
 RUN dotnet restore api/api.csproj
 RUN dotnet restore core/core.csproj
+RUN dotnet restore dars-client/dars-client.csproj
 RUN dotnet restore models/models.csproj
 RUN dotnet restore transitory-documents-client/transitory-documents-client.csproj
 

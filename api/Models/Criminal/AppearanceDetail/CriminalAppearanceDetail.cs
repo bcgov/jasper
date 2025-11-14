@@ -34,8 +34,6 @@ public class CriminalAppearanceDetail
     public ICollection<Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod> AppearanceMethods { get; set; }
     public string EstimatedTimeHour { get; set; }
     public string EstimatedTimeMin { get; set; }
-    public IEnumerable<CriminalDocument> Documents { get; set; }
-    public IEnumerable<CriminalDocument> KeyDocuments => KeyDocumentResolver.GetCriminalKeyDocuments(Documents);
 
     public CriminalFileDetailResponseCourtLevelCd CourtLevelCd { get; set; }
 }

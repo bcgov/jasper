@@ -21,12 +21,15 @@ locals {
       }
     }
     "proxy-request" = {
-      http_method   = "*"
-      resource_path = ""
+      http_method       = "*"
+      resource_path     = ""
+      enable_vpc_config = true
+      enable_efs        = true
       env_variables = {
         FILE_SERVICES_CLIENT_SECRET_NAME = var.lambda_secrets["file_services_client"]
         PCSS_SECRET_NAME                 = var.lambda_secrets["pcss"]
         DARS_SECRET_NAME                 = var.lambda_secrets["dars"]
+        EFS_MOUNT_PATH                   = var.efs_mount_path
       }
     }
   }
@@ -44,6 +47,7 @@ locals {
       env_variables       = v.env_variables
       source_arn          = coalesce(lookup(v, "source_arn", null), "${var.apigw_execution_arn}/*/${v.http_method}${v.resource_path}")
       enable_vpc_config   = coalesce(lookup(v, "enable_vpc_config", null), true)
+      enable_efs          = coalesce(lookup(v, "enable_efs", null), false)
     }
   }
 
@@ -76,6 +80,14 @@ resource "aws_lambda_function" "lambda" {
     content {
       subnet_ids         = var.subnet_ids
       security_group_ids = var.sg_ids
+    }
+  }
+
+  dynamic "file_system_config" {
+    for_each = each.value.enable_efs && var.efs_access_point_arn != "" ? [1] : []
+    content {
+      arn              = var.efs_access_point_arn
+      local_mount_path = var.efs_mount_path
     }
   }
 

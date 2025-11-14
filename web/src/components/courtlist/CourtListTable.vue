@@ -36,6 +36,7 @@
             :fileId="item.physicalFileId"
             :appearanceId="item.appearanceId"
             :showBinder="true"
+            :courtClassCd="item.courtClassCd"
           />
         </td>
       </tr>

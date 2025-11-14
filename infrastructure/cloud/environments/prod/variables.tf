@@ -135,3 +135,11 @@ variable "api_ecs_config" {
     memory_size  = number
   })
 }
+
+variable "efs_config" {
+  description = "EFS configuration"
+  type = object({
+    mount_path = string
+    files_dir  = string
+  })
+}

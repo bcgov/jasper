@@ -21,7 +21,7 @@
   import { UserInfo } from '@/types/common';
   import { defineProps, ref, watch } from 'vue';
 
-  defineProps<{
+  const props = defineProps<{
     judges: PersonSearchItem[];
   }>();
 
@@ -36,7 +36,14 @@
     }
 
     if (newVal != commonStore.userInfo?.judgeId) {
-      commonStore.setUserInfo({ ...commonStore.userInfo, judgeId: newVal });
+      const { homeLocationId } = props.judges.find(
+        (j) => j.personId === newVal
+      );
+      commonStore.setUserInfo({
+        ...commonStore.userInfo,
+        judgeId: newVal,
+        judgeHomeLocationId: homeLocationId,
+      });
     }
   });
 

@@ -84,7 +84,13 @@ namespace Scv.Api.Services
         public async Task<string> GetLocationCodeFromId(string code)
         {
             var locations = await GetLocations();
-            return locations.FirstOrDefault(loc => loc.LocationId == code)?.Code;
+            return locations.FirstOrDefault(loc => loc.Code == code)?.Code;
+        }
+
+        public async Task<string> GetLocationId(string code)
+        {
+            var locations = await GetLocations();
+            return locations.FirstOrDefault(loc => loc.Code == code)?.LocationId;
         }
 
         public async Task<string> GetLocationAgencyIdentifier(string code) => FindShortDescriptionFromCode(await GetLocations(), code);

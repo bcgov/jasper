@@ -1,11 +1,13 @@
 import { APIGatewayEvent } from "aws-lambda";
 import { beforeEach, describe, expect, it, MockedObject, vi } from "vitest";
 import { ApiService } from "../../services/apiService";
+import { EFSService } from "../../services/efsService";
 import { HttpService } from "../../services/httpService";
 import { SecretsManagerService } from "../../services/secretsManagerService";
 
 vi.mock("../../services/httpService");
 vi.mock("../../services/secretsManagerService");
+vi.mock("../../services/efsService");
 vi.mock("../../util", () => ({
   sanitizeHeaders: vi.fn((headers) => headers),
   sanitizeQueryStringParams: vi.fn((params) =>
@@ -17,6 +19,7 @@ describe("ApiService", () => {
   let apiService: ApiService;
   let mockHttpService: MockedObject<HttpService>;
   let mockSecretsManagerService: MockedObject<SecretsManagerService>;
+  let mockEfsService: MockedObject<EFSService>;
 
   beforeEach(() => {
     mockHttpService = new HttpService() as MockedObject<HttpService>;
@@ -37,6 +40,11 @@ describe("ApiService", () => {
       .fn()
       .mockResolvedValue("mock-secret");
 
+    mockEfsService = new EFSService() as MockedObject<EFSService>;
+    mockEfsService.saveFile = vi
+      .fn()
+      .mockResolvedValue("/mnt/efs/test-file.pdf");
+
     apiService = new ApiService("test-secret");
     (
       apiService as unknown as { httpService: MockedObject<HttpService> }
@@ -46,6 +54,9 @@ describe("ApiService", () => {
         smService: MockedObject<SecretsManagerService>;
       }
     ).smService = mockSecretsManagerService;
+    (
+      apiService as unknown as { efsService: MockedObject<EFSService> }
+    ).efsService = mockEfsService;
   });
 
   it("should initialize the service", async () => {
@@ -137,7 +148,14 @@ describe("ApiService", () => {
     });
   });
 
-  it("should handle a GET binary request", async () => {
+  it("should handle a GET binary request with small file (< 4.5MB)", async () => {
+    const smallBinaryData = new ArrayBuffer(1024 * 1024); // 1MB
+    mockHttpService.get = vi.fn().mockResolvedValue({
+      data: smallBinaryData,
+      headers: { "content-type": "application/pdf" },
+      status: 200,
+    });
+
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
       path: "/test",
@@ -155,13 +173,82 @@ describe("ApiService", () => {
       },
       responseType: "arraybuffer",
     });
-    expect(response).toEqual({
-      statusCode: 200,
-      body: Buffer.from(
-        new Uint8Array("get response" as unknown as ArrayBuffer)
-      ).toString("base64"),
-      isBase64Encoded: true,
-      headers: {},
+    expect(mockEfsService.saveFile).not.toHaveBeenCalled();
+    expect(response.statusCode).toBe(200);
+    expect(response.isBase64Encoded).toBe(true);
+    expect(response.headers).toEqual({ "content-type": "application/pdf" });
+  });
+
+  it("should save large binary file to EFS (> 4.5MB)", async () => {
+    const largeBinaryData = new ArrayBuffer(5 * 1024 * 1024); // 5MB
+    mockHttpService.get = vi.fn().mockResolvedValue({
+      data: largeBinaryData,
+      headers: { "content-type": "application/pdf" },
+      status: 200,
     });
+
+    const event: Partial<APIGatewayEvent> = {
+      httpMethod: "GET",
+      path: "/test/large-file",
+      queryStringParameters: {},
+      headers: { Accept: "application/octet-stream" },
+      body: null,
+    };
+
+    const response = await apiService.handleRequest(event as APIGatewayEvent);
+
+    expect(mockEfsService.saveFile).toHaveBeenCalledWith(expect.any(Buffer));
+    expect(response.statusCode).toBe(200);
+    expect(response.isBase64Encoded).toBe(false);
+    expect(response.headers).toBeDefined();
+    expect(response.headers!["X-EFS-File-Path"]).toBe("/mnt/efs/test-file.pdf");
+    expect(response.headers!["X-File-Size"]).toBe(String(5 * 1024 * 1024));
+    expect(JSON.parse(response.body)).toEqual({
+      message: "File saved to EFS due to size limit",
+      filePath: "/mnt/efs/test-file.pdf",
+      fileSize: 5 * 1024 * 1024,
+    });
+  });
+
+  it("should handle exactly 4.5MB file as threshold", async () => {
+    const thresholdData = new ArrayBuffer(4.5 * 1024 * 1024); // Exactly 4.5MB
+    mockHttpService.get = vi.fn().mockResolvedValue({
+      data: thresholdData,
+      headers: {},
+      status: 200,
+    });
+
+    const event: Partial<APIGatewayEvent> = {
+      httpMethod: "GET",
+      path: "/test/threshold",
+      headers: { Accept: "application/octet-stream" },
+    };
+
+    const response = await apiService.handleRequest(event as APIGatewayEvent);
+
+    // At exactly 4.5MB, should still return base64 (not > threshold)
+    expect(mockEfsService.saveFile).not.toHaveBeenCalled();
+    expect(response.isBase64Encoded).toBe(true);
+  });
+
+  it("should save file to EFS when size is just over 4.5MB", async () => {
+    const justOverThreshold = new ArrayBuffer(4.5 * 1024 * 1024 + 1); // 4.5MB + 1 byte
+    mockHttpService.get = vi.fn().mockResolvedValue({
+      data: justOverThreshold,
+      headers: {},
+      status: 200,
+    });
+
+    const event: Partial<APIGatewayEvent> = {
+      httpMethod: "GET",
+      path: "/test/just-over",
+      headers: { Accept: "application/octet-stream" },
+    };
+
+    const response = await apiService.handleRequest(event as APIGatewayEvent);
+
+    expect(mockEfsService.saveFile).toHaveBeenCalled();
+    expect(response.headers).toBeDefined();
+    expect(response.headers!["X-EFS-File-Path"]).toBe("/mnt/efs/test-file.pdf");
   });
 });

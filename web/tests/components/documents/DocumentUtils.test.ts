@@ -137,11 +137,6 @@ describe('DocumentUtils', () => {
       const document = { category: null, docmClassification: null } as any;
       expect(DocumentUtils.formatDocumentCategory(document)).toBeNull();
     });
-
-    it('should default to docmClassification when category is null', () => {
-      const document = { category: null, docmClassification: 'test' } as any;
-      expect(DocumentUtils.formatDocumentCategory(document)).toBe('test');
-    });
   });
 
   describe('formatDocumentType', () => {

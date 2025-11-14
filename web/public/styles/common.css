@@ -70,7 +70,8 @@ tbody tr:nth-of-type(odd) {
 }
 
 /* Dashboard Common Styles */
-.civil {
+.civil,
+.small-claims {
   color: var(--text-purple-500);
 }
 

@@ -54,17 +54,17 @@ public class CaseService(
 
             var reservedJudgments = judgeCases
                 .Where(c => string.IsNullOrWhiteSpace(c.Reason))
-                .OrderBy(c => c.StyleOfCause);
+                .OrderBy(c => c.DueDate);
 
             var scheduledDecisions = judgeCases
                 .Where(c => !string.IsNullOrWhiteSpace(c.Reason)
                     && c.Reason.Equals(DECISION_APPR_REASON_CD, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(c => c.StyleOfCause);
+                .OrderBy(c => c.DueDate);
 
             var scheduledContinuations = judgeCases
                 .Where(c => ContinuationReasonCodes
                     .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase)))
-                .OrderBy(c => c.StyleOfCause);
+                .OrderBy(c => c.DueDate);
 
             var response = new CaseResponse
             {

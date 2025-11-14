@@ -1,9 +1,9 @@
 import { createPinia } from 'pinia';
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { App } from 'vue';
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 const pinia = createPinia();
-pinia.use(piniaPluginPersistedstate)
+pinia.use(piniaPluginPersistedstate);
 
 export function registerPinia(app: App) {
   app.use(pinia);
@@ -11,11 +11,12 @@ export function registerPinia(app: App) {
 
 export default pinia;
 
+export { useBundleStore } from './BundleStore';
 export { useCivilFileStore } from './CivilFileStore';
 export { useCommonStore } from './CommonStore';
 export { useCourtFileSearchStore } from './CourtFileSearchStore';
 export { useCourtListStore } from './CourtListStore';
 export { useCriminalFileStore } from './CriminalFileStore';
-export { useSnackbarStore } from './SnackbarStore';
+export { useDarsStore } from './DarsStore';
 export { usePDFViewerStore } from './PDFViewerStore';
-export { useBundleStore } from './BundleStore';
+export { useSnackbarStore } from './SnackbarStore';

@@ -18,7 +18,9 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.request_secret.arn,
     aws_secretsmanager_secret.reserved_judgements_secret.arn,
     aws_secretsmanager_secret.splunk_secret.arn,
-    aws_secretsmanager_secret.user_services_client_secret.arn
+    aws_secretsmanager_secret.user_services_client_secret.arn,
+    aws_secretsmanager_secret.keycloak_td_secret.arn,
+    aws_secretsmanager_secret.smb_secret.arn
   ]
 }
 
@@ -38,6 +40,7 @@ output "api_secrets" {
     ["DARS__Username", "${aws_secretsmanager_secret.dars_secret.arn}:username::"],
     ["DARS__Password", "${aws_secretsmanager_secret.dars_secret.arn}:password::"],
     ["DARS__Url", "${aws_secretsmanager_secret.dars_secret.arn}:baseUrl::"],
+    ["DARS__LogsheetUrl", "${aws_secretsmanager_secret.dars_secret.arn}:logsheetUrl::"],
     ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString::"],
     ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey::"],
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],

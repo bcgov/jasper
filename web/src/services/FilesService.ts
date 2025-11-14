@@ -2,9 +2,9 @@ import {
   GeneratePdfRequest,
   GeneratePdfResponse,
 } from '@/components/documents/models/GeneratePdf';
-import { CivilAppearanceDetails } from '@/types/civil/jsonTypes/index';
+import { CivilAppearanceDetailParty, CivilAppearanceDetailDocuments, CivilAppearanceDetailMethods } from '@/types/civil/jsonTypes/index';
 import { CourtFileSearchResponse } from '@/types/courtFileSearch';
-import { CriminalAppearanceDetails } from '@/types/criminal/jsonTypes/index';
+import { CriminalAppearanceDetails, CriminalAppearanceDocuments } from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
 
 export class FilesService {
@@ -31,13 +31,31 @@ export class FilesService {
     );
   }
 
-  async civilAppearanceDetails(
+  async civilAppearanceDocuments(
     fileId: string,
     appearanceId: string,
     includeJudicialBinder: boolean = false
-  ): Promise<CivilAppearanceDetails> {
+  ): Promise<CivilAppearanceDetailDocuments> {
     return this.httpService.get<any>(
-      `${this.baseUrl}/civil/${fileId}/appearance-detail/${appearanceId}?includeJudicialBinder=${includeJudicialBinder}`
+      `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/documents?includeJudicialBinder=${includeJudicialBinder}`
+    );
+  }
+
+  async civilAppearanceParty(
+    fileId: string,
+    appearanceId: string,
+  ): Promise<CivilAppearanceDetailParty> {
+    return this.httpService.get<any>(
+      `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/party`
+    );
+  }
+
+  async civilAppearanceMethods(
+    fileId: string,
+    appearanceId: string,
+  ): Promise<CivilAppearanceDetailMethods> {
+    return this.httpService.get<any>(
+      `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/methods`
     );
   }
 
@@ -48,6 +66,15 @@ export class FilesService {
   ): Promise<CriminalAppearanceDetails> {
     return this.httpService.get<any>(
       `${this.baseUrl}/criminal/${fileId}/appearance-detail/${appearanceId}/${partId}`
+    );
+  }
+
+  async criminalAppearanceDocuments(
+    fileId: string,
+    partId: string
+  ): Promise<CriminalAppearanceDocuments> {
+    return this.httpService.get<any>(
+      `${this.baseUrl}/criminal/${fileId}/appearance-detail/${partId}/documents`
     );
   }
 

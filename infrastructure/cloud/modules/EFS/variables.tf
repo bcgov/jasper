@@ -9,7 +9,7 @@ variable "app_name" {
 }
 
 variable "name" {
-  description = "The name identifier for the EFS (e.g., 'coredumps', 'api-dumps')"
+  description = "The name identifier for the EFS (e.g., 'coredumps', 'api-dumps', 'files')"
   type        = string
 }
 

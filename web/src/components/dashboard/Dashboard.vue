@@ -19,7 +19,7 @@
     v-model:selectedDate="selectedDate"
     v-model:isCalendarLoading="isCalendarLoading"
   />
-  <DashboardPanels class="my-5" :judgeId="judgeId" />
+  <DashboardPanels :judgeId="judgeId" />
 </template>
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';

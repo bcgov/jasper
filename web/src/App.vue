@@ -14,6 +14,12 @@
           <v-tab value="court-file-search" to="/court-file-search"
             >Court file search</v-tab
           >
+          <v-btn
+            class="v-tab underline-on-hover"
+            value="dars"
+            @click="showDarsModal = true"
+            >DARS</v-btn
+          >
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
             <JudgeSelector
@@ -37,6 +43,7 @@
       <v-main>
         <router-view />
       </v-main>
+      <DarsAccessModal v-model="showDarsModal" />
       <snackbar />
     </v-app>
   </v-theme-provider>
@@ -47,6 +54,7 @@
   import { mdiAccountCircle } from '@mdi/js';
   import { inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
+  import DarsAccessModal from './components/dashboard/DarsAccessModal.vue';
   import JudgeSelector from './components/shared/JudgeSelector.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
@@ -80,6 +88,9 @@
       }
     }
   );
+
+  // DARS modal state
+  const showDarsModal = ref(false);
 </script>
 
 <style>
@@ -100,5 +111,12 @@
   .logo:hover {
     transform: scale(1.02);
     filter: brightness(1.1);
+  }
+</style>
+
+<style scoped>
+  .underline-on-hover:hover :deep(.v-btn__content) {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 </style>

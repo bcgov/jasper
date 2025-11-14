@@ -135,19 +135,33 @@ module "alb" {
   tg_api_arn       = module.tg_api.tg_arn
 }
 
+# Setup EFS Files storage
+module "efs_files" {
+  source             = "../../modules/EFS"
+  environment        = var.environment
+  app_name           = var.app_name
+  name               = var.efs_config.files_dir
+  purpose            = "Temporary file storage when accessing court files."
+  subnet_ids         = module.subnets.app_subnets_ids
+  security_group_ids = [data.aws_security_group.app_sg.id]
+  kms_key_arn        = module.initial.kms_key_arn
+}
+
 # Create Lambda Functions
 module "lambda" {
-  source              = "../../modules/Lambda"
-  environment         = var.environment
-  app_name            = var.app_name
-  lambda_role_arn     = module.iam.lambda_role_arn
-  apigw_execution_arn = module.apigw.apigw_execution_arn
-  lambda_ecr_repo_url = module.initial.lambda_ecr.ecr_repo_url
-  lambda_memory_size  = var.lambda_memory_size
-  subnet_ids          = module.subnets.all_subnet_ids
-  sg_ids              = [data.aws_security_group.web_sg.id, data.aws_security_group.data_sg.id, data.aws_security_group.app_sg.id]
-  lambda_secrets      = module.secrets_manager.lambda_secrets
-  ecs_cluster_name    = module.ecs_cluster.ecs_cluster.name
+  source               = "../../modules/Lambda"
+  environment          = var.environment
+  app_name             = var.app_name
+  lambda_role_arn      = module.iam.lambda_role_arn
+  apigw_execution_arn  = module.apigw.apigw_execution_arn
+  lambda_ecr_repo_url  = module.initial.lambda_ecr.ecr_repo_url
+  lambda_memory_size   = var.lambda_memory_size
+  subnet_ids           = module.subnets.all_subnet_ids
+  sg_ids               = [data.aws_security_group.web_sg.id, data.aws_security_group.data_sg.id, data.aws_security_group.app_sg.id]
+  lambda_secrets       = module.secrets_manager.lambda_secrets
+  ecs_cluster_name     = module.ecs_cluster.ecs_cluster.name
+  efs_access_point_arn = module.efs_files.access_point_arn
+  efs_mount_path       = var.efs_config.mount_path
 }
 
 # Create Cloudwatch LogGroups
@@ -266,6 +280,13 @@ module "ecs_api_td" {
   log_group_name       = module.ecs_api_td_log_group.log_group.name
   cpu                  = var.api_ecs_config.cpu
   memory_size          = var.api_ecs_config.memory_size
+  efs_volume_config = {
+    name            = "efs-files-storage"
+    file_system_id  = module.efs_files.efs_id
+    access_point_id = module.efs_files.access_point_id
+    root_directory  = var.efs_config.files_dir
+    container_path  = var.efs_config.mount_path
+  }
 }
 
 # Create Web ECS Service

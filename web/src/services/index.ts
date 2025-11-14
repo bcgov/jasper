@@ -4,6 +4,7 @@ import { AuthService } from './AuthService';
 import { BinderService } from './BinderService';
 import { CaseService } from './CaseService';
 import { CourtListService } from './CourtListService';
+import { DarsService } from './DarsService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
@@ -24,6 +25,7 @@ export function registerRouter(app: App) {
   const binderService = new BinderService(httpService);
   const userService = new UserService(httpService);
   const caseService = new CaseService(httpService);
+  const darsService = new DarsService(httpService);
   const transitoryDocumentsService = new TransitoryDocumentsService(
     httpService
   );
@@ -40,12 +42,14 @@ export function registerRouter(app: App) {
   app.provide('userService', userService);
   app.provide('caseService', caseService);
   app.provide('transitoryDocumentsService', transitoryDocumentsService);
+  app.provide('darsService', darsService);
 }
 
 export * from './AuthService';
 export * from './BinderService';
 export * from './CaseService';
 export * from './CourtListService';
+export * from './DarsService';
 export * from './DashboardService';
 export * from './FilesService';
 export * from './LocationService';

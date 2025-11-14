@@ -20,13 +20,13 @@
     <PackageReference Include="dotenv.net" Version="4.0.0" />
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
-    <PackageReference Include="GdPicture.API" Version="14.3.18" />
-    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.21" />
+    <PackageReference Include="GdPicture.API" Version="14.3.19.1" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.20.12" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Graph" Version="5.95.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.96.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.6.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
     <PackageReference Include="NETStandard.Library" Version="2.0.3" />
@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\core\core.csproj" />
+    <ProjectReference Include="..\dars-client\dars-client.csproj" />
     <ProjectReference Include="..\db\db.csproj" />
     <ProjectReference Include="..\jc-interface-client\jc-interface-client.csproj" />
     <ProjectReference Include="..\models\models.csproj" />

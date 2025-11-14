@@ -68,7 +68,7 @@
 <script setup lang="ts">
   import { CalendarDayActivity } from '@/types';
   import { mdiHeadphones } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{

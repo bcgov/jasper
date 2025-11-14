@@ -43,9 +43,6 @@ namespace Scv.Api.Services
                 return [];
             }
 
-            logger.LogInformation("Calling DARS API with AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
-                agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
-
             var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier);
             logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
                 darsResult?.Count ?? 0, agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));

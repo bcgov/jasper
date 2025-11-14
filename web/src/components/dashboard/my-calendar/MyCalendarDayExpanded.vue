@@ -112,7 +112,7 @@
   import { CalendarDay, CalendarDayActivity } from '@/types';
   import { parseDDMMMYYYYToDate } from '@/utils/dateUtils';
   import { mdiHeadphones, mdiListBoxOutline, mdiVideo } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{

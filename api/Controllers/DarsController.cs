@@ -32,7 +32,7 @@ namespace Scv.Api.Controllers
         public async Task<IActionResult> Search(DateTime date, string agencyIdentifierCd, string courtRoomCd)
         {
             var sanitizedCourtRoomCd = courtRoomCd?.Replace(Environment.NewLine, "").Trim();
-            var sanitizedAgencyIdentifierCd = courtRoomCd?.Replace(Environment.NewLine, "").Trim();
+            var sanitizedAgencyIdentifierCd = agencyIdentifierCd?.Replace(Environment.NewLine, "").Trim();
             logger.LogInformation(
                 "DARS search requested - Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
                 date,

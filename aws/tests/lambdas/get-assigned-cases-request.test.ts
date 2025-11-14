@@ -12,6 +12,7 @@ vi.mock("../../services/assignedCasesService");
 
 describe("Get Assigned Cases Request Lambda Handler", () => {
   let mockContext: Partial<Context>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockAssignedCasesService: any;
   const mockCallback = vi.fn();
 

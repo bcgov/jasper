@@ -64,6 +64,12 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 _logger.LogDebug("Listing files in SMB path: {Path} with normalized room filter: {RoomFilter}",
                     smbPath, normalizedRoomFilter ?? "none");
 
+                // Check if path contains wildcard for prefix matching
+                if (smbPath.Contains('*'))
+                {
+                    return await ListFilesWithWildcardAsync(connection.FileStore, smbPath, normalizedRoomFilter, ct);
+                }
+
                 var files = new List<SmbFileInfo>();
 
                 // List files with normalized room matching
@@ -72,6 +78,107 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 _logger.LogDebug("Found {Count} files in {Path}", files.Count, smbPath);
                 return (IReadOnlyList<SmbFileInfo>)files;
             }, cancellationToken);
+        }
+
+        /// <summary>
+        /// Lists files matching a wildcard path pattern.
+        /// Supports prefix matching for date folders (e.g., "10 OCTOBER/OCTOBER 31*" matches "10 OCTOBER/OCTOBER 31(Fri)").
+        /// </summary>
+        private async Task<IReadOnlyList<SmbFileInfo>> ListFilesWithWildcardAsync(
+            ISMBFileStore fileStore,
+            string wildcardPath,
+            string? normalizedRoomFilter,
+            CancellationToken cancellationToken)
+        {
+            var allFiles = new List<SmbFileInfo>();
+
+            // Split path into directory and wildcard pattern
+            var lastBackslash = wildcardPath.LastIndexOf('\\');
+            if (lastBackslash == -1)
+            {
+                _logger.LogWarning("Invalid wildcard path format: {Path}", wildcardPath);
+                return allFiles;
+            }
+
+            var parentDirectory = wildcardPath.Substring(0, lastBackslash);
+            var wildcardPattern = wildcardPath.Substring(lastBackslash + 1);
+            
+            // Extract the prefix (before the *)
+            var wildcardIndex = wildcardPattern.IndexOf('*');
+            if (wildcardIndex == -1)
+            {
+                _logger.LogWarning("No wildcard found in pattern: {Pattern}", wildcardPattern);
+                return allFiles;
+            }
+
+            var prefix = wildcardPattern.Substring(0, wildcardIndex);
+            
+            _logger.LogDebug("Searching for directories in '{Parent}' starting with '{Prefix}'", 
+                parentDirectory, prefix);
+
+            try
+            {
+                var directoryHandle = OpenSmbPath(fileStore, parentDirectory, AccessMask.GENERIC_READ, CreateOptions.FILE_DIRECTORY_FILE);
+
+                try
+                {
+                    var status = fileStore.QueryDirectory(
+                        out var fileList,
+                        directoryHandle,
+                        "*",
+                        FileInformationClass.FileDirectoryInformation);
+
+                    if (status != NTStatus.STATUS_SUCCESS && status != NTStatus.STATUS_NO_MORE_FILES)
+                    {
+                        throw new IOException($"Failed to query directory '{parentDirectory}': {status}");
+                    }
+
+                    var matchingDirectories = new List<string>();
+
+                    foreach (var item in fileList ?? Enumerable.Empty<QueryDirectoryFileInformation>())
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (item is not FileDirectoryInformation fileInfo || fileInfo.FileName == "." || fileInfo.FileName == "..")
+                            continue;
+
+                        var isDirectory = (fileInfo.FileAttributes & SMBLibrary.FileAttributes.Directory) != 0;
+
+                        // Check if this is a directory that starts with our prefix
+                        if (isDirectory && fileInfo.FileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var matchedPath = CombineSmbPath(parentDirectory, fileInfo.FileName);
+                            matchingDirectories.Add(matchedPath);
+                            _logger.LogDebug("Found matching directory: {Path}", matchedPath);
+                        }
+                    }
+
+                    // Now list files from all matching directories
+                    foreach (var matchedDirectory in matchingDirectories)
+                    {
+                        var files = new List<SmbFileInfo>();
+                        await ListFilesWithRoomFilterAsync(fileStore, matchedDirectory, matchedDirectory, normalizedRoomFilter, files, cancellationToken);
+                        allFiles.AddRange(files);
+                    }
+
+                    _logger.LogDebug("Found {DirectoryCount} matching directories and {FileCount} total files", 
+                        matchingDirectories.Count, allFiles.Count);
+                }
+                finally
+                {
+                    fileStore.CloseFile(directoryHandle);
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                _logger.LogDebug("Parent directory not found: {Path}", parentDirectory);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error processing wildcard path: {Path}", wildcardPath);
+            }
+
+            return allFiles;
         }
 
         public async Task<Stream> OpenFileAsync(string filePath, CancellationToken cancellationToken = default)

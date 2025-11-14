@@ -9,8 +9,9 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         /// Lists all files in the specified directory path and optionally in subdirectories matching a room filter.
         /// The room filter is normalized (leading zeros removed) and matches folder names containing the same normalized number.
         /// For example, roomFilter "009" will match folders "Room 9", "Courtroom 009", "R9" but not "Room 69".
+        /// If the path contains a wildcard (*), it will match directories that start with the prefix before the wildcard.
         /// </summary>
-        /// <param name="path">Relative path from the base path</param>
+        /// <param name="path">Relative path from the base path (may include * wildcard for prefix matching)</param>
         /// <param name="roomFilter">Optional room code to filter subdirectories</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Collection of file information objects</returns>

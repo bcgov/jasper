@@ -6,6 +6,8 @@ using Scv.TdApi.Infrastructure.FileSystem;
 using Scv.TdApi.Infrastructure.Options;
 using Scv.TdApi.Models;
 using System.Collections.Concurrent;
+using SMBLibrary;
+using SMBLibrary.Client;
 
 namespace Scv.TdApi.Services
 {
@@ -108,24 +110,41 @@ namespace Scv.TdApi.Services
         {
             _logger.LogDebug("Processing date folder: {Path}", datePath);
 
-            var files = await _fileSystemClient.ListFilesAsync(datePath, roomFilter: roomCd);
-
-            if (files.Count == 0)
+            try
             {
-                _logger.LogDebug("No files found in date folder: {Path}", datePath);
-                return;
-            }
+                var files = await _fileSystemClient.ListFilesAsync(datePath, roomFilter: roomCd);
 
-            _logger.LogDebug("Retrieved {Count} files from {Path}", files.Count, datePath);
-
-            foreach (var file in files)
-            {
-                _logger.LogDebug("Processing file: {FileName} at {FullPath} relative directory {RelativeDirectory}", file.FileName, file.FullPath, file.RelativeDirectory);
-                var dto = CreateFileMetadataDto(file);
-                if (!allFiles.ContainsKey(dto.AbsolutePath))
+                if (files.Count == 0)
                 {
-                    allFiles[dto.AbsolutePath] = dto;
+                    _logger.LogDebug("No files found in date folder: {Path}", datePath);
+                    return;
                 }
+
+                _logger.LogDebug("Retrieved {Count} files from {Path}", files.Count, datePath);
+
+                foreach (var file in files)
+                {
+                    _logger.LogDebug("Processing file: {FileName} at {FullPath} relative directory {RelativeDirectory}", file.FileName, file.FullPath, file.RelativeDirectory);
+                    var dto = CreateFileMetadataDto(file);
+                    if (!allFiles.ContainsKey(dto.AbsolutePath))
+                    {
+                        allFiles[dto.AbsolutePath] = dto;
+                    }
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                // Expected when the folder doesn't exist - log as debug
+                _logger.LogDebug("Date folder not found: {Path}", datePath);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Expected when the folder doesn't exist - log as debug
+                _logger.LogDebug("Date folder not found: {Path}", datePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error accessing date folder: {Path}", datePath);
             }
         }
 
@@ -144,10 +163,20 @@ namespace Scv.TdApi.Services
 
         private List<string> GetCandidateDatePaths(string locationPath, DateOnly date)
         {
-            return _options.DateFolderFormats
-                .Select(format => Path.Combine(locationPath, date.ToString(format)).Replace('\\', '/'))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            // For each date format, generate both:
+            // 1. The exact path with the formatted date
+            // 2. A wildcard path using "*" suffix to match any additional characters
+            var paths = new List<string>();
+            
+            foreach (var format in _options.DateFolderFormats)
+            {
+                var formattedDate = date.ToString(format);
+                
+                var exactPath = Path.Combine(locationPath, formattedDate).Replace('\\', '/');
+                paths.Add(exactPath);
+            }
+
+            return paths.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         private IReadOnlyList<FileMetadataDto> OrderResults(IEnumerable<FileMetadataDto> results)

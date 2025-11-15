@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
@@ -21,7 +22,6 @@ using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Jobs;
 using Scv.Api.Models;
 using Scv.Api.Services;
-using Scv.Api.Services.Files;
 using tests.api.Fixtures;
 using Xunit;
 using GraphModel = Microsoft.Graph.Models;
@@ -41,9 +41,8 @@ public class SyncAssignedCasesJobTests
     private readonly Mock<ICsvParser> _mockCsvParser;
     private readonly Mock<IDashboardService> _mockDashboardService;
     private readonly Mock<ICaseService> _mockCaseService;
+    private readonly Mock<ILambdaInvokerService> _mockLambdaInvokerService;
 
-    private readonly Mock<FilesService> _mockFilesService;
-    private readonly Mock<LocationService> _mockLocationService;
     private readonly Mock<JudicialCalendarServicesClient> _mockJcServiceClient;
     private readonly Mock<ILogger<SyncAssignedCasesJob>> _mockLogger;
     private readonly IAppCache _cache;
@@ -66,16 +65,14 @@ public class SyncAssignedCasesJobTests
         _mockCsvParser = new Mock<ICsvParser>();
         _mockDashboardService = new Mock<IDashboardService>();
         _mockCaseService = new Mock<ICaseService>();
+        _mockLambdaInvokerService = new Mock<ILambdaInvokerService>();
 
-        // HttpClient setup
         var mockHandler = new Mock<HttpMessageHandler>();
         var httpClient = new HttpClient(mockHandler.Object)
         {
             BaseAddress = new Uri(_faker.Internet.Url())
         };
 
-        _mockFilesService = new Mock<FilesService>();
-        _mockLocationService = new Mock<LocationService>();
         _mockJcServiceClient = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, httpClient);
         _mockLogger = new Mock<ILogger<SyncAssignedCasesJob>>();
 
@@ -98,9 +95,8 @@ public class SyncAssignedCasesJobTests
             _mockDashboardService.Object,
             _mockCaseService.Object,
             _courtListServiceFixture.MockCourtListService.Object,
-            _filesServiceFixture.MockFilesService.Object,
-            _locationServiceFixture.MockLocationService.Object,
-            _mockJcServiceClient.Object);
+            _mockJcServiceClient.Object,
+            _mockLambdaInvokerService.Object);
     }
 
     private void SetupMockConfiguration()
@@ -129,6 +125,11 @@ public class SyncAssignedCasesJobTests
         mockFromEmailSection.Setup(s => s.Value).Returns("sender@example.com");
         _mockConfig.Setup(c => c.GetSection("RESERVED_JUDGEMENTS:SENDER"))
             .Returns(mockFromEmailSection.Object);
+
+        var mockLambdaNameSection = new Mock<IConfigurationSection>();
+        mockLambdaNameSection.Setup(s => s.Value).Returns((string)null);
+        _mockConfig.Setup(c => c.GetSection("AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"))
+            .Returns(mockLambdaNameSection.Object);
     }
 
     [Fact]
@@ -477,6 +478,71 @@ public class SyncAssignedCasesJobTests
         var schedule = _job.CronSchedule;
 
         Assert.Equal("0 7 * * *", schedule);
+    }
+
+    [Fact]
+    public async Task Execute_UsesLambdaInvoker_WhenLambdaNameConfigured()
+    {
+        SetupBasicMocks();
+
+        var mockLambdaNameSection = new Mock<IConfigurationSection>();
+        mockLambdaNameSection.Setup(s => s.Value).Returns("test-lambda-function");
+        _mockConfig.Setup(c => c.GetSection("AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"))
+            .Returns(mockLambdaNameSection.Object);
+
+        _mockEmailService.Setup(s => s
+            .GetFilteredEmailsAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<bool>()))
+            .ReturnsAsync([]);
+
+        var scheduledCases = new List<PCSSCommon.Models.Case>
+        {
+            new()
+            {
+                NextApprId = _faker.Random.Double(1, 9999),
+                LastApprDt = "24-Oct-2025",
+                NextApprDt = "25-Oct-2025",
+                CourtClassCd = "S",
+                FileNumberTxt = _faker.Random.AlphaNumeric(10),
+                NextApprReason = "DEC",
+                StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
+                Participants = []
+            }
+        };
+
+        var lambdaResponse = new AssignedCaseResponse
+        {
+            Success = true,
+            Data = scheduledCases
+        };
+
+        _mockLambdaInvokerService.Setup(s => s
+            .InvokeAsync<object, AssignedCaseResponse>(
+                It.IsAny<object>(),
+                "test-lambda-function",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(lambdaResponse);
+
+        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
+            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
+
+        await _job.Execute();
+
+        _mockLambdaInvokerService.Verify(s => s
+            .InvokeAsync<object, AssignedCaseResponse>(
+                It.IsAny<object>(),
+                "test-lambda-function",
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _mockJcServiceClient.Verify(c => c
+            .GetUpcomingSeizedAssignedCasesAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
     }
 
     private void SetupBasicMocks()

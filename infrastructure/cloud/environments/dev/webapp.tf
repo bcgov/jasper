@@ -162,6 +162,8 @@ module "lambda" {
   ecs_cluster_name     = module.ecs_cluster.ecs_cluster.name
   efs_access_point_arn = module.efs_files.access_point_arn
   efs_mount_path       = var.efs_config.mount_path
+  region               = var.region
+  account_id           = data.aws_caller_identity.current.account_id
 }
 
 # Create Cloudwatch LogGroups
@@ -273,6 +275,14 @@ module "ecs_api_td" {
     {
       name  = "DEFAULT_USERS"
       value = "${module.secrets_manager.default_users}"
+    },
+    {
+      name  = "AWS_REGION"
+      value = var.region
+    },
+    {
+      name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"
+      value = "${module.lambda.lambda_functions["get-assigned-cases-request"].name}"
     }
   ]
   secret_env_variables = module.secrets_manager.api_secrets

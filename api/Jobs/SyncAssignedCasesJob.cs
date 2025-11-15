@@ -7,13 +7,13 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Api.Services;
-using Scv.Api.Services.Files;
 
 namespace Scv.Api.Jobs;
 
@@ -27,9 +27,8 @@ public class SyncAssignedCasesJob(
     IDashboardService dashboardService,
     ICaseService caseService,
     CourtListService courtListService,
-    FilesService filesService,
-    LocationService locationService,
-    JudicialCalendarServicesClient jcServiceClient)
+    JudicialCalendarServicesClient jcServiceClient,
+    ILambdaInvokerService lambdaInvokerService = null)
     : RecurringJobBase<SyncAssignedCasesJob>(configuration, cache, mapper, logger)
 {
     private readonly IEmailService _emailService = emailService;
@@ -37,10 +36,8 @@ public class SyncAssignedCasesJob(
     private readonly IDashboardService _dashboardService = dashboardService;
     private readonly ICaseService _caseService = caseService;
     private readonly CourtListService _courtListService = courtListService;
-    private readonly CriminalFilesService _criminalFilesService = filesService.Criminal;
-    private readonly CivilFilesService _civilFilesService = filesService.Civil;
-    private readonly LocationService _locationService = locationService;
     private readonly JudicialCalendarServicesClient _jcServiceClient = jcServiceClient;
+    private readonly ILambdaInvokerService _lambdaInvokerService = lambdaInvokerService;
 
     public override string JobName => nameof(SyncAssignedCasesJob);
 
@@ -209,9 +206,7 @@ public class SyncAssignedCasesJob(
     {
         this.Logger.LogInformation("Starting to process scheduled decisions and continuations.");
 
-        var apprReasonCodes = string.Join(",", CaseService.ContinuationReasonCodes);
-
-        var scheduledCases = await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes);
+        var scheduledCases = await this.GetScheduledCases();
         if (scheduledCases.Count == 0)
         {
             this.Logger.LogInformation("No Scheduled Cases found.");
@@ -223,6 +218,38 @@ public class SyncAssignedCasesJob(
         await _caseService.AddRangeAsync([.. scheduledData]);
 
         this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Count);
+    }
+
+    private async Task<ICollection<Case>> GetScheduledCases()
+    {
+        var apprReasonCodes = string.Join(",", CaseService.ContinuationReasonCodes);
+
+        // Retrieve the Scheduled Cases by invoking a lambda function to avoid API Gateway's timeout.
+        // The endpoint is expected to take a while to get the data specially in PROD.
+        var lambdaName = this.Configuration.GetValue<string>("AWS_GET_ASSIGNED_CASES_LAMBDA_NAME");
+        if (!string.IsNullOrWhiteSpace(lambdaName))
+        {
+            this.Logger.LogInformation("Executing in AWS Lambda environment: {LambdaName}", lambdaName);
+            var request = new
+            {
+                reasons = apprReasonCodes,
+                restrictions = string.Empty
+            };
+
+            var response = await _lambdaInvokerService.InvokeAsync<object, AssignedCaseResponse>(request, lambdaName);
+
+            if (response == null || !response.Success)
+            {
+                this.Logger.LogError("Failed to retrieve scheduled cases from Lambda: {Error}", response?.Error);
+                return Array.Empty<Case>();
+            }
+
+            return response.Data;
+        }
+        else
+        {
+            return await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes);
+        }
     }
 
     private CaseDto PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)

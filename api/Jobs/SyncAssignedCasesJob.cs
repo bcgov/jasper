@@ -212,8 +212,6 @@ public class SyncAssignedCasesJob(
     {
         this.Logger.LogInformation("Starting to process scheduled decisions and continuations.");
 
-        var apprReasonCodes = string.Join(",", CaseService.ContinuationReasonCodes);
-
         var scheduledCases = await this.GetScheduledCases();
         if (scheduledCases.Count == 0)
         {

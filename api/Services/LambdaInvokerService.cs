@@ -84,14 +84,13 @@ public class LambdaInvokerService(
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "JSON deserialization error for Lambda function: {FunctionName}",
-                ex.Message);
-            throw;
+            _logger.LogError(ex, "JSON deserialization error for Lambda function: {FunctionName}", functionName);
+            throw new InvalidOperationException($"Failed to deserialize response from Lambda function '{functionName}'", ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error invoking Lambda function: {FunctionName}", ex.Message);
-            throw;
+            _logger.LogError(ex, "Error invoking Lambda function: {FunctionName}", functionName);
+            throw new InvalidOperationException($"Failed to invoke Lambda function '{functionName}'", ex);
         }
     }
 }

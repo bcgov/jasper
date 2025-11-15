@@ -147,7 +147,7 @@ public class LambdaInvokerServiceTests
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.InvokeAsync<TestRequest, TestResponse>(request, functionName));
 
-        Assert.Contains("Lambda function returned error: Unhandled", exception.Message);
+        Assert.Contains($"Failed to invoke Lambda function '{functionName}'", exception.Message);
     }
 
     [Fact]
@@ -171,11 +171,11 @@ public class LambdaInvokerServiceTests
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.InvokeAsync<TestRequest, TestResponse>(request, functionName));
 
-        Assert.Contains("Lambda invocation failed with status code: 500", exception.Message);
+        Assert.Contains($"Failed to invoke Lambda function '{functionName}'", exception.Message);
     }
 
     [Fact]
-    public async Task InvokeAsync_ShouldThrowJsonException_WhenResponseIsInvalidJson()
+    public async Task InvokeAsync_ShouldThrowInvalidOperationException_WhenResponseIsInvalidJson()
     {
         var functionName = _faker.Lorem.Word();
         var request = new TestRequest { Name = _faker.Person.FullName };
@@ -193,7 +193,7 @@ public class LambdaInvokerServiceTests
             .Setup(x => x.InvokeAsync(It.IsAny<InvokeRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(invokeResponse);
 
-        await Assert.ThrowsAsync<JsonReaderException>(() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.InvokeAsync<TestRequest, TestResponse>(request, functionName));
     }
 
@@ -364,14 +364,16 @@ public class LambdaInvokerServiceTests
             .Setup(x => x.InvokeAsync(It.IsAny<InvokeRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        await Assert.ThrowsAsync<Exception>(() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.InvokeAsync<TestRequest, TestResponse>(request, functionName));
 
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Error invoking Lambda function: {functionName}")),
+                It.Is<It.IsAnyType>((v, t) =>
+                    v.ToString().Contains("Error invoking Lambda function") &&
+                    v.ToString().Contains(functionName)),
                 expectedException,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);

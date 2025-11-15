@@ -14,7 +14,6 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Api.Services;
-using Scv.Api.Services.Files;
 
 namespace Scv.Api.Jobs;
 
@@ -28,8 +27,6 @@ public class SyncAssignedCasesJob(
     IDashboardService dashboardService,
     ICaseService caseService,
     CourtListService courtListService,
-    FilesService filesService,
-    LocationService locationService,
     JudicialCalendarServicesClient jcServiceClient,
     ILambdaInvokerService lambdaInvokerService = null)
     : RecurringJobBase<SyncAssignedCasesJob>(configuration, cache, mapper, logger)
@@ -39,9 +36,6 @@ public class SyncAssignedCasesJob(
     private readonly IDashboardService _dashboardService = dashboardService;
     private readonly ICaseService _caseService = caseService;
     private readonly CourtListService _courtListService = courtListService;
-    private readonly CriminalFilesService _criminalFilesService = filesService.Criminal;
-    private readonly CivilFilesService _civilFilesService = filesService.Civil;
-    private readonly LocationService _locationService = locationService;
     private readonly JudicialCalendarServicesClient _jcServiceClient = jcServiceClient;
     private readonly ILambdaInvokerService _lambdaInvokerService = lambdaInvokerService;
 
@@ -242,7 +236,7 @@ public class SyncAssignedCasesJob(
                 restrictions = string.Empty
             };
 
-            var response = await lambdaInvokerService.InvokeAsync<object, AssignedCaseResponse>(request, lambdaName);
+            var response = await _lambdaInvokerService.InvokeAsync<object, AssignedCaseResponse>(request, lambdaName);
 
             if (response == null || !response.Success)
             {

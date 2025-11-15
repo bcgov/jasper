@@ -85,12 +85,12 @@ public class LambdaInvokerService(
         catch (JsonException ex)
         {
             _logger.LogError(ex, "JSON deserialization error for Lambda function: {FunctionName}",
-                functionName);
+                ex.Message);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error invoking Lambda function: {FunctionName}", functionName);
+            _logger.LogError(ex, "Error invoking Lambda function: {FunctionName}", ex.Message);
             throw;
         }
     }

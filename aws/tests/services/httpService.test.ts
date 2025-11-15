@@ -23,6 +23,7 @@ describe("HttpService", () => {
   };
 
   beforeEach(() => {
+    vi.clearAllMocks();
     httpService = new HttpService();
     credentialsSecret = JSON.stringify({
       baseUrl,
@@ -51,17 +52,27 @@ describe("HttpService", () => {
   });
 
   it("should perform GET request", async () => {
-    axiosMock.get.mockResolvedValue({ data: { message: "success" } });
+    const mockInstance = {
+      get: vi.fn().mockResolvedValue({ data: { message: "success" } }),
+      post: vi.fn(),
+      put: vi.fn(),
+    };
+    axiosMock.create.mockReturnValue(mockInstance as any);
 
     await httpService.init(credentialsSecret, mtlsSecret);
     const response = await httpService.get("/test", mockAxiosConfig);
 
     expect(response.data).toEqual({ message: "success" });
-    expect(axiosMock.get).toHaveBeenCalledWith("/test", mockAxiosConfig);
+    expect(mockInstance.get).toHaveBeenCalledWith("/test", mockAxiosConfig);
   });
 
   it("should perform POST request", async () => {
-    axiosMock.post.mockResolvedValue({ data: { id: 1 } });
+    const mockInstance = {
+      get: vi.fn(),
+      post: vi.fn().mockResolvedValue({ data: { id: 1 } }),
+      put: vi.fn(),
+    };
+    axiosMock.create.mockReturnValue(mockInstance as any);
 
     await httpService.init(credentialsSecret, mtlsSecret);
     const response = await httpService.post(
@@ -71,7 +82,7 @@ describe("HttpService", () => {
     );
 
     expect(response.data).toEqual({ id: 1 });
-    expect(axiosMock.post).toHaveBeenCalledWith(
+    expect(mockInstance.post).toHaveBeenCalledWith(
       "/test",
       { name: "example" },
       mockAxiosConfig
@@ -79,7 +90,12 @@ describe("HttpService", () => {
   });
 
   it("should perform PUT request", async () => {
-    axiosMock.put.mockResolvedValue({ data: { updated: true } });
+    const mockInstance = {
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn().mockResolvedValue({ data: { updated: true } }),
+    };
+    axiosMock.create.mockReturnValue(mockInstance as any);
 
     await httpService.init(credentialsSecret, mtlsSecret);
     const response = await httpService.put(
@@ -89,7 +105,7 @@ describe("HttpService", () => {
     );
 
     expect(response.data).toEqual({ updated: true });
-    expect(axiosMock.put).toHaveBeenCalledWith(
+    expect(mockInstance.put).toHaveBeenCalledWith(
       "/test",
       { name: "updated" },
       mockAxiosConfig
@@ -97,7 +113,12 @@ describe("HttpService", () => {
   });
 
   it("should handle errors correctly", async () => {
-    axiosMock.get.mockRejectedValue({ response: { status: 404 } });
+    const mockInstance = {
+      get: vi.fn().mockRejectedValue({ response: { status: 404 } }),
+      post: vi.fn(),
+      put: vi.fn(),
+    };
+    axiosMock.create.mockReturnValue(mockInstance as any);
     axiosMock.isAxiosError.mockReturnValue(true);
 
     await httpService.init(credentialsSecret, mtlsSecret);

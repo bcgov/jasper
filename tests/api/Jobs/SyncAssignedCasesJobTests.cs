@@ -22,7 +22,6 @@ using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Jobs;
 using Scv.Api.Models;
 using Scv.Api.Services;
-using Scv.Api.Services.Files;
 using tests.api.Fixtures;
 using Xunit;
 using GraphModel = Microsoft.Graph.Models;
@@ -44,8 +43,6 @@ public class SyncAssignedCasesJobTests
     private readonly Mock<ICaseService> _mockCaseService;
     private readonly Mock<ILambdaInvokerService> _mockLambdaInvokerService;
 
-    private readonly Mock<FilesService> _mockFilesService;
-    private readonly Mock<LocationService> _mockLocationService;
     private readonly Mock<JudicialCalendarServicesClient> _mockJcServiceClient;
     private readonly Mock<ILogger<SyncAssignedCasesJob>> _mockLogger;
     private readonly IAppCache _cache;
@@ -76,8 +73,6 @@ public class SyncAssignedCasesJobTests
             BaseAddress = new Uri(_faker.Internet.Url())
         };
 
-        _mockFilesService = new Mock<FilesService>();
-        _mockLocationService = new Mock<LocationService>();
         _mockJcServiceClient = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, httpClient);
         _mockLogger = new Mock<ILogger<SyncAssignedCasesJob>>();
 
@@ -100,8 +95,6 @@ public class SyncAssignedCasesJobTests
             _mockDashboardService.Object,
             _mockCaseService.Object,
             _courtListServiceFixture.MockCourtListService.Object,
-            _filesServiceFixture.MockFilesService.Object,
-            _locationServiceFixture.MockLocationService.Object,
             _mockJcServiceClient.Object,
             _mockLambdaInvokerService.Object);
     }

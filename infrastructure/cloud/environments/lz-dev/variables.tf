@@ -80,25 +80,25 @@ variable create_efs {
   default     = false
 }
 
-variable delete_protection_enabled {
+variable "delete_protection_enabled" {
   description = "Flag to enable or disable deletion protection for the DocDB cluster"
   type        = bool
   default     = true
 }
 
-variable mongo_node_count {
+variable "mongo_node_count" {
   description = "Number of instances in the DocDB cluster"
   type        = number
   default     = 1
 }
 
-variable mongo_instance_type {
+variable "mongo_instance_type" {
   description = "Instance type for the DocDB instances"
   type        = string
   default     = "db.t3.medium"
 }
 
-variable mongousername {
+variable "mongousername" {
   description = "Username for the MongoDB admin user"
   type        = string
 }
@@ -139,5 +139,13 @@ variable "api_ecs_config" {
     max_capacity = number
     cpu          = number
     memory_size  = number
+  })
+}
+
+variable "efs_config" {
+  description = "EFS configuration"
+  type = object({
+    mount_path = string
+    files_dir  = string
   })
 }

@@ -64,16 +64,16 @@ module "rds" {
 }
 
 module "mongodb" {
-  source              = "../../modules/MongoDocDB"
-  environment         = var.environment
-  data_subnets_ids    = module.subnets.data_subnets_ids
-  kms_key_id          = module.initial.kms_key_arn
-  app_sg_id           = data.aws_security_group.app_sg.id
+  source                    = "../../modules/MongoDocDB"
+  environment               = var.environment
+  data_subnets_ids          = module.subnets.data_subnets_ids
+  kms_key_id                = module.initial.kms_key_arn
+  app_sg_id                 = data.aws_security_group.app_sg.id
   delete_protection_enabled = var.delete_protection_enabled
-  mongo_node_count    = var.mongo_node_count
-  mongo_instance_type = var.mongo_instance_type
-  mongousername       = var.mongousername
-  app_name            = var.app_name
+  mongo_node_count          = var.mongo_node_count
+  mongo_instance_type       = var.mongo_instance_type
+  mongousername             = var.mongousername
+  app_name                  = var.app_name
 }
 
 # Create IAM Roles/Policies
@@ -101,17 +101,6 @@ module "subnets" {
   vpc_id            = data.aws_vpc.vpc.id
 }
 
-module "efs" {
-  source              = "../../modules/EFS"
-  environment         = var.environment
-  web_subnet_ids      = module.subnets.web_subnets_ids
-  app_subnet_ids      = module.subnets.app_subnets_ids
-  kms_key_arn         = module.initial.kms_key_arn
-  web_security_group_id = data.aws_security_group.web_sg.id
-  app_security_group_id = data.aws_security_group.app_sg.id
-  count = var.create_efs ? 1 : 0
-}
-
 # Create Target Groups
 module "tg_web" {
   source            = "../../modules/TargetGroup"
@@ -137,32 +126,46 @@ module "tg_api" {
 
 # Setup ALB Listeners
 module "alb" {
-  source           = "../../modules/ALB"
-  environment      = var.environment
-  app_name         = var.app_name
-  lb_name          = var.lb_name
-  cert_domain_name = var.cert_domain_name
-  tg_web_arn       = module.tg_web.tg_arn
-  tg_api_arn       = module.tg_api.tg_arn
+  source                = "../../modules/ALB"
+  environment           = var.environment
+  app_name              = var.app_name
+  lb_name               = var.lb_name
+  cert_domain_name      = var.cert_domain_name
+  tg_web_arn            = module.tg_web.tg_arn
+  tg_api_arn            = module.tg_api.tg_arn
   web_security_group_id = data.aws_security_group.web_sg.id
-  vpc_id = data.aws_vpc.vpc.id
-  web_subnets_ids = module.subnets.web_subnets_ids
-  depends_on = [ module.subnets ]
+  vpc_id                = data.aws_vpc.vpc.id
+  web_subnets_ids       = module.subnets.web_subnets_ids
+  depends_on            = [module.subnets]
+}
+
+# Setup EFS Files storage
+module "efs_files" {
+  source             = "../../modules/EFS"
+  environment        = var.environment
+  app_name           = var.app_name
+  name               = var.efs_config.files_dir
+  purpose            = "Temporary file storage when accessing court files."
+  subnet_ids         = module.subnets.app_subnets_ids
+  security_group_ids = [data.aws_security_group.app_sg.id]
+  kms_key_arn        = module.initial.kms_key_arn
 }
 
 # Create Lambda Functions
 module "lambda" {
-  source              = "../../modules/Lambda"
-  environment         = var.environment
-  app_name            = var.app_name
-  lambda_role_arn     = module.iam.lambda_role_arn
-  apigw_execution_arn = module.apigw.apigw_execution_arn
-  lambda_ecr_repo_url = module.initial.lambda_ecr.ecr_repo_url
-  lambda_memory_size  = var.lambda_memory_size
-  subnet_ids          = module.subnets.app_subnets_ids
-  sg_ids              = [data.aws_security_group.app_sg.id]
-  lambda_secrets      = module.secrets_manager.lambda_secrets
-  ecs_cluster_name    = module.ecs_cluster.ecs_cluster.name
+  source               = "../../modules/Lambda"
+  environment          = var.environment
+  app_name             = var.app_name
+  lambda_role_arn      = module.iam.lambda_role_arn
+  apigw_execution_arn  = module.apigw.apigw_execution_arn
+  lambda_ecr_repo_url  = module.initial.lambda_ecr.ecr_repo_url
+  lambda_memory_size   = var.lambda_memory_size
+  subnet_ids           = module.subnets.app_subnets_ids
+  sg_ids               = [data.aws_security_group.app_sg.id]
+  lambda_secrets       = module.secrets_manager.lambda_secrets
+  ecs_cluster_name     = module.ecs_cluster.ecs_cluster.name
+  efs_access_point_arn = module.efs_files.access_point_arn
+  efs_mount_path       = var.efs_config.mount_path
 }
 
 # Create Cloudwatch LogGroups
@@ -281,20 +284,27 @@ module "ecs_api_td" {
   log_group_name       = module.ecs_api_td_log_group.log_group.name
   cpu                  = var.api_ecs_config.cpu
   memory_size          = var.api_ecs_config.memory_size
+  efs_volume_config = {
+    name            = "efs-files-storage"
+    file_system_id  = module.efs_files.efs_id
+    access_point_id = module.efs_files.access_point_id
+    root_directory  = var.efs_config.files_dir
+    container_path  = var.efs_config.mount_path
+  }
 }
 
 # Create Web ECS Service
 module "ecs_web_service" {
-  source         = "../../modules/ECS/Service"
-  environment    = var.environment
-  app_name       = var.app_name
-  name           = "web"
-  ecs_cluster_id = module.ecs_cluster.ecs_cluster.id
-  ecs_td_arn     = module.ecs_web_td.ecs_td_arn
-  tg_arn         = module.tg_web.tg_arn
-  sg_id          = data.aws_security_group.app_sg.id
-  subnet_ids     = module.subnets.web_subnets_ids
-  port           = module.ecs_web_td.port
+  source           = "../../modules/ECS/Service"
+  environment      = var.environment
+  app_name         = var.app_name
+  name             = "web"
+  ecs_cluster_id   = module.ecs_cluster.ecs_cluster.id
+  ecs_td_arn       = module.ecs_web_td.ecs_td_arn
+  tg_arn           = module.tg_web.tg_arn
+  sg_id            = data.aws_security_group.app_sg.id
+  subnet_ids       = module.subnets.web_subnets_ids
+  port             = module.ecs_web_td.port
   ecs_cluster_name = module.ecs_cluster.ecs_cluster.name
   min_capacity     = var.web_ecs_config.min_capacity
   max_capacity     = var.web_ecs_config.max_capacity

@@ -39,6 +39,7 @@ locals {
       principal           = "ecs-tasks.amazonaws.com"
       source_arn          = "arn:aws:ecs:${var.region}:${var.account_id}:cluster/${var.ecs_cluster_name}"
       enable_vpc_config   = true
+      timeout             = 300 // 5 minutes
       env_variables = {
         PCSS_SECRET_NAME = var.lambda_secrets["pcss"]
       }

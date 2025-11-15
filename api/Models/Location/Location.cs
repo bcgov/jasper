@@ -49,7 +49,7 @@ public class Location
             jcLocation.LocationId,
             pcssLocation?.LocationId,
             jcLocation.Code,
-            jcLocation.Active,
+            pcssLocation != null ? pcssLocation.Active : jcLocation.Active,
             pcssLocation != null ? pcssLocation.CourtRooms : jcLocation.CourtRooms);
     }
 

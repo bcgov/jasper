@@ -8,6 +8,11 @@ import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { useDarsStore } from '@/stores/DarsStore';
+
+const pinia = createPinia();
+setActivePinia(pinia);
 
 describe('MyCalendarDayExpanded.vue', () => {
   it('renders all fields in the expanded panel', () => {
@@ -33,6 +38,7 @@ describe('MyCalendarDayExpanded.vue', () => {
 
     const wrapper = mount(MyCalendarDayExpanded, {
       global: {
+        plugins: [pinia],
         stubs: {
           teleport: true, // Disable the Teleport behavior
         },
@@ -105,6 +111,7 @@ describe('MyCalendarDayExpanded.vue', () => {
 
     const wrapper = mount(MyCalendarDayExpanded, {
       global: {
+        plugins: [pinia],
         stubs: {
           teleport: true, // Disable the Teleport behavior
         },
@@ -147,5 +154,48 @@ describe('MyCalendarDayExpanded.vue', () => {
     expect(darsEl.exists()).toBe(false);
     expect(roomEl.exists()).toBe(false);
     expect(restrictionsEl.exists()).toBe(false);
+  });
+
+  it('opens DARS modal with correct data when dars button is clicked', async () => {
+    const date = faker.date.anytime();
+    const formattedDate = formatDateInstanceToDDMMMYYYY(date);
+    const mockLocation = faker.location.city();
+    const mockRoomCode = faker.location.buildingNumber();
+
+    const wrapper = mount(MyCalendarDayExpanded, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          teleport: true,
+        },
+      },
+      props: {
+        expandedDate: formattedDate,
+        day: {
+          date: formattedDate,
+          showCourtList: true,
+          activities: [
+            {
+              locationName: mockLocation,
+              roomCode: mockRoomCode,
+              showDars: true,
+            } as CalendarDayActivity,
+          ] as CalendarDayActivity[],
+        } as CalendarDay,
+        close: vi.fn(),
+      },
+    });
+
+    const darsStore = useDarsStore();
+
+    await wrapper.find('[data-testid="dars"]').trigger('click');
+
+    expect(darsStore.isModalVisible).toBe(true);
+    const midnightDate = new Date(date.toDateString());
+    expect(darsStore.searchDate?.toISOString()).toEqual(
+      midnightDate.toISOString()
+    );
+    expect(darsStore.searchLocationId).toBe(null);
+    expect(darsStore.searchRoom).toBe(mockRoomCode);
   });
 });

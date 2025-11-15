@@ -218,7 +218,7 @@ public class DashboardService(
     public async Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges()
     {
         // This is a temp solution to retrieve list of users(judge) from external source. 
-        var date = DateTime.Now.ToString("dd-MMM-yyyy");
+        var date = DateTime.Now.ToClientTimezone().ToString("dd-MMM-yyyy");
         var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
 
         async Task<ICollection<PCSS.PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
@@ -246,7 +246,7 @@ public class DashboardService(
                 .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
                     && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
             // Show DARS icon (headset) when judge is sitting, assigned to an activity and date today or earlier
-            var showDars = date.Date <= DateTime.Now.Date && activities
+            var showDars = date.Date <= DateTime.Now.ToClientTimezone().Date && activities
                 .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
                     && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
 

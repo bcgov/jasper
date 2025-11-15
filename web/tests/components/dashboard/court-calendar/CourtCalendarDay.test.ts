@@ -3,6 +3,11 @@ import { CalendarDayActivity } from '@/types';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { useDarsStore } from '@/stores/DarsStore';
+
+const pinia = createPinia();
+setActivePinia(pinia);
 
 describe('CourtCalendarDay.vue', () => {
   const mockShortName = faker.location.city();
@@ -20,6 +25,7 @@ describe('CourtCalendarDay.vue', () => {
       roomCode: mockRoomCode,
       activityClassDescription: faker.lorem.word(),
       showDars: true,
+      locationId: 1,
     } as CalendarDayActivity,
     {
       judgeId: faker.number.int(),
@@ -30,6 +36,7 @@ describe('CourtCalendarDay.vue', () => {
       roomCode: mockRoomCode,
       activityClassDescription: faker.lorem.word(),
       showDars: true,
+      locationId: 1,
     } as CalendarDayActivity,
     {
       judgeId: faker.number.int(),
@@ -41,6 +48,7 @@ describe('CourtCalendarDay.vue', () => {
       activityClassDescription: faker.lorem.word(),
       showDars: true,
       isJudgeAway: true,
+      locationId: 1,
     } as CalendarDayActivity,
     {
       judgeId: faker.number.int(),
@@ -52,6 +60,7 @@ describe('CourtCalendarDay.vue', () => {
       activityClassDescription: faker.lorem.word(),
       showDars: true,
       isJudgeBorrowed: true,
+      locationId: 1,
     } as CalendarDayActivity,
   ];
 
@@ -59,6 +68,9 @@ describe('CourtCalendarDay.vue', () => {
     const wrapper = mount(CourtCalendarDay, {
       props: {
         activities: mockActivities,
+      },
+      global: {
+        plugins: [pinia],
       },
     });
 
@@ -78,5 +90,32 @@ describe('CourtCalendarDay.vue', () => {
     expect(
       judgeActivities.filter((e) => e.classes().includes('is-borrowed')).length
     ).toBe(1);
+  });
+
+  it('opens DARS modal with correct data when dars button is clicked', async () => {
+    const mockDate = new Date('2023-10-15'); // Define the mock date for this test
+
+    const wrapper = mount(CourtCalendarDay, {
+      props: {
+        activities: mockActivities,
+        date: mockDate, // Pass consistent date prop
+      },
+      global: {
+        plugins: [pinia],
+      },
+    });
+
+    const darsStore = useDarsStore();
+
+    // Simulate clicking the DARS button
+    await wrapper.find('[data-testid="dars"]').trigger('click');
+
+    // Check that the store state was updated correctly
+    expect(darsStore.isModalVisible).toBe(true);
+    expect(darsStore.searchLocationId).toBe(
+      mockActivities[0].locationId?.toString()
+    );
+    expect(darsStore.searchRoom).toBe(mockActivities[0].roomCode);
+    expect(darsStore.searchDate?.toISOString()).toEqual(mockDate.toISOString());
   });
 });

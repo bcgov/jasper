@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using Xunit;
 using Scv.Api.Models.Location;
+using Xunit;
 using LocationModel = Scv.Api.Models.Location.Location;
 using LocationsModel = Scv.Api.Models.Location.Locations;
 
@@ -67,7 +67,70 @@ public class LocationsTest
     }
 
     [Fact]
-    public void Create_ShouldMergeAndReturnActiveLocations()
+    public void Create_ShouldReturnEmptyLocations_WhenPcssLocationsIsEmpty()
+    {
+        var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", true, []);
+        var jcLocations = new List<LocationModel> { jcLocation };
+        var pcssLocations = new List<LocationModel>();
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Create_ShouldReturnEmptyLocations_WhenJcLocationsIsEmpty()
+    {
+        var pcssLocation = LocationModel.Create("PCSSName", "PCSSCode", "PCSSLocationId", true, []);
+        var jcLocations = new List<LocationModel>();
+        var pcssLocations = new List<LocationModel> { pcssLocation };
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Create_ShouldReturnEmptyLocations_WhenBothCollectionsAreEmpty()
+    {
+        var jcLocations = new List<LocationModel>();
+        var pcssLocations = new List<LocationModel>();
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Create_ShouldMatchByLocationId_WhenPcssCodeMatchesJcLocationId()
+    {
+        var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", true, []);
+        var pcssLocation = LocationModel.Create("PCSSName", "JCLocationId", "PCSSLocationId", true, []);
+        var jcLocations = new List<LocationModel> { jcLocation };
+        var pcssLocations = new List<LocationModel> { pcssLocation };
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
+        Assert.Single(result);
+        Assert.Equal("JCName", result[0].Name);
+    }
+
+    [Fact]
+    public void Create_ShouldMatchByName_WhenPcssNameMatchesJcCode()
+    {
+        var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", true, []);
+        var pcssLocation = LocationModel.Create("JCCode", "PCSSCode", "PCSSLocationId", true, []);
+        var jcLocations = new List<LocationModel> { jcLocation };
+        var pcssLocations = new List<LocationModel> { pcssLocation };
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
+        Assert.Single(result);
+        Assert.Equal("JCName", result[0].Name);
+    }
+
+    [Fact]
+    public void Create_ShouldReturnEmptyLocations_WhenNoMatchFound()
     {
         var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", true, []);
         var pcssLocation = LocationModel.Create("PCSSName", "PCSSCode", "PCSSLocationId", true, []);
@@ -76,7 +139,32 @@ public class LocationsTest
 
         var result = LocationsModel.Create(jcLocations, pcssLocations);
 
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Create_ShouldIncludeInactiveLocations()
+    {
+        var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", false, []);
+        var pcssLocation = LocationModel.Create("PCSSName", "JCLocationId", "PCSSLocationId", true, []);
+        var jcLocations = new List<LocationModel> { jcLocation };
+        var pcssLocations = new List<LocationModel> { pcssLocation };
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
         Assert.Single(result);
-        Assert.Equal("JCName", result[0].Name);
+    }
+
+    [Fact]
+    public void Create_ShouldIncludeLocations_WhenActiveIsNull()
+    {
+        var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", null, []);
+        var pcssLocation = LocationModel.Create("PCSSName", "JCLocationId", "PCSSLocationId", true, []);
+        var jcLocations = new List<LocationModel> { jcLocation };
+        var pcssLocations = new List<LocationModel> { pcssLocation };
+
+        var result = LocationsModel.Create(jcLocations, pcssLocations);
+
+        Assert.Single(result);
     }
 }

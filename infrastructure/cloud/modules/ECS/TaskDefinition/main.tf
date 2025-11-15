@@ -46,6 +46,33 @@ resource "aws_ecs_task_definition" "ecs_td" {
           valueFrom = secret[1]
         }
       ]
+      mountPoints = var.efs_volume_config != null ? [
+        {
+          sourceVolume  = var.efs_volume_config.name
+          containerPath = var.efs_volume_config.container_path
+          readOnly      = false
+        }
+      ] : []
     }
   ])
+
+  dynamic "volume" {
+    for_each = var.efs_volume_config != null ? [var.efs_volume_config] : []
+    content {
+      name = volume.value.name
+
+      efs_volume_configuration {
+        file_system_id     = volume.value.file_system_id
+        transit_encryption = "ENABLED"
+
+        dynamic "authorization_config" {
+          for_each = volume.value.access_point_id != null ? [1] : []
+          content {
+            access_point_id = volume.value.access_point_id
+            iam             = "ENABLED"
+          }
+        }
+      }
+    }
+  }
 }

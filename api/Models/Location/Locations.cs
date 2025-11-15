@@ -54,17 +54,18 @@ public class Locations : IList<Location>
     /// <param name="pcssLocations">A collection of <see cref="Location"/> objects representing PCSS locations.</param>
     /// <returns>A new instance of <see cref="Locations"/> containing the merged locations.</returns>
     /// <remarks>
-    /// This method merges the JC and PCSS locations based on matching <see cref="Location.Code"/> and <see cref="Location.LocationId"/>.
+    /// This method merges the PCSS and JC locations based on matching <see cref="Location.Code"/> and <see cref="Location.LocationId"/>.
+    /// Only those who have matching locations and are active will be included in the resulting collection.
     /// </remarks>
     public static Locations Create(ICollection<Location> jcLocations, ICollection<Location> pcssLocations)
     {
-        var locations = jcLocations
-            .Select(jc =>
+        var locations = pcssLocations
+            .Select(pcss =>
             {
-                var match = pcssLocations.SingleOrDefault(pcss => pcss.Code == jc.LocationId || pcss.Name == jc.Code);
-                return Location.Create(jc, match);
+                var match = jcLocations.SingleOrDefault(jc => jc.LocationId == pcss.Code || jc.Code == pcss.Name);
+                return match != null ? Location.Create(match, pcss) : null;
             })
-            .Where(loc => loc.Active.GetValueOrDefault())
+            .Where(loc => loc != null)
             .OrderBy(loc => loc.ShortName)
             .ToList();
 

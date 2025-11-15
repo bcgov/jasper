@@ -28,7 +28,11 @@
               activityDisplayCode,
               roomCode,
               showDars,
+              period,
+              activityCode,
+              locationId,
             } in activities"
+            :key="`${activityCode}-${period}`"
           >
             <v-tooltip :text="activityDescription">
               <template #activator="{ props }">
@@ -52,6 +56,8 @@
               data-testid="dars"
               size="16"
               :icon="mdiHeadphones"
+              class="cursor-pointer"
+              @click="openDarsModal(locationId, roomCode)"
             />
           </div>
         </div>
@@ -63,15 +69,30 @@
   import { CalendarDayActivity } from '@/types';
   import { mdiHeadphones } from '@mdi/js';
   import { computed } from 'vue';
+  import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{
     activities: CalendarDayActivity[];
+    date?: Date;
   }>();
+
+  const darsStore = useDarsStore();
+
+  const openDarsModal = (locationId: number | undefined, roomCode: string) => {
+    darsStore.openModal(
+      props.date || new Date(),
+      locationId?.toString() || null,
+      roomCode || ''
+    );
+  };
 
   const cleanActivityClassDescription = (
     activityClassDescription: string
   ): string => {
-    return activityClassDescription.trim().replace(/\s+/g, '-').toLowerCase();
+    return activityClassDescription
+      .trim()
+      .replaceAll(/\s+/g, '-')
+      .toLowerCase();
   };
 
   const groupedData = computed<[string, [string, CalendarDayActivity[]][]][]>(

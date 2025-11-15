@@ -16,6 +16,7 @@ using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
@@ -604,7 +605,7 @@ public class DashboardServiceTests : ServiceTestBase
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
         var mockFileCount = _faker.Random.Int();
-        var currentDate = DateTime.Now;
+        var currentDate = DateTime.Now.ToClientTimezone();
 
         var mockJudicialCalendar = new JudicialCalendar
         {

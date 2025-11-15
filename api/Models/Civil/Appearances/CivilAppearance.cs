@@ -13,6 +13,7 @@ namespace Scv.Api.Models.Civil.Appearances
         public string AppearanceStatusDsc { get; set; }
         public string CourtLocationId { get; set; }
         public string CourtLocation { get; set; }
+        public string LocationId { get; set; } //PCSS - DARS location id.
         public string DocumentTypeDsc { get; set; }
         [AdaptIgnore]
         [JsonIgnore]

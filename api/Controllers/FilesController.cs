@@ -19,7 +19,9 @@ using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.archive;
+using Scv.Api.Models.Civil.AppearanceDetail;
 using Scv.Api.Models.Civil.Detail;
+using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Models.Document;
 using Scv.Api.Models.Search;
@@ -104,38 +106,61 @@ namespace Scv.Api.Controllers
         }
 
         /// <summary>
-        /// Gets detailed information regarding an appearance given civil file id and appearance id.
+        /// Gets detailed document information regarding an appearance given civil file id and appearance id.
         /// </summary>
         /// <param name="fileId"></param>
         /// <param name="appearanceId"></param>
-        /// <param name="includeJudicialBinder">Flag to indicate whether the user's judicial binder will be included in the response.</param>
-        /// <returns>CivilAppearanceDetail</returns>
+        /// <returns>CivilAppearanceDetailDocuments</returns>
         [HttpGet]
-        [Route("civil/{fileId}/appearance-detail/{appearanceId}")]
-        public async Task<ActionResult<CivilAppearanceDetail>> GetCivilAppearanceDetails(string fileId, string appearanceId, bool includeJudicialBinder = false)
+        [Route("civil/{fileId}/appearance/{appearanceId}/documents")]
+        public async Task<ActionResult<CivilAppearanceDetailDocuments>> GetCivilAppearanceDocuments(string fileId, string appearanceId)
         {
-            if (User.IsVcUser())
-            {
-                if (!await _vcCivilFileAccessHandler.HasCivilFileAccess(User, fileId))
-                    return Forbid();
-
-                var civilFileDetailResponse = await _civilFilesService.FileIdAsync(fileId, User.IsVcUser(), User.IsStaff());
-                if (civilFileDetailResponse?.PhysicalFileId == null)
-                    throw new NotFoundException("Couldn't find civil file with this id.");
-                if (civilFileDetailResponse.SealedYN != "N")
-                    return Forbid();
-            }
-
-            var civilAppearanceDetail = await _civilFilesService.DetailedAppearanceAsync(fileId, appearanceId, User.IsVcUser(), includeJudicialBinder);
-            if (civilAppearanceDetail == null)
-                throw new NotFoundException("Couldn't find appearance detail with the provided file id and appearance id.");
+            var civilAppearanceDocuments = await _civilFilesService.DetailedAppearanceDocuments(fileId, appearanceId) ?? throw new NotFoundException("Couldn't find appearance detail with the provided file id and appearance id.");
 
             // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
             // Only Provincial files can be accessed in JASPER
-            if (User.IsSupremeUser() && civilAppearanceDetail.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.P)
+            if (User.IsSupremeUser() && civilAppearanceDocuments.CourtLevelCd != CivilFileDetailResponseCourtLevelCd.P)
                 return Forbid();
 
-            return Ok(civilAppearanceDetail);
+            return Ok(civilAppearanceDocuments);
+        }
+
+        /// <summary>
+        /// Gets detailed party information regarding an appearance given civil file id and appearance id.
+        /// </summary>
+        /// <param name="fileId"></param>
+        /// <param name="appearanceId"></param>
+        /// <returns>CivilAppearanceDetail</returns>
+        [HttpGet]
+        [Route("civil/{fileId}/appearance/{appearanceId}/party")]
+        public async Task<ActionResult<CivilAppearanceDetailParties>> GetCivilAppearanceParty(string fileId, string appearanceId)
+        {
+            if (User.IsSupremeUser())
+                return Forbid();
+
+            var parties = await _civilFilesService.DetailedAppearanceParties(fileId, appearanceId)
+                ?? throw new NotFoundException("Couldn't find party details with the provided file id and appearance id.");
+
+            return Ok(parties);
+        }
+        
+        /// <summary>
+        /// Gets detailed method information regarding an appearance given civil file id and appearance id.
+        /// </summary>
+        /// <param name="fileId"></param>
+        /// <param name="appearanceId"></param>
+        /// <returns>CivilAppearanceDetail</returns>
+        [HttpGet]
+        [Route("civil/{fileId}/appearance/{appearanceId}/methods")]
+        public async Task<ActionResult<CivilAppearanceDetail>> GetCivilAppearanceMethods(string fileId, string appearanceId)
+        {
+            if (User.IsSupremeUser())
+                return Forbid();
+
+            var methods = await _civilFilesService.DetailedAppearanceMethods(fileId, appearanceId) 
+                ?? throw new NotFoundException("Couldn't find appearance methods with the provided file id and appearance id.");
+
+            return Ok(methods);
         }
 
         /// <summary>
@@ -243,9 +268,8 @@ namespace Scv.Api.Controllers
         [Route("criminal/{fileId}/appearance-detail/{appearanceId}/{partId}")]
         public async Task<ActionResult<CriminalAppearanceDetail>> GetCriminalAppearanceDetails(string fileId, string appearanceId, string partId)
         {
-            var appearanceDetail = await _criminalFilesService.AppearanceDetailAsync(fileId, appearanceId, partId);
-            if (appearanceDetail == null)
-                throw new NotFoundException("Couldn't find appearance details with the provided parameters.");
+            var appearanceDetail = await _criminalFilesService.AppearanceDetailAsync(fileId, appearanceId, partId) 
+                ?? throw new NotFoundException("Couldn't find appearance details with the provided parameters.");
 
             // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
             // Only Provincial files can be accessed in JASPER
@@ -254,6 +278,25 @@ namespace Scv.Api.Controllers
 
 
             return Ok(appearanceDetail);
+        }
+
+        /// <summary>
+        /// Gets appearance documents regarding a given criminal file id, participant id.
+        /// </summary>
+        /// <param name="fileId"></param>
+        /// <param name="partId"></param>
+        /// <returns>CriminalAppearanceDocuments</returns>
+        [HttpGet]
+        [Route("criminal/{fileId}/appearance-detail/{partId}/documents")]
+        public async Task<ActionResult<CriminalAppearanceDocuments>> GetCriminalAppearanceDocuments(string fileId, string partId)
+        {
+            var appearanceDocuments = await _criminalFilesService.AppearanceDetailDocuments(fileId, partId) 
+                ?? throw new NotFoundException("Couldn't find appearance documents with the provided parameters.");
+
+            if (User.IsSupremeUser())
+                return Forbid();
+
+            return Ok(appearanceDocuments);
         }
 
         /// <summary>

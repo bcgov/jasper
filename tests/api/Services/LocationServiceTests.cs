@@ -123,7 +123,8 @@ public class LocationServiceTests : ServiceTestBase
                 new()
                 {
                     JustinAgenId = mockCode,
-                    LocationSNm = _faker.Random.AlphaNumeric(5)
+                    LocationSNm = _faker.Random.AlphaNumeric(5),
+                    ActiveYn = "Y"
                 }
             ]);
 
@@ -161,7 +162,8 @@ public class LocationServiceTests : ServiceTestBase
                 new()
                 {
                     LocationId = _faker.Random.Int(),
-                    LocationSNm = mockShortDesc
+                    LocationSNm = mockShortDesc,
+                    ActiveYn = "N"
                 }
             ]);
 
@@ -174,14 +176,14 @@ public class LocationServiceTests : ServiceTestBase
         var location = result.Single();
         Assert.Equal(mockJCLocations[0].LongDesc, location.Name);
         Assert.Equal(mockPCSSLocations[0].LocationId.ToString(), location.LocationId);
-        Assert.True(location.Active.GetValueOrDefault());
+        Assert.False(location.Active.GetValueOrDefault());
 
         mockJCLocationClient.Verify(c => c.LocationsGetAsync(null, true, true), Times.Once());
         mockPCSSLocationClient.Verify(c => c.GetLocationsAsync(), Times.Once());
     }
 
     [Fact]
-    public async Task GetLocations_ShouldIgnorePCSSLocationWhenNeitherJustinAgenOrLocationSNmExists()
+    public async Task GetLocations_ShouldReturnEmptyListWhenNeitherJustinAgenOrLocationSNmExists()
     {
         var mockJCLocations = new List<CodeValue>(
             [
@@ -206,11 +208,7 @@ public class LocationServiceTests : ServiceTestBase
         var result = await locationService.GetLocations();
 
         Assert.NotNull(result);
-        Assert.Single(result);
-
-        var location = result.Single();
-        Assert.Null(location.LocationId);
-        Assert.Empty(location.CourtRooms);
+        Assert.Empty(result);
     }
 
     [Fact]

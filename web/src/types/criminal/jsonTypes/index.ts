@@ -350,6 +350,11 @@ export interface CriminalAppearanceDetails {
   courtLevelCd: CriminalFileDetailResponseCourtLevelCd;
 }
 
+export interface CriminalAppearanceDocuments {
+  documents: documentType[];
+  keyDocuments: documentType[];
+}
+
 export interface ClAgeNotice {
   eventDate: string;
   eventTypeDsc: string;

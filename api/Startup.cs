@@ -166,6 +166,9 @@ namespace Scv.Api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Configure DateTimeExtensions to use the service provider
+            Helpers.Extensions.DateTimeExtensions.Configure(app.ApplicationServices);
+            
             // Use the new exception handler
             app.UseExceptionHandler();
 

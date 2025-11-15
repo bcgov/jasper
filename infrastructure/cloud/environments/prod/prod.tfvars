@@ -34,3 +34,7 @@ alarm_config = {
   task_evaluation_periods   = 1
   task_period               = 30
 }
+efs_config = {
+  mount_path = "/mnt/efs"
+  files_dir  = "files"
+}

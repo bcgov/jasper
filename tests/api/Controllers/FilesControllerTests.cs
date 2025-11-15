@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using DARSCommon.Clients.LogNotesServices;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
@@ -611,22 +612,6 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_Appearance_Details()
-        {
-            //Has party data.
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("2506", "11034", false);
-
-            Assert.Equal(3, civilAppearanceDetail.Party.Count);
-            Assert.Contains(civilAppearanceDetail.Party, p => p.LastNm == "BYSTANDER");
-
-            //Has appearanceMethod data.
-            civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("3499", "13410", false);
-
-            Assert.Equal(1, civilAppearanceDetail.AppearanceMethod.Count);
-            Assert.Equal("IP", civilAppearanceDetail.AppearanceMethod.First().AppearanceMethodCd);
-        }
-
-        [Fact]
         public async void Criminal_Appearance_Details()
         {
             var criminalAppearanceDetail = await _service.Criminal.AppearanceDetailAsync("2934", "36548.0734", "19498.0042");
@@ -700,87 +685,6 @@ namespace tests.api.Controllers
             Assert.Equal("VC", criminalAppearanceDetail.Accused.AttendanceMethodCd);
             Assert.Equal("PV", criminalAppearanceDetail.Accused.PartyAppearanceMethod);
         }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Adjudicator()
-        {
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("2255", "13403");
-
-            //Assert.Equal("This is the comment i made to Guy Landry ", civilAppearanceDetail.AdjudicatorComment);
-            Assert.Equal("Butler Mon Ami, R", civilAppearanceDetail.Adjudicator.FullName);
-            Assert.Equal("In Person", civilAppearanceDetail.Adjudicator.AdjudicatorAppearanceMethodDesc);
-            Assert.Equal("IP", civilAppearanceDetail.Adjudicator.AdjudicatorAppearanceMethod);
-        }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Party_AppearanceMethods()
-        {
-            //This test sees if our AppearanceMethod data is tied into the party objects.
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("2222", "12047");
-
-            //Here we have AppearanceMethods, for adjudicator.  Note no data for name.
-            Assert.Equal("VC", civilAppearanceDetail.Adjudicator?.AppearanceMethodCd);
-            Assert.Equal("Video Conference", civilAppearanceDetail.Adjudicator.AppearanceMethodDesc);
-            //Also data for applicant.
-            Assert.True(civilAppearanceDetail.Party.Where(p => p.PartyRole.Any(pr => pr.RoleTypeCd == "APP"))
-                .All(p => p.AppearanceMethodCd == "VC"));
-        }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Party_CourtList_AttendanceMethod()
-        {
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("100", "19");
-
-            Assert.Contains(civilAppearanceDetail.Party, p => p.PartyId == "11" && p.AttendanceMethodCd == "TC");
-        }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Party_CourtList_LegalRepresentative()
-        {
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("1984", "8344");
-
-            var legalRepresentativeParty = civilAppearanceDetail.Party.FirstOrDefault(p => p.PartyId == "896");
-            Assert.NotNull(legalRepresentativeParty);
-            Assert.NotEmpty(legalRepresentativeParty.LegalRepresentative);
-            Assert.True(legalRepresentativeParty.LegalRepresentative.First().LegalRepTypeDsc == "Litigation Guardian");
-            Assert.True(legalRepresentativeParty.LegalRepresentative.First().LegalRepFullName == "SMITH AND BARNEY ASSOCIATES");
-        }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Party_CourtList_Counsel()
-        {
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("2436", "8430");
-
-            var counselParty = civilAppearanceDetail.Party.FirstOrDefault(p => p.PartyId == "1928");
-            Assert.NotNull(counselParty);
-            Assert.NotEmpty(counselParty.Counsel);
-            Assert.Equal("119", counselParty.Counsel.First().CounselId);
-            Assert.Equal("PETER, John", counselParty.Counsel.First().CounselFullName);
-            Assert.Equal("(547)123-1233", counselParty.Counsel.First().PhoneNumber);
-        }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Party_CourtList_Representative()
-        {
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("2307", "9403");
-
-            var representativeParty = civilAppearanceDetail.Party.FirstOrDefault(p => p.PartyId == "1112");
-            Assert.NotNull(representativeParty);
-            Assert.NotEmpty(representativeParty.Representative);
-            Assert.Equal("bla", representativeParty.Representative.First().RepFullName);
-        }
-
-        [Fact]
-        public async void Civil_Appearance_Details_Party_PreviousAppearance_PartyAppearanceMethod()
-        {
-            var civilAppearanceDetail = await _service.Civil.DetailedAppearanceAsync("100", "19");
-
-            var party = civilAppearanceDetail.Party.FirstOrDefault(p => p.PartyId == "21");
-            Assert.NotNull(party);
-            Assert.Equal("P", party.PartyAppearanceMethod);
-            Assert.Equal("Present", party.PartyAppearanceMethodDesc); //Doesn't seem to have any appearance methods
-        }
-
 
         [Fact(Skip = "Unused for now")]
         public async Task Get_Archive()

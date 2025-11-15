@@ -80,6 +80,9 @@
         <v-icon
           v-if="item.appearanceStatusCd === 'SCHD'"
           :icon="mdiHeadphones"
+          class="cursor-pointer"
+          :data-testid="`dars-button-${item.appearanceId}`"
+          @click="openDarsModal(item)"
         />
       </template>
       <template v-slot:item.appearanceReasonCd="{ value, item }">
@@ -127,6 +130,7 @@
   import CriminalAppearanceDetails from '@/components/case-details/criminal/appearances/CriminalAppearanceDetails.vue';
   import CivilAppearanceDetails from '@/components/civil/CivilAppearanceDetails.vue';
   import AppearanceStatusChip from '@/components/shared/AppearanceStatusChip.vue';
+  import { useDarsStore } from '@/stores/DarsStore';
   import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
   import { ApprDetailType } from '@/types/shared';
   import {
@@ -193,6 +197,8 @@
       title: 'DATE',
       key: 'appearanceDt',
       value: (item) => formatDateToDDMMMYYYY(item.appearanceDt),
+      sortRaw: (a: ApprDetailType, b: ApprDetailType) =>
+        new Date(a.appearanceDt).getTime() - new Date(b.appearanceDt).getTime(),
     },
     { title: 'REASON', key: 'appearanceReasonCd' },
     {
@@ -217,6 +223,17 @@
   const selectedAccused = ref<string>();
   const sortBy = ref([{ key: 'appearanceDt', order: 'desc' }] as const);
   const now = new Date();
+
+  const darsStore = useDarsStore();
+
+  const openDarsModal = (item: ApprDetailType) => {
+    // Parse the date string to Date object
+    darsStore.openModal(
+      new Date(item.appearanceDt),
+      item.locationId || null,
+      item.courtRoomCd || ''
+    );
+  };
 
   const filterByAccused = (appearance: criminalApprDetailType) =>
     !selectedAccused.value ||

@@ -27,7 +27,8 @@ public class CaseMapping : IRegister
             .Map(dest => dest.Reason, src => src.NextApprReason)
             .Map(dest => dest.PartId, src => src.ProfPartId)
             .Map(dest => dest.DueDate, src => src.NextApprDt)
-            .Map(dest => dest.AgeInDays, src => src.CaseAgeDays);
+            .Map(dest => dest.AgeInDays, src => src.CaseAgeDays)
+            .Map(dest => dest.PhysicalFileId, src => src.JustinNo ?? src.PhysicalFileId);
         config.NewConfig<CaseDto, Db.Models.Case>()
              .Ignore(dest => dest.Id);
     }

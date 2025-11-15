@@ -14,6 +14,12 @@
           <v-tab value="court-file-search" to="/court-file-search"
             >Court file search</v-tab
           >
+          <v-btn
+            class="v-tab underline-on-hover"
+            value="dars"
+            @click="darsStore.openModal()"
+            >DARS</v-btn
+          >
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
             <JudgeSelector
@@ -37,6 +43,7 @@
       <v-main>
         <router-view />
       </v-main>
+      <DarsAccessModal v-model="darsStore.isModalVisible" />
       <snackbar />
     </v-app>
   </v-theme-provider>
@@ -47,14 +54,19 @@
   import { mdiAccountCircle } from '@mdi/js';
   import { inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
+  import DarsAccessModal from './components/dashboard/DarsAccessModal.vue';
   import JudgeSelector from './components/shared/JudgeSelector.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
   import { DashboardService } from './services';
+  import { useCommonStore } from './stores/CommonStore';
+  import { useDarsStore } from './stores/DarsStore';
   import { useThemeStore } from './stores/ThemeStore';
   import { PersonSearchItem } from './types';
 
   const themeStore = useThemeStore();
+  const darsStore = useDarsStore();
+  const commonStore = useCommonStore();
   const theme = ref(themeStore.state);
   const profile = ref(false);
 
@@ -100,5 +112,12 @@
   .logo:hover {
     transform: scale(1.02);
     filter: brightness(1.1);
+  }
+</style>
+
+<style scoped>
+  .underline-on-hover:hover :deep(.v-btn__content) {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 </style>

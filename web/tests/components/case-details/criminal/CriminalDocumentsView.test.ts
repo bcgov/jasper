@@ -160,7 +160,8 @@ describe('CriminalDocumentsView.vue', () => {
      expect(wrapper.findComponent({ name: 'ActionBar' }).exists()).toBe(false);
   });
 
-  it('renders bail document', async () => {
+  it('renders bail document with perfected label date', async () => {
+    mockDocumentOne.docmDispositionDsc = 'Perfected';
     mockParticipants[0].keyDocuments.push(mockDocumentOne);
         wrapper = shallowMount(DocumentsView, {
           global: {
@@ -185,7 +186,37 @@ describe('CriminalDocumentsView.vue', () => {
       });
       await flushPromises();
   
-      expect(wrapper.text()).toContain('Disposition');
+      expect(wrapper.text()).toContain('Perfected');
       expect(wrapper.text()).toContain('01-Jan-2023');
+    });
+
+     it('does not render bail document with unperfected label date', async () => {
+    mockDocumentOne.docmDispositionDsc = 'Unperfected';
+    mockParticipants[0].keyDocuments.push(mockDocumentOne);
+        wrapper = shallowMount(DocumentsView, {
+          global: {
+            stubs: {
+                'v-data-table-virtual': {
+                    template: `
+                        <slot name="item.documentTypeDescription" :item="items && items[0] ? items[0] : { category: 'bail' }"></slot>
+                        `,
+                    props: ['headers', 'items', 'itemValue', 'columns'],
+                    methods: {
+                        isGroupOpen: () => true,
+                        toggleGroup: () => {},
+                    },
+                },
+              'v-banner': true,
+              'v-card-text': true
+            },
+          },
+         props: {
+            participants: mockParticipants,
+      },
+      });
+      await flushPromises();
+  
+      expect(wrapper.text()).not.toContain('Unperfected');
+      expect(wrapper.text()).not.toContain('01-Jan-2023');
     });
 });

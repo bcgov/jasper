@@ -26,7 +26,7 @@ namespace Scv.Api.Models.Civil.AppearanceDetail
         /// <summary>
         /// Extended document object.
         /// </summary>
-        public ICollection<CivilAppearanceDocument> Document { get; set; }
+        public IEnumerable<CivilAppearanceDocument> Document { get; set; }
 
         /// <summary>
         /// Extended object.

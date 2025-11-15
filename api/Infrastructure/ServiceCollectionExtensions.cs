@@ -44,6 +44,8 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
+using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Scv.Api.Infrastructure
 {
@@ -186,6 +188,9 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<LogNotesServices.LogNotesServicesClient>(client => { ConfigureHttpClient(client, configuration, "DARS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
@@ -194,6 +199,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<LocationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
+            services.AddScoped<DarsService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
@@ -210,6 +216,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
@@ -261,7 +268,6 @@ namespace Scv.Api.Infrastructure
             // Defaults to BC Gov API if any config setting is missing
             if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
             {
-                Console.WriteLine($"Redirecting traffic to: {configuration.GetNonEmptyValue($"{prefix}:Url")} for {prefix}");
                 client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
                     configuration.GetNonEmptyValue($"{prefix}:Username"),
                     configuration.GetNonEmptyValue($"{prefix}:Password"));
@@ -270,7 +276,6 @@ namespace Scv.Api.Infrastructure
             // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.
             else
             {
-                Console.WriteLine($"Redirecting traffic to: {apigwUrl} for {prefix}");
                 client.BaseAddress = new Uri(apigwUrl.EnsureEndingForwardSlash());
                 client.DefaultRequestHeaders.Add(X_APIGW_KEY_HEADER, apigwKey);
                 client.DefaultRequestHeaders.Add(X_ORIGIN_VERIFY_HEADER, authorizerKey);

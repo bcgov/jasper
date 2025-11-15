@@ -38,7 +38,10 @@
               isRemote,
               showDars,
               restrictions,
+              activityCode,
+              locationId,
             } in activities"
+            :key="`${activityCode} - ${period}`"
           >
             <div class="d-flex justify-space-between">
               <div class="d-flex align-center">
@@ -68,6 +71,8 @@
                   v-if="showDars"
                   data-testid="dars"
                   :icon="mdiHeadphones"
+                  class="cursor-pointer"
+                  @click="openDarsModal(locationId, roomCode)"
                 />
                 <v-icon
                   data-testid="activity-remote-icon"
@@ -108,6 +113,7 @@
   import { parseDDMMMYYYYToDate } from '@/utils/dateUtils';
   import { mdiHeadphones, mdiListBoxOutline, mdiVideo } from '@mdi/js';
   import { computed } from 'vue';
+  import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{
     expandedDate: string | null;
@@ -115,10 +121,25 @@
     close: () => void;
   }>();
 
+  const darsStore = useDarsStore();
+
+  const openDarsModal = (locationId: number | undefined, roomCode: string) => {
+    // Parse the date from the day.date string (format: DD MMM YYYY)
+    const parsedDate = parseDDMMMYYYYToDate(props.day.date);
+    darsStore.openModal(
+      parsedDate || new Date(),
+      locationId?.toString() || null,
+      roomCode || ''
+    );
+  };
+
   const cleanActivityClassDescription = (
-    activityClassDescription: string
+    activityClassDescription: string | undefined
   ): string => {
-    return activityClassDescription.trim().replace(/\s+/g, '-').toLowerCase();
+    return (activityClassDescription || '')
+      .trim()
+      .replaceAll(/\s+/g, '-')
+      .toLowerCase();
   };
 
   const dayNumberText = computed(() => {

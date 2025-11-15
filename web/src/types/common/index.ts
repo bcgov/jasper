@@ -54,6 +54,7 @@ export interface ArchiveInfoType {
 
 export interface CourtRoomsJsonInfoType {
   name: string;
+  shortName: string;
   code: string;
   locationId: string;
   active: boolean;
@@ -84,6 +85,7 @@ export interface UserInfo {
   agencyCode: string;
   userId: string;
   judgeId: number;
+  judgeHomeLocationId: number;
   email: string;
 }
 

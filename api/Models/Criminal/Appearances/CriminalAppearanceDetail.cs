@@ -15,6 +15,7 @@ namespace Scv.Api.Models.Criminal.Appearances
         public string AppearanceReasonDsc { get; set; }
         public string AppearanceResultDsc { get; set; }
         public string AppearanceStatusDsc { get; set; }
+        public string LocationId { get; set; } // The location id from PCSS, DARS.
         public string CourtLocationId { get; set; }
         public string CourtLocation { get; set; }
         [AdaptIgnore]

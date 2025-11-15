@@ -83,10 +83,6 @@
             item-title="shortName"
             item-value="code"
             label="Location"
-            :required="true"
-            :error-messages="
-              errors.isMissingLocation ? ['Location is required'] : []
-            "
           />
         </v-col>
         <v-col style="max-width: 20rem">
@@ -141,7 +137,7 @@
   import { FilesService } from '@/services/FilesService';
   import { LocationService } from '@/services/LocationService';
   import { LookupService } from '@/services/LookupService';
-  import { useCourtFileSearchStore } from '@/stores';
+  import { useCourtFileSearchStore, useCommonStore } from '@/stores';
   import { CourtClassEnum, KeyValueInfo, LookupCode } from '@/types/common';
   import {
     CourtFileSearchCriteria,
@@ -156,7 +152,8 @@
   const SEARCH_RESULT_LIMIT = 100;
 
   const courtFileSearchStore = useCourtFileSearchStore();
-  const defaultLocation = undefined;
+  const commonStore = useCommonStore();
+  let defaultLocation = undefined;
   let searchCriteria: CourtFileSearchCriteria = reactive({
     isCriminal: true,
     isFamily: false,
@@ -185,8 +182,7 @@
   const errors = reactive({
     isMissingFileNo: false,
     isMissingSurname: false,
-    isMissingOrg: false,
-    isMissingLocation: false,
+    isMissingOrg: false
   });
 
   const locationService = inject<LocationService>('locationService');
@@ -261,6 +257,7 @@
       classes.value = courtClassesResp;
       loadDataFromState();
       loadClasses();
+      loadJudgeHomeLocation();
       isLookupDataReady.value = true;
     } catch (err: unknown) {
       console.error(err);
@@ -286,9 +283,6 @@
 
     errors.isMissingFileNo =
       searchCriteria.searchBy === 'fileNumber' && !searchCriteria.fileNumberTxt;
-    errors.isMissingLocation =
-      searchCriteria.searchBy === 'fileNumber' &&
-      !searchCriteria.fileHomeAgencyId;
     errors.isMissingSurname =
       searchCriteria.searchBy === 'lastName' && !searchCriteria.lastName;
     errors.isMissingOrg =
@@ -361,7 +355,6 @@
     errors.isMissingFileNo = false;
     errors.isMissingSurname = false;
     errors.isMissingOrg = false;
-    errors.isMissingLocation = false;
   };
 
   const loadClasses = () => {
@@ -472,5 +465,18 @@
   const clearSelectedFiles = () => {
     selectedFiles.value = [];
     courtFileSearchStore.clearSelectedFiles();
+  };
+
+  const loadJudgeHomeLocation = () => {
+    const userInfo = commonStore.userInfo;
+    if (courtRooms.value && userInfo) {
+      const homeLocation = courtRooms.value.find(
+        (l) => l.locationId === userInfo.judgeHomeLocationId?.toString()
+      );
+      if (homeLocation) {
+        defaultLocation = homeLocation.code;
+        searchCriteria.fileHomeAgencyId = defaultLocation;
+      }
+    }
   };
 </script>

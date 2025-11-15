@@ -11,7 +11,10 @@
     ref="calendarRef"
   >
     <template v-slot:eventContent="{ event }">
-      <CourtCalendarDay :activities="event.extendedProps.activities" />
+      <CourtCalendarDay
+        :activities="event.extendedProps.activities"
+        :date="event.start"
+      />
     </template>
   </FullCalendar>
 </template>

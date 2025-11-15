@@ -131,6 +131,7 @@ namespace Scv.Api.Controllers
                 AgencyCode = HttpContext.User.AgencyCode(),
                 UserId = HttpContext.User.UserId(),
                 JudgeId = HttpContext.User.JudgeId(),
+                JudgeHomeLocationId = HttpContext.User.JudgeHomeLocationId(),
                 Email = HttpContext.User.Email(),
                 IsActive = HttpContext.User.IsActive(),
                 DateTime.UtcNow

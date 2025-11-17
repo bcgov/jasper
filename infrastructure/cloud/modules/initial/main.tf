@@ -37,3 +37,10 @@ module "lambda_ecr" {
   kms_key_id  = module.kms.kms_key_id
   repo_name   = "lambda"
 }
+
+# SSM Parameter Store
+module "ssm" {
+  source      = "../SSM"
+  environment = var.environment
+  app_name    = var.app_name
+}

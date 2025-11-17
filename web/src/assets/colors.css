@@ -14,6 +14,11 @@
   --bg-gray-400: #f7f7f7;
   --bg-gray-500: #efedf5;
   --bg-gray-700: #c2bdd2;
+  --bg-gray-900: #8c8c8c;
+
+  --bg-scrollbar-track: #f1f1f1;
+  --bg-scrollbar-thumb: #888;
+  --bg-scrollbar-thumb-hover: #555;
 
   --bg-green-300: #86b28a;
   --bg-green-500: #2e8540;

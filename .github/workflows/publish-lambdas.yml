@@ -146,12 +146,12 @@ jobs:
     name: Deploy to TEST
     needs: [get-lambdas, deploy2gchr, deploy2dev]
     env:
-      ENVIRONMENT: lz-tst
+      ENVIRONMENT: lz-test
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: lz-tst
+    environment: lz-test
 
     strategy:
       matrix:
@@ -178,12 +178,12 @@ jobs:
     name: Deploy to PROD
     needs: [get-lambdas, deploy2gchr, deploy2dev, deploy2test]
     env:
-      ENVIRONMENT: lz-prd
+      ENVIRONMENT: lz-prod
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: lz-prd
+    environment: lz-prod
 
     strategy:
       matrix:

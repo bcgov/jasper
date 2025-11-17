@@ -107,12 +107,12 @@ jobs:
     name: Deploy to TEST
     needs: [build, deploy2dev]
     env:
-      ENVIRONMENT: lz-tst
+      ENVIRONMENT: lz-test
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: lz-tst
+    environment: lz-test
 
     steps:
       - name: Checkout
@@ -136,12 +136,12 @@ jobs:
     name: Deploy to PROD
     needs: [build, deploy2dev, deploy2test]
     env:
-      ENVIRONMENT: lz-prd
+      ENVIRONMENT: lz-prod
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: lz-prd
+    environment: lz-prod
 
     steps:
       - name: Checkout

@@ -28,7 +28,9 @@
       <template v-slot:prepend>
         <v-icon :icon="mdiWeatherNight"></v-icon>
       </template>
-      <v-list-item-title style="font-size: 0.85rem">Dark mode</v-list-item-title>
+      <v-list-item-title style="font-size: 0.85rem"
+        >Dark mode</v-list-item-title
+      >
       <template v-slot:append>
         <v-switch v-model="isDark" hide-details @click="toggleDark" />
       </template>
@@ -71,8 +73,6 @@
   const userJudgeId = computed(() => {
     return commonStore.userInfo?.judgeId;
   });
-
-  const commonStore = useCommonStore();
   const userName = ref<string>(commonStore.userInfo?.userTitle || '');
 
   function toggleDark() {

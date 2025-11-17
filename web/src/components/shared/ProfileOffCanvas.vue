@@ -21,7 +21,9 @@
       <template v-slot:prepend>
         <v-icon :icon="mdiCalendarClock"></v-icon>
       </template>
-      <v-list-item-title>My Timebank</v-list-item-title>
+      <v-list-item-title style="font-size: 0.85rem"
+        >My Timebank</v-list-item-title
+      >
     </v-list-item>
 
     <v-list-item color="primary" rounded="shaped">

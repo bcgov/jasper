@@ -31,12 +31,18 @@
               :judges="judges"
             />
             <v-btn
-              class="ma-2"
-              @click.stop="profile = true"
-              :icon="mdiAccountCircle"
+              spaced="end"
               size="x-large"
-              style="font-size: 1.5rem"
-            />
+              @click.stop="profile = true"
+              class="text-subtitle-1"
+            >
+              <span class="text-left">
+                <div class="mb-1">{{ userName }}</div>
+              </span>
+              <template #append>
+                <v-icon :icon="mdiAccountCircle" size="32" />
+              </template>
+            </v-btn>
           </div>
         </v-tabs>
       </v-app-bar>
@@ -51,6 +57,8 @@
 
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
+  import { useCommonStore } from '@/stores';
+  import { UserInfo } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
   import { inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
@@ -59,14 +67,13 @@
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
   import { DashboardService } from './services';
-  import { useCommonStore } from './stores/CommonStore';
   import { useDarsStore } from './stores/DarsStore';
   import { useThemeStore } from './stores/ThemeStore';
   import { PersonSearchItem } from './types';
 
   const themeStore = useThemeStore();
-  const darsStore = useDarsStore();
   const commonStore = useCommonStore();
+  const darsStore = useDarsStore();
   const theme = ref(themeStore.state);
   const profile = ref(false);
 
@@ -90,6 +97,18 @@
       } else {
         selectedTab.value = newPath;
       }
+    }
+  );
+
+  const userName = ref<string>(commonStore.userInfo?.userTitle || '');
+
+  watch(
+    () => commonStore.userInfo,
+    (newUserInfo: UserInfo | null) => {
+      if (!newUserInfo) {
+        return;
+      }
+      userName.value = newUserInfo.userTitle || '';
     }
   );
 </script>

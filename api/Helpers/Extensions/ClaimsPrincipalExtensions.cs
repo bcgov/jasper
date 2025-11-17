@@ -8,6 +8,11 @@ namespace Scv.Api.Helpers.Extensions
 {
     public static class ClaimsPrincipalExtensions
     {
+        private const string JUDICIARY = "judiciary";
+        private const string VC = "vc";
+        private const string IDIR = "idir";
+        private const string JUDGE = "Judge";
+
         public static string ApplicationCode(this ClaimsPrincipal claimsPrincipal)
         {
             var identity = (ClaimsIdentity)claimsPrincipal.Identity;
@@ -72,6 +77,30 @@ namespace Scv.Api.Helpers.Extensions
 
         public static string Email(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal.FindFirstValue(ClaimTypes.Email);
+
+        public static string FullName(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue("name");
+
+        public static string FirstName(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue("given_name");
+
+        public static string UserType(this ClaimsPrincipal claimsPrincipal)
+        {
+            if (claimsPrincipal.IsIdirUser())
+                return IDIR;
+            if (claimsPrincipal.IsVcUser())
+                return VC;
+                
+            return JUDICIARY;
+        }
+
+        public static string UserTitle(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.UserType() == JUDICIARY
+                ? JUDGE + " " + claimsPrincipal.LastName()
+                : claimsPrincipal.FirstName() + " " + claimsPrincipal.LastName();
+
+        public static string LastName(this ClaimsPrincipal claimsPrincipal) =>
+            claimsPrincipal.FindFirstValue("family_name");
 
         public static bool HasPermissions(
             this ClaimsPrincipal claimsPrincipal,

@@ -28,7 +28,7 @@ export const useCommonStore = defineStore('CommonStore', {
     email: '',
   }),
   actions: {
-    setUserInfo(userInfo): void {
+    setUserInfo(userInfo: UserInfo | null): void {
       this.userInfo = userInfo;
     },
     updateUserInfo(newUserInfo): void {

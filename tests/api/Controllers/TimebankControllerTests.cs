@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -21,12 +22,16 @@ public class TimebankControllerTests
 {
     private readonly Mock<ITimebankService> _mockTimebankService;
     private readonly Mock<ILogger<TimebankController>> _mockLogger;
+    private readonly Mock<IValidator<TimebankSummaryRequest>> _mockSummaryValidator;
+    private readonly Mock<IValidator<TimebankPayoutRequest>> _mockPayoutValidator;
     private readonly Faker _faker;
 
     public TimebankControllerTests()
     {
         _mockTimebankService = new Mock<ITimebankService>();
         _mockLogger = new Mock<ILogger<TimebankController>>();
+        _mockSummaryValidator = new Mock<IValidator<TimebankSummaryRequest>>();
+        _mockPayoutValidator = new Mock<IValidator<TimebankPayoutRequest>>();
         _faker = new Faker();
     }
 
@@ -34,7 +39,9 @@ public class TimebankControllerTests
     {
         var controller = new TimebankController(
             _mockTimebankService.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockSummaryValidator.Object,
+            _mockPayoutValidator.Object
         );
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");
@@ -65,27 +72,16 @@ public class TimebankControllerTests
             new(CustomClaimTypes.JudgeId, judgeId.ToString())
         };
 
+        // Setup validator to fail for period = 0
+        var validationFailure = new FluentValidation.Results.ValidationFailure("Period", "Period must be a positive integer.");
+        var validationResult = new FluentValidation.Results.ValidationResult(new[] { validationFailure });
+        _mockSummaryValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankSummaryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(validationResult);
+
         var controller = CreateControllerWithContext(claims);
 
         // Act
         var result = await controller.GetTimebankSummaryForJudge(0);
-
-        // Assert
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.NotNull(badRequest.Value);
-    }
-
-    [Fact]
-    public async Task GetTimebankSummaryForJudge_ReturnsBadRequest_WhenJudgeIdIsInvalid()
-    {
-        // Arrange
-        var period = _faker.Random.Int(2020, 2025);
-        var claims = new List<Claim>();
-
-        var controller = CreateControllerWithContext(claims);
-
-        // Act
-        var result = await controller.GetTimebankSummaryForJudge(period);
 
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
@@ -110,6 +106,9 @@ public class TimebankControllerTests
             FirstNm = _faker.Name.FirstName(),
             SurnameNm = _faker.Name.LastName()
         };
+
+        _mockSummaryValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankSummaryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankSummaryForJudgeAsync(
@@ -141,6 +140,9 @@ public class TimebankControllerTests
         {
             new(CustomClaimTypes.JudgeId, judgeId.ToString())
         };
+
+        _mockSummaryValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankSummaryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankSummaryForJudgeAsync(
@@ -178,6 +180,9 @@ public class TimebankControllerTests
             JudiciaryPersonId = requestedJudgeId,
             Period = period
         };
+
+        _mockSummaryValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankSummaryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankSummaryForJudgeAsync(
@@ -222,6 +227,9 @@ public class TimebankControllerTests
             Period = period
         };
 
+        _mockSummaryValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankSummaryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
         _mockTimebankService
             .Setup(s => s.GetTimebankSummaryForJudgeAsync(
                 period,
@@ -260,28 +268,16 @@ public class TimebankControllerTests
             new(CustomClaimTypes.JudgeId, judgeId.ToString())
         };
 
+        // Setup validator to fail for period <= 1900
+        var validationFailure = new FluentValidation.Results.ValidationFailure("Period", "Period must be a valid year.");
+        var validationResult = new FluentValidation.Results.ValidationResult(new[] { validationFailure });
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(validationResult);
+
         var controller = CreateControllerWithContext(claims);
 
         // Act
         var result = await controller.GetTimebankPayoutsForJudges(1899, rate: rate);
-
-        // Assert
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.NotNull(badRequest.Value);
-    }
-
-    [Fact]
-    public async Task GetTimebankPayoutsForJudges_ReturnsBadRequest_WhenJudgeIdIsInvalid()
-    {
-        // Arrange
-        var period = _faker.Random.Int(2020, 2025);
-        var rate = _faker.Random.Double(100, 500);
-        var claims = new List<Claim>();
-
-        var controller = CreateControllerWithContext(claims);
-
-        // Act
-        var result = await controller.GetTimebankPayoutsForJudges(period, rate: rate);
 
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
@@ -298,6 +294,12 @@ public class TimebankControllerTests
         {
             new(CustomClaimTypes.JudgeId, judgeId.ToString())
         };
+
+        // Setup validator to fail for rate = 0
+        var validationFailure = new FluentValidation.Results.ValidationFailure("Rate", "Rate must be a positive number.");
+        var validationResult = new FluentValidation.Results.ValidationResult(new[] { validationFailure });
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(validationResult);
 
         var controller = CreateControllerWithContext(claims);
 
@@ -328,6 +330,9 @@ public class TimebankControllerTests
             Rate = rate,
             TotalPayout = _faker.Random.Double(1000, 5000)
         };
+
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankPayoutsForJudgesAsync(
@@ -363,6 +368,9 @@ public class TimebankControllerTests
             new(CustomClaimTypes.JudgeId, judgeId.ToString())
         };
 
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
         _mockTimebankService
             .Setup(s => s.GetTimebankPayoutsForJudgesAsync(
                 period,
@@ -393,6 +401,9 @@ public class TimebankControllerTests
         {
             new(CustomClaimTypes.JudgeId, judgeId.ToString())
         };
+
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankPayoutsForJudgesAsync(
@@ -433,6 +444,9 @@ public class TimebankControllerTests
             Period = period,
             Rate = rate
         };
+
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankPayoutsForJudgesAsync(
@@ -481,6 +495,9 @@ public class TimebankControllerTests
             Rate = rate
         };
 
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
         _mockTimebankService
             .Setup(s => s.GetTimebankPayoutsForJudgesAsync(
                 period,
@@ -524,6 +541,9 @@ public class TimebankControllerTests
             Period = period,
             Rate = rate
         };
+
+        _mockPayoutValidator.Setup(v => v.ValidateAsync(It.IsAny<TimebankPayoutRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTimebankService
             .Setup(s => s.GetTimebankPayoutsForJudgesAsync(

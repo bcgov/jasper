@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using LazyCache;
+using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.TimebankServices;
@@ -22,17 +23,20 @@ public class TimebankService : ServiceBase, ITimebankService
 {
     private readonly TimebankServicesClient _timebankClient;
     private readonly ILogger<TimebankService> _logger;
+    private readonly IMapper _mapper;
 
     public override string CacheName => nameof(TimebankService);
 
     public TimebankService(
         IAppCache cache,
         TimebankServicesClient timebankClient,
-        ILogger<TimebankService> logger
+        ILogger<TimebankService> logger,
+        IMapper mapper
     ) : base(cache)
     {
         _timebankClient = timebankClient;
         _logger = logger;
+        _mapper = mapper;
 
         _timebankClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver
         {
@@ -104,7 +108,7 @@ public class TimebankService : ServiceBase, ITimebankService
                 return OperationResult<VacationPayoutDto>.Failure("No timebank payout data available.");
             }
 
-            var dto = VacationPayoutDto.FromVacationPayout(payout);
+            var dto = _mapper.Map<VacationPayoutDto>(payout);
 
             _logger.LogInformation("Successfully retrieved timebank payout for judge {JudgeId}, period {Period}. Total payout: {TotalPayout}",
                 judgeId, period, dto.TotalPayout);

@@ -89,206 +89,23 @@
           class="mb-4"
           elevation="1"
         >
-          <v-expansion-panel value="vacation-summary" class="mb-2">
-            <v-expansion-panel-title class="py-3">
-              <h3 class="text-h6">
-                Vacation Summary
-                <span v-if="processedFlags.length > 0" class="mb-4">
-                  <span v-for="flag in processedFlags" :key="flag.reason">
-                    <v-chip
-                      v-if="
-                        flag.shortDescription &&
-                        flag.shortDescription?.length > 0
-                      "
-                      size="small"
-                      color="error"
-                      class="mr-2"
-                      :title="flag.shortDescription"
-                      >{{ flag.shortDescription }}</v-chip
-                    ></span
-                  >
-                </span>
-              </h3>
-            </v-expansion-panel-title>
-            <v-expansion-panel-text class="pt-3">
-              <v-alert v-if="error" type="error" class="mb-4" closable>
-                {{ error }}
-              </v-alert>
+          <TimebankSummaryComponent
+            :loading="loading"
+            :error="error"
+            :processed-flags="processedFlags"
+            :vacation-summary-list="vacationSummaryList"
+            :is-hours="isHours"
+          />
 
-              <div v-if="processedFlags.length > 0" class="mb-4">
-                <div
-                  v-for="flag in processedFlags"
-                  :key="flag.reason"
-                  class="mb-1"
-                >
-                  <v-alert type="warning" density="compact"
-                    ><span>{{ flag.description }}</span></v-alert
-                  >
-                </div>
-              </div>
-
-              <v-skeleton-loader
-                v-if="loading"
-                type="table"
-                class="vacation-summary-skeleton"
-              />
-
-              <div v-else-if="vacationSummaryList.length > 0">
-                <v-table density="compact" class="vacation-summary-table pb-5">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="text-left">&nbsp;</th>
-                      <th v-if="!isHours" scope="col" class="text-right">
-                        Days
-                      </th>
-                      <th v-if="isHours" scope="col" class="text-right">
-                        Hours
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in vacationSummaryList" :key="item.desc">
-                      <td class="text-left">{{ item.desc }}</td>
-                      <td class="text-right">
-                        {{ formatDaysOrHours(item.amount) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </v-table>
-              </div>
-
-              <div
-                v-else-if="!loading && !error"
-                class="text-center text-grey py-4"
-              >
-                <p>No vacation data available.</p>
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel value="vacation-payout">
-            <v-expansion-panel-title class="py-3">
-              <h3 class="text-h6">Vacation Payout</h3>
-            </v-expansion-panel-title>
-            <v-expansion-panel-text class="pt-3">
-              <v-alert
-                v-if="payoutError"
-                type="error"
-                class="mb-4"
-                closable
-                @click:close="payoutError = null"
-              >
-                {{ payoutError }}
-              </v-alert>
-
-              <div v-if="payoutLoading" class="payout-placeholder">
-                <v-skeleton-loader type="table" />
-              </div>
-
-              <v-table
-                v-else-if="payoutData"
-                density="compact"
-                class="payout-table"
-              >
-                <thead>
-                  <tr>
-                    <th scope="col">&nbsp;</th>
-                    <th scope="col" class="text-right">Days</th>
-                    <th scope="col" class="text-right">Rate</th>
-                    <th scope="col" class="text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Current Year</strong></td>
-                    <td class="text-right">
-                      {{
-                        formatDaysOrHours(
-                          payoutData.vacationCurrentRemaining +
-                            payoutData.extraDutyCurrentRemaining
-                        )
-                      }}
-                    </td>
-                    <td class="text-right">
-                      ${{ formatMoney(payoutData.rate) }}
-                    </td>
-                    <td class="text-right">
-                      ${{ formatMoney(payoutData.totalCurrent) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>Prior Year</strong></td>
-                    <td class="text-right">
-                      {{
-                        formatDaysOrHours(
-                          payoutData.vacationBankedRemaining +
-                            payoutData.extraDutyBankedRemaining
-                        )
-                      }}
-                    </td>
-                    <td class="text-right">
-                      ${{ formatMoney(payoutData.rate) }}
-                    </td>
-                    <td class="text-right">
-                      ${{ formatMoney(payoutData.totalBanked) }}
-                    </td>
-                  </tr>
-                  <tr class="total-row">
-                    <td><strong>Total Payout</strong></td>
-                    <td class="text-right">
-                      <strong>{{
-                        formatDaysOrHours(
-                          payoutData.vacationCurrentRemaining +
-                            payoutData.extraDutyCurrentRemaining +
-                            payoutData.vacationBankedRemaining +
-                            payoutData.extraDutyBankedRemaining
-                        )
-                      }}</strong>
-                    </td>
-                    <td class="text-right">
-                      <strong>${{ formatMoney(payoutData.rate) }}</strong>
-                    </td>
-                    <td class="text-right">
-                      <strong
-                        >${{ formatMoney(payoutData.totalPayout) }}</strong
-                      >
-                    </td>
-                  </tr>
-                </tbody>
-              </v-table>
-
-              <!-- Extra Duty Summary -->
-              <div v-if="payoutData" class="payout-summary mt-3 text-body-2">
-                <p class="mb-1">
-                  At the start of the year there were
-                  <strong>{{
-                    formatDaysOrHours(payoutData.extraDutyBanked)
-                  }}</strong>
-                  Extra Duties {{ extraDutyHoursDaysLabel }} banked.
-                </p>
-                <p class="mb-1">
-                  An entitlement of
-                  <strong>{{
-                    formatDaysOrHours(payoutData.extraDutyCurrent)
-                  }}</strong>
-                  Extra Duties {{ extraDutyHoursDaysLabel }} were added for the
-                  year.
-                </p>
-                <p class="mb-0">
-                  As of the effective date (above), the Extra Duties balance is
-                  <strong>{{ extraDutyBalanceFormatted }}</strong>
-                  {{ extraDutyHoursDaysLabel }}.
-                </p>
-              </div>
-
-              <div
-                v-else-if="!payoutLoading"
-                class="text-center text-grey py-4"
-              >
-                <p>Click "Calculate" to generate payout information.</p>
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
+          <TimebankPayoutComponent
+            :payout-loading="payoutLoading"
+            :payout-error="payoutError"
+            :payout-data="payoutData"
+            :is-hours="isHours"
+            :extra-duty-hours-days-label="extraDutyHoursDaysLabel"
+            :extra-duty-balance-formatted="extraDutyBalanceFormatted"
+            @close-error="payoutError = null"
+          />
         </v-expansion-panels>
       </v-container>
 
@@ -311,6 +128,10 @@
   } from '@/types/timebank';
   import { mdiClose, mdiRefresh } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
+  import {
+    TimebankSummary as TimebankSummaryComponent,
+    TimebankPayout as TimebankPayoutComponent,
+  } from './timebank';
 
   interface Props {
     judgeId: number;
@@ -397,7 +218,7 @@
 
   const dateRequired = (value: Date | null | undefined | string) => {
     // If value is null, undefined, or empty string, require a date
-    if (value === null || value === undefined || value === '') {
+    if (!value) {
       return 'Expiry date is required';
     }
     // Check if it's a valid Date object
@@ -681,54 +502,5 @@
 </script>
 
 <style scoped>
-  .vacation-summary-table {
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 4px;
-  }
-
-  .vacation-summary-table th {
-    font-weight: 600;
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .vacation-summary-table tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .vacation-summary-skeleton {
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 4px;
-  }
-
-  .payout-table {
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 4px;
-    margin-top: 16px;
-  }
-
-  .payout-table th {
-    font-weight: 600;
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .payout-table .total-row {
-    background-color: rgba(33, 150, 243, 0.08);
-    border-top: 2px solid #2196f3;
-  }
-
-  .payout-placeholder {
-    margin-top: 16px;
-  }
-
-  .payout-summary {
-    line-height: 1.6;
-  }
-
-  .payout-summary p {
-    margin-bottom: 8px;
-  }
-
-  .payout-summary p:last-child {
-    margin-bottom: 0;
-  }
+  /* Styles for the main modal container */
 </style>

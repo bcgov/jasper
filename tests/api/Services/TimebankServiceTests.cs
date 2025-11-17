@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
 using LazyCache.Providers;
+using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -26,10 +27,12 @@ public class TimebankServiceTests : ServiceTestBase
 
     private (
         TimebankService timebankService,
-        Mock<TimebankServicesClient> mockTimebankClient
+        Mock<TimebankServicesClient> mockTimebankClient,
+        Mock<IMapper> mockMapper
     ) SetupTimebankService()
     {
         var mockTimebankClient = new Mock<TimebankServicesClient>(MockBehavior.Strict, this.HttpClient);
+        var mockMapper = new Mock<IMapper>();
 
         var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
@@ -37,9 +40,10 @@ public class TimebankServiceTests : ServiceTestBase
         var timebankService = new TimebankService(
             cachingService,
             mockTimebankClient.Object,
-            new Mock<ILogger<TimebankService>>().Object);
+            new Mock<ILogger<TimebankService>>().Object,
+            mockMapper.Object);
 
-        return (timebankService, mockTimebankClient);
+        return (timebankService, mockTimebankClient, mockMapper);
     }
 
     #region GetTimebankSummaryForJudgeAsync Tests
@@ -47,7 +51,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnSuccess_WhenDataExists()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var expectedSummary = new PCSSCommon.Clients.TimebankServices.TimebankSummary
@@ -84,7 +88,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnSuccess_WithIncludeLineItems()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var includeLineItems = true;
@@ -118,7 +122,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnFailure_WhenDataIsNull()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
 
@@ -147,7 +151,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnSuccess_When204NoContent()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
 
@@ -174,7 +178,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnFailure_WhenApiExceptionThrown()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var statusCode = 500;
@@ -204,7 +208,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnFailure_WhenArgumentNullExceptionThrown()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
 
@@ -235,7 +239,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankSummaryForJudgeAsync_ShouldReturnFailure_WhenUnexpectedExceptionThrown()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
 
@@ -268,7 +272,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldReturnSuccess_WhenDataExists()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, mockMapper) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
@@ -282,6 +286,15 @@ public class TimebankServiceTests : ServiceTestBase
             EffectiveDate = DateTimeOffset.Now
         };
 
+        var expectedDto = new VacationPayoutDto
+        {
+            JudiciaryPersonId = judgeId,
+            Period = period,
+            Rate = rate,
+            TotalPayout = expectedPayout.TotalPayout,
+            EffectiveDate = expectedPayout.EffectiveDate
+        };
+
         mockTimebankClient
             .Setup(c => c.GetTimebankPayoutsForJudgesAsync(
                 period,
@@ -290,6 +303,9 @@ public class TimebankServiceTests : ServiceTestBase
                 rate,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedPayout);
+
+        mockMapper.Setup(m => m.Map<VacationPayoutDto>(expectedPayout))
+            .Returns(expectedDto);
 
         var result = await timebankService.GetTimebankPayoutsForJudgesAsync(period, judgeId, expiryDate, rate);
 
@@ -310,7 +326,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldReturnSuccess_WithoutExpiryDate()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, mockMapper) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
@@ -323,6 +339,15 @@ public class TimebankServiceTests : ServiceTestBase
             EffectiveDate = DateTimeOffset.Now
         };
 
+        var expectedDto = new VacationPayoutDto
+        {
+            JudiciaryPersonId = judgeId,
+            Period = period,
+            Rate = rate,
+            TotalPayout = expectedPayout.TotalPayout,
+            EffectiveDate = expectedPayout.EffectiveDate
+        };
+
         mockTimebankClient
             .Setup(c => c.GetTimebankPayoutsForJudgesAsync(
                 period,
@@ -331,6 +356,9 @@ public class TimebankServiceTests : ServiceTestBase
                 rate,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedPayout);
+
+        mockMapper.Setup(m => m.Map<VacationPayoutDto>(It.IsAny<PCSSCommon.Clients.TimebankServices.VacationPayout>()))
+            .Returns(expectedDto);
 
         var result = await timebankService.GetTimebankPayoutsForJudgesAsync(period, judgeId, null, rate);
 
@@ -348,7 +376,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldFormatExpiryDateCorrectly()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, mockMapper) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
@@ -363,6 +391,15 @@ public class TimebankServiceTests : ServiceTestBase
             EffectiveDate = DateTimeOffset.Now
         };
 
+        var expectedDto = new VacationPayoutDto
+        {
+            JudiciaryPersonId = judgeId,
+            Period = period,
+            Rate = rate,
+            TotalPayout = expectedPayout.TotalPayout,
+            EffectiveDate = expectedPayout.EffectiveDate
+        };
+
         mockTimebankClient
             .Setup(c => c.GetTimebankPayoutsForJudgesAsync(
                 period,
@@ -371,6 +408,9 @@ public class TimebankServiceTests : ServiceTestBase
                 rate,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedPayout);
+
+        mockMapper.Setup(m => m.Map<VacationPayoutDto>(It.IsAny<PCSSCommon.Clients.TimebankServices.VacationPayout>()))
+            .Returns(expectedDto);
 
         var result = await timebankService.GetTimebankPayoutsForJudgesAsync(period, judgeId, expiryDate, rate);
 
@@ -387,7 +427,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldReturnFailure_WhenDataIsNull()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
@@ -419,7 +459,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldReturnFailure_WhenApiExceptionThrown()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
@@ -452,7 +492,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldReturnFailure_WhenArgumentNullExceptionThrown()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
@@ -486,7 +526,7 @@ public class TimebankServiceTests : ServiceTestBase
     [Fact]
     public async Task GetTimebankPayoutsForJudgesAsync_ShouldReturnFailure_WhenUnexpectedExceptionThrown()
     {
-        var (timebankService, mockTimebankClient) = SetupTimebankService();
+        var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);

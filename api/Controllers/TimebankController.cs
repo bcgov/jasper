@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -16,10 +18,14 @@ namespace Scv.Api.Controllers;
 [ApiController]
 public class TimebankController(
     ITimebankService timebankService,
-    ILogger<TimebankController> logger) : ControllerBase
+    ILogger<TimebankController> logger,
+    IValidator<TimebankSummaryRequest> summaryValidator,
+    IValidator<TimebankPayoutRequest> payoutValidator) : ControllerBase
 {
     private readonly ITimebankService _timebankService = timebankService;
     private readonly ILogger<TimebankController> _logger = logger;
+    private readonly IValidator<TimebankSummaryRequest> _summaryValidator = summaryValidator;
+    private readonly IValidator<TimebankPayoutRequest> _payoutValidator = payoutValidator;
 
     /// <summary>
     /// Retrieves the timebank summary for a judge for a given period.
@@ -37,32 +43,36 @@ public class TimebankController(
         [FromQuery] bool? includeLineItems = null,
         CancellationToken cancellationToken = default)
     {
-        if (period <= 0)
+        var request = new TimebankSummaryRequest
         {
-            _logger.LogWarning("Invalid period {Period} provided for timebank summary", period);
-            return BadRequest(new { error = "Period must be a positive integer." });
+            Period = period,
+            JudgeId = judgeId,
+            IncludeLineItems = includeLineItems
+        };
+
+        var validationResult = await _summaryValidator.ValidateAsync(request, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            _logger.LogWarning("Invalid timebank summary request. Errors: {Errors}",
+                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
-        var resolvedJudgeId = User.JudgeId(judgeId);
+        var resolvedJudgeId = User.JudgeId(request.JudgeId);
 
-        if (resolvedJudgeId <= 0)
-        {
-            _logger.LogWarning("Invalid or missing judge ID for timebank summary request. Period: {Period}", period);
-            return BadRequest(new { error = "A valid judge ID is required." });
-        }
+        _logger.LogInformation("Processing timebank summary request for judge {JudgeId}, period {Period}", resolvedJudgeId, request.Period);
 
-        _logger.LogInformation("Processing timebank summary request for judge {JudgeId}, period {Period}", resolvedJudgeId, period);
-
-        var result = await _timebankService.GetTimebankSummaryForJudgeAsync(period, resolvedJudgeId, includeLineItems, cancellationToken);
+        var result = await _timebankService.GetTimebankSummaryForJudgeAsync(request.Period, resolvedJudgeId, request.IncludeLineItems, cancellationToken);
 
         if (!result.Succeeded)
         {
             _logger.LogWarning("Failed to retrieve timebank summary for judge {JudgeId}, period {Period}. Errors: {Errors}",
-                resolvedJudgeId, period, string.Join(", ", result.Errors));
+                resolvedJudgeId, request.Period, string.Join(", ", result.Errors));
             return BadRequest(new { error = result.Errors });
         }
 
-        _logger.LogInformation("Successfully retrieved timebank summary for judge {JudgeId}, period {Period}", resolvedJudgeId, period);
+        _logger.LogInformation("Successfully retrieved timebank summary for judge {JudgeId}, period {Period}", resolvedJudgeId, request.Period);
 
         return Ok(result.Payload);
     }
@@ -85,48 +95,45 @@ public class TimebankController(
         [FromQuery] double rate = 0,
         CancellationToken cancellationToken = default)
     {
-        // Validate period
-        if (period <= 1900)
+        var request = new TimebankPayoutRequest
         {
-            _logger.LogWarning("Invalid period {Period} provided for timebank payout", period);
-            return BadRequest(new { error = "Period must be a valid year." });
+            Period = period,
+            JudgeId = judgeId,
+            ExpiryDate = expiryDate,
+            Rate = rate
+        };
+
+        var validationResult = await _payoutValidator.ValidateAsync(request, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            _logger.LogWarning("Invalid timebank payout request. Errors: {Errors}",
+                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
-        var resolvedJudgeId = User.JudgeId(judgeId);
-
-        if (resolvedJudgeId <= 0)
-        {
-            _logger.LogWarning("Invalid or missing judge ID for timebank payout request. Period: {Period}", period);
-            return BadRequest(new { error = "A valid judge ID is required." });
-        }
-
-        if (rate <= 0)
-        {
-            _logger.LogWarning("Invalid rate {Rate} provided for timebank payout. Judge: {JudgeId}, Period: {Period}",
-                rate, resolvedJudgeId, period);
-            return BadRequest(new { error = "Rate must be a positive number." });
-        }
+        var resolvedJudgeId = User.JudgeId(request.JudgeId);
 
         _logger.LogInformation("Processing timebank payout request for judge {JudgeId}, period {Period}, rate {Rate}, expiryDate {ExpiryDate}",
-            resolvedJudgeId, period, rate, expiryDate?.ToString("yyyy-MM-dd"));
+            resolvedJudgeId, request.Period, request.Rate, request.ExpiryDate?.ToString("yyyy-MM-dd"));
 
-        var result = await _timebankService.GetTimebankPayoutsForJudgesAsync(period, resolvedJudgeId, expiryDate, rate, cancellationToken);
+        var result = await _timebankService.GetTimebankPayoutsForJudgesAsync(request.Period, resolvedJudgeId, request.ExpiryDate, request.Rate, cancellationToken);
 
         if (!result.Succeeded)
         {
             _logger.LogWarning("Failed to retrieve timebank payout for judge {JudgeId}, period {Period}. Errors: {Errors}",
-                resolvedJudgeId, period, string.Join(", ", result.Errors));
+                resolvedJudgeId, request.Period, string.Join(", ", result.Errors));
             return BadRequest(new { error = result.Errors });
         }
 
         if (result.Payload == null)
         {
-            _logger.LogWarning("Timebank payout returned null payload for judge {JudgeId}, period {Period}", resolvedJudgeId, period);
+            _logger.LogWarning("Timebank payout returned null payload for judge {JudgeId}, period {Period}", resolvedJudgeId, request.Period);
             return NotFound(new { error = "Timebank payout not found." });
         }
 
         _logger.LogInformation("Successfully retrieved timebank payout for judge {JudgeId}, period {Period}. Total payout: {TotalPayout}",
-            resolvedJudgeId, period, result.Payload.TotalPayout);
+            resolvedJudgeId, request.Period, result.Payload.TotalPayout);
 
         return Ok(result.Payload);
     }

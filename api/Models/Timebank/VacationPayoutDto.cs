@@ -21,28 +21,4 @@ public class VacationPayoutDto
     public double TotalCurrent { get; set; }
     public double TotalBanked { get; set; }
     public double TotalPayout { get; set; }
-
-    public static VacationPayoutDto FromVacationPayout(PCSSCommon.Clients.TimebankServices.VacationPayout source)
-    {
-        return new VacationPayoutDto
-        {
-            JudiciaryPersonId = source.JudiciaryPersonId,
-            Period = source.Period,
-            EffectiveDate = source.EffectiveDate,
-            EntitlementCalcType = source.EntitlementCalcType,
-            VacationCurrent = source.VacationCurrent,
-            VacationBanked = source.VacationBanked,
-            ExtraDutyCurrent = source.ExtraDutyCurrent,
-            ExtraDutyBanked = source.ExtraDutyBanked,
-            VacationUsed = source.VacationUsed,
-            VacationCurrentRemaining = source.VacationCurrentRemaining,
-            VacationBankedRemaining = source.VacationBankedRemaining,
-            ExtraDutyCurrentRemaining = source.ExtraDutyCurrentRemaining,
-            ExtraDutyBankedRemaining = source.ExtraDutyBankedRemaining,
-            Rate = source.Rate,
-            TotalCurrent = source.TotalCurrent,
-            TotalBanked = source.TotalBanked,
-            TotalPayout = source.TotalPayout
-        };
-    }
 }

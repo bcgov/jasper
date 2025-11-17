@@ -21,8 +21,8 @@ on:
           - test
           - prod
           - lz-dev
-          - lz-tst
-          - lz-prd
+          - lz-test
+          - lz-prod
 
 env:
   WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"

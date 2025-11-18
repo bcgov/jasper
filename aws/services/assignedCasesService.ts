@@ -63,21 +63,22 @@ export class AssignedCasesService {
       console.log("Fetching assigned cases from PCSS API:", url.toString());
 
       const response = await this.httpService.get<Case[]>(url, axiosConfig);
+      const { data = [], status } = response || {};
 
       const durationMs = Date.now() - startTime;
       const durationSeconds = (durationMs / 1000).toFixed(2);
 
       console.log("Successfully retrieved scheduled cases", {
-        count: response.data.length,
-        statusCode: response.status,
+        count: data.length,
+        statusCode: status,
         duration: `${durationSeconds}s`,
         durationMs,
       });
 
       return {
-        data: response.data,
+        data,
         success: true,
-        message: `Retrieved ${response.data.length} scheduled cases`,
+        message: `Retrieved ${data.length} scheduled cases`,
       };
     } catch (error) {
       const durationMs = Date.now() - startTime;

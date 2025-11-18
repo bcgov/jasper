@@ -39,7 +39,6 @@ namespace Scv.Api.Infrastructure.Authorization
             var httpContext = context.Resource as DefaultHttpContext;
             var endpoint = httpContext?.GetEndpoint();
             var actionDescriptor = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>();
-            var isAuthController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(AuthController);
             var isUserController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(UsersController);
 
             var userId = context.User.UserId();
@@ -91,10 +90,6 @@ namespace Scv.Api.Infrastructure.Authorization
                 {
                     context.Succeed(requirement);
                     return;
-                }
-                if (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))
-                {
-                    context.Succeed(requirement);
                 }
             }
         }

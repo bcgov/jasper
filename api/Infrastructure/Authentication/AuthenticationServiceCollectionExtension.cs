@@ -298,6 +298,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 if (userDto == null)
                 {
                     var newUser = await BuildNewUser(context, logger);
+                    logger.LogInformation("Creating new user in SCV database: {NewUser}", JsonConvert.SerializeObject(newUser));
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
                     {
@@ -371,7 +372,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 userDto.IsActive = groupIds.Count > 0;
 
             }
-            catch (ApiException e)
+            catch (Exception e)
             {
                 logger.LogError(e, "Unable to get user or groups from PCSS.");
             }

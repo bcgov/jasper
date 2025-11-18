@@ -20,12 +20,12 @@ labels:
   template: update-aws-creds-template
 metadata:
   # Append the target environment:
-  #name: update-aws-creds-dev
-  #name: update-aws-creds-test
-  #name: update-aws-creds-prod
-  #name: update-aws-creds-lz-dev
-  name: update-aws-creds-lz-test
-  #name: update-aws-creds-lz-prod
+  # name: update-aws-creds-dev
+  # name: update-aws-creds-test
+  # name: update-aws-creds-prod
+  name: update-aws-creds-lz-dev
+  # name: update-aws-creds-lz-test
+  # name: update-aws-creds-lz-prod
 
 objects:
   - apiVersion: v1
@@ -138,7 +138,7 @@ parameters:
   - name: ENVIRONMENT
     description: Target environment (dev, test, prod)
     required: true
-    value: "test"
+    value: "dev"
     
   - name: AWS_SECRET_PREFIX
     description: AWS secret prefix to handle new landing zone environment

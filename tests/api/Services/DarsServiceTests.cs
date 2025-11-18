@@ -109,7 +109,7 @@ public class DarsServiceTests : ServiceTestBase
 
         // Verify that DARS API was called with the agencyIdentifierCd (which is the same as agencyIdentifierCd in our test)
         mockLogNotesClient.Verify(c => c.GetBaseAsync(
-            null,
+            It.IsAny<string>(),
             agencyIdentifierCd,  // This is the agencyIdentifierCd converted to int
             courtRoomCd,
             It.IsAny<DateTimeOffset?>(),

@@ -193,9 +193,8 @@ export class ApiService {
       });
 
       // Attempt to pass the original error back from the proxy - so the client can determine how to handle the error.
-      const axiosErr = error as any;
-      if (axiosErr && axiosErr.response) {
-        const resp = axiosErr.response as AxiosResponse<unknown>;
+      if (error && error.response) {
+        const resp = error.response as AxiosResponse<unknown>;
         const responseHeaders = this.sanitizeResponseHeaders(
           resp.headers || {}
         );

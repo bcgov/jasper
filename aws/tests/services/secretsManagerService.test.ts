@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock(
-  "@aws-sdk/client-secrets-manager",
-  () => import("../../mocks/aws-sdk-secrets-manager")
-);
-
 import {
   GetSecretValueCommand,
   mockSend,
   UpdateSecretCommand,
 } from "../../mocks/aws-sdk-secrets-manager";
 import { SecretsManagerService } from "../../services/secretsManagerService";
+
+vi.mock(
+  "@aws-sdk/client-secrets-manager",
+  () => import("../../mocks/aws-sdk-secrets-manager")
+);
 
 describe("SecretsManagerService", () => {
   let service: SecretsManagerService;

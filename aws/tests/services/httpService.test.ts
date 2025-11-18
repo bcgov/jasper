@@ -12,7 +12,7 @@ describe("HttpService", () => {
 
   const baseUrl = "https://api.example.com";
   const username = "user";
-  const password = process.env.TEST_PASSWORD;
+  const password = "test-password";
   const cert = "mock-cert";
   const key = "mock-key";
 
@@ -37,6 +37,13 @@ describe("HttpService", () => {
   });
 
   it("should initialize axios instance with correct configs", async () => {
+    const mockInstance = {
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+    };
+    axiosMock.create.mockReturnValue(mockInstance as any);
+
     await httpService.init(credentialsSecret, mtlsSecret);
 
     expect(axiosMock.create).toHaveBeenCalledWith(
@@ -113,8 +120,13 @@ describe("HttpService", () => {
   });
 
   it("should handle errors correctly", async () => {
+    const axiosError = {
+      response: { status: 404 },
+      isAxiosError: true,
+      message: "Request failed with status code 404",
+    };
     const mockInstance = {
-      get: vi.fn().mockRejectedValue({ response: { status: 404 } }),
+      get: vi.fn().mockRejectedValue(axiosError),
       post: vi.fn(),
       put: vi.fn(),
     };

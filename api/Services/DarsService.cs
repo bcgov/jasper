@@ -43,7 +43,7 @@ namespace Scv.Api.Services
                 return [];
             }
 
-            var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier);
+            var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier, region: "all");
             logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
                 darsResult?.Count ?? 0, agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
             var mappedResults = mapper.Map<IEnumerable<DarsSearchResults>>(darsResult).ToList();

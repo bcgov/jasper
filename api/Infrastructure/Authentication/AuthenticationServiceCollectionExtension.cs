@@ -260,6 +260,10 @@ namespace Scv.Api.Infrastructure.Authentication
                 if (int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId))
                 {
                     judge = await GetJudgeById(context, externalJudgeId);
+                } 
+                else
+                {
+                    logger.LogWarning("Failed to parse external judge id: {ExternalJudgeId}", context.Principal.ExternalJudgeId());
                 }
 
                 if (IsMongoDbConfigured(configuration))
@@ -274,6 +278,7 @@ namespace Scv.Api.Infrastructure.Authentication
             }
             finally
             {
+                logger.LogDebug("Logged user in, with potential fallback values judge person id: {JudgePersonId}, judge id: {JudgeId} judge home location id: {JudgeLocationId} homeLocationId: {HomeLocationId}", judge?.PersonId, judgeId, judge?.HomeLocationId, homeLocationId);
                 judgeId = judge?.PersonId.ToString() ?? judgeId;
                 homeLocationId = judge?.HomeLocationId.ToString() ?? homeLocationId;
                 AddDefaultJudgeClaims(logger, claims, judgeId, homeLocationId);

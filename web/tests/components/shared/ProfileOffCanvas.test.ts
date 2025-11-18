@@ -5,15 +5,19 @@ import { createPinia, setActivePinia } from 'pinia';
 
 vi.mock('SRC/stores/ThemeStore', () => ({
   useThemeStore: () => ({
+    state: 'light',
     theme: 'light',
     setTheme: vi.fn(),
     changeState: vi.fn(),
   }),
 }));
 
-vi.mock('@/stores/commonStore', () => ({
+vi.mock('@/stores/CommonStore', () => ({
   useCommonStore: () => ({
-    userInfo: { userTitle: 'Judge Josh' },
+    userInfo: { userTitle: 'Judge Josh', judgeId: 123 },
+    state: () => ({
+      userInfo: { userTitle: 'Judge Josh', judgeId: 123 },
+    }),
   }),
 }));
 
@@ -24,7 +28,16 @@ describe('ProfileOffCanvas.vue', () => {
   beforeEach(() => {
     pinia = createPinia();
     setActivePinia(pinia);
-    wrapper = mount(ProfileOffCanvas, { global: { plugins: [pinia] } });
+
+    // Mount with explicit props to bypass store dependency
+    wrapper = mount(ProfileOffCanvas, {
+      global: {
+        plugins: [pinia],
+        provide: {
+          // Provide mock data directly if needed
+        },
+      },
+    });
   });
 
   it('renders the component', () => {

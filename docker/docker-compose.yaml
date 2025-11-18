@@ -131,6 +131,9 @@ services:
       - ASPNETCORE_URLS=${ASPNETCORE_TD_URLS}
       - AuthorizerKey=${AuthorizerKey}
       - DataProtectionKeyEncryptionKey=${DataProtectionKeyEncryptionKey}
+      - Keycloak__Audience=${TDKeycloakAudience}
+      - Keycloak__Authority=${TDKeycloakAuthority}
+      - Keycloak__ClientId=${TDKeycloakClient}
       - Keycloak__Secret=${TdKeycloakSecret}
       - SplunkCollectorId=${SplunkCollectorId}
       - SplunkCollectorUrl=${SplunkCollectorUrl}

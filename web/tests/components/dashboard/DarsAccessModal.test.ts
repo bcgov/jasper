@@ -60,6 +60,7 @@ describe('DarsAccessModal tests', () => {
       shortName: 'VAN',
       code: 'VAN',
       locationId: '1',
+      agencyIdentifierCd: '1234',
       courtRooms: [
         { room: 'Room 101', locationId: '1', type: 'courtroom' },
         { room: 'Room 102', locationId: '1', type: 'courtroom' },
@@ -70,6 +71,7 @@ describe('DarsAccessModal tests', () => {
       shortName: 'SUR',
       code: 'SUR',
       locationId: '2',
+      agencyIdentifierCd: '5678',
       courtRooms: [
         { room: 'Room 201', locationId: '2', type: 'courtroom' },
         { room: 'Room 202', locationId: '2', type: 'courtroom' },
@@ -210,7 +212,7 @@ describe('DarsAccessModal tests', () => {
       await vm.handleSearch();
       await flushPromises();
 
-      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1, 'Room 101');
+      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1234, 'Room 101');
     });
 
     it('fires search request without room when room is not selected', async () => {
@@ -231,7 +233,7 @@ describe('DarsAccessModal tests', () => {
       await flushPromises();
 
       // Verify search was called with empty room
-      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1, '');
+      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1234, '');
     });
   });
 

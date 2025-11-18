@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;

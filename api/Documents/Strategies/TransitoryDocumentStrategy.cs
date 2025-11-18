@@ -16,9 +16,7 @@ public class TransitoryDocumentStrategy(ITransitoryDocumentsService transitoryDo
     {
         var documentResponseStreamCopy = new MemoryStream();
 
-        var fileResponse = await _transitoryDocumentsService.DownloadFile(
-            documentRequest.BearerToken,
-            documentRequest.Path);
+        var fileResponse = await _transitoryDocumentsService.DownloadFile(documentRequest.Path);
 
         await fileResponse.Stream.CopyToAsync(documentResponseStreamCopy); // follows existing pattern.
         documentResponseStreamCopy.Position = 0;

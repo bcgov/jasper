@@ -17,18 +17,21 @@ namespace Scv.Api.Services
     {
         private readonly TransitoryDocumentsClient _tdClient;
         private readonly LocationService _locationService;
+        private readonly IKeycloakTokenService _keycloakTokenService;
         private readonly Lazy<JsonSerializerOptions> _jsonSerializerOptions;
         private readonly ILogger<TransitoryDocumentsService> _logger;
 
         public TransitoryDocumentsService(
             ILogger<TransitoryDocumentsService> logger,
             TransitoryDocumentsClient transitoryDocumentsClient,
-            LocationService locationService)
+            LocationService locationService,
+            IKeycloakTokenService keycloakTokenService)
         {
             _jsonSerializerOptions = new Lazy<JsonSerializerOptions>(CreateJsonSerializerOptions);
             _logger = logger;
             _tdClient = transitoryDocumentsClient;
             _locationService = locationService;
+            _keycloakTokenService = keycloakTokenService;
         }
 
         private JsonSerializerOptions CreateJsonSerializerOptions()
@@ -46,15 +49,16 @@ namespace Scv.Api.Services
         /// <summary>
         /// Calls the Transitory Documents API to search for documents.
         /// </summary>
-        /// <param name="bearer">The bearer token for authentication.</param>
         /// <param name="locationId">The location to retrieve files.</param>
         /// <param name="roomCode">The room within the location.</param>
         /// <param name="date">The date to retrieve files.</param>
         /// <returns>The collection of file metadata from the API.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
-        public async Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(string bearer, string locationId, string roomCode, string date)
+        public async Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(string locationId, string roomCode, string date)
         {
             _logger.LogInformation("Searching for documents in location: {Location}, room: {Room}, date: {Date}", locationId, roomCode, date);
+            
+            var bearer = await _keycloakTokenService.GetAccessTokenAsync();
             _tdClient.SetBearerToken(bearer);
 
             try
@@ -98,12 +102,13 @@ namespace Scv.Api.Services
         /// <summary>
         /// Downloads a file from the Transitory Documents API using the generated client.
         /// </summary>
-        /// <param name="bearer">The bearer token for authentication.</param>
         /// <param name="path">The absolute UNC path to the file (will be normalized to relative path).</param>
         /// <returns>A file stream response containing the stream, file name, and content type.</returns>
-        public async Task<FileStreamResponse> DownloadFile(string bearer, string path)
+        public async Task<FileStreamResponse> DownloadFile(string path)
         {
             _logger.LogInformation("Downloading file from path: {Path}", path);
+            
+            var bearer = await _keycloakTokenService.GetAccessTokenAsync();
             _tdClient.SetBearerToken(bearer);
 
             try
@@ -114,10 +119,8 @@ namespace Scv.Api.Services
 
                 var fileResponse = await _tdClient.ContentAsync(normalizedPath);
 
-                // Extract file name from Content-Disposition header if available
                 var fileName = GetFileNameFromHeaders(fileResponse.Headers, path);
 
-                // Extract content type from headers
                 var contentType = GetContentTypeFromHeaders(fileResponse.Headers);
 
                 var response = new FileStreamResponse(fileResponse.Stream, fileName, contentType);
@@ -144,7 +147,7 @@ namespace Scv.Api.Services
 
         /// <summary>
         /// Normalizes a UNC-style path to the relative format expected by the Transitory Documents API.
-        /// Example input: "Criminal Share\Fraser+Vancouver Coastal\222 main\2025\10 October\October 1 (Wed)\101\File.pdf"
+        /// Example input: "/Criminal Share/Fraser+Vancouver Coastal/222 main/2025/10 October/October 1 (Wed)/101/File.pdf"
         /// Example output: "Fraser+Vancouver Coastal\222 main\2025\10 October\October 1 (Wed)\101\File.pdf"
         /// </summary>
         private string NormalizePathForTdApi(string uncPath)

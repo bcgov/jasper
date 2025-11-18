@@ -7,7 +7,7 @@ using DARSCommon.Models;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Services
 {

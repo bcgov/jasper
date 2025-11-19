@@ -17,10 +17,14 @@ export class DarsService {
     agencyIdentifierCd: string,
     courtRoomCd: string
   ): Promise<DarsLogNote[]> {
-    return this.httpService.get<DarsLogNote[]>('api/Dars/search', {
-      date,
-      agencyIdentifierCd,
-      courtRoomCd,
-    });
+    return this.httpService.get<DarsLogNote[]>(
+      'api/Dars/search',
+      {
+        date,
+        agencyIdentifierCd,
+        courtRoomCd,
+      },
+      { skipErrorHandler: true }
+    );
   }
 }

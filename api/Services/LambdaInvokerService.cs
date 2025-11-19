@@ -15,7 +15,7 @@ public interface ILambdaInvokerService
     Task<TResponse> InvokeAsync<TRequest, TResponse>(
         TRequest request,
         string functionName,
-        CancellationToken cancellationToken = default)
+        TimeSpan? timeout = null)
         where TRequest : class
         where TResponse : class;
 }
@@ -36,7 +36,7 @@ public class LambdaInvokerService(
     public async Task<TResponse> InvokeAsync<TRequest, TResponse>(
         TRequest request,
         string functionName,
-        CancellationToken cancellationToken = default)
+        TimeSpan? timeout = null)
         where TRequest : class
         where TResponse : class
     {
@@ -45,9 +45,12 @@ public class LambdaInvokerService(
             throw new InvalidOperationException("Lambda function name is not configured.");
         }
 
+        using var cts = timeout.HasValue ? new CancellationTokenSource(timeout.Value) : null;
+
         try
         {
-            _logger.LogInformation("Invoking Lambda function: {FunctionName}", functionName);
+            _logger.LogInformation("Invoking Lambda function: {FunctionName} with timeout: {Timeout}",
+                functionName, timeout?.TotalSeconds.ToString() ?? "default");
 
             var payload = JsonConvert.SerializeObject(request, _serializerSettings);
 
@@ -55,10 +58,10 @@ public class LambdaInvokerService(
             {
                 FunctionName = functionName,
                 InvocationType = InvocationType.RequestResponse,
-                Payload = payload
+                Payload = payload,
             };
 
-            var response = await _lambdaClient.InvokeAsync(invokeRequest, cancellationToken);
+            var response = await _lambdaClient.InvokeAsync(invokeRequest, cts?.Token ?? default);
 
             if (response.FunctionError != null)
             {
@@ -81,6 +84,12 @@ public class LambdaInvokerService(
             _logger.LogDebug("Lambda response payload: {Payload}", responsePayload);
 
             return JsonConvert.DeserializeObject<TResponse>(responsePayload, _serializerSettings);
+        }
+        catch (OperationCanceledException ex) when (cts?.IsCancellationRequested == true)
+        {
+            _logger.LogError(ex, "Lambda function invocation timed out after {Timeout} seconds for function: {FunctionName}",
+                timeout?.TotalSeconds, functionName);
+            throw new TimeoutException($"Lambda function '{functionName}' timed out after {timeout?.TotalSeconds} seconds", ex);
         }
         catch (JsonException ex)
         {

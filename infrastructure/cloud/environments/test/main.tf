@@ -149,21 +149,22 @@ module "efs_files" {
 
 # Create Lambda Functions
 module "lambda" {
-  source               = "../../modules/Lambda"
-  environment          = var.environment
-  app_name             = var.app_name
-  lambda_role_arn      = module.iam.lambda_role_arn
-  apigw_execution_arn  = module.apigw.apigw_execution_arn
-  lambda_ecr_repo_url  = module.initial.lambda_ecr.ecr_repo_url
-  lambda_memory_size   = var.lambda_memory_size
-  subnet_ids           = module.subnets.all_subnet_ids
-  sg_ids               = [data.aws_security_group.web_sg.id, data.aws_security_group.data_sg.id, data.aws_security_group.app_sg.id]
-  lambda_secrets       = module.secrets_manager.lambda_secrets
-  ecs_cluster_name     = module.ecs_cluster.ecs_cluster.name
-  efs_access_point_arn = module.efs_files.access_point_arn
-  efs_mount_path       = var.efs_config.mount_path
-  region               = var.region
-  account_id           = data.aws_caller_identity.current.account_id
+  source                            = "../../modules/Lambda"
+  environment                       = var.environment
+  app_name                          = var.app_name
+  lambda_role_arn                   = module.iam.lambda_role_arn
+  apigw_execution_arn               = module.apigw.apigw_execution_arn
+  lambda_ecr_repo_url               = module.initial.lambda_ecr.ecr_repo_url
+  lambda_memory_size                = var.lambda_memory_size
+  subnet_ids                        = module.subnets.all_subnet_ids
+  sg_ids                            = [data.aws_security_group.web_sg.id, data.aws_security_group.data_sg.id, data.aws_security_group.app_sg.id]
+  lambda_secrets                    = module.secrets_manager.lambda_secrets
+  ecs_cluster_name                  = module.ecs_cluster.ecs_cluster.name
+  efs_access_point_arn              = module.efs_files.access_point_arn
+  efs_mount_path                    = var.efs_config.mount_path
+  region                            = var.region
+  account_id                        = data.aws_caller_identity.current.account_id
+  get_assigned_cases_lambda_timeout = var.get_assigned_cases_lambda_timeout
 }
 
 # Create Cloudwatch LogGroups
@@ -283,6 +284,10 @@ module "ecs_api_td" {
     {
       name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"
       value = "${module.lambda.lambda_functions["get-assigned-cases-request"].name}"
+    },
+    {
+      name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"
+      value = var.get_assigned_cases_lambda_timeout
     }
   ]
   secret_env_variables = module.secrets_manager.api_secrets

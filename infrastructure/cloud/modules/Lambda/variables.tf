@@ -89,3 +89,8 @@ variable "efs_mount_path" {
   description = "Local mount path for EFS in Lambda"
   type        = string
 }
+
+variable "get_assigned_cases_lambda_timeout" {
+  description = "Timeout for getAssignedCases Lambda function"
+  type        = number
+}

@@ -227,6 +227,7 @@ public class SyncAssignedCasesJob(
         // Retrieve the Scheduled Cases by invoking a lambda function to avoid API Gateway's timeout.
         // The endpoint is expected to take a while to get the data specially in PROD.
         var lambdaName = this.Configuration.GetValue<string>("AWS_GET_ASSIGNED_CASES_LAMBDA_NAME");
+        var timeoutMinutes = this.Configuration.GetValue<int?>("AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES") ?? 10;
         if (!string.IsNullOrWhiteSpace(lambdaName))
         {
             this.Logger.LogInformation("Executing in AWS Lambda environment: {LambdaName}", lambdaName);
@@ -236,7 +237,7 @@ public class SyncAssignedCasesJob(
                 restrictions = string.Empty
             };
 
-            var response = await _lambdaInvokerService.InvokeAsync<object, AssignedCaseResponse>(request, lambdaName);
+            var response = await _lambdaInvokerService.InvokeAsync<object, AssignedCaseResponse>(request, lambdaName, TimeSpan.FromMinutes(timeoutMinutes));
 
             if (response == null || !response.Success)
             {

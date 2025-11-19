@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
@@ -130,6 +129,11 @@ public class SyncAssignedCasesJobTests
         mockLambdaNameSection.Setup(s => s.Value).Returns((string)null);
         _mockConfig.Setup(c => c.GetSection("AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"))
             .Returns(mockLambdaNameSection.Object);
+
+        var mockLambdaTimeoutSection = new Mock<IConfigurationSection>();
+        mockLambdaTimeoutSection.Setup(s => s.Value).Returns("10");
+        _mockConfig.Setup(c => c.GetSection("AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"))
+            .Returns(mockLambdaTimeoutSection.Object);
     }
 
     [Fact]
@@ -523,7 +527,7 @@ public class SyncAssignedCasesJobTests
             .InvokeAsync<object, AssignedCaseResponse>(
                 It.IsAny<object>(),
                 "test-lambda-function",
-                It.IsAny<CancellationToken>()))
+                It.IsAny<TimeSpan?>()))
             .ReturnsAsync(lambdaResponse);
 
         _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
@@ -535,7 +539,7 @@ public class SyncAssignedCasesJobTests
             .InvokeAsync<object, AssignedCaseResponse>(
                 It.IsAny<object>(),
                 "test-lambda-function",
-                It.IsAny<CancellationToken>()),
+                It.IsAny<TimeSpan?>()),
             Times.Once);
 
         _mockJcServiceClient.Verify(c => c

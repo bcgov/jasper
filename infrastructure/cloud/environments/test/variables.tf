@@ -143,3 +143,8 @@ variable "efs_config" {
     files_dir  = string
   })
 }
+
+variable "get_assigned_cases_lambda_timeout" {
+  description = "Timeout for getAssignedCases Lambda function"
+  type        = number
+}

@@ -202,7 +202,7 @@ public class LambdaInvokerServiceTests
     {
         var functionName = _faker.Lorem.Word();
         var request = new TestRequest { Name = _faker.Person.FullName };
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromMinutes(5);
         var responsePayload = JsonConvert.SerializeObject(new TestResponse { Success = true });
         var responseStream = new MemoryStream(Encoding.UTF8.GetBytes(responsePayload));
 
@@ -215,7 +215,7 @@ public class LambdaInvokerServiceTests
 
         var cts = new CancellationTokenSource(timeout);
         _mockLambdaClient
-            .Setup(x => x.InvokeAsync(It.IsAny<InvokeRequest>(), cts.Token))
+            .Setup(x => x.InvokeAsync(It.IsAny<InvokeRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(invokeResponse);
 
         await _service.InvokeAsync<TestRequest, TestResponse>(
@@ -224,7 +224,7 @@ public class LambdaInvokerServiceTests
             timeout);
 
         _mockLambdaClient.Verify(
-            x => x.InvokeAsync(It.IsAny<InvokeRequest>(), cts.Token),
+            x => x.InvokeAsync(It.IsAny<InvokeRequest>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

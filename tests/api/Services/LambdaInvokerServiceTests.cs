@@ -202,7 +202,7 @@ public class LambdaInvokerServiceTests
     {
         var functionName = _faker.Lorem.Word();
         var request = new TestRequest { Name = _faker.Person.FullName };
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromMinutes(5);
         var responsePayload = JsonConvert.SerializeObject(new TestResponse { Success = true });
         var responseStream = new MemoryStream(Encoding.UTF8.GetBytes(responsePayload));
 

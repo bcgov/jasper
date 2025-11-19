@@ -83,6 +83,8 @@
     caseAge: {
       title: 'CASE AGE (days)',
       key: 'ageInDays',
+      value: (item: Case) =>
+        item.ageInDays === 0 ? '' : item.ageInDays.toString(),
     },
   };
 

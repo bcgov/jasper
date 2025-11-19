@@ -28,7 +28,6 @@
                 'reason',
                 'lastAppearance',
                 'dueDate',
-                'caseAge',
               ]"
               :sort-by="[{ key: 'cc', order: 'desc' }]"
             />

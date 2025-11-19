@@ -88,8 +88,8 @@ public class LambdaInvokerService(
         catch (OperationCanceledException ex) when (cts?.IsCancellationRequested == true)
         {
             _logger.LogError(ex, "Lambda function invocation timed out after {Timeout} seconds for function: {FunctionName}",
-                timeout?.TotalSeconds, functionName);
-            throw new TimeoutException($"Lambda function '{functionName}' timed out after {timeout?.TotalSeconds} seconds", ex);
+                timeout.Value.TotalSeconds, functionName);
+            throw new TimeoutException($"Lambda function '{functionName}' timed out after {timeout.Value.TotalSeconds} seconds", ex);
         }
         catch (JsonException ex)
         {

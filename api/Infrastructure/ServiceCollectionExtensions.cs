@@ -147,12 +147,21 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddAWSConfig(this IServiceCollection services, IConfiguration configuration)
         {
             var region = configuration.GetValue<string>("AWS_REGION");
+            var timeoutMinutes = configuration.GetValue<int?>("AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES") ?? 10;
 
             if (!string.IsNullOrWhiteSpace(region))
             {
                 // For deployed environments
                 services.AddSingleton<IAmazonLambda>(sp =>
-                    new AmazonLambdaClient(RegionEndpoint.GetBySystemName(region)));
+                {
+                    var config = new AmazonLambdaConfig
+                    {
+                        RegionEndpoint = RegionEndpoint.GetBySystemName(region),
+                        Timeout = TimeSpan.FromMinutes(timeoutMinutes),
+                        MaxErrorRetry = 0
+                    };
+                    return new AmazonLambdaClient(config);
+                });
 
                 services.AddScoped<ILambdaInvokerService, LambdaInvokerService>();
             }

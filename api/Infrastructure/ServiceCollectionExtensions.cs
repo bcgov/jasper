@@ -270,8 +270,6 @@ namespace Scv.Api.Infrastructure
                 return services;
             }
 
-            GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 0 });
-
             services.AddHangfire(config => config
                 .UsePostgreSqlStorage(c => c
                     .UseNpgsqlConnection(connectionString), new PostgreSqlStorageOptions

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hangfire;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +18,7 @@ using Scv.Api.Services;
 
 namespace Scv.Api.Jobs;
 
+[AutomaticRetry(Attempts = 0)]
 public class SyncAssignedCasesJob(
     IConfiguration configuration,
     IAppCache cache,

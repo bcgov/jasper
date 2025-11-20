@@ -147,18 +147,18 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddAWSConfig(this IServiceCollection services, IConfiguration configuration)
         {
             var region = configuration.GetValue<string>("AWS_REGION");
-            var timeoutMinutes = configuration.GetValue<int?>("AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES") ?? 10;
 
             if (!string.IsNullOrWhiteSpace(region))
             {
                 // For deployed environments
+                // Set a high default timeout for the HTTP client, individual invocations can specify shorter timeouts via CancellationToken
                 services.AddSingleton<IAmazonLambda>(sp =>
                 {
                     var config = new AmazonLambdaConfig
                     {
                         RegionEndpoint = RegionEndpoint.GetBySystemName(region),
-                        Timeout = TimeSpan.FromMinutes(timeoutMinutes),
-                        MaxErrorRetry = 0
+                        Timeout = TimeSpan.FromMinutes(15), // High default to support long-running Lambdas
+                        MaxErrorRetry = 0 // Don't retry timeouts
                     };
                     return new AmazonLambdaClient(config);
                 });
@@ -269,6 +269,8 @@ namespace Scv.Api.Infrastructure
             {
                 return services;
             }
+
+            GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 0 });
 
             services.AddHangfire(config => config
                 .UsePostgreSqlStorage(c => c

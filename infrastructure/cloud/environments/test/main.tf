@@ -295,7 +295,7 @@ module "ecs_api_td" {
     },
     {
       name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
-      value = var.lambda_rety_attempts
+      value = var.lambda_retry_attempts
     },
 
   ]

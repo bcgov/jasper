@@ -192,6 +192,35 @@ export class ApiService {
         error: error instanceof Error ? error.message : String(error),
       });
 
+      // Attempt to pass the original error back from the proxy - so the client can determine how to handle the error.
+      if (error && typeof error === "object" && "response" in error) {
+        const resp = (error as { response?: AxiosResponse<unknown> })
+          .response as AxiosResponse<unknown>;
+        const responseHeaders = this.sanitizeResponseHeaders(
+          resp.headers || {}
+        );
+
+        let body: string;
+        try {
+          if (typeof resp.data === "string") {
+            body = resp.data;
+          } else if (resp.data) {
+            body = JSON.stringify(resp.data);
+          } else {
+            body = JSON.stringify({});
+          }
+        } catch (stringifyError) {
+          console.error("Failed to serialize response data:", stringifyError);
+          body = String(resp.data ?? "{}");
+        }
+        return {
+          statusCode: resp.status || 500,
+          headers: responseHeaders,
+          body,
+          isBase64Encoded: false,
+        };
+      }
+
       return {
         statusCode: 500,
         body: JSON.stringify({ message: "Internal Server Error" }),

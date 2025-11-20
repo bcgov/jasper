@@ -97,12 +97,16 @@ describe("HttpService", () => {
   });
 
   it("should handle errors correctly", async () => {
-    axiosMock.get.mockRejectedValue({ response: { status: 404 } });
+    const mockError = {
+      response: { status: 404 },
+      message: "Request failed with status code 404",
+    };
+    axiosMock.get.mockRejectedValue(mockError);
     axiosMock.isAxiosError.mockReturnValue(true);
 
     await httpService.init(credentialsSecret, mtlsSecret);
     await expect(
       httpService.get("/not-found", mockAxiosConfig)
-    ).rejects.toThrow("HTTP Error: 404");
+    ).rejects.toMatchObject({ response: { status: 404 } });
   });
 });

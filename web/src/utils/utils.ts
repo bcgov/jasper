@@ -22,14 +22,14 @@ export const SessionManager = {
     try {
       const [userInfo, appInfo] = await Promise.all([
         authService?.getUserInfo(),
-        appService?.getApplicationInfo()
+        appService?.getApplicationInfo(),
       ]);
       let succeeded = true;
       if (!userInfo) {
         console.error('User info not available.');
         succeeded = false;
       }
-      if(!appInfo) {
+      if (!appInfo) {
         console.error('Application info not available.');
         succeeded = false;
       }

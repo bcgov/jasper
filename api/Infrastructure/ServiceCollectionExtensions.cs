@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net.Http;
 using System.Reflection;
+using Amazon;
+using Amazon.Lambda;
 using Azure.Identity;
 using GdPicture14;
 using Hangfire;
@@ -46,6 +48,7 @@ using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
+using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using Microsoft.AspNetCore.Hosting;
 
 namespace Scv.Api.Infrastructure
@@ -108,6 +111,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<RoleSeeder>();
             services.AddScoped<GroupSeeder>();
             services.AddScoped<UserSeeder>();
+            services.AddScoped<GroupAliasSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -137,6 +141,22 @@ namespace Scv.Api.Infrastructure
             });
 
             services.AddScoped<IEmailService, EmailService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddAWSConfig(this IServiceCollection services, IConfiguration configuration)
+        {
+            var region = configuration.GetValue<string>("AWS_REGION");
+
+            if (!string.IsNullOrWhiteSpace(region))
+            {
+                // For deployed environments
+                services.AddSingleton<IAmazonLambda>(sp =>
+                    new AmazonLambdaClient(RegionEndpoint.GetBySystemName(region)));
+
+                services.AddScoped<ILambdaInvokerService, LambdaInvokerService>();
+            }
 
             return services;
         }
@@ -200,12 +220,16 @@ namespace Scv.Api.Infrastructure
                     // Configure the TimebankServicesClient after creation
                     // This is a workaround since we can't use the UpdateJsonSerializerSettings partial method
                 });
+            services
+                .AddHttpClient<PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
+            services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<DarsService>();
@@ -229,6 +253,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
+                services.AddScoped<IGroupService, GroupService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
 

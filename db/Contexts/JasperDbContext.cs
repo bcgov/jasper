@@ -10,6 +10,7 @@ namespace Scv.Db.Contexts
         public DbSet<Permission> Permissions { get; init; }
         public DbSet<Role> Roles { get; init; }
         public DbSet<Group> Groups { get; init; }
+        public DbSet<GroupAlias> GroupAliases { get; init; }
         public DbSet<User> Users { get; init; }
         public DbSet<Binder> Binders { get; set; }
         public DbSet<DocumentCategory> DocumentCategories { get; set; }
@@ -34,6 +35,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Permission>();
             modelBuilder.Entity<Role>();
             modelBuilder.Entity<Group>();
+            modelBuilder.Entity<GroupAlias>();
             modelBuilder.Entity<User>(u =>
             {
                 u.HasKey(u => u.Id);

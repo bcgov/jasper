@@ -8,6 +8,16 @@ variable "environment" {
   type        = string
 }
 
+variable "region" {
+  description = "The AWS region"
+  type        = string
+}
+
+variable "account_id" {
+  description = "The current AWS Account Id"
+  type        = string
+}
+
 variable "lambda_role_arn" {
   description = "The Lambda IAM Role ARN"
   type        = string
@@ -78,4 +88,9 @@ variable "efs_access_point_arn" {
 variable "efs_mount_path" {
   description = "Local mount path for EFS in Lambda"
   type        = string
+}
+
+variable "get_assigned_cases_lambda_timeout" {
+  description = "Timeout for getAssignedCases Lambda function"
+  type        = number
 }

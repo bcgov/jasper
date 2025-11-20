@@ -13,7 +13,7 @@ env:
   WORKING_DIRECTORY: ./aws
   NODE_VERSION: 22
   GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
-  
+
 jobs:
   get-lambdas:
     runs-on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
         run: |
           dirs=$(find lambdas -mindepth 2 -maxdepth 2 -type d | sed 's|lambdas/||' | paste -sd ';' -)  # Space-separated
           echo "LAMBDA_DIRS=$dirs" >> $GITHUB_ENV
-      
+
       - name: Convert FOLDERS to JSON array
         id: convert
         shell: bash
@@ -39,6 +39,12 @@ jobs:
         run: |
           LAMBDA_DIR_LIST=$(echo "${LAMBDA_DIRS}" | jq -R 'split(";")' -c)
           echo "LAMBDA_DIR_LIST=$LAMBDA_DIR_LIST" >> $GITHUB_OUTPUT
+
+      - name: Build Lambdas codebase
+        uses: ./.github/workflows/actions/build-lambdas
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          node_version: ${{ env.NODE_VERSION }}
 
   deploy2gchr:
     needs: get-lambdas
@@ -57,12 +63,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      - name: Build Lambdas codebase
-        uses: ./.github/workflows/actions/build-lambdas
-        with:
-          working_directory: ${{ env.WORKING_DIRECTORY }}
-          node_version: ${{ env.NODE_VERSION }}
 
       - name: Log in to the GHCR
         uses: docker/login-action@v3

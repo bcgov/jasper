@@ -83,7 +83,7 @@ export class HttpService implements IHttpService {
       window.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
-    } else {
+    } else if (error.response.status !== 403) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',

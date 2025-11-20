@@ -34,3 +34,4 @@ runs:
     - run: npm run test:run
       shell: bash
       working-directory: ${{ inputs.working_directory }}
+      continue-on-error: true

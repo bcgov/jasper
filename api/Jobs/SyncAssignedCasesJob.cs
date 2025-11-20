@@ -18,7 +18,6 @@ using Scv.Api.Services;
 
 namespace Scv.Api.Jobs;
 
-[AutomaticRetry(Attempts = 0)]
 public class SyncAssignedCasesJob(
     IConfiguration configuration,
     IAppCache cache,

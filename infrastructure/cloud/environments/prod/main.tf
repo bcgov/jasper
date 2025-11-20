@@ -288,7 +288,16 @@ module "ecs_api_td" {
     {
       name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"
       value = var.get_assigned_cases_lambda_timeout
-    }
+    },
+    {
+      name  = "AWS_LAMBDA_LONG_TIMEOUT_MINUTES"
+      value = var.lambda_long_timeout
+    },
+    {
+      name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
+      value = var.lambda_retry_attempts
+    },
+
   ]
   secret_env_variables = module.secrets_manager.api_secrets
   kms_key_arn          = module.initial.kms_key_arn

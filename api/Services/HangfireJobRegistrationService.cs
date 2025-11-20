@@ -1,11 +1,13 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Hangfire;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using Scv.Api.Jobs;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {
@@ -15,7 +17,8 @@ namespace Scv.Api.Services
     /// </summary>
     public class HangfireJobRegistrationService(
         IServiceProvider serviceProvider,
-        ILogger<HangfireJobRegistrationService> logger) : BackgroundService
+        ILogger<HangfireJobRegistrationService> logger,
+        IConfiguration configuration) : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider = serviceProvider;
         private readonly ILogger<HangfireJobRegistrationService> _logger = logger;
@@ -32,6 +35,9 @@ namespace Scv.Api.Services
                 using var scope = _serviceProvider.CreateScope();
                 var provider = scope.ServiceProvider;
                 var allJobs = provider.GetServices<IRecurringJob>();
+                var retryCount = configuration.GetValue<int>("JOBS:RETRY_COUNT", AutomaticRetryAttribute.DefaultRetryAttempts);
+
+                GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = retryCount });
 
                 foreach (var job in allJobs)
                 {
@@ -40,7 +46,7 @@ namespace Scv.Api.Services
                     _logger.LogInformation("Registered recurring job: {JobType}", job.GetType().Name);
                 }
 
-                _logger.LogInformation("All Hangfire recurring jobs registered successfully.");
+                _logger.LogInformation("All Hangfire recurring jobs registered successfully with retry count {RetryCount}", retryCount);
             }
             catch (Exception ex)
             {

@@ -148,3 +148,13 @@ variable "get_assigned_cases_lambda_timeout" {
   description = "Timeout for getAssignedCases Lambda function"
   type        = number
 }
+
+variable "lambda_long_timeout" {
+  description = "Timeout for long-running Lambda functions"
+  type        = number
+}
+
+variable "lambda_retry_attempts" {
+  description = "Number of retry attempts for Lambda functions"
+  type        = number
+}

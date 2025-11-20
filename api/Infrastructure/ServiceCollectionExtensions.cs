@@ -157,9 +157,20 @@ namespace Scv.Api.Infrastructure
                     var config = new AmazonLambdaConfig
                     {
                         RegionEndpoint = RegionEndpoint.GetBySystemName(region),
-                        Timeout = TimeSpan.FromMinutes(15), // High default to support long-running Lambdas
-                        MaxErrorRetry = 0 // Don't retry timeouts
                     };
+
+                    var lambdaLongTimeout = configuration.GetValue<int?>("AWS_LAMBDA_LONG_TIMEOUT_MINUTES");
+                    if (lambdaLongTimeout.HasValue)
+                    {
+                        config.Timeout = TimeSpan.FromMinutes(lambdaLongTimeout.Value);
+                    }
+
+                    var retryAttempts = configuration.GetValue<int?>("AWS_LAMBDA_RETRY_ATTEMPTS");
+                    if (retryAttempts.HasValue)
+                    {
+                        config.MaxErrorRetry = retryAttempts.Value;
+                    }
+
                     return new AmazonLambdaClient(config);
                 });
 

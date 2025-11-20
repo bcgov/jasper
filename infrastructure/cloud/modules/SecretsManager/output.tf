@@ -48,6 +48,7 @@ output "api_secrets" {
     ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl::"],
     ["JOBS__SYNC_ASSIGNED_CASES_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncAssignedCasesSchedule::"],
     ["JOBS__SYNC_DOCUMENT_CATEGORIES_SCHEDULE", "${aws_secretsmanager_secret.jobs_secret.arn}:syncDocumentCategoriesSchedule::"],
+    ["JOBS__RETRY_COUNT", "${aws_secretsmanager_secret.jobs_secret.arn}:retryCount::"],
     ["Keycloak__Audience", "${aws_secretsmanager_secret.keycloak_secret.arn}:audience::"],
     ["Keycloak__Authority", "${aws_secretsmanager_secret.keycloak_secret.arn}:authority::"],
     ["Keycloak__Client", "${aws_secretsmanager_secret.keycloak_secret.arn}:client::"],

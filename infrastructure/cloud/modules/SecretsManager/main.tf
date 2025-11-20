@@ -331,7 +331,8 @@ resource "aws_secretsmanager_secret_version" "jobs_secret_value" {
   secret_id = aws_secretsmanager_secret.jobs_secret.id
   secret_string = jsonencode({
     syncAssignedCasesSchedule      = "",
-    syncDocumentCategoriesSchedule = ""
+    syncDocumentCategoriesSchedule = "",
+    retryCount                     = ""
   })
   lifecycle {
     ignore_changes = [secret_string]
@@ -363,11 +364,11 @@ resource "aws_secretsmanager_secret" "keycloak_td_secret" {
 resource "aws_secretsmanager_secret_version" "keycloak_td_secret_value" {
   secret_id = aws_secretsmanager_secret.keycloak_td_secret.id
   secret_string = jsonencode({
-    audience           = "",
-    authority          = "",
-    client             = "",
-    secret             = "",
-    url                = ""
+    audience  = "",
+    authority = "",
+    client    = "",
+    secret    = "",
+    url       = ""
   })
   lifecycle {
     ignore_changes = [secret_string]
@@ -382,11 +383,11 @@ resource "aws_secretsmanager_secret" "smb_secret" {
 resource "aws_secretsmanager_secret_version" "smb_secret_value" {
   secret_id = aws_secretsmanager_secret.smb_secret.id
   secret_string = jsonencode({
-    basePath          = "",
-    host              = "",
-    password          = "",
-    share             = "",
-    username          = ""
+    basePath = "",
+    host     = "",
+    password = "",
+    share    = "",
+    username = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

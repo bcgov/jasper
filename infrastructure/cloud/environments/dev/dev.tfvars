@@ -39,3 +39,5 @@ efs_config = {
   files_dir  = "files"
 }
 get_assigned_cases_lambda_timeout = 5 // minutes
+lambda_long_timeout               = 5 // minutes
+lambda_retry_attempts             = 0

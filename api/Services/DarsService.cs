@@ -1,19 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using DARSCommon.Clients.LogNotesServices;
+﻿using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Scv.Api.Helpers;
+using Scv.Api.Models.Dars;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {
     public interface IDarsService
     {
-        Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);
+        Task<DarsClientSearchResult> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);
     }
     public class DarsService(
         IConfiguration configuration,
@@ -27,26 +30,27 @@ namespace Scv.Api.Services
 
         #endregion Variables
 
-        public async Task<IEnumerable<DarsSearchResults>> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd)
+        public async Task<DarsClientSearchResult> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd)
         {
             logger.LogInformation("DarsApiSearch called for AgencyIdentifierCd: {AgencyIdentifierCd}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", agencyIdentifierCd, courtRoomCd, date.ToString("yyyy-MM-dd"));
 
             if (agencyIdentifierCd == null)
             {
                 logger.LogWarning("Location not found for AgencyIdentifierCd: {AgencyIdentifierCd}", agencyIdentifierCd);
-                return [];
+                return new DarsClientSearchResult() { Results = [], Cookies = [] };
             }
 
             if (!int.TryParse(agencyIdentifierCd, out var agencyIdentifier))
             {
                 logger.LogWarning("Unable to parse agencyIdentifierCd '{AgencyIdentifierCd}'", agencyIdentifierCd);
-                return [];
+                return new DarsClientSearchResult() { Results = [], Cookies = [] };
             }
 
             var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier, region: "all");
             logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
-                darsResult?.Count ?? 0, agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
-            var mappedResults = mapper.Map<IEnumerable<DarsSearchResults>>(darsResult).ToList();
+                darsResult?.Result?.Count ?? 0, agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
+            
+            var mappedResults = mapper.Map<IEnumerable<DarsSearchResults>>(darsResult?.Result).ToList();
 
             // Use LINQ's Select to append the base URL to each result's Url property
             var resultsWithUrl = mappedResults
@@ -61,7 +65,16 @@ namespace Scv.Api.Services
                 .ToList();
 
             var darsResultsPerRoom = GetResultPerRoom(resultsWithUrl);
-            return darsResultsPerRoom;
+            List<SetCookieHeaderValue> cookies = [];
+
+            if (darsResult?.Headers.TryGetValue("Set-Cookie", out var setCookieValues) == true)
+            {
+                cookies = ConvertSetCookieHeadersToCookieHeaderValues(setCookieValues);
+                logger.LogDebug("Received {CookieCount} cookies from DARS API", cookies.Count);
+            }
+
+
+            return new DarsClientSearchResult() { Results = darsResultsPerRoom, Cookies = cookies};
         }
 
         // only return result for each room, preferring CCD json, then FLS, then CCD html.
@@ -90,6 +103,21 @@ namespace Scv.Api.Services
 
             }
             return filteredResults;
+        }
+
+        private static List<SetCookieHeaderValue> ConvertSetCookieHeadersToCookieHeaderValues(IEnumerable<string> setCookieHeaders)
+        {
+            var cookieHeaderValues = new List<SetCookieHeaderValue>();
+
+            foreach (var setCookieHeader in setCookieHeaders)
+            {
+                if (SetCookieHeaderValue.TryParse(setCookieHeader, out var cookieHeaderValue))
+                {
+                    cookieHeaderValues.Add(cookieHeaderValue);
+                }
+            }
+
+            return cookieHeaderValues;
         }
     }
 }

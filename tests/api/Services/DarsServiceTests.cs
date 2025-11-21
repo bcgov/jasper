@@ -57,7 +57,7 @@ public class DarsServiceTests : ServiceTestBase
                 It.IsAny<DateTimeOffset?>(),  // datetime
                 It.IsAny<string>(),  // judge
                 It.IsAny<System.Threading.CancellationToken>()))
-            .ReturnsAsync(darsResults);
+            .ReturnsAsync(new SwaggerResponse<ICollection<Lognotes>>(200, new Dictionary<string, IEnumerable<string>>(), darsResults));
 
 
         var darsService = new DarsService(
@@ -100,8 +100,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        var firstResult = result.First();
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        var firstResult = result.Results.First();
         Assert.Equal("https://logsheet.example.com/path/to/logsheet.json", firstResult.Url);
         Assert.Equal("logsheet.json", firstResult.FileName);
         Assert.Equal(agencyIdentifierCd, firstResult.LocationId);
@@ -160,8 +161,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        var firstResult = result.First();
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        var firstResult = result.Results.First();
         Assert.Contains("json", firstResult.FileName.ToLowerInvariant());
         Assert.DoesNotContain("html", firstResult.FileName.ToLowerInvariant());
     }
@@ -209,8 +211,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(2, result.Count());
-        Assert.All(result, r => Assert.Contains("fls", r.FileName.ToLowerInvariant()));
+        Assert.NotNull(result.Results);
+        Assert.Equal(2, result.Results.Count());
+        Assert.All(result.Results, r => Assert.Contains("fls", r.FileName.ToLowerInvariant()));
     }
 
     [Fact]
@@ -256,8 +259,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        var firstResult = result.First();
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        var firstResult = result.Results.First();
         Assert.Contains("fls", firstResult.FileName.ToLowerInvariant());
     }
 
@@ -292,8 +296,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        var firstResult = result.First();
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        var firstResult = result.Results.First();
         Assert.Contains("html", firstResult.FileName.ToLowerInvariant());
     }
 
@@ -340,9 +345,10 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(2, result.Count());
-        Assert.Contains(result, r => r.CourtRoomCd == courtRoomCd1);
-        Assert.Contains(result, r => r.CourtRoomCd == courtRoomCd2);
+        Assert.NotNull(result.Results);
+        Assert.Equal(2, result.Results.Count());
+        Assert.Contains(result.Results, r => r.CourtRoomCd == courtRoomCd1);
+        Assert.Contains(result.Results, r => r.CourtRoomCd == courtRoomCd2);
     }
 
     [Fact]
@@ -376,8 +382,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Null(result.First().Url);
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        Assert.Null(result.Results.First().Url);
     }
 
     [Fact]
@@ -397,7 +404,8 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Empty(result);
+        Assert.NotNull(result.Results);
+        Assert.Empty(result.Results);
     }
 
     [Fact]
@@ -431,8 +439,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        var firstResult = result.First();
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        var firstResult = result.Results.First();
         Assert.Equal("https://logsheet.example.com/path/to/logsheet.json", firstResult.Url);
         Assert.DoesNotContain("//path", firstResult.Url);
     }
@@ -468,8 +477,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Null(result.First().FileName);
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        Assert.Null(result.Results.First().FileName);
     }
 
     [Fact]
@@ -505,8 +515,9 @@ public class DarsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result);
-        var firstResult = result.First();
+        Assert.NotNull(result.Results);
+        Assert.Single(result.Results);
+        var firstResult = result.Results.First();
         Assert.Equal(expectedDateTime, firstResult.Date);
         Assert.Equal(agencyIdentifierCd, firstResult.LocationId);
         Assert.Equal(courtRoomCd, firstResult.CourtRoomCd);

@@ -7,7 +7,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
     {
         public ISmbClient CreateClient()
         {
-            return new SmbClientWrapper();
+            return new SmbClientService();
         }
     }
 }

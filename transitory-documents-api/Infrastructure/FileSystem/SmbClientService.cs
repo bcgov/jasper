@@ -6,11 +6,11 @@ namespace Scv.TdApi.Infrastructure.FileSystem
     /// <summary>
     /// Wrapper class around SMB2Client that implements ISmbClient for testability.
     /// </summary>
-    public sealed class SmbClientWrapper : ISmbClient
+    public sealed class SmbClientService : ISmbClient
     {
         private readonly SMB2Client _client;
 
-        public SmbClientWrapper()
+        public SmbClientService()
         {
             _client = new SMB2Client();
         }

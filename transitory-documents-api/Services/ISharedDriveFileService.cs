@@ -12,6 +12,6 @@ namespace Scv.TdApi.Services
         Task<IReadOnlyList<FileMetadataDto>> FindFilesAsync(
             TransitoryDocumentSearchRequest request);
 
-        Task<Scv.Models.FileStreamResponse> OpenFileAsync(string absolutePath);
+        Task<Scv.Models.FileStreamResponse> OpenFileAsync(string relativePath);
     }
 }

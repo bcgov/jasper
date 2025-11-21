@@ -38,7 +38,7 @@ describe('TransitoryDocumentsDialog', () => {
     extension: '.pdf',
     sizeBytes: 1024,
     createdUtc: '2025-11-01T10:00:00Z',
-    absolutePath: '/path/to/file',
+    relativePath: '/path/to/file',
     matchedRoomFolder: 'Room 101',
     ...overrides,
   });

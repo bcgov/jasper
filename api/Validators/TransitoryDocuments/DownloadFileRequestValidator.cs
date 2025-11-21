@@ -16,7 +16,7 @@ public class DownloadFileRequestValidator : AbstractValidator<DownloadFileReques
         RuleFor(x => x.FileMetadata)
             .NotNull().WithMessage("fileMetadata is required.");
 
-        RuleFor(x => x.FileMetadata.AbsolutePath)
+        RuleFor(x => x.FileMetadata.RelativePath)
             .NotEmpty().WithMessage("AbsolutePath is required and must be non-empty.")
             .When(x => x.FileMetadata != null);
 

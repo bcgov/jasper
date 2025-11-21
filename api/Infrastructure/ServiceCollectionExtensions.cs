@@ -204,6 +204,9 @@ namespace Scv.Api.Infrastructure
                 .AddHttpClient<TdDocumentsServices.TransitoryDocumentsClient>(client => { ConfigureHttpClient(client, configuration, "TD"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
+            // Register the wrapper for TransitoryDocumentsClient
+            services.AddScoped<ITransitoryDocumentsClientService, TransitoryDocumentsClientService>();
+
             // Keycloak
             services.AddHttpClient("keycloak").AddHttpMessageHandler<TimingHandler>(); ;
 
@@ -211,6 +214,7 @@ namespace Scv.Api.Infrastructure
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
+            services.AddScoped<ILocationService, LocationService>();
             services.AddScoped<LocationService>();
             services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();

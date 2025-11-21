@@ -73,7 +73,7 @@ namespace tests.tdApi.Tests.Controllers
             var actualFiles = Assert.IsAssignableFrom<IReadOnlyList<FileMetadataDto>>(okResult.Value);
             Assert.Equal(expectedFiles.Count, actualFiles.Count);
             Assert.Equal(expectedFiles, actualFiles);
-            
+
             _mockService.Verify(s => s.FindFilesAsync(request), Times.Once);
         }
 
@@ -94,7 +94,7 @@ namespace tests.tdApi.Tests.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             var actualFiles = Assert.IsAssignableFrom<IReadOnlyList<FileMetadataDto>>(okResult.Value);
             Assert.Empty(actualFiles);
-            
+
             _mockService.Verify(s => s.FindFilesAsync(request), Times.Once);
         }
 
@@ -138,7 +138,7 @@ namespace tests.tdApi.Tests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("path is required and must be an absolute path.", badRequestResult.Value);
+            Assert.Equal("path is required and must be an relative path.", badRequestResult.Value);
             _mockService.Verify(s => s.OpenFileAsync(It.IsAny<string>()), Times.Never);
         }
 
@@ -166,7 +166,7 @@ namespace tests.tdApi.Tests.Controllers
             Assert.Equal(contentType, fileResult.ContentType);
             Assert.True(fileResult.EnableRangeProcessing);
             Assert.Equal(stream, fileResult.FileStream);
-            
+
             _mockService.Verify(s => s.OpenFileAsync(path), Times.Once);
         }
 
@@ -249,7 +249,7 @@ namespace tests.tdApi.Tests.Controllers
                 Extension = Path.GetExtension(fileName),
                 SizeBytes = _faker.Random.Long(1000, 1000000),
                 CreatedUtc = _faker.Date.Recent().ToUniversalTime(),
-                AbsolutePath = _faker.System.FilePath(),
+                RelativePath = _faker.System.FilePath(),
                 MatchedRoomFolder = _faker.Random.Bool() ? _faker.Random.AlphaNumeric(5) : null
             };
         }

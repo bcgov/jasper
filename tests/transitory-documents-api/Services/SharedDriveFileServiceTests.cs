@@ -384,7 +384,7 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public async Task FindFilesAsync_RemovesDuplicatesByAbsolutePath()
+    public async Task FindFilesAsync_RemovesDuplicatesByRelativePath()
     {
         // Arrange
         var service = CreateService();
@@ -507,7 +507,7 @@ public class SharedDriveFileServiceTests
         result.Should().HaveCount(1);
         var dto = result[0];
         dto.FileName.Should().Be("test-document.pdf");
-        dto.AbsolutePath.Should().Be("/path/to/test-document.pdf");
+        dto.RelativePath.Should().Be("/path/to/test-document.pdf");
         dto.Extension.Should().Be(".pdf");
         dto.SizeBytes.Should().Be(12345);
         dto.CreatedUtc.Should().Be(createdDate);
@@ -581,7 +581,7 @@ public class SharedDriveFileServiceTests
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.OpenFileAsync(path));
-        exception.ParamName.Should().Be("absolutePath");
+        exception.ParamName.Should().Be("relativePath");
     }
 
     [Fact]
@@ -589,21 +589,21 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var absolutePath = _faker.System.FilePath();
+        var RelativePath = _faker.System.FilePath();
         var fileContent = _faker.Random.Bytes(_faker.Random.Int(100, 1000));
         var memoryStream = new MemoryStream(fileContent);
 
         _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()))
+            .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
             .ReturnsAsync(memoryStream);
 
         // Act
-        var result = await service.OpenFileAsync(absolutePath);
+        var result = await service.OpenFileAsync(RelativePath);
 
         // Assert
         result.Should().NotBeNull();
         result.Stream.Should().BeSameAs(memoryStream);
-        result.FileName.Should().Be(Path.GetFileName(absolutePath));
+        result.FileName.Should().Be(Path.GetFileName(RelativePath));
         result.SizeBytes.Should().Be(fileContent.Length);
     }
 
@@ -612,16 +612,16 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var absolutePath = _faker.System.FilePath();
+        var RelativePath = _faker.System.FilePath();
 
         _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()))
+            .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("File not found"));
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<IOException>(() => service.OpenFileAsync(absolutePath));
+        var exception = await Assert.ThrowsAsync<IOException>(() => service.OpenFileAsync(RelativePath));
         exception.Message.Should().Contain("Error opening file at path");
-        exception.Message.Should().Contain(absolutePath);
+        exception.Message.Should().Contain(RelativePath);
         exception.InnerException.Should().NotBeNull();
         exception.InnerException.Message.Should().Be("File not found");
     }
@@ -631,15 +631,15 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var absolutePath = "/path/to/document.unknownextension";
+        var RelativePath = "/path/to/document.unknownextension";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()))
+            .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
             .ReturnsAsync(memoryStream);
 
         // Act
-        var result = await service.OpenFileAsync(absolutePath);
+        var result = await service.OpenFileAsync(RelativePath);
 
         // Assert
         result.Should().NotBeNull();
@@ -673,19 +673,19 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
-    public async Task OpenFileAsync_ExtractsFileName_FromAbsolutePath()
+    public async Task OpenFileAsync_ExtractsFileName_FromRelativePath()
     {
         // Arrange
         var service = CreateService();
-        var absolutePath = "/very/long/path/to/my/document.pdf";
+        var RelativePath = "/very/long/path/to/my/document.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()))
+            .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
             .ReturnsAsync(memoryStream);
 
         // Act
-        var result = await service.OpenFileAsync(absolutePath);
+        var result = await service.OpenFileAsync(RelativePath);
 
         // Assert
         result.FileName.Should().Be("document.pdf");
@@ -696,15 +696,15 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var absolutePath = "/path/to/my document with spaces.pdf";
+        var RelativePath = "/path/to/my document with spaces.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()))
+            .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
             .ReturnsAsync(memoryStream);
 
         // Act
-        var result = await service.OpenFileAsync(absolutePath);
+        var result = await service.OpenFileAsync(RelativePath);
 
         // Assert
         result.FileName.Should().Be("my document with spaces.pdf");
@@ -715,19 +715,19 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var absolutePath = _faker.System.FilePath();
+        var RelativePath = _faker.System.FilePath();
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()))
+            .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
             .ReturnsAsync(memoryStream);
 
         // Act
-        await service.OpenFileAsync(absolutePath);
+        await service.OpenFileAsync(RelativePath);
 
         // Assert
         _mockFileSystemClient.Verify(
-            c => c.OpenFileAsync(absolutePath, It.IsAny<CancellationToken>()),
+            c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

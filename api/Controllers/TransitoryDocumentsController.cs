@@ -87,7 +87,7 @@ namespace Scv.Api.Controllers
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
             }
 
-            var fileResponse = await transitiveDocumentsService.DownloadFile(request.FileMetadata.AbsolutePath);
+            var fileResponse = await transitiveDocumentsService.DownloadFile(request.FileMetadata.RelativePath);
 
             return File(fileResponse.Stream, fileResponse.ContentType, fileResponse.FileName, enableRangeProcessing: true);
         }
@@ -112,7 +112,7 @@ namespace Scv.Api.Controllers
 
             var bearer = await keycloakTokenService.GetAccessTokenAsync();
 
-            var documentRequests = request.Files.Select(f => f.AbsolutePath).Select(path => new PdfDocumentRequest
+            var documentRequests = request.Files.Select(f => f.RelativePath).Select(path => new PdfDocumentRequest
             {
                 Type = DocumentType.TransitoryDocument,
                 Data = new PdfDocumentRequestDetails

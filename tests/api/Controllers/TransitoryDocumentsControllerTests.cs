@@ -124,7 +124,7 @@ public class TransitoryDocumentsControllerTests
         var locationId = _faker.Random.AlphaNumeric(10);
         var roomCd = _faker.Random.AlphaNumeric(5);
         var date = DateOnly.FromDateTime(_faker.Date.Recent());
-        var expectedDocuments = new List<TDCommon.Clients.DocumentsServices.FileMetadataDto>
+        var expectedDocuments = new List<FileMetadata>
         {
             CreateFileMetadata(),
             CreateFileMetadata()
@@ -143,7 +143,7 @@ public class TransitoryDocumentsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<TDCommon.Clients.DocumentsServices.FileMetadataDto>>(okResult.Value);
+        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<FileMetadata>>(okResult.Value);
         Assert.Equal(expectedDocuments.Count, actualDocuments.Count());
 
         _mockTransitoryDocumentsService.Verify(
@@ -165,14 +165,14 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, It.IsAny<string>()))
-            .ReturnsAsync(new List<TDCommon.Clients.DocumentsServices.FileMetadataDto>());
+            .ReturnsAsync(new List<FileMetadata>());
 
         // Act
         var result = await _controller.GetDocuments(locationId, roomCd, date);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<TDCommon.Clients.DocumentsServices.FileMetadataDto>>(okResult.Value);
+        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<FileMetadata>>(okResult.Value);
         Assert.Empty(actualDocuments);
     }
 
@@ -190,7 +190,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, "2025-10-31"))
-            .ReturnsAsync(new List<TDCommon.Clients.DocumentsServices.FileMetadataDto>());
+            .ReturnsAsync(new List<FileMetadata>());
 
         // Act
         await _controller.GetDocuments(locationId, roomCd, date);
@@ -231,19 +231,21 @@ public class TransitoryDocumentsControllerTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task DownloadFile_ThrowsBadRequestException_WhenAbsolutePathIsInvalid(string absolutePath)
+    public async Task DownloadFile_ThrowsBadRequestException_WhenRelativePathIsInvalid(string relativePath)
     {
         // Arrange
         var fileMetadata = new FileMetadata
         {
-            AbsolutePath = absolutePath,
+            FileName = _faker.System.FileName(),
+            Extension = _faker.System.FileExt(),
+            RelativePath = relativePath,
             SizeBytes = 1024
         };
 
         _mockDownloadFileValidator
             .Setup(v => v.ValidateAsync(It.IsAny<DownloadFileRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult(
-                new[] { new FluentValidation.Results.ValidationFailure("FileMetadata.AbsolutePath", "AbsolutePath is required and must be non-empty.") }));
+                new[] { new FluentValidation.Results.ValidationFailure("FileMetadata.RelativePath", "RelativePath is required and must be non-empty.") }));
 
         // Act
         var result = await _controller.DownloadFile(fileMetadata);
@@ -251,7 +253,7 @@ public class TransitoryDocumentsControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
-        Assert.Contains("AbsolutePath is required and must be non-empty.", errors);
+        Assert.Contains("RelativePath is required and must be non-empty.", errors);
 
         _mockTransitoryDocumentsService.Verify(
             s => s.DownloadFile(It.IsAny<string>()),
@@ -264,7 +266,9 @@ public class TransitoryDocumentsControllerTests
         // Arrange
         var fileMetadata = new FileMetadata
         {
-            AbsolutePath = _faker.System.FilePath(),
+            FileName = _faker.System.FileName(),
+            Extension = _faker.System.FileExt(),
+            RelativePath = _faker.System.FilePath(),
             SizeBytes = -1
         };
 
@@ -293,7 +297,9 @@ public class TransitoryDocumentsControllerTests
         var maxFileSize = 10 * 1024 * 1024;
         var fileMetadata = new FileMetadata
         {
-            AbsolutePath = _faker.System.FilePath(),
+            FileName = _faker.System.FileName(),
+            Extension = _faker.System.FileExt(),
+            RelativePath = _faker.System.FilePath(),
             SizeBytes = maxFileSize + 1
         };
 
@@ -320,7 +326,7 @@ public class TransitoryDocumentsControllerTests
     public async Task DownloadFile_ReturnsFile_WhenFileExists()
     {
         // Arrange
-        var absolutePath = _faker.System.FilePath();
+        var relativePath = _faker.System.FilePath();
         var fileName = _faker.System.FileName();
         var contentType = "application/pdf";
         var fileContent = _faker.Random.Bytes(1024);
@@ -328,7 +334,9 @@ public class TransitoryDocumentsControllerTests
 
         var fileMetadata = new FileMetadata
         {
-            AbsolutePath = absolutePath,
+            FileName = fileName,
+            Extension = "pdf",
+            RelativePath = relativePath,
             SizeBytes = fileContent.Length
         };
 
@@ -339,7 +347,7 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTransitoryDocumentsService
-            .Setup(s => s.DownloadFile(absolutePath))
+            .Setup(s => s.DownloadFile(relativePath))
             .ReturnsAsync(fileResponse);
 
         // Act
@@ -352,19 +360,21 @@ public class TransitoryDocumentsControllerTests
         Assert.True(fileResult.EnableRangeProcessing);
         Assert.Equal(stream, fileResult.FileStream);
 
-        _mockTransitoryDocumentsService.Verify(s => s.DownloadFile(absolutePath), Times.Once);
+        _mockTransitoryDocumentsService.Verify(s => s.DownloadFile(relativePath), Times.Once);
     }
 
     [Fact]
     public async Task DownloadFile_EnablesRangeProcessing()
     {
         // Arrange
-        var absolutePath = _faker.System.FilePath();
+        var relativePath = _faker.System.FilePath();
         var stream = new MemoryStream(_faker.Random.Bytes(1024));
 
         var fileMetadata = new FileMetadata
         {
-            AbsolutePath = absolutePath,
+            FileName = _faker.System.FileName(),
+            Extension = _faker.System.FileExt(),
+            RelativePath = relativePath,
             SizeBytes = 1024
         };
 
@@ -375,7 +385,7 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTransitoryDocumentsService
-            .Setup(s => s.DownloadFile(absolutePath))
+            .Setup(s => s.DownloadFile(relativePath))
             .ReturnsAsync(fileResponse);
 
         // Act
@@ -393,12 +403,14 @@ public class TransitoryDocumentsControllerTests
     public async Task DownloadFile_AcceptsValidFileSizes(long fileSize)
     {
         // Arrange
-        var absolutePath = _faker.System.FilePath();
+        var relativePath = _faker.System.FilePath();
         var stream = new MemoryStream(new byte[fileSize]);
 
         var fileMetadata = new FileMetadata
         {
-            AbsolutePath = absolutePath,
+            FileName = _faker.System.FileName(),
+            Extension = _faker.System.FileExt(),
+            RelativePath = relativePath,
             SizeBytes = fileSize
         };
 
@@ -409,7 +421,7 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
         _mockTransitoryDocumentsService
-            .Setup(s => s.DownloadFile(absolutePath))
+            .Setup(s => s.DownloadFile(relativePath))
             .ReturnsAsync(fileResponse);
 
         // Act
@@ -504,22 +516,22 @@ public class TransitoryDocumentsControllerTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task MergePdfs_ThrowsBadRequestException_WhenAnyFileHasInvalidAbsolutePath(string invalidPath)
+    public async Task MergePdfs_ThrowsBadRequestException_WhenAnyFileHasInvalidRelativePath(string invalidPath)
     {
         // Arrange
         var request = new MergePdfsRequest
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 },
-                new FileMetadata { AbsolutePath = invalidPath, SizeBytes = 2048 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = invalidPath, SizeBytes = 2048, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
         _mockMergePdfsValidator
             .Setup(v => v.ValidateAsync(It.IsAny<MergePdfsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult(
-                new[] { new FluentValidation.Results.ValidationFailure("Files", "All files must have a valid AbsolutePath.") }));
+                new[] { new FluentValidation.Results.ValidationFailure("Files", "All files must have a valid RelativePath.") }));
 
         // Act
         var result = await _controller.MergePdfs(request);
@@ -527,7 +539,7 @@ public class TransitoryDocumentsControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
-        Assert.Contains("All files must have a valid AbsolutePath.", errors);
+        Assert.Contains("All files must have a valid RelativePath.", errors);
 
         _mockDocumentMerger.Verify(
             m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
@@ -542,8 +554,8 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = -1 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = -1, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -575,8 +587,8 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = halfMax },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = halfMax }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = halfMax, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = halfMax, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -612,8 +624,8 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 2048 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 2048, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -655,7 +667,7 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -681,7 +693,7 @@ public class TransitoryDocumentsControllerTests
         Assert.NotNull(capturedRequests);
         Assert.Single(capturedRequests);
         Assert.Equal(DocumentType.TransitoryDocument, capturedRequests[0].Type);
-        Assert.Equal(request.Files[0].AbsolutePath, capturedRequests[0].Data.Path);
+        Assert.Equal(request.Files[0].RelativePath, capturedRequests[0].Data.Path);
         Assert.Equal(bearerToken, capturedRequests[0].Data.BearerToken);
     }
 
@@ -694,9 +706,9 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 2048 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 4096 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 2048, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 4096, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -737,7 +749,7 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -770,10 +782,10 @@ public class TransitoryDocumentsControllerTests
         {
             Files = new[]
             {
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 1024 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 2048 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 4096 },
-                new FileMetadata { AbsolutePath = _faker.System.FilePath(), SizeBytes = 8192 }
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 2048, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 4096, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
+                new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 8192, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
             }
         };
 
@@ -801,16 +813,16 @@ public class TransitoryDocumentsControllerTests
 
     #region Helper Methods
 
-    private TDCommon.Clients.DocumentsServices.FileMetadataDto CreateFileMetadata()
+    private FileMetadata CreateFileMetadata()
     {
         var fileName = _faker.System.FileName();
-        return new TDCommon.Clients.DocumentsServices.FileMetadataDto
+        return new FileMetadata
         {
             FileName = fileName,
             Extension = Path.GetExtension(fileName),
             SizeBytes = _faker.Random.Long(1000, 1000000),
-            CreatedUtc = DateTimeOffset.FromFileTime(_faker.Date.Recent().Ticks),
-            AbsolutePath = _faker.System.FilePath(),
+            CreatedUtc = _faker.Date.Recent(),
+            RelativePath = _faker.System.FilePath(),
             MatchedRoomFolder = _faker.Random.Bool() ? _faker.Random.AlphaNumeric(5) : null
         };
     }

@@ -54,7 +54,7 @@ namespace Scv.TdApi.Services
                 request.RegionCode, regionFolderName, request.AgencyIdentifierCd, locationFolderName);
 
 
-            var locationPath = Path.Combine(regionFolderName, locationFolderName).Replace('\\', '/');
+            var locationPath = SmbPathUtility.CombinePathWithForwardSlashes(regionFolderName, locationFolderName);
             var candidateDatePaths = GetCandidateDatePaths(locationPath, request.Date);
             var allFiles = new ConcurrentDictionary<string, FileMetadataDto>(StringComparer.OrdinalIgnoreCase);
 
@@ -72,19 +72,19 @@ namespace Scv.TdApi.Services
             return results;
         }
 
-        public async Task<FileStreamResponse> OpenFileAsync(string absolutePath)
+        public async Task<FileStreamResponse> OpenFileAsync(string relativePath)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(absolutePath))
+                if (string.IsNullOrWhiteSpace(relativePath))
                 {
-                    throw new ArgumentException("Absolute path is required", nameof(absolutePath));
+                    throw new ArgumentException("Relative path is required", nameof(relativePath));
                 }
 
-                _logger.LogInformation("Opening file: {Path}", absolutePath);
+                _logger.LogInformation("Opening file: {Path}", relativePath);
 
-                var stream = await _fileSystemClient.OpenFileAsync(absolutePath);
-                var fileName = Path.GetFileName(absolutePath);
+                var stream = await _fileSystemClient.OpenFileAsync(relativePath);
+                var fileName = Path.GetFileName(relativePath);
 
                 if (!_contentTypeProvider.TryGetContentType(fileName, out var contentType))
                 {
@@ -100,10 +100,29 @@ namespace Scv.TdApi.Services
             }
             catch (IOException ex)
             {
-                _logger.LogWarning(ex, "File not found: {Path}", absolutePath);
-                throw new IOException($"Error opening file at path '{absolutePath}'. See inner exception for details.", ex);
+                _logger.LogWarning(ex, "File not found: {Path}", relativePath);
+                throw new IOException($"Error opening file at path '{relativePath}'. See inner exception for details.", ex);
             }
 
+        }
+
+        private string RemoveBasePath(string fullPath)
+        {
+            if (string.IsNullOrWhiteSpace(_options.BasePath))
+                return fullPath;
+
+            var normalizedFullPath = fullPath.Replace('/', '\\').Trim('\\');
+            var normalizedBasePath = _options.BasePath.Trim('/', '\\');
+
+            if (normalizedFullPath.StartsWith(normalizedBasePath, StringComparison.OrdinalIgnoreCase))
+            {
+                var pathWithoutBase = normalizedFullPath.Substring(normalizedBasePath.Length).TrimStart('\\');
+                _logger.LogDebug("Removed base path '{Base}' from '{Full}', result: '{Result}'",
+                    normalizedBasePath, normalizedFullPath, pathWithoutBase);
+                return pathWithoutBase;
+            }
+
+            return fullPath;
         }
 
         private async Task ProcessDateFolder(string datePath, string? roomCd, ConcurrentDictionary<string, FileMetadataDto> allFiles)
@@ -126,20 +145,18 @@ namespace Scv.TdApi.Services
                 {
                     _logger.LogDebug("Processing file: {FileName} at {FullPath} relative directory {RelativeDirectory}", file.FileName, file.FullPath, file.RelativeDirectory);
                     var dto = CreateFileMetadataDto(file);
-                    if (!allFiles.ContainsKey(dto.AbsolutePath))
+                    if (!allFiles.ContainsKey(dto.RelativePath))
                     {
-                        allFiles[dto.AbsolutePath] = dto;
+                        allFiles[dto.RelativePath] = dto;
                     }
                 }
             }
             catch (FileNotFoundException)
             {
-                // Expected when the folder doesn't exist - log as debug
-                _logger.LogDebug("Date folder not found: {Path}", datePath);
+                _logger.LogDebug("Date file not found: {Path}", datePath);
             }
             catch (DirectoryNotFoundException)
             {
-                // Expected when the folder doesn't exist - log as debug
                 _logger.LogDebug("Date folder not found: {Path}", datePath);
             }
             catch (Exception ex)
@@ -150,13 +167,16 @@ namespace Scv.TdApi.Services
 
         private FileMetadataDto CreateFileMetadataDto(SmbFileInfo file)
         {
+            // Strip the base path from FullPath to create a relative path
+            var relativePath = RemoveBasePath(file.FullPath);
+
             return new FileMetadataDto()
             {
                 FileName = file.FileName,
                 Extension = file.Extension,
                 SizeBytes = file.SizeBytes,
                 CreatedUtc = file.CreatedUtc,
-                AbsolutePath = file.FullPath,
+                RelativePath = relativePath,
                 MatchedRoomFolder = file.RelativeDirectory?.Split(Path.DirectorySeparatorChar).FirstOrDefault()
             };
         }
@@ -167,12 +187,12 @@ namespace Scv.TdApi.Services
             // 1. The exact path with the formatted date
             // 2. A wildcard path using "*" suffix to match any additional characters
             var paths = new List<string>();
-            
+
             foreach (var format in _options.DateFolderFormats)
             {
                 var formattedDate = date.ToString(format);
-                
-                var exactPath = Path.Combine(locationPath, formattedDate).Replace('\\', '/');
+
+                var exactPath = SmbPathUtility.CombinePathWithForwardSlashes(locationPath, formattedDate);
                 paths.Add(exactPath);
             }
 
@@ -185,7 +205,7 @@ namespace Scv.TdApi.Services
                 .OrderByDescending(f => !string.IsNullOrEmpty(f.MatchedRoomFolder)) // Files with rooms first
                 .ThenBy(f => f.MatchedRoomFolder ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(f => f.FileName, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(f => f.AbsolutePath, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
     }

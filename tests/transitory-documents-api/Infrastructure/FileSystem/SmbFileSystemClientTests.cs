@@ -93,6 +93,10 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
                 .Setup(c => c.Login(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(NTStatus.STATUS_LOGON_FAILURE);
 
+            _mockSmbClient
+                .Setup(c => c.IsConnected)
+                .Returns(true);
+
             var client = CreateClient();
 
             // Act & Assert
@@ -121,6 +125,10 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             _mockSmbClient
                 .Setup(c => c.TreeConnect(It.IsAny<string>(), out treeConnectStatus))
                 .Returns((ISMBFileStore)null);
+
+            _mockSmbClient
+                .Setup(c => c.IsConnected)
+                .Returns(true);
 
             var client = CreateClient();
 

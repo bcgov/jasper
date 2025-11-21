@@ -301,8 +301,11 @@ namespace Scv.TdApi
                 var options = serviceProvider.GetRequiredService<IOptions<SharedDriveOptions>>().Value;
 
                 return Policy
-                    .Handle<IOException>()
-                    .Or<Exception>(ex => ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase))
+                    .Handle<IOException>(ex => ex is not FileNotFoundException && ex is not DirectoryNotFoundException)
+                    .Or<Exception>(ex =>
+                        ex is not FileNotFoundException &&
+                        ex is not DirectoryNotFoundException &&
+                        ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase))
                     .WaitAndRetryAsync(
                         retryCount: options.MaxRetryAttempts,
                         sleepDurationProvider: retryAttempt =>

@@ -24,7 +24,7 @@ export class TransitoryDocumentsService {
         extension: fileMetadata.extension,
         sizeBytes: fileMetadata.sizeBytes,
         createdUtc: fileMetadata.createdUtc,
-        absolutePath: fileMetadata.absolutePath,
+        relativePath: fileMetadata.relativePath,
         matchedRoomFolder: fileMetadata.matchedRoomFolder,
       },
       { responseType: 'blob', skipErrorHandler: true }
@@ -52,7 +52,7 @@ export class TransitoryDocumentsService {
         extension: fileMetadata.extension,
         sizeBytes: fileMetadata.sizeBytes,
         createdUtc: fileMetadata.createdUtc,
-        absolutePath: fileMetadata.absolutePath,
+        relativePath: fileMetadata.relativePath,
         matchedRoomFolder: fileMetadata.matchedRoomFolder,
       },
       { responseType: 'blob', skipErrorHandler: true }

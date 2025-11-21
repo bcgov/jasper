@@ -24,7 +24,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         private readonly ISmbClientFactory _clientFactory;
         private bool _disposed;
 
-        [GeneratedRegex(@"\d+", RegexOptions.Compiled)]
+        [GeneratedRegex(@"\b\d+\b", RegexOptions.Compiled)]
         private static partial Regex DigitsPattern();
 
         public SmbFileSystemClient(
@@ -58,7 +58,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
             {
                 using var connection = await CreateConnectionAsync(ct);
 
-                var smbPath = GetSmbPath(path);
+                var smbPath = SmbPathUtility.GetSmbPath(_options.BasePath, path);
                 var normalizedRoomFilter = NormalizeRoomCode(roomFilter);
 
                 _logger.LogDebug("Listing files in SMB path: {Path} with normalized room filter: {RoomFilter}",
@@ -76,7 +76,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 await ListFilesWithRoomFilterAsync(connection.FileStore, smbPath, smbPath, normalizedRoomFilter, files, ct);
 
                 _logger.LogDebug("Found {Count} files in {Path}", files.Count, smbPath);
-                return (IReadOnlyList<SmbFileInfo>)files;
+                return files;
             }, cancellationToken);
         }
 
@@ -100,9 +100,9 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 return allFiles;
             }
 
-            var parentDirectory = wildcardPath.Substring(0, lastBackslash);
-            var wildcardPattern = wildcardPath.Substring(lastBackslash + 1);
-            
+            var parentDirectory = wildcardPath[..lastBackslash];
+            var wildcardPattern = wildcardPath[(lastBackslash + 1)..];
+
             // Extract the prefix (before the *)
             var wildcardIndex = wildcardPattern.IndexOf('*');
             if (wildcardIndex == -1)
@@ -111,9 +111,9 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 return allFiles;
             }
 
-            var prefix = wildcardPattern.Substring(0, wildcardIndex);
-            
-            _logger.LogDebug("Searching for directories in '{Parent}' starting with '{Prefix}'", 
+            var prefix = wildcardPattern[..wildcardIndex];
+
+            _logger.LogDebug("Searching for directories in '{Parent}' starting with '{Prefix}'",
                 parentDirectory, prefix);
 
             try
@@ -147,7 +147,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                         // Check if this is a directory that starts with our prefix
                         if (isDirectory && fileInfo.FileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                         {
-                            var matchedPath = CombineSmbPath(parentDirectory, fileInfo.FileName);
+                            var matchedPath = SmbPathUtility.CombinePath(parentDirectory, fileInfo.FileName);
                             matchingDirectories.Add(matchedPath);
                             _logger.LogDebug("Found matching directory: {Path}", matchedPath);
                         }
@@ -161,7 +161,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                         allFiles.AddRange(files);
                     }
 
-                    _logger.LogDebug("Found {DirectoryCount} matching directories and {FileCount} total files", 
+                    _logger.LogDebug("Found {DirectoryCount} matching directories and {FileCount} total files",
                         matchingDirectories.Count, allFiles.Count);
                 }
                 finally
@@ -189,7 +189,8 @@ namespace Scv.TdApi.Infrastructure.FileSystem
             {
                 using var connection = await CreateConnectionAsync(ct);
 
-                var smbPath = GetSmbPath(filePath);
+                // Combine the relative filePath with the base path to get the full SMB path
+                var smbPath = SmbPathUtility.GetSmbPath(_options.BasePath, filePath);
 
                 var fileHandle = OpenSmbPath(connection.FileStore, smbPath, AccessMask.GENERIC_READ | AccessMask.SYNCHRONIZE, CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT);
                 try
@@ -335,6 +336,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 var client = _clientFactory.CreateClient();
                 ISMBFileStore? fileStore = null;
                 var connectionSucceeded = false;
+                var loginSucceeded = false;
 
                 try
                 {
@@ -354,6 +356,8 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                         throw new IOException($"SMB login failed with status: {loginStatus}");
                     }
 
+                    loginSucceeded = true;
+
                     fileStore = client.TreeConnect(_options.SmbShareName!, out var treeConnectStatus);
                     if (treeConnectStatus != NTStatus.STATUS_SUCCESS)
                     {
@@ -366,11 +370,28 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 }
                 catch
                 {
-                    // Only disconnect if we failed to create the connection successfully
-                    // If successful, SmbConnection will handle disposal
-                    if (!connectionSucceeded && client.IsConnected)
+                    // Clean up resources if connection failed
+                    // If we successfully created the SmbConnection, it will handle disposal
+                    if (!connectionSucceeded)
                     {
-                        client.Disconnect();
+                        try
+                        {
+                            // If login succeeded but TreeConnect failed, we need to logoff
+                            if (loginSucceeded)
+                            {
+                                client.Logoff();
+                            }
+
+                            // Disconnect if we're still connected
+                            if (client.IsConnected)
+                            {
+                                client.Disconnect();
+                            }
+                        }
+                        catch (Exception cleanupEx)
+                        {
+                            _logger.LogError(cleanupEx, "Error during connection cleanup");
+                        }
                     }
                     throw;
                 }
@@ -416,7 +437,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                     if (item is not FileDirectoryInformation fileInfo || fileInfo.FileName == "." || fileInfo.FileName == "..")
                         continue;
 
-                    var itemPath = CombineSmbPath(directoryPath, fileInfo.FileName);
+                    var itemPath = SmbPathUtility.CombinePath(directoryPath, fileInfo.FileName);
                     var isDirectory = (fileInfo.FileAttributes & SMBLibrary.FileAttributes.Directory) != 0;
 
                     if (isDirectory)
@@ -577,16 +598,16 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         {
             _logger.LogDebug("Opening SMB file: {Path}", smbPath);
 
-                var status = fileStore.CreateFile(
-                    out var fileHandle,
-                    out _,
-                    smbPath,
-                    desiredAccess,
-                    SMBLibrary.FileAttributes.Normal,
-                    ShareAccess.Read,
-                    CreateDisposition.FILE_OPEN,
-                    createOptions,
-                    null);
+            var status = fileStore.CreateFile(
+                out var fileHandle,
+                out _,
+                smbPath,
+                desiredAccess,
+                SMBLibrary.FileAttributes.Normal,
+                ShareAccess.Read,
+                CreateDisposition.FILE_OPEN,
+                createOptions,
+                null);
 
             _logger.LogDebug("Opened SMB file: {Path} with status: {Status}", smbPath, status);
             if (status != NTStatus.STATUS_SUCCESS)
@@ -615,7 +636,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
                 if (fileInfo.FileName == "." || fileInfo.FileName == "..")
                     continue;
 
-                var itemPath = CombineSmbPath(currentDir, fileInfo.FileName);
+                var itemPath = SmbPathUtility.CombinePath(currentDir, fileInfo.FileName);
                 var isDirectory = (fileInfo.FileAttributes & SMBLibrary.FileAttributes.Directory) != 0;
 
                 if (isDirectory)
@@ -655,7 +676,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
             var parts = new[] { basePath, relPath }
                 .Where(part => !string.IsNullOrEmpty(part));
 
-            return string.Join("\\", parts).Replace('/','\\');
+            return string.Join("\\", parts).Replace('/', '\\');
         }
 
         private static string CombineSmbPath(string path1, string path2)

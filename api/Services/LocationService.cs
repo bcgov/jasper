@@ -18,7 +18,7 @@ namespace Scv.Api.Services
     /// <summary>
     /// This should handle caching and LocationServicesClient.
     /// </summary>
-    public class LocationService
+    public class LocationService : ILocationService
     {
         #region Variables
 

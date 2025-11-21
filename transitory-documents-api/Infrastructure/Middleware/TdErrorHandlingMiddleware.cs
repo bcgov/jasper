@@ -102,6 +102,19 @@ namespace Scv.TdApi.Infrastructure.Middleware
                     message = ex.Message;
                     break;
 
+                case FileNotFoundException _:
+                case DirectoryNotFoundException _:
+                    code = HttpStatusCode.NotFound;
+                    message = "The requested file or directory was not found.";
+                    _logger.LogDebug(ex, "File or directory not found: {Message}", ex.Message);
+                    break;
+
+                case IOException _:
+                    code = HttpStatusCode.InternalServerError;
+                    message = "Unable to access the file system. Please try again later.";
+                    _logger.LogError(ex, "File system access error: {Message}", ex.Message);
+                    break;
+
                 case BadRequestException _:
                 case InvalidOperationException _:
                     code = HttpStatusCode.BadRequest;

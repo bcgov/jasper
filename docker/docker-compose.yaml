@@ -61,7 +61,7 @@ services:
       - Keycloak__PresReqConfId=${KeycloakPresReqConfId}
       - Keycloak__Secret=${KeycloakSecret}
       - Keycloak__VcIdpHint=${KeycloakVcIdpHint}
-      - TDKeycloak__Secret=${TDKeycloakSecret}
+      - TDKeycloak__Secret=${TDKeycloakServiceSecret}
       - LocationServicesClient__Password=${LocationServicesClientPassword}
       - LocationServicesClient__Url=${LocationServicesClientUrl}
       - LocationServicesClient__Username=${LocationServicesClientUsername}

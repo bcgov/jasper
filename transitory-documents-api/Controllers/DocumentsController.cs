@@ -24,7 +24,7 @@ namespace Scv.TdApi.Controllers
 
         /// <summary>
         /// Lists files for a region, location and date. Also scans any subfolders whose name matches the provided roomCode.
-        /// Returns absolute paths and the matched room folder name (if any).
+        /// Returns relative paths and the matched room folder name (if any).
         /// </summary>
         /// <remarks>
         /// - Searches: &lt;base&gt;\{region}\{location}\{dateFolder}\ and &lt;base&gt;\{region}\{location}\{dateFolder}\{*room*}
@@ -60,7 +60,7 @@ namespace Scv.TdApi.Controllers
         }
 
         /// <summary>
-        /// Streams the specified file by ABSOLUTE path. The path must reside under the configured base path.
+        /// Streams the specified file by relative path. The path must reside under the configured base path.
         /// </summary>
         [HttpGet("content")]
         [Authorize(Policy = TdPolicies.RequireReadRole)]
@@ -73,7 +73,7 @@ namespace Scv.TdApi.Controllers
         public async Task<IActionResult> GetContent([FromQuery] string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                return BadRequest("path is required and must be an absolute path.");
+                return BadRequest("path is required and must be an relative path.");
 
             _logger.LogInformation(
                 "File content requested path: {Path}",

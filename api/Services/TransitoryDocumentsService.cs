@@ -1,4 +1,5 @@
 using DnsClient.Internal;
+using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
@@ -8,30 +9,38 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TDCommon.Clients.DocumentsServices;
+using FileMetadataDto = Scv.TdApi.Models.FileMetadataDto;
 
 namespace Scv.Api.Services
 {
-    public class TransitoryDocumentsService : ITransitoryDocumentsService
+    public partial class TransitoryDocumentsService : ITransitoryDocumentsService
     {
-        private readonly TransitoryDocumentsClient _tdClient;
-        private readonly LocationService _locationService;
+        private readonly ITransitoryDocumentsClientService _tdClient;
+        private readonly ILocationService _locationService;
         private readonly IKeycloakTokenService _keycloakTokenService;
+        private readonly IMapper _mapper;
         private readonly Lazy<JsonSerializerOptions> _jsonSerializerOptions;
         private readonly ILogger<TransitoryDocumentsService> _logger;
 
+        [GeneratedRegex(@"filename\*?=[""']?(?:UTF-\d+'')?([^""';]+)", RegexOptions.IgnoreCase)]
+        private static partial Regex FileNameRegex();
+
         public TransitoryDocumentsService(
             ILogger<TransitoryDocumentsService> logger,
-            TransitoryDocumentsClient transitoryDocumentsClient,
-            LocationService locationService,
-            IKeycloakTokenService keycloakTokenService)
+            ITransitoryDocumentsClientService transitoryDocumentsClientWrapper,
+            ILocationService locationService,
+            IKeycloakTokenService keycloakTokenService,
+            IMapper mapper)
         {
             _jsonSerializerOptions = new Lazy<JsonSerializerOptions>(CreateJsonSerializerOptions);
             _logger = logger;
-            _tdClient = transitoryDocumentsClient;
+            _tdClient = transitoryDocumentsClientWrapper;
             _locationService = locationService;
             _keycloakTokenService = keycloakTokenService;
+            _mapper = mapper;
         }
 
         private JsonSerializerOptions CreateJsonSerializerOptions()
@@ -57,7 +66,7 @@ namespace Scv.Api.Services
         public async Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(string locationId, string roomCode, string date)
         {
             _logger.LogInformation("Searching for documents in location: {Location}, room: {Room}, date: {Date}", locationId, roomCode, date);
-            
+
             var bearer = await _keycloakTokenService.GetAccessTokenAsync();
             _tdClient.SetBearerToken(bearer);
 
@@ -90,7 +99,10 @@ namespace Scv.Api.Services
 
                 _logger.LogDebug("Searching documents for Date: {Date}, Room: {Room}, AgencyIdentifierCd: {AgencyIdentifierCd}, LocationShortName: {LocationShortName}, RegionCode: {RegionCode}, RegionName: {RegionName}",
                     parsedDate, roomCode, matchingLocation.AgencyIdentifierCd, locationShortName, region.RegionId, region.RegionName);
-                return await _tdClient.SearchAsync(new TransitoryDocumentSearchRequest() { Date = parsedDate, RoomCd = roomCode, AgencyIdentifierCd = matchingLocation.AgencyIdentifierCd, LocationShortName = locationShortName, RegionCode = region.RegionId.ToString(), RegionName = region.RegionName});
+                var clientResult = await _tdClient.SearchAsync(new TransitoryDocumentSearchRequest() { Date = parsedDate, RoomCd = roomCode, AgencyIdentifierCd = matchingLocation.AgencyIdentifierCd, LocationShortName = locationShortName, RegionCode = region.RegionId.ToString(), RegionName = region.RegionName });
+
+                // Use Mapster to map generated client DTOs to shared model DTOs
+                return _mapper.Map<IEnumerable<FileMetadataDto>>(clientResult);
             }
             catch (ApiException<string> apiEx)
             {
@@ -102,22 +114,18 @@ namespace Scv.Api.Services
         /// <summary>
         /// Downloads a file from the Transitory Documents API using the generated client.
         /// </summary>
-        /// <param name="path">The absolute UNC path to the file (will be normalized to relative path).</param>
+        /// <param name="path">The relative UNC path to the file (will be normalized to relative path).</param>
         /// <returns>A file stream response containing the stream, file name, and content type.</returns>
         public async Task<FileStreamResponse> DownloadFile(string path)
         {
             _logger.LogInformation("Downloading file from path: {Path}", path);
-            
+
             var bearer = await _keycloakTokenService.GetAccessTokenAsync();
             _tdClient.SetBearerToken(bearer);
 
             try
             {
-                // Normalize the UNC-style path to the relative format expected by the TD API
-                var normalizedPath = NormalizePathForTdApi(path);
-                _logger.LogDebug("Normalized path from '{Original}' to '{Normalized}'", path, normalizedPath);
-
-                var fileResponse = await _tdClient.ContentAsync(normalizedPath);
+                var fileResponse = await _tdClient.ContentAsync(path);
 
                 var fileName = GetFileNameFromHeaders(fileResponse.Headers, path);
 
@@ -145,33 +153,6 @@ namespace Scv.Api.Services
             }
         }
 
-        /// <summary>
-        /// Normalizes a UNC-style path to the relative format expected by the Transitory Documents API.
-        /// Example input: "/Criminal Share/Fraser+Vancouver Coastal/222 main/2025/10 October/October 1 (Wed)/101/File.pdf"
-        /// Example output: "Fraser+Vancouver Coastal\222 main\2025\10 October\October 1 (Wed)\101\File.pdf"
-        /// </summary>
-        private string NormalizePathForTdApi(string uncPath)
-        {
-            if (string.IsNullOrWhiteSpace(uncPath))
-                return uncPath;
-
-            var normalized = uncPath.Replace('/', '\\').Trim('\\');
-
-            var segments = normalized.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if (segments.Length == 0)
-                return uncPath;
-
-            var firstSegment = segments[0];
-            if (firstSegment.EndsWith(" Share", StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogDebug("Removing share prefix: {SharePrefix}", firstSegment);
-                segments = segments.Skip(1).ToArray();
-            }
-
-            return string.Join("\\", segments);
-        }
-
         private static string GetFileNameFromHeaders(
             IReadOnlyDictionary<string, IEnumerable<string>> headers,
             string fallbackPath)
@@ -181,10 +162,7 @@ namespace Scv.Api.Services
                 var disposition = dispositionValues.FirstOrDefault();
                 if (!string.IsNullOrWhiteSpace(disposition))
                 {
-                    var fileNameMatch = System.Text.RegularExpressions.Regex.Match(
-                        disposition,
-                        @"filename\*?=[""']?(?:UTF-\d+'')?([^""';]+)",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    var fileNameMatch = FileNameRegex().Match(disposition);
 
                     if (fileNameMatch.Success)
                     {

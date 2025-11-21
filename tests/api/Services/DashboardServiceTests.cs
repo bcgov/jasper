@@ -65,8 +65,8 @@ public class DashboardServiceTests : ServiceTestBase
         JudicialCalendar schedule,
         ActivityClassUsage.ActivityAppearanceResultsCollection courtList)
     {
-        var mockJudicialCalendarClient = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, this.HttpClient);
-        mockJudicialCalendarClient
+        var mockJudicialCalendar = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, this.HttpClient);
+        mockJudicialCalendar
             .Setup(c => c.ReadCalendarV2Async(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(schedule);
 
@@ -86,7 +86,7 @@ public class DashboardServiceTests : ServiceTestBase
 
         var dashboardService = new DashboardService(
             _cachingService,
-            mockJudicialCalendarClient.Object,
+            mockJudicialCalendar.Object,
             mockSearchDateClient.Object,
             mockLocationService.Object,
             _mapper,
@@ -95,7 +95,7 @@ public class DashboardServiceTests : ServiceTestBase
 
         return (
             dashboardService,
-            mockJudicialCalendarClient,
+            mockJudicialCalendar,
             mockSearchDateClient,
             mockLocationService
         );
@@ -164,12 +164,17 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
 
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddDays(-5);
+        var endDate = currentDate.AddDays(5);
+
         var mockJudicialCalendar = new JudicialCalendar
         {
             Days =
             [
                 new JudicialCalendarDay
                 {
+                    Date = currentDate.ToString(DashboardService.DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -184,10 +189,6 @@ public class DashboardServiceTests : ServiceTestBase
         };
 
         var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
-
-        var currentDate = DateTime.Now;
-        var startDate = currentDate.AddDays(-5);
-        var endDate = currentDate.AddDays(5);
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
@@ -228,12 +229,17 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
 
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddDays(-5);
+        var endDate = currentDate.AddDays(5);
+
         var mockJudicialCalendar = new JudicialCalendar
         {
             Days =
             [
                 new JudicialCalendarDay
                 {
+                    Date = currentDate.ToString(DashboardService.DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
 
@@ -261,10 +267,6 @@ public class DashboardServiceTests : ServiceTestBase
         };
 
         var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
-
-        var currentDate = DateTime.Now;
-        var startDate = currentDate.AddDays(-5);
-        var endDate = currentDate.AddDays(5);
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
@@ -307,6 +309,7 @@ public class DashboardServiceTests : ServiceTestBase
         var mockLocationName = _faker.Address.City();
         var mockActivityCode = _faker.Lorem.Word();
         var mockActivityDisplayCode = _faker.Lorem.Word();
+        var mockActivityClassCode = _faker.Lorem.Word();
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
@@ -329,6 +332,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                             CourtRoomCode = mockCourtRoom,
@@ -339,6 +343,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                         },
@@ -418,12 +423,17 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
 
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddMonths(-5);
+        var endDate = currentDate.AddMonths(-4);
+
         var mockJudicialCalendar = new JudicialCalendar
         {
             Days =
             [
                 new JudicialCalendarDay
                 {
+                    Date = startDate.ToString(DashboardService.DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -438,10 +448,6 @@ public class DashboardServiceTests : ServiceTestBase
         };
 
         var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
-
-        var currentDate = DateTime.Now;
-        var startDate = currentDate.AddMonths(-5);
-        var endDate = currentDate.AddMonths(-4);
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
@@ -600,11 +606,14 @@ public class DashboardServiceTests : ServiceTestBase
         var mockLocationName = _faker.Address.City();
         var mockActivityCode = _faker.Lorem.Word();
         var mockActivityDisplayCode = _faker.Lorem.Word();
+        var mockActivityClassCode = _faker.Lorem.Word();
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
         var mockFileCount = _faker.Random.Int();
-        var currentDate = DateTime.Now;
+        
+        // Use UTC time to match what ToClientTimezone() returns in test environment
+        var currentDate = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.Now, "UTC");
 
         var mockJudicialCalendar = new JudicialCalendar
         {
@@ -622,6 +631,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                             CourtRoomCode = mockCourtRoom,
@@ -632,6 +642,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                         },

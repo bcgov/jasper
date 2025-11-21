@@ -20,8 +20,8 @@ public class MergePdfsRequestValidator : AbstractValidator<MergePdfsRequest>
         RuleForEach(x => x.Files)
             .ChildRules(file =>
             {
-                file.RuleFor(f => f.AbsolutePath)
-                    .NotEmpty().WithMessage("All files must have a valid AbsolutePath.");
+                file.RuleFor(f => f.RelativePath)
+                    .NotEmpty().WithMessage("All files must have a valid RelativePath.");
 
                 file.RuleFor(f => f.SizeBytes)
                     .GreaterThanOrEqualTo(0).WithMessage("All files must have SizeBytes greater than or equal to 0.");

@@ -112,6 +112,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<GroupSeeder>();
             services.AddScoped<UserSeeder>();
             services.AddScoped<GroupAliasSeeder>();
+            services.AddScoped<QuickLinkSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -274,6 +275,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddScoped<IGroupService, GroupService>();
+                services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
 

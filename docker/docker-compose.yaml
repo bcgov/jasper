@@ -48,6 +48,7 @@ services:
       - AZURE__TENANT_ID=${AZURE_TENANT_ID}
       - DatabaseConnectionString=${DatabaseConnectionString}
       - DataProtectionKeyEncryptionKey=${DataProtectionKeyEncryptionKey}
+      - DEFAULT_QUICK_LINKS=${DEFAULT_QUICK_LINKS}
       - DEFAULT_USERS=${DEFAULT_USERS}
       - FileServicesClient__Password=${FileServicesClientPassword}
       - FileServicesClient__Url=${FileServicesClientUrl}

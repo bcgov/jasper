@@ -43,6 +43,7 @@ output "api_secrets" {
     ["DARS__LogsheetUrl", "${aws_secretsmanager_secret.dars_secret.arn}:logsheetUrl::"],
     ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString::"],
     ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey::"],
+    ["DEFAULT_QUICK_LINKS", "${aws_secretsmanager_secret.misc_secret.arn}:defaultQuickLinks::"],
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
     ["FileServicesClient__Password", "${aws_secretsmanager_secret.file_services_client_secret.arn}:password::"],
     ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl::"],

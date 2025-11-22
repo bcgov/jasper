@@ -9,15 +9,15 @@ using Scv.Api.Models.Dars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {
     public interface IDarsService
     {
-        Task<DarsClientSearchResult> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);
+        Task<DarsClientSearchResult> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);   
     }
+
     public class DarsService(
         IConfiguration configuration,
         ILogger<DarsService> logger,

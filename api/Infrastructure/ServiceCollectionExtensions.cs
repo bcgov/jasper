@@ -1,9 +1,7 @@
-﻿using System;
-using System.Net.Http;
-using System.Reflection;
-using Amazon;
+﻿using Amazon;
 using Amazon.Lambda;
 using Azure.Identity;
+using DARSCommon.Handlers;
 using GdPicture14;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -13,6 +11,7 @@ using JCCommon.Clients.LookupCodeServices;
 using JCCommon.Clients.UserService;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -36,7 +35,12 @@ using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
+using System;
+using System.Net.Http;
+using System.Reflection;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
+using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
 using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
@@ -46,10 +50,7 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
-using LogNotesServices = DARSCommon.Clients.LogNotesServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
-using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
-using Microsoft.AspNetCore.Hosting;
 
 namespace Scv.Api.Infrastructure
 {
@@ -229,9 +230,14 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            
+            // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
+            services.AddTransient<DarsCookieHandler>();
             services
                 .AddHttpClient<LogNotesServices.LogNotesServicesClient>(client => { ConfigureHttpClient(client, configuration, "DARS"); })
-                .AddHttpMessageHandler<TimingHandler>();
+                .AddHttpMessageHandler<TimingHandler>()
+                .AddHttpMessageHandler<DarsCookieHandler>();
+
             services
                 .AddHttpClient<PCSSTimebankServices.TimebankServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>()

@@ -63,6 +63,16 @@ describe('CivilDocumentsView.vue', () => {
       issue: [{ issueTypeDesc: 'Issue3' }],
       documentSupport: [{ actCd: 'Act3' }],
     },
+    {
+      civilDocumentId: '4',
+      category: 'Affidavits',
+      documentTypeDescription: 'Civil Document 4',
+      filedDt: '2023-02-01',
+      nextAppearanceDt: '2023-04-01',
+      filedBy: [{ roleTypeCode: 'Role4' }],
+      issue: [{ issueTypeDesc: 'Issue4' }],
+      documentSupport: [{ actCd: 'Act4' }],
+    },
   ];
   beforeEach(() => {
     wrapper = shallowMount(CivilDocumentsView, {
@@ -140,10 +150,23 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('inserts "Scheduled" option when a document has a next appearance date', async () => {
-    expect(wrapper.vm.documentCategories[0]).toEqual('Scheduled');
+    expect(wrapper.vm.documentCategories[0]).toEqual({
+      "title": "Scheduled",
+      "value": "Scheduled",
+    });
   });
 
   it(`renames 'CSR' to 'Court Summary' in the document categories`, async () => {
-    expect(wrapper.vm.documentCategories).toContain('Court Summary');
+    expect(wrapper.vm.documentCategories[1]).toEqual({
+      "title": "Court Summary",
+      "value": "CSR",
+    });
+  });
+
+  it(`renames 'Affidavits' to 'Affidavits/Financial Stmts' in the document categories`, async () => {
+    expect(wrapper.vm.documentCategories[4]).toEqual({
+      "title": "Affidavits/Financial Stmts",
+      "value": "Affidavits",
+    });
   });
 });

@@ -45,6 +45,8 @@ public class CourtListServiceTests : ServiceTestBase
         mockRefreshHoursSection.Setup(s => s.Value).Returns("12");
 
         _mockConfig.Setup(c => c.GetSection("Caching:FileExpiryMinutes")).Returns(mockFileExpirySection.Object);
+        var mockSection = Mock.Of<IConfigurationSection>(s => s.Value == "TESTAPP");
+        _mockConfig.Setup(c => c.GetSection("Request:ApplicationCd")).Returns(mockSection);
 
         // IMapper setup
         var config = new TypeAdapterConfig();

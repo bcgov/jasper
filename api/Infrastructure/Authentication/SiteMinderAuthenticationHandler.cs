@@ -68,7 +68,6 @@ namespace Scv.Api.Infrastructure.Authentication
             Logger.LogDebug("\tContext.User.Identity.Name: {0}", Context.User.Identity.Name);
 
             var authenticatedBySiteMinderPreviously = Context.User.Identity.AuthenticationType == SiteMinder;
-            var applicationCode = Context.User.ApplicationCode();
             var participantId = Context.User.ParticipantId();
             var agencyCode = Context.User.AgencyCode();
             var isSupremeUser = Context.User.IsSupremeUser();
@@ -77,7 +76,6 @@ namespace Scv.Api.Infrastructure.Authentication
 
             Logger.LogDebug("SiteMinder: {0}", SiteMinder);
             Logger.LogDebug("authenticatedBySiteMinderPreviously: {0}", authenticatedBySiteMinderPreviously);
-            Logger.LogDebug("applicationCode: {0}", applicationCode);
             Logger.LogDebug("participantId : {0}", participantId);
             Logger.LogDebug("agencyCode : {0}", agencyCode);
             Logger.LogDebug("isSupremeUser : {0}", isSupremeUser);
@@ -107,7 +105,6 @@ namespace Scv.Api.Infrastructure.Authentication
                     Logger.LogDebug("JCUserServce Response is valid");
                 }
 
-                applicationCode = "SCV";
                 participantId = jcUserInfo.PartID;
                 agencyCode = jcUserInfo.AgenID;
                 role = jcUserInfo.RoleCd;
@@ -120,7 +117,6 @@ namespace Scv.Api.Infrastructure.Authentication
             }
 
             var claims = new[] {
-                new Claim(CustomClaimTypes.ApplicationCode, applicationCode),
                 new Claim(CustomClaimTypes.JcParticipantId, participantId),
                 new Claim(CustomClaimTypes.JcAgencyCode, agencyCode),
                 new Claim(CustomClaimTypes.ExternalRole, role),

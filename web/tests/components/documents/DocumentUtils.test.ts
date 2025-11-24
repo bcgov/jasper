@@ -76,6 +76,16 @@ describe('DocumentUtils', () => {
       const result = DocumentUtils.prepareCivilDocumentData(data);
       expect(result.appearanceId).toBe('civ-1');
     });
+
+    it('should use imageId as documentId when Reference category', () => {
+      const data = {
+        documentId: 'doc-id-1',
+        imageId: 'img-1',
+        category: 'Reference',
+      };
+      const result = DocumentUtils.prepareCivilDocumentData(data);
+      expect(result.documentId).toBe('img-1');
+    });
   });
 
   describe('getCriminalDocumentType', () => {

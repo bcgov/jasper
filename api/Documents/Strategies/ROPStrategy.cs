@@ -3,7 +3,9 @@ using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Document;
@@ -14,11 +16,12 @@ public class ROPStrategy : IDocumentStrategy
 {
     private readonly FileServicesClient _filesClient;
     private readonly ClaimsPrincipal _currentUser;
+    private readonly IConfiguration _configuration;
 
-    public ROPStrategy(FileServicesClient filesClient, ClaimsPrincipal currentUser)
+    public ROPStrategy(FileServicesClient filesClient, ClaimsPrincipal currentUser, IConfiguration configuration)
     {
         _filesClient = filesClient;
-
+        _configuration = configuration;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
         _currentUser = currentUser;
     }
@@ -32,7 +35,7 @@ public class ROPStrategy : IDocumentStrategy
         var recordsOfProceeding = await _filesClient.FilesRecordOfProceedingsAsync(
             _currentUser.AgencyCode(),
             _currentUser.ParticipantId(),
-            _currentUser.ApplicationCode(),
+            _configuration.GetNonEmptyValue("Request:ApplicationCd"),
             documentRequest.PartId,
             documentRequest.ProfSeqNo,
             courtLevelCd,

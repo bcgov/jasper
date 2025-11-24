@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
@@ -18,6 +19,7 @@ namespace tests.api.Documents.Strategies;
 public class CourtSummaryReportStrategyTest : ServiceTestBase
 {
     private Mock<FileServicesClient> _mockFileServicesClient;
+    private Mock<IConfiguration> _mockConfiguration;
     private ClaimsPrincipal _mockUser;
     private readonly string fakeContent = "Hello, world!";
     private readonly byte[] fakeContentBytes;
@@ -33,7 +35,6 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
         var claims = new List<Claim>
         {
             new(CustomClaimTypes.JudgeId, 1.ToString()),
-            new(CustomClaimTypes.ApplicationCode, "TESTAPP"),
             new(CustomClaimTypes.JcAgencyCode, "TESTAGENCY"),
             new(CustomClaimTypes.JcParticipantId, "TESTPART"),
         };
@@ -41,6 +42,9 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
         var identity = new ClaimsIdentity(claims, "HELLO");
         _mockUser = new ClaimsPrincipal(identity);
         _mockFileServicesClient = new Mock<FileServicesClient>(MockBehavior.Strict, this.HttpClient);
+        _mockConfiguration = new Mock<IConfiguration>();
+        var mockSection = Mock.Of<IConfigurationSection>(s => s.Value == "TESTAPP");
+        _mockConfiguration.Setup(c => c.GetSection("Request:ApplicationCd")).Returns(mockSection);
         var fakeStream = new MemoryStream(fakeContentBytes);
         var documentResponse = new DocumentResponse
         {
@@ -75,7 +79,7 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
             CourtLevelCd = "P",
             CourtClassCd = "Y"
         };
-        var strategy = new CourtSummaryReportStrategy(_mockFileServicesClient.Object, _mockUser);
+        var strategy = new CourtSummaryReportStrategy(_mockConfiguration.Object, _mockFileServicesClient.Object, _mockUser);
         var resultStream = await strategy.Invoke(documentRequest);
 
         Assert.NotNull(resultStream);
@@ -87,7 +91,7 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
     [Fact]
     public void Type_ReturnsCourtSummary()
     {
-        var strategy = new CourtSummaryReportStrategy(_mockFileServicesClient.Object, _mockUser);
+        var strategy = new CourtSummaryReportStrategy(_mockConfiguration.Object, _mockFileServicesClient.Object, _mockUser);
 
         var type = strategy.Type;
 

@@ -8,11 +8,13 @@
         placeholder="All documents"
         hide-details
         :items="documentCategories"
+        item-title="title"
+        item-value="value"
       >
         <template v-slot:item="{ props: itemProps, item }">
           <v-list-item
             v-bind="itemProps"
-            :title="`${item.title} (${categoryCount(item.raw)})`"
+            :title="`${item.title} (${categoryCount(item.raw.value)})`"
           ></v-list-item>
         </template>
       </v-select>
@@ -145,6 +147,7 @@
   const SCHEDULED_CATEGORY = 'Scheduled';
   const CSR_CATEGORY = 'CSR';
   const CSR_CATEGORY_DESC = 'Court Summary';
+  const AFF_FIN_STMT = 'Affidavits/Financial Stmts';
 
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
@@ -179,17 +182,21 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
-  const documentCategories = ref<string[]>(
-    (scheduledDocuments.length > 0 ? [SCHEDULED_CATEGORY] : []).concat(
-      Array.from(
-        new Set(
-          props.documents
-            .filter((d) => d.category)
-            .map((doc) =>
-              doc.category === CSR_CATEGORY ? CSR_CATEGORY_DESC : doc.category
-            )
-        )
-      )
+  const getCategoryDisplayTitle = (category: string): string => {
+    const categoryMap: Record<string, string> = {
+      'Affidavits': AFF_FIN_STMT,
+      'CSR': CSR_CATEGORY_DESC,
+    };
+    return categoryMap[category] || category;
+  };
+
+  const documentCategories = ref<{ title: string; value: string }[]>(
+    (scheduledDocuments.length > 0 ? [{ title: SCHEDULED_CATEGORY, value: SCHEDULED_CATEGORY }] : []).concat(
+      [...new Set(props.documents.filter(d => d.category).map(doc => doc.category))]
+        .map(category => ({
+          title: getCategoryDisplayTitle(category),
+          value: category
+        }))
     )
   );
 

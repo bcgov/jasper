@@ -83,7 +83,7 @@ export class HttpService implements IHttpService {
       window.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
-    } else {
+    } else if (error.response.status !== 403) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',
@@ -104,6 +104,10 @@ export class HttpService implements IHttpService {
         params: queryParams,
         ...config,
       });
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return null as T;
+      }
       return response.data;
     } catch (error) {
       console.error('Error in GET request: ', error);

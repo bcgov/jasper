@@ -5,14 +5,14 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 async function authGuard(to: any, from: any, next: any) {
   const commonStore = useCommonStore();
   const results = await SessionManager.getSettings();
-  if (results) {
+
+  if (
+    !isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
+    commonStore?.userInfo?.isActive === false
+  ) {
+    to.name === 'RequestAccess' ? next() : next({ path: '/request-access' });
+  } else if (results) {
     if (
-      (!isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
-        commonStore?.userInfo?.isActive === false) &&
-      to.name !== 'RequestAccess'
-    ) {
-      next({ path: '/request-access' });
-    } else if (
       isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
       commonStore?.userInfo?.isActive === true &&
       to.name === 'RequestAccess'

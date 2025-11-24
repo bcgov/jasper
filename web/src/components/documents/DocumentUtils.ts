@@ -38,13 +38,14 @@ export const prepareCivilDocumentData = (data: civilDocumentType) => {
   const civilFileStore = useCivilFileStore();
   const documentData: DocumentData = {
     appearanceDate: beautifyDate(data.lastAppearanceDt),
-    appearanceId:
-      data.appearanceId ?? data.civilDocumentId,
+    appearanceId: data.appearanceId ?? data.civilDocumentId,
     dateFiled: beautifyDate(data.filedDt),
     documentDescription: data.documentTypeDescription,
-    documentId: data.civilDocumentId,
+    documentId:
+      data.category === 'Reference' ? data.imageId : data.civilDocumentId,
     fileId: civilFileStore.civilFileInformation?.fileNumber,
-    fileNumberText: civilFileStore.civilFileInformation?.detailsData?.fileNumberTxt,
+    fileNumberText:
+      civilFileStore.civilFileInformation?.detailsData?.fileNumberTxt,
     courtClass: civilFileStore.civilFileInformation?.detailsData?.courtClassCd,
     courtLevel: civilFileStore.civilFileInformation?.detailsData?.courtLevelCd,
     location:
@@ -70,12 +71,11 @@ export const getCivilDocumentType = (
     : CourtDocumentType.Civil;
 };
 
+// Move this mapping to the BE
 export const formatDocumentCategory = (document: documentType) => {
   let category = document.category;
-  if(category === 'PSR')
-    category = 'Report';
-  else if(category === 'rop')
-    category = 'ROP';
+  if (category === 'PSR') category = 'Report';
+  else if (category === 'rop') category = 'ROP';
   return category;
 };
 

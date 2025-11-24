@@ -91,9 +91,7 @@ export class HttpService implements IHttpService {
   private handleError(error: unknown): never {
     if (axios.isAxiosError(error)) {
       console.error("Axios error:", error.message);
-      throw new Error(
-        `HTTP Error: ${error.response?.status || "Unknown status"}`
-      );
+      throw error;
     } else {
       console.error("Unexpected error:", error);
       throw new Error("Unexpected error occurred");

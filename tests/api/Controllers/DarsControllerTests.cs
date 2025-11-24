@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Controllers;
+using Scv.Api.Models.Dars;
 using Scv.Api.Services;
 using Xunit;
 
@@ -72,7 +73,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync(expectedResults);
+                .ReturnsAsync(new DarsClientSearchResult { Results = expectedResults, Cookies = [] });
 
             // Act
             var result = await _controller.Search(date, agencyIdentifierCd, courtRoomCd);
@@ -94,7 +95,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync(new List<DarsSearchResults>());
+                .ReturnsAsync(new DarsClientSearchResult { Results = [], Cookies = [] });
 
             // Act
             var result = await _controller.Search(date, agencyIdentifierCd, courtRoomCd);
@@ -114,7 +115,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync((IEnumerable<DarsSearchResults>)null);
+                .ReturnsAsync(new DarsClientSearchResult { Results = null, Cookies = [] });
 
             // Act
             var result = await _controller.Search(date, agencyIdentifierCd, courtRoomCd);
@@ -206,7 +207,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync(expectedResults);
+                .ReturnsAsync(new DarsClientSearchResult { Results = expectedResults, Cookies = [] });
 
             // Act
             await _controller.Search(date, agencyIdentifierCd, courtRoomCd);
@@ -226,7 +227,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync(expectedResults);
+                .ReturnsAsync(new DarsClientSearchResult { Results = expectedResults, Cookies = [] });
 
             // Act
             var result = await _controller.Search(date, agencyIdentifierCd, courtRoomCd);
@@ -246,7 +247,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync(new List<DarsSearchResults>());
+                .ReturnsAsync(new DarsClientSearchResult { Results = [], Cookies = [] });
 
             // Act
             var result = await _controller.Search(date, agencyIdentifierCd, courtRoomCd);
@@ -267,7 +268,7 @@ namespace tests.api.Controllers
 
             _mockDarsService
                 .Setup(s => s.DarsApiSearch(date, agencyIdentifierCd, courtRoomCd))
-                .ReturnsAsync(expectedResults);
+                .ReturnsAsync(new DarsClientSearchResult { Results = expectedResults, Cookies = [] });
 
             // Act
             var result = await _controller.Search(date, agencyIdentifierCd, courtRoomCd);

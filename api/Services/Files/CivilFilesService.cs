@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -61,7 +62,7 @@ namespace Scv.Api.Services.Files
             _locationService = locationService;
             _mapper = mapper;
             _cache = cache;
-            _applicationCode = user?.ApplicationCode() ?? configuration.GetNonEmptyValue("Request:ApplicationCd");
+            _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
             _requestAgencyIdentifierId = user?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
             _requestPartId = user?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
 
@@ -245,7 +246,7 @@ namespace Scv.Api.Services.Files
 
             var fileContentCivilFile = fileContentTask.Result?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
             var partyTask = PopulateDetailParties(detail.Party, courtListParties);
-            var documentTask = PopulateDetailDocuments(detail.Document, fileContentCivilFile, isVcUser, isStaff);
+            var documentTask = PopulateDetailDocuments(detail.Document, detail, fileContentCivilFile, isVcUser, isStaff);
             var hearingRestrictionTask = PopulateDetailHearingRestrictions(fileDetailTask.Result.HearingRestriction);
 
             await Task.WhenAll(partyTask, documentTask, hearingRestrictionTask);
@@ -307,7 +308,7 @@ namespace Scv.Api.Services.Files
             //Sometimes we can have a bogus location, querying court list wont work.
             ClCivilCourtList civilCourtList = null;
             var agencyId = await _locationService.GetLocationAgencyIdentifier(detail.HomeLocationAgenId);
-            
+
             if (agencyId != null)
             {
                 async Task<CourtList> CourtList() => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, targetAppearance.CourtRoomCd, targetAppearance.AppearanceDt, "CV", detail.FileNumberTxt);
@@ -336,7 +337,7 @@ namespace Scv.Api.Services.Files
             var detailedAppearance = new CivilAppearanceDetailMethods
             {
                 AppearanceId = appearanceId,
-                AppearanceMethod =  await PopulateAppearanceMethods(appearanceMethods.AppearanceMethod),
+                AppearanceMethod = await PopulateAppearanceMethods(appearanceMethods.AppearanceMethod),
             };
 
             return detailedAppearance;
@@ -412,7 +413,7 @@ namespace Scv.Api.Services.Files
             var courtLevelDescriptionTask = _lookupService.GetCourtLevelDescription(detail.CourtLevelCd.ToString());
             var activityClassCdTask = _lookupService.GetActivityClassCdLong(detail.CourtClassCd.ToString());
             var activityClassDescTask = _lookupService.GetActivityClassCdShort(detail.CourtClassCd.ToString());
-            var regionNameTask =  _locationService.GetRegionName(detail.HomeLocationAgencyCode);
+            var regionNameTask = _locationService.GetRegionName(detail.HomeLocationAgencyCode);
 
             await Task.WhenAll(homeLocationAgencyCodeTask, homeLocationAgencyNameTask, courtClassDescriptionTask, courtLevelDescriptionTask, activityClassCdTask, activityClassDescTask, regionNameTask);
 
@@ -429,7 +430,7 @@ namespace Scv.Api.Services.Files
             return detail;
         }
 
-        private async Task<IList<CivilDocument>> PopulateDetailDocuments(IList<CivilDocument> documents, CvfcCivilFile civilFileContent, bool isVcUser, bool isStaff)
+        private async Task<IList<CivilDocument>> PopulateDetailDocuments(IList<CivilDocument> documents, RedactedCivilFileDetailResponse detail, CvfcCivilFile civilFileContent, bool isVcUser, bool isStaff)
         {
             //Populate extra fields for document.
             documents = documents.WhereToList(doc => !isVcUser || !_filterOutDocumentTypes.Contains(doc.DocumentTypeCd));
@@ -472,7 +473,23 @@ namespace Scv.Api.Services.Files
                     issue.IssueTypeDesc = issueTypeDescs[issueIdx++];
                 }
             }
-            return documents;
+
+            // We add in reference documents alongside other documents since JASPER treats them the same
+            foreach (var refDoc in detail.ReferenceDocument.Where(refDoc => refDoc != null))
+            {
+                var referenceDoc = new CivilDocument
+                    {
+                        Appearance = null,
+                        CivilDocumentId = refDoc.ReferenceDocumentId,
+                        DocumentTypeCd = refDoc.ReferenceDocumentTypeCd,
+                        DocumentTypeDescription = refDoc.ReferenceDocumentTypeDsc,
+                        Category =  char.ToUpper(DocumentCategory.REFERENCE[0]) + DocumentCategory.REFERENCE[1..].ToLower(),
+                        ImageId = refDoc.ObjectGuid,
+                        FiledDt = refDoc.EnterDtm,
+                    };
+                detail.Document.Add(referenceDoc);
+            }
+            return detail.Document;
         }
 
         private async Task<ICollection<CivilParty>> PopulateDetailParties(ICollection<CivilParty> parties, ICollection<ClParty> courtListParties)
@@ -524,17 +541,17 @@ namespace Scv.Api.Services.Files
                     || r.HearingRestrictionTypeCd != CvfcHearingRestriction2HearingRestrictionTypeCd.G)
                 .OrderBy(r => restrictionTypeOrder.IndexOf(r.HearingRestrictionTypeCd))
                 .ThenBy(r => r.AdjFullNm));
-                // Build a list of tasks for hearing restriction descriptions
-                var hearingRestrictionDescTasks = civilHearingRestrictions
-                    .Select(h => _lookupService.GetHearingRestrictionDescription(h.HearingRestrictionTypeCd.ToString()));
+            // Build a list of tasks for hearing restriction descriptions
+            var hearingRestrictionDescTasks = civilHearingRestrictions
+                .Select(h => _lookupService.GetHearingRestrictionDescription(h.HearingRestrictionTypeCd.ToString()));
 
-                var hearingRestrictionDescs = await Task.WhenAll(hearingRestrictionDescTasks);
+            var hearingRestrictionDescs = await Task.WhenAll(hearingRestrictionDescTasks);
 
-                int idx = 0;
-                foreach (var hearing in civilHearingRestrictions)
-                {
-                    hearing.HearingRestrictionTypeDsc = hearingRestrictionDescs[idx++];
-                }
+            int idx = 0;
+            foreach (var hearing in civilHearingRestrictions)
+            {
+                hearing.HearingRestrictionTypeDsc = hearingRestrictionDescs[idx++];
+            }
             return civilHearingRestrictions;
         }
 
@@ -614,10 +631,10 @@ namespace Scv.Api.Services.Files
         {
             var documents = _mapper.Map<IEnumerable<CivilAppearanceDocument>>(fileDetailDocuments).ToList();
             documents = [.. documents.Where(doc => !isVcUser || !_filterOutDocumentTypes.Contains(doc.DocumentTypeCd))];
-            
+
             if (documents.Count == 0)
                 return documents;
-            
+
             var uniqueDocumentTypeCds = documents.Select(d => d.DocumentTypeCd).Where(cd => !string.IsNullOrEmpty(cd)).Distinct();
             var categoryTasks = uniqueDocumentTypeCds.Select(async cd => new { Code = cd, Category = await _lookupService.GetDocumentCategory(cd) });
             var descriptionTasks = uniqueDocumentTypeCds.Select(async cd => new { Code = cd, Description = await _lookupService.GetDocumentDescriptionAsync(cd) });
@@ -625,25 +642,25 @@ namespace Scv.Api.Services.Files
             var descriptionResults = await Task.WhenAll(descriptionTasks);
             var categoryLookup = categoryResults.Where(r => !string.IsNullOrEmpty(r.Code)).ToDictionary(r => r.Code, r => r.Category ?? "");
             var descriptionLookup = descriptionResults.Where(r => !string.IsNullOrEmpty(r.Code)).ToDictionary(r => r.Code, r => r.Description ?? "");
-            
+
             // Apply the results to each document
             foreach (var document in documents)
             {
-                document.Category = !string.IsNullOrEmpty(document.DocumentTypeCd) 
-                    ? categoryLookup.GetValueOrDefault(document.DocumentTypeCd, "") 
+                document.Category = !string.IsNullOrEmpty(document.DocumentTypeCd)
+                    ? categoryLookup.GetValueOrDefault(document.DocumentTypeCd, "")
                     : "";
-                document.DocumentTypeDescription = !string.IsNullOrEmpty(document.DocumentTypeCd) 
-                    ? descriptionLookup.GetValueOrDefault(document.DocumentTypeCd, "") 
+                document.DocumentTypeDescription = !string.IsNullOrEmpty(document.DocumentTypeCd)
+                    ? descriptionLookup.GetValueOrDefault(document.DocumentTypeCd, "")
                     : "";
                 document.ImageId = document.SealedYN != "N" ? null : document.ImageId;
             }
-            
+
             return documents;
         }
 
         private async Task<IList<CivilDocument>> PopulateBinderDocuments(CivilFileDetailResponse detail, CvfcCivilFile fileContentCivilFile)
         {
-            
+
             var labels = new Dictionary<string, string>
             {
                 { LabelConstants.PHYSICAL_FILE_ID, detail.PhysicalFileId },
@@ -652,7 +669,7 @@ namespace Scv.Api.Services.Files
             };
 
             var binders = await _binderService.GetByLabels(labels);
-            
+
             if (!binders.Succeeded || binders.Payload.Count == 0)
             {
                 return [];
@@ -670,7 +687,7 @@ namespace Scv.Api.Services.Files
             var orderedDocs = csrDocs.Concat(otherDocs)
                 .OrderBy(d => binderDocIdsOrdered.TryGetValue(d.CivilDocumentId, out var order) ? order : int.MaxValue);
 
-            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], fileContentCivilFile, false, false);
+            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], mappedDetail, fileContentCivilFile, false, false);
 
             return binderDocuments;
         }

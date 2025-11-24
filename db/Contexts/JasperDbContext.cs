@@ -10,10 +10,12 @@ namespace Scv.Db.Contexts
         public DbSet<Permission> Permissions { get; init; }
         public DbSet<Role> Roles { get; init; }
         public DbSet<Group> Groups { get; init; }
+        public DbSet<GroupAlias> GroupAliases { get; init; }
         public DbSet<User> Users { get; init; }
         public DbSet<Binder> Binders { get; set; }
         public DbSet<DocumentCategory> DocumentCategories { get; set; }
         public DbSet<Case> Cases { get; set; }
+        public DbSet<QuickLink> QuickLinks { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -34,6 +36,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Permission>();
             modelBuilder.Entity<Role>();
             modelBuilder.Entity<Group>();
+            modelBuilder.Entity<GroupAlias>();
             modelBuilder.Entity<User>(u =>
             {
                 u.HasKey(u => u.Id);
@@ -44,6 +47,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
             modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
             modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
+            modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
         }
     }
 }

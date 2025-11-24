@@ -60,7 +60,7 @@ namespace Scv.Api.Services.Files
                 binderService);
             Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal, documentConverter);
 
-            _applicationCode = claimsPrincipal?.ApplicationCode() ?? configuration.GetNonEmptyValue("Request:ApplicationCd");
+            _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
             _requestAgencyIdentifierId = claimsPrincipal?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
             _requestPartId = claimsPrincipal?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
         }

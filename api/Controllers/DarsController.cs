@@ -1,6 +1,7 @@
 ﻿using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure.Authorization;
@@ -48,9 +49,10 @@ namespace Scv.Api.Controllers
 
             try
             {
-                var result = await darsService.DarsApiSearch(date, sanitizedAgencyIdentifierCd, sanitizedCourtRoomCd);
+                var darsApiResult = await darsService.DarsApiSearch(date, sanitizedAgencyIdentifierCd, sanitizedCourtRoomCd);
+                var searchResults = darsApiResult?.Results;
 
-                if (result == null || !result.Any())
+                if (searchResults == null || !searchResults.Any())
                 {
                     logger.LogInformation(
                         "No DARS recordings found for Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
@@ -61,15 +63,17 @@ namespace Scv.Api.Controllers
                     return NotFound();
                 }
 
+                AppendCookiesToResponse(darsApiResult.Cookies);
+
                 logger.LogInformation(
                     "Found {Count} DARS recording(s) for Date: {Date}, LocationId: {LocationId}, CourtRoom: {CourtRoom}",
-                    result.Count(),
+                    searchResults.Count(),
                     date,
                     sanitizedAgencyIdentifierCd,
                     sanitizedCourtRoomCd
                 );
 
-                return Ok(result);
+                return Ok(searchResults);
             }
             catch (ApiException ex)
             {
@@ -90,6 +94,35 @@ namespace Scv.Api.Controllers
 
                 return StatusCode(500, "An error occurred while searching for audio recordings.");
             }
+        }
+
+        private void AppendCookiesToResponse(IEnumerable<Microsoft.Net.Http.Headers.SetCookieHeaderValue> cookies)
+        {
+            if (cookies == null || !cookies.Any())
+            {
+                return;
+            }
+
+            foreach (var cookie in cookies)
+            {
+                Response.Cookies.Append(cookie.Name.Value, cookie.Value.Value, new CookieOptions
+                {
+                    Domain = cookie.Domain.Value,
+                    Path = cookie.Path.Value,
+                    Expires = cookie.Expires,
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = cookie.SameSite switch
+                    {
+                        Microsoft.Net.Http.Headers.SameSiteMode.Lax => SameSiteMode.Lax,
+                        Microsoft.Net.Http.Headers.SameSiteMode.Strict => SameSiteMode.Strict,
+                        Microsoft.Net.Http.Headers.SameSiteMode.None => SameSiteMode.None,
+                        _ => SameSiteMode.Unspecified
+                    }
+                });
+            }
+
+            logger.LogDebug("Added {CookieCount} cookies to response", cookies.Count());
         }
     }
 }

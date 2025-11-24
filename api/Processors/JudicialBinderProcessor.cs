@@ -4,7 +4,9 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
@@ -16,15 +18,18 @@ namespace Scv.Api.Processors;
 public class JudicialBinderProcessor : BinderProcessorBase
 {
     private readonly FileServicesClient _filesClient;
+    private readonly IConfiguration _configuration;
 
     public JudicialBinderProcessor(
         FileServicesClient filesClient,
         ClaimsPrincipal currentUser,
         IValidator<BinderDto> basicValidator,
-        BinderDto dto) : base(currentUser, dto, basicValidator)
+        BinderDto dto,
+        IConfiguration configuration) : base(currentUser, dto, basicValidator)
     {
         _filesClient = filesClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
+        _configuration = configuration;
     }
 
     public override async Task PreProcessAsync()
@@ -35,7 +40,7 @@ public class JudicialBinderProcessor : BinderProcessorBase
         var fileDetail = await _filesClient.FilesCivilGetAsync(
             this.CurrentUser.AgencyCode(),
             this.CurrentUser.ParticipantId(),
-            this.CurrentUser.ApplicationCode(),
+            _configuration.GetNonEmptyValue("Request:ApplicationCd"),
             fileId);
 
         // Add labels specific to Judicial Binder
@@ -65,15 +70,16 @@ public class JudicialBinderProcessor : BinderProcessorBase
         var fileDetail = await _filesClient.FilesCivilGetAsync(
             this.CurrentUser.AgencyCode(),
             this.CurrentUser.ParticipantId(),
-            this.CurrentUser.ApplicationCode(),
+            _configuration.GetNonEmptyValue("Request:ApplicationCd"),
             fileId);
 
         var courtSummaryIds = fileDetail.Appearance.Select(a => a.AppearanceId);
         var civilDocIds = fileDetail.Document.Select(d => d.CivilDocumentId);
+        var referenceDocIds = fileDetail.ReferenceDocument.Select(r => r.ReferenceDocumentId);
 
-        // Validate that all document ids from Dto exist in Civil Case Detail documents
+        // Validate that all document ids from Dto exist in Civil Case Detail documents or reference documents
         var docIdsFromDto = this.Binder.Documents.Select(d => d.DocumentId);
-        if (!docIdsFromDto.All(id => courtSummaryIds.Concat(civilDocIds).Contains(id)))
+        if (!docIdsFromDto.All(id => courtSummaryIds.Concat(civilDocIds).Concat(referenceDocIds).Contains(id)))
         {
             errors.Add("Found one or more invalid Document IDs.");
         }

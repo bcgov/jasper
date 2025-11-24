@@ -1,7 +1,7 @@
-﻿using System;
-using System.Net.Http;
-using System.Reflection;
+﻿using Amazon;
+using Amazon.Lambda;
 using Azure.Identity;
+using DARSCommon.Handlers;
 using GdPicture14;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -11,6 +11,7 @@ using JCCommon.Clients.LookupCodeServices;
 using JCCommon.Clients.UserService;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -34,7 +35,12 @@ using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
+using System;
+using System.Net.Http;
+using System.Reflection;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
+using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
 using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
@@ -44,8 +50,7 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
-using LogNotesServices = DARSCommon.Clients.LogNotesServices;
-using Microsoft.AspNetCore.Hosting;
+using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
 
 namespace Scv.Api.Infrastructure
 {
@@ -107,6 +112,8 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<RoleSeeder>();
             services.AddScoped<GroupSeeder>();
             services.AddScoped<UserSeeder>();
+            services.AddScoped<GroupAliasSeeder>();
+            services.AddScoped<QuickLinkSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -136,6 +143,42 @@ namespace Scv.Api.Infrastructure
             });
 
             services.AddScoped<IEmailService, EmailService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddAWSConfig(this IServiceCollection services, IConfiguration configuration)
+        {
+            var region = configuration.GetValue<string>("AWS_REGION");
+
+            if (!string.IsNullOrWhiteSpace(region))
+            {
+                // For deployed environments
+                // Set a high default timeout for the HTTP client, individual invocations can specify shorter timeouts via CancellationToken
+                services.AddSingleton<IAmazonLambda>(sp =>
+                {
+                    var config = new AmazonLambdaConfig
+                    {
+                        RegionEndpoint = RegionEndpoint.GetBySystemName(region),
+                    };
+
+                    var lambdaLongTimeout = configuration.GetValue<int?>("AWS_LAMBDA_LONG_TIMEOUT_MINUTES");
+                    if (lambdaLongTimeout.HasValue)
+                    {
+                        config.Timeout = TimeSpan.FromMinutes(lambdaLongTimeout.Value);
+                    }
+
+                    var retryAttempts = configuration.GetValue<int?>("AWS_LAMBDA_RETRY_ATTEMPTS");
+                    if (retryAttempts.HasValue)
+                    {
+                        config.MaxErrorRetry = retryAttempts.Value;
+                    }
+
+                    return new AmazonLambdaClient(config);
+                });
+
+                services.AddScoped<ILambdaInvokerService, LambdaInvokerService>();
+            }
 
             return services;
         }
@@ -188,8 +231,24 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            
+            // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
+            services.AddTransient<DarsCookieHandler>();
             services
                 .AddHttpClient<LogNotesServices.LogNotesServicesClient>(client => { ConfigureHttpClient(client, configuration, "DARS"); })
+                .AddHttpMessageHandler<TimingHandler>()
+                .AddHttpMessageHandler<DarsCookieHandler>();
+
+            services
+                .AddHttpClient<PCSSTimebankServices.TimebankServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>()
+                .ConfigureHttpClient((sp, client) =>
+                {
+                    // Configure the TimebankServicesClient after creation
+                    // This is a workaround since we can't use the UpdateJsonSerializerSettings partial method
+                });
+            services
+                .AddHttpClient<PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
@@ -197,6 +256,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
+            services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<DarsService>();
@@ -205,6 +265,7 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JudicialCalendarService>();
 
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<ITimebankService, TimebankService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
             services.AddScoped<ICsvParser, CsvParser>();
 
@@ -219,6 +280,8 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
+                services.AddScoped<IGroupService, GroupService>();
+                services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
 

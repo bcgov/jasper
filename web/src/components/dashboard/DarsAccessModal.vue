@@ -126,9 +126,11 @@
   import { useCommonStore } from '@/stores/CommonStore';
   import { useDarsStore } from '@/stores/DarsStore';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
+  import { CustomAPIError } from '@/types/ApiResponse';
   import type { LocationInfo } from '@/types/courtlist';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { mdiClose } from '@mdi/js';
+  import axios, { AxiosError } from 'axios';
   import { computed, inject, ref, watch } from 'vue';
 
   const snackbarStore = useSnackbarStore();
@@ -299,7 +301,16 @@
     } catch (error: any) {
       console.error('Error searching DARS:', error);
 
-      const isNotFound = error.response?.status === 404 || error.status === 404;
+      let isNotFound = false;
+      if (
+        error instanceof CustomAPIError &&
+        axios.isAxiosError((error as CustomAPIError<AxiosError>).originalError)
+      ) {
+        isNotFound =
+          (error as CustomAPIError<AxiosError>)?.originalError.response
+            ?.status === 404;
+      }
+
       const message = isNotFound
         ? NO_RECORDINGS_MESSAGE
         : `Error: ${error.message || SEARCH_ERROR_MESSAGE}`;

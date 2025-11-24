@@ -116,7 +116,7 @@ public class KeyDocumentsBinderProcessor : BinderProcessorBase
         async Task<CriminalFileContent> FileContent() => await _filesClient.FilesCriminalFilecontentAsync(
                 this.CurrentUser.AgencyCode(),
                 this.CurrentUser.ParticipantId(),
-                this.CurrentUser.ApplicationCode(),
+                _configuration.GetNonEmptyValue("Request:ApplicationCd"),
                 null,
                 null,
                 null,

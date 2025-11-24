@@ -539,7 +539,7 @@
             docInfo.concluded = jDoc.concludedYn;
             if (
               categories.value.indexOf('CONCLUDED') < 0 &&
-              docInfo.concluded.toUpperCase() == 'Y'
+              docInfo.concluded?.toUpperCase() == 'Y'
             )
               categories.value.push('CONCLUDED');
             docInfo.nextAppearanceDate = jDoc.nextAppearanceDt
@@ -572,7 +572,7 @@
             docInfo.sealed = jDoc.sealedYN === 'Y';
             docInfo.documentId = jDoc.civilDocumentId;
             docInfo.pdfAvail = jDoc.imageId ? true : false;
-            if (docInfo.documentType.toUpperCase() == 'ORDER') {
+            if (docInfo.documentType?.toUpperCase() == 'ORDER') {
               docInfo.dateFiled = jDoc.DateGranted
                 ? jDoc.DateGranted.split(' ')[0]
                 : '';

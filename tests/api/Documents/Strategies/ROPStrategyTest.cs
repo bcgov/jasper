@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
@@ -18,6 +19,7 @@ namespace tests.api.Documents.Strategies;
 public class ROPStrategyTest : ServiceTestBase
 {
     private Mock<FileServicesClient> _mockFileServicesClient;
+    private Mock<IConfiguration> _mockConfiguration;
     private ClaimsPrincipal _mockUser;
     private readonly string fakeContent = "Hello, world!";
     private readonly byte[] fakeContentBytes;
@@ -33,7 +35,6 @@ public class ROPStrategyTest : ServiceTestBase
         var claims = new List<Claim>
         {
             new(CustomClaimTypes.JudgeId, 1.ToString()),
-            new(CustomClaimTypes.ApplicationCode, "TESTAPP"),
             new(CustomClaimTypes.JcAgencyCode, "TESTAGENCY"),
             new(CustomClaimTypes.JcParticipantId, "TESTPART"),
         };
@@ -41,6 +42,9 @@ public class ROPStrategyTest : ServiceTestBase
         var identity = new ClaimsIdentity(claims, "HELLO");
         _mockUser = new ClaimsPrincipal(identity);
         _mockFileServicesClient = new Mock<FileServicesClient>(MockBehavior.Strict, this.HttpClient);
+        _mockConfiguration = new Mock<IConfiguration>();
+        var mockSection = Mock.Of<IConfigurationSection>(s => s.Value == "TESTAPP");
+        _mockConfiguration.Setup(c => c.GetSection("Request:ApplicationCd")).Returns(mockSection);
         var fakeStream = new MemoryStream(fakeContentBytes);
         var documentResponse = new DocumentResponse
         {
@@ -77,7 +81,7 @@ public class ROPStrategyTest : ServiceTestBase
             CourtLevelCd = "P",
             CourtClassCd = "Y"
         };
-        var strategy = new ROPStrategy(_mockFileServicesClient.Object, _mockUser);
+        var strategy = new ROPStrategy(_mockFileServicesClient.Object, _mockUser, _mockConfiguration.Object);
         var resultStream = await strategy.Invoke(documentRequest);
 
         Assert.NotNull(resultStream);
@@ -89,7 +93,7 @@ public class ROPStrategyTest : ServiceTestBase
     [Fact]
     public void Type_ReturnsROP()
     {
-        var strategy = new ROPStrategy(_mockFileServicesClient.Object, _mockUser);
+        var strategy = new ROPStrategy(_mockFileServicesClient.Object, _mockUser, _mockConfiguration.Object);
 
         var type = strategy.Type;
 

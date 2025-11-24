@@ -13,12 +13,6 @@ namespace Scv.Api.Helpers.Extensions
         private const string IDIR = "idir";
         private const string JUDGE = "Judge";
 
-        public static string ApplicationCode(this ClaimsPrincipal claimsPrincipal)
-        {
-            var identity = (ClaimsIdentity)claimsPrincipal.Identity;
-            return identity.Claims.FirstOrDefault(c => c.Type == CustomClaimTypes.ApplicationCode)?.Value;
-        }
-
         public static string AgencyCode(this ClaimsPrincipal claimsPrincipal)
         {
             var identity = (ClaimsIdentity)claimsPrincipal.Identity;
@@ -39,7 +33,9 @@ namespace Scv.Api.Helpers.Extensions
 
         public static List<string> Groups(this ClaimsPrincipal claimsPrincipal)
         {
-            var identity = (ClaimsIdentity)claimsPrincipal.Identity;
+            if (claimsPrincipal?.Identity is not ClaimsIdentity identity)
+                return [];
+
             return identity.Claims.Where(c => c.Type == CustomClaimTypes.Groups).Select(s => s.Value).ToList();
         }
 
@@ -139,6 +135,9 @@ namespace Scv.Api.Helpers.Extensions
 
         public static int JudgeId(this ClaimsPrincipal claimsPrincipal, int? judgeIdOverride = null)
         {
+            if (claimsPrincipal == null)
+                return default;
+
             if (judgeIdOverride != null && CanViewOthersSchedule(claimsPrincipal))
             {
                 return judgeIdOverride.GetValueOrDefault();
@@ -156,10 +155,22 @@ namespace Scv.Api.Helpers.Extensions
         }
 
         public static bool CanViewOthersSchedule(this ClaimsPrincipal claimsPrincipal)
-            => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.Groups && c.Value == "jasper-view-others-schedule");
+            => claimsPrincipal?.HasClaim(c => c.Type == CustomClaimTypes.Groups && c.Value == "jasper-view-others-schedule") ?? false;
 
-        public static string UserGuid(this ClaimsPrincipal claimsPrincipal)
+        public static string IdirUserGuid(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.UserGuid);
+
+        public static string ProvjudUserGuid(this ClaimsPrincipal claimsPrincipal)
+        {
+            var base64Guid = claimsPrincipal.FindFirstValue(CustomClaimTypes.ProvjudUserGuid);
+            if (string.IsNullOrWhiteSpace(base64Guid))
+            {
+                return null;
+            }
+            byte[] decodedBytes = Convert.FromBase64String(base64Guid);
+            string hex = Convert.ToHexStringLower(decodedBytes);
+            return hex;
+        }
 
         public static string ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalJudgeId);

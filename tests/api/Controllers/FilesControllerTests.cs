@@ -91,7 +91,6 @@ namespace tests.api.Controllers
             _agencyIdentifierId = fileServices.Configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
             _partId = fileServices.Configuration.GetNonEmptyValue("Request:PartId");
             var claims = new[] {
-                new Claim(CustomClaimTypes.ApplicationCode, "SCV"),
                 new Claim(CustomClaimTypes.JcParticipantId, _partId),
                 new Claim(CustomClaimTypes.JcAgencyCode, _agencyIdentifierId),
                 new Claim(CustomClaimTypes.IsSupremeUser, "True"),

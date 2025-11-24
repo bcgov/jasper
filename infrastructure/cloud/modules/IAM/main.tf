@@ -178,6 +178,13 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
         ],
         "Resource" : "arn:aws:rds:${var.region}:${var.account_id}:db:${var.app_name}-postgres-db-${var.environment}"
       },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "lambda:InvokeFunction"
+        ],
+        "Resource" : "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.app_name}-get-assigned-cases-request-lambda-${var.environment}"
+      },
       # policy to be able to mount efs
       {
         "Effect" : "Allow",
@@ -388,6 +395,11 @@ resource "aws_iam_policy" "lambda_role_policy" {
 resource "aws_iam_role_policy_attachment" "lambda_role_policy_attachment" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_role_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 #

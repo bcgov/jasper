@@ -56,8 +56,8 @@
 
   const locationItems = computed(() =>
     props.locations.map((location) => ({
-      id: location.locationId,
-      label: location.shortName,
+      value: location.locationId,
+      text: location.shortName,
     }))
   );
 

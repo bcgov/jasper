@@ -104,12 +104,12 @@ describe('CourtCalendarFilters.vue', () => {
 
       expect(items).toHaveLength(4);
       expect(items[0]).toEqual({
-        id: 'LOC1',
-        label: 'Victoria',
+        value: 'LOC1',
+        text: 'Victoria',
       });
       expect(items[1]).toEqual({
-        id: 'LOC2',
-        label: 'Vancouver',
+        value: 'LOC2',
+        text: 'Vancouver',
       });
     });
 
@@ -276,10 +276,10 @@ describe('CourtCalendarFilters.vue', () => {
       const items = filterItem.props('items');
 
       expect(items).toEqual([
-        { id: 'LOC1', label: 'Victoria' },
-        { id: 'LOC2', label: 'Vancouver' },
-        { id: 'LOC3', label: 'Surrey' },
-        { id: 'LOC4', label: 'Kelowna' },
+        { value: 'LOC1', text: 'Victoria' },
+        { value: 'LOC2', text: 'Vancouver' },
+        { value: 'LOC3', text: 'Surrey' },
+        { value: 'LOC4', text: 'Kelowna' },
       ]);
     });
 
@@ -295,7 +295,7 @@ describe('CourtCalendarFilters.vue', () => {
 
       const filterItem = wrapper.findComponent({ name: 'FilterItem' });
       expect(filterItem.props('items')).toEqual([
-        { id: 'LOC5', label: 'Nanaimo' },
+        { value: 'LOC5', text: 'Nanaimo' },
       ]);
     });
   });

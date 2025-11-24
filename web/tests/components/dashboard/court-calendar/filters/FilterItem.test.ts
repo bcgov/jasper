@@ -1,24 +1,20 @@
 import FilterItem from '@/components/dashboard/court-calendar/filters/FilterItem.vue';
+import { TextValue } from '@/types/TextValue';
 import { faker } from '@faker-js/faker';
 import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 
-interface FilterItemData {
-  id: string;
-  label: string;
-}
-
 describe('FilterItem.vue', () => {
   let wrapper: VueWrapper;
-  let mockItems: FilterItemData[];
+  let mockItems: TextValue[];
 
-  const createMockItem = (): FilterItemData => ({
-    id: faker.string.uuid(),
-    label: faker.location.city(),
+  const createMockItem = (): TextValue => ({
+    value: faker.string.uuid(),
+    text: faker.location.city(),
   });
 
-  const createMockItems = (count: number): FilterItemData[] => {
+  const createMockItems = (count: number): TextValue[] => {
     return Array.from({ length: count }, () => createMockItem());
   };
 
@@ -107,10 +103,10 @@ describe('FilterItem.vue', () => {
 
   describe('Search Functionality', () => {
     it('filters items based on search query', async () => {
-      const searchableItems: FilterItemData[] = [
-        { id: '1', label: 'Vancouver' },
-        { id: '2', label: 'Victoria' },
-        { id: '3', label: 'Surrey' },
+      const searchableItems: TextValue[] = [
+        { value: '1', text: 'Vancouver' },
+        { value: '2', text: 'Victoria' },
+        { value: '3', text: 'Surrey' },
       ];
 
       wrapper = mountComponent({ items: searchableItems, showSearch: true });
@@ -121,7 +117,7 @@ describe('FilterItem.vue', () => {
 
       // The search should filter items containing 'Van'
       expect((wrapper.vm as any).filteredItems).toHaveLength(1);
-      expect((wrapper.vm as any).filteredItems[0].label).toBe('Vancouver');
+      expect((wrapper.vm as any).filteredItems[0].text).toBe('Vancouver');
     });
 
     it('shows all items when search query is cleared', async () => {
@@ -153,7 +149,7 @@ describe('FilterItem.vue', () => {
       const items = createMockItems(20);
       wrapper = mountComponent({ items, previewCount: 5 });
 
-      (wrapper.vm as any).localSearchQuery = items[10].label;
+      (wrapper.vm as any).localSearchQuery = items[10].text;
       await nextTick();
 
       // When searching, should show all matching results, not limited by preview
@@ -179,26 +175,26 @@ describe('FilterItem.vue', () => {
       wrapper = mountComponent();
 
       const itemToSelect = mockItems[0];
-      await (wrapper.vm as any).toggleItem(itemToSelect.id);
+      await (wrapper.vm as any).toggleItem(itemToSelect.value);
 
       expect(wrapper.emitted('update:modelValue')).toBeTruthy();
       expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([
-        [itemToSelect.id],
+        [itemToSelect.value],
       ]);
     });
 
     it('deselects individual item when already selected', async () => {
       const selectedItem = mockItems[0];
-      wrapper = mountComponent({ modelValue: [selectedItem.id] });
+      wrapper = mountComponent({ modelValue: [selectedItem.value] });
 
-      await (wrapper.vm as any).toggleItem(selectedItem.id);
+      await (wrapper.vm as any).toggleItem(selectedItem.value);
 
       const emissions = wrapper.emitted('update:modelValue');
       expect(emissions?.[0]).toEqual([[]]);
     });
 
     it('shows items as selected when in modelValue', () => {
-      const selectedIds = [mockItems[0].id, mockItems[1].id];
+      const selectedIds = [mockItems[0].value, mockItems[1].value];
       wrapper = mountComponent({ modelValue: selectedIds });
 
       expect((wrapper.vm as any).selectedItems).toEqual(selectedIds);
@@ -211,12 +207,12 @@ describe('FilterItem.vue', () => {
 
       await (wrapper.vm as any).toggleSelectAll();
 
-      const allItemIds = mockItems.map((item) => item.id);
+      const allItemIds = mockItems.map((item) => item.value);
       expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([allItemIds]);
     });
 
     it('deselects all items when Select All is clicked and all are selected', async () => {
-      const allIds = mockItems.map((item) => item.id);
+      const allIds = mockItems.map((item) => item.value);
       wrapper = mountComponent({ modelValue: allIds });
 
       await (wrapper.vm as any).toggleSelectAll();
@@ -225,7 +221,7 @@ describe('FilterItem.vue', () => {
     });
 
     it('shows indeterminate state when some items are selected', () => {
-      const someIds = [mockItems[0].id, mockItems[1].id];
+      const someIds = [mockItems[0].value, mockItems[1].value];
       wrapper = mountComponent({ modelValue: someIds });
 
       expect((wrapper.vm as any).isIndeterminate).toBe(true);
@@ -233,7 +229,7 @@ describe('FilterItem.vue', () => {
     });
 
     it('shows all selected state when all items are selected', () => {
-      const allIds = mockItems.map((item) => item.id);
+      const allIds = mockItems.map((item) => item.value);
       wrapper = mountComponent({ modelValue: allIds });
 
       expect((wrapper.vm as any).isAllSelected).toBe(true);
@@ -248,10 +244,10 @@ describe('FilterItem.vue', () => {
     });
 
     it('Select All works with filtered items', async () => {
-      const items: FilterItemData[] = [
-        { id: '1', label: 'Apple' },
-        { id: '2', label: 'Apricot' },
-        { id: '3', label: 'Banana' },
+      const items: TextValue[] = [
+        { value: '1', text: 'Apple' },
+        { value: '2', text: 'Apricot' },
+        { value: '3', text: 'Banana' },
       ];
 
       wrapper = mountComponent({ items });
@@ -273,10 +269,10 @@ describe('FilterItem.vue', () => {
     });
 
     it('deselects only filtered items when Select All is toggled off', async () => {
-      const items: FilterItemData[] = [
-        { id: '1', label: 'Apple' },
-        { id: '2', label: 'Apricot' },
-        { id: '3', label: 'Banana' },
+      const items: TextValue[] = [
+        { value: '1', text: 'Apple' },
+        { value: '2', text: 'Apricot' },
+        { value: '3', text: 'Banana' },
       ];
 
       wrapper = mountComponent({ items, modelValue: ['1', '2', '3'] });
@@ -347,9 +343,9 @@ describe('FilterItem.vue', () => {
     });
 
     it('handles case-insensitive search', async () => {
-      const items: FilterItemData[] = [
-        { id: '1', label: 'Vancouver' },
-        { id: '2', label: 'victoria' },
+      const items: TextValue[] = [
+        { value: '1', text: 'Vancouver' },
+        { value: '2', text: 'victoria' },
       ];
 
       wrapper = mountComponent({ items });
@@ -358,11 +354,11 @@ describe('FilterItem.vue', () => {
       await nextTick();
 
       expect((wrapper.vm as any).filteredItems).toHaveLength(1);
-      expect((wrapper.vm as any).filteredItems[0].label).toBe('victoria');
+      expect((wrapper.vm as any).filteredItems[0].text).toBe('victoria');
     });
 
     it('maintains selection when toggling show all', async () => {
-      const selectedIds = [mockItems[0].id, mockItems[5].id];
+      const selectedIds = [mockItems[0].value, mockItems[5].value];
       wrapper = mountComponent({ modelValue: selectedIds, previewCount: 3 });
 
       const showAllBtn = wrapper.find('.link-style-btn');
@@ -373,9 +369,9 @@ describe('FilterItem.vue', () => {
     });
 
     it('maintains selection when searching', async () => {
-      const items: FilterItemData[] = [
-        { id: '1', label: 'Vancouver' },
-        { id: '2', label: 'Victoria' },
+      const items: TextValue[] = [
+        { value: '1', text: 'Vancouver' },
+        { value: '2', text: 'Victoria' },
       ];
 
       wrapper = mountComponent({ items, modelValue: ['1', '2'] });
@@ -405,7 +401,7 @@ describe('FilterItem.vue', () => {
     it('emits update:modelValue when item is toggled', async () => {
       wrapper = mountComponent();
 
-      await (wrapper.vm as any).toggleItem(mockItems[0].id);
+      await (wrapper.vm as any).toggleItem(mockItems[0].value);
 
       expect(wrapper.emitted('update:modelValue')).toBeTruthy();
     });
@@ -413,7 +409,7 @@ describe('FilterItem.vue', () => {
     it('updates internal state when modelValue prop changes', async () => {
       wrapper = mountComponent({ modelValue: [] });
 
-      const newSelection = [mockItems[0].id, mockItems[1].id];
+      const newSelection = [mockItems[0].value, mockItems[1].value];
       await wrapper.setProps({ modelValue: newSelection });
 
       expect((wrapper.vm as any).selectedItems).toEqual(newSelection);

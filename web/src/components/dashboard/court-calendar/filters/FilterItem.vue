@@ -19,13 +19,17 @@
     />
     <div class="filter-list-container">
       <v-list class="pa-0 mb-2">
-        <v-list-item v-for="item in displayedItems" :key="item.id" class="pa-0">
+        <v-list-item
+          v-for="item in displayedItems"
+          :key="item.value"
+          class="pa-0"
+        >
           <v-checkbox
-            :model-value="selectedItems.includes(item.id)"
-            :label="item.label"
+            :model-value="selectedItems.includes(item.value)"
+            :label="item.text"
             hide-details
             density="compact"
-            @update:model-value="toggleItem(item.id)"
+            @update:model-value="toggleItem(item.value)"
           >
           </v-checkbox>
         </v-list-item>
@@ -47,17 +51,13 @@
 </template>
 
 <script setup lang="ts">
+  import { TextValue } from '@/types/TextValue';
   import { computed, ref } from 'vue';
-
-  interface FilterItemData {
-    id: string;
-    label: string;
-  }
 
   const props = withDefaults(
     defineProps<{
       title: string;
-      items: FilterItemData[];
+      items: TextValue[];
       modelValue: string[];
       previewCount?: number;
       showSearch?: boolean;
@@ -86,7 +86,7 @@
     }
     const query = localSearchQuery.value.toLowerCase();
     return props.items.filter((item) =>
-      item.label.toLowerCase().includes(query)
+      item.text.toLowerCase().includes(query)
     );
   });
 
@@ -102,13 +102,13 @@
   const isAllSelected = computed(() => {
     if (filteredItems.value.length === 0) return false;
     return filteredItems.value.every((item) =>
-      selectedItems.value.includes(item.id)
+      selectedItems.value.includes(item.value)
     );
   });
 
   const isIndeterminate = computed(() => {
     const selectedCount = filteredItems.value.filter((item) =>
-      selectedItems.value.includes(item.id)
+      selectedItems.value.includes(item.value)
     ).length;
     return selectedCount > 0 && selectedCount < filteredItems.value.length;
   });
@@ -120,13 +120,17 @@
   const toggleSelectAll = () => {
     if (isAllSelected.value) {
       // Deselect all filtered items
-      const filteredIds = new Set(filteredItems.value.map((item) => item.id));
+      const filteredIds = new Set(
+        filteredItems.value.map((item) => item.value)
+      );
       selectedItems.value = selectedItems.value.filter(
         (id) => !filteredIds.has(id)
       );
     } else {
       // Select all filtered items
-      const filteredIds = new Set(filteredItems.value.map((item) => item.id));
+      const filteredIds = new Set(
+        filteredItems.value.map((item) => item.value)
+      );
       const newSelection = [...selectedItems.value];
       filteredIds.forEach((id) => {
         if (!newSelection.includes(id)) {

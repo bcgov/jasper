@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace dars_client.Handlers
+namespace DARSCommon.Handlers
 {
     /// <summary>
     /// HTTP message handler that forwards the LogSheetSessionService.Token cookie from incoming requests to outgoing DARS requests

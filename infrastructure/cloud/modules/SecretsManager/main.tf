@@ -137,7 +137,8 @@ resource "aws_secretsmanager_secret_version" "database_secret_value" {
     adminPassword           = "",
     mongoDbConnectionString = "",
     mongoDbName             = "",
-    defaultUsers            = ""
+    defaultUsers            = "",
+    defaultQuickLinks       = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

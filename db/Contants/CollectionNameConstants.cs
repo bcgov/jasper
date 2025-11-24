@@ -14,4 +14,5 @@ public static class CollectionNameConstants
     public const string ROLES = "roles";
     public const string TAGS = "tags";
     public const string USERS = "users";
+    public const string QUICK_LINKS = "quick_links";
 }

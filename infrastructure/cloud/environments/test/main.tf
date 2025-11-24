@@ -274,6 +274,10 @@ module "ecs_api_td" {
       value = "${module.apigw.apigw_invoke_url}"
     },
     {
+      name  = "DEFAULT_QUICK_LINKS"
+      value = "${module.secrets_manager.default_quick_links}"
+    },
+    {
       name  = "DEFAULT_USERS"
       value = "${module.secrets_manager.default_users}"
     },

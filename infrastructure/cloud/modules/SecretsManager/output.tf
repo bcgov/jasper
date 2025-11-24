@@ -114,6 +114,10 @@ output "allowed_ip_ranges" {
   sensitive = true
 }
 
+output "default_quick_links" {
+  value = jsonencode(jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string)["defaultQuickLinks"])
+}
+
 output "default_users" {
   value = jsonencode(jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string)["defaultUsers"])
 }

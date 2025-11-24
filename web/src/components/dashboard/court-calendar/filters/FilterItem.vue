@@ -120,13 +120,13 @@
   const toggleSelectAll = () => {
     if (isAllSelected.value) {
       // Deselect all filtered items
-      const filteredIds = filteredItems.value.map((item) => item.id);
+      const filteredIds = new Set(filteredItems.value.map((item) => item.id));
       selectedItems.value = selectedItems.value.filter(
-        (id) => !filteredIds.includes(id)
+        (id) => !filteredIds.has(id)
       );
     } else {
       // Select all filtered items
-      const filteredIds = filteredItems.value.map((item) => item.id);
+      const filteredIds = new Set(filteredItems.value.map((item) => item.id));
       const newSelection = [...selectedItems.value];
       filteredIds.forEach((id) => {
         if (!newSelection.includes(id)) {

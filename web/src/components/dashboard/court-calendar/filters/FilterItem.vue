@@ -18,7 +18,7 @@
       @update:model-value="toggleSelectAll"
     />
     <div class="filter-list-container">
-      <v-list class="pa-0">
+      <v-list class="pa-0 mb-2">
         <v-list-item v-for="item in displayedItems" :key="item.id" class="pa-0">
           <v-checkbox
             :model-value="selectedItems.includes(item.id)"

@@ -1,7 +1,17 @@
 <template>
-  <div>
+  <div class="filter-container">
     <div v-if="selectedLocations.length > 0" class="selected-filters mb-3">
-      <div class="mb-2">Selected Filters</div>
+      <div class="d-flex justify-space-between align-center mb-2">
+        <span>Selected Filters</span>
+        <v-btn
+          variant="text"
+          size="small"
+          class="clear-all-btn"
+          @click="clearAllFilters"
+        >
+          Clear All
+        </v-btn>
+      </div>
       <div class="selected-filters-chips">
         <v-chip
           v-for="locationId in selectedLocations"
@@ -15,8 +25,8 @@
         </v-chip>
       </div>
     </div>
-    <v-expansion-panels>
-      <v-expansion-panel :value="LOCATIONS">
+    <v-expansion-panels multiple flat>
+      <v-expansion-panel>
         <v-expansion-panel-title> Locations </v-expansion-panel-title>
         <v-expansion-panel-text>
           <FilterItem
@@ -32,17 +42,17 @@
 </template>
 <script setup lang="ts">
   import { LocationInfo } from '@/types/courtlist';
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import FilterItem from './FilterItem.vue';
-
-  const LOCATIONS = 'locations';
 
   const props = defineProps<{
     isLocationFilterLoading: boolean;
     locations: LocationInfo[];
   }>();
 
-  const selectedLocations = ref<string[]>([]);
+  const selectedLocations = defineModel<string[]>('selectedLocations', {
+    default: [],
+  });
 
   const locationItems = computed(() =>
     props.locations.map((location) => ({
@@ -58,14 +68,33 @@
     }
   };
 
+  const clearAllFilters = () => {
+    selectedLocations.value = [];
+  };
+
   const getLocationName = (locationId: string) => {
     const location = props.locations.find((l) => l.locationId === locationId);
     return location?.shortName || locationId;
   };
 </script>
 <style scoped>
-  :deep(.v-expansion-panel) {
+  .filter-container {
     width: 15rem;
+    flex-shrink: 0;
+  }
+
+  :deep(.v-expansion-panel) {
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  :deep(.v-expansion-panel::before) {
+    box-shadow: none !important;
+  }
+
+  :deep(.v-expansion-panel--active > .v-expansion-panel-title) {
+    border-bottom: none !important;
   }
 
   :deep(.v-list-item) {
@@ -116,6 +145,8 @@
     background-color: var(--bg-gray-100);
     border-radius: 4px;
     border: 1px solid var(--bg-gray-300);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .selected-filters-chips {
@@ -140,5 +171,22 @@
 
   .selected-filters-chips::-webkit-scrollbar-thumb:hover {
     background: var(--bg-scrollbar-thumb-hover);
+  }
+
+  .clear-all-btn {
+    text-transform: none;
+    letter-spacing: normal;
+    min-width: auto;
+    padding: 0 0.5rem;
+  }
+
+  .clear-all-btn :deep(.v-btn__content) {
+    font-size: 0.875rem;
+    color: var(--text-blue-600);
+    text-decoration: underline;
+  }
+
+  .clear-all-btn:hover :deep(.v-btn__content) {
+    color: var(--text-blue-900);
   }
 </style>

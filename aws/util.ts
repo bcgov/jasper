@@ -5,6 +5,7 @@ import * as qs from "qs";
 const allowedHeaders = new Set([
   "Accept",
   "applicationCd",
+  "Cookie",
   "correlationId",
   "deviceNm",
   "domainNm",

@@ -15,13 +15,15 @@ namespace Scv.Api.Services
 {
     public interface IDarsService
     {
-        Task<DarsClientSearchResult> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);   
+        Task<DarsClientSearchResult> DarsApiSearch(DateTime date, string agencyIdentifierCd, string courtRoomCd);
+        Task<DARSCommon.Clients.TranscriptsServices.SwaggerResponse<System.Collections.Generic.ICollection<DARSCommon.Clients.TranscriptsServices.Documents>>> GetCompletedDocuments(string physicalFileId, string mdocJustinNo, bool returnChildRecords);
     }
 
     public class DarsService(
         IConfiguration configuration,
         ILogger<DarsService> logger,
         LogNotesServicesClient logNotesServicesClient,
+        DARSCommon.Clients.TranscriptsServices.TranscriptsServicesClient transcriptsServicesClient,
         IMapper mapper) : IDarsService
     {
 
@@ -47,9 +49,9 @@ namespace Scv.Api.Services
             }
 
             var darsResult = await logNotesServicesClient.GetBaseAsync(room: courtRoomCd, datetime: date, location: agencyIdentifier, region: "all");
-            logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}", 
+            logger.LogInformation("DarsApiSearch returned {ResultCount} results for AgencyIdentifier: {AgencyIdentifier}, CourtRoomCd: {CourtRoomCd}, Date: {Date}",
                 darsResult?.Result?.Count ?? 0, agencyIdentifier, courtRoomCd, date.ToString("yyyy-MM-dd"));
-            
+
             var mappedResults = mapper.Map<IEnumerable<DarsSearchResults>>(darsResult?.Result).ToList();
 
             // Use LINQ's Select to append the base URL to each result's Url property
@@ -74,7 +76,7 @@ namespace Scv.Api.Services
             }
 
 
-            return new DarsClientSearchResult() { Results = darsResultsPerRoom, Cookies = cookies};
+            return new DarsClientSearchResult() { Results = darsResultsPerRoom, Cookies = cookies };
         }
 
         // only return result for each room, preferring CCD json, then FLS, then CCD html.
@@ -118,6 +120,29 @@ namespace Scv.Api.Services
             }
 
             return cookieHeaderValues;
+        }
+
+        public async Task<DARSCommon.Clients.TranscriptsServices.SwaggerResponse<System.Collections.Generic.ICollection<DARSCommon.Clients.TranscriptsServices.Documents>>> GetCompletedDocuments(
+            string physicalFileId,
+            string mdocJustinNo,
+            bool returnChildRecords)
+        {
+            logger.LogInformation(
+                "GetCompletedDocuments called - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, ReturnChildRecords: {ReturnChildRecords}",
+                physicalFileId,
+                mdocJustinNo,
+                returnChildRecords);
+
+            var result = await transcriptsServicesClient.GetCompletedDocumentsBaseAsync(
+                mdocJustinNo: mdocJustinNo,
+                physicalFileId: physicalFileId,
+                returnchildrecords: returnChildRecords);
+
+            logger.LogInformation(
+                "GetCompletedDocuments returned {ResultCount} documents",
+                result?.Result?.Count ?? 0);
+
+            return result;
         }
     }
 }

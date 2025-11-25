@@ -1,10 +1,13 @@
 ﻿using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Models.Dars;
 using Scv.Api.Services;
 using System;
 using System.Collections.Generic;
@@ -16,7 +19,11 @@ namespace Scv.Api.Controllers
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("api/[controller]")]
     [ApiController]
-    public class DarsController(IDarsService darsService, ILogger<DarsController> logger) : ControllerBase
+    public class DarsController(
+        IDarsService darsService,
+        ILogger<DarsController> logger,
+        IValidator<TranscriptSearchRequest> transcriptSearchRequestValidator,
+        IDocumentMerger documentMerger) : ControllerBase
     {
         /// <summary>
         /// Search for DARS audio recordings by date, location, and court room.
@@ -123,6 +130,145 @@ namespace Scv.Api.Controllers
             }
 
             logger.LogDebug("Added {CookieCount} cookies to response", cookies.Count());
+        }
+
+        /// <summary>
+        /// Get completed transcript documents by physical file ID or MDOC JUSTIN number.
+        /// </summary>
+        /// <param name="physicalFileId">The physical file ID (numeric string)</param>
+        /// <param name="mdocJustinNo">The MDOC JUSTIN number (numeric string)</param>
+        /// <param name="returnChildRecords">Whether to return child records (default: true)</param>
+        /// <returns>A collection of completed transcript documents</returns>
+        [HttpGet("transcripts")]
+        [ProducesResponseType(typeof(IEnumerable<DARSCommon.Clients.TranscriptsServices.Documents>), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetTranscripts(
+            string physicalFileId = null,
+            string mdocJustinNo = null,
+            bool returnChildRecords = true)
+        {
+            physicalFileId = 3221491.ToString();
+            mdocJustinNo = null;
+            var request = new TranscriptSearchRequest
+            {
+                PhysicalFileId = physicalFileId?.Trim(),
+                MdocJustinNo = mdocJustinNo?.Trim(),
+                ReturnChildRecords = returnChildRecords
+            };
+
+            var validationResult = await transcriptSearchRequestValidator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                logger.LogWarning(
+                    "Invalid transcript search request - Errors: {Errors}",
+                    string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+            }
+
+            logger.LogInformation(
+                "Transcript search requested - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, ReturnChildRecords: {ReturnChildRecords}",
+                request.PhysicalFileId,
+                request.MdocJustinNo,
+                request.ReturnChildRecords);
+
+            try
+            {
+                var result = await darsService.GetCompletedDocuments(
+                    request.PhysicalFileId,
+                    request.MdocJustinNo,
+                    request.ReturnChildRecords);
+
+                if (result?.Result == null || !result.Result.Any())
+                {
+                    logger.LogInformation(
+                        "No transcripts found - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}",
+                        request.PhysicalFileId,
+                        request.MdocJustinNo);
+                    return NotFound();
+                }
+
+                logger.LogInformation(
+                    "Found {Count} transcript(s) - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}",
+                    result.Result.Count,
+                    request.PhysicalFileId,
+                    request.MdocJustinNo);
+
+                return Ok(result.Result);
+            }
+            catch (DARSCommon.Clients.TranscriptsServices.ApiException ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Transcripts API exception - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, Status: {StatusCode}",
+                    request.PhysicalFileId,
+                    request.MdocJustinNo,
+                    ex.StatusCode);
+
+                if (ex.StatusCode == 404)
+                {
+                    return NotFound();
+                }
+
+                return StatusCode(500, "An error occurred while searching for transcripts.");
+            }
+        }
+
+        /// <summary>
+        /// Gets a transcript document as a base64 PDF.
+        /// </summary>
+        /// <param name="orderId">The transcript order ID</param>
+        /// <param name="documentId">The transcript document ID</param>
+        /// <returns>Base64-encoded PDF document</returns>
+        [HttpGet("transcript/{orderId}/{documentId}")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetTranscriptDocument(string orderId, string documentId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId) || string.IsNullOrWhiteSpace(documentId))
+            {
+                return BadRequest("Order ID and Document ID are required.");
+            }
+
+            logger.LogInformation(
+                "Transcript document requested - OrderId: {OrderId}, DocumentId: {DocumentId}",
+                orderId,
+                documentId);
+
+            try
+            {
+                var documentRequest = new Scv.Api.Models.Document.PdfDocumentRequest
+                {
+                    Type = Scv.Api.Documents.DocumentType.Transcript,
+                    Data = new Scv.Api.Models.Document.PdfDocumentRequestDetails
+                    {
+                        OrderId = orderId,
+                        TranscriptDocumentId = documentId
+                    }
+                };
+
+                var result = await documentMerger.MergeDocuments([documentRequest]);
+
+                logger.LogInformation(
+                    "Transcript document retrieved successfully - OrderId: {OrderId}, DocumentId: {DocumentId}",
+                    orderId,
+                    documentId);
+
+                return Ok(new { base64Pdf = result.Base64Pdf });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Error retrieving transcript document - OrderId: {OrderId}, DocumentId: {DocumentId}",
+                    orderId,
+                    documentId);
+                return StatusCode(500, "An error occurred while retrieving the transcript document.");
+            }
         }
     }
 }

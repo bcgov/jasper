@@ -472,6 +472,26 @@
 
       const cellClick = (eventData) => {
         loadingPdf.value = true;
+
+        // Check if this is a transcript document
+        if (
+          eventData.item.category === 'Transcript' &&
+          eventData.item.transcriptOrderId &&
+          eventData.item.transcriptDocumentId
+        ) {
+          // Handle transcript document viewing
+          const orderId = eventData.item.transcriptOrderId;
+          const documentId = eventData.item.transcriptDocumentId;
+
+          // Open transcript in new window - for now just open the API endpoint
+          // TODO: Implement proper PDF viewer integration for transcripts
+          const transcriptUrl = `/api/Dars/transcript/${orderId}/${documentId}`;
+          window.open(transcriptUrl, '_blank');
+          loadingPdf.value = false;
+          return;
+        }
+
+        // Standard document handling
         const documentType =
           eventData.value == 'CourtSummary'
             ? CourtDocumentType.CSR

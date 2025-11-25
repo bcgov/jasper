@@ -83,6 +83,7 @@
   import CourtFilesSelector from '@/components/case-details/common/CourtFilesSelector.vue';
   import CriminalSidePanel from '@/components/case-details/criminal/CriminalSidePanel.vue';
   import { beautifyDate } from '@/filters';
+  import { DarsService, TranscriptDocument } from '@/services/DarsService';
   import { HttpService } from '@/services/HttpService';
   import {
     useCommonStore,
@@ -160,9 +161,10 @@
       const route = useRoute();
       //      const router = useRouter();
       const httpService = inject<HttpService>('httpService');
+      const darsService = inject<DarsService>('darsService');
 
-      if (!httpService) {
-        throw new Error('HttpService is not available!');
+      if (!httpService || !darsService) {
+        throw new Error('Service is not available!');
       }
 
       const participantList = ref<participantListInfoType[]>([]);
@@ -256,6 +258,9 @@
               const courtClass = DecodeCourtClass[data.courtClassCd];
               ExtractFileInfo();
               //Allow blank participants, it's a real case file 1019 for example on dev.
+              
+              // Load transcripts from DARS API
+              loadTranscripts(data.justinNo);
               criminalFileStore.criminalFileInformation.participantList =
                 participantList.value;
               criminalFileStore.criminalFileInformation.adjudicatorRestrictionsInfo =
@@ -547,6 +552,56 @@
             ? jRestriction.partNm
             : 'All participants on file';
           adjudicatorRestrictionsInfo.value.push(restrictionInfo);
+        }
+      };
+
+      const loadTranscripts = async (mdocJustinNo: string) => {
+        try {
+          const transcripts = await darsService.getTranscripts(undefined, mdocJustinNo);
+          
+          // Map transcripts to participants based on appearance matching
+          for (const transcript of transcripts) {
+            // Each transcript has appearances array with appearanceId
+            for (const appearance of transcript.appearances) {
+              // Find participant(s) with matching appearance
+              for (const participant of participantList.value) {
+                // Match transcript appearance to participant's appearance
+                // participant.documentsJson contains documents with partId
+                // We need to add the transcript to the participant's documentsJson
+                
+                // Create a transcript document entry
+                const transcriptDoc = {
+                  partId: participant.partId,
+                  category: 'Transcript',
+                  documentTypeDescription: `Transcript - ${transcript.description}`,
+                  hasFutureAppearance: false,
+                  docmClassification: 'Transcript',
+                  docmId: `transcript-${transcript.orderId}-${transcript.id}`,
+                  issueDate: appearance.appearanceDt,
+                  docmFormId: '',
+                  docmFormDsc: `Transcript - ${transcript.description}`,
+                  docmDispositionDsc: '',
+                  docmDispositionDate: '',
+                  imageId: `transcript-${transcript.orderId}-${transcript.id}`,
+                  documentPageCount: '',
+                  additionalProperties: {},
+                  additionalProp1: {},
+                  additionalProp2: {},
+                  additionalProp3: {},
+                  // Store transcript metadata for PDF viewing
+                  transcriptOrderId: transcript.orderId.toString(),
+                  transcriptDocumentId: transcript.id.toString(),
+                  transcriptAppearanceId: appearance.appearanceId.toString(),
+                } as any;
+                
+                // Add to participant's documents
+                participant.documentsJson.push(transcriptDoc);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading transcripts:', error);
+          // Don't fail the entire page load if transcripts fail
         }
       };
 

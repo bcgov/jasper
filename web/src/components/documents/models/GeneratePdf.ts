@@ -1,13 +1,12 @@
-import { DocumentRequestType } from "@/types/shared";
+import { DocumentRequestType } from '@/types/shared';
 
 export interface GeneratePdfResponse {
   base64Pdf: string;
   pageRanges: Array<PageRange>;
 }
-export interface PageRange
-{
-    start: number,
-    end: number
+export interface PageRange {
+  start: number;
+  end: number;
 }
 
 export type GeneratePdfRequest = {
@@ -28,5 +27,7 @@ export type GeneratePdfRequest = {
     roomCode?: string;
     additionsList?: string;
     reportType?: string;
+    orderId?: string;
+    transcriptDocumentId?: string;
   };
 };

@@ -19,4 +19,6 @@ public class PdfDocumentRequestDetails
     public string RoomCode { get; set; }
     public string AdditionsList { get; set; }
     public string ReportType { get; set; }
+    public string OrderId { get; set; }
+    public string TranscriptDocumentId { get; set; }
 }

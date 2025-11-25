@@ -143,7 +143,7 @@ namespace Scv.Api.Controllers
 
             return Ok(parties);
         }
-        
+
         /// <summary>
         /// Gets detailed method information regarding an appearance given civil file id and appearance id.
         /// </summary>
@@ -157,7 +157,7 @@ namespace Scv.Api.Controllers
             if (User.IsSupremeUser())
                 return Forbid();
 
-            var methods = await _civilFilesService.DetailedAppearanceMethods(fileId, appearanceId) 
+            var methods = await _civilFilesService.DetailedAppearanceMethods(fileId, appearanceId)
                 ?? throw new NotFoundException("Couldn't find appearance methods with the provided file id and appearance id.");
 
             return Ok(methods);
@@ -268,7 +268,7 @@ namespace Scv.Api.Controllers
         [Route("criminal/{fileId}/appearance-detail/{appearanceId}/{partId}")]
         public async Task<ActionResult<CriminalAppearanceDetail>> GetCriminalAppearanceDetails(string fileId, string appearanceId, string partId)
         {
-            var appearanceDetail = await _criminalFilesService.AppearanceDetailAsync(fileId, appearanceId, partId) 
+            var appearanceDetail = await _criminalFilesService.AppearanceDetailAsync(fileId, appearanceId, partId)
                 ?? throw new NotFoundException("Couldn't find appearance details with the provided parameters.");
 
             // CourtLevel = "S"  Supreme court data, CourtLevel = "P" - Province.
@@ -290,7 +290,7 @@ namespace Scv.Api.Controllers
         [Route("criminal/{fileId}/appearance-detail/{partId}/documents")]
         public async Task<ActionResult<CriminalAppearanceDocuments>> GetCriminalAppearanceDocuments(string fileId, string partId)
         {
-            var appearanceDocuments = await _criminalFilesService.AppearanceDetailDocuments(fileId, partId) 
+            var appearanceDocuments = await _criminalFilesService.AppearanceDetailDocuments(fileId, partId)
                 ?? throw new NotFoundException("Couldn't find appearance documents with the provided parameters.");
 
             if (User.IsSupremeUser())
@@ -412,7 +412,6 @@ namespace Scv.Api.Controllers
             var result = await _documentMerger.MergeDocuments(documentRequests);
             return Ok(result);
         }
-
 
         [HttpPost]
         [Route("archive")]

@@ -1,10 +1,12 @@
 import { FilePDFStrategy } from './FilePDFStrategy';
 import { BundlePDFStrategy } from './BundlePDFStrategy';
+import { TranscriptPDFStrategy } from './TranscriptPDFStrategy';
 import { PDFViewerStrategy } from '@/components/documents/FileViewer.vue';
 
 export enum PDFViewerType {
   FILE = 'file',
   BUNDLE = 'bundle',
+  TRANSCRIPT = 'transcript',
 }
 
 export class PDFStrategyFactory {
@@ -14,6 +16,8 @@ export class PDFStrategyFactory {
         return new FilePDFStrategy();
       case PDFViewerType.BUNDLE:
         return new BundlePDFStrategy();
+      case PDFViewerType.TRANSCRIPT:
+        return new TranscriptPDFStrategy();
       default:
         throw new Error(`Unknown PDF viewer type: ${type}`);
     }

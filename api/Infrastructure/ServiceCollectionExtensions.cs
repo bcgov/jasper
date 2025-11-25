@@ -2,6 +2,8 @@
 using Amazon.Lambda;
 using Azure.Identity;
 using DARSCommon.Handlers;
+using DARSCommon.Clients.LogNotesServices;
+using DARSCommon.Clients.TranscriptsServices;
 using GdPicture14;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -51,6 +53,8 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
+using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Scv.Api.Infrastructure
 {
@@ -72,6 +76,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentStrategy, ROPStrategy>();
             services.AddScoped<IDocumentStrategy, ReportStrategy>();
             services.AddScoped<IDocumentStrategy, CourtSummaryReportStrategy>();
+            services.AddScoped<IDocumentStrategy, TranscriptStrategy>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
@@ -239,6 +244,9 @@ namespace Scv.Api.Infrastructure
                 .AddHttpMessageHandler<TimingHandler>()
                 .AddHttpMessageHandler<DarsCookieHandler>();
 
+            services
+                .AddHttpClient<TranscriptsServices.TranscriptsServicesClient>(client => { ConfigureHttpClient(client, configuration, "DARS"); })
+                .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSTimebankServices.TimebankServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>()

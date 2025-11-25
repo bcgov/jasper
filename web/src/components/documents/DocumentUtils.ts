@@ -7,6 +7,11 @@ import { CourtDocumentType, DocumentData } from '@/types/shared';
 const ROP = 'rop';
 const CSR = 'CSR';
 
+export interface TranscriptDocumentType extends civilDocumentType {
+  transcriptOrderId: number;
+  transcriptDocumentId: number;
+}
+
 export const prepareCriminalDocumentData = (data) => {
   const criminalFileStore = useCriminalFileStore();
   const documentData: DocumentData = {
@@ -52,6 +57,15 @@ export const prepareCivilDocumentData = (data: civilDocumentType) => {
       civilFileStore.civilFileInformation?.detailsData?.homeLocationAgencyName,
     isCriminal: false,
   };
+
+  // Add transcript metadata if this is a transcript document
+  if (data.documentTypeCd === 'TRANSCRIPT') {
+    const transcriptData = data as TranscriptDocumentType;
+    documentData.orderId = transcriptData.transcriptOrderId?.toString();
+    documentData.transcriptDocumentId =
+      transcriptData.transcriptDocumentId?.toString();
+  }
+
   return documentData;
 };
 
@@ -66,6 +80,9 @@ export const getCriminalDocumentType = (
 export const getCivilDocumentType = (
   data: civilDocumentType
 ): CourtDocumentType => {
+  if (data.documentTypeCd === 'TRANSCRIPT') {
+    return CourtDocumentType.Transcript;
+  }
   return data.documentTypeCd == CSR
     ? CourtDocumentType.CSR
     : CourtDocumentType.Civil;

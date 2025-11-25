@@ -12,7 +12,7 @@ export const formatDateToDDMMMYYYY = (dateString: string): string => {
   const date = normalizedDateString
     ? new Date(`${normalizedDateString}T00:00:00`)
     : null;
-  if (!date) {
+  if (!date || Number.isNaN(date.getTime())) {
     return '';
   }
 

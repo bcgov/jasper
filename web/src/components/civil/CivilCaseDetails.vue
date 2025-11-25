@@ -92,6 +92,7 @@
   import CourtFilesSelector from '@/components/case-details/common/CourtFilesSelector.vue';
   import CivilSidePanel from '@/components/civil/CivilSidePanel.vue';
   import { beautifyDate } from '@/filters';
+  import { DarsService } from '@/services/DarsService';
   import { HttpService } from '@/services/HttpService';
   import {
     useCivilFileStore,
@@ -145,8 +146,9 @@
       const commonStore = useCommonStore();
       const courtFileSearchStore = useCourtFileSearchStore();
       const httpService = inject<HttpService>('httpService');
+      const darsService = inject<DarsService>('darsService');
 
-      if (!httpService) {
+      if (!httpService || !darsService) {
         throw new Error('Service is undefined.');
       }
 
@@ -245,6 +247,9 @@
               isSealed.value = data.sealedYN === 'Y';
 
               ExtractCaseInfo();
+
+              // Load transcripts from DARS API
+              loadTranscripts(data.physicalFileId);
 
               if (
                 adjudicatorRestrictionsInfo.value.length > 0 ||
@@ -660,6 +665,115 @@
             );
           }
           providedDocumentsInfo.value.push(providedDocInfo);
+        }
+      };
+
+      const loadTranscripts = async (physicalFileId: string) => {
+        try {
+          const transcripts = await darsService.getTranscripts(physicalFileId);
+
+          console.log('Transcripts loaded:', transcripts);
+          // Map transcripts to both civilDocumentType and documentsInfoType formats
+          for (const transcript of transcripts) {
+            // Add to documentsInfo for legacy support
+            const docInfo = {} as documentsInfoType;
+
+            // Create unique document ID for transcript
+            docInfo.documentId = `transcript-${transcript.orderId}-${transcript.id}`;
+
+            // Document type format: "Transcript - {description}"
+            docInfo.documentType = `Transcript - ${transcript.description}`;
+
+            // Category is "Transcript"
+            docInfo.category = 'Transcript';
+            if (!categories.value.includes('Transcript')) {
+              categories.value.push('Transcript');
+            }
+
+            // Date filed is appearance date from first appearance
+            if (transcript.appearances && transcript.appearances.length > 0) {
+              const firstAppearance = transcript.appearances[0];
+              docInfo.dateFiled = firstAppearance.appearanceDt
+                ? firstAppearance.appearanceDt.split('T')[0]
+                : '';
+            } else {
+              docInfo.dateFiled = '';
+            }
+
+            // Fields that are null for transcripts
+            docInfo.seq = '';
+            docInfo.filedByName = [];
+            docInfo.issues = [];
+            docInfo.act = [];
+            docInfo.swornBy = '';
+            docInfo.affNo = '';
+            docInfo.comment = '';
+            docInfo.concluded = '';
+            docInfo.nextAppearanceDate =
+              transcript.appearances.sort(
+                (a, b) =>
+                  new Date(a.appearanceDt).getTime() -
+                  new Date(b.appearanceDt).getTime()
+              )[0]?.appearanceDt || '';
+            docInfo.orderMadeDate = '';
+
+            // PDF availability - transcripts are always available
+            docInfo.pdfAvail = true;
+            docInfo.isChecked = false;
+            docInfo.isEnabled = true;
+            docInfo.sealed = false;
+
+            // Store transcript metadata for PDF viewing
+            (docInfo as any).transcriptOrderId = transcript.orderId.toString();
+            (docInfo as any).transcriptDocumentId = transcript.id.toString();
+
+            documentsInfo.value.push(docInfo);
+
+            // Also add to details.value.document array for CaseHeader/CivilDocumentsView
+            const civilDoc: civilDocumentType = {
+              civilDocumentId: `transcript-${transcript.orderId}-${transcript.id}`,
+              documentTypeDescription: `Transcript - ${transcript.description}`,
+              documentTypeCd: 'TRANSCRIPT',
+              category: 'Transcript',
+              filedDt: docInfo.dateFiled,
+              imageId: transcript.id.toString(),
+              sealedYN: 'N',
+              fileSeqNo: '',
+              concludedYn: '',
+              nextAppearanceDt: '',
+              swornByNm: '',
+              affidavitNo: '',
+              filedByName: '',
+              commentTxt: '',
+              lastAppearanceId: '',
+              lastAppearanceDt: '',
+              lastAppearanceTm: '',
+              DateGranted: '',
+              documentSupport: [],
+              issue: [],
+              filedBy: [],
+              appearance: [],
+              additionalProperties: {},
+              additionalProp1: {},
+              additionalProp2: {},
+              additionalProp3: {},
+              // Store transcript metadata as additional properties
+              ...({
+                transcriptOrderId: transcript.orderId,
+                transcriptDocumentId: transcript.id,
+              } as any),
+            };
+
+            details.value.document.push(civilDoc);
+          }
+        } catch (error: any) {
+          // Log warning for 404 errors (no transcripts found) but don't display error to user
+          if (error?.status === 404 || error?.response?.status === 404) {
+            console.warn(`No transcripts found for file ${physicalFileId}`);
+          } else {
+            console.error('Error loading transcripts:', error);
+          }
+          // Don't fail the entire page load if transcripts fail
         }
       };
 

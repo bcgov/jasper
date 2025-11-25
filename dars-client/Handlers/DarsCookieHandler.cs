@@ -31,7 +31,7 @@ namespace DARSCommon.Handlers
             if (httpContext?.Request?.Cookies != null &&
                 httpContext.Request.Cookies.TryGetValue(_logsheetSessionCookieName, out var cookieValue))
             {
-                _logger.LogDebug("Found {CookieName} cookie in request, forwarding to DARS API", _logsheetSessionCookieName);
+                _logger.LogDebug("Found {CookieName} cookie in request, forwarding to DARS API {CookieValue}", _logsheetSessionCookieName, cookieValue);
 
                 // Add the cookie to the outgoing request
                 request.Headers.Add("Cookie", $"{_logsheetSessionCookieName}={cookieValue}");

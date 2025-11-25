@@ -83,6 +83,8 @@ export default {
       type = DocumentRequestType.ROP;
     } else if (documentType === CourtDocumentType.CSR) {
       type = DocumentRequestType.CourtSummary;
+    } else if (documentType === CourtDocumentType.Transcript) {
+      type = DocumentRequestType.Transcript;
     }
     this.addDocumentsToPdfStore([
       {
@@ -175,6 +177,8 @@ export default {
             roomCode: doc.documentData.roomCode || '',
             reportType: doc.documentData.reportType || '',
             additionsList: doc.documentData.additionsList || '',
+            orderId: doc.documentData.orderId || '',
+            transcriptDocumentId: doc.documentData.transcriptDocumentId || '',
           },
         },
         groupKeyOne: doc.groupKeyOne,
@@ -205,8 +209,10 @@ export default {
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-documents.zip`;
       case CourtDocumentType.CriminalZip:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.courtClass}-${documentData.fileNumberText}-documents.zip`;
+      case CourtDocumentType.Transcript:
+        return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.dateFiled}.pdf`;
       default:
-        throw Error(`No file structure for type: ${documentType}`);
+        throw new Error(`No file structure for type: ${documentType}`);
     }
   },
 

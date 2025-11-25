@@ -166,6 +166,9 @@ module "lambda" {
   ecs_cluster_name     = module.ecs_cluster.ecs_cluster.name
   efs_access_point_arn = module.efs_files.access_point_arn
   efs_mount_path       = var.efs_config.mount_path
+  region                            = var.region
+  account_id                        = data.aws_caller_identity.current.account_id
+  get_assigned_cases_lambda_timeout = var.get_assigned_cases_lambda_timeout
 }
 
 # Create Cloudwatch LogGroups
@@ -275,9 +278,34 @@ module "ecs_api_td" {
       value = "${module.apigw.apigw_invoke_url}"
     },
     {
+      name  = "DEFAULT_QUICK_LINKS"
+      value = "${module.secrets_manager.default_quick_links}"
+    },
+    {
       name  = "DEFAULT_USERS"
       value = "${module.secrets_manager.default_users}"
-    }
+    },
+    {
+      name  = "AWS_REGION"
+      value = var.region
+    },
+    {
+      name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"
+      value = "${module.lambda.lambda_functions["get-assigned-cases-request"].name}"
+    },
+    {
+      name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"
+      value = var.get_assigned_cases_lambda_timeout
+    },
+    {
+      name  = "AWS_LAMBDA_LONG_TIMEOUT_MINUTES"
+      value = var.lambda_long_timeout
+    },
+    {
+      name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
+      value = var.lambda_retry_attempts
+    },
+
   ]
   secret_env_variables = module.secrets_manager.api_secrets
   kms_key_arn          = module.initial.kms_key_arn

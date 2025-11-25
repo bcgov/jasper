@@ -22,7 +22,7 @@
     criminalParticipantType,
   } from '@/types/criminal/jsonTypes';
   import { getEnumName } from '@/utils/utils';
-  import { computed, defineProps } from 'vue';
+  import { computed } from 'vue';
   import Accused from './Accused.vue';
 
   const props = defineProps<{

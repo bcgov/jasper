@@ -82,7 +82,7 @@
   import { LocationInfo } from '@/types/courtlist';
   import { getCourtClassLabel } from '@/utils/utils';
   import { mdiFileDocumentOutline } from '@mdi/js';
-  import { computed, defineProps, ref } from 'vue';
+  import { computed, ref } from 'vue';
 
   const props = defineProps<{
     courtRooms: LocationInfo[];

@@ -1,36 +1,55 @@
 <template>
-  <v-skeleton-loader
-    v-if="isCalendarLoading"
-    type="date-picker"
-    :loading="isCalendarLoading"
-  ></v-skeleton-loader>
-  <FullCalendar
-    class="mx-2"
-    v-else
-    :options="calendarOptions"
-    ref="calendarRef"
-  >
-    <template v-slot:eventContent="{ event }">
-      <CourtCalendarDay
-        :activities="event.extendedProps.activities"
-        :date="event.start"
-      />
-    </template>
-  </FullCalendar>
+  <div class="d-flex align-start">
+    <v-skeleton-loader
+      v-if="isLocationFilterLoading"
+      data-testid="cc-filters-loader"
+      type="list-item-avatar-two-line"
+      :loading="isLocationFilterLoading"
+    />
+    <CourtCalendarFilters
+      data-testid="cc-filters"
+      v-if="locations.length > 0"
+      v-model:selected-locations="selectedLocationIds"
+      :isLocationFilterLoading="isLocationFilterLoading"
+      :locations="locations"
+    />
+    <v-skeleton-loader
+      data-testid="cc-loader"
+      v-if="isCalendarLoading"
+      type="date-picker"
+      :loading="isCalendarLoading"
+    ></v-skeleton-loader>
+    <FullCalendar
+      class="mx-2"
+      v-else
+      :options="calendarOptions"
+      ref="calendarRef"
+    >
+      <template v-slot:eventContent="{ event }">
+        <CourtCalendarDay
+          :activities="event.extendedProps.activities"
+          :date="event.start"
+        />
+      </template>
+    </FullCalendar>
+  </div>
 </template>
 <script setup lang="ts">
-  import { DashboardService } from '@/services';
+  import { DashboardService, LocationService } from '@/services';
   import { Activity, CalendarDay, Presider } from '@/types';
   import { CalendarViewEnum } from '@/types/common';
+  import { LocationInfo } from '@/types/courtlist';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { CalendarOptions } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
   import { computed, inject, onMounted, ref, watch, watchEffect } from 'vue';
+  import CourtCalendarFilters from './filters/CourtCalendarFilters.vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
+  const locationService = inject<LocationService>('locationService');
 
-  if (!dashboardService) {
+  if (!dashboardService || !locationService) {
     throw new Error('Service is not available!');
   }
 
@@ -41,6 +60,7 @@
   const selectedDate = defineModel<Date>('selectedDate');
   const calendarView = defineModel<string>('calendarView');
   const isCalendarLoading = defineModel<boolean>('isCalendarLoading');
+  const isLocationFilterLoading = ref(true);
 
   if (!selectedDate.value) {
     throw new Error('selectedDate is required');
@@ -48,12 +68,14 @@
 
   const calendarRef = ref();
   const calendarData = ref<CalendarDay[]>([]);
+  const locations = ref<LocationInfo[]>([]);
   const presiders = ref<Presider[]>([]);
   const activities = ref<Activity[]>([]);
+  const selectedLocationIds = ref<string[]>([]);
 
   const startDay = ref(new Date(selectedDate.value));
   const endDay = ref(new Date(selectedDate.value));
-  const locationIds = ref('');
+  const locationIds = computed(() => selectedLocationIds.value.join(','));
 
   const updateCalendar = async () => {
     if (!calendarView.value) {
@@ -115,13 +137,18 @@
     },
   };
 
-  onMounted(updateCalendar);
+  onMounted(async () => {
+    isCalendarLoading.value = true;
+    await Promise.all([loadLocations(), updateCalendar()]);
+  });
 
   watch(selectedDate, updateCalendar);
 
   watch(calendarView, updateCalendar);
 
   watch(() => props.judgeId, updateCalendar);
+
+  watch(selectedLocationIds, updateCalendar, { deep: true });
 
   watchEffect(() => {
     const calendarApi = calendarRef.value?.getApi();
@@ -184,6 +211,17 @@
         endDay.value = saturday;
         break;
       }
+    }
+  };
+
+  const loadLocations = async () => {
+    try {
+      isLocationFilterLoading.value = true;
+      locations.value = await locationService.getLocations();
+    } catch (error) {
+      console.error('Failed to load locations:', error);
+    } finally {
+      isLocationFilterLoading.value = false;
     }
   };
 </script>

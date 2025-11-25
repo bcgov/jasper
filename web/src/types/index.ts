@@ -14,3 +14,4 @@ export * from './Location';
 export * from './PersonSearchItem';
 export * from './Presider';
 export * from './Tag';
+export * from './QuickLink';

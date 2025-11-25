@@ -81,7 +81,7 @@
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { getEnumName } from '@/utils/utils';
   import { mdiInformationSlabCircleOutline } from '@mdi/js';
-  import { computed, defineProps, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import Bans from './Bans.vue';
 
   const props = defineProps<{

@@ -19,7 +19,7 @@
   import { useCommonStore } from '@/stores';
   import { PersonSearchItem } from '@/types';
   import { UserInfo } from '@/types/common';
-  import { defineProps, ref, watch } from 'vue';
+  import { ref, watch } from 'vue';
 
   const props = defineProps<{
     judges: PersonSearchItem[];

@@ -26,7 +26,7 @@
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
     "@fullcalendar/vue3": "^6.1.19",
-    "@nutrient-sdk/viewer": "^1.8.0",
+    "@nutrient-sdk/viewer": "^1.9.1",
     "@types/luxon": "^3.7.1",
     "@types/underscore": "^1.13.0",
     "@vitejs/plugin-basic-ssl": "^2.1.0",

@@ -21,7 +21,7 @@ jobs:
         node-version: [22]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Building Web codebase
         uses: ./.github/workflows/actions/build-web

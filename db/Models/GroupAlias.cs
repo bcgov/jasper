@@ -7,18 +7,18 @@ namespace Scv.Db.Models
     [Collection(CollectionNameConstants.GROUP_ALIASES)]
     public class GroupAlias : EntityBase
     {
-        public const string REGIONAL_ADMINISTRATIVE_JUDGE = "Regional Administrative Judge";
-        public const string RAJ_WITH_CC_VIEW = "RAJ with CC View";
-        public const string JUDGE = "Judge";
+        public const string REGIONAL_ADMINISTRATIVE_JUDGE = "REGIONAL_ADMINISTRATIVE_JUDGE";
+        public const string RAJ_WITH_CC_VIEW = "RAJ with CC view";
+        public const string JUDGE = "JUDGE";
         public const string JUDGE_NO_CLDC = "Judge - No CLDC";
-        public const string JUDGE_WITH_COURT_LIST = "Judge with Court List";
-        public const string JUDGE_TRAINING_ROLE = "Judge Training Role";
+        public const string JUDGE_WITH_COURT_LIST = "Court List Pilot Judge";
+        public const string JUDGE_TRAINING_ROLE = "Judge Training";
         public const string SENIOR_JUDGE = "Senior Judge";
         public const string SENIOR_JUDGE_COURT_LIST = "Senior Judge - Court List";
-        public const string JUDGE_JJ_OUTLOOK_INTEGRATION = "Judge/JJ Outlook Integration";
-        public const string USER_ROLE_ADMIN = "User Role Admin";
-        public const string PRODUCT_MANAGER = "Product Manager/OCJ JCM";
-        public const string OCJ_HELP_DESK = "OCJ Help Desk";
+        public const string JUDGE_JJ_OUTLOOK_INTEGRATION = "OUTLOOK_INTEGRATION";
+        public const string USER_ROLE_ADMIN = "Admin User Edit";
+        public const string PRODUCT_MANAGER = "PRODUCT_MANAGER";
+        public const string OCJ_HELP_DESK = "OCJ_HELP_DESK";
         public const string CHIEF_JUDGE_ACJ = "Chief Judge/ACJ";
 
 

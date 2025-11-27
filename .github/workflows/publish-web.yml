@@ -14,7 +14,7 @@ env:
   WEB_IMAGE_NAME: web
   WEB_RUNTIME_IMAGE_NAME: web-runtime
   WEB_ARTIFACTS_IMAGE_NAME: web-artifacts
-  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper-lz
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
   WEB_BASE_HREF: /
 
 jobs:

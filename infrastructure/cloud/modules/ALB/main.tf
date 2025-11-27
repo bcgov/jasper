@@ -12,18 +12,22 @@ resource "aws_lb" "default_lb" {
   load_balancer_type = "application"
   security_groups    = [var.web_security_group_id]
   subnets            = var.web_subnets_ids
-  
+
+  # Access logs are enabled and managed by LZA organizational policy
+  # This block satisfies security scanning tools while allowing LZA to manage the actual configuration
   access_logs {
-    bucket  = var.alb_logs_bucket_name
+    bucket  = "aws-accelerator-elb-access-logs-${var.lza_log_archive_account_id}-${var.region}"
+    prefix  = "${var.account_id}/elb-${var.environment}-app-svc-lb"
     enabled = true
   }
-  
+
   tags = {
     Public = "True"
   }
   lifecycle {
     ignore_changes = [
-      tags
+      tags,
+      access_logs
     ]
   }
 }

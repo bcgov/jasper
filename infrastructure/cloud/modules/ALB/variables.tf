@@ -43,7 +43,18 @@ variable "web_subnets_ids" {
   type        = list(string)
 }
 
-variable "alb_logs_bucket_name" {
-  description = "The name of the S3 bucket for ALB access logs"
+variable "account_id" {
+  description = "The current AWS Account Id"
   type        = string
+}
+
+variable "region" {
+  description = "The AWS region"
+  type        = string
+}
+
+variable "lza_log_archive_account_id" {
+  description = "LZA Log Archive Account ID for centralized ALB logging"
+  type        = string
+  default     = "897722703828"
 }

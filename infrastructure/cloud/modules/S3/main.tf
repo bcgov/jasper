@@ -1,42 +1,79 @@
+# S3 bucket for ALB access logs
+resource "aws_s3_bucket" "alb_logs_bucket" {
+  bucket = "${var.app_name}-alb-logs-${var.environment}"
 
-# data "aws_caller_identity" "current" {}
+  tags = {
+    Application = "${var.app_name}-${var.environment}"
+    Name        = "${var.app_name}-alb-logs-${var.environment}"
+    Environment = var.environment
+  }
+}
 
-# data "aws_kms_alias" "encryption_key_alias" {
-#   name = var.kms_key_name
-# }
+# Block public access to the ALB logs bucket
+resource "aws_s3_bucket_public_access_block" "alb_logs_bucket_public_access_block" {
+  bucket = aws_s3_bucket.alb_logs_bucket.id
 
-# # a test s3 bucket
-# resource "aws_s3_bucket" "test_s3_bucket" {
-#   bucket = "${var.test_s3_bucket_name}-${var.environment}"
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
-#   tags = {
-#     Application = "${var.app_name}-${var.environment}"
-#     Name        = "${var.test_s3_bucket_name}-${var.environment}"
-#     Environment = "${var.environment}"
-#   }
-# }
+# Enable server-side encryption for ALB logs bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs_bucket_encryption" {
+  bucket = aws_s3_bucket.alb_logs_bucket.id
 
-# resource "aws_s3_bucket_server_side_encryption_configuration" "test_bucket_encryption" {
-#   bucket = aws_s3_bucket.test_s3_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
 
-#   rule {
-#     apply_server_side_encryption_by_default {
-#       kms_master_key_id = data.aws_kms_alias.encryption_key_alias.target_key_id
-#       sse_algorithm     = "aws:kms"
-#     }
-#   }
-# }
+# Bucket policy to allow ALB to write logs
+# Reference: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html
+resource "aws_s3_bucket_policy" "alb_logs_bucket_policy" {
+  bucket = aws_s3_bucket.alb_logs_bucket.id
 
-# resource "aws_s3_bucket_ownership_controls" "test_bucket_ownership_controls" {
-#   bucket = aws_s3_bucket.test_s3_bucket.id
-#   rule {
-#     object_ownership = "BucketOwnerPreferred"
-#   }
-# }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AWSLogDeliveryWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "elasticloadbalancing.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.alb_logs_bucket.arn}/*"
+      },
+      {
+        Sid    = "AWSLogDeliveryAclCheck"
+        Effect = "Allow"
+        Principal = {
+          Service = "elasticloadbalancing.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.alb_logs_bucket.arn
+      }
+    ]
+  })
+}
 
-# resource "aws_s3_bucket_acl" "test_bucket_acl" {
-#   depends_on = [aws_s3_bucket_ownership_controls.test_bucket_ownership_controls]
+# Lifecycle policy to manage old logs
+resource "aws_s3_bucket_lifecycle_configuration" "alb_logs_bucket_lifecycle" {
+  bucket = aws_s3_bucket.alb_logs_bucket.id
 
-#   bucket = aws_s3_bucket.test_s3_bucket.id
-#   acl    = "private"
-# }
+  rule {
+    id     = "expire-old-logs"
+    status = "Enabled"
+
+    expiration {
+      days = 90
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+}

@@ -42,3 +42,8 @@ variable "web_subnets_ids" {
   description = "The IDs of the subnets for the web tier"
   type        = list(string)
 }
+
+variable "alb_logs_bucket_name" {
+  description = "The name of the S3 bucket for ALB access logs"
+  type        = string
+}

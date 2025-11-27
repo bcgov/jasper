@@ -101,6 +101,13 @@ module "subnets" {
   vpc_id            = data.aws_vpc.vpc.id
 }
 
+# Create S3 buckets
+module "s3" {
+  source      = "../../modules/S3"
+  environment = var.environment
+  app_name    = var.app_name
+}
+
 # Create Target Groups
 module "tg_web" {
   source            = "../../modules/TargetGroup"
@@ -136,6 +143,7 @@ module "alb" {
   web_security_group_id = data.aws_security_group.web_sg.id
   vpc_id                = data.aws_vpc.vpc.id
   web_subnets_ids       = module.subnets.web_subnets_ids
+  alb_logs_bucket_name  = module.s3.alb_logs_bucket_name
   depends_on            = [module.subnets]
 }
 

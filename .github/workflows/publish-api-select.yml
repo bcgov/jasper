@@ -6,9 +6,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
-        default: 'dev'
+        default: 'lz-dev'
         type: choice
         options:
+          - lz-dev
+          - lz-test
+          - lz-prod
           - dev
           - test
           - prod
@@ -21,7 +24,7 @@ on:
 env:
   WORKING_DIRECTORY: .
   IMAGE_NAME: api
-  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper-lz
 
 jobs:
   build:

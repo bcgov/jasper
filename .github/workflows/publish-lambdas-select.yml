@@ -7,9 +7,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
-        default: 'dev'
+        default: 'lz-dev'
         type: choice
         options:
+          - lz-dev
+          - lz-test
+          - lz-prod
           - dev
           - test
           - prod
@@ -22,7 +25,7 @@ on:
 env:
   WORKING_DIRECTORY: ./aws
   NODE_VERSION: 22
-  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
+  GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper-lz
   
 jobs:
   get-lambdas:
@@ -54,7 +57,7 @@ jobs:
 
   deploy2gchr:
     needs: get-lambdas
-    environment: dev
+    environment: lz-dev
     outputs:
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
     permissions:

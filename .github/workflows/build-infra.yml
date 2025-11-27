@@ -51,7 +51,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
-            echo "environment=dev" >> $GITHUB_ENV
+            echo "environment=lz-dev" >> $GITHUB_ENV
           fi
 
       - name: Checkout repository

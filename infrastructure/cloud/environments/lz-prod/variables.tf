@@ -164,3 +164,8 @@ variable "lambda_retry_attempts" {
   description = "Number of retry attempts for Lambda functions"
   type        = number
 }
+
+variable "lza_log_archive_account_id" {
+  description = "LZA Log Archive Account ID for centralized ALB logging"
+  type        = string
+}

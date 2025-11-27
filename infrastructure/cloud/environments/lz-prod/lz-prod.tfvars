@@ -41,3 +41,4 @@ efs_config = {
 get_assigned_cases_lambda_timeout = 10 // minutes
 lambda_long_timeout               = 15 // minutes
 lambda_retry_attempts             = 3
+lza_log_archive_account_id        = "897722703828"

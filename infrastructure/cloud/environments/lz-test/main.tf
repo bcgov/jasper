@@ -126,17 +126,20 @@ module "tg_api" {
 
 # Setup ALB Listeners
 module "alb" {
-  source                = "../../modules/ALB"
-  environment           = var.environment
-  app_name              = var.app_name
-  lb_name               = var.lb_name
-  cert_domain_name      = var.cert_domain_name
-  tg_web_arn            = module.tg_web.tg_arn
-  tg_api_arn            = module.tg_api.tg_arn
-  web_security_group_id = data.aws_security_group.web_sg.id
-  vpc_id                = data.aws_vpc.vpc.id
-  web_subnets_ids       = module.subnets.web_subnets_ids
-  depends_on            = [module.subnets]
+  source                     = "../../modules/ALB"
+  environment                = var.environment
+  app_name                   = var.app_name
+  lb_name                    = var.lb_name
+  cert_domain_name           = var.cert_domain_name
+  tg_web_arn                 = module.tg_web.tg_arn
+  tg_api_arn                 = module.tg_api.tg_arn
+  web_security_group_id      = data.aws_security_group.web_sg.id
+  vpc_id                     = data.aws_vpc.vpc.id
+  web_subnets_ids            = module.subnets.web_subnets_ids
+  depends_on                 = [module.subnets]
+  account_id                 = data.aws_caller_identity.current.account_id
+  region                     = var.region
+  lza_log_archive_account_id = var.lza_log_archive_account_id
 }
 
 # Setup EFS Files storage
@@ -153,19 +156,19 @@ module "efs_files" {
 
 # Create Lambda Functions
 module "lambda" {
-  source               = "../../modules/Lambda"
-  environment          = var.environment
-  app_name             = var.app_name
-  lambda_role_arn      = module.iam.lambda_role_arn
-  apigw_execution_arn  = module.apigw.apigw_execution_arn
-  lambda_ecr_repo_url  = module.initial.lambda_ecr.ecr_repo_url
-  lambda_memory_size   = var.lambda_memory_size
-  subnet_ids           = module.subnets.app_subnets_ids
-  sg_ids               = [data.aws_security_group.app_sg.id]
-  lambda_secrets       = module.secrets_manager.lambda_secrets
-  ecs_cluster_name     = module.ecs_cluster.ecs_cluster.name
-  efs_access_point_arn = module.efs_files.access_point_arn
-  efs_mount_path       = var.efs_config.mount_path
+  source                            = "../../modules/Lambda"
+  environment                       = var.environment
+  app_name                          = var.app_name
+  lambda_role_arn                   = module.iam.lambda_role_arn
+  apigw_execution_arn               = module.apigw.apigw_execution_arn
+  lambda_ecr_repo_url               = module.initial.lambda_ecr.ecr_repo_url
+  lambda_memory_size                = var.lambda_memory_size
+  subnet_ids                        = module.subnets.app_subnets_ids
+  sg_ids                            = [data.aws_security_group.app_sg.id]
+  lambda_secrets                    = module.secrets_manager.lambda_secrets
+  ecs_cluster_name                  = module.ecs_cluster.ecs_cluster.name
+  efs_access_point_arn              = module.efs_files.access_point_arn
+  efs_mount_path                    = var.efs_config.mount_path
   region                            = var.region
   account_id                        = data.aws_caller_identity.current.account_id
   get_assigned_cases_lambda_timeout = var.get_assigned_cases_lambda_timeout

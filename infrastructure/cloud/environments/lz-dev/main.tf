@@ -126,19 +126,20 @@ module "tg_api" {
 
 # Setup ALB Listeners
 module "alb" {
-  source                = "../../modules/ALB"
-  environment           = var.environment
-  app_name              = var.app_name
-  lb_name               = var.lb_name
-  cert_domain_name      = var.cert_domain_name
-  tg_web_arn            = module.tg_web.tg_arn
-  tg_api_arn            = module.tg_api.tg_arn
-  web_security_group_id = data.aws_security_group.web_sg.id
-  vpc_id                = data.aws_vpc.vpc.id
-  web_subnets_ids       = module.subnets.web_subnets_ids
-  depends_on            = [module.subnets]
-  account_id            = data.aws_caller_identity.current.account_id
-  region                = var.region
+  source                     = "../../modules/ALB"
+  environment                = var.environment
+  app_name                   = var.app_name
+  lb_name                    = var.lb_name
+  cert_domain_name           = var.cert_domain_name
+  tg_web_arn                 = module.tg_web.tg_arn
+  tg_api_arn                 = module.tg_api.tg_arn
+  web_security_group_id      = data.aws_security_group.web_sg.id
+  vpc_id                     = data.aws_vpc.vpc.id
+  web_subnets_ids            = module.subnets.web_subnets_ids
+  depends_on                 = [module.subnets]
+  account_id                 = data.aws_caller_identity.current.account_id
+  region                     = var.region
+  lza_log_archive_account_id = var.lza_log_archive_account_id
 }
 
 # Setup EFS Files storage

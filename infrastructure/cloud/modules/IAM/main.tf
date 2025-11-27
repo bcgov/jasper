@@ -184,16 +184,6 @@ resource "aws_iam_role_policy" "ecs_execution_policy" {
           "lambda:InvokeFunction"
         ],
         "Resource" : "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.app_name}-get-assigned-cases-request-lambda-${var.environment}"
-      },
-      # policy to be able to mount efs
-      {
-        "Effect" : "Allow",
-        "Action" : [
-          "elasticfilesystem:DescribeFileSystems",
-          "elasticfilesystem:CreateMountTarget",
-          "elasticfilesystem:DeleteMountTarget"
-        ],
-        "Resource" : "*"
       }
     ]
   })
@@ -361,32 +351,6 @@ resource "aws_iam_policy" "lambda_role_policy" {
         "Resource" : [
           "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.app_name}-*-repo-${var.environment}"
         ]
-      },
-      {
-        "Action" : [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:AttachNetworkInterface",
-          "ec2:DetachNetworkInterface"
-        ],
-        "Effect" : "Allow",
-        "Resource" : "*",
-        # "Condition" : {
-        #   "ArnLikeIfExists" : {
-        #     "ec2:Vpc" : "arn:aws:ec2:${var.region}:*:vpc/${var.vpc_id}"
-        #   }
-        # }
-      },
-      # policy to be able to mount efs
-      {
-        "Effect" : "Allow",
-        "Action" : [
-          "elasticfilesystem:DescribeFileSystems",
-          "elasticfilesystem:CreateMountTarget",
-          "elasticfilesystem:DeleteMountTarget"
-        ],
-        "Resource" : "*"
       }
     ]
   })

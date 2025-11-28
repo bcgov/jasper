@@ -240,7 +240,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 if (int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId))
                 {
                     judge = await GetJudgeById(context, externalJudgeId);
-                } 
+                }
                 else
                 {
                     logger.LogWarning("Failed to parse external judge id: {ExternalJudgeId}", context.Principal.ExternalJudgeId());
@@ -350,7 +350,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 var groupIds = groupResult.Payload.Select(g => g.Id).ToList();
                 userDto.GroupIds = groupIds;
                 userDto.IsActive = groupIds.Count > 0;
-
+                userDto.JudgeId = matchingUser.UserId;
             }
             catch (Exception e)
             {

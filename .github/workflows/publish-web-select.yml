@@ -7,9 +7,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
-        default: 'dev'
+        default: 'lz-dev'
         type: choice
         options:
+          - lz-dev
+          - lz-test
+          - lz-prod
           - dev
           - test
           - prod

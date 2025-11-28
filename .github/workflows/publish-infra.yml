@@ -14,25 +14,27 @@ on:
       environment:
         description: 'Select target environment'
         required: true
-        default: 'dev'
+        default: 'lz-dev'
         type: choice
         options:
+          - lz-dev
+          - lz-test
+          - lz-prod
           - dev
           - test
           - prod
 
 env:
-  WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
+  WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'lz-dev' }}"
   DUMMY_IMAGE_NAME: dummy-image
   GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
-  APP_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-app-repo-${{ inputs.environment || 'dev' }}
-  LAMBDA_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-lambda-repo-${{ inputs.environment || 'dev' }}
-
+  APP_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-app-repo-${{ inputs.environment || 'lz-dev' }}
+  LAMBDA_ECR_REPO_URL: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.APP_NAME }}-lambda-repo-${{ inputs.environment || 'lz-dev' }}
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.environment || 'dev' }}
+      name: ${{ inputs.environment || 'lz-dev' }}
     env:
       TF_VAR_app_name: ${{ vars.APP_NAME }}
       TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
@@ -53,7 +55,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
-            echo "environment=dev" >> $GITHUB_ENV
+            echo "environment=lz-dev" >> $GITHUB_ENV
           fi
 
       - name: Checkout repository

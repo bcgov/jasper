@@ -48,7 +48,7 @@ jobs:
 
   deploy2gchr:
     needs: get-lambdas
-    environment: dev
+    environment: lz-dev
     outputs:
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
     permissions:
@@ -115,12 +115,12 @@ jobs:
     name: Deploy to DEV
     needs: [get-lambdas, deploy2gchr]
     env:
-      ENVIRONMENT: dev
+      ENVIRONMENT: lz-dev
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: dev
+    environment: lz-dev
 
     strategy:
       matrix:
@@ -142,17 +142,16 @@ jobs:
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
           lambda: ${{ matrix.lambda }}
           short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
-
   deploy2test:
     name: Deploy to TEST
     needs: [get-lambdas, deploy2gchr, deploy2dev]
     env:
-      ENVIRONMENT: test
+      ENVIRONMENT: lz-test
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: test
+    environment: lz-test
 
     strategy:
       matrix:
@@ -179,12 +178,12 @@ jobs:
     name: Deploy to PROD
     needs: [get-lambdas, deploy2gchr, deploy2dev, deploy2test]
     env:
-      ENVIRONMENT: prod
+      ENVIRONMENT: lz-prod
     permissions:
       id-token: write
       packages: write
     runs-on: ubuntu-latest
-    environment: prod
+    environment: lz-prod
 
     strategy:
       matrix:

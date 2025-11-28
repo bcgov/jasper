@@ -10,49 +10,86 @@ data "aws_subnet" "subnets" {
   id       = each.key
 }
 
-locals {
-  temp_web_subnets = {
-    for tag_value in var.web_subnet_names :
-    tag_value => [
-      for subnet in data.aws_subnet.subnets :
-      {
-        id         = subnet.id
-        cidr_block = subnet.cidr_block
-      } if substr(subnet.tags["Name"], 0, length(tag_value)) == tag_value
-    ]
+
+data "aws_subnets" "web" {
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
   }
 
-  web_subnets = flatten([
-    for subnets in local.temp_web_subnets : subnets
-  ])
-
-  temp_app_subnets = {
-    for tag_value in var.app_subnet_names :
-    tag_value => [
-      for subnet in data.aws_subnet.subnets :
-      {
-        id         = subnet.id
-        cidr_block = subnet.cidr_block
-      } if substr(subnet.tags["Name"], 0, length(tag_value)) == tag_value
-    ]
+  filter {
+    name   = "tag:Name"
+    values = var.web_subnet_names
   }
-
-  app_subnets = flatten([
-    for subnets in local.temp_app_subnets : subnets
-  ])
-
-  temp_data_subnets = {
-    for tag_value in var.data_subnet_names :
-    tag_value => [
-      for subnet in data.aws_subnet.subnets :
-      {
-        id         = subnet.id
-        cidr_block = subnet.cidr_block
-      } if substr(subnet.tags["Name"], 0, length(tag_value)) == tag_value
-    ]
-  }
-
-  data_subnets = flatten([
-    for subnets in local.temp_data_subnets : subnets
-  ])
 }
+
+data "aws_subnets" "app" {
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+
+  filter {
+    name   = "tag:Name"
+    values = var.app_subnet_names
+  }
+}
+
+data "aws_subnets" "data" {
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+
+  filter {
+    name   = "tag:Name"
+    values = var.data_subnet_names
+  }
+}
+
+# locals {
+#   temp_web_subnets = {
+#     for tag_value in var.web_subnet_names :
+#     tag_value => [
+#       for subnet in data.aws_subnet.subnets :
+#       {
+#         id         = subnet.id
+#         cidr_block = subnet.cidr_block
+#       } if substr(subnet.tags["Name"], 0, length(tag_value)) == tag_value
+#     ]
+#   }
+
+#   web_subnets = flatten([
+#     for subnets in local.temp_web_subnets : subnets
+#   ])
+
+#   temp_app_subnets = {
+#     for tag_value in var.app_subnet_names :
+#     tag_value => [
+#       for subnet in data.aws_subnet.subnets :
+#       {
+#         id         = subnet.id
+#         cidr_block = subnet.cidr_block
+#       } if substr(subnet.tags["Name"], 0, length(tag_value)) == tag_value
+#     ]
+#   }
+
+#   app_subnets = flatten([
+#     for subnets in local.temp_app_subnets : subnets
+#   ])
+
+#   temp_data_subnets = {
+#     for tag_value in var.data_subnet_names :
+#     tag_value => [
+#       for subnet in data.aws_subnet.subnets :
+#       {
+#         id         = subnet.id
+#         cidr_block = subnet.cidr_block
+#       } if substr(subnet.tags["Name"], 0, length(tag_value)) == tag_value
+#     ]
+#   }
+
+#   data_subnets = flatten([
+#     for subnets in local.temp_data_subnets : subnets
+#   ])
+# }

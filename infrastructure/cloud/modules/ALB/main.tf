@@ -5,13 +5,93 @@ data "aws_acm_certificate" "default_lb_cert" {
   statuses    = ["ISSUED"]
 }
 
-data "aws_lb" "default_lb" {
-  name = var.lb_name
+
+resource "aws_lb" "default_lb" {
+  name               = "${var.environment}-app-svc-lb"
+  internal           = true
+  load_balancer_type = "application"
+  security_groups    = [var.web_security_group_id]
+  subnets            = var.web_subnets_ids
+
+  # Access logs are enabled and managed by LZA organizational policy
+  # This block satisfies security scanning tools while allowing LZA to manage the actual configuration
+  access_logs {
+    bucket  = "aws-accelerator-elb-access-logs-${var.lza_log_archive_account_id}-${var.region}"
+    prefix  = "${var.account_id}/elb-${var.environment}-app-svc-lb"
+    enabled = true
+  }
+
+  tags = {
+    Public = "True"
+  }
+  lifecycle {
+    ignore_changes = [
+      tags,
+      access_logs
+    ]
+  }
 }
+
+# resource "aws_lb_target_group" "api_lb_tg" {
+#   name        = "jasper-api-tg-${var.environment}"
+#   port        = 5000
+#   protocol    = "HTTP"
+#   vpc_id      = var.vpc_id
+#   target_type = "ip"
+#   health_check {
+#     enabled             = true
+#     interval            = 30
+#     path                = "/api/test/headers"
+#     port                = 5000
+#     protocol            = "HTTP"
+#     healthy_threshold   = 3
+#     unhealthy_threshold = 3
+#     timeout             = 5
+#     matcher             = "200"
+#   }
+
+#   tags = {
+#     Name = "jasper-api-tg-${var.environment}"
+#   }
+#   lifecycle {
+#     ignore_changes = [
+#       tags
+#     ]
+#   }
+# }
+
+
+# resource "aws_lb_target_group" "web_lb_tg" {
+#   name        = "jasper-web-tg-${var.environment}"
+#   port        = 8080
+#   protocol    = "HTTPS"
+#   vpc_id      = var.vpc_id
+#   target_type = "ip"
+#   health_check {
+#     enabled             = true
+#     interval            = 30
+#     path                = "/"
+#     port                = 8080
+#     protocol            = "HTTPS"
+#     healthy_threshold   = 3
+#     unhealthy_threshold = 3
+#     timeout             = 5
+#     matcher             = "200"
+#   }
+
+#   tags = {
+#     Name = "jasper-web-tg-${var.environment}"
+#   }
+#   lifecycle {
+#     ignore_changes = [
+#       tags
+#     ]
+#   }
+# }
 
 # HTTP Listener
 resource "aws_lb_listener" "http_listener" {
-  load_balancer_arn = data.aws_lb.default_lb.arn
+  load_balancer_arn = aws_lb.default_lb.arn
   port              = 80
   protocol          = "HTTP"
 
@@ -31,7 +111,7 @@ resource "aws_lb_listener" "http_listener" {
 
 # HTTPS Listener
 resource "aws_lb_listener" "https_listener" {
-  load_balancer_arn = data.aws_lb.default_lb.arn
+  load_balancer_arn = aws_lb.default_lb.arn
   port              = 443
   protocol          = "HTTPS"
   certificate_arn   = data.aws_acm_certificate.default_lb_cert.arn
@@ -46,10 +126,36 @@ resource "aws_lb_listener" "https_listener" {
   }
 }
 
+
+# health check rule
+resource "aws_lb_listener_rule" "gov_healthcheck_lr" {
+  listener_arn = aws_lb_listener.https_listener.arn
+  priority     = 10
+
+  condition {
+    path_pattern {
+      values = ["/bcgovhealthcheck"]
+    }
+  }
+
+  action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "application/json"
+      status_code  = 200
+    }
+  }
+
+  tags = {
+    Name = "${var.app_name}-gov-healthcheck-lr-${var.environment}"
+  }
+}
+
+
 # Web Listener Rule
 resource "aws_lb_listener_rule" "web_lr" {
   listener_arn = aws_lb_listener.https_listener.arn
-  priority     = 200
+  priority     = 201
 
   condition {
     path_pattern {

@@ -7,9 +7,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
-        default: 'dev'
+        default: 'lz-dev'
         type: choice
         options:
+          - lz-dev
+          - lz-test
+          - lz-prod
           - dev
           - test
           - prod
@@ -54,7 +57,7 @@ jobs:
 
   deploy2gchr:
     needs: get-lambdas
-    environment: dev
+    environment: lz-dev
     outputs:
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
     permissions:

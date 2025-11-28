@@ -14,21 +14,24 @@ on:
       environment:
         description: 'Select target environment'
         required: true
-        default: 'dev'
+        default: 'lz-dev'
         type: choice
         options:
+          - lz-dev
+          - lz-test
+          - lz-prod
           - dev
           - test
           - prod
 
 env:
-  WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'dev' }}"
+  WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'lz-dev' }}"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.environment || 'dev' }}
+      name: ${{ inputs.environment || 'lz-dev' }}
     env:
       TF_VAR_app_name: ${{ vars.APP_NAME }}
       TF_VAR_environment: ${{ vars.ENVIRONMENT_NAME }}
@@ -48,7 +51,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
-            echo "environment=dev" >> $GITHUB_ENV
+            echo "environment=lz-dev" >> $GITHUB_ENV
           fi
 
       - name: Checkout repository

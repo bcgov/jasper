@@ -13,7 +13,7 @@ env:
   WORKING_DIRECTORY: ./web
 
 jobs:
-  build-and-test:
+  build-and-test-lz:
     runs-on: ubuntu-latest
 
     strategy:

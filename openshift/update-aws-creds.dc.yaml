@@ -20,11 +20,12 @@ labels:
   template: update-aws-creds-template
 metadata:
   # Append the target environment:
-  # - update-aws-creds-dev
-  # - update-aws-creds-test
-  # - update-aws-creds-prod
-  # - update-aws-creds-lz-dev
-  name: update-aws-creds-dev
+  # name: update-aws-creds-dev
+  # name: update-aws-creds-test
+  # name: update-aws-creds-prod
+  name: update-aws-creds-lz-dev
+  # name: update-aws-creds-lz-test
+  # name: update-aws-creds-lz-prod
 
 objects:
   - apiVersion: v1
@@ -142,7 +143,7 @@ parameters:
   - name: AWS_SECRET_PREFIX
     description: AWS secret prefix to handle new landing zone environment
     required: false
-    value: ""
+    value: "lz-"
 
   - name: CRON_SCHEDULE
     description: Cronjob Schedule

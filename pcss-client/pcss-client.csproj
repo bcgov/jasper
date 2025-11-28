@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="NETStandard.Library" Version="2.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="NSwag.AspNetCore" Version="14.6.2" />
+    <PackageReference Include="NSwag.AspNetCore" Version="14.6.3" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0">
       <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>

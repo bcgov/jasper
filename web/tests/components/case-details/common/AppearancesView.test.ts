@@ -65,52 +65,6 @@ describe('AppearancesView.vue', () => {
     expect(wrapper.find('v-data-table-virtual').exists()).toBe(true);
   });
 
-  it('renders only past appearances', () => {
-    props.appearances[1].appearanceDt = '1999-10-01';
-    const wrapper = mount(AppearancesView, {
-      props,
-      global: {
-        plugins: [pinia],
-      },
-    });
-
-    expect(wrapper.findAll('v-card').length).toBe(1);
-    expect(
-      wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
-    ).toBe('Past Appearances');
-  });
-
-  it('renders only future appearances', () => {
-    props.appearances[0].appearanceDt = '3030-10-01';
-    const wrapper = mount(AppearancesView, {
-      props,
-      global: {
-        plugins: [pinia],
-      },
-    });
-
-    expect(wrapper.findAll('v-card').length).toBe(1);
-    expect(
-      wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
-    ).toBe('Future Appearances');
-  });
-
-  it('renders both past and future appearances', () => {
-    const wrapper = mount(AppearancesView, {
-      props,
-      global: {
-        plugins: [pinia],
-      },
-    });
-
-    expect(
-      wrapper.findAll('v-card')?.at(0)?.findAll('v-col')?.at(0)?.text()
-    ).toBe('Past Appearances');
-    expect(
-      wrapper.findAll('v-card')?.at(1)?.findAll('v-col')?.at(0)?.text()
-    ).toBe('Future Appearances');
-  });
-
   it('filters appearances by selected accused', () => {
     const wrapper: any = mount(AppearancesView, {
       props,
@@ -120,9 +74,7 @@ describe('AppearancesView.vue', () => {
     });
 
     wrapper.vm.selectedAccused = 'Doe, John';
-    const appearances = wrapper.vm.pastAppearances.concat(
-      wrapper.vm.futureAppearances
-    );
+    const appearances = wrapper.vm.appearances;
     expect(appearances.length).toBe(1);
   });
 
@@ -145,7 +97,7 @@ describe('AppearancesView.vue', () => {
       'name',
       'appearanceStatusCd',
     ];
-    const headerKeys = wrapper.vm.pastHeaders.map((header: any) => header.key);
+    const headerKeys = wrapper.vm.headers.map((header: any) => header.key);
 
     expect(headerKeys).toEqual(expectedHeaderKeys);
   });
@@ -169,7 +121,7 @@ describe('AppearancesView.vue', () => {
       'judgeFullNm',
       'appearanceStatusCd',
     ];
-    const headerKeys = wrapper.vm.pastHeaders.map((header: any) => header.key);
+    const headerKeys = wrapper.vm.headers.map((header: any) => header.key);
 
     expect(headerKeys).toEqual(expectedHeaderKeys);
   });

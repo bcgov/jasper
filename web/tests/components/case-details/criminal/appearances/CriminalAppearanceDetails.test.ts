@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import CriminalAppearanceDetails from 'CMP/case-details/criminal/appearances/CriminalAppearanceDetails.vue';
 import { FilesService } from '@/services/FilesService';
 
@@ -15,13 +15,14 @@ describe('CriminalAppearanceDetails.vue', () => {
     ],
     document: [{ id: 1, name: 'Document 1' }],
     party: [{ id: 1, name: 'Party 1' }],
+    justinCounsel: { fullName: 'Josh Traill' }
   };
 
   beforeEach(() => {
     filesService = {
-      criminalAppearanceDetails: vi.fn().mockResolvedValue([
+      criminalAppearanceDetails: vi.fn().mockResolvedValue(
         mockDetails
-      ])
+      )
     };
     (FilesService as any).mockReturnValue(filesService);
     wrapper = mount(CriminalAppearanceDetails, {
@@ -33,13 +34,13 @@ describe('CriminalAppearanceDetails.vue', () => {
       props: {
         fileId: '123',
         appearanceId: '456',
-        partId: '789',
-        isPast: true
+        partId: '789'
       },
     });
   });
 
-  it('renders the tabs correctly', () => {
+  it('renders the tabs correctly', async () => {
+    await flushPromises();
     const tabs = wrapper.findAll('v-tab');
     expect(tabs.length).toBe(3);
     expect(tabs[0].text()).toBe('Charges');
@@ -65,7 +66,13 @@ describe('CriminalAppearanceDetails.vue', () => {
     expect(wrapper.findComponent({name: 'AppearanceCounsel'}).exists()).toBe(true);
   });
 
-    it('does not render AppearanceCounsel component when is future appearance', async () => {
+  it('does not render Counsel tab when no counsel exists', async () => {
+    filesService = {
+      criminalAppearanceDetails: vi.fn().mockResolvedValue(
+        { ...mockDetails, justinCounsel: null }
+      )
+    };
+    (FilesService as any).mockReturnValue(filesService);
     wrapper = mount(CriminalAppearanceDetails, {
       global: {
         provide: {
@@ -75,11 +82,15 @@ describe('CriminalAppearanceDetails.vue', () => {
       props: {
         fileId: '123',
         appearanceId: '456',
-        partId: '789',
-        isPast: false
+        partId: '789'
       },
     });
-    wrapper.vm.tab = 'counsel';
-    expect(wrapper.findComponent({name: 'AppearanceCounsel'}).exists()).toBe(false);
+    
+    await flushPromises();
+
+    const tabs = wrapper.findAll('v-tab');
+    expect(tabs.length).toBe(2);
+    expect(tabs[0].text()).toBe('Charges');
+    expect(tabs[1].text()).toBe('Appearance Methods');
   });
 });

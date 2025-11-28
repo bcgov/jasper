@@ -2,7 +2,7 @@
   <v-tabs v-model="tab" align-tabs="start" slider-color="primary">
     <v-tab value="charges">Charges</v-tab>
     <v-tab value="methods">Appearance Methods</v-tab>
-    <v-tab value="counsel" v-if="isPast">Counsel</v-tab>
+    <v-tab value="counsel" v-if="details.justinCounsel && Object.keys(details.justinCounsel).length > 0">Counsel</v-tab>
   </v-tabs>
 
   <v-card-text>
@@ -21,7 +21,7 @@
           <CriminalAppearanceMethods :appearanceMethods="details.appearanceMethods" />
         </v-tabs-window-item>
         <v-tabs-window-item value="counsel">
-          <AppearanceCounsel v-if="isPast" />
+          <AppearanceCounsel :counsel="details.justinCounsel" />
         </v-tabs-window-item>
       </v-skeleton-loader>
     </v-tabs-window>
@@ -40,7 +40,6 @@
     fileId: string;
     appearanceId: string;
     partId: string;
-    isPast: boolean;
   }>();
 
   const filesService = inject<FilesService>('filesService');

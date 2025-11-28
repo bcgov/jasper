@@ -240,7 +240,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 if (int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId))
                 {
                     judge = await GetJudgeById(context, externalJudgeId);
-                } 
+                }
                 else
                 {
                     logger.LogWarning("Failed to parse external judge id: {ExternalJudgeId}", context.Principal.ExternalJudgeId());
@@ -350,7 +350,11 @@ namespace Scv.Api.Infrastructure.Authentication
                 var groupIds = groupResult.Payload.Select(g => g.Id).ToList();
                 userDto.GroupIds = groupIds;
                 userDto.IsActive = groupIds.Count > 0;
-
+                if (matchingUser.UserId.HasValue)
+                {
+                    var judge = await GetJudgeByUserId(context, matchingUser.UserId.Value);
+                    userDto.JudgeId = judge.PersonId;
+                }
             }
             catch (Exception e)
             {
@@ -366,6 +370,14 @@ namespace Scv.Api.Infrastructure.Authentication
             var judges = await dashboardService.GetJudges();
 
             return judges.FirstOrDefault(j => j.PersonId == judgeId);
+        }
+
+        private static async Task<PersonSearchItem> GetJudgeByUserId(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int userId)
+        {
+            var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
+            var judges = await dashboardService.GetJudges();
+
+            return judges.FirstOrDefault(j => j.UserId == userId);
         }
 
         private static bool IsMongoDbConfigured(IConfiguration configuration)

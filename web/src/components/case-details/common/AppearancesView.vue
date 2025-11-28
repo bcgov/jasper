@@ -9,39 +9,36 @@
       />
     </v-col>
   </v-row>
-  <div
-    v-if="pastAppearances.length || futureAppearances.length"
-    v-for="(appearances, type) in {
-      past: pastAppearances,
-      future: futureAppearances,
-    }"
-    :key="type"
-  >
     <v-card
       class="my-6"
       color="var(--bg-gray-500)"
       elevation="0"
-      v-if="appearances?.length"
     >
       <v-card-text>
         <v-row align="center" no-gutters>
           <v-col class="text-h5" cols="6">
-            {{ type === 'future' ? 'Future Appearances' : 'Past Appearances' }}
+            Appearances
           </v-col>
         </v-row>
       </v-card-text>
     </v-card>
     <v-data-table-virtual
       v-if="appearances?.length"
-      :headers="type === 'future' ? futureHeaders : pastHeaders"
+      :headers="headers"
       :items="appearances"
       :sort-by="sortBy"
-      :height="pastAppearances.length && futureAppearances.length ? 400 : 800"
+      :height="800"
       item-value="appearanceId"
       fixed-header
       show-expand
       variant="hover"
     >
+      <template v-slot:header.appearanceTm>
+        TIME<br />EST. /DURATION
+      </template>
+      <template v-slot:header.courtLocation>
+        LOCATION ROOM
+      </template>
       <template
         v-slot:item.data-table-expand="{
           internalItem,
@@ -68,7 +65,6 @@
               :fileId="fileNumber"
               :appearanceId="item.appearanceId"
               :partId="(item as criminalApprDetailType).partId"
-              :isPast="type === 'past'"
             />
           </td>
         </tr>
@@ -101,14 +97,12 @@
         </span>
       </template>
       <template v-slot:item.courtLocation="{ value, item }">
-        {{ value }} <br />
-        <span style="color: gray">Room {{ item.courtRoomCd }}</span>
+        {{ value }} &nbsp; <span style="color: gray">{{ item.courtRoomCd }}</span>
       </template>
       <template v-slot:item.appearanceStatusCd="{ value }">
         <AppearanceStatusChip :status="value" />
       </template>
     </v-data-table-virtual>
-  </div>
   <div v-else>
     <v-card class="my-6" color="var(--bg-gray-500)" elevation="0">
       <v-card-text>
@@ -118,8 +112,8 @@
       </v-card-text>
     </v-card>
     <v-data-table-virtual
-      :headers="pastHeaders"
-      :items="pastAppearances"
+      :headers="headers"
+      :items="appearances"
       no-data-text="No appearances"
     >
     </v-data-table-virtual>
@@ -149,7 +143,7 @@
     courtClassCd: string;
   }>();
 
-  const pastHeaders = [
+  const headers = [
     {
       key: 'data-table-expand',
     },
@@ -164,10 +158,10 @@
     { title: '', key: 'DARS', sortable: false, width: '1%' },
     { title: 'REASON', key: 'appearanceReasonCd' },
     {
-      title: 'TIME DURATION',
+      title: 'TIME EST. /DURATION',
       key: 'appearanceTm',
     },
-    { title: 'LOCATION ROOM', key: 'courtLocation' },
+    { title: 'LOCATION ROOM ACTIVITY', key: 'courtLocation' },
     {
       title: 'PRESIDER',
       key: 'judgeFullNm',
@@ -187,36 +181,6 @@
           },
         ]
       : []),
-    { title: 'STATUS', key: 'appearanceStatusCd' },
-  ];
-  const futureHeaders = [
-    {
-      key: 'data-table-expand',
-    },
-    {
-      title: 'DATE',
-      key: 'appearanceDt',
-      value: (item) => formatDateToDDMMMYYYY(item.appearanceDt),
-      sortRaw: (a: ApprDetailType, b: ApprDetailType) =>
-        new Date(a.appearanceDt).getTime() - new Date(b.appearanceDt).getTime(),
-    },
-    { title: 'REASON', key: 'appearanceReasonCd' },
-    {
-      title: 'TIME DURATION',
-      key: 'appearanceTm',
-    },
-    { title: 'LOCATION ROOM', key: 'courtLocation' },
-    { title: 'ACTIVITY', key: 'activity' },
-    ...(props.isCriminal
-      ? [
-          {
-            title: 'ACCUSED',
-            key: 'name',
-            value: (item) => formatToFullName(item.lastNm, item.givenNm),
-          },
-        ]
-      : []),
-
     { title: 'STATUS', key: 'appearanceStatusCd' },
   ];
 
@@ -239,16 +203,8 @@
     !selectedAccused.value ||
     formatToFullName(appearance.lastNm, appearance.givenNm) ===
       selectedAccused.value;
-  const futureAppearances = computed(() =>
+  const appearances = computed(() =>
     props.appearances
-      ?.filter((app: ApprDetailType) => new Date(app?.appearanceDt) > now)
-      .filter((app) =>
-        props.isCriminal ? filterByAccused(app as criminalApprDetailType) : true
-      )
-  );
-  const pastAppearances = computed(() =>
-    props.appearances
-      ?.filter((app: ApprDetailType) => new Date(app?.appearanceDt) <= now)
       .filter((app) =>
         props.isCriminal ? filterByAccused(app as criminalApprDetailType) : true
       )

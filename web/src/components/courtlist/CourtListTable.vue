@@ -41,9 +41,9 @@
         </td>
       </tr>
     </template>
-    <template #item.accusedNm="{ item }">
+    <template #item.accusedNm="{ item, value }">
       <a href="#" @click.prevent="viewCaseDetails([item])">
-        {{ item.accusedNm || item.styleOfCause }}
+        {{ value }}
       </a>
     </template>
     <template v-slot:group-header="{ item, columns, isGroupOpen, toggleGroup }">
@@ -102,7 +102,7 @@
         </template>
       </v-tooltip>
     </template>
-    <template v-slot:item.counsel="{ item }">
+    <template v-slot:item.counsel="{ item, value }">
       <v-tooltip
         :disabled="
           (item.counsel?.length ?? 0) + (item.accusedCounselNm ? 1 : 0) < 2
@@ -117,7 +117,7 @@
                 (item?.accusedCounselNm ? 1 : 0) + (item.counsel?.length ?? 0) >
                 1,
             }"
-            >{{ renderCounsel(item.accusedCounselNm, item.counsel) }}</span
+            >{{ value }}</span
           >
         </template>
         <span
@@ -244,13 +244,15 @@
     {
       title: 'ACCUSED/PARTIES',
       key: 'accusedNm',
+      value: (item: CourtListAppearance) =>
+        item.accusedNm || item.styleOfCause,
     },
     { title: 'TIME', key: 'appearanceTm' },
     { title: 'EST.', key: 'estimatedTime' },
     { title: 'ROOM', key: 'courtRoomCd' },
     { title: 'REASON', key: 'appearanceReasonCd' },
     { title: 'FILE MARKERS', key: 'fileMarkers', sortable: false },
-    { title: 'COUNSEL', key: 'counsel' },
+    { title: 'COUNSEL', key: 'counsel', value: (item: CourtListAppearance) => renderName(item.counsel ?? [], item.accusedCounselNm) },
     { title: 'CROWN', key: 'crown' },
     {
       title: 'CASE AGE (days)',

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -15,12 +14,10 @@ using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Civil.AppearanceDetail;
 using Scv.Api.Models.Civil.Appearances;
-using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Search;
 using Scv.Db.Contants;
 using Scv.Db.Models;
-using CivilAppearanceDetail = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
 
 namespace Scv.Api.Services.Files
@@ -358,6 +355,51 @@ namespace Scv.Api.Services.Files
                 appearanceId, physicalFileId);
         }
 
+        public async Task<IList<CivilDocument>> GetBinderDocumentsAsync(string fileId)
+        {
+            async Task<CivilFileDetailResponse> FileDetails() => await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
+            async Task<CivilFileContent> FileContent() => await _filesClient.FilesCivilFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
+
+            var fileDetailTask = _cache.GetOrAddAsync($"GetBinderDocumentsAsync-CivilFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
+            var fileContentTask = _cache.GetOrAddAsync($"GetBinderDocumentsAsync-CivilFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
+
+            await Task.WhenAll(fileDetailTask, fileContentTask);
+
+            var detail = _mapper.Map<RedactedCivilFileDetailResponse>(fileDetailTask.Result);
+            var fileContentCivilFile = fileContentTask.Result?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
+
+            var labels = new Dictionary<string, string>
+            {
+                { LabelConstants.PHYSICAL_FILE_ID, detail.PhysicalFileId },
+                { LabelConstants.COURT_CLASS_CD, detail.CourtClassCd.ToString() },
+                { LabelConstants.JUDGE_ID, _currentUser.UserId().ToString() }
+            };
+
+            var binders = await _binderService.GetByLabels(labels);
+
+            if (!binders.Succeeded || binders.Payload.Count == 0)
+            {
+                return [];
+            }
+
+            var binder = binders.Payload[0];
+            var binderDocIds = binder.Documents.Select(d => d.DocumentId);
+
+            var binderDocIdsOrdered = binder.Documents.Select((d, index) => new { d.DocumentId, Order = index }).ToDictionary(x => x.DocumentId, x => x.Order);
+
+            var csrDocs = PopulateDetailCsrsDocuments([.. fileDetailTask.Result.Appearance.Where(a => binderDocIds.Contains(a.AppearanceId))]);
+
+            var mappedDetail = _mapper.Map<RedactedCivilFileDetailResponse>(detail);
+            var otherDocs = mappedDetail.Document.Where(d => binderDocIds.Contains(d.CivilDocumentId));
+
+            var orderedDocs = csrDocs.Concat(otherDocs)
+                .OrderBy(d => binderDocIdsOrdered.TryGetValue(d.CivilDocumentId, out var order) ? order : int.MaxValue);
+
+            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], mappedDetail, fileContentCivilFile, false, false);
+
+            return binderDocuments;
+        }
+
         #endregion Methods
 
         #region Helpers
@@ -478,18 +520,18 @@ namespace Scv.Api.Services.Files
             foreach (var refDoc in detail.ReferenceDocument.Where(refDoc => refDoc != null))
             {
                 var referenceDoc = new CivilDocument
-                    {
-                        Appearance = null,
-                        CivilDocumentId = refDoc.ReferenceDocumentId,
-                        DocumentTypeCd = refDoc.ReferenceDocumentTypeCd,
-                        DocumentTypeDescription = refDoc.ReferenceDocumentTypeDsc,
-                        Category =  char.ToUpper(DocumentCategory.REFERENCE[0]) + DocumentCategory.REFERENCE[1..].ToLower(),
-                        ImageId = refDoc.ObjectGuid,
-                        FiledDt = refDoc.EnterDtm,
-                    };
-                detail.Document.Add(referenceDoc);
+                {
+                    Appearance = null,
+                    CivilDocumentId = refDoc.ReferenceDocumentId,
+                    DocumentTypeCd = refDoc.ReferenceDocumentTypeCd,
+                    DocumentTypeDescription = refDoc.ReferenceDocumentTypeDsc,
+                    Category = char.ToUpper(DocumentCategory.REFERENCE[0]) + DocumentCategory.REFERENCE[1..].ToLower(),
+                    ImageId = refDoc.ObjectGuid,
+                    FiledDt = refDoc.EnterDtm,
+                };
+                documents.Add(referenceDoc);
             }
-            return detail.Document;
+            return documents;
         }
 
         private async Task<ICollection<CivilParty>> PopulateDetailParties(ICollection<CivilParty> parties, ICollection<ClParty> courtListParties)
@@ -656,40 +698,6 @@ namespace Scv.Api.Services.Files
             }
 
             return documents;
-        }
-
-        private async Task<IList<CivilDocument>> PopulateBinderDocuments(CivilFileDetailResponse detail, CvfcCivilFile fileContentCivilFile)
-        {
-
-            var labels = new Dictionary<string, string>
-            {
-                { LabelConstants.PHYSICAL_FILE_ID, detail.PhysicalFileId },
-                { LabelConstants.COURT_CLASS_CD, detail.CourtClassCd.ToString() },
-                { LabelConstants.JUDGE_ID, _currentUser.UserId().ToString() }
-            };
-
-            var binders = await _binderService.GetByLabels(labels);
-
-            if (!binders.Succeeded || binders.Payload.Count == 0)
-            {
-                return [];
-            }
-
-            var binder = binders.Payload[0];
-            var binderDocIds = binder.Documents.Select(d => d.DocumentId);
-
-            var binderDocIdsOrdered = binder.Documents.Select((d, index) => new { d.DocumentId, Order = index }).ToDictionary(x => x.DocumentId, x => x.Order);
-
-            var csrDocs = PopulateDetailCsrsDocuments([.. detail.Appearance.Where(a => binderDocIds.Contains(a.AppearanceId))]);
-            var mappedDetail = _mapper.Map<RedactedCivilFileDetailResponse>(detail);
-            var otherDocs = mappedDetail.Document.Where(d => binderDocIds.Contains(d.CivilDocumentId));
-
-            var orderedDocs = csrDocs.Concat(otherDocs)
-                .OrderBy(d => binderDocIdsOrdered.TryGetValue(d.CivilDocumentId, out var order) ? order : int.MaxValue);
-
-            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], mappedDetail, fileContentCivilFile, false, false);
-
-            return binderDocuments;
         }
 
         #endregion Civil Appearance Details

@@ -1,26 +1,13 @@
 import { FilesService } from '@/services/FilesService';
-import { BinderService } from '@/services/BinderService';
 import { flushPromises, mount } from '@vue/test-utils';
 import CivilAppearanceDetails from 'CMP/civil/CivilAppearanceDetails.vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { useCommonStore } from '@/stores';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
 
 vi.mock('@/services/FilesService');
-vi.mock('@/services/BinderService');
-vi.mock('@/stores');
-
-beforeEach(() => {
-  setActivePinia(createPinia());
-  (useCommonStore as any).mockReturnValue({
-    userInfo: { userId: 'testUser123' }
-  });
-});
 
 describe('CivilAppearanceDetails.vue', () => {
   let filesService: any;
-  let binderService: any;
 
   const mockDocumentDetails = {
     agencyId: 'AGENCY123',
@@ -35,23 +22,16 @@ describe('CivilAppearanceDetails.vue', () => {
     ],
   };
 
-  const mockBinderResponse = {
-    succeeded: true,
-    payload: [
-      {
-        id: 'binder1',
-        labels: {},
-        documents: [{ documentId: '1', order: 1 }],
-      },
-    ],
-  };
+  const mockBinderDocuments = [
+    { civilDocumentId: '1', name: 'Document 1' },
+    { civilDocumentId: '2', name: 'Document 2' },
+  ];
 
   const mountComponent = (showBinder = true, courtClassCd = 'C') => {
     return mount(CivilAppearanceDetails, {
       global: {
         provide: {
           filesService,
-          binderService,
         },
       },
       props: {
@@ -64,28 +44,29 @@ describe('CivilAppearanceDetails.vue', () => {
   };
 
   beforeEach(() => {
+    setActivePinia(createPinia());
     filesService = {
       civilAppearanceDocuments: vi.fn().mockResolvedValue(mockDocumentDetails),
       civilAppearanceMethods: vi.fn().mockResolvedValue(mockMethods),
-      civilAppearanceParty: vi.fn().mockResolvedValue([]), // Add mock for missing method
-    };
-    binderService = {
-      getBinders: vi.fn().mockResolvedValue(mockBinderResponse),
+      civilBinderDocuments: vi.fn().mockResolvedValue(mockBinderDocuments),
+      civilAppearanceParty: vi.fn().mockResolvedValue({}),
     };
     (FilesService as any).mockReturnValue(filesService);
-    (BinderService as any).mockReturnValue(binderService);
   });
 
-  it('renders the tabs correctly', () => {
+  it('renders the tabs correctly', async () => {
     const wrapper = mountComponent();
+    await flushPromises();
+
     const tabs = wrapper.findAll('v-tab');
-    expect(tabs.length).toBe(3);
-    expect(tabs[0].text()).toBe('Scheduled Documents');
-    expect(tabs[1].text()).toBe('Judicial Binder');
-    expect(tabs[2].text()).toBe('Scheduled Parties');
+    expect(tabs.length).toBe(4);
+    expect(tabs[0].text()).toContain('Scheduled Documents');
+    expect(tabs[1].text()).toContain('Judicial Binder');
+    expect(tabs[2].text()).toContain('Scheduled Parties');
+    expect(tabs[3].text()).toContain('Appearance Methods');
   });
 
-  it('calls appearance documents and methods apis with correct parameters', async () => {
+  it('calls appearance documents, methods, and binder documents apis with correct parameters', async () => {
     mountComponent();
     await flushPromises();
     expect(filesService.civilAppearanceDocuments).toHaveBeenCalledWith(
@@ -96,16 +77,13 @@ describe('CivilAppearanceDetails.vue', () => {
       '123',
       '456'
     );
+    expect(filesService.civilBinderDocuments).toHaveBeenCalledWith('123');
   });
 
-  it('calls binder service with correct labels when showBinder is true', async () => {
+  it('calls binder service with correct parameters when showBinder is true', async () => {
     mountComponent(true, 'C');
     await flushPromises();
-    expect(binderService.getBinders).toHaveBeenCalledWith({
-      physicalFileId: '123',
-      courtClassCd: 'C',
-      judgeId: 'testUser123',
-    });
+    expect(filesService.civilBinderDocuments).toHaveBeenCalled();
   });
 
   it('renders ScheduledDocuments component when "documents" tab is active', async () => {
@@ -130,7 +108,9 @@ describe('CivilAppearanceDetails.vue', () => {
   it('passes correct props to ScheduledParties component', async () => {
     const wrapper: any = mountComponent();
     wrapper.vm.tab = 'parties';
-    const scheduledPartiesComponent = wrapper.findComponent({ name: 'ScheduledParties' });
+    const scheduledPartiesComponent = wrapper.findComponent({
+      name: 'ScheduledParties',
+    });
     expect(scheduledPartiesComponent.props('fileId')).toBe('123');
     expect(scheduledPartiesComponent.props('appearanceId')).toBe('456');
   });
@@ -154,52 +134,61 @@ describe('CivilAppearanceDetails.vue', () => {
   });
 
   it('disables binder tab when binder is loading or has no documents', async () => {
-    // Mock empty binder response to test disabled state
-    const emptyBinderResponse = {
-      succeeded: true,
-      payload: [
-        {
-          id: 'binder1',
-          labels: {},
-          documents: [],
-        },
-      ],
-    };
-    binderService.getBinders = vi.fn().mockResolvedValue(emptyBinderResponse);
-    
+    filesService.civilBinderDocuments = vi.fn().mockResolvedValue([]);
+
     const wrapper: any = mountComponent();
     await flushPromises();
-    
+
     const binderTab = wrapper.find('[data-testid="binder-tab"]');
     expect(binderTab.attributes('disabled')).toBeDefined();
   });
 
+  it('enables binder tab when binder documents exist', async () => {
+    const wrapper: any = mountComponent();
+    await flushPromises();
+
+    const binderTab = wrapper.find('[data-testid="binder-tab"]');
+
+    expect(binderTab.attributes('disabled')).not.toBe('true');
+  });
+
   it('shows methods tab when appearance methods exist', async () => {
     const wrapper: any = mountComponent();
-    await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async operations
+    await new Promise((resolve) => setTimeout(resolve, 0)); // Wait for async operations
     const tabs = wrapper.findAll('v-tab');
-    expect(tabs.some((tab: any) => tab.text().includes('Appearance Methods'))).toBe(true);
+    expect(
+      tabs.some((tab: any) => tab.text().includes('Appearance Methods'))
+    ).toBe(true);
   });
 
   it('handles error in binder loading gracefully', async () => {
-    binderService.getBinders.mockRejectedValue(new Error('Binder error'));
+    filesService.civilBinderDocuments.mockRejectedValue(
+      new Error('Binder error')
+    );
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     mountComponent();
     await flushPromises();
-    
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Error occured while retrieving user\'s binders'));
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Error occured while retrieving user's binders")
+    );
     consoleSpy.mockRestore();
   });
 
   it('handles error in methods loading gracefully', async () => {
-    filesService.civilAppearanceMethods.mockRejectedValue(new Error('Methods error'));
+    filesService.civilAppearanceMethods.mockRejectedValue(
+      new Error('Methods error')
+    );
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     mountComponent();
     await flushPromises();
-    
-    expect(consoleSpy).toHaveBeenCalledWith('Error occurred while retrieving appearance methods:', expect.any(Error));
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error occurred while retrieving appearance methods:',
+      expect.any(Error)
+    );
     consoleSpy.mockRestore();
   });
 });

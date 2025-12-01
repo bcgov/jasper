@@ -2,9 +2,17 @@ import {
   GeneratePdfRequest,
   GeneratePdfResponse,
 } from '@/components/documents/models/GeneratePdf';
-import { CivilAppearanceDetailParty, CivilAppearanceDetailDocuments, CivilAppearanceDetailMethods } from '@/types/civil/jsonTypes/index';
+import {
+  CivilAppearanceDetailDocuments,
+  CivilAppearanceDetailMethods,
+  CivilAppearanceDetailParty,
+  civilDocumentType,
+} from '@/types/civil/jsonTypes/index';
 import { CourtFileSearchResponse } from '@/types/courtFileSearch';
-import { CriminalAppearanceDetails, CriminalAppearanceDocuments } from '@/types/criminal/jsonTypes/index';
+import {
+  CriminalAppearanceDetails,
+  CriminalAppearanceDocuments,
+} from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
 
 export class FilesService {
@@ -33,17 +41,16 @@ export class FilesService {
 
   async civilAppearanceDocuments(
     fileId: string,
-    appearanceId: string,
-    includeJudicialBinder: boolean = false
+    appearanceId: string
   ): Promise<CivilAppearanceDetailDocuments> {
     return this.httpService.get<any>(
-      `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/documents?includeJudicialBinder=${includeJudicialBinder}`
+      `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/documents`
     );
   }
 
   async civilAppearanceParty(
     fileId: string,
-    appearanceId: string,
+    appearanceId: string
   ): Promise<CivilAppearanceDetailParty> {
     return this.httpService.get<any>(
       `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/party`
@@ -52,7 +59,7 @@ export class FilesService {
 
   async civilAppearanceMethods(
     fileId: string,
-    appearanceId: string,
+    appearanceId: string
   ): Promise<CivilAppearanceDetailMethods> {
     return this.httpService.get<any>(
       `${this.baseUrl}/civil/${fileId}/appearance/${appearanceId}/methods`
@@ -84,6 +91,12 @@ export class FilesService {
     return this.httpService.post<GeneratePdfResponse>(
       `${this.baseUrl}/document/generate-pdf`,
       requestData
+    );
+  }
+
+  async civilBinderDocuments(fileId: string): Promise<civilDocumentType[]> {
+    return this.httpService.get<civilDocumentType[]>(
+      `${this.baseUrl}/civil/${fileId}/binder-documents`
     );
   }
 

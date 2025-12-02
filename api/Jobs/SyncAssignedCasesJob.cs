@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Hangfire;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +15,7 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Api.Services;
+using PCSSCommonConstants = PCSSCommon.Common.Constants;
 
 namespace Scv.Api.Jobs;
 
@@ -214,11 +215,12 @@ public class SyncAssignedCasesJob(
             return;
         }
 
-        var scheduledData = scheduledCases.Select(c => PopulateMissingInfoForScheduledCase(c)).ToList();
+        var scheduledDataTask = scheduledCases.Select(c => PopulateMissingInfoForScheduledCase(c));
+        var scheduledData = await Task.WhenAll(scheduledDataTask);
 
         await _caseService.AddRangeAsync([.. scheduledData]);
 
-        this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Count);
+        this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Length);
     }
 
     private async Task<ICollection<Case>> GetScheduledCases()
@@ -254,7 +256,44 @@ public class SyncAssignedCasesJob(
         }
     }
 
-    private CaseDto PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)
+    private async Task<CaseDto> PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)
+    {
+        var caseDto = this.Mapper.Map<CaseDto>(@case);
+        var nextApprDate = DateTime.ParseExact(
+                caseDto.DueDate,
+                PCSSCommonConstants.DATE_FORMAT,
+                CultureInfo.InvariantCulture);
+
+        // Attempt to retrieve the appropriate Accused/Participant and "full" Court File Number via Court List endpoint.
+        // If unsuccessful, fall back to populating Style of Cause from participants list.
+        var courtList = await _courtListService.GetJudgeCourtListAppearances(caseDto.JudgeId.GetValueOrDefault(), nextApprDate);
+        if (courtList == null || courtList.Items.Count == 0)
+        {
+            this.Logger.LogWarning("Could not find court list for JudgeId: {JudgeId}, AppearanceDate: {AppearanceDate}. PhysicalFileId: {PhysicalFileId}",
+                caseDto.JudgeId, nextApprDate, caseDto.PhysicalFileId);
+            return PopulateScheduledCaseWithDefaults(@case);
+        }
+
+        var appearance = courtList.Items
+            .SelectMany(i => i.Appearances)
+            .FirstOrDefault(a => a.AppearanceId == caseDto.AppearanceId
+                && a.ProfPartId == caseDto.PartId
+                && (a.PhysicalFileId == caseDto.PhysicalFileId || a.JustinNo == caseDto.PhysicalFileId)
+                && a.AslFeederAdjudicators.Any(asl => asl.JudiciaryPersonId == caseDto.JudgeId));
+        if (appearance == null)
+        {
+            this.Logger.LogWarning("Could not find appearance for JudgeId: {JudgeId}, PhysicalFileId: {PhysicalFileId}, AppearanceDate: {AppearanceDate}, AppearanceId: {AppearanceId}, ProfPartId: {ProfPartId}",
+                caseDto.JudgeId, caseDto.PhysicalFileId, nextApprDate, caseDto.AppearanceId, caseDto.PartId);
+            return PopulateScheduledCaseWithDefaults(@case);
+        }
+
+        caseDto.StyleOfCause = appearance.AccusedNm;
+        caseDto.CourtFileNumber = appearance.CourtFileNumber;
+
+        return caseDto;
+    }
+
+    private CaseDto PopulateScheduledCaseWithDefaults(PCSSCommon.Models.Case @case)
     {
         var caseDto = this.Mapper.Map<CaseDto>(@case);
 

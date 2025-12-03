@@ -12,6 +12,7 @@ COPY ${WEB_SRC}/package*.json ./
 
 USER root
 
+# Keep as is as this is for local development
 RUN npm install
 
 COPY ${WEB_SRC} .

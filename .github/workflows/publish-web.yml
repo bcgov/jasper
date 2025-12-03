@@ -25,6 +25,7 @@ jobs:
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
     permissions:
       contents: read
+      packages: write
 
     strategy:
       matrix:

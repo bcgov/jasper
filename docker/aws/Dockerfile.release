@@ -2,6 +2,7 @@
 ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION} AS build
+ARG WEB_SRC
 
 # Copy package.json to install dependencies once
 WORKDIR /app

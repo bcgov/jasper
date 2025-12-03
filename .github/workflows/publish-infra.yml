@@ -57,22 +57,22 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: tfsec
-        uses: aquasecurity/tfsec-sarif-action@21ded20e8ca120cd9d3d6ab04ef746477542a608
+        uses: aquasecurity/tfsec-sarif-action@21ded20e8ca120cd9d3d6ab04ef746477542a608 # v0.1.4
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
           tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@fe4161a26a8629af62121b670040955b330f9af2
+        uses: github/codeql-action/upload-sarif@fe4161a26a8629af62121b670040955b330f9af2 # v4.31.6
         with:
           sarif_file: tfsec.sarif
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-skip-session-tagging: true
           aws-region: ${{ vars.AWS_REGION }}
@@ -81,7 +81,7 @@ jobs:
           role-session-name: ci-deployment
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: 1.13.1
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
       - name: Log in to the GHCR
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -116,7 +116,7 @@ jobs:
 
       - name: Setup Image Metadata
         id: meta
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: |
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.DUMMY_IMAGE_NAME }}
@@ -124,12 +124,12 @@ jobs:
             type=raw,value=latest
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.0
         with:
           driver: docker
 
       - name: Build ${{ env.DUMMY_IMAGE_NAME }} image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           push: true
           file: ./docker/dummy-image/Dockerfile.release
@@ -138,7 +138,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: Check dummy-image in App ECR exists
         id: app-ecr-check

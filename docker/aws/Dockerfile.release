@@ -5,7 +5,9 @@ FROM node:${NODE_VERSION} AS build
 
 # Copy package.json to install dependencies once
 WORKDIR /app
-COPY /package.json .
+
+# Copy package.json and package-lock.json
+COPY ${WEB_SRC}/package*.json .
 
 RUN npm ci --ignore-scripts
 

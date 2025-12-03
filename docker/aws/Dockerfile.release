@@ -1,6 +1,5 @@
 # Use base Node image for building
 ARG NODE_VERSION=22
-ARG NPM_CONFIG_IGNORE_SCRIPTS=true
 
 FROM node:${NODE_VERSION} AS build
 
@@ -8,7 +7,7 @@ FROM node:${NODE_VERSION} AS build
 WORKDIR /app
 COPY /package.json .
 
-RUN npm_config_ignore_scripts=${NPM_CONFIG_IGNORE_SCRIPTS} npm ci
+RUN npm ci --ignore-scripts
 
 # Copy the rest of the code
 COPY . .

@@ -5,7 +5,6 @@ ARG NGINX_RUNTIME_SRC=./nginx-runtime
 ARG VUE_ON_NGINX_SRC=./vue-on-nginx
 ARG WEB_SRC=./web
 ARG NPM_INSTALL_ARGS=""
-ARG NPM_CONFIG_IGNORE_SCRIPTS=true
 
 ###################################################################################
 # 1. Build web-runtime
@@ -67,7 +66,6 @@ FROM registry.access.redhat.com/ubi9/nodejs-${NODE_VERSION} AS artifacts
 ARG NODE_VERSION
 ARG WEB_SRC
 ARG NPM_INSTALL_ARGS
-ARG NPM_CONFIG_IGNORE_SCRIPTS
 
 USER root
 WORKDIR /opt/app-root/src
@@ -76,7 +74,7 @@ WORKDIR /opt/app-root/src
 COPY ${WEB_SRC}/package*.json .
 
 # Install packages
-RUN npm_config_ignore_scripts=${NPM_CONFIG_IGNORE_SCRIPTS} npm ci ${NPM_INSTALL_ARGS}
+RUN npm ci ${NPM_INSTALL_ARGS} --ignore-scripts
 
 # Copy the rest of the code
 COPY ${WEB_SRC} .

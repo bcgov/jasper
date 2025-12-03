@@ -40,22 +40,28 @@ runs:
     - name: Set reusable variables
       id: vars
       shell: bash
+      env:
+        GH_APP_NAME: ${{ inputs.app_name }}
+        GH_TIER_NAME: ${{ inputs.tier_name }}
+        GH_ENVIRONMENT: ${{ inputs.environment }}
+        GH_AWS_ACCOUNT: ${{ inputs.aws_account }}
+        GH_REGION: ${{ inputs.region }}
       run: |
-        echo "task_definition_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-td-${{ inputs.environment }}" >> $GITHUB_OUTPUT
-        echo "container_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-container-${{ inputs.environment }}" >> $GITHUB_OUTPUT
-        echo "ecs_cluster_name=${{ inputs.app_name }}-app-cluster-${{ inputs.environment }}" >> $GITHUB_OUTPUT
-        echo "ecs_service_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-ecs-service-${{ inputs.environment }}" >> $GITHUB_OUTPUT
-        echo "full_ecr_repo_url=${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-app-repo-${{ inputs.environment }}" >> $GITHUB_OUTPUT
+        echo "task_definition_name=${GH_APP_NAME}-${GH_TIER_NAME}-td-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
+        echo "container_name=${GH_APP_NAME}-${GH_TIER_NAME}-container-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
+        echo "ecs_cluster_name=${GH_APP_NAME}-app-cluster-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
+        echo "ecs_service_name=${GH_APP_NAME}-${GH_TIER_NAME}-ecs-service-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
+        echo "full_ecr_repo_url=${GH_AWS_ACCOUNT}.dkr.ecr.${GH_REGION}.amazonaws.com/${GH_APP_NAME}-app-repo-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
 
     - name: Log in to the GHCR
-      uses: docker/login-action@v2
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ inputs.ghcr_token }}
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
       with:
         role-skip-session-tagging: true
         aws-region: ${{ inputs.region }}
@@ -64,16 +70,21 @@ runs:
         role-session-name: ci-deployment
 
     - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v2
+      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
     - name: Check ECR Image exists
       id: ecr-check
       shell: bash
+      env:
+        GH_IMAGE_NAME: ${{ inputs.image_name }}
+        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_APP_NAME: ${{ inputs.app_name }}
+        GH_ENVIRONMENT: ${{ inputs.environment }}
       run: |
-        IMAGE_TAG=${{ inputs.image_name }}-${{ inputs.short_sha}}
-        REPOSITORY_NAME=${{ inputs.app_name }}-app-repo-${{ inputs.environment }}
+        IMAGE_TAG="${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+        REPOSITORY_NAME="${GH_APP_NAME}-app-repo-${GH_ENVIRONMENT}"
         
-        IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+        IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
         if [ -z "$IMAGE_EXISTS" ]; then
           echo "Image with tag $IMAGE_TAG does not exist."
@@ -86,19 +97,26 @@ runs:
     - name: Push if Docker image does not exist
       if: steps.ecr-check.outputs.exists == 'false'
       shell: bash
+      env:
+        GH_GITHUB_IMAGE_REPO: ${{ inputs.github_image_repo }}
+        GH_IMAGE_NAME: ${{ inputs.image_name }}
+        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_FULL_ECR_REPO_URL: ${{ steps.vars.outputs.full_ecr_repo_url }}
       run: |
-        docker pull ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}}
-        docker tag ${{ inputs.github_image_repo }}/${{ inputs.image_name }}:${{ inputs.short_sha}} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
-        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ inputs.image_name }}-${{ inputs.short_sha }}
+        docker pull "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_SHORT_SHA}"
+        docker tag "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_SHORT_SHA}" "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+        docker push "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
 
     - name: Download task definition
       shell: bash
+      env:
+        GH_TASK_DEFINITION_NAME: ${{ steps.vars.outputs.task_definition_name }}
       run: |
-        aws ecs describe-task-definition --task-definition ${{ steps.vars.outputs.task_definition_name }} --query taskDefinition > ${{ steps.vars.outputs.task_definition_name }}.json
+        aws ecs describe-task-definition --task-definition "$GH_TASK_DEFINITION_NAME" --query taskDefinition > "${GH_TASK_DEFINITION_NAME}.json"
 
     - name: Fill in new image ID in task definition
       id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      uses: aws-actions/amazon-ecs-render-task-definition@cbed19f1b86bbb18f59cfffde7107b93cc9b75da # v1.8.1
       with:
         task-definition: ${{ steps.vars.outputs.task_definition_name }}.json
         container-name: ${{ steps.vars.outputs.container_name }}
@@ -106,11 +124,17 @@ runs:
 
     - name: Update SSM Param Store
       shell: bash
+      env:
+        GH_APP_NAME: ${{ inputs.app_name }}
+        GH_TIER_NAME: ${{ inputs.tier_name }}
+        GH_ENVIRONMENT: ${{ inputs.environment }}
+        GH_IMAGE_NAME: ${{ inputs.image_name }}
+        GH_SHORT_SHA: ${{ inputs.short_sha }}
       run: |
-        aws ssm put-parameter --name "/images/${{ inputs.app_name }}-${{ inputs.tier_name }}-image-param-${{ inputs.environment }}" --value "${{ inputs.image_name }}-${{ inputs.short_sha }}" --type "String" --overwrite
+        aws ssm put-parameter --name "/images/${GH_APP_NAME}-${GH_TIER_NAME}-image-param-${GH_ENVIRONMENT}" --value "${GH_IMAGE_NAME}-${GH_SHORT_SHA}" --type "String" --overwrite
 
     - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      uses: aws-actions/amazon-ecs-deploy-task-definition@7b5ba17dae98c8fd463ddf2cef977d3be43322c5 # v2.5.0
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: ${{ steps.vars.outputs.ecs_service_name }}

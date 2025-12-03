@@ -74,7 +74,7 @@ WORKDIR /opt/app-root/src
 COPY ${WEB_SRC}/package*.json .
 
 # Install packages
-RUN npm install ${NPM_INSTALL_ARGS}
+RUN npm ci ${NPM_INSTALL_ARGS} --ignore-scripts
 
 # Copy the rest of the code
 COPY ${WEB_SRC} .

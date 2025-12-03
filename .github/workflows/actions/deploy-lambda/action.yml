@@ -36,15 +36,14 @@ runs:
   steps:
     - name: Parse Resource and Lambda Name
       shell: bash
+      env:
+        GH_LAMBDA: ${{ inputs.lambda }}
       run: |
-        echo "Lambda: ${{ inputs.lambda }}"
-        
-        # Store the input value in a variable
-        LAMBDA_INPUT="${{ inputs.lambda }}"
+        echo "Lambda: $GH_LAMBDA"
         
         # Extract RESOURCE and LAMBDA
-        RESOURCE="${LAMBDA_INPUT%%/*}"
-        LAMBDA="${LAMBDA_INPUT##*/}"
+        RESOURCE="${GH_LAMBDA%%/*}"
+        LAMBDA="${GH_LAMBDA##*/}"
         
         # Save variables as ENV var
         echo "RESOURCE=$RESOURCE" >> $GITHUB_ENV
@@ -54,19 +53,25 @@ runs:
     - name: Set reusable variables
       id: vars
       shell: bash
+      env:
+        GH_AWS_ACCOUNT: ${{ inputs.aws_account }}
+        GH_REGION: ${{ inputs.region }}
+        GH_APP_NAME: ${{ inputs.app_name }}
+        GH_ENVIRONMENT: ${{ inputs.environment }}
+        GH_TIER_NAME: ${{ inputs.tier_name }}
       run: |
-        echo "full_ecr_repo_url=${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com/${{ inputs.app_name }}-lambda-repo-${{ inputs.environment }}" >> $GITHUB_OUTPUT
-        echo "container_name=${{ inputs.app_name }}-${{ inputs.tier_name }}-container-${{ inputs.environment }}" >> $GITHUB_OUTPUT
+        echo "full_ecr_repo_url=${GH_AWS_ACCOUNT}.dkr.ecr.${GH_REGION}.amazonaws.com/${GH_APP_NAME}-lambda-repo-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
+        echo "container_name=${GH_APP_NAME}-${GH_TIER_NAME}-container-${GH_ENVIRONMENT}" >> $GITHUB_OUTPUT
 
     - name: Log in to the GHCR
-      uses: docker/login-action@v2
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ inputs.ghcr_token }}
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
       with:
         role-skip-session-tagging: true
         aws-region: ${{ inputs.region }}
@@ -75,16 +80,21 @@ runs:
         role-session-name: ci-deployment
 
     - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v2
+      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
     - name: Check ECR Image exists
       id: ecr-check
       shell: bash
+      env:
+        GH_IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_APP_NAME: ${{ inputs.app_name }}
+        GH_ENVIRONMENT: ${{ inputs.environment }}
       run: |
-        IMAGE_TAG=${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
-        REPOSITORY_NAME=${{ inputs.app_name }}-lambda-repo-${{ inputs.environment }}
+        IMAGE_TAG="${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+        REPOSITORY_NAME="${GH_APP_NAME}-lambda-repo-${GH_ENVIRONMENT}"
         
-        IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+        IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
         if [ -z "$IMAGE_EXISTS" ]; then
           echo "Image with tag $IMAGE_TAG does not exist."
@@ -97,14 +107,26 @@ runs:
     - name: Push if Docker image does not exist
       if: steps.ecr-check.outputs.exists == 'false'
       shell: bash
+      env:
+        GH_GITHUB_IMAGE_REPO: ${{ inputs.github_image_repo }}
+        GH_IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_FULL_ECR_REPO_URL: ${{ steps.vars.outputs.full_ecr_repo_url }}
       run: |
-        docker pull ${{ inputs.github_image_repo }}/${{ env.IMAGE_NAME }}:${{ inputs.short_sha}}
-        docker tag ${{ inputs.github_image_repo }}/${{ env.IMAGE_NAME }}:${{ inputs.short_sha}} ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
-        docker push ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
+        docker pull "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_SHORT_SHA}"
+        docker tag "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_SHORT_SHA}" "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+        docker push "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
 
     - name: Update Lambda Function
       shell: bash
+      env:
+        GH_APP_NAME: ${{ inputs.app_name }}
+        GH_LAMBDA: ${{ env.LAMBDA }}
+        GH_ENVIRONMENT: ${{ inputs.environment }}
+        GH_FULL_ECR_REPO_URL: ${{ steps.vars.outputs.full_ecr_repo_url }}
+        GH_IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        GH_SHORT_SHA: ${{ inputs.short_sha }}
       run: |
         aws lambda update-function-code \
-          --function-name ${{ inputs.app_name }}-${{ env.LAMBDA }}-lambda-${{ inputs.environment }} \
-          --image-uri ${{ steps.vars.outputs.full_ecr_repo_url }}:${{ env.IMAGE_NAME }}-${{ inputs.short_sha }}
+          --function-name "${GH_APP_NAME}-${GH_LAMBDA}-lambda-${GH_ENVIRONMENT}" \
+          --image-uri "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"

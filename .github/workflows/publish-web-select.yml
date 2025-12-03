@@ -33,6 +33,9 @@ env:
 jobs:
   build:
     name: Build, Create and Push Image
+    permissions:
+      contents: read
+      packages: write
     runs-on: ubuntu-latest
     outputs:
       short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
@@ -44,7 +47,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -55,7 +58,7 @@ jobs:
           node_version: ${{ matrix.node-major-version }}.${{ matrix.node-minor-version }}
 
       - name: Log in to the GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -67,13 +70,13 @@ jobs:
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.0
         with:
           driver: docker
 
       - name: Setup ${{ env.WEB_IMAGE_NAME }} Image Metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: |
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.WEB_IMAGE_NAME }}
@@ -81,7 +84,7 @@ jobs:
             type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
 
       - name: Build ${{ env.WEB_IMAGE_NAME }} image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           push: true
           context: .
@@ -108,7 +111,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.event.inputs.branch }}
 

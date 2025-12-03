@@ -2,12 +2,15 @@
 ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION} AS build
+ARG WEB_SRC
 
 # Copy package.json to install dependencies once
 WORKDIR /app
-COPY /package.json .
 
-RUN npm install
+# Copy package.json and package-lock.json
+COPY ${WEB_SRC}/package*.json .
+
+RUN npm ci --ignore-scripts
 
 # Copy the rest of the code
 COPY . .

@@ -168,8 +168,8 @@ namespace Scv.Api.Controllers
 
             logger.LogInformation(
                 "Transcript search requested - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, ReturnChildRecords: {ReturnChildRecords}",
-                request.PhysicalFileId,
-                request.MdocJustinNo,
+                request.PhysicalFileId?.Replace("\r", "").Replace("\n", ""),
+                request.MdocJustinNo?.Replace("\r", "").Replace("\n", ""),
                 request.ReturnChildRecords);
 
             try
@@ -183,16 +183,16 @@ namespace Scv.Api.Controllers
                 {
                     logger.LogInformation(
                         "No transcripts found - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}",
-                        request.PhysicalFileId,
-                        request.MdocJustinNo);
+                        request.PhysicalFileId?.Replace("\r", "").Replace("\n", ""),
+                        request.MdocJustinNo?.Replace("\r", "").Replace("\n", ""));
                     return NotFound();
                 }
 
                 logger.LogInformation(
                     "Found {Count} transcript(s) - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}",
                     result.Count(),
-                    request.PhysicalFileId,
-                    request.MdocJustinNo);
+                    request.PhysicalFileId?.Replace("\r", "").Replace("\n", ""),
+                    request.MdocJustinNo?.Replace("\r", "").Replace("\n", ""));
 
                 return Ok(result);
             }
@@ -201,8 +201,8 @@ namespace Scv.Api.Controllers
                 logger.LogError(
                     ex,
                     "Transcripts API exception - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, Status: {StatusCode}",
-                    request.PhysicalFileId,
-                    request.MdocJustinNo,
+                    request.PhysicalFileId?.Replace("\r", "").Replace("\n", ""),
+                    request.MdocJustinNo?.Replace("\r", "").Replace("\n", ""),
                     ex.StatusCode);
 
                 if (ex.StatusCode == 404)

@@ -232,10 +232,14 @@ namespace Scv.Api.Controllers
                 return BadRequest("Order ID and Document ID are required.");
             }
 
+            // Sanitize user input before logging
+            var sanitizedOrderId = orderId.Replace("\r", "").Replace("\n", "");
+            var sanitizedDocumentId = documentId.Replace("\r", "").Replace("\n", "");
+
             logger.LogInformation(
                 "Transcript document requested - OrderId: {OrderId}, DocumentId: {DocumentId}",
-                orderId,
-                documentId);
+                sanitizedOrderId,
+                sanitizedDocumentId);
 
             try
             {
@@ -253,8 +257,8 @@ namespace Scv.Api.Controllers
 
                 logger.LogInformation(
                     "Transcript document retrieved successfully - OrderId: {OrderId}, DocumentId: {DocumentId}",
-                    orderId,
-                    documentId);
+                    sanitizedOrderId,
+                    sanitizedDocumentId);
 
                 return Ok(new { base64Pdf = result.Base64Pdf });
             }
@@ -263,8 +267,8 @@ namespace Scv.Api.Controllers
                 logger.LogError(
                     ex,
                     "Error retrieving transcript document - OrderId: {OrderId}, DocumentId: {DocumentId}",
-                    orderId,
-                    documentId);
+                    sanitizedOrderId,
+                    sanitizedDocumentId);
                 return StatusCode(500, "An error occurred while retrieving the transcript document.");
             }
         }

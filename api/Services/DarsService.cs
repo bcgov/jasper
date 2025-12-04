@@ -4,6 +4,7 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using Scv.Api.Helpers;
 using Scv.Api.Models.Dars;
 using System;
@@ -127,10 +128,11 @@ namespace Scv.Api.Services
             string mdocJustinNo,
             bool returnChildRecords)
         {
+            var sanitizedMdocJustinNo = SanitizeForLogging(mdocJustinNo);
             logger.LogInformation(
                 "GetCompletedDocuments called - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, ReturnChildRecords: {ReturnChildRecords}",
                 physicalFileId,
-                mdocJustinNo,
+                sanitizedMdocJustinNo,
                 returnChildRecords);
 
             var result = await transcriptsServicesClient.GetCompletedDocumentsBaseAsync(
@@ -142,6 +144,12 @@ namespace Scv.Api.Services
                 "GetCompletedDocuments returned {ResultCount} documents",
                 result?.Result?.Count ?? 0);
 
+        private static string SanitizeForLogging(string input)
+        {
+            if (input == null) return null;
+            // Remove CR and LF and optionally all control characters except tab (0x09)
+            return Regex.Replace(input, @"[\r\n]", string.Empty);
+        }
             var mappedDocuments = mapper.Map<IEnumerable<TranscriptDocument>>(result?.Result);
             return mappedDocuments ?? Enumerable.Empty<TranscriptDocument>();
         }

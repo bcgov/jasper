@@ -129,9 +129,10 @@ namespace Scv.Api.Services
             bool returnChildRecords)
         {
             var sanitizedMdocJustinNo = SanitizeForLogging(mdocJustinNo);
+            var sanitizedPhysicalFileId = SanitizeForLogging(physicalFileId);
             logger.LogInformation(
                 "GetCompletedDocuments called - PhysicalFileId: {PhysicalFileId}, MdocJustinNo: {MdocJustinNo}, ReturnChildRecords: {ReturnChildRecords}",
-                physicalFileId,
+                sanitizedPhysicalFileId,
                 sanitizedMdocJustinNo,
                 returnChildRecords);
 

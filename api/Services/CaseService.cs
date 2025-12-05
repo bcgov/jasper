@@ -66,11 +66,18 @@ public class CaseService(
                     .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase)))
                 .OrderBy(c => c.DueDate);
 
+            var others = judgeCases
+                .Where(c => !string.IsNullOrWhiteSpace(c.Reason)
+                    && !ContinuationReasonCodes
+                        .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(c => c.DueDate);
+
             var response = new CaseResponse
             {
                 // Scheduled decisions should be listed first followed by reserved judgments
                 ReservedJudgments = this.Mapper.Map<List<CaseDto>>(scheduledDecisions.Concat(reservedJudgments)),
-                ScheduledContinuations = this.Mapper.Map<List<CaseDto>>(scheduledContinuations)
+                ScheduledContinuations = this.Mapper.Map<List<CaseDto>>(scheduledContinuations),
+                Others = this.Mapper.Map<List<CaseDto>>(others)
             };
 
             return OperationResult<CaseResponse>.Success(response);

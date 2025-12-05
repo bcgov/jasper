@@ -13,4 +13,8 @@ public class CaseResponse
     /// List of cases related to scheduled continuations.
     /// </summary>
     public List<CaseDto> ScheduledContinuations { get; set; } = [];
+    /// <summary>
+    /// List of other seized cases
+    /// </summary>
+    public List<CaseDto> Others { get; set; } = [];
 }

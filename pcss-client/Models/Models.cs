@@ -3589,4 +3589,15 @@ public partial class Participant
     public System.Collections.Generic.ICollection<Charge> Charges { get; set; }
 }
 
+
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
+public partial class AppearanceReason
+{
+    [Newtonsoft.Json.JsonProperty("code", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string Code { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("shortDesc", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string ShortDesc { get; set; }
+}
+
 #pragma warning restore 8618

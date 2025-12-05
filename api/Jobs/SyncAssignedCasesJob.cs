@@ -8,6 +8,7 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.LookupServices;
 using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
@@ -30,6 +31,7 @@ public class SyncAssignedCasesJob(
     ICaseService caseService,
     CourtListService courtListService,
     JudicialCalendarServicesClient jcServiceClient,
+    LookupServicesClient lookupServicesClient,
     ILambdaInvokerService lambdaInvokerService = null)
     : RecurringJobBase<SyncAssignedCasesJob>(configuration, cache, mapper, logger)
 {
@@ -39,6 +41,7 @@ public class SyncAssignedCasesJob(
     private readonly ICaseService _caseService = caseService;
     private readonly CourtListService _courtListService = courtListService;
     private readonly JudicialCalendarServicesClient _jcServiceClient = jcServiceClient;
+    private readonly LookupServicesClient _lookupServicesClient = lookupServicesClient;
     private readonly ILambdaInvokerService _lambdaInvokerService = lambdaInvokerService;
 
     public override string JobName => nameof(SyncAssignedCasesJob);
@@ -206,7 +209,7 @@ public class SyncAssignedCasesJob(
 
     private async Task ProcessScheduledCases()
     {
-        this.Logger.LogInformation("Starting to process scheduled decisions and continuations.");
+        this.Logger.LogInformation("Starting to process scheduled appearances with all reasons.");
 
         var scheduledCases = await this.GetScheduledCases();
         if (scheduledCases.Count == 0)
@@ -225,7 +228,7 @@ public class SyncAssignedCasesJob(
 
     private async Task<ICollection<Case>> GetScheduledCases()
     {
-        var apprReasonCodes = string.Join(",", CaseService.ContinuationReasonCodes);
+        var apprReasonCodes = await GetAppearanceReasonCodes();
 
         // Retrieve the Scheduled Cases by invoking a lambda function to avoid API Gateway's timeout.
         // The endpoint is expected to take a while to get the data specially in PROD.
@@ -319,5 +322,33 @@ public class SyncAssignedCasesJob(
         return caseDto;
     }
 
-    #endregion Scheduled Cases (Decisions and Continuations) Methods
+    private async Task<string> GetAppearanceReasonCodes()
+    {
+        async Task<ICollection<AppearanceReason>> CriminalAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCriminalAsync();
+        async Task<ICollection<AppearanceReason>> CivilAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCivilAsync();
+        async Task<ICollection<AppearanceReason>> FamilyAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsFamilyAsync();
+        async Task<ICollection<AppearanceReason>> JustinAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsJustinAsync();
+        async Task<ICollection<AppearanceReason>> CeisAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCeisAsync();
+
+        var criminalTask = this.Cache.GetOrAddAsync($"CriminalAppearanceReasons", CriminalAppearanceReasons);
+        var civilTask = this.Cache.GetOrAddAsync($"CivilAppearanceReasons", CivilAppearanceReasons);
+        var familyTask = this.Cache.GetOrAddAsync($"FamilyAppearanceReasons", FamilyAppearanceReasons);
+        var justinTask = this.Cache.GetOrAddAsync($"JustinAppearanceReasons", JustinAppearanceReasons);
+        var ceisTask = this.Cache.GetOrAddAsync($"CeisAppearanceReasons", CeisAppearanceReasons);
+
+        await Task.WhenAll(criminalTask, civilTask, familyTask, justinTask, ceisTask);
+
+        var appearanceReasons = criminalTask.Result
+            .Concat(civilTask.Result)
+            .Concat(familyTask.Result)
+            .Concat(justinTask.Result)
+            .Concat(ceisTask.Result)
+            .OrderBy(a => a.Code);
+
+        var commaDelimitedCodes = string.Join(",", appearanceReasons.Select(a => a.Code).Distinct());
+
+        return commaDelimitedCodes;
+    }
+
+    #endregion Scheduled Cases
 }

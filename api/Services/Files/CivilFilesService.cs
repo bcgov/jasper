@@ -389,13 +389,12 @@ namespace Scv.Api.Services.Files
 
             var csrDocs = PopulateDetailCsrsDocuments([.. fileDetailTask.Result.Appearance.Where(a => binderDocIds.Contains(a.AppearanceId))]);
 
-            var mappedDetail = _mapper.Map<RedactedCivilFileDetailResponse>(detail);
-            var otherDocs = mappedDetail.Document.Where(d => binderDocIds.Contains(d.CivilDocumentId));
+            var otherDocs = detail.Document.Where(d => binderDocIds.Contains(d.CivilDocumentId));
 
             var orderedDocs = csrDocs.Concat(otherDocs)
                 .OrderBy(d => binderDocIdsOrdered.TryGetValue(d.CivilDocumentId, out var order) ? order : int.MaxValue);
 
-            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], mappedDetail, fileContentCivilFile, false, false);
+            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], detail, fileContentCivilFile, false, false);
 
             return binderDocuments;
         }

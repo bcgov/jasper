@@ -36,13 +36,15 @@ export const prepareCriminalDocumentData = (data) => {
 
 export const prepareCivilDocumentData = (data: civilDocumentType) => {
   const civilFileStore = useCivilFileStore();
+  const isLitigantDocument =
+    data.category?.toLowerCase() === 'reference' ||
+    data.category?.toLowerCase() === 'litigant';
   const documentData: DocumentData = {
     appearanceDate: beautifyDate(data.lastAppearanceDt),
     appearanceId: data.appearanceId ?? data.civilDocumentId,
     dateFiled: beautifyDate(data.filedDt),
     documentDescription: data.documentTypeDescription,
-    documentId:
-      data.category === 'Reference' ? data.imageId : data.civilDocumentId,
+    documentId: isLitigantDocument ? data.imageId : data.civilDocumentId,
     fileId: civilFileStore.civilFileInformation?.fileNumber,
     fileNumberText:
       civilFileStore.civilFileInformation?.detailsData?.fileNumberTxt,
@@ -72,13 +74,17 @@ export const getCivilDocumentType = (
 };
 
 // Move this mapping to the BE
-export const formatDocumentCategory = (documentOrCategory: documentType | string) => {
-  const category = typeof documentOrCategory === 'string' 
-    ? documentOrCategory 
-    : documentOrCategory.category;
-  
+export const formatDocumentCategory = (
+  documentOrCategory: documentType | string
+) => {
+  const category =
+    typeof documentOrCategory === 'string'
+      ? documentOrCategory
+      : documentOrCategory.category;
+
   if (category === 'PSR') return 'Report';
   if (category === 'rop') return 'ROP';
+  if (category?.toLowerCase() === 'litigant') return 'Litigant';
   return category;
 };
 

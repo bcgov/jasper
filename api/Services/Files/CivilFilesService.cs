@@ -514,22 +514,27 @@ namespace Scv.Api.Services.Files
                     issue.IssueTypeDesc = issueTypeDescs[issueIdx++];
                 }
             }
+            _logger.LogInformation("Mapped {DocumentCount} documents with categories and descriptions.", detail.Document.Count);
 
             // We add in reference documents alongside other documents since JASPER treats them the same
-            foreach (var refDoc in detail.ReferenceDocument.Where(refDoc => refDoc != null))
+            var referenceDocuments = detail.ReferenceDocument?.Where(refDoc => refDoc != null)?.ToList() ?? [];
+
+            foreach (var refDoc in referenceDocuments)
             {
                 var referenceDoc = new CivilDocument
                 {
                     Appearance = null,
                     CivilDocumentId = refDoc.ReferenceDocumentId,
                     DocumentTypeCd = refDoc.ReferenceDocumentTypeCd,
-                    DocumentTypeDescription = refDoc.ReferenceDocumentTypeDsc,
-                    Category = char.ToUpper(DocumentCategory.REFERENCE[0]) + DocumentCategory.REFERENCE[1..].ToLower(),
+                    DocumentTypeDescription = "Litigant Document", // TODO: temporary, requires future module to handle JASPER document category mapping.
+                    Category = DocumentCategory.LITIGANT,
                     ImageId = refDoc.ObjectGuid,
                     FiledDt = refDoc.EnterDtm,
+                    Issue = new List<CivilIssue>()
                 };
                 documents.Add(referenceDoc);
             }
+
             return documents;
         }
 

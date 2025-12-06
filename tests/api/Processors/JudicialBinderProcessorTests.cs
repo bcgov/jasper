@@ -302,7 +302,7 @@ public class JudicialBinderProcessorTests
         Assert.Equal(2, result.Count());
         Assert.All(result, doc =>
         {
-            Assert.Equal(DocumentCategory.REFERENCE, doc.DocumentTypeCd);
+            Assert.Equal(DocumentCategory.LITIGANT, doc.DocumentTypeCd);
         });
     }
 }
@@ -325,7 +325,7 @@ public static class JudicialBinderProcessor_TestHelper
     {
         return referenceDocuments.Select(referenceDocument => new CvfcDocument()
         {
-            DocumentTypeCd = DocumentCategory.REFERENCE,
+            DocumentTypeCd = DocumentCategory.LITIGANT,
             DocumentTypeDescription = referenceDocument.ReferenceDocumentTypeDsc,
             DocumentId = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(referenceDocument.ObjectGuid)),
             ImageId = referenceDocument.ObjectGuid,

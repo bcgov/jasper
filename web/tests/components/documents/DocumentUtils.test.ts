@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import * as DocumentUtils from 'CMP/documents/DocumentUtils';
 import { CourtDocumentType } from '@/types/shared';
+import * as DocumentUtils from 'CMP/documents/DocumentUtils';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/filters', () => ({
   beautifyDate: vi.fn((date) => `beautified-${date}`),
@@ -85,6 +85,26 @@ describe('DocumentUtils', () => {
       };
       const result = DocumentUtils.prepareCivilDocumentData(data);
       expect(result.documentId).toBe('img-1');
+    });
+
+    it('should use imageId as documentId when LITIGANT category', () => {
+      const data = {
+        documentId: 'doc-id-1',
+        imageId: 'img-2',
+        category: 'LITIGANT',
+      };
+      const result = DocumentUtils.prepareCivilDocumentData(data);
+      expect(result.documentId).toBe('img-2');
+    });
+
+    it('should use imageId as documentId when litigant category (lowercase)', () => {
+      const data = {
+        documentId: 'doc-id-1',
+        imageId: 'img-3',
+        category: 'litigant',
+      };
+      const result = DocumentUtils.prepareCivilDocumentData(data);
+      expect(result.documentId).toBe('img-3');
     });
   });
 

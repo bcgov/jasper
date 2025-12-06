@@ -157,8 +157,8 @@ public class JudicialBinderProcessor : BinderProcessorBase
         //Add in Reference Documents.
         return referenceDocuments.Select(referenceDocument => new CvfcDocument()
         {
-            DocumentTypeCd = DocumentCategory.REFERENCE,
-            DocumentTypeDescription = referenceDocument.ReferenceDocumentTypeDsc,
+            DocumentTypeCd = DocumentCategory.LITIGANT,
+            DocumentTypeDescription = "Litigant Document",
             DocumentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(referenceDocument.ObjectGuid)),
             ImageId = referenceDocument.ObjectGuid,
         });

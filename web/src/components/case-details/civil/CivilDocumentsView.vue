@@ -148,6 +148,7 @@
   const CSR_CATEGORY = 'CSR';
   const CSR_CATEGORY_DESC = 'Court Summary';
   const AFF_FIN_STMT = 'Affidavits/Financial Stmts';
+  const LITIGANT = 'Litigant';
 
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
@@ -186,6 +187,7 @@
     const categoryMap: Record<string, string> = {
       Affidavits: AFF_FIN_STMT,
       CSR: CSR_CATEGORY_DESC,
+      LITIGANT: LITIGANT,
     };
     return categoryMap[category] || category;
   };
@@ -416,10 +418,10 @@
       currentBinder.value?.documents.push({
         documentId: d.civilDocumentId,
         order: currentBinder.value?.documents.length,
-        documentType: getCivilDocumentType(d) === CourtDocumentType.CSR
+        documentType:
+          getCivilDocumentType(d) === CourtDocumentType.CSR
             ? DocumentRequestType.CourtSummary
             : DocumentRequestType.File,
-        category: d.category ?? d.documentTypeCd,
       } as BinderDocument);
     });
 

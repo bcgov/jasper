@@ -8,13 +8,15 @@ async function authGuard(to: any, from: any, next: any) {
 
   if (
     !isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
-    commonStore?.userInfo?.isActive === false
+    commonStore?.userInfo?.isActive === false ||
+    !commonStore?.userInfo?.judgeId
   ) {
     to.name === 'RequestAccess' ? next() : next({ path: '/request-access' });
   } else if (results) {
     if (
       isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
       commonStore?.userInfo?.isActive === true &&
+      commonStore?.userInfo?.judgeId &&
       to.name === 'RequestAccess'
     ) {
       next({ path: '/' });

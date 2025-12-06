@@ -232,11 +232,10 @@ namespace Scv.Api.Infrastructure.Authentication
             ILogger logger,
             List<Claim> claims)
         {
-            var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
-            var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
             PersonSearchItem judge = null;
             try
             {
+                // Try to get judge from external judge id claim first
                 if (int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId))
                 {
                     judge = await GetJudgeById(context, externalJudgeId);
@@ -252,15 +251,15 @@ namespace Scv.Api.Infrastructure.Authentication
 
                     if (userDto?.JudgeId.HasValue == true)
                     {
-                        judge = (await GetJudgeById(context, userDto.JudgeId.Value)) ?? judge; // Attempt to override the default Judge Id and HomeLocationId if the current user has been mapped.
+                        judge = (await GetJudgeById(context, userDto.JudgeId.Value)) ?? judge; // Attempt to override with PCSS-mapped judge if available
                     }
                 }
             }
             finally
             {
-                logger.LogDebug("Logged user in, with potential fallback values judge person id: {JudgePersonId}, judge id: {JudgeId} judge home location id: {JudgeLocationId} homeLocationId: {HomeLocationId}", judge?.PersonId, judgeId, judge?.HomeLocationId, homeLocationId);
-                judgeId = judge?.PersonId.ToString() ?? judgeId;
-                homeLocationId = judge?.HomeLocationId.ToString() ?? homeLocationId;
+                var judgeId = judge?.PersonId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeId");
+                var homeLocationId = judge?.HomeLocationId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
+                logger.LogDebug("Logged user in with judge person id: {JudgePersonId}, judge home location id: {JudgeLocationId}", judge?.PersonId, judge?.HomeLocationId);
                 AddDefaultJudgeClaims(logger, claims, judgeId, homeLocationId);
             }
         }
@@ -275,18 +274,38 @@ namespace Scv.Api.Infrastructure.Authentication
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
                 userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
+
                 if (userDto == null)
                 {
                     var newUser = await BuildNewUser(context, logger);
-                    logger.LogInformation("Creating new user in SCV database: {NewUser}", JsonConvert.SerializeObject(newUser));
+                    logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(newUser));
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
                     {
-                        logger.LogError("Error creating new user in SCV database: {Errors}", string.Join(", ", result.Errors));
+                        logger.LogError("Error creating new user in JASPER database: {Errors}", string.Join(", ", result.Errors));
                         return null;
                     }
                     userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;
                 }
+                else
+                {
+                    // Update existing user with latest PCSS data
+                    logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
+                    var updated = await UpdateUserFromPcss(context, logger, userDto);
+                    if (updated)
+                    {
+                        var updateResult = await userService.UpdateAsync(userDto);
+                        if (updateResult.Errors.Any())
+                        {
+                            logger.LogError("Error updating user in JASPER database: {Errors}", string.Join(", ", updateResult.Errors));
+                        }
+                        else
+                        {
+                            userDto = await userService.GetByIdWithPermissionsAsync(userDto.Id); // re-fetch to get updated permissions and roles
+                        }
+                    }
+                }
+
                 AddUserClaims(claims, userDto);
             }
             catch (Exception ex)
@@ -310,58 +329,89 @@ namespace Scv.Api.Infrastructure.Authentication
                 IsActive = false,
             };
 
+            await UpdateUserFromPcss(context, logger, userDto);
+
+            return userDto;
+        }
+
+        private static async Task<bool> UpdateUserFromPcss(
+            Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
+            ILogger logger,
+            UserDto userDto)
+        {
             // If there is no ProvJud GUID, we cannot map this user to PCSS, so return early.
-            if (userDto.NativeGuid == null)
+            if (string.IsNullOrEmpty(userDto.NativeGuid))
             {
-                return userDto;
+                logger.LogInformation("User {Email} has no ProvJud GUID, cannot map to PCSS", userDto.Email);
+                return false;
             }
 
-            var pcssAuthServiceClient = context.HttpContext.RequestServices.GetRequiredService<AuthorizationServicesClient>();
-            var authorizationService = context.HttpContext.RequestServices.GetRequiredService<AuthorizationService>();
-            var groupService = context.HttpContext.RequestServices.GetRequiredService<IGroupService>();
-
-            UserItem matchingUser = null;
             try
             {
-                logger.LogInformation("Requesting user information from PCSS.");
+                var pcssAuthServiceClient = context.HttpContext.RequestServices.GetRequiredService<AuthorizationServicesClient>();
+                var authorizationService = context.HttpContext.RequestServices.GetRequiredService<AuthorizationService>();
+                var groupService = context.HttpContext.RequestServices.GetRequiredService<IGroupService>();
+
+                logger.LogInformation("Requesting user information from PCSS for {Email}.", userDto.Email);
                 var pcssUsers = await pcssAuthServiceClient.GetUsersAsync();
-                matchingUser = pcssUsers?.FirstOrDefault(u => u.GUID == userDto.NativeGuid);
+                var matchingUser = pcssUsers?.FirstOrDefault(u => u.GUID == userDto.NativeGuid);
                 logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
-                    context.Principal.IdirUserGuid(),
+                    userDto.NativeGuid,
                     matchingUser != null ? JsonConvert.SerializeObject(matchingUser) : "No match");
 
                 if (matchingUser == null || !matchingUser.UserId.HasValue)
                 {
-                    return userDto;
+                    logger.LogWarning("No matching PCSS user found for {Email} with GUID {UserGuid}", userDto.Email, userDto.NativeGuid);
+                    return false;
                 }
 
+                // Get role names from PCSS
                 var roleNameResult = await authorizationService.GetPcssUserRoleNames(matchingUser.UserId.Value);
                 if (roleNameResult == null || roleNameResult.Errors.Any())
                 {
-                    return userDto;
+                    logger.LogWarning("Failed to get PCSS roles for user {Email}: {Errors}",
+                        userDto.Email,
+                        roleNameResult?.Errors != null ? string.Join(", ", roleNameResult.Errors) : "No result");
+                    return false;
                 }
 
+                // Map role names to internal groups
                 var groupResult = await groupService.GetGroupsByAliases(roleNameResult.Payload);
                 if (groupResult == null || groupResult.Errors.Any())
                 {
-                    return userDto;
+                    logger.LogWarning("Failed to get groups for user {Email}: {Errors}",
+                        userDto.Email,
+                        groupResult?.Errors != null ? string.Join(", ", groupResult.Errors) : "No result");
+                    return false;
                 }
 
                 var groupIds = groupResult.Payload.Select(g => g.Id).ToList();
                 userDto.GroupIds = groupIds;
                 userDto.IsActive = groupIds.Count > 0;
-                if (matchingUser.UserId.HasValue)
+
+                // Look up judge by PCSS UserId
+                var judge = await GetJudgeByUserId(context, matchingUser.UserId.Value);
+                if (judge != null)
                 {
-                    var judge = await GetJudgeByUserId(context, matchingUser.UserId.Value);
                     userDto.JudgeId = judge.PersonId;
+                    logger.LogInformation("Mapped user {Email} to judge PersonId {PersonId}", userDto.Email, judge.PersonId);
                 }
+                else
+                {
+                    logger.LogInformation("No judge mapping found for user {Email} with PCSS UserId {UserId}", userDto.Email, matchingUser.UserId.Value);
+                    userDto.JudgeId = null;
+                }
+
+                logger.LogInformation("Updated user {Email} with {GroupCount} groups and judgeId {JudgeId}",
+                    userDto.Email, groupIds.Count, userDto.JudgeId);
+
+                return true;
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unable to get user or groups from PCSS.");
+                logger.LogError(e, "Unable to get user or groups from PCSS for {Email}.", userDto.Email);
+                return false;
             }
-
-            return userDto;
         }
 
         private static async Task<PersonSearchItem> GetJudgeById(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int judgeId)
@@ -389,8 +439,14 @@ namespace Scv.Api.Infrastructure.Authentication
         private static void AddDefaultJudgeClaims(ILogger logger, List<Claim> claims, string judgeId, string homeLocationId)
         {
             logger.LogInformation("Acting as Judge Id - {JudgeId} with Home Location Id - {HomeLocationId}.", judgeId, homeLocationId);
-            claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
-            claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+            if (!string.IsNullOrEmpty(judgeId))
+            {
+                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+            }
+            if (!string.IsNullOrEmpty(homeLocationId))
+            {
+                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+            }
         }
 
         private static void AddUserClaims(List<Claim> claims, UserDto userDto)

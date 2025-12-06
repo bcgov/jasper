@@ -38,6 +38,7 @@
 <style scoped>
   .active-tab {
     background-color: var(--bg-white-500) !important;
+    color: var(--text-black-500) !important;
   }
   .active-tab:hover {
     color: var(--text-black-500) !important;

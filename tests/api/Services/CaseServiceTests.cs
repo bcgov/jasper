@@ -129,6 +129,8 @@ public class CaseServiceTests
         Assert.NotNull(result.Payload);
         Assert.Empty(result.Payload.ReservedJudgments);
         Assert.Empty(result.Payload.ScheduledContinuations);
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
     }
 
     [Fact]
@@ -136,9 +138,8 @@ public class CaseServiceTests
     {
         var cases = new List<Case>
         {
-            CreateCase(null),
-            CreateCase(""),
-            CreateCase("")
+            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("", CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -147,19 +148,21 @@ public class CaseServiceTests
         var result = await _caseService.GetAssignedCasesAsync(_faker.Random.Int());
 
         Assert.True(result.Succeeded);
-        Assert.Equal(3, result.Payload.ReservedJudgments.Count);
+        Assert.Equal(2, result.Payload.ReservedJudgments.Count);
         Assert.Empty(result.Payload.ScheduledContinuations);
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
         Assert.Equal(cases.OrderBy(c => c.DueDate).First().StyleOfCause, result.Payload.ReservedJudgments[0].StyleOfCause);
     }
 
     [Fact]
-    public async Task GetAssignedCasesAsync_WithScheduledDecisionsOnly_ReturnsInBothLists()
+    public async Task GetAssignedCasesAsync_WithScheduledDecisionsOnly_ReturnsInReservedJudgmentsAndScheduledContinuations()
     {
         var cases = new List<Case>
         {
-            CreateCase(CaseService.DECISION_APPR_REASON_CD),
-            CreateCase("dec"),
-            CreateCase("Dec")
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("dec", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("Dec", CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -170,6 +173,8 @@ public class CaseServiceTests
         Assert.True(result.Succeeded);
         Assert.Equal(3, result.Payload.ReservedJudgments.Count);
         Assert.Equal(3, result.Payload.ScheduledContinuations.Count);
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
     }
 
     [Fact]
@@ -177,8 +182,8 @@ public class CaseServiceTests
     {
         var cases = new List<Case>
         {
-            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD),
-            CreateCase(CaseService.ADDTL_CNT_TIME_APPR_REASON_CD)
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.ADDTL_CNT_TIME_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -189,6 +194,8 @@ public class CaseServiceTests
         Assert.True(result.Succeeded);
         Assert.Empty(result.Payload.ReservedJudgments);
         Assert.Equal(2, result.Payload.ScheduledContinuations.Count);
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
     }
 
     [Fact]
@@ -196,11 +203,11 @@ public class CaseServiceTests
     {
         var cases = new List<Case>
         {
-            CreateCase(null),
-            CreateCase(CaseService.DECISION_APPR_REASON_CD),
-            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD),
-            CreateCase(""),
-            CreateCase(CaseService.ADDTL_CNT_TIME_APPR_REASON_CD)
+            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.ADDTL_CNT_TIME_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -211,6 +218,8 @@ public class CaseServiceTests
         Assert.True(result.Succeeded);
         Assert.Equal(3, result.Payload.ReservedJudgments.Count); // 1 DEC + 2 reserved
         Assert.Equal(3, result.Payload.ScheduledContinuations.Count); // DEC, CNT, ACT
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
     }
 
     [Fact]
@@ -218,9 +227,9 @@ public class CaseServiceTests
     {
         var cases = new List<Case>
         {
-            CreateCase(null),
-            CreateCase(CaseService.DECISION_APPR_REASON_CD),
-            CreateCase(null)
+            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -237,12 +246,12 @@ public class CaseServiceTests
     {
         var cases = new List<Case>
         {
-            CreateCase("dec"),
-            CreateCase(CaseService.DECISION_APPR_REASON_CD),
-            CreateCase("Dec"),
-            CreateCase("cnt"),
-            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD),
-            CreateCase("act")
+            CreateCase("dec", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("Dec", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("cnt", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("act", CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -253,16 +262,18 @@ public class CaseServiceTests
         Assert.True(result.Succeeded);
         Assert.Equal(3, result.Payload.ReservedJudgments.Count);
         Assert.Equal(6, result.Payload.ScheduledContinuations.Count);
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
     }
 
     [Fact]
-    public async Task GetAssignedCasesAsync_UnrecognizedReasonCode_ExcludedFromBothLists()
+    public async Task GetAssignedCasesAsync_UnrecognizedReasonCode_IncludedInOthers()
     {
         var cases = new List<Case>
         {
-            CreateCase("UNKNOWN"),
-            CreateCase("XYZ"),
-            CreateCase(CaseService.DECISION_APPR_REASON_CD)
+            CreateCase("UNKNOWN", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("XYZ", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD)
         };
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
             .ReturnsAsync(cases);
@@ -270,8 +281,81 @@ public class CaseServiceTests
         var result = await _caseService.GetAssignedCasesAsync(_testJudgeId);
 
         Assert.True(result.Succeeded);
-        Assert.Single(result.Payload.ReservedJudgments);
+        Assert.Single(result.Payload.ReservedJudgments); // Only DEC
+        Assert.Single(result.Payload.ScheduledContinuations); // Only DEC
+        Assert.Equal(2, result.Payload.Others.Count); // UNKNOWN and XYZ
+        Assert.Empty(result.Payload.FutureAssigned);
+    }
+
+    [Fact]
+    public async Task GetAssignedCasesAsync_FutureAssignedCases_IncludedInFutureAssigned()
+    {
+        var cases = new List<Case>
+        {
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.ASSIGNED_RESTRICTION_CD),
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.ASSIGNED_RESTRICTION_CD),
+            CreateCase("UNKNOWN", CaseService.ASSIGNED_RESTRICTION_CD)
+        };
+
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
+            .ReturnsAsync(cases);
+
+        var result = await _caseService.GetAssignedCasesAsync(_testJudgeId);
+
+        Assert.True(result.Succeeded);
+        Assert.Empty(result.Payload.ReservedJudgments);
+        Assert.Empty(result.Payload.ScheduledContinuations);
+        Assert.Empty(result.Payload.Others);
+        Assert.Equal(3, result.Payload.FutureAssigned.Count);
+    }
+
+    [Fact]
+    public async Task GetAssignedCasesAsync_MixedRestrictionCodes_CategorizedCorrectly()
+    {
+        var cases = new List<Case>
+        {
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.ASSIGNED_RESTRICTION_CD),
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.ASSIGNED_RESTRICTION_CD),
+            CreateCase("UNKNOWN", CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase("UNKNOWN", CaseService.ASSIGNED_RESTRICTION_CD),
+            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD)
+        };
+
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
+            .ReturnsAsync(cases);
+
+        var result = await _caseService.GetAssignedCasesAsync(_testJudgeId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Payload.ReservedJudgments.Count); // 1 DEC (S) + 1 reserved
+        Assert.Equal(2, result.Payload.ScheduledContinuations.Count); // DEC (S), CNT (S)
+        Assert.Single(result.Payload.Others); // UNKNOWN (S)
+        Assert.Equal(3, result.Payload.FutureAssigned.Count); // All with restriction G
+    }
+
+    [Fact]
+    public async Task GetAssignedCasesAsync_OnlySeizedRestrictionInNonFutureAssigned()
+    {
+        var cases = new List<Case>
+        {
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, "X"), // Should be excluded
+            CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, "Y"), // Should be excluded
+            CreateCase(null, "Z"),
+            CreateCase(CaseService.DECISION_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD) // Should be included
+        };
+
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
+            .ReturnsAsync(cases);
+
+        var result = await _caseService.GetAssignedCasesAsync(_testJudgeId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Payload.ReservedJudgments.Count);
         Assert.Single(result.Payload.ScheduledContinuations);
+        Assert.Empty(result.Payload.Others);
+        Assert.Empty(result.Payload.FutureAssigned);
     }
 
     [Fact]
@@ -286,7 +370,7 @@ public class CaseServiceTests
         Assert.Contains("Error retrieving assigned cases.", result.Errors);
     }
 
-    private Case CreateCase(string reason)
+    private Case CreateCase(string reason, string restrictionCode)
     {
         return new Case
         {
@@ -299,8 +383,8 @@ public class CaseServiceTests
             FileNumber = $"{_faker.Random.AlphaNumeric(2)}-{_faker.Random.AlphaNumeric(8)}",
             StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
             Reason = reason,
-            PartId = _faker.Random.AlphaNumeric(10)
+            PartId = _faker.Random.AlphaNumeric(10),
+            RestrictionCode = restrictionCode
         };
     }
-
 }

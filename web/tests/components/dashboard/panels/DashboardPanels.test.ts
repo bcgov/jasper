@@ -40,6 +40,22 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
         courtFileNumber: 'CF-22222',
       } as Case,
     ],
+    others: [
+      {
+        id: 'case5',
+        courtClass: 'CC',
+        physicalFileId: 'phys-5',
+        courtFileNumber: 'CF-33333',
+      } as Case,
+    ],
+    futureAssigned: [
+      {
+        id: 'case6',
+        courtClass: 'SC',
+        physicalFileId: 'phys-6',
+        courtFileNumber: 'CF-44444',
+      } as Case,
+    ],
   },
   errors: [],
 };
@@ -93,6 +109,12 @@ describe('DashboardPanels.vue', () => {
     expect(wrapper.text()).toContain('Scheduled continuations');
     expect(wrapper.text()).toContain(
       `(${mockData.payload.scheduledContinuations.length})`
+    );
+    expect(wrapper.text()).toContain('Other seized cases');
+    expect(wrapper.text()).toContain(`(${mockData.payload.others.length})`);
+    expect(wrapper.text()).toContain('Future assigned');
+    expect(wrapper.text()).toContain(
+      `(${mockData.payload.futureAssigned.length})`
     );
   });
 

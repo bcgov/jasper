@@ -19,4 +19,5 @@ public class Case : EntityBase
     public string Reason { get; set; }
     public string DueDate { get; set; }
     public string PartId { get; set; }
+    public string RestrictionCode { get; set; }
 }

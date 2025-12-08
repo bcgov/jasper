@@ -15,7 +15,11 @@ public class CriminalParticipant : JCCommon.Clients.FileServices.CriminalPartici
     }
 
     public string FullName => GivenNm != null && LastNm != null
-        ? $"{GivenNm?.Trim()} {LastNm?.Trim()}"
+        ? $"{GivenNm.Trim()} {LastNm.Trim()}"
+        : OrgNm;
+
+    public string FullNameLastFirst => GivenNm != null && LastNm != null
+        ? $"{LastNm.Trim()}, {GivenNm.Trim()}"
         : OrgNm;
 
     /// <summary>

@@ -134,6 +134,16 @@ public class SyncAssignedCasesJobTests
         mockLambdaTimeoutSection.Setup(s => s.Value).Returns("10");
         _mockConfig.Setup(c => c.GetSection("AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"))
             .Returns(mockLambdaTimeoutSection.Object);
+
+        var mockMaxConcurrentRequestsSection = new Mock<IConfigurationSection>();
+        mockMaxConcurrentRequestsSection.Setup(s => s.Value).Returns("10");
+        _mockConfig.Setup(c => c.GetSection("JOBS:MAX_CONCURRENT_REQUESTS"))
+            .Returns(mockMaxConcurrentRequestsSection.Object);
+
+        var mockDelayBetweenRequestsMsSection = new Mock<IConfigurationSection>();
+        mockDelayBetweenRequestsMsSection.Setup(s => s.Value).Returns("100");
+        _mockConfig.Setup(c => c.GetSection("JOBS:DELAY_BETWEEN_REQUESTS_MS"))
+            .Returns(mockDelayBetweenRequestsMsSection.Object);
     }
 
     [Fact]

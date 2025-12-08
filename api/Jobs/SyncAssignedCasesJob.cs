@@ -13,6 +13,7 @@ using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers;
+using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Api.Services;
@@ -284,7 +285,7 @@ public class SyncAssignedCasesJob(
                     this.Logger.LogError(ex, "Error populating missing info for {ItemType} {ItemId}", itemTypeName, itemId);
 
                     Interlocked.Increment(ref processedCount);
-                    throw;
+                    throw new NotFoundException(warning);
                 }
             });
 

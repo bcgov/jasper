@@ -28,6 +28,10 @@ runs:
       working-directory: ${{ inputs.working_directory }}
       continue-on-error: true
 
+    - run: npm run prettier:check
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+
     - run: npm run build
       shell: bash
       working-directory: ${{ inputs.working_directory }}

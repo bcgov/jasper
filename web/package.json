@@ -8,6 +8,8 @@
     "dev": "vite",
     "clean": "",
     "lint": "eslint --ext .ts,.vue --ignore-path .gitignore --fix src",
+    "prettier:check": "prettier --check \"src/**/*.{ts,vue,js,json}\"",
+    "prettier:fix": "prettier --write \"src/**/*.{ts,vue,js,json}\"",
     "test": "vitest"
   },
   "resolutions": {

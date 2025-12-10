@@ -63,11 +63,11 @@ public class Locations : IList<Location>
             .Select(pcss =>
             {
                 var match = jcLocations.SingleOrDefault(jc => jc.LocationId == pcss.Code || jc.Code == pcss.Name);
-                return match != null ? Location.Create(match, pcss) : null;
+                // If there's a match, create a new Location combining both
+                // Otherwise, return the PCSS location as is.
+                return match != null ? Location.Create(match, pcss) : pcss;
             })
-            .Where(loc => loc != null)
-            .OrderBy(loc => loc.ShortName)
-            .ToList();
+            .OrderBy(loc => loc.ShortName);
 
         return [.. locations];
     }

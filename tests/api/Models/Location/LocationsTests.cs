@@ -79,7 +79,7 @@ public class LocationsTest
     }
 
     [Fact]
-    public void Create_ShouldReturnEmptyLocations_WhenJcLocationsIsEmpty()
+    public void Create_ShouldReturnPcssLocations_WhenJcLocationsIsEmpty()
     {
         var pcssLocation = LocationModel.Create("PCSSName", "PCSSCode", "PCSSLocationId", true, []);
         var jcLocations = new List<LocationModel>();
@@ -87,7 +87,8 @@ public class LocationsTest
 
         var result = LocationsModel.Create(jcLocations, pcssLocations);
 
-        Assert.Empty(result);
+        Assert.Single(result);
+        Assert.Equal(pcssLocation.Name, result[0].Name);
     }
 
     [Fact]
@@ -130,7 +131,7 @@ public class LocationsTest
     }
 
     [Fact]
-    public void Create_ShouldReturnEmptyLocations_WhenNoMatchFound()
+    public void Create_ShouldReturnPcssLocations_WhenNoMatchFound()
     {
         var jcLocation = LocationModel.Create("JCName", "JCCode", "JCLocationId", true, []);
         var pcssLocation = LocationModel.Create("PCSSName", "PCSSCode", "PCSSLocationId", true, []);
@@ -139,7 +140,8 @@ public class LocationsTest
 
         var result = LocationsModel.Create(jcLocations, pcssLocations);
 
-        Assert.Empty(result);
+        Assert.Single(result);
+        Assert.Equal(pcssLocation.Name, result[0].Name);
     }
 
     [Fact]

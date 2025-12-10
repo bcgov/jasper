@@ -183,7 +183,7 @@ public class LocationServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task GetLocations_ShouldReturnEmptyListWhenNeitherJustinAgenOrLocationSNmExists()
+    public async Task GetLocations_ShouldReturnPcssLocationsWhenNeitherJustinAgenOrLocationSNmExists()
     {
         var mockJCLocations = new List<CodeValue>(
             [
@@ -207,8 +207,9 @@ public class LocationServiceTests : ServiceTestBase
 
         var result = await locationService.GetLocations();
 
-        Assert.NotNull(result);
-        Assert.Empty(result);
+        Assert.Single(result);
+        Assert.Equal(mockPCSSLocations[0].LocationId.ToString(), result.First().LocationId);
+        Assert.Equal(mockPCSSLocations[0].LocationSNm, result.First().ShortName);
     }
 
     [Fact]

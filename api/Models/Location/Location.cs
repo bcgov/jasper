@@ -48,11 +48,11 @@ public class Location
         return new Location(
             jcLocation?.Name,
             pcssLocation?.Name,
-            jcLocation.LocationId,
+            jcLocation?.LocationId,
             pcssLocation?.LocationId,
-            jcLocation.Code,
-            pcssLocation != null ? pcssLocation.Active : jcLocation.Active,
-            pcssLocation != null ? pcssLocation.CourtRooms : jcLocation.CourtRooms);
+            jcLocation?.Code,
+            pcssLocation?.Active ?? jcLocation?.Active,
+            pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms);
     }
 
     private static Uri ParseCourtLocationUrl(string locationName)

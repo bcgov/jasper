@@ -5,7 +5,7 @@
     :height="200"
     color="var(--bg-gray-200)"
     :loading="partiesLoading"
-    >
+  >
     <v-data-table-virtual
       class="party-table"
       :headers

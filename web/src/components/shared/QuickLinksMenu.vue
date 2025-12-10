@@ -93,5 +93,5 @@
     if (child.url) {
       window.open(child.url, '_blank');
     }
-  }
+  };
 </script>

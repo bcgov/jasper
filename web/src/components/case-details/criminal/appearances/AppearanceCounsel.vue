@@ -7,11 +7,10 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
   import { JustinCounsel } from '@/types/criminal/jsonTypes';
 
   defineProps<{
-    counsel: JustinCounsel
+    counsel: JustinCounsel;
   }>();
 </script>

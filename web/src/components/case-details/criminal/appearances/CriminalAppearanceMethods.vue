@@ -1,9 +1,7 @@
 <template>
   <div v-if="appearanceMethods?.length">
     <span v-for="method in appearanceMethods">
-        {{
-          `${method.roleTypeDsc} appearing by ${method.appearanceMethodDesc}`
-        }}
+      {{ `${method.roleTypeDsc} appearing by ${method.appearanceMethodDesc}` }}
     </span>
   </div>
   <div v-else>

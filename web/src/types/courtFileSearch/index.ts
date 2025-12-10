@@ -1,4 +1,4 @@
-import { chargeType } from "../criminal/jsonTypes";
+import { chargeType } from '../criminal/jsonTypes';
 
 // Interfaces
 export interface CourtFileSearchCriteria {

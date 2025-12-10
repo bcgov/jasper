@@ -182,7 +182,7 @@
   const errors = reactive({
     isMissingFileNo: false,
     isMissingSurname: false,
-    isMissingOrg: false
+    isMissingOrg: false,
   });
 
   const locationService = inject<LocationService>('locationService');

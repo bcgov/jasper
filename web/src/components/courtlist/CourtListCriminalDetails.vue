@@ -3,13 +3,20 @@
     <v-col>
       <v-card title="Appearance Methods" variant="flat">
         <v-card-text>
-          <CriminalAppearanceMethods :appearanceMethods="details.appearanceMethods" />
+          <CriminalAppearanceMethods
+            :appearanceMethods="details.appearanceMethods"
+          />
         </v-card-text>
       </v-card>
     </v-col>
   </v-row>
   <v-card title="Key Documents" variant="flat">
-    <v-skeleton-loader class="p-3" type="card" :max-height="125" :loading="documentsLoading">
+    <v-skeleton-loader
+      class="p-3"
+      type="card"
+      :max-height="125"
+      :loading="documentsLoading"
+    >
       <v-data-table-virtual
         :items="documents.keyDocuments"
         :headers
@@ -31,10 +38,12 @@
           <span v-else>
             {{ formatDocumentType(item) }}
           </span>
-          <div v-if="
-            item.category?.toLowerCase() === 'bail' &&
-            item.docmDispositionDsc?.toLowerCase() === 'perfected'
-          ">
+          <div
+            v-if="
+              item.category?.toLowerCase() === 'bail' &&
+              item.docmDispositionDsc?.toLowerCase() === 'perfected'
+            "
+          >
             {{ item.docmDispositionDsc }}<span class="pl-2" />
             {{ formatDateToDDMMMYYYY(item.issueDate) }}
           </div>
@@ -43,7 +52,12 @@
     </v-skeleton-loader>
   </v-card>
   <v-card title="Charges" variant="flat">
-    <v-skeleton-loader class="p-3" :max-height="125" type="card" :loading="detailsLoading">
+    <v-skeleton-loader
+      class="p-3"
+      :max-height="125"
+      type="card"
+      :loading="detailsLoading"
+    >
       <v-data-table-virtual
         :items="details.charges"
         :headers="chargeHeaders"
@@ -54,7 +68,9 @@
         <template v-slot:item.lastResults="{ value, item }">
           <v-tooltip :text="item.appearanceResultDesc" location="top">
             <template v-slot:activator="{ props }">
-              <span v-bind="props" class="has-tooltip">{{ item.appearanceResultCd }}</span>
+              <span v-bind="props" class="has-tooltip">{{
+                item.appearanceResultCd
+              }}</span>
             </template>
           </v-tooltip>
         </template>
@@ -79,7 +95,10 @@
   import CriminalAppearanceMethods from '@/components/case-details/criminal/appearances/CriminalAppearanceMethods.vue';
   import shared from '@/components/shared';
   import { beautifyDate } from '@/filters';
-  import { formatDateInstanceToDDMMMYYYY, formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+  import {
+    formatDateInstanceToDDMMMYYYY,
+    formatDateToDDMMMYYYY,
+  } from '@/utils/dateUtils';
   import { FilesService } from '@/services/FilesService';
   import { useCommonStore } from '@/stores';
   import {
@@ -88,7 +107,10 @@
     documentType,
   } from '@/types/criminal/jsonTypes';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
-  import { formatDocumentCategory, formatDocumentType } from '@/components/documents/DocumentUtils';
+  import {
+    formatDocumentCategory,
+    formatDocumentType,
+  } from '@/components/documents/DocumentUtils';
   import { inject, onMounted, ref } from 'vue';
 
   const props = defineProps<{
@@ -118,7 +140,7 @@
     { title: 'DESCRIPTION', key: 'statuteDsc' },
     { title: 'LAST RESULTS', key: 'lastResults' },
     { title: 'PLEA', key: 'pleaCode' },
-    { title: 'FINDINGS', key: 'findingDsc' }
+    { title: 'FINDINGS', key: 'findingDsc' },
   ]);
 
   const headers = ref([
@@ -137,7 +159,10 @@
           const idx = order.indexOf(cat);
           return idx === -1 ? order.length : idx;
         };
-        return getOrder(b.category ?? b.docmClassification) - getOrder(a.category ?? a.docmClassification);
+        return (
+          getOrder(b.category ?? b.docmClassification) -
+          getOrder(a.category ?? a.docmClassification)
+        );
       },
     },
     { title: 'PAGES', key: 'documentPageCount' },
@@ -146,23 +171,22 @@
   onMounted(() => {
     documentsLoading.value = true;
     detailsLoading.value = true;
-    filesService.criminalAppearanceDocuments(
-      props.fileId,
-      props.partId
-    ).then(result => {
-      documents.value = result;
-    }).finally(() => {
-      documentsLoading.value = false;
-    });
-    filesService.criminalAppearanceDetails(
-      props.fileId,
-      props.appearanceId,
-      props.partId
-    ).then(result => {
-      details.value = result;
-    }).finally(() => {
-      detailsLoading.value = false;
-    });
+    filesService
+      .criminalAppearanceDocuments(props.fileId, props.partId)
+      .then((result) => {
+        documents.value = result;
+      })
+      .finally(() => {
+        documentsLoading.value = false;
+      });
+    filesService
+      .criminalAppearanceDetails(props.fileId, props.appearanceId, props.partId)
+      .then((result) => {
+        details.value = result;
+      })
+      .finally(() => {
+        detailsLoading.value = false;
+      });
   });
 
   const openDocument = (document: documentType) => {

@@ -247,15 +247,19 @@
     {
       title: 'ACCUSED/PARTIES',
       key: 'accusedNm',
-      value: (item: CourtListAppearance) =>
-        item.accusedNm || item.styleOfCause,
+      value: (item: CourtListAppearance) => item.accusedNm || item.styleOfCause,
     },
     { title: 'TIME', key: 'appearanceTm' },
     { title: 'EST.', key: 'estimatedTime' },
     { title: 'ROOM', key: 'courtRoomCd' },
     { title: 'REASON', key: 'appearanceReasonCd' },
     { title: 'FILE MARKERS', key: 'fileMarkers', sortable: false },
-    { title: 'COUNSEL', key: 'counsel', value: (item: CourtListAppearance) => renderName(item.counsel ?? [], item.accusedCounselNm) },
+    {
+      title: 'COUNSEL',
+      key: 'counsel',
+      value: (item: CourtListAppearance) =>
+        renderName(item.counsel ?? [], item.accusedCounselNm),
+    },
     { title: 'CROWN', key: 'crown' },
     {
       title: 'CASE AGE (days)',
@@ -378,7 +382,10 @@
     return [];
   };
 
-  const viewKeyDocuments = async (appearances: CourtListAppearance[], categories: string[]) => {
+  const viewKeyDocuments = async (
+    appearances: CourtListAppearance[],
+    categories: string[]
+  ) => {
     if (appearances.length === 0) {
       return;
     }
@@ -396,9 +403,7 @@
     shared.openCourtListKeyDocuments(appearances, categories);
   };
 
-  const handleViewJudicialBinders = (
-    appearances: CourtListAppearance[]
-  ) => {
+  const handleViewJudicialBinders = (appearances: CourtListAppearance[]) => {
     if (appearances.length === 0) {
       return;
     }
@@ -409,11 +414,14 @@
           physicalFileId: app.physicalFileId,
           appearanceId: app.appearanceId,
           participantId: app.profPartId,
-          courtClassCd: app.courtClassCd
+          courtClassCd: app.courtClassCd,
         }) as AppearanceDocumentRequest
     );
 
-    shared.openJudicialBinderDocuments(appearances, commonStore.userInfo?.userId || "");
+    shared.openJudicialBinderDocuments(
+      appearances,
+      commonStore.userInfo?.userId || ''
+    );
   };
 
   const viewCaseDetails = (selectedItems: CourtListAppearance[]) => {

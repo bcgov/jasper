@@ -1,5 +1,5 @@
 <template>
-  <v-banner :style="{ backgroundColor: bgColor}">
+  <v-banner :style="{ backgroundColor: bgColor }">
     <v-row class="my-1">
       <v-col cols="9">
         <h3 :style="{ color: color }">

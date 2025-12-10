@@ -77,7 +77,10 @@ export class BundlePDFStrategy
   ): Promise<ApiResponse<DocumentBundleResponse>> {
     const urlParams = new URLSearchParams(globalThis.location.search);
     const documentCategories = urlParams.get('category')?.split(',') || [];
-    return await this.binderService.generateBinderPDF(processedData, documentCategories);
+    return await this.binderService.generateBinderPDF(
+      processedData,
+      documentCategories
+    );
   }
 
   extractBase64PDF(apiResponse: ApiResponse<DocumentBundleResponse>): string {
@@ -98,7 +101,7 @@ export class BundlePDFStrategy
     const binderFileIds = new Set(
       apiResponse.payload.binders.map((b) => b.labels.physicalFileId)
     );
-    
+
     return Object.entries(rawData)
       .filter(([, userGroup]) =>
         Object.values(userGroup)

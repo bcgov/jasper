@@ -1,5 +1,8 @@
 import { ApiResponse } from '@/types/ApiResponse';
-import { AppearanceDocumentRequest, DocumentBundleResponse } from '@/types/common';
+import {
+  AppearanceDocumentRequest,
+  DocumentBundleResponse,
+} from '@/types/common';
 import { HttpService } from './HttpService';
 
 export class BundleService {
@@ -8,7 +11,6 @@ export class BundleService {
   constructor(httpService: HttpService) {
     this.httpService = httpService;
   }
-
 
   async generateBundle(
     appearances: AppearanceDocumentRequest[]

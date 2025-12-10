@@ -21,8 +21,7 @@
       <template v-slot:prepend>
         <v-icon :icon="mdiCalendarClock"></v-icon>
       </template>
-      <v-list-item-title>My Timebank</v-list-item-title
-      >
+      <v-list-item-title>My Timebank</v-list-item-title>
     </v-list-item>
 
     <v-list density="compact" v-model:opened="openedGroups">
@@ -34,8 +33,7 @@
         <template v-slot:prepend>
           <v-icon :icon="mdiWeatherNight"></v-icon>
         </template>
-        <v-list-item-title>Dark mode</v-list-item-title
-      >
+        <v-list-item-title>Dark mode</v-list-item-title>
         <template v-slot:append>
           <v-switch v-model="appliedThemes" value="dark" hide-details />
         </template>

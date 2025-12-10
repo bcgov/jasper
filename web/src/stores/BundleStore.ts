@@ -4,7 +4,6 @@ import { Binder } from '@/types/Binder';
 import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
 
-
 export const useBundleStore = defineStore('BundleStore', {
   persist: true,
   state: () => ({
@@ -15,7 +14,7 @@ export const useBundleStore = defineStore('BundleStore', {
   getters: {
     getBundle: (state): ((id: UUIDTypes) => Bundle | undefined) => {
       return (id: UUIDTypes) => {
-        const bundle = state.bundles.find(b => b.id === id);
+        const bundle = state.bundles.find((b) => b.id === id);
         return bundle;
       };
     },
@@ -34,7 +33,7 @@ export const useBundleStore = defineStore('BundleStore', {
       });
     },
     addBinder(binder: Binder, bundleId: UUIDTypes): void {
-      const bundle = this.bundles.find(b => b.id === bundleId);
+      const bundle = this.bundles.find((b) => b.id === bundleId);
       if (bundle) {
         bundle.binders.push(binder);
       }

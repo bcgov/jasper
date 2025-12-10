@@ -188,7 +188,6 @@
 
   const getFormattedFileNumber = (detail: FileDetail) =>
     `${detail.ticketSeriesTxt ?? ''}${detail.fileNumberTxt}${detail.mdocSeqNo ? '-' + detail.mdocSeqNo : ''}${detail.mdocRefTypeCd ? '-' + detail.mdocRefTypeCd : ''}`;
-  
 
   const getLocation = (fileHomeAgencyId: string) =>
     props.courtRooms.find((room) => room.code === fileHomeAgencyId)?.name || '';

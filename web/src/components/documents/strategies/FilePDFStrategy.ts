@@ -1,15 +1,21 @@
-import { OutlineItem, PDFViewerStrategy } from '@/components/documents/FileViewer.vue';
+import {
+  OutlineItem,
+  PDFViewerStrategy,
+} from '@/components/documents/FileViewer.vue';
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { FilesService } from '@/services/FilesService';
 import { usePDFViewerStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
 import { inject } from 'vue';
 
-export class FilePDFStrategy implements PDFViewerStrategy<
-  Record<string, Record<string, StoreDocument[]>>,
-  StoreDocument[],
-  GeneratePdfResponse 
-> {
+export class FilePDFStrategy
+  implements
+    PDFViewerStrategy<
+      Record<string, Record<string, StoreDocument[]>>,
+      StoreDocument[],
+      GeneratePdfResponse
+    >
+{
   private readonly pdfStore = usePDFViewerStore();
   private readonly filesService: FilesService;
   private pageIndex = 0;
@@ -30,17 +36,23 @@ export class FilePDFStrategy implements PDFViewerStrategy<
     return this.pdfStore.groupedDocuments;
   }
 
-  processDataForAPI(rawData: Record<string, Record<string, StoreDocument[]>>): StoreDocument[] {
+  processDataForAPI(
+    rawData: Record<string, Record<string, StoreDocument[]>>
+  ): StoreDocument[] {
     const allDocs: StoreDocument[] = [];
-    Object.values(rawData).forEach((userGroup: Record<string, StoreDocument[]>) => {
-      Object.values(userGroup).forEach((docs) => {
-        allDocs.push(...(docs));
-      });
-    });
+    Object.values(rawData).forEach(
+      (userGroup: Record<string, StoreDocument[]>) => {
+        Object.values(userGroup).forEach((docs) => {
+          allDocs.push(...docs);
+        });
+      }
+    );
     return allDocs;
   }
 
-  async generatePDF(processedData: StoreDocument[]): Promise<GeneratePdfResponse> {
+  async generatePDF(
+    processedData: StoreDocument[]
+  ): Promise<GeneratePdfResponse> {
     return await this.filesService.generatePdf(
       processedData.map((doc) => doc.request)
     );
@@ -50,12 +62,14 @@ export class FilePDFStrategy implements PDFViewerStrategy<
     return apiResponse.base64Pdf;
   }
 
-  extractPageRanges(apiResponse: GeneratePdfResponse): Array<{ start: number; end?: number }> | undefined {
+  extractPageRanges(
+    apiResponse: GeneratePdfResponse
+  ): Array<{ start: number; end?: number }> | undefined {
     return apiResponse.pageRanges;
   }
 
   createOutline(
-    rawData: Record<string, Record<string, StoreDocument[]>>, 
+    rawData: Record<string, Record<string, StoreDocument[]>>,
     apiResponse: GeneratePdfResponse
   ): OutlineItem[] {
     this.pageIndex = 0; // Reset counter
@@ -70,7 +84,7 @@ export class FilePDFStrategy implements PDFViewerStrategy<
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
     const children: OutlineItem[] = [];
-    const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start
+    const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start;
     Object.entries(userGroup).forEach(([name, docs]) => {
       if (name !== '') {
         children.push(this.makeSecondGroup(name, docs, apiResponse));
@@ -83,29 +97,35 @@ export class FilePDFStrategy implements PDFViewerStrategy<
       title: groupKey,
       isExpanded: true,
       children,
-      pageIndex
+      pageIndex,
     };
   }
 
   private makeSecondGroup(
-    memberName: string, 
-    docs: StoreDocument[], 
+    memberName: string,
+    docs: StoreDocument[],
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
-    const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start
+    const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start;
     return {
       title: memberName,
       isExpanded: true,
       children: docs.map((doc) => this.makeDocElement(doc, apiResponse)),
-      pageIndex
+      pageIndex,
     };
   }
 
-  private makeDocElements(docs: StoreDocument[], apiResponse: GeneratePdfResponse): OutlineItem[] {
+  private makeDocElements(
+    docs: StoreDocument[],
+    apiResponse: GeneratePdfResponse
+  ): OutlineItem[] {
     return docs.map((doc) => this.makeDocElement(doc, apiResponse));
   }
 
-  private makeDocElement(doc: StoreDocument, apiResponse: GeneratePdfResponse): OutlineItem {
+  private makeDocElement(
+    doc: StoreDocument,
+    apiResponse: GeneratePdfResponse
+  ): OutlineItem {
     return {
       title: doc.documentName,
       pageIndex: apiResponse.pageRanges?.[this.pageIndex++]?.start,

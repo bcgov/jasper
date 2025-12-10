@@ -238,8 +238,8 @@
         httpService
           .get<any>('api/location/court-rooms')
           .then(
-            Response => Response,
-            err => {
+            (Response) => Response,
+            (err) => {
               this.errorCode = err.status;
               this.errorText = err.statusText;
               if (this.errorCode != 401) {
@@ -255,7 +255,7 @@
               console.log(this.errorCode);
             }
           )
-          .then(data => {
+          .then((data) => {
             if (data) {
               this.courtRoomsAndLocationsJson = data;
               this.ExtractCourtRoomsAndLocationsInfo();

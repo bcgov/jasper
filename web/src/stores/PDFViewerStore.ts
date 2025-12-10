@@ -5,10 +5,7 @@ export const usePDFViewerStore = defineStore('PDFViewerStore', {
   persist: true,
   state: () => ({
     storedDocuments: [] as StoreDocument[],
-    groupedDocuments: {} as Record<
-      string,
-      Record<string, StoreDocument[]>
-    >,
+    groupedDocuments: {} as Record<string, Record<string, StoreDocument[]>>,
   }),
   getters: {
     documents: (state) => state.storedDocuments,

@@ -3,7 +3,9 @@
     <template v-slot:item.lastResults="{ value, item }">
       <v-tooltip :text="item.appearanceResultDesc" location="top">
         <template v-slot:activator="{ props }">
-          <span v-bind="props" class="has-tooltip">{{ item.appearanceResultCd }}</span>
+          <span v-bind="props" class="has-tooltip">{{
+            item.appearanceResultCd
+          }}</span>
         </template>
       </v-tooltip>
     </template>

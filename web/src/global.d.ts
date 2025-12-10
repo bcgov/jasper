@@ -1,4 +1,4 @@
-import NutrientViewer from "@nutrient-sdk/viewer";
+import NutrientViewer from '@nutrient-sdk/viewer';
 
 declare global {
   interface Window {

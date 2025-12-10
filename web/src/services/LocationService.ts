@@ -9,6 +9,8 @@ export class LocationService {
   }
 
   async getLocations(includeChildRecords = false): Promise<LocationInfo[]> {
-    return await this.httpService.get<LocationInfo[]>(`api/location?includeChildRecords=${includeChildRecords}`);
+    return await this.httpService.get<LocationInfo[]>(
+      `api/location?includeChildRecords=${includeChildRecords}`
+    );
   }
 }

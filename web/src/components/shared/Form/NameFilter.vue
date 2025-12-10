@@ -28,7 +28,7 @@
   const selectedName = defineModel<string>();
   const namesOnFile = computed<string[]>(() => {
     const nameList = props.people?.map((app) =>
-    formatToFullName(app.lastNm.trim(), app.givenNm.trim())
+      formatToFullName(app.lastNm.trim(), app.givenNm.trim())
     );
     return [...new Set(nameList)];
   });

@@ -10,7 +10,9 @@ export class LookupService {
   }
 
   async getCourtClasses(): Promise<LookupCode[]> {
-    return await this.httpService.get<LookupCode[]>(`${this.baseUrl}/court/classes`);
+    return await this.httpService.get<LookupCode[]>(
+      `${this.baseUrl}/court/classes`
+    );
   }
 
   getRoles(): Promise<LookupCode[]> {

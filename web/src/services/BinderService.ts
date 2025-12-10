@@ -54,11 +54,11 @@ export class BinderService extends ServiceBase {
     bundleRequest: DocumentBundleRequest,
     categories: string[]
   ): Promise<ApiResponse<DocumentBundleResponse>> {
-    const categoryParams = categories.length 
+    const categoryParams = categories.length
       ? '?category=' + categories.join(',')
       : '';
     const url = 'api/binders/bundle' + categoryParams;
-    
+
     return this.httpService.post<ApiResponse<DocumentBundleResponse>>(
       url,
       bundleRequest.appearances

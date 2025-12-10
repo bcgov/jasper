@@ -2,7 +2,13 @@
   <v-tabs v-model="tab" align-tabs="start" slider-color="primary">
     <v-tab value="charges">Charges</v-tab>
     <v-tab value="methods">Appearance Methods</v-tab>
-    <v-tab value="counsel" v-if="details.justinCounsel && Object.keys(details.justinCounsel).length > 0">Counsel</v-tab>
+    <v-tab
+      value="counsel"
+      v-if="
+        details.justinCounsel && Object.keys(details.justinCounsel).length > 0
+      "
+      >Counsel</v-tab
+    >
   </v-tabs>
 
   <v-card-text>
@@ -18,7 +24,9 @@
           <AppearanceCharges :charges="details.charges" />
         </v-tabs-window-item>
         <v-tabs-window-item value="methods">
-          <CriminalAppearanceMethods :appearanceMethods="details.appearanceMethods" />
+          <CriminalAppearanceMethods
+            :appearanceMethods="details.appearanceMethods"
+          />
         </v-tabs-window-item>
         <v-tabs-window-item value="counsel">
           <AppearanceCounsel :counsel="details.justinCounsel" />

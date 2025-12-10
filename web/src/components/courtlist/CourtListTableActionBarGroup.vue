@@ -48,17 +48,17 @@
             @click="onViewJudicialBinders(group)"
           >
             View judicial binder(s)&nbsp;
-              <v-progress-circular
-                v-if="binderLoading"
-                  indeterminate
-                  size="18"
-                  width="2"
-                  color="primary"
-                  class="mr-2 align-middle"
-                />
-                <span v-else-if="totalBinderCount > 0">
-                  ({{ totalBinderCount }} / {{ selected.length }})
-                </span>
+            <v-progress-circular
+              v-if="binderLoading"
+              indeterminate
+              size="18"
+              width="2"
+              color="primary"
+              class="mr-2 align-middle"
+            />
+            <span v-else-if="totalBinderCount > 0">
+              ({{ totalBinderCount }} / {{ selected.length }})
+            </span>
           </v-btn>
         </template>
       </ActionBar>
@@ -73,7 +73,7 @@
   import {
     mdiFileDocumentMultipleOutline,
     mdiFileDocumentOutline,
-    mdiFolderEyeOutline
+    mdiFolderEyeOutline,
   } from '@mdi/js';
   import { computed, inject, ref, watch } from 'vue';
   import { BinderService } from '@/services';
@@ -92,8 +92,16 @@
 
   const emit = defineEmits<{
     (e: 'view-case-details', appearances: CourtListAppearance[]): void;
-    (e: 'view-key-documents', appearances: CourtListAppearance[], categories: string[]): void;
-    (e: 'view-informations', appearances: CourtListAppearance[], categories: string[]): void;
+    (
+      e: 'view-key-documents',
+      appearances: CourtListAppearance[],
+      categories: string[]
+    ): void;
+    (
+      e: 'view-informations',
+      appearances: CourtListAppearance[],
+      categories: string[]
+    ): void;
     (e: 'unique-civil-file-selected', appearance: CourtListAppearance): void;
     (e: 'view-judicial-binders', appearances: CourtListAppearance[]): void;
   }>();
@@ -104,12 +112,15 @@
   const binderLoading = computed(() => binderRequests.value.length > 0);
 
   const getCivilFiles = (items: CourtListAppearance[]) =>
-    items.filter((item) => 
-      !isCourtClassLabelCriminal(getCourtClassLabel(item.courtClassCd)) && 
-      item.physicalFileId
+    items.filter(
+      (item) =>
+        !isCourtClassLabelCriminal(getCourtClassLabel(item.courtClassCd)) &&
+        item.physicalFileId
     );
 
-  const fetchBinderCountForAppearance = async (appearance: CourtListAppearance) => {
+  const fetchBinderCountForAppearance = async (
+    appearance: CourtListAppearance
+  ) => {
     const labels = {
       physicalFileId: appearance.physicalFileId,
       courtClassCd: appearance.courtClassCd,
@@ -117,12 +128,18 @@
     };
 
     try {
-      const request = binderService.getBinders(labels).then((response) => {
-          binderCounts.value[appearance.physicalFileId] = response.succeeded && response.payload 
-            ? response.payload.length 
-            : 0;
-        }).finally(() => {
-          binderRequests.value = binderRequests.value.filter(r => r !== request);
+      const request = binderService
+        .getBinders(labels)
+        .then((response) => {
+          binderCounts.value[appearance.physicalFileId] =
+            response.succeeded && response.payload
+              ? response.payload.length
+              : 0;
+        })
+        .finally(() => {
+          binderRequests.value = binderRequests.value.filter(
+            (r) => r !== request
+          );
         });
       binderRequests.value.push(request);
     } catch (error) {
@@ -133,7 +150,7 @@
 
   const groupedSelections = computed(() => {
     const groups: Record<string, CourtListAppearance[]> = {};
-    
+
     for (const item of props.selected) {
       const group = getCourtClassLabel(item.courtClassCd);
       if (!groups[group]) {
@@ -161,18 +178,24 @@
       if (!isSelection) {
         const currentFileIds = new Set(civilFiles.map((f) => f.physicalFileId));
         binderCounts.value = Object.fromEntries(
-          Object.entries(binderCounts.value).filter(([fileId]) => currentFileIds.has(fileId))
+          Object.entries(binderCounts.value).filter(([fileId]) =>
+            currentFileIds.has(fileId)
+          )
         );
-        
+
         // Update previousCivilFileIds to match current selection
         previousCivilFileIds.clear();
-        currentFileIds.forEach(id => previousCivilFileIds.add(id));
+        currentFileIds.forEach((id) => previousCivilFileIds.add(id));
         return;
       }
 
       // Find newly added items
-      const oldFileIds = new Set(getCivilFiles(oldSelected || []).map(f => f.physicalFileId));
-      const newlySelected = civilFiles.filter(f => !oldFileIds.has(f.physicalFileId));
+      const oldFileIds = new Set(
+        getCivilFiles(oldSelected || []).map((f) => f.physicalFileId)
+      );
+      const newlySelected = civilFiles.filter(
+        (f) => !oldFileIds.has(f.physicalFileId)
+      );
 
       // Fetch for all new items
       for (const appearance of newlySelected) {
@@ -187,16 +210,25 @@
   );
 
   const totalBinderCount = computed(() => {
-    return Object.values(binderCounts.value).reduce((sum, count) => sum + count, 0);
+    return Object.values(binderCounts.value).reduce(
+      (sum, count) => sum + count,
+      0
+    );
   });
 
   const onViewApprCaseDetails = (appearances: CourtListAppearance[]) => {
     emit('view-case-details', appearances);
   };
-  const onViewKeyDocuments = (appearances: CourtListAppearance[], categories: string[]) => {
+  const onViewKeyDocuments = (
+    appearances: CourtListAppearance[],
+    categories: string[]
+  ) => {
     emit('view-key-documents', appearances, categories);
   };
-  const onViewInformations = (appearances: CourtListAppearance[], categories: string[]) => {
+  const onViewInformations = (
+    appearances: CourtListAppearance[],
+    categories: string[]
+  ) => {
     emit('view-informations', appearances, categories);
   };
   const onViewJudicialBinders = (appearances: CourtListAppearance[]) => {

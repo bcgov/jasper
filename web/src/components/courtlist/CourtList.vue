@@ -183,7 +183,7 @@
       card.amPM = adjudicatorDetails?.amPm;
 
       cardTablePairings.value.push({ card, table: appearances });
-    };
+    }
 
     // We always want AM pairings to appear before PM pairings
     cardTablePairings.value.sort((a, b) =>
@@ -231,8 +231,8 @@
 
         const key = `${obj.locationId}|${obj.locationName}|${obj.date}|${obj.division}|${obj.class}|${obj.courtRoom}`;
         uniqueMap.set(key, obj);
-      };
-    };
+      }
+    }
     const documents: Array<{
       documentType: DocumentRequestType;
       documentData: Record<string, any>;
@@ -262,7 +262,7 @@
         documentName: reportType,
         groupKeyOne: value.locationName,
       });
-    };
+    }
     shared.openMergedDocuments(documents);
   };
 </script>

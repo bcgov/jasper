@@ -70,7 +70,7 @@
   const closeClick = () => {
     selectedAccused.value = '';
     show.value = false;
-  }
+  };
 </script>
 <style scoped>
   .v-dialog {

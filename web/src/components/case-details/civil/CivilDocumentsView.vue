@@ -442,7 +442,7 @@
         order: currentBinder.value?.documents.length ?? 0,
         documentType:
           getCivilDocumentType(d) === CourtDocumentType.CSR
-          ? DocumentRequestType.CourtSummary
+            ? DocumentRequestType.CourtSummary
             : getCivilDocumentType(d) === CourtDocumentType.Transcript
               ? DocumentRequestType.Transcript
               : DocumentRequestType.File,

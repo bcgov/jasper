@@ -1,57 +1,56 @@
-import vue from 'eslint-plugin-vue';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import typescriptParser from '@typescript-eslint/parser';
-import * as vueParser from 'vue-eslint-parser';
-import prettier from 'eslint-config-prettier';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+// web/eslint.config.js
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import pluginVue from 'eslint-plugin-vue';
+import {
+  defineConfigWithVueTs,
+  vueTsConfigs,
+} from '@vue/eslint-config-typescript';
+import eslintConfigPrettier from 'eslint-config-prettier/flat';
+import globals from 'globals';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
-// Read .gitignore patterns
-const gitignorePath = resolve(__dirname, '../.gitignore');
-const gitignoreContent = readFileSync(gitignorePath, 'utf-8');
-const ignorePatterns = gitignoreContent
-  .split('\n')
-  .filter((line) => line.trim() && !line.startsWith('#'))
-  .map((line) => line.trim());
+// Reuse patterns from the repo root .gitignore
+const gitignorePath = path.resolve(__dirname, '../.gitignore');
+const gitignorePatterns = fs.existsSync(gitignorePath)
+  ? fs
+      .readFileSync(gitignorePath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#'))
+  : [];
 
-export default [
+export default defineConfigWithVueTs(
   {
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/build/**',
-      '**/*.min.js',
-      ...ignorePatterns,
+      '**/coverage/**',
+      ...gitignorePatterns,
     ],
   },
+
+  pluginVue.configs['flat/essential'],
+  vueTsConfigs.recommended,
+
   {
-    files: ['**/*.ts', '**/*.vue'],
+    files: ['src/**/*.{ts,tsx,vue}'],
     languageOptions: {
-      parser: vueParser,
-      parserOptions: {
-        parser: typescriptParser,
-        ecmaVersion: 2020,
-        sourceType: 'module',
-      },
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
-        node: true,
-        es2022: true,
+        ...globals.browser,
       },
-    },
-    plugins: {
-      vue,
-      '@typescript-eslint': typescriptEslint,
     },
     rules: {
       'no-debugger': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      ...vue.configs.essential.rules,
-      ...typescriptEslint.configs.recommended.rules,
-      ...prettier.rules,
     },
   },
-];
+
+  eslintConfigPrettier
+);

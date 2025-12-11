@@ -7,7 +7,7 @@
     "build": "vite build",
     "dev": "vite",
     "clean": "",
-    "lint": "eslint --ext .ts,.vue --ignore-path .gitignore --fix src",
+    "lint": "eslint --ext .ts,.vue --fix src",
     "test": "vitest"
   },
   "resolutions": {

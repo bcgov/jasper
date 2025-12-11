@@ -35,7 +35,7 @@
     "jquery": "^3.7.1",
     "luxon": "^3.7.2",
     "pinia": "^3.0.4",
-    "pinia-plugin-persistedstate": "^4.5.0",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "splunk-logging": "^0.11.1",
     "underscore": "^1.13.7",
     "uuid": "^13.0.0",

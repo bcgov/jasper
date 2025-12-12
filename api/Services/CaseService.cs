@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models;
 using Scv.Db.Models;
@@ -34,6 +35,9 @@ public class CaseService(
     public const string CONTINUATION_APPR_REASON_CD = "CNT";
     public const string ADDTL_CNT_TIME_APPR_REASON_CD = "ACT";
 
+    public const string SEIZED_RESTRICTION_CD = "S";
+    public const string ASSIGNED_RESTRICTION_CD = "G";
+
     public static readonly ImmutableArray<string> ContinuationReasonCodes = [
         DECISION_APPR_REASON_CD,
         CONTINUATION_APPR_REASON_CD,
@@ -58,19 +62,34 @@ public class CaseService(
 
             var scheduledDecisions = judgeCases
                 .Where(c => !string.IsNullOrWhiteSpace(c.Reason)
-                    && c.Reason.Equals(DECISION_APPR_REASON_CD, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(c => c.DueDate);
+                    && c.Reason.Equals(DECISION_APPR_REASON_CD, StringComparison.OrdinalIgnoreCase)
+                    && c.RestrictionCode.Equals(SEIZED_RESTRICTION_CD, StringComparison.OrdinalIgnoreCase))
+                .OrderByDateString(c => c.DueDate);
 
             var scheduledContinuations = judgeCases
                 .Where(c => ContinuationReasonCodes
-                    .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase)))
-                .OrderBy(c => c.DueDate);
+                    .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase))
+                        && c.RestrictionCode.Equals(SEIZED_RESTRICTION_CD, StringComparison.OrdinalIgnoreCase))
+                .OrderByDateString(c => c.DueDate);
+
+            var others = judgeCases
+                .Where(c => !string.IsNullOrWhiteSpace(c.Reason)
+                    && !ContinuationReasonCodes
+                        .Any(code => code.Equals(c.Reason, StringComparison.OrdinalIgnoreCase))
+                    && c.RestrictionCode.Equals(SEIZED_RESTRICTION_CD, StringComparison.OrdinalIgnoreCase))
+                .OrderByDateString(c => c.DueDate);
+
+            var futureAssigned = judgeCases
+                .Where(c => c.RestrictionCode.Equals(ASSIGNED_RESTRICTION_CD, StringComparison.OrdinalIgnoreCase))
+                .OrderByDateString(c => c.DueDate);
 
             var response = new CaseResponse
             {
                 // Scheduled decisions should be listed first followed by reserved judgments
                 ReservedJudgments = this.Mapper.Map<List<CaseDto>>(scheduledDecisions.Concat(reservedJudgments)),
-                ScheduledContinuations = this.Mapper.Map<List<CaseDto>>(scheduledContinuations)
+                ScheduledContinuations = this.Mapper.Map<List<CaseDto>>(scheduledContinuations),
+                Others = this.Mapper.Map<List<CaseDto>>(others),
+                FutureAssigned = this.Mapper.Map<List<CaseDto>>(futureAssigned)
             };
 
             return OperationResult<CaseResponse>.Success(response);

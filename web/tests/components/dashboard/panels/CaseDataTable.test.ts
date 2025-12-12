@@ -155,7 +155,7 @@ describe('CaseDataTable.vue', () => {
     expect(sortBy[0].order).toBe('desc');
   });
 
-  it('sets empty sortBy array when no sortBy prop is provided', () => {
+  it('sets default sortBy when no sortBy prop is provided', () => {
     const wrapper = mount(CaseDataTable, {
       props: {
         data: mockData,
@@ -163,7 +163,7 @@ describe('CaseDataTable.vue', () => {
       },
     });
     const sortBy = (wrapper.vm as any).sortBy;
-    expect(sortBy).toEqual([]);
+    expect(sortBy).toEqual([{ key: 'dueDate', order: 'asc' }]);
   });
 
   it('calls viewCaseDetails when style of cause link is clicked', () => {

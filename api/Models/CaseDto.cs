@@ -16,5 +16,6 @@ public class CaseDto : BaseDto
     public string Reason { get; set; }
     public string DueDate { get; set; }
     public string PartId { get; set; }
+    public string RestrictionCode { get; set; }
     public DateTime? UpdatedDate { get; set; }
 }

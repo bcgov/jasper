@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.LookupServices;
 using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
@@ -17,7 +18,7 @@ using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Api.Services;
-using PCSSCommonConstants = PCSSCommon.Common.Constants;
+using Scv.Api.Services.Files;
 
 namespace Scv.Api.Jobs;
 
@@ -32,6 +33,8 @@ public class SyncAssignedCasesJob(
     ICaseService caseService,
     CourtListService courtListService,
     JudicialCalendarServicesClient jcServiceClient,
+    LookupServicesClient lookupServicesClient,
+    FilesService fileService,
     ILambdaInvokerService lambdaInvokerService = null)
     : RecurringJobBase<SyncAssignedCasesJob>(configuration, cache, mapper, logger)
 {
@@ -41,6 +44,9 @@ public class SyncAssignedCasesJob(
     private readonly ICaseService _caseService = caseService;
     private readonly CourtListService _courtListService = courtListService;
     private readonly JudicialCalendarServicesClient _jcServiceClient = jcServiceClient;
+    private readonly LookupServicesClient _lookupServicesClient = lookupServicesClient;
+    private readonly CriminalFilesService _criminalFilesService = fileService.Criminal;
+    private readonly CivilFilesService _civilFilesService = fileService.Civil;
     private readonly ILambdaInvokerService _lambdaInvokerService = lambdaInvokerService;
 
     public override string JobName => nameof(SyncAssignedCasesJob);
@@ -56,8 +62,25 @@ public class SyncAssignedCasesJob(
             var existingCases = await _caseService.GetAllAsync();
             await _caseService.DeleteRangeAsync([.. existingCases.Select(rj => rj.Id)]);
 
+            // RJs
             await this.ProcessReservedJudgements();
-            await this.ProcessScheduledCases();
+
+            // Get appearance reason codes excluding CNT, DEC and ACT.
+            var apprReasonCodes = await GetAppearanceReasonCodes(CaseService.ContinuationReasonCodes);
+
+            // Get Seized scheduled CNTs, DECs and ACTs.
+            await this.ProcessScheduledCases(string.Join(",", CaseService.ContinuationReasonCodes), CaseService.SEIZED_RESTRICTION_CD);
+
+            // Get Other Seized
+            await this.ProcessScheduledCases(apprReasonCodes, CaseService.SEIZED_RESTRICTION_CD);
+
+            // Get Future Assigned - CNTs, DECs and ACTs.
+            await this.ProcessScheduledCases(string.Join(",", CaseService.ContinuationReasonCodes), CaseService.ASSIGNED_RESTRICTION_CD);
+
+            // Get Future Assigned - Others
+            await this.ProcessScheduledCases(apprReasonCodes, CaseService.ASSIGNED_RESTRICTION_CD);
+
+            this.Logger.LogInformation("SyncAssignedCasesJob completed successfully.");
         }
         catch (Exception ex)
         {
@@ -209,6 +232,7 @@ public class SyncAssignedCasesJob(
         rj.PartId = appearance.ProfPartId;
         rj.JudgeId = judgeId.Value;
         rj.StyleOfCause = appearance.StyleOfCause;
+        rj.RestrictionCode = CaseService.SEIZED_RESTRICTION_CD;
 
         // Replace the CourtClass from court list as it is what the app is accustomed to.
         rj.CourtClass = appearance.CourtClassCd;
@@ -284,8 +308,9 @@ public class SyncAssignedCasesJob(
                     }
                     this.Logger.LogError(ex, "Error populating missing info for {ItemType} {ItemId}", itemTypeName, itemId);
 
+                    // Set default value to avoid null entries in results array
+                    results[index] = default;
                     Interlocked.Increment(ref processedCount);
-                    throw new NotFoundException(warning);
                 }
             });
 
@@ -296,21 +321,24 @@ public class SyncAssignedCasesJob(
                 warnings.Count, itemTypeName, warningTable);
         }
 
-        return results;
+        return [.. results.Where(r => !EqualityComparer<TOutput>.Default.Equals(r, default))];
     }
 
     #endregion Common Helper Methods
 
     #region Scheduled Cases (Decisions and Continuations) Methods
 
-    private async Task ProcessScheduledCases()
+    private async Task ProcessScheduledCases(string apprReasonCodes, string restrictionCode)
     {
-        this.Logger.LogInformation("Starting to process scheduled decisions and continuations.");
+        this.Logger.LogInformation("Starting to retrieve scheduled cases for {ApprReasonCodes} and {RestrictionCode}", apprReasonCodes, restrictionCode);
 
-        var scheduledCases = await this.GetScheduledCases();
+        var scheduledCases = await this.GetScheduledCases(apprReasonCodes, restrictionCode);
         if (scheduledCases.Count == 0)
         {
-            this.Logger.LogInformation("No Scheduled Cases found.");
+            this.Logger.LogInformation(
+                "No data found for {ApprReasonCodes} and {RestrictionCode}.",
+                apprReasonCodes,
+                restrictionCode);
             return;
         }
 
@@ -330,15 +358,18 @@ public class SyncAssignedCasesJob(
             c => $"{c.FileNumberTxt} (PhysicalFileId: {c.PhysicalFileId})",
             "case");
 
-        await _caseService.AddRangeAsync([.. scheduledData]);
+        await _caseService.AddRangeAsync([.. scheduledData
+            .Select(c => {
+                c.RestrictionCode = restrictionCode;
+                return c;
+            })
+        ]);
 
-        this.Logger.LogInformation("Processed {Count} Scheduled Cases", scheduledData.Length);
+        this.Logger.LogInformation("Processed {ScheduledCasesCount} scheduled cases for {RestrictionCode}", scheduledData.Length, restrictionCode);
     }
 
-    private async Task<ICollection<Case>> GetScheduledCases()
+    private async Task<ICollection<Case>> GetScheduledCases(string apprReasonCodes, string restrictionCode)
     {
-        var apprReasonCodes = string.Join(",", CaseService.ContinuationReasonCodes);
-
         // Retrieve the Scheduled Cases by invoking a lambda function to avoid API Gateway's timeout.
         // The endpoint is expected to take a while to get the data specially in PROD.
         var lambdaName = this.Configuration.GetValue<string>("AWS_GET_ASSIGNED_CASES_LAMBDA_NAME");
@@ -349,7 +380,7 @@ public class SyncAssignedCasesJob(
             var request = new
             {
                 reasons = apprReasonCodes,
-                restrictions = string.Empty
+                restrictions = restrictionCode
             };
 
             var response = await _lambdaInvokerService.InvokeAsync<object, AssignedCaseResponse>(request, lambdaName, TimeSpan.FromMinutes(timeoutMinutes));
@@ -364,45 +395,71 @@ public class SyncAssignedCasesJob(
         }
         else
         {
-            return await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes);
+            return await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes, restrictionCode);
         }
     }
 
     private async Task<CaseDto> PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)
     {
         var caseDto = this.Mapper.Map<CaseDto>(@case);
-        var nextApprDate = DateTime.ParseExact(
-                caseDto.DueDate,
-                PCSSCommonConstants.DATE_FORMAT,
-                CultureInfo.InvariantCulture);
 
-        // Attempt to retrieve the appropriate Accused/Participant and "full" Court File Number via Court List endpoint.
-        // If unsuccessful, fall back to populating Style of Cause from participants list.
-        var courtList = await _courtListService.GetJudgeCourtListAppearances(caseDto.JudgeId.GetValueOrDefault(), nextApprDate);
-        if (courtList == null || courtList.Items.Count == 0)
+        if (!Enum.TryParse<CourtClassCd>(caseDto.CourtClass, true, out var courtClass))
         {
-            this.Logger.LogWarning("Could not find court list for JudgeId: {JudgeId}, AppearanceDate: {AppearanceDate}. PhysicalFileId: {PhysicalFileId}",
-                caseDto.JudgeId, nextApprDate, caseDto.PhysicalFileId);
+            this.Logger.LogWarning("Invalid CourtClass value: {CourtClass} for PhysicalFileId: {PhysicalFileId}", caseDto.CourtClass, caseDto.PhysicalFileId);
+            return caseDto;
+        }
+
+        return courtClass switch
+        {
+            CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T
+                => await PopulateCriminalCaseInfo(caseDto, @case),
+
+            CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M
+                => await PopulateCivilCaseInfo(caseDto, @case),
+
+
+            _ => HandleUnsupportedCourtClass(caseDto, @case)
+        };
+    }
+
+    private async Task<CaseDto> PopulateCriminalCaseInfo(CaseDto caseDto, PCSSCommon.Models.Case @case)
+    {
+        var criminalFile = await _criminalFilesService.AppearanceDetailAsync(caseDto.PhysicalFileId, caseDto.AppearanceId, caseDto.PartId);
+
+        if (criminalFile == null)
+        {
+            this.Logger.LogWarning("Unable to find criminal file for PhysicalFileId: {PhysicalFileId}, AppearanceId: {AppearanceId} and PartId: {PartId}",
+                caseDto.PhysicalFileId, caseDto.AppearanceId, caseDto.PartId);
             return PopulateScheduledCaseWithDefaults(@case);
         }
 
-        var appearance = courtList.Items
-            .SelectMany(i => i.Appearances)
-            .FirstOrDefault(a => a.AppearanceId == caseDto.AppearanceId
-                && a.ProfPartId == caseDto.PartId
-                && (a.PhysicalFileId == caseDto.PhysicalFileId || a.JustinNo == caseDto.PhysicalFileId)
-                && a.AslFeederAdjudicators.Any(asl => asl.JudiciaryPersonId == caseDto.JudgeId));
-        if (appearance == null)
-        {
-            this.Logger.LogWarning("Could not find appearance for JudgeId: {JudgeId}, PhysicalFileId: {PhysicalFileId}, AppearanceDate: {AppearanceDate}, AppearanceId: {AppearanceId}, ProfPartId: {ProfPartId}",
-                caseDto.JudgeId, caseDto.PhysicalFileId, nextApprDate, caseDto.AppearanceId, caseDto.PartId);
-            return PopulateScheduledCaseWithDefaults(@case);
-        }
-
-        caseDto.StyleOfCause = appearance.AccusedNm;
-        caseDto.CourtFileNumber = appearance.CourtFileNumber;
+        caseDto.StyleOfCause = criminalFile.Accused?.FullNameLastFirst ?? caseDto.StyleOfCause;
+        caseDto.CourtFileNumber = criminalFile.FileNumberTxt ?? caseDto.CourtFileNumber;
 
         return caseDto;
+    }
+
+    private async Task<CaseDto> PopulateCivilCaseInfo(CaseDto caseDto, PCSSCommon.Models.Case @case)
+    {
+        var civilFile = await _civilFilesService.FileIdAsync(caseDto.PhysicalFileId, false, false);
+
+        if (civilFile == null)
+        {
+            this.Logger.LogWarning("Unable to find civil file for PhysicalFileId: {PhysicalFileId}, AppearanceId: {AppearanceId} and PartId: {PartId}",
+                caseDto.PhysicalFileId, caseDto.AppearanceId, caseDto.PartId);
+            return PopulateScheduledCaseWithDefaults(@case);
+        }
+
+        caseDto.StyleOfCause = civilFile.SocTxt ?? caseDto.StyleOfCause;
+        caseDto.CourtFileNumber = civilFile.FileNumberTxt ?? caseDto.CourtFileNumber;
+
+        return caseDto;
+    }
+
+    private CaseDto HandleUnsupportedCourtClass(CaseDto caseDto, PCSSCommon.Models.Case @case)
+    {
+        this.Logger.LogWarning("Unsupported CourtClass value: {CourtClass} for PhysicalFileId: {PhysicalFileId}", caseDto.CourtClass, caseDto.PhysicalFileId);
+        return PopulateScheduledCaseWithDefaults(@case);
     }
 
     private CaseDto PopulateScheduledCaseWithDefaults(PCSSCommon.Models.Case @case)
@@ -431,5 +488,33 @@ public class SyncAssignedCasesJob(
         return caseDto;
     }
 
-    #endregion Scheduled Cases (Decisions and Continuations) Methods
+    private async Task<string> GetAppearanceReasonCodes(IEnumerable<string> excludeApprCodes)
+    {
+        async Task<ICollection<AppearanceReason>> CriminalAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCriminalAsync();
+        async Task<ICollection<AppearanceReason>> CivilAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCivilAsync();
+        async Task<ICollection<AppearanceReason>> FamilyAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsFamilyAsync();
+        async Task<ICollection<AppearanceReason>> JustinAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsJustinAsync();
+        async Task<ICollection<AppearanceReason>> CeisAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCeisAsync();
+
+        var criminalTask = this.Cache.GetOrAddAsync($"CriminalAppearanceReasons", CriminalAppearanceReasons);
+        var civilTask = this.Cache.GetOrAddAsync($"CivilAppearanceReasons", CivilAppearanceReasons);
+        var familyTask = this.Cache.GetOrAddAsync($"FamilyAppearanceReasons", FamilyAppearanceReasons);
+        var justinTask = this.Cache.GetOrAddAsync($"JustinAppearanceReasons", JustinAppearanceReasons);
+        var ceisTask = this.Cache.GetOrAddAsync($"CeisAppearanceReasons", CeisAppearanceReasons);
+
+        await Task.WhenAll(criminalTask, civilTask, familyTask, justinTask, ceisTask);
+
+        var appearanceReasons = criminalTask.Result
+            .Concat(civilTask.Result)
+            .Concat(familyTask.Result)
+            .Concat(justinTask.Result)
+            .Concat(ceisTask.Result)
+            .OrderBy(a => a.Code);
+
+        var commaDelimitedCodes = string.Join(",", appearanceReasons.Select(a => a.Code).Except(excludeApprCodes).Distinct());
+
+        return commaDelimitedCodes;
+    }
+
+    #endregion Scheduled Cases
 }

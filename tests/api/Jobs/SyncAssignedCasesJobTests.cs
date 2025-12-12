@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.JudicialCalendarServices;
+using PCSSCommon.Clients.LookupServices;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Infrastructure;
@@ -32,7 +33,6 @@ public class SyncAssignedCasesJobTests
 {
     private readonly CourtListServiceFixture _courtListServiceFixture;
     private readonly FilesServiceFixture _filesServiceFixture;
-    private readonly LocationServiceFixture _locationServiceFixture;
 
     private readonly Faker _faker;
     private readonly Mock<IConfiguration> _mockConfig;
@@ -43,6 +43,7 @@ public class SyncAssignedCasesJobTests
     private readonly Mock<ILambdaInvokerService> _mockLambdaInvokerService;
 
     private readonly Mock<JudicialCalendarServicesClient> _mockJcServiceClient;
+    private readonly Mock<LookupServicesClient> _mockLookupServiceClient;
     private readonly Mock<ILogger<SyncAssignedCasesJob>> _mockLogger;
     private readonly IAppCache _cache;
     private readonly IMapper _mapper;
@@ -55,7 +56,6 @@ public class SyncAssignedCasesJobTests
     {
         _courtListServiceFixture = courtListServiceFixture;
         _filesServiceFixture = filesServiceFixture;
-        _locationServiceFixture = locationServiceFixture;
 
         _faker = new Faker();
 
@@ -73,6 +73,7 @@ public class SyncAssignedCasesJobTests
         };
 
         _mockJcServiceClient = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, httpClient);
+        _mockLookupServiceClient = new Mock<LookupServicesClient>(MockBehavior.Strict, httpClient);
         _mockLogger = new Mock<ILogger<SyncAssignedCasesJob>>();
 
         _cache = new CachingService(new Lazy<ICacheProvider>(() =>
@@ -95,6 +96,8 @@ public class SyncAssignedCasesJobTests
             _mockCaseService.Object,
             _courtListServiceFixture.MockCourtListService.Object,
             _mockJcServiceClient.Object,
+            _mockLookupServiceClient.Object,
+            _filesServiceFixture.MockFilesService.Object,
             _mockLambdaInvokerService.Object);
     }
 
@@ -149,6 +152,7 @@ public class SyncAssignedCasesJobTests
     [Fact]
     public async Task Execute_DeletesExistingCases_BeforeProcessing()
     {
+        SetupBasicMocks();
         var existingCases = new List<CaseDto>
         {
             new() { Id = _faker.Random.AlphaNumeric(24) },
@@ -264,83 +268,6 @@ public class SyncAssignedCasesJobTests
     }
 
     [Fact]
-    public async Task Execute_ProcessesScheduledCases_WhenDataAvailable()
-    {
-        SetupBasicMocks();
-
-        _mockEmailService.Setup(s => s
-            .GetFilteredEmailsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>()))
-            .ReturnsAsync([]);
-
-        var judgeId = _faker.Random.Int(1, 1000);
-        var appearanceDate = DateTime.Now.AddDays(1);
-        var physicalFileId = _faker.Random.Double(1, 9999);
-        var appearanceId = _faker.Random.Double(1, 9999);
-
-        var scheduledCases = new List<PCSSCommon.Models.Case>
-        {
-            new()
-            {
-
-                NextApprId = appearanceId,
-                PhysicalFileId = physicalFileId,
-                LastApprDt = appearanceDate.AddDays(-1).ToString("dd-MMM-yyyy"),
-                NextApprDt = appearanceDate.ToString("dd-MMM-yyyy"),
-                CourtClassCd = "S",
-                FileNumberTxt = _faker.Random.AlphaNumeric(10),
-                NextApprReason = "DEC",
-                StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
-                JudgeId = judgeId,
-                Participants = []
-            }
-        };
-
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
-
-        // Setup court list mock
-        var courtList = new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection
-        {
-            Items =
-            [
-                new()
-                {
-                    Appearances =
-                    [
-                        new()
-                        {
-                            AppearanceId = appearanceId.ToString(),
-                            PhysicalFileId = physicalFileId.ToString(),
-                            CourtFileNumber = scheduledCases[0].FileNumberTxt,
-                            AccusedNm = "Updated Style of Cause",
-                            AslFeederAdjudicators =
-                            [
-                                new() { JudiciaryPersonId = judgeId }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-
-        _courtListServiceFixture.MockCourtListService
-            .Setup(c => c.GetJudgeCourtListAppearances(judgeId, It.IsAny<DateTime>()))
-            .ReturnsAsync(courtList);
-
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
-
-        await _job.Execute();
-
-        _mockCaseService.Verify(s => s.AddRangeAsync(It.Is<List<CaseDto>>(list =>
-            list.Count == 1 && list[0].StyleOfCause == "Updated Style of Cause")), Times.Once);
-    }
-
-    [Fact]
     public async Task Execute_LogsInfo_WhenNoScheduledCasesFound()
     {
         SetupBasicMocks();
@@ -362,14 +289,14 @@ public class SyncAssignedCasesJobTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("No Scheduled Cases found")),
+                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("No data found for")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Exactly(4));
     }
 
     [Fact]
-    public async Task Execute_LogsWarning_WhenCourtListNotFoundForScheduledCase()
+    public async Task Execute_LogsWarning_WhenCasesHaveUnsupportedCourtClass()
     {
         SetupBasicMocks();
 
@@ -404,105 +331,16 @@ public class SyncAssignedCasesJobTests
         _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(scheduledCases);
 
-        // Return empty court list
-        _courtListServiceFixture.MockCourtListService
-            .Setup(c => c.GetJudgeCourtListAppearances(It.IsAny<int>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection
-            {
-                Items = []
-            });
-
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
-
         await _job.Execute();
 
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Could not find court list")),
+                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Unsupported CourtClass value")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task Execute_LogsWarning_WhenAppearanceNotFoundInCourtList()
-    {
-        SetupBasicMocks();
-
-        _mockEmailService.Setup(s => s
-            .GetFilteredEmailsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>()))
-            .ReturnsAsync([]);
-
-        var judgeId = _faker.Random.Int(1, 1000);
-        var appearanceDate = DateTime.Now.AddDays(1);
-
-        var scheduledCases = new List<PCSSCommon.Models.Case>
-        {
-            new()
-            {
-                NextApprId = _faker.Random.Double(1, 9999),
-                PhysicalFileId = _faker.Random.Double(1, 9999),
-                LastApprDt = appearanceDate.AddDays(-1).ToString("dd-MMM-yyyy"),
-                NextApprDt = appearanceDate.ToString("dd-MMM-yyyy"),
-                CourtClassCd = "S",
-                FileNumberTxt = _faker.Random.AlphaNumeric(10),
-                NextApprReason = "DEC",
-                StyleOfCause = null,
-                JudgeId = judgeId,
-                Participants = []
-            }
-        };
-
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
-
-        // Return court list but with no matching appearance
-        var courtList = new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection
-        {
-            Items =
-            [
-                new()
-                {
-                    Appearances =
-                    [
-                        new()
-                        {
-                            PhysicalFileId = "99999", // Different file ID
-                            CourtFileNumber = "DIFFERENT",
-                            AslFeederAdjudicators =
-                            [
-                                new() { JudiciaryPersonId = judgeId }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-
-        _courtListServiceFixture.MockCourtListService
-            .Setup(c => c.GetJudgeCourtListAppearances(judgeId, It.IsAny<DateTime>()))
-            .ReturnsAsync(courtList);
-
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
-
-        await _job.Execute();
-
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Could not find appearance")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Exactly(4));
     }
 
     [Fact]
@@ -678,7 +516,7 @@ public class SyncAssignedCasesJobTests
                 It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("No participants found")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Exactly(4));
     }
 
     [Fact]
@@ -741,7 +579,7 @@ public class SyncAssignedCasesJobTests
                 NextApprReason = "DEC",
                 StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
                 JudgeId = judgeId,
-                Participants = new List<PCSSCommon.Models.Participant>()
+                Participants = []
             }
         };
 
@@ -795,7 +633,7 @@ public class SyncAssignedCasesJobTests
                 It.IsAny<object>(),
                 "test-lambda-function",
                 It.IsAny<TimeSpan?>()),
-            Times.Once);
+            Times.Exactly(4));
 
         _mockJcServiceClient.Verify(c => c
             .GetUpcomingSeizedAssignedCasesAsync(
@@ -844,87 +682,7 @@ public class SyncAssignedCasesJobTests
                 It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Failed to retrieve scheduled cases from Lambda")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task Execute_UpdatesFileNumberFromCourtList()
-    {
-        SetupBasicMocks();
-
-        _mockEmailService.Setup(s => s
-            .GetFilteredEmailsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>()))
-            .ReturnsAsync([]);
-
-        var judgeId = _faker.Random.Int(1, 1000);
-        var appearanceDate = DateTime.Now.AddDays(1);
-        var physicalFileId = _faker.Random.Double(1, 9999);
-        var courtListFileNumber = "CL-12345";
-        var appearanceId = _faker.Random.Double(1, 9999);
-
-        var scheduledCases = new List<PCSSCommon.Models.Case>
-        {
-            new()
-            {
-                NextApprId = appearanceId,
-                PhysicalFileId = physicalFileId,
-                LastApprDt = appearanceDate.AddDays(-1).ToString("dd-MMM-yyyy"),
-                NextApprDt = appearanceDate.ToString("dd-MMM-yyyy"),
-                CourtClassCd = "S",
-                FileNumberTxt = "ORIGINAL-FILE-NUMBER",
-                NextApprReason = "DEC",
-                StyleOfCause = "Original Style",
-                JudgeId = judgeId,
-                Participants = []
-            }
-        };
-
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
-
-        var courtList = new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection
-        {
-            Items =
-            [
-                new()
-                {
-                    Appearances =
-                    [
-                        new()
-                        {
-                            AppearanceId = appearanceId.ToString(),
-                            PhysicalFileId = physicalFileId.ToString(),
-                            CourtFileNumber = courtListFileNumber,
-                            AccusedNm = "Court List Style",
-                            AslFeederAdjudicators =
-                            [
-                                new() { JudiciaryPersonId = judgeId }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-
-        _courtListServiceFixture.MockCourtListService
-            .Setup(c => c.GetJudgeCourtListAppearances(judgeId, It.IsAny<DateTime>()))
-            .ReturnsAsync(courtList);
-
-        List<CaseDto> capturedCases = null;
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .Callback<List<CaseDto>>(cases => capturedCases = cases)
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
-
-        await _job.Execute();
-
-        Assert.NotNull(capturedCases);
-        Assert.Single(capturedCases);
-        Assert.Equal(courtListFileNumber, capturedCases[0].CourtFileNumber);
-        Assert.Equal("Court List Style", capturedCases[0].StyleOfCause);
+            Times.Exactly(4));
     }
 
     private void SetupBasicMocks()
@@ -932,5 +690,21 @@ public class SyncAssignedCasesJobTests
         _mockCaseService.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
         _mockCaseService.Setup(s => s.DeleteRangeAsync(It.IsAny<List<string>>()))
             .ReturnsAsync(OperationResult.Success());
+
+        _mockLookupServiceClient
+            .Setup(l => l.GetAppearanceReasonsCriminalAsync())
+            .ReturnsAsync([]);
+        _mockLookupServiceClient
+            .Setup(l => l.GetAppearanceReasonsCivilAsync())
+            .ReturnsAsync([]);
+        _mockLookupServiceClient
+            .Setup(l => l.GetAppearanceReasonsFamilyAsync())
+            .ReturnsAsync([]);
+        _mockLookupServiceClient
+            .Setup(l => l.GetAppearanceReasonsJustinAsync())
+            .ReturnsAsync([]);
+        _mockLookupServiceClient
+            .Setup(l => l.GetAppearanceReasonsCeisAsync())
+            .ReturnsAsync([]);
     }
 }

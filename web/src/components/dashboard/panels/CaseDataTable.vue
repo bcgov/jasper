@@ -1,5 +1,10 @@
 <template>
-  <v-data-table-virtual :headers="headers" :items="data" fixed-header :sort-by>
+  <v-data-table-virtual
+    :headers="headers"
+    :items="data"
+    :sort-by="sortBy"
+    fixed-header
+  >
     <template #item.courtClass="{ item }">
       <span :class="getCourtClassStyle(item.courtClass)">
         {{ getCourtClassLabel(item.courtClass) }}
@@ -37,7 +42,7 @@
     sortBy?: { key: string; order: 'asc' | 'desc' }[];
   }>();
 
-  const sortBy = ref(props.sortBy || []);
+  const sortBy = ref(props.sortBy || [{ key: 'dueDate', order: 'asc' }]);
 
   const allColumns: Record<string, DataTableHeader> = {
     fileNumber: {
@@ -57,12 +62,16 @@
       key: 'decisionDate',
       value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.dueDate)),
+      sort: (a: string, b: string) =>
+        new Date(a).getTime() - new Date(b).getTime(),
     },
     nextAppearance: {
       title: 'NEXT APPEARANCE',
       key: 'dueDate',
       value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.dueDate)),
+      sort: (a: string, b: string) =>
+        new Date(a).getTime() - new Date(b).getTime(),
     },
     reason: {
       title: 'REASON',
@@ -73,12 +82,16 @@
       key: 'appearanceDate',
       value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.appearanceDate)),
+      sort: (a: string, b: string) =>
+        new Date(a).getTime() - new Date(b).getTime(),
     },
     dueDate: {
       title: 'DUE DATE',
       key: 'dueDate',
       value: (item: Case) =>
         formatDateInstanceToDDMMMYYYY(new Date(item.dueDate)),
+      sort: (a: string, b: string) =>
+        new Date(a).getTime() - new Date(b).getTime(),
     },
     caseAge: {
       title: 'CASE AGE (days)',

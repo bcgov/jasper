@@ -223,6 +223,7 @@ namespace Scv.Api.Services.Files
             var accused = new CriminalAccused
             {
                 FullName = criminalParticipant.FullName,
+                FullNameLastFirst = criminalParticipant.FullNameLastFirst,
                 PartId = partId
             };
 
@@ -250,14 +251,14 @@ namespace Scv.Api.Services.Files
             };
             return appearanceDetail;
         }
-        
+
         public async Task<CriminalAppearanceDocuments> AppearanceDetailDocuments(string fileId, string partId)
         {
             async Task<CriminalFileContent> FileContent() => await _filesClient.FilesCriminalFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
 
             var fileContent = await _cache.GetOrAddAsync($"CriminalFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
             var accusedFile = fileContent?.AccusedFile?.FirstOrDefault(af => af.MdocJustinNo == fileId && af.PartId == partId);
-            
+
             if (accusedFile == null)
                 return null;
 
@@ -481,7 +482,7 @@ namespace Scv.Api.Services.Files
             var justinCounsel = _mapper.Map<JustinCounsel>(criminalParticipant);
             var attendanceMethod = attendanceMethods?.FirstOrDefault(am => am.RoleType == "CON");
             var appearanceMethod = appearanceMethods?.FirstOrDefault(am => am.RoleTypeCd == "CON");
-            
+
             justinCounsel.AttendanceMethodCd = attendanceMethod?.AttendanceMethodCd;
             justinCounsel.AppearanceMethodCd = appearanceMethod?.AppearanceMethodCd;
 
@@ -491,10 +492,10 @@ namespace Scv.Api.Services.Files
                 _lookupService.GetCriminalAssetsDescriptions(appearanceMethod?.AppearanceMethodCd)
             );
             var lookupResults = await lookupTasks;
-            
+
             justinCounsel.AttendanceMethodDesc = lookupResults[0];
             justinCounsel.AppearanceMethodDesc = lookupResults[1];
-            
+
             //We could assign name here from the PartyAppearance, but that doesn't appear to be correct. 
             //While testing I found data inside of PartyAppearances, but used CourtList and saw there was no assigned counsel. 
             //FileId 1180, AppearanceId 1528.0026, PartId 15911.0026 is an example of this on the Development Environment. 

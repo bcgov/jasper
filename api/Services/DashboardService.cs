@@ -119,9 +119,7 @@ public class DashboardService(
             var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
             var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
 
-            async Task<PCSS.JudicialCalendar> MySchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
-            var myScheduleTask = this.GetDataFromCache($"{this.CacheName}-{judgeId}-{formattedStartDate}-{formattedEndDate}", MySchedule);
-            var mySchedule = await myScheduleTask;
+            var mySchedule = await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
             var days = await GetDays(mySchedule);
 
             return OperationResult<List<CalendarDay>>.Success(days);
@@ -149,14 +147,11 @@ public class DashboardService(
             var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
             var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
 
-            async Task<PCSS.ReadJudicialCalendarsResponse> JudicialCalendar() => await _calendarClient.ReadCalendarsV2Async(
+            var judicialCalendar = await _calendarClient.ReadCalendarsV2Async(
                    locationIds,
                    formattedStartDate,
                    formattedEndDate,
                    string.Empty);
-
-            var judicialCalendarTask = this.GetDataFromCache($"{this.CacheName}-{locationIds}-{formattedStartDate}-{formattedEndDate}", JudicialCalendar);
-            var judicialCalendar = await judicialCalendarTask;
             var calendarsWithData = judicialCalendar.Calendars.Where(c => c.Days.Count > 0);
 
             // Aggregate calendars into a single list of CalendarDay

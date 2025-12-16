@@ -89,7 +89,9 @@ public class DashboardService(
                                 && crd.AdjudicatorDetails.Any(ad => ad.AdjudicatorId == judgeId)));
                 if (result != null)
                 {
-                    activity.FilesCount = result.CasesTarget.GetValueOrDefault();
+                    activity.FilesCount = result.CourtRoomDetails
+                        .FirstOrDefault(crd => crd.AdjudicatorDetails.Any(ad => ad.AdjudicatorId == judgeId))
+                        .CasesTarget ?? 0;
                     activity.ContinuationsCount = result.Appearances.Count(a => a.ContinuationYn == "Y");
                 }
             }

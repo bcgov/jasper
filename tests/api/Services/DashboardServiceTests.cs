@@ -647,12 +647,12 @@ public class DashboardServiceTests : ServiceTestBase
             [
                 new() {
                     ActivityCd = mockActivityCode,
-                    CasesTarget = mockFileCount,
                     CourtRoomDetails =
                     [
                         new CourtRoomDetail
                         {
                             CourtRoomCd = mockCourtRoom,
+                            CasesTarget = mockFileCount,
                             AdjudicatorDetails =
                             [
                                 new() {

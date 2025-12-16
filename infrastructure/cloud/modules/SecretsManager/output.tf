@@ -56,6 +56,7 @@ output "api_secrets" {
     ["Keycloak__Secret", "${aws_secretsmanager_secret.keycloak_secret.arn}:secret::"],
     ["Keycloak__VcIdpHint", "${aws_secretsmanager_secret.keycloak_secret.arn}:vcIdpHint::"],
     ["KEY_DOCS_BINDER_REFRESH_HOURS", "${aws_secretsmanager_secret.misc_secret.arn}:keyDocsBinderRefreshHours::"],
+    ["LAZY_CACHE_DEFAULT_DURATION_SECONDS", "${aws_secretsmanager_secret.misc_secret.arn}:lazyCacheDefaultDurationSeconds::"],
     ["LocationServicesClient__Username", "${aws_secretsmanager_secret.location_services_client_secret.arn}:username::"],
     ["LocationServicesClient__Password", "${aws_secretsmanager_secret.location_services_client_secret.arn}:password::"],
     ["LocationServicesClient__Url", "${aws_secretsmanager_secret.location_services_client_secret.arn}:baseUrl::"],

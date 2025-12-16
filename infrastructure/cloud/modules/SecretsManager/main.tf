@@ -173,17 +173,18 @@ resource "aws_secretsmanager_secret" "misc_secret" {
 resource "aws_secretsmanager_secret_version" "misc_secret_value" {
   secret_id = aws_secretsmanager_secret.misc_secret.id
   secret_string = jsonencode({
-    dataProtectionKeyEncryptionKey = "",
-    webBaseHref                    = "",
-    useSelfSignedSsl               = "",
-    ipFilterRules                  = "",
-    realIpFrom                     = "",
-    apiUrl                         = ""
-    siteMinderLogoutUrl            = "",
-    includeSiteMinderHeaders       = "",
-    mtlsCert                       = "",
-    allowedIpRanges                = "",
-    keyDocsBinderRefreshHours      = ""
+    dataProtectionKeyEncryptionKey  = "",
+    webBaseHref                     = "",
+    useSelfSignedSsl                = "",
+    ipFilterRules                   = "",
+    realIpFrom                      = "",
+    apiUrl                          = ""
+    siteMinderLogoutUrl             = "",
+    includeSiteMinderHeaders        = "",
+    mtlsCert                        = "",
+    allowedIpRanges                 = "",
+    keyDocsBinderRefreshHours       = "",
+    lazyCacheDefaultDurationSeconds = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

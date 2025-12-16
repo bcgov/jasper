@@ -159,7 +159,17 @@ namespace Scv.Api
 
             #endregion Swagger
 
-            services.AddLazyCache();
+            services.AddLazyCache(serviceProvider =>
+            {
+                var cache = new LazyCache.CachingService
+                {
+                    DefaultCachePolicy = new LazyCache.CacheDefaults
+                    {
+                        DefaultCacheDurationSeconds = Configuration.GetValue<int?>("LAZY_CACHE_DEFAULT_DURATION_SECONDS") ?? 300 // 5 minutes
+                    }
+                };
+                return cache;
+            });
 
             services.AddHttpContextAccessor();
         }

@@ -187,24 +187,28 @@ describe('DarsAccessModal tests', () => {
       expect(darsStore.isModalVisible).toBe(true);
     });
 
-    it('sets the correct locationId based on openModal parameter', async () => {
+    it('updates locationId and clears room when room parameter is null', async () => {
       await mountComponent();
+
+      darsStore.setSearchCriteria(new Date('2025-10-28'), '1', 'Room 101');
 
       darsStore.openModal(null, '1', null);
       await nextTick();
 
       expect(darsStore.searchLocationId).toBe('1');
-      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1234, 'Room 101');
+      expect(darsStore.searchRoom).toBe('');
     });
 
-    it('sets the correct locationId when called with string parameter', async () => {
+    it('updates locationId and preserves existing room when not overridden', async () => {
       await mountComponent();
 
-      darsStore.openModal(null, '2', null);
+      darsStore.setSearchCriteria(new Date('2025-10-28'), '1', 'Room 101');
+
+      darsStore.openModal(null, '2');
       await nextTick();
 
       expect(darsStore.searchLocationId).toBe('2');
-      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1234, '');
+      expect(darsStore.searchRoom).toBe('Room 101');
     });
   });
 

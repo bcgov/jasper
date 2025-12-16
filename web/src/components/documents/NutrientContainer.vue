@@ -19,6 +19,8 @@
       switch (queryType.toLowerCase()) {
         case 'bundle':
           return usePDFStrategy(PDFViewerType.BUNDLE);
+        case 'transitory-bundle':
+          return usePDFStrategy(PDFViewerType.TRANSITORY_BUNDLE);
         case 'nutrient':
         case 'file':
         case 'pdf':

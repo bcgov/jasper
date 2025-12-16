@@ -25,12 +25,13 @@ using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.CourtList;
+using Scv.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
+using Scv.Core.Helpers;
 
 
 namespace tests.api.Controllers;

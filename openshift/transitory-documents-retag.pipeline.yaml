@@ -1,0 +1,117 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: jasper-retag-image
+  labels:
+    DataClass: Low
+spec:
+  params:
+    - name: tag
+      type: string
+      description: Source image tag to import from GHCR
+    - name: environment
+      type: string
+      description: Destination environment tag (dev|test|prod)
+    - name: registry
+      type: string
+      description: image registry (e.g. ghcr.io)
+      default: 'ghcr.io'
+    - name: org
+      type: string
+      description: image org (e.g. bcgov)
+      default: 'bcgov'
+    - name: repository
+      type: string
+      description: image repository (e.g. jasper)
+      default: 'jasper'
+  tasks:
+    - name: validate-environment
+      taskRef:
+        # Pull Task from Tekton Catalog via cluster resolver
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: SCRIPT
+          value: |
+            set -euo pipefail
+            ENV="$(params.environment)"
+            case "$ENV" in
+              dev|test|prod)
+                echo "Environment OK: $ENV"
+                ;;
+              *)
+                echo "ERROR: invalid environment '$ENV' (must be dev, test, or prod)" >&2
+                exit 1
+                ;;
+            esac
+
+    - name: import-image
+      runAfter: ['validate-environment']
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: namespace
+            value: openshift-pipelines
+          - name: name
+            value: openshift-client
+      params:
+        - name: SCRIPT
+          value: |
+            set -euo pipefail
+            SRC_TAG="$(params.tag)"
+            REGISTRY="$(params.registry)"
+            ORG="$(params.org)"
+            REPO="$(params.repository)"
+            IMAGE="jasper-transitory-documents-api"
+            SRC_IMAGE="${REGISTRY}/${ORG}/${REPO}/${IMAGE}:${SRC_TAG}"
+
+            echo "Ensuring ImageStream ${IMAGE} exists..."
+            oc get is "${IMAGE}" >/dev/null 2>&1 || oc create is "${IMAGE}"
+
+            echo "Pointing ImageStreamTag ${IMAGE}:${SRC_TAG} to ${SRC_IMAGE} ..."
+            oc tag --source=docker "${SRC_IMAGE}" "${IMAGE}:${SRC_TAG}" --reference-policy=local
+
+            echo "Importing to populate status for ${IMAGE}:${SRC_TAG} ..."
+            # Uses the 'from' already set on the spec; no conflict.
+            oc import-image "${IMAGE}:${SRC_TAG}" --confirm >/dev/null
+
+            # Optional: wait briefly for ISTag to materialize (status)
+            echo "Waiting for ISTag ${IMAGE}:${SRC_TAG} to be available..."
+            for i in $(seq 1 15); do
+              if oc get istag "${IMAGE}:${SRC_TAG}" -o jsonpath='{.image.dockerImageReference}' >/dev/null 2>&1; then
+                oc get istag "${IMAGE}:${SRC_TAG}" -o jsonpath='{.tag.from.kind}/{.tag.from.name}{"\n"}'
+                break
+              fi
+              sleep 2
+            done || true
+
+    - name: retag-to-environment
+      runAfter: ['import-image']
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: SCRIPT
+          value: |
+            set -euo pipefail
+            SRC_TAG="$(params.tag)"
+            DEST_ENV="$(params.environment)"
+
+            echo "Tagging jasper-transitory-documents-api:${SRC_TAG} -> jasper-transitory-documents-api:${DEST_ENV} ..."
+            oc tag "jasper-transitory-documents-api:${SRC_TAG}" \
+                   "jasper-transitory-documents-api:${DEST_ENV}" \
+                   --reference-policy=local

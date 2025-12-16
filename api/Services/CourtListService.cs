@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -13,12 +7,19 @@ using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Civil.CourtList;
-using Scv.Api.Models.CourtList;
-using Scv.Api.Models.Criminal.CourtList;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Civil.CourtList;
+using Scv.Models.CourtList;
+using Scv.Models.Criminal.CourtList;
+using Scv.Models.Criminal.Detail;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {
@@ -73,7 +74,7 @@ namespace Scv.Api.Services
 
         #endregion Constructor
 
-        public async Task<Models.CourtList.CourtList> CourtListAsync(string agencyId, string roomCode, DateTime proceeding, string divisionCode, string fileNumber, string courtLevelCode)
+        public async Task<Scv.Models.CourtList.CourtList> CourtListAsync(string agencyId, string roomCode, DateTime proceeding, string divisionCode, string fileNumber, string courtLevelCode)
         {
             var proceedingDateString = proceeding.ToString("yyyy-MM-dd");
             var agencyCode = await _locationService.GetLocationCodeFromId(agencyId);
@@ -103,7 +104,7 @@ namespace Scv.Api.Services
             var criminalFileIds = criminalCourtCalendarAppearances.SelectToList(ccl => ccl.MdocJustinNo);
 
             if (civilFileIds.Count == 0 && criminalFileIds.Count == 0)
-                return new Models.CourtList.CourtList();
+                return new Scv.Models.CourtList.CourtList();
 
             //Start file details tasks.
             var civilFileDetailTasks = CivilFileDetailTasks(civilFileIds);
@@ -125,7 +126,7 @@ namespace Scv.Api.Services
             //create a blank courtList object and overlay CourtCalendarDetails on top of it.
             //Some overlap happens already, but some of the fields aren't passed over (they already exist in CourtList). 
             //PCSS for example isn't aware of CourtList, it only uses CourtCalendarDetails where as SCV uses the CourtList + CourtCalendarDetails. 
-            var courtList = _mapper.Map<Models.CourtList.CourtList>(originalCourtList);
+            var courtList = _mapper.Map<Scv.Models.CourtList.CourtList>(originalCourtList);
 
             courtList.CivilCourtList = await PopulateCivilCourtListFromFileDetails(courtList.CivilCourtList, civilFileDetails);
             courtList.CriminalCourtList = await PopulateCriminalCourtListFromFileDetails(courtList.CriminalCourtList, criminalFileDetails);

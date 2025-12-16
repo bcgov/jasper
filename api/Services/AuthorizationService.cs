@@ -1,8 +1,8 @@
 ﻿using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +52,12 @@ namespace Scv.Api.Services
             _logger.LogInformation("Fetching roles for user with ID {UserId}.", userId);
             var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId);
             var userRoles = user?.Roles;
-            var userRoleNames = userRoles?.Select(ur => ur.Name).Distinct();
+            DateTime expiryDate;
+            DateTime effectiveDate;
+            var userRoleNames = userRoles?.Where(ur =>
+                (DateTime.TryParse(ur.ExpiryDate, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out expiryDate) && expiryDate >= DateTime.Now || ur.ExpiryDate == null) &&
+                DateTime.TryParse(ur.EffectiveDate, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out effectiveDate) && effectiveDate <= DateTime.Now)
+                .Select(ur => ur.Name).Distinct();
             if (userRoleNames == null || !userRoleNames.Any())
             {
                 _logger.LogWarning("No roles found for user with ID {UserId}.", userId);
@@ -60,6 +65,7 @@ namespace Scv.Api.Services
             }
 
             _logger.LogInformation("Roles successfully fetched for user with ID {UserId}.", userId);
+            _logger.LogDebug("Fetched Roles {UserId}. {Roles}", userId, userRoles);
             return OperationResult<IEnumerable<string>>.Success(userRoleNames);
         }
 

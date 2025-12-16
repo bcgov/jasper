@@ -6,10 +6,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Timebank;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Timebank;
 
 namespace Scv.Api.Controllers;
 
@@ -37,7 +37,7 @@ public class TimebankController(
     /// <returns>Timebank summary record.</returns>
     [HttpGet]
     [Route("summary/{period}")]
-    public async Task<ActionResult<TimebankSummaryDto>> GetTimebankSummaryForJudge(
+    public async Task<ActionResult<Scv.Models.Timebank.TimebankSummaryDto>> GetTimebankSummaryForJudge(
         int period,
         [FromQuery] int? judgeId = null,
         [FromQuery] bool? includeLineItems = null,

@@ -18,8 +18,10 @@ using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using System;
 using System.Collections.Generic;
@@ -321,6 +323,11 @@ namespace Scv.Api.Infrastructure.Authentication
             var groupService = context.HttpContext.RequestServices.GetRequiredService<IGroupService>();
 
             UserItem matchingUser = null;
+            if (context.Principal.ProvjudUserGuid() == null)
+            {
+                logger.LogInformation("No GUID claim found for user with email {Email}. Cannot look up user in PCSS.", userDto.Email);
+                return userDto;
+            }
             try
             {
                 logger.LogInformation("Requesting user information from PCSS.");

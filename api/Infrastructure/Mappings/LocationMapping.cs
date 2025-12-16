@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Mapster;
-using Scv.Api.Models.Location;
+﻿using Mapster;
+using Scv.Models.Location;
+using System.Collections.Generic;
 using JC = JCCommon.Clients.LocationServices;
 using PCSS = PCSSCommon.Models;
 
@@ -35,7 +35,8 @@ public class LocationMapping : IRegister
                 src.JustinAgenId != null ? src.JustinAgenId.ToString() : null,
                 src.LocationId != null ? src.LocationId.ToString() : null,
                 src.ActiveYn == "Y",
-                new List<CourtRoom>()))
+                new List<CourtRoom>()
+                ))
             .Ignore(dest => dest.InfoLink)
             .IgnoreIf((src, dest) => src.CourtRooms == null, dest => dest.CourtRooms);
     }

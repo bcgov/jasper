@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using Scv.Api.Helpers.Documents;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Api.Helpers;
+using Scv.Models.Criminal.Detail;
 
 namespace Scv.Api.Models.Criminal.AppearanceDetail;
 

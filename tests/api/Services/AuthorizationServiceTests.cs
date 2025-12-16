@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using System;
 using System.Collections.Generic;
@@ -132,7 +132,7 @@ public class AuthorizationServiceTests
             UserId = userId,
             Roles = new List<EffectiveRoleItem>
             {
-                new EffectiveRoleItem { Name = roleName }
+                new EffectiveRoleItem { Name = roleName, EffectiveDate = DateTime.Now.AddDays(-1).ToShortDateString(), ExpiryDate = null }
             }
         };
 

@@ -1,0 +1,18 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+
+ENV ASPNETCORE_ENVIRONMENT='Development'
+ENV ASPNETCORE_URLS='http://+:5001'
+ENV DOTNET_STARTUP_PROJECT='./transitory-documents-api/transitory-documents-api.csproj'
+ENV DOTNET_USE_POLLING_FILE_WATCHER=1
+ENV DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1
+ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /vsdbg \
+    && curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg
+
+WORKDIR /opt/app-root/src
+
+# Expose the port
+EXPOSE 5001

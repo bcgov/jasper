@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Hangfire;
@@ -16,20 +12,27 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.FeatureManagement;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
+using Scv.Api.Models;
 using Scv.Api.Services.EF;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace Scv.Api
 {
@@ -47,7 +50,6 @@ namespace Scv.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddExceptionHandler<CustomExceptionHandler>();
             services.AddProblemDetails();
 
             services.AddLogging(options =>
@@ -112,6 +114,8 @@ namespace Scv.Api
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
+            services.Configure<TdApiOptions>(Configuration.GetSection("TDApi"));
+
             #endregion Setup Services
 
             services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
@@ -162,6 +166,7 @@ namespace Scv.Api
             services.AddLazyCache();
 
             services.AddHttpContextAccessor();
+            services.AddFeatureManagement();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

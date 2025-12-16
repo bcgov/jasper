@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Scv.Models.archive
+﻿namespace Scv.Models.archive
 {
     public class DocumentRequest
     {

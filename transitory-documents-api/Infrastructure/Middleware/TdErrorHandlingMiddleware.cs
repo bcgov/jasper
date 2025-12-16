@@ -1,11 +1,11 @@
 ﻿
-using System.Net;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
+using System.Net;
+using System.Text.Json;
 
 namespace Scv.TdApi.Infrastructure.Middleware
 {
@@ -100,6 +100,19 @@ namespace Scv.TdApi.Infrastructure.Middleware
                 case NotFoundException _:
                     code = HttpStatusCode.NotFound;
                     message = ex.Message;
+                    break;
+
+                case FileNotFoundException _:
+                case DirectoryNotFoundException _:
+                    code = HttpStatusCode.NotFound;
+                    message = "The requested file or directory was not found.";
+                    _logger.LogDebug(ex, "File or directory not found: {Message}", ex.Message);
+                    break;
+
+                case IOException _:
+                    code = HttpStatusCode.InternalServerError;
+                    message = "Unable to access the file system. Please try again later.";
+                    _logger.LogError(ex, "File system access error: {Message}", ex.Message);
                     break;
 
                 case BadRequestException _:

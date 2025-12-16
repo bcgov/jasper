@@ -27,7 +27,7 @@
             }}
           </h5>
         </v-col>
-        <v-col>
+        <v-col v-if="transitoryDocumentsEnabled">
           <v-btn @click.prevent="dialogOpen = true"> View Shared Folder </v-btn>
         </v-col>
       </v-row>
@@ -85,6 +85,9 @@
 
   const commonStore = useCommonStore();
   const dialogOpen = ref(false);
+  const transitoryDocumentsEnabled = computed(
+    () => !!commonStore.appInfo?.featureFlags?.TransitoryDocuments
+  );
 
   const infoAddress = computed<string>(() => {
     // Try to get the location from the store using the id since it is the most reliable.

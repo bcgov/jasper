@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace Scv.Core.Infrastructure;
+﻿namespace Scv.Core.Infrastructure;
 
 public class OperationResult
 {

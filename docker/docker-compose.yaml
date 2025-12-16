@@ -62,7 +62,7 @@ services:
       - Keycloak__PresReqConfId=${KeycloakPresReqConfId}
       - Keycloak__Secret=${KeycloakSecret}
       - Keycloak__VcIdpHint=${KeycloakVcIdpHint}
-      - TDKeycloak__Secret=${TDKeycloakSecret}
+      - TDKeycloak__Secret=${TDKeycloakServiceSecret}
       - LocationServicesClient__Password=${LocationServicesClientPassword}
       - LocationServicesClient__Url=${LocationServicesClientUrl}
       - LocationServicesClient__Username=${LocationServicesClientUsername}
@@ -84,8 +84,6 @@ services:
       - DARS__Url=${DARS_URL}
       - DARS__Username=${DARS_USERNAME}
       - TD__Url=${TD_URL}
-      - TD__Username=${TD_USERNAME}
-      - TD__Password=${TD_PASSWORD}
       - DARS__LogsheetUrl=${DARS_LOGSHEET_URL}
       - Request__AgencyIdentifierId=${RequestAgencyIdentifierId}
       - Request__ApplicationCd=${RequestApplicationCd}
@@ -132,21 +130,14 @@ services:
     environment:
       - ASPNETCORE_URLS=${ASPNETCORE_TD_URLS}
       - AuthorizerKey=${AuthorizerKey}
-      - Auth__AllowSiteMinderUserType=${ALLOW_SITE_MINDER_USER_TYPE}
-      - Auth__UserId=${USER_ID}
-      - Auth__UserPassword=${USER_PASSWORD}
       - DataProtectionKeyEncryptionKey=${DataProtectionKeyEncryptionKey}
+      - Keycloak__Audience=${TDKeycloakAudience}
+      - Keycloak__Authority=${TDKeycloakAuthority}
+      - Keycloak__ClientId=${TDKeycloakClient}
       - Keycloak__Secret=${TdKeycloakSecret}
       - SplunkCollectorId=${SplunkCollectorId}
       - SplunkCollectorUrl=${SplunkCollectorUrl}
       - SplunkToken=${SplunkToken}
-      - UserServicesClient__Password=${UserServicesClientPassword}
-      - UserServicesClient__Url=${UserServicesClientUrl}
-      - UserServicesClient__Username=${UserServicesClientUsername}
-      - Request__AgencyIdentifierId=${RequestAgencyIdentifierId}
-      - Request__ApplicationCd=${RequestApplicationCd}
-      - Request__GetUserLoginDefaultAgencyId=${RequestGetUserLoginDefaultAgencyId}
-      - Request__PartId=${RequestPartId}
       - SharedDrive__SmbServer=${SMB_HOST}
       - SharedDrive__SmbShareName=${SMB_SHARE}
       - SharedDrive__BasePath=${SMB_BASE}

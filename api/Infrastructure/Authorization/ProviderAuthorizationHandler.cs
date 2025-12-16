@@ -51,10 +51,6 @@ namespace Scv.Api.Infrastructure.Authorization
                     context.Fail(new AuthorizationFailureReason(this, "User claims changed since last authentication."));
                     return;
                 }
-                if (isAuthController && actionDescriptor.ActionName == nameof(AuthController.UserInfo))
-                {
-                    context.Succeed(requirement);
-                }
             }
 
             if (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetMyUser)))

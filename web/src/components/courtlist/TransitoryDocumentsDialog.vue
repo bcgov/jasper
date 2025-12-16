@@ -7,69 +7,69 @@
           {{ props.roomCd }} {{
         }}</v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn :icon="mdiClose" @click="close"></v-btn>
+        <v-btn :icon="mdiClose" @click="close" title="close"></v-btn>
       </v-toolbar>
 
       <v-card-text>
         <v-container>
-          <v-row v-if="loading" justify="center" class="my-5">
-            <v-progress-circular
-              indeterminate
-              color="primary"
-              size="64"
-            ></v-progress-circular>
-          </v-row>
-
-          <v-row v-else-if="error" justify="center" class="my-5">
-            <v-col cols="12" md="6">
-              <v-alert type="error" border="start">
-                {{ error }}
-              </v-alert>
-            </v-col>
-          </v-row>
-
           <v-row
-            v-else-if="documents.length === 0"
+            v-if="error || (documents.length === 0 && !loading)"
             justify="center"
             class="my-5"
           >
             <v-col cols="12" md="6">
-              <v-alert type="info" border="start">
+              <v-alert v-if="error" type="error" border="start">
+                {{ error }}
+              </v-alert>
+              <v-alert v-else type="info" border="start">
                 No documents found for this location and date.
               </v-alert>
             </v-col>
           </v-row>
 
-          <v-data-table
-            v-else
-            v-model="selectedDocuments"
-            :headers="headers"
-            :items="documents"
-            :sort-by="[{ key: 'matchedRoomFolder', order: 'desc' }]"
-            class="elevation-1"
-            fixed-header
-            height="calc(100vh - 200px)"
-            show-select
-            return-object
-            :item-value="(item) => item.absolutePath"
-            :item-selectable="(item) => isPdf(item)"
-          >
-            <template v-slot:item.fileName="{ item }">
-              <a
-                href="#"
-                @click.prevent="downloadFile(item)"
-                class="text-primary"
-              >
-                {{ item.fileName }}
-              </a>
-            </template>
-            <template v-slot:item.sizeBytes="{ item }">
-              {{ formatFileSize(item.sizeBytes) }}
-            </template>
-            <template v-slot:item.createdUtc="{ item }">
-              {{ formatDate(item.createdUtc) }}
-            </template>
-          </v-data-table>
+          <v-skeleton-loader class="my-1" type="table" :loading="loading">
+            <v-data-table
+              v-if="documents.length > 0"
+              v-model="selectedDocuments"
+              :headers="headers"
+              :items="documents"
+              :sort-by="[{ key: 'matchedRoomFolder', order: 'desc' }]"
+              class="elevation-1"
+              fixed-header
+              height="calc(100vh - 200px)"
+              show-select
+              return-object
+              :item-value="(item) => item.relativePath"
+              :item-selectable="(item) => isPdf(item)"
+            >
+              <template v-slot:item.fileName="{ item }">
+                <a
+                  v-if="isSupportedByNutrient(item)"
+                  href="#"
+                  @click.prevent="openInNutrient(item)"
+                  class="text-primary"
+                >
+                  {{ item.fileName }}
+                </a>
+                <span v-else>{{ item.fileName }}</span>
+              </template>
+              <template v-slot:item.actions="{ item }">
+                <v-btn
+                  :icon="mdiDownload"
+                  variant="text"
+                  size="small"
+                  @click="downloadFile(item)"
+                  title="Download file"
+                ></v-btn>
+              </template>
+              <template v-slot:item.sizeBytes="{ item }">
+                {{ formatFileSize(item.sizeBytes) }}
+              </template>
+              <template v-slot:item.createdUtc="{ item }">
+                {{ formatDate(item.createdUtc) }}
+              </template>
+            </v-data-table>
+          </v-skeleton-loader>
         </v-container>
       </v-card-text>
     </v-card>
@@ -85,6 +85,7 @@
         :prepend-icon="mdiFileDocumentOutline"
         style="letter-spacing: 0.001rem"
         @click="handleViewDocuments"
+        data-testid="view-documents"
       >
         View documents
       </v-btn>
@@ -103,7 +104,7 @@
   import ActionBar from '@/components/shared/table/ActionBar.vue';
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
   import { FileMetadataDto } from '@/types/transitory-documents';
-  import { mdiClose, mdiFileDocumentOutline } from '@mdi/js';
+  import { mdiClose, mdiDownload, mdiFileDocumentOutline } from '@mdi/js';
   import { inject, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
 
@@ -138,6 +139,12 @@
     { title: 'Extension', key: 'extension', sortable: true },
     { title: 'Created', key: 'createdUtc', sortable: true },
     { title: 'Size', key: 'sizeBytes', sortable: true },
+    {
+      title: 'Actions',
+      key: 'actions',
+      sortable: false,
+      align: 'center' as const,
+    },
   ];
 
   const formatFileSize = (bytes: number): string => {
@@ -167,9 +174,20 @@
         props.date
       );
       documents.value = result || [];
-    } catch (e) {
-      error.value = 'Failed to load documents. Please try again.';
+    } catch (e: any) {
       console.error('Error fetching transitory documents:', e);
+
+      // Check for response status code
+      const status = e?.response?.status || e?.statusCode;
+
+      if (status === 404) {
+        error.value = 'No documents were found for this location and date.';
+      } else if (status === 401 || status === 403 || status >= 500) {
+        error.value =
+          'Server error occurred while retrieving documents. Please try again later or contact your administrator.';
+      } else {
+        error.value = 'Failed to load documents. Please try again.';
+      }
     } finally {
       loading.value = false;
     }
@@ -182,6 +200,30 @@
 
   const isPdf = (item: FileMetadataDto): boolean => {
     return item.extension?.toLowerCase() === '.pdf';
+  };
+
+  const isSupportedByNutrient = (item: FileMetadataDto): boolean => {
+    const ext = item.extension?.toLowerCase();
+    return ext === '.pdf' || ext === '.doc' || ext === '.docx';
+  };
+
+  const openInNutrient = async (item: FileMetadataDto) => {
+    try {
+      // Store single file in session storage
+      sessionStorage.setItem('transitoryDocuments', JSON.stringify([item]));
+
+      // Open in new tab
+      const route = router.resolve({
+        name: 'NutrientContainer',
+        query: { type: 'transitory-bundle' },
+      });
+      window.open(route.href, '_blank');
+    } catch (e) {
+      downloadError.value = true;
+      downloadErrorMessage.value =
+        'Failed to open document in viewer. Please try again.';
+      console.error('Error opening document in viewer:', e);
+    }
   };
 
   const downloadFile = async (item: FileMetadataDto) => {

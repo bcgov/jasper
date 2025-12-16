@@ -1,7 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using JCCommon.Clients.FileServices;
 
-namespace Scv.Api.Models.Civil.AppearanceDetail;
+namespace Scv.Models.Civil.AppearanceDetail;
 
 public class CivilAppearanceDetailDocuments
 {

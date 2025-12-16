@@ -3,6 +3,6 @@ export interface FileMetadataDto {
   extension: string;
   sizeBytes: number;
   createdUtc: string;
-  absolutePath: string;
+  relativePath: string;
   matchedRoomFolder: string | null;
 }

@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
+using Scv.Api.Helpers;
+using Scv.Models.Criminal.AppearanceDetail;
+using Scv.Models.Criminal.Detail;
+using System.Collections.Generic;
 
 
 namespace Scv.Api.Models.Criminal.AppearanceDetail;
@@ -28,9 +31,11 @@ public class CriminalAppearanceDetail
     /// <summary>
     /// Extended CriminalAppearanceMethod object.
     /// </summary>
-    public ICollection<CriminalAppearanceMethod> AppearanceMethods { get; set; }
+    public ICollection<Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod> AppearanceMethods { get; set; }
     public string EstimatedTimeHour { get; set; }
     public string EstimatedTimeMin { get; set; }
-    
+    public IEnumerable<CriminalDocument> Documents { get; set; }
+    public IEnumerable<CriminalDocument> KeyDocuments => KeyDocumentResolver.GetCriminalKeyDocuments(Documents);
+
     public CriminalFileDetailResponseCourtLevelCd CourtLevelCd { get; set; }
 }

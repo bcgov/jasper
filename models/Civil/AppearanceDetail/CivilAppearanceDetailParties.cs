@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using Scv.Models.Civil.AppearanceDetail;
 
 namespace Scv.Api.Models.Civil.AppearanceDetail;
 

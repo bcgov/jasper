@@ -25,15 +25,15 @@ namespace TDCommon.Clients.DocumentsServices
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class TransitoryDocumentsClient 
+    public partial class TransitoryDocumentsClient
     {
         private System.Net.Http.HttpClient _httpClient;
         private static System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(CreateSerializerSettings, true);
         private Newtonsoft.Json.JsonSerializerSettings _instanceSettings;
 
-    #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public TransitoryDocumentsClient(System.Net.Http.HttpClient httpClient)
-    #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             _httpClient = httpClient;
             Initialize();
@@ -57,8 +57,8 @@ namespace TDCommon.Clients.DocumentsServices
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
         /// <summary>
-        /// Lists files for a region, location and date. Also scans any subfolders whose name CONTAINS the provided roomCode (case-insensitive).
-        /// <br/>Returns absolute paths and the matched room folder name (if any).
+        /// Lists files for a region, location and date. Also scans any subfolders whose name matches the provided roomCode.
+        /// <br/>Returns relative paths and the matched room folder name (if any).
         /// </summary>
         /// <remarks>
         /// - Searches: &lt;base&gt;\{region}\{location}\{dateFolder}\ and &lt;base&gt;\{region}\{location}\{dateFolder}\{*room*}
@@ -68,15 +68,15 @@ namespace TDCommon.Clients.DocumentsServices
         /// </remarks>
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<FileMetadataDto>> SearchAsync(string region, string location, string roomCd, string date)
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<FileMetadataDto>> SearchAsync(TransitoryDocumentSearchRequest body)
         {
-            return SearchAsync(region, location, roomCd, date, System.Threading.CancellationToken.None);
+            return SearchAsync(body, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Lists files for a region, location and date. Also scans any subfolders whose name CONTAINS the provided roomCode (case-insensitive).
-        /// <br/>Returns absolute paths and the matched room folder name (if any).
+        /// Lists files for a region, location and date. Also scans any subfolders whose name matches the provided roomCode.
+        /// <br/>Returns relative paths and the matched room folder name (if any).
         /// </summary>
         /// <remarks>
         /// - Searches: &lt;base&gt;\{region}\{location}\{dateFolder}\ and &lt;base&gt;\{region}\{location}\{dateFolder}\{*room*}
@@ -86,7 +86,7 @@ namespace TDCommon.Clients.DocumentsServices
         /// </remarks>
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<FileMetadataDto>> SearchAsync(string region, string location, string roomCd, string date, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<FileMetadataDto>> SearchAsync(TransitoryDocumentSearchRequest body, System.Threading.CancellationToken cancellationToken)
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -94,31 +94,17 @@ namespace TDCommon.Clients.DocumentsServices
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(body, JsonSerializerSettings);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json-patch+json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                
+
                     // Operation Path: "api/documents/search"
                     urlBuilder_.Append("api/documents/search");
-                    urlBuilder_.Append('?');
-                    if (region != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("region")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(region, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (location != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("location")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(location, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (roomCd != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("roomCd")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(roomCd, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (date != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("date")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(date, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -203,7 +189,7 @@ namespace TDCommon.Clients.DocumentsServices
         }
 
         /// <summary>
-        /// Streams the specified file by ABSOLUTE path. The path must reside under the configured base path.
+        /// Streams the specified file by relative path. The path must reside under the configured base path.
         /// </summary>
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
@@ -214,7 +200,7 @@ namespace TDCommon.Clients.DocumentsServices
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Streams the specified file by ABSOLUTE path. The path must reside under the configured base path.
+        /// Streams the specified file by relative path. The path must reside under the configured base path.
         /// </summary>
         /// <returns>OK</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
@@ -230,7 +216,7 @@ namespace TDCommon.Clients.DocumentsServices
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                
+
                     // Operation Path: "api/documents/content"
                     urlBuilder_.Append("api/documents/content");
                     urlBuilder_.Append('?');
@@ -346,21 +332,21 @@ namespace TDCommon.Clients.DocumentsServices
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         private static System.Threading.Tasks.Task<string> ReadAsStringAsync(System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken)
         {
-    #if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER
             return content.ReadAsStringAsync(cancellationToken);
-    #else
+#else
             return content.ReadAsStringAsync();
-    #endif
+#endif
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         private static System.Threading.Tasks.Task<System.IO.Stream> ReadAsStreamAsync(System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken)
         {
-    #if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER
             return content.ReadAsStreamAsync(cancellationToken);
-    #else
+#else
             return content.ReadAsStreamAsync();
-    #endif
+#endif
         }
 
         public bool ReadResponseAsString { get; set; }
@@ -422,7 +408,7 @@ namespace TDCommon.Clients.DocumentsServices
                     var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -434,13 +420,13 @@ namespace TDCommon.Clients.DocumentsServices
                     return converted == null ? string.Empty : converted;
                 }
             }
-            else if (value is bool) 
+            else if (value is bool)
             {
                 return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
             }
             else if (value is byte[])
             {
-                return System.Convert.ToBase64String((byte[]) value);
+                return System.Convert.ToBase64String((byte[])value);
             }
             else if (value is string[])
             {
@@ -463,6 +449,36 @@ namespace TDCommon.Clients.DocumentsServices
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class TransitoryDocumentSearchRequest
+    {
+
+        [Newtonsoft.Json.JsonProperty("regionCode", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public string RegionCode { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("regionName", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public string RegionName { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("agencyIdentifierCd", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public string AgencyIdentifierCd { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("locationShortName", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public string LocationShortName { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("roomCd", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string RoomCd { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("date", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset Date { get; set; }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class FileMetadataDto
     {
 
@@ -478,12 +494,21 @@ namespace TDCommon.Clients.DocumentsServices
         [Newtonsoft.Json.JsonProperty("createdUtc", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.DateTimeOffset CreatedUtc { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("absolutePath", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string AbsolutePath { get; set; }
+        [Newtonsoft.Json.JsonProperty("relativePath", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string RelativePath { get; set; }
 
         [Newtonsoft.Json.JsonProperty("matchedRoomFolder", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string MatchedRoomFolder { get; set; }
 
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    internal class DateFormatConverter : Newtonsoft.Json.Converters.IsoDateTimeConverter
+    {
+        public DateFormatConverter()
+        {
+            DateTimeFormat = "yyyy-MM-dd";
+        }
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.6.1.0 (NJsonSchema v11.5.1.0 (Newtonsoft.Json v13.0.0.0))")]
@@ -560,11 +585,11 @@ namespace TDCommon.Clients.DocumentsServices
 
 }
 
-#pragma warning restore  108
-#pragma warning restore  114
-#pragma warning restore  472
-#pragma warning restore  612
-#pragma warning restore  649
+#pragma warning restore 108
+#pragma warning restore 114
+#pragma warning restore 472
+#pragma warning restore 612
+#pragma warning restore 649
 #pragma warning restore 1573
 #pragma warning restore 1591
 #pragma warning restore 8073

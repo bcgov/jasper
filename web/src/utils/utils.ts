@@ -1,6 +1,7 @@
 import { beautifyDate } from '@/filters';
 import { ApplicationService } from '@/services/ApplicationService';
 import { AuthService } from '@/services/AuthService';
+import { FeatureFlagService } from '@/services/FeatureFlagService';
 import { LookupService } from '@/services/LookupService';
 import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
@@ -18,11 +19,13 @@ export const SessionManager = {
     const commonStore = useCommonStore();
     const authService = inject<AuthService>('authService');
     const appService = inject<ApplicationService>('applicationService');
+    const featureFlagService = inject<FeatureFlagService>('featureFlagService');
 
     try {
-      const [userInfo, appInfo] = await Promise.all([
+      const [userInfo, appInfo, featureFlags] = await Promise.all([
         authService?.getUserInfo(),
         appService?.getApplicationInfo(),
+        featureFlagService?.getFeatureFlags(),
       ]);
       let succeeded = true;
       if (!userInfo) {
@@ -33,8 +36,15 @@ export const SessionManager = {
         console.error('Application info not available.');
         succeeded = false;
       }
+      if (!featureFlags) {
+        console.error('Feature flags not available.');
+        succeeded = false;
+      }
       commonStore.setUserInfo(userInfo ?? null);
-      commonStore.appInfo = appInfo ?? null;
+      const appInfoWithFlags = appInfo
+        ? { ...appInfo, featureFlags: featureFlags ?? {} }
+        : null;
+      commonStore.appInfo = appInfoWithFlags;
       return succeeded;
     } catch (error) {
       console.log(error);

@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Scv.Models.TransitoryDocuments;
 using Scv.TdApi.Infrastructure.Authorization;
 using Scv.TdApi.Models;
 using Scv.TdApi.Services;
-using System.Globalization;
 
 namespace Scv.TdApi.Controllers
 {
@@ -23,8 +23,8 @@ namespace Scv.TdApi.Controllers
         }
 
         /// <summary>
-        /// Lists files for a region, location and date. Also scans any subfolders whose name CONTAINS the provided roomCode (case-insensitive).
-        /// Returns absolute paths and the matched room folder name (if any).
+        /// Lists files for a region, location and date. Also scans any subfolders whose name matches the provided roomCode.
+        /// Returns relative paths and the matched room folder name (if any).
         /// </summary>
         /// <remarks>
         /// - Searches: &lt;base&gt;\{region}\{location}\{dateFolder}\ and &lt;base&gt;\{region}\{location}\{dateFolder}\{*room*}
@@ -32,40 +32,25 @@ namespace Scv.TdApi.Controllers
         /// - Date folder name is resolved using all formats configured in SharedDrive:DateFolderFormats
         /// - Requires 'query' role
         /// </remarks>
-        [HttpGet("search")]
+        [HttpPost("search")]
         [Authorize(Policy = TdPolicies.RequireQueryRole)]
         [ProducesResponseType(typeof(IReadOnlyList<FileMetadataDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status403Forbidden)]
-        public IActionResult Search(
-            [FromQuery] string region,
-            [FromQuery] string location,
-            [FromQuery] string roomCd,
-            [FromQuery] string date)
+        public async Task<IActionResult> Search([FromBody] TransitoryDocumentSearchRequest request)
         {
-            if (string.IsNullOrWhiteSpace(region))
+            if (request == null)
             {
-                return BadRequest("region is required.");
-            }
-            if (string.IsNullOrWhiteSpace(location))
-            {
-                return BadRequest("location is required.");
-            }
-            if (string.IsNullOrWhiteSpace(roomCd))
-            {
-                return BadRequest("roomCd is required.");
-            }
-            if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day))
-            {
-                return BadRequest("date must be in format yyyy-MM-dd.");
+                return BadRequest("Request body is required.");
             }
 
             _logger.LogInformation(
-                "File search requested region: {Region}, location: {Location}, room: {Room}, date: {Date}",
-                region, location, roomCd, date);
+                "File search requested - RegionCode: {RegionCode}, RegionName: {RegionName}, AgencyIdentifierCd: {AgencyIdentifierCd}, LocationShortName: {LocationShortName}, Room: {Room}, Date: {Date}",
+                request.RegionCode, request.RegionName, request.AgencyIdentifierCd, request.LocationShortName, request.RoomCd, request.Date);
 
-            var foundFiles = _sharedDriveFileService.FindFilesAsync(region, location, roomCd, day);
+            var foundFiles = await _sharedDriveFileService.FindFilesAsync(
+                request);
 
             _logger.LogInformation(
                 "File search completed found {FileCount} files",
@@ -75,7 +60,7 @@ namespace Scv.TdApi.Controllers
         }
 
         /// <summary>
-        /// Streams the specified file by ABSOLUTE path. The path must reside under the configured base path.
+        /// Streams the specified file by relative path. The path must reside under the configured base path.
         /// </summary>
         [HttpGet("content")]
         [Authorize(Policy = TdPolicies.RequireReadRole)]
@@ -88,7 +73,7 @@ namespace Scv.TdApi.Controllers
         public async Task<IActionResult> GetContent([FromQuery] string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                return BadRequest("path is required and must be an absolute path.");
+                return BadRequest("path is required and must be an relative path.");
 
             _logger.LogInformation(
                 "File content requested path: {Path}",

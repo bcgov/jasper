@@ -1,5 +1,3 @@
-using Scv.Models;
-
 namespace Scv.Models.Document;
 
 public class PdfDocumentRequest

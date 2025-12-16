@@ -1,5 +1,3 @@
-using System;
-
 namespace Scv.Models.Document;
 
 public class PdfDocumentRequestDetails
@@ -21,6 +19,6 @@ public class PdfDocumentRequestDetails
     public string ReportType { get; set; }
     public string OrderId { get; set; }
     // Transitory Documents properties
-    public string Path { get; set; }
-    public string BearerToken { get; set; }
+    public string? Path { get; set; }
+    public string? BearerToken { get; set; }
 }

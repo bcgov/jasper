@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Scv.Models.Civil.CourtList;
+﻿using Scv.Models.Civil.CourtList;
 using Scv.Models.Criminal.CourtList;
 
 namespace Scv.Models.CourtList

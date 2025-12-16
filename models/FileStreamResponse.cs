@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace Scv.Models
 {
     /// <summary>

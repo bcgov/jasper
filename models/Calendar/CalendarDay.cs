@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Scv.Models.Calendar;
+﻿namespace Scv.Models.Calendar;
 
 public class CalendarDay
 {

@@ -23,6 +23,7 @@ using Scv.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
 using static PCSSCommon.Models.ActivityClassUsage;
+using Scv.Core.Helpers;
 
 namespace tests.api.Services;
 public class CourtListServiceTests : ServiceTestBase

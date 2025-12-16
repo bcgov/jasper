@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Scv.TdApi.Infrastructure.Options
@@ -38,6 +37,11 @@ namespace Scv.TdApi.Infrastructure.Options
         /// Initial retry delay (ms) for exponential backoff.
         /// </summary>
         public int InitialRetryDelayMs { get; set; } = 1000;
+
+        /// <summary>
+        /// The buffer size (in bytes) to use when reading files from the SMB share.
+        /// </summary>
+        public int FileBufferSize { get; set; } = 65536; // 64 KB
 
         /// <summary>
         /// Maximum concurrency when traversing a room subtree (parallel directory enumeration).

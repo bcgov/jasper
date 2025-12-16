@@ -72,6 +72,7 @@ export interface CourtRoomsInfo {
 export interface ApplicationInfo {
   nutrientFeLicenseKey: string;
   environment: string;
+  featureFlags?: Record<string, boolean>;
 }
 
 export interface UserInfo {

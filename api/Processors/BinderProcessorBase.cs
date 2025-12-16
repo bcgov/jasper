@@ -1,12 +1,12 @@
-﻿using System;
+﻿using FluentValidation;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
+using Scv.Db.Contants;
+using Scv.Models;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using FluentValidation;
-using Scv.Models;
-using Scv.Db.Contants;
-using Scv.Core.Infrastructure;
-using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Processors;
 

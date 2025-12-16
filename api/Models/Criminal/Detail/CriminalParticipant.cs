@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
-using Scv.Api.Helpers.Documents;
+﻿using JCCommon.Clients.FileServices;
+using Scv.Api.Helpers;
+using Scv.Models.Criminal.Detail;
+using System.Collections.Generic;
 
 namespace Scv.Api.Models.Criminal.Detail;
 /// <summary>
@@ -15,7 +16,7 @@ public class CriminalParticipant : JCCommon.Clients.FileServices.CriminalPartici
     }
 
     public string FullName => GivenNm != null && LastNm != null
-        ? $"{GivenNm.Trim()} {LastNm.Trim()}"
+        ? $"{GivenNm?.Trim()} {LastNm?.Trim()}"
         : OrgNm;
 
     public string FullNameLastFirst => GivenNm != null && LastNm != null

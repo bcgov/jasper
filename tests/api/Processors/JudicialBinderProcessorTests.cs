@@ -12,8 +12,10 @@ using Scv.Api.Helpers;
 using Scv.Api.Models;
 using Scv.Api.Processors;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Contants;
 using Scv.Db.Models;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Processors;

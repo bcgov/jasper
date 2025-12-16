@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Scv.Models.AccessControlManagement;
+﻿namespace Scv.Models.AccessControlManagement;
 
 public class UserDto : BaseDto
 {

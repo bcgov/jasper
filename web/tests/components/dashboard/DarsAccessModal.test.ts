@@ -49,6 +49,7 @@ describe('DarsAccessModal tests', () => {
       code: 'TL1',
       locationId: '1',
       active: true,
+      agencyIdentifierCd: '1234',
       courtRooms: [
         { room: 'Room 101', locationId: '1', type: 'courtroom' },
         { room: 'Room 102', locationId: '1', type: 'courtroom' },
@@ -62,6 +63,7 @@ describe('DarsAccessModal tests', () => {
       code: 'TL2',
       locationId: '2',
       active: true,
+      agencyIdentifierCd: '5678',
       courtRooms: [{ room: 'Room 201', locationId: '2', type: 'courtroom' }],
       infoLink: '',
       agencyIdentifierCd: 'TL2',
@@ -192,6 +194,7 @@ describe('DarsAccessModal tests', () => {
       await nextTick();
 
       expect(darsStore.searchLocationId).toBe('1');
+      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1234, 'Room 101');
     });
 
     it('sets the correct locationId when called with string parameter', async () => {
@@ -201,6 +204,7 @@ describe('DarsAccessModal tests', () => {
       await nextTick();
 
       expect(darsStore.searchLocationId).toBe('2');
+      expect(mockDarsSearch).toHaveBeenCalledWith('2025-10-28', 1234, '');
     });
   });
 

@@ -2,8 +2,6 @@
 using Amazon.Lambda;
 using Azure.Identity;
 using DARSCommon.Handlers;
-using DARSCommon.Clients.LogNotesServices;
-using DARSCommon.Clients.TranscriptsServices;
 using GdPicture14;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -13,7 +11,6 @@ using JCCommon.Clients.LookupCodeServices;
 using JCCommon.Clients.UserService;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,17 +25,18 @@ using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Jobs;
-using Scv.Models;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure.Handler;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using System;
 using System.Net.Http;
 using System.Reflection;
+using Scv.Models.AccessControlManagement;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
 using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
@@ -52,13 +50,9 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
-using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
-using Microsoft.AspNetCore.Hosting;
 using TdDocumentsServices = TDCommon.Clients.DocumentsServices;
-using Scv.Core.Infrastructure.Handler;
-using Scv.Core.Services;
-using Scv.Core.Helpers.Extensions;
+using Scv.Api.Infrastructure.Options;
 
 namespace Scv.Api.Infrastructure
 {
@@ -250,7 +244,11 @@ namespace Scv.Api.Infrastructure
                 .AddHttpClient<TdDocumentsServices.TransitoryDocumentsClient>(client => { ConfigureHttpClient(client, configuration, "TD"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
-            // Keycloak
+            // Register the wrapper for TransitoryDocumentsClient
+            services.AddScoped<ITransitoryDocumentsClientService, TransitoryDocumentsClientService>();
+
+            // Keycloak - Configure options for TdKeycloakTokenService
+            services.Configure<KeycloakOptions>(configuration.GetSection("TDKeycloak"));
             services.AddHttpClient("keycloak").AddHttpMessageHandler<TimingHandler>();
 
             // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
@@ -279,12 +277,13 @@ namespace Scv.Api.Infrastructure
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
+            services.AddScoped<ILocationService, LocationService>();
             services.AddScoped<LocationService>();
             services.AddScoped<AuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<DarsService>();
-            services.AddScoped<TransitoryDocumentsService>();
+            services.AddScoped<ITransitoryDocumentsService, TransitoryDocumentsService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
@@ -358,9 +357,11 @@ namespace Scv.Api.Infrastructure
             // Defaults to BC Gov API if any config setting is missing
             if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
             {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
+                if (prefix != "TD") {
+                    client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
                     configuration.GetNonEmptyValue($"{prefix}:Username"),
                     configuration.GetNonEmptyValue($"{prefix}:Password"));
+                }
                 client.BaseAddress = new Uri(configuration.GetNonEmptyValue($"{prefix}:Url").EnsureEndingForwardSlash());
             }
             // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using Scv.Models.Civil.CourtList;
 
 namespace Scv.Models.Civil.AppearanceDetail
@@ -9,7 +8,7 @@ namespace Scv.Models.Civil.AppearanceDetail
         public string FullName => GivenNm != null && LastNm != null
             ? $"{GivenNm?.Trim()} {LastNm?.Trim()}"
             : OrgNm;
-        public string PartyId { get; set;}
+        public string PartyId { get; set; }
         public string LastNm { get; set; }
         public string GivenNm { get; set; }
         public string OrgNm { get; set; }

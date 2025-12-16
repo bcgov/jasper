@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Scv.Models.Location
+﻿namespace Scv.Models.Location
 {
     public class CourtRoom
     {

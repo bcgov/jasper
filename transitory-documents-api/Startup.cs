@@ -21,17 +21,17 @@ using Scv.TdApi.Infrastructure.Options;
 using Scv.TdApi.Services;
 using System.Reflection;
 using System.Security.Claims;
+using Polly;
+using Polly.Retry;
+using Microsoft.Extensions.Options;
 
 namespace Scv.TdApi
 {
     public class Startup
     {
-        private IWebHostEnvironment CurrentEnvironment { get; }
-
-        public Startup(IWebHostEnvironment env, IConfiguration configuration)
+        public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            CurrentEnvironment = env;
         }
 
         private IConfiguration Configuration { get; }
@@ -101,18 +101,8 @@ namespace Scv.TdApi
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User ?? new ClaimsPrincipal());
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
-            // Register file system client based on configuration
-            var fileSystemType = Configuration.GetValue<string>("SharedDrive:FileSystemType") ?? "LocalFileSystem";
-            switch (fileSystemType)
-            {
-                case "SmbFileSystem":
-                    services.AddScoped<ISmbFileSystemClient, SmbFileSystemClient>();
-                    break;
-                case "LocalFileSystem":
-                default:
-                    services.AddScoped<ISmbFileSystemClient, LocalFileSystemClient>();
-                    break;
-            }
+            services.AddSingleton<ISmbClientFactory, SmbClientFactory>();
+            services.AddScoped<ISmbFileSystemClient, SmbFileSystemClient>();
 
             services.AddScoped<ISharedDriveFileService, SharedDriveFileService>();
 
@@ -130,7 +120,7 @@ namespace Scv.TdApi
             })
             .AddJwtBearer(options =>
             {
-                var keycloakOptions = Configuration.GetSection("Keycloak").Get<KeycloakOptions>() 
+                var keycloakOptions = Configuration.GetSection("Keycloak").Get<KeycloakOptions>()
                     ?? new KeycloakOptions();
 
                 options.Authority = keycloakOptions.Authority;
@@ -170,11 +160,11 @@ namespace Scv.TdApi
                         var logger = context.HttpContext.RequestServices
                             .GetRequiredService<ILogger<Startup>>();
 
-                        var username = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                            ?? context.Principal?.FindFirst("preferred_username")?.Value 
+                        var username = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? context.Principal?.FindFirst("preferred_username")?.Value
                             ?? "unknown";
 
-                        var clientId = context.Principal?.FindFirst("azp")?.Value 
+                        var clientId = context.Principal?.FindFirst("azp")?.Value
                             ?? context.Principal?.FindFirst("client_id")?.Value;
 
                         logger.LogInformation(
@@ -201,8 +191,8 @@ namespace Scv.TdApi
                         var logger = context.HttpContext.RequestServices
                             .GetRequiredService<ILogger<Startup>>();
 
-                        var username = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                            ?? context.Principal?.FindFirst("preferred_username")?.Value 
+                        var username = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? context.Principal?.FindFirst("preferred_username")?.Value
                             ?? "unknown";
 
                         logger.LogWarning(
@@ -258,7 +248,7 @@ namespace Scv.TdApi
                 var thisAssemblyName = Assembly.GetExecutingAssembly().GetName().Name;
                 options.EnableAnnotations(true, true);
                 options.CustomSchemaIds(o => o.FullName);
-                
+
                 var xmlFile = $"{thisAssemblyName}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 options.IncludeXmlComments(xmlPath);
@@ -305,6 +295,32 @@ namespace Scv.TdApi
             #endregion Swagger
 
             services.AddLazyCache();
+
+            services.AddSingleton<AsyncRetryPolicy>(serviceProvider =>
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<SharedDriveOptions>>().Value;
+
+                return Policy
+                    .Handle<IOException>(ex => ex is not FileNotFoundException && ex is not DirectoryNotFoundException)
+                    .Or<Exception>(ex =>
+                        ex is not FileNotFoundException &&
+                        ex is not DirectoryNotFoundException &&
+                        ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase))
+                    .WaitAndRetryAsync(
+                        retryCount: options.MaxRetryAttempts,
+                        sleepDurationProvider: retryAttempt =>
+                            TimeSpan.FromMilliseconds(options.InitialRetryDelayMs * Math.Pow(2, retryAttempt - 1)),
+                        onRetry: (exception, timeSpan, retryCount, context) =>
+                        {
+                            var logger = serviceProvider.GetRequiredService<ILogger<SmbFileSystemClient>>();
+                            logger.LogWarning(
+                                exception,
+                                "SMB operation failed. Retry {RetryCount}/{MaxRetries} after {Delay}ms",
+                                retryCount,
+                                options.MaxRetryAttempts,
+                                timeSpan.TotalMilliseconds);
+                        });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

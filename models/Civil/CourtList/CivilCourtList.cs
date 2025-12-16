@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using Mapster;
 using Newtonsoft.Json;
 using Scv.Models.CourtList;
@@ -28,6 +27,6 @@ namespace Scv.Models.Civil.CourtList
         public new ICollection<CivilClDocument> Document { get; set; }
         [AdaptIgnore]
         [JsonIgnore]
-        public new string SheriffCommentText { get;set;}
+        public new string SheriffCommentText { get; set; }
     }
 }

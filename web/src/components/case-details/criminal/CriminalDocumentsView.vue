@@ -302,6 +302,7 @@
       groupKeyOne: string;
       groupKeyTwo: string;
       documentName: string;
+      physicalFileId: string;
     }[] = [];
     selectedItems.value
       .filter((item) => item.imageId)
@@ -324,6 +325,7 @@
           groupKeyOne: documentData.fileNumberText || '',
           groupKeyTwo: item.fullName || '',
           documentName: documentData.documentDescription || '',
+          physicalFileId: documentData.fileId || '',
         });
       });
 

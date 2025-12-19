@@ -273,11 +273,12 @@ namespace Scv.Api.Infrastructure.Authentication
             try
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<PcssSyncService>();
                 userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
 
                 if (userDto == null)
                 {
-                    var newUser = await BuildNewUser(context, logger);
+                    var newUser = await BuildNewUser(context, logger, pcssSyncService);
                     logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(newUser));
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
@@ -291,7 +292,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 {
                     // Update existing user with latest PCSS data
                     logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
-                    var updated = await UpdateUserFromPcss(context, logger, userDto);
+                    var updated = await pcssSyncService.UpdateUserFromPcss(userDto);
                     if (updated)
                     {
                         var updateResult = await userService.UpdateAsync(userDto);
@@ -317,7 +318,8 @@ namespace Scv.Api.Infrastructure.Authentication
 
         private static async Task<UserDto> BuildNewUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            ILogger logger)
+            ILogger logger,
+            PcssSyncService pcssSyncService)
         {
             UserDto userDto = new()
             {
@@ -329,89 +331,9 @@ namespace Scv.Api.Infrastructure.Authentication
                 IsActive = false,
             };
 
-            await UpdateUserFromPcss(context, logger, userDto);
+            await pcssSyncService.UpdateUserFromPcss(userDto);
 
             return userDto;
-        }
-
-        private static async Task<bool> UpdateUserFromPcss(
-            Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            ILogger logger,
-            UserDto userDto)
-        {
-            // If there is no ProvJud GUID, we cannot map this user to PCSS, so return early.
-            if (string.IsNullOrEmpty(userDto.NativeGuid))
-            {
-                logger.LogInformation("User {Email} has no ProvJud GUID, cannot map to PCSS", userDto.Email);
-                return false;
-            }
-
-            try
-            {
-                var pcssAuthServiceClient = context.HttpContext.RequestServices.GetRequiredService<AuthorizationServicesClient>();
-                var authorizationService = context.HttpContext.RequestServices.GetRequiredService<AuthorizationService>();
-                var groupService = context.HttpContext.RequestServices.GetRequiredService<IGroupService>();
-
-                logger.LogInformation("Requesting user information from PCSS for {Email}.", userDto.Email);
-                var pcssUsers = await pcssAuthServiceClient.GetUsersAsync();
-                var matchingUser = pcssUsers?.FirstOrDefault(u => u.GUID == userDto.NativeGuid);
-                logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
-                    userDto.NativeGuid,
-                    matchingUser != null ? JsonConvert.SerializeObject(matchingUser) : "No match");
-
-                if (matchingUser == null || !matchingUser.UserId.HasValue)
-                {
-                    logger.LogWarning("No matching PCSS user found for {Email} with GUID {UserGuid}", userDto.Email, userDto.NativeGuid);
-                    return false;
-                }
-
-                // Get role names from PCSS
-                var roleNameResult = await authorizationService.GetPcssUserRoleNames(matchingUser.UserId.Value);
-                if (roleNameResult == null || roleNameResult.Errors.Any())
-                {
-                    logger.LogWarning("Failed to get PCSS roles for user {Email}: {Errors}",
-                        userDto.Email,
-                        roleNameResult?.Errors != null ? string.Join(", ", roleNameResult.Errors) : "No result");
-                    return false;
-                }
-
-                // Map role names to internal groups
-                var groupResult = await groupService.GetGroupsByAliases(roleNameResult.Payload);
-                if (groupResult == null || groupResult.Errors.Any())
-                {
-                    logger.LogWarning("Failed to get groups for user {Email}: {Errors}",
-                        userDto.Email,
-                        groupResult?.Errors != null ? string.Join(", ", groupResult.Errors) : "No result");
-                    return false;
-                }
-
-                var groupIds = groupResult.Payload.Select(g => g.Id).ToList();
-                userDto.GroupIds = groupIds;
-                userDto.IsActive = groupIds.Count > 0;
-
-                // Look up judge by PCSS UserId
-                var judge = await GetJudgeByUserId(context, matchingUser.UserId.Value);
-                if (judge != null)
-                {
-                    userDto.JudgeId = judge.PersonId;
-                    logger.LogInformation("Mapped user {Email} to judge PersonId {PersonId}", userDto.Email, judge.PersonId);
-                }
-                else
-                {
-                    logger.LogInformation("No judge mapping found for user {Email} with PCSS UserId {UserId}", userDto.Email, matchingUser.UserId.Value);
-                    userDto.JudgeId = null;
-                }
-
-                logger.LogInformation("Updated user {Email} with {GroupCount} groups and judgeId {JudgeId}",
-                    userDto.Email, groupIds.Count, userDto.JudgeId);
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                logger.LogError(e, "Unable to get user or groups from PCSS for {Email}.", userDto.Email);
-                return false;
-            }
         }
 
         private static async Task<PersonSearchItem> GetJudgeById(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int judgeId)
@@ -420,14 +342,6 @@ namespace Scv.Api.Infrastructure.Authentication
             var judges = await dashboardService.GetJudges();
 
             return judges.FirstOrDefault(j => j.PersonId == judgeId);
-        }
-
-        private static async Task<PersonSearchItem> GetJudgeByUserId(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int userId)
-        {
-            var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
-            var judges = await dashboardService.GetJudges();
-
-            return judges.FirstOrDefault(j => j.UserId == userId);
         }
 
         private static bool IsMongoDbConfigured(IConfiguration configuration)

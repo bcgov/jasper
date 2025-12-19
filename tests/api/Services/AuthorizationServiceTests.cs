@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using System;
@@ -21,7 +20,7 @@ namespace tests.api.Services;
 public class AuthorizationServiceTests
 {
     private readonly Faker _faker;
-    private readonly Mock<AuthorizationServicesClient> _mockPcssAuthorizationServiceClient;
+    private readonly Mock<IAuthorizationServicesClient> _mockPcssAuthorizationServiceClient;
     private readonly AuthorizationService _authorizationService;
 
     public AuthorizationServiceTests()
@@ -39,10 +38,7 @@ public class AuthorizationServiceTests
         var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
-        // Mock ILogger
-        var logger = new Mock<ILogger<AuthorizationService>>();
-
-        _mockPcssAuthorizationServiceClient = new Mock<AuthorizationServicesClient>(MockBehavior.Strict, new object[] { null });
+        _mockPcssAuthorizationServiceClient = new Mock<IAuthorizationServicesClient>(MockBehavior.Strict);
 
         _authorizationService = new AuthorizationService(
             mockConfig.Object,

@@ -47,18 +47,21 @@ public class TranscriptStrategyTest : ServiceTestBase
         _mockConfiguration = new Mock<IConfiguration>();
         _mockLogger = new Mock<ILogger<TranscriptStrategy>>();
 
-        var fakeStream = new MemoryStream(_fakeContentBytes);
-
         _mockTranscriptsClient.Setup(c => c.GetAttachmentBaseAsync(
-            It.IsAny<string>(),  // orderId
-            It.IsAny<string>(),  // documentId
-            It.IsAny<System.Threading.CancellationToken>()))
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<System.Threading.CancellationToken>()))
             .ReturnsAsync((string orderId, string documentId, System.Threading.CancellationToken cancellationToken) =>
             {
                 var stream = new MemoryStream(_fakeContentBytes);
                 return new FileResponse(
                     200,
-                    new Dictionary<string, IEnumerable<string>>(),
+                    new Dictionary<string, IEnumerable<string>>
+                    {
+                        { "Content-Type", new [] { "application/pdf" } },
+                        { "Content-Length", new [] { _fakeContentBytes.Length.ToString() } },
+                        { "Content-Disposition", new [] { "inline; filename=transcript.pdf" } }
+                    },
                     stream,
                     null,
                     null
@@ -244,7 +247,7 @@ public class TranscriptStrategyTest : ServiceTestBase
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Transcript attachment retrieved successfully")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Transcript response - OrderId")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -258,15 +261,19 @@ public class TranscriptStrategyTest : ServiceTestBase
         new Random().NextBytes(largeFakeContent);
 
         _mockTranscriptsClient.Setup(c => c.GetAttachmentBaseAsync(
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<System.Threading.CancellationToken>()))
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<System.Threading.CancellationToken>()))
             .ReturnsAsync((string orderId, string documentId, System.Threading.CancellationToken cancellationToken) =>
             {
                 var stream = new MemoryStream(largeFakeContent);
                 return new FileResponse(
                     200,
-                    new Dictionary<string, IEnumerable<string>>(),
+                    new Dictionary<string, IEnumerable<string>>
+                    {
+                        { "Content-Type", new [] { "application/pdf" } },
+                        { "Content-Length", new [] { largeFakeContent.Length.ToString() } }
+                    },
                     stream,
                     null,
                     null

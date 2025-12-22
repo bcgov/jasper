@@ -256,7 +256,7 @@ namespace Scv.Api.Infrastructure
                     // This is a workaround since we can't use the UpdateJsonSerializerSettings partial method
                 });
             services
-                .AddHttpClient<PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpClient<PCSSAuthorizationServices.IAuthorizationServicesClient, PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
@@ -276,6 +276,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ITimebankService, TimebankService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
             services.AddScoped<ICsvParser, CsvParser>();
+            services.AddScoped<PcssSyncService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -292,6 +293,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
+                services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }

@@ -19,7 +19,7 @@ namespace Scv.Api.Services
         #region Variables
 
         private readonly IAppCache _cache;
-        private readonly PCSSAuthServices.AuthorizationServicesClient _pcssAuthorizationServiceClient;
+        private readonly PCSSAuthServices.IAuthorizationServicesClient _pcssAuthorizationServiceClient;
         private readonly ILogger<AuthorizationService> _logger;
 
         #endregion Variables
@@ -28,7 +28,7 @@ namespace Scv.Api.Services
 
         public AuthorizationService(
             IConfiguration configuration,
-            PCSSAuthServices.AuthorizationServicesClient pcssAuthorizationServiceClient,
+            PCSSAuthServices.IAuthorizationServicesClient pcssAuthorizationServiceClient,
             IAppCache cache,
             ILogger<AuthorizationService> logger
         )
@@ -41,13 +41,13 @@ namespace Scv.Api.Services
 
         #endregion Constructor
 
-        public async Task<ICollection<PCSSAuthServices.UserItem>> GetUsers() => await GetDataFromCache($"Users", async () =>
+        public virtual async Task<ICollection<PCSSAuthServices.UserItem>> GetUsers() => await GetDataFromCache($"Users", async () =>
         {
             _logger.LogInformation("Fetching users from cache or PCSS.");
             return await this._pcssAuthorizationServiceClient.GetUsersAsync();
         });
 
-        public async Task<OperationResult<IEnumerable<string>>> GetPcssUserRoleNames(int userId)
+        public virtual async Task<OperationResult<IEnumerable<string>>> GetPcssUserRoleNames(int userId)
         {
             _logger.LogInformation("Fetching roles for user with ID {UserId}.", userId);
             var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId);

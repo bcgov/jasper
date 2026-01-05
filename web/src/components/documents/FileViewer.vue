@@ -6,94 +6,8 @@
       <p class="text-center mx-auto">No documents available to display.</p>
     </v-col>
   </v-row>
-  <!-- todo: extract out to own sfc -->
-  <v-dialog v-model="showReviewModal" persistent max-width="750">
-    <v-card>
-      <!-- Header -->
-      <v-card-title class="d-flex align-center">
-        <v-icon class="me-2" :icon="mdiPencilBoxOutline" />
-          Review Order
-        <v-spacer />
-        <v-btn
-          icon
-          variant="text"
-          density="comfortable"
-          @click="closeReviewModal()"
-          aria-label="Close dialog"
-        >
-          <v-icon :icon="mdiClose" />
-        </v-btn>
-      </v-card-title>
-      <v-divider />
 
-      <!-- Body -->
-      <v-card-text>
-        <p class="text-body-2 text-medium-emphasis">
-          Add any notes or reasoning for your decision. These comments will be saved with the order. <br/>
-          Note: Comments are required for any action other than Approval.
-        </p>
-
-        <v-textarea
-          ref="commentsRef"
-          v-model="comments"
-          label="Review comments"
-          rows="4"
-          auto-grow
-          clearable
-          variant="outlined"
-        />
-        <v-alert
-            v-if="approveBlocked"
-            type="warning"
-            variant="tonal"
-            density="comfortable"
-            class="mx-6 mt-2"
-          >
-          Document signature is required before Approval.
-        </v-alert>
-      </v-card-text>
-
-      <v-divider />
-
-      <!-- Actions -->
-      <v-card-actions class="px-6 py-4">
-        <!-- Left (destructive / secondary) -->
-        <div class="d-flex ga-2">
-          <v-btn
-            color="error"
-            variant="text"
-            :prepend-icon="mdiClose"
-            :disabled="!canReject"
-            @click="closeReviewModal()"
-          >
-            Reject
-          </v-btn>
-
-          <v-btn
-            color="warning"
-            variant="outlined"
-            :prepend-icon="mdiAccountClock"
-            :disabled="!canReject"
-            @click="closeReviewModal()"
-          >
-            Awaiting documentation
-          </v-btn>
-        </div>
-
-        <v-spacer />
-
-        <!-- Primary -->
-        <v-btn
-          color="success"
-          size="large"
-          :prepend-icon="mdiCheckBold"
-          @click="approveOrder()"
-        >
-          Approve
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <ReviewModal v-model="showReviewModal" :can-approve="canApprove" />
 
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
@@ -104,6 +18,7 @@
   import { mdiNotebookOutline, mdiFileDocumentArrowRightOutline, mdiCheckBold, mdiClose, mdiPencilBoxOutline, mdiAccountClock } from '@mdi/js';
   import { useCourtFileSearchStore } from '@/stores';
   import { KeyValueInfo } from '@/types/common';
+  import ReviewModal from './ReviewModal.vue';
   //import NutrientViewer from '@nutrient-sdk/viewer';
 
   // Declare NutrientViewer global
@@ -163,10 +78,8 @@
   const loading = ref(false);
   const emptyStore = ref(false);
   const showReviewModal = ref(false);
-  const comments = ref();
-  const canReject = computed<boolean>(() => comments.value?.length > 0 );
-  const approveBlocked = ref<boolean>(false);
-
+  const canApprove = ref<boolean>(false);
+  
   let instance = {} as any; // NutrientViewer.Instance
 
   const configuration = {
@@ -174,31 +87,23 @@
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
   };
 
-  const approveOrder = async () => {
+  async function hasAnnotations(pageIndex: number) {
+    const annotations = await instance.getAnnotations(pageIndex);
+    return annotations.size > 0;
+  }
 
-    async function hasAnnotations(pageIndex: number) {
-      const annotations = await instance.getAnnotations(pageIndex);
-      return annotations.size > 0;
-    }
-
-    // Usage example.
-    async function checkDocument() {
-      for (let i = 0; i < instance.totalPageCount; i++) {
-        if (await hasAnnotations(i)) {
-          console.log("Document contains annotations");
-          approveBlocked.value = false
-          showReviewModal.value = false
-          return true;
-        }
+  async function checkDocumentForAnnotations() {
+    for (let i = 0; i < instance.totalPageCount; i++) {
+      if (await hasAnnotations(i)) {
+        return true;
       }
-      console.log("No annotations found");
-      approveBlocked.value = true
-      return false;
     }
+    return false;
+  }
 
-    checkDocument();
-    return true;
-  };
+  async function updateCanApprove() {
+    canApprove.value = await checkDocumentForAnnotations();
+  }
 
   const loadNutrient = async () => {
     loading.value = true;
@@ -284,6 +189,14 @@
         items.push(reviewItem);
         return items;
       });
+
+      // Listen for annotation changes to update canApprove
+      instance.addEventListener('annotations.create', updateCanApprove);
+      instance.addEventListener('annotations.update', updateCanApprove);
+      instance.addEventListener('annotations.delete', updateCanApprove);
+
+      // Check if document can be approved initially
+      await updateCanApprove();
     } catch (error) {
       console.error('Error loading PDF:', error);
       loading.value = false;
@@ -291,10 +204,7 @@
     }
   };
 
-  const closeReviewModal = () => {
-    showReviewModal.value = false;
-    approveBlocked.value = false;
-  };
+
 
   const createNutrientOutline = (outlineData: OutlineItem[]): any => {
     return NutrientViewer.Immutable.List(

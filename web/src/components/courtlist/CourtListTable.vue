@@ -13,7 +13,7 @@
     class="pb-5"
   >
     <template
-      v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }"
+      v-slot:[`item.data-table-expand`]="{ internalItem, isExpanded, toggleExpand }"
     >
       <v-icon
         color="primary"
@@ -21,7 +21,7 @@
         @click="toggleExpand(internalItem)"
       />
     </template>
-    <template v-slot:expanded-row="{ columns, item }">
+    <template v-slot:[`expanded-row`]="{ columns, item }">
       <tr class="expanded">
         <td :colspan="columns.length">
           <CourtListCriminalDetails
@@ -41,12 +41,12 @@
         </td>
       </tr>
     </template>
-    <template #item.accusedNm="{ item, value }">
+    <template #[`item.accusedNm`]="{ item, value }">
       <a href="#" @click.prevent="viewCaseDetails([item])">
         {{ value }}
       </a>
     </template>
-    <template v-slot:group-header="{ item, columns, isGroupOpen, toggleGroup }">
+    <template v-slot:[`group-header`]="{ item, columns, isGroupOpen, toggleGroup }">
       <tr>
         <td class="pa-0" style="height: 1rem" :colspan="columns.length">
           <v-banner
@@ -64,7 +64,7 @@
         </td>
       </tr>
     </template>
-    <template v-slot:item.icons="{ item }">
+    <template v-slot:[`item.icons`]="{ item }">
       <template v-if="item.isComplete">
         <TooltipIcon
           text="Appearance is complete, one or more of the charges has a recorded result"
@@ -86,23 +86,23 @@
         />
       </template>
     </template>
-    <template v-slot:item.estimatedTime="{ item }">
+    <template v-slot:[`item.estimatedTime`]="{ item }">
       {{ hoursMinsFormatter(item.estimatedTimeHour, item.estimatedTimeMin) }}
     </template>
-    <template v-slot:item.fileMarkers="{ item }">
+    <template v-slot:[`item.fileMarkers`]="{ item }">
       <FileMarkers
         class-override="ml-1 mt-1"
         :markers="getFileMarkers(item) ?? []"
       />
     </template>
-    <template v-slot:item.appearanceReasonCd="{ value, item }">
+    <template v-slot:[`item.appearanceReasonCd`]="{ value, item }">
       <v-tooltip :text="item.appearanceReasonDsc" location="top">
-        <template v-slot:activator="{ props }">
+        <template v-slot:[`activator`]="{ props }">
           <span v-bind="props" class="has-tooltip">{{ value }}</span>
         </template>
       </v-tooltip>
     </template>
-    <template v-slot:item.counsel="{ item, value }">
+    <template v-slot:[`item.counsel`]="{ item, value }">
       <v-tooltip
         :disabled="
           (item.counsel?.length ?? 0) + (item.accusedCounselNm ? 1 : 0) < 2
@@ -125,7 +125,7 @@
         ></span>
       </v-tooltip>
     </template>
-    <template v-slot:item.crown="{ value }">
+    <template v-slot:[`item.crown`]="{ value }">
       <v-tooltip :disabled="value?.length < 2" location="top">
         <template #activator="{ props }">
           <span :class="{ 'has-tooltip': value?.length > 1 }" v-bind="props">
@@ -135,7 +135,7 @@
         <span v-html="renderTooltip(value)"></span>
       </v-tooltip>
     </template>
-    <template v-slot:item.actions="{ item }">
+    <template v-slot:[`item.actions`]="{ item }">
       <TooltipIcon
         v-if="item.scheduleNoteTxt"
         location="start"
@@ -295,11 +295,6 @@
     accusedCounselNm: string,
     counsel: PcssCounsel[] | undefined
   ) => renderTooltip(counsel ?? [], accusedCounselNm);
-
-  const renderCounsel = (
-    accusedCounselNm: string,
-    counsel: PcssCounsel[] | undefined
-  ) => renderName(counsel ?? [], accusedCounselNm);
 
   const splitNames = (name: string) => {
     const [firstName, lastName] = name.split(' ');

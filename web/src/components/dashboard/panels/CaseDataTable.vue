@@ -5,12 +5,12 @@
     :sort-by="sortBy"
     fixed-header
   >
-    <template #item.courtClass="{ item }">
-      <span :class="getCourtClassStyle(item.courtClass)">
+    <template #[`item.courtClass`]="{ item }">
+      <span :class="[getCourtClassStyle(item.courtClass)]">
         {{ getCourtClassLabel(item.courtClass) }}
       </span>
     </template>
-    <template #item.styleOfCause="{ item }">
+    <template #[`item.styleOfCause`]="{ item }">
       <a href="#" @click.prevent="viewCaseDetails(item)">
         {{ item.styleOfCause }}
       </a>

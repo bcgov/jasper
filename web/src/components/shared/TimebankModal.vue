@@ -392,14 +392,6 @@
     return value.toFixed(2);
   };
 
-  const formatMoney = (value: number): string => {
-    if (value === null || value === undefined) {
-      return '0.00';
-    }
-    if (value === 0) return '0.00';
-    return value.toFixed(2);
-  };
-
   const fetchTimebankData = async () => {
     if (!timebankService) {
       error.value = 'Timebank service not available';

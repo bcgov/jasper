@@ -142,7 +142,7 @@ export class BundlePDFStrategy
     const fileIds = docs.map((d) => d.appearance.physicalFileId);
     const partIds = docs.map((d) => d.appearance.participantId);
 
-    let binders = apiResponse.payload.binders.filter(
+    const binders = apiResponse.payload.binders.filter(
       (b) =>
         b.labels &&
         fileIds.some((id) => b.labels.physicalFileId === id) &&

@@ -10,7 +10,11 @@ async function authGuard(to: any, from: any, next: any) {
     !isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
     commonStore?.userInfo?.isActive === false
   ) {
-    to.name === 'RequestAccess' ? next() : next({ path: '/request-access' });
+    if (to.name === 'RequestAccess') {
+      next();
+    } else {
+      next({ path: '/request-access' });
+    }
   } else if (results) {
     if (
       isPositiveInteger(commonStore?.userInfo?.roles?.length) &&

@@ -12,10 +12,8 @@
   import { beautifyDate } from '@/filters';
   import { HttpService } from '@/services/HttpService';
   import {
-    useCivilFileStore,
     useCommonStore,
     useCourtListStore,
-    useCriminalFileStore,
   } from '@/stores';
   import { IconInfoType } from '@/types/common';
   import { civilListInfoType, courtListInfoType } from '@/types/courtlist';
@@ -23,11 +21,8 @@
     civilCourtListType,
     criminalCourtListType,
   } from '@/types/courtlist/jsonTypes';
-  import { criminalFileInformationType } from '@/types/criminal';
-  import { CourtDocumentType, DocumentData } from '@/types/shared';
+  import { DocumentData } from '@/types/shared';
   import { inject, onMounted, ref } from 'vue';
-  import { useRouter } from 'vue-router';
-  import shared from '../shared';
 
   enum HearingType {
     'A' = '+',
@@ -45,24 +40,10 @@
   const isDataReady = ref(false);
   const selectedItems = ref<[]>([]);
   const idSelector = ref('appearanceId');
-
-  const notes = {
-    remarks: [],
-    text: '',
-    trialNotes: '',
-    fileComment: '',
-    commentToJudge: '',
-    sheriffComment: '',
-  };
   const physicalIds = ref<string[]>([]);
   const referenceDocs = ref<any>([]);
-
-  const router = useRouter();
-
   const commonStore = useCommonStore();
   const courtListStore = useCourtListStore();
-  const criminalFileStore = useCriminalFileStore();
-  const civilFileStore = useCivilFileStore();
   const httpService = inject<HttpService>('httpService');
 
   if (!httpService) {
@@ -290,30 +271,6 @@
     return false;
   };
 
-  const OpenCriminalNotes = (notesData) => {
-    notes.text = notesData;
-    // showNotes.value = true;
-  };
-
-  const getNameOfParticipant = (lastName, givenName) => {
-    commonStore.updateDisplayName({
-      lastName: lastName,
-      givenName: givenName,
-    });
-    return commonStore.displayName;
-  };
-
-  const OpenCriminalFilePage = (data) => {
-    const fileInformation = {} as criminalFileInformationType;
-    fileInformation.fileNumber = data.item.justinNo;
-    criminalFileStore.updateCriminalFile(fileInformation);
-    const routeData = router.resolve({
-      name: 'CriminalCaseDetails',
-      params: { fileNumber: fileInformation.fileNumber },
-    });
-    window.open(routeData.href, '_blank');
-  };
-
   const getNameOfAccusedTrunc = (nameOfAccused) => {
     const maximumFullNameLength = 20;
     if (nameOfAccused.length > maximumFullNameLength)
@@ -456,10 +413,6 @@
       return true;
     else return false;
   };
-  const OpenNotes = (notesData) => {
-    notes.text = notesData;
-    // showNotes.value = true;
-  };
 
   const getNameOfPartyTrunc = (partyNames) => {
     const maximumFullNameLength = 15;
@@ -494,57 +447,6 @@
   const getDuration = (hr, min) => {
     commonStore.updateDuration({ hr: hr, min: min });
     return commonStore.duration;
-  };
-
-  const OpenCriminalDetails = (data) => {
-    if (!data.detailsShowing) {
-      criminalFileStore.criminalAppearanceInfo = data;
-      // criminalFileStore.criminalAppearanceInfo.fileNo = data.item.justinNo;
-      // criminalFileStore.criminalAppearanceInfo.appearanceId = data.item.appearanceId;
-      // criminalFileStore.criminalAppearanceInfo.partId = data.item.partId;
-      // criminalFileStore.criminalAppearanceInfo.supplementalEquipmentTxt = data.item.supplementalEquipment;
-      // criminalFileStore.criminalAppearanceInfo.securityRestrictionTxt = data.item.securityRestriction;
-      // criminalFileStore.criminalAppearanceInfo.outOfTownJudgeTxt = data.item.outOfTownJudge;
-      // criminalFileStore.criminalAppearanceInfo.courtLevel = data.item.courtLevel;
-      // criminalFileStore.criminalAppearanceInfo.courtClass = data.item.courtClass;
-      // criminalFileStore.criminalAppearanceInfo.profSeqNo = data.item.profSeqNo;
-      criminalFileStore.updateCriminalAppearanceInfo(
-        criminalFileStore.criminalAppearanceInfo
-      );
-    }
-  };
-
-  const OpenCivilDetails = (data) => {
-    if (!data.detailsShowing) {
-      civilFileStore.civilAppearanceInfo.fileNo = data.item.fileId;
-      civilFileStore.civilAppearanceInfo.appearanceId = data.item.appearanceId;
-      civilFileStore.civilAppearanceInfo.supplementalEquipmentTxt =
-        data.item.supplementalEquipment;
-      civilFileStore.civilAppearanceInfo.securityRestrictionTxt =
-        data.item.securityRestriction;
-      civilFileStore.civilAppearanceInfo.outOfTownJudgeTxt =
-        data.item.outOfTownJudge;
-      civilFileStore.updateCivilAppearanceInfo(
-        civilFileStore.civilAppearanceInfo
-      );
-    }
-  };
-
-  const countReferenceDocs = (data) => {
-    if (data?.item?.fileId) {
-      const target = referenceDocs.value.find(
-        (doc) => doc['fileId'] === data.item.fileId
-      );
-      return target && target['doc'] ? target['doc'].length : 0;
-    }
-    return 0;
-  };
-
-  const downloadProvidedDocument = (data) => {
-    const target = referenceDocs.value.find(
-      (rd) => rd.fileId === data.item.fileId
-    );
-    shared.openDocumentsPdf(CourtDocumentType.ProvidedCivil, target.doc[0]);
   };
 
   const BuildReferenceDocsList = () => {
@@ -593,27 +495,5 @@
           });
         });
     });
-  };
-
-  const OpenCivilFilePage = (data, section = '') => {
-    let params;
-    if (section) {
-      params = {
-        fileNumber: data.item.fileId,
-        section: section,
-      };
-    } else {
-      params = { fileNumber: data.item.fileId };
-    }
-
-    const routeData = router.resolve({
-      name: 'CivilCaseDetails',
-      params: params,
-    });
-    window.open(routeData.href, '_blank');
-  };
-
-  const getFullCounsel = (counselDesc) => {
-    return '<b style="white-space: pre-line;">' + counselDesc + '</b>';
   };
 </script>

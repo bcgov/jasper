@@ -12,14 +12,14 @@
       :items="parties?.party"
       item-value="appearanceId"
     >
-      <template v-slot:item.role="{ item }">
+      <template v-slot:[`item.role`]="{ item }">
         <span v-for="(role, index) in item.partyRole" :key="index">
           <span v-if="role.roleTypeDsc">
             {{ role.roleTypeDsc }}
           </span>
         </span>
       </template>
-      <template v-slot:item.counsel="{ item }">
+      <template v-slot:[`item.counsel`]="{ item }">
         <LabelWithTooltip
           v-if="item.counsel?.length > 0"
           :values="item.counsel.map((issue) => issue.counselFullName)"

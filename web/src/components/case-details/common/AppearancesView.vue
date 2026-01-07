@@ -27,10 +27,16 @@
     show-expand
     variant="hover"
   >
-    <template v-slot:[`header.appearanceTm`]> TIME<br />EST. /DURATION </template>
+    <template v-slot:[`header.appearanceTm`]>
+      TIME<br />EST. /DURATION
+    </template>
     <template v-slot:[`header.courtLocation`]> LOCATION ROOM </template>
     <template
-      v-slot:[`item.data-table-expand`]="{ internalItem, isExpanded, toggleExpand }"
+      v-slot:[`item.data-table-expand`]="{
+        internalItem,
+        isExpanded,
+        toggleExpand,
+      }"
     >
       <v-icon
         color="primary"

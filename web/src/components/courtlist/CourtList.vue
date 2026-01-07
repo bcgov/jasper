@@ -45,7 +45,11 @@
         :key="pairing.card.courtListLocationID"
       >
         <court-list-card :cardInfo="pairing.card" class="w-100" />
-        <court-list-table :search="search" :data="pairing.table" class="w-100" />
+        <court-list-table
+          :search="search"
+          :data="pairing.table"
+          class="w-100"
+        />
       </template>
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"

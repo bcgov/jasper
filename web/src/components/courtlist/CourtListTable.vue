@@ -13,7 +13,11 @@
     class="pb-5"
   >
     <template
-      v-slot:[`item.data-table-expand`]="{ internalItem, isExpanded, toggleExpand }"
+      v-slot:[`item.data-table-expand`]="{
+        internalItem,
+        isExpanded,
+        toggleExpand,
+      }"
     >
       <v-icon
         color="primary"
@@ -46,7 +50,9 @@
         {{ value }}
       </a>
     </template>
-    <template v-slot:[`group-header`]="{ item, columns, isGroupOpen, toggleGroup }">
+    <template
+      v-slot:[`group-header`]="{ item, columns, isGroupOpen, toggleGroup }"
+    >
       <tr>
         <td class="pa-0" style="height: 1rem" :colspan="columns.length">
           <v-banner

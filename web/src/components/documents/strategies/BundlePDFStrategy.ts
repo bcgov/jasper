@@ -11,14 +11,11 @@ import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 import { inject } from 'vue';
 
-export class BundlePDFStrategy
-  implements
-    PDFViewerStrategy<
-      Record<string, Record<string, appearanceRequest[]>>,
-      DocumentBundleRequest,
-      ApiResponse<DocumentBundleResponse>
-    >
-{
+export class BundlePDFStrategy implements PDFViewerStrategy<
+  Record<string, Record<string, appearanceRequest[]>>,
+  DocumentBundleRequest,
+  ApiResponse<DocumentBundleResponse>
+> {
   private readonly bundleStore = useBundleStore();
   private readonly binderService: BinderService;
   private count = 0;

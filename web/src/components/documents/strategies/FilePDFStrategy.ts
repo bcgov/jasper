@@ -8,14 +8,11 @@ import { usePDFViewerStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
 import { inject } from 'vue';
 
-export class FilePDFStrategy
-  implements
-    PDFViewerStrategy<
-      Record<string, Record<string, StoreDocument[]>>,
-      StoreDocument[],
-      GeneratePdfResponse
-    >
-{
+export class FilePDFStrategy implements PDFViewerStrategy<
+  Record<string, Record<string, StoreDocument[]>>,
+  StoreDocument[],
+  GeneratePdfResponse
+> {
   private readonly pdfStore = usePDFViewerStore();
   private readonly filesService: FilesService;
   private pageIndex = 0;

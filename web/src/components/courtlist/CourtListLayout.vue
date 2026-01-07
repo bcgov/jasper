@@ -11,10 +11,7 @@
 <script setup lang="ts">
   import { beautifyDate } from '@/filters';
   import { HttpService } from '@/services/HttpService';
-  import {
-    useCommonStore,
-    useCourtListStore,
-  } from '@/stores';
+  import { useCommonStore, useCourtListStore } from '@/stores';
   import { IconInfoType } from '@/types/common';
   import { civilListInfoType, courtListInfoType } from '@/types/courtlist';
   import {

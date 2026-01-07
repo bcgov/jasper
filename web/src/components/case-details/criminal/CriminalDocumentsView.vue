@@ -83,7 +83,11 @@
         {{ item.category }}
       </template>
       <template
-        v-slot:[`item.documentTypeDescription`]="{ item }: { item: documentType }"
+        v-slot:[`item.documentTypeDescription`]="{
+          item,
+        }: {
+          item: documentType;
+        }"
       >
         <v-row>
           <v-col>

@@ -3,8 +3,8 @@ using Bogus;
 using FluentValidation;
 using FluentValidation.TestHelper;
 using MongoDB.Bson;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Validators;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace tests.api.Validators;

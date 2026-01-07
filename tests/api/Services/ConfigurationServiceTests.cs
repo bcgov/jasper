@@ -10,7 +10,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Configuration;
+using Scv.Models.Configuration;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;

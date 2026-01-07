@@ -36,6 +36,14 @@ namespace Scv.Api.Infrastructure.Options
         /// </summary>
         public bool ValidateIssuer { get; set; } = true;
 
+        public string Secret { get; set; }
+
+        public string Scope { get; set; }
+
+        public int RefreshSkewSeconds { get; set; } = 60; // refresh if within this window
+
+        public int ClockSkewSeconds { get; set; } = 10;   // tolerate small clock drift
+
         /// <summary>
         /// Require HTTPS metadata (default: true, set to false only for local dev)
         /// </summary>

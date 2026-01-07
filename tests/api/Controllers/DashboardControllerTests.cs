@@ -6,15 +6,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Models.Calendar;
 using Scv.Api.Services;
-using Xunit;
-using Scv.Core.Infrastructure;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
+using Scv.Models.Calendar;
+using Xunit;
 
 namespace tests.api.Controllers
 {

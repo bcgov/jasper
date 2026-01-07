@@ -1,5 +1,5 @@
 using FluentValidation;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Validators;
 

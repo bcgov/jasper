@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Bogus;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using Xunit;
 
 namespace tests.api.Helpers.Extensions;
@@ -17,7 +17,7 @@ public class DateTimeExtensionsTests
         var mockHttpContext = new Mock<HttpContext>();
         var mockRequest = new Mock<HttpRequest>();
         var headers = new Dictionary<string, StringValues>();
-        
+
         if (!string.IsNullOrEmpty(timezoneHeaderValue))
         {
             headers["X-Timezone"] = new StringValues(timezoneHeaderValue);
@@ -25,19 +25,19 @@ public class DateTimeExtensionsTests
 
         mockRequest.Setup(r => r.Headers).Returns(new HeaderDictionary(headers));
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
-        
+
         return mockHttpContext;
     }
 
     private static IServiceProvider CreateMockServiceProvider(HttpContext httpContext = null)
     {
         var services = new ServiceCollection();
-        
+
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
-        
+
         services.AddSingleton(mockHttpContextAccessor.Object);
-        
+
         return services.BuildServiceProvider();
     }
 
@@ -119,7 +119,7 @@ public class DateTimeExtensionsTests
         var testDateTime = new DateTime(2024, 1, 15, 12, 0, 0);
         var mockHttpContext = CreateMockHttpContext("America/New_York");
         var serviceProvider = CreateMockServiceProvider(mockHttpContext.Object);
-        
+
         DateTimeExtensions.Configure(serviceProvider);
 
         var result = testDateTime.ToClientTimezone();
@@ -133,7 +133,7 @@ public class DateTimeExtensionsTests
     public void ToClientTimezone_ParameterlessWithNoServiceProvider_ReturnsDefaultUtcTime()
     {
         var testDateTime = new DateTime(2024, 1, 15, 12, 0, 0);
-        
+
         // Don't configure service provider (or configure with null)
         DateTimeExtensions.Configure(null);
 

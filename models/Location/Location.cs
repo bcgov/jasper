@@ -1,44 +1,45 @@
 ﻿namespace Scv.Models.Location
 {
+
     public class Location
     {
-#pragma warning disable S1075
         private const string BASE_URL = "https://provincialcourt.bc.ca/court-locations/";
-#pragma warning restore
         private static readonly string[] invalidWords = ["Law", "Courts", "Court", "Provincial"];
         private static readonly string[] courtTypes = ["Provincial Courts", "Provincial Court", "Law Courts"];
 
-        public string? Name { get; set; }
-        public string? ShortName { get; set; }
-        public string? Code { get; set; }
-        public string? LocationId { get; set; }
-        public string? AgencyIdentifierCd { get; set; }
+        public string Name { get; set; }
+        public string ShortName { get; set; }
+        public string Code { get; set; }
+        public string LocationId { get; set; }
+        public string AgencyIdentifierCd { get; set; }
         public bool? Active { get; set; }
-        public Uri? InfoLink => ParseCourtLocationUrl(Name);
-        public ICollection<CourtRoom>? CourtRooms { get; set; }
+        public Uri InfoLink => ParseCourtLocationUrl(Name);
+        public ICollection<CourtRoom> CourtRooms { get; set; }
+        public string RegionCd { get; set; }
 
-        private Location(string? name, string? code, string? locationId, bool? active, ICollection<CourtRoom>? courtRooms)
+        private Location(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms, string regionCd)
         {
             Name = name;
             Code = code;
             LocationId = locationId;
             Active = active;
             CourtRooms = courtRooms;
+            RegionCd = regionCd;
             // Set Name as ShortName by default
             ShortName = name;
         }
 
-        private Location(string? name, string? shortName, string? code, string? locationId, string? agencyIdentifierCd, bool? active, ICollection<CourtRoom>? courtRooms)
-            : this(name, code, locationId, active, courtRooms)
+        private Location(string name, string shortName, string code, string locationId, string agencyIdentifierCd, bool? active, ICollection<CourtRoom> courtRooms, string regionCd)
+            : this(name, code, locationId, active, courtRooms, regionCd)
         {
             AgencyIdentifierCd = agencyIdentifierCd;
             // When short name is not available, use the location name and make it a short name
             ShortName = string.IsNullOrWhiteSpace(shortName) ? GenerateShortName(name) : shortName;
         }
 
-        public static Location Create(string name, string code, string locationId, bool? active, ICollection<CourtRoom>? courtRooms)
+        public static Location Create(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms)
         {
-            return new Location(name, code, locationId, active, courtRooms);
+            return new Location(name, code, locationId, active, courtRooms, null);
         }
 
         public static Location Create(Location jcLocation, Location pcssLocation)
@@ -48,12 +49,13 @@
                 pcssLocation?.Name,
                 jcLocation?.LocationId,
                 pcssLocation?.LocationId,
-                jcLocation?.Code,
+                agencyIdentifierCd: jcLocation?.Code,
                 pcssLocation?.Active ?? jcLocation?.Active,
-                pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms);
+                pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms,
+                    pcssLocation?.RegionCd ?? jcLocation?.RegionCd);
         }
 
-        private static Uri? ParseCourtLocationUrl(string? locationName)
+        private static Uri ParseCourtLocationUrl(string locationName)
         {
             if (string.IsNullOrEmpty(locationName))
             {
@@ -68,18 +70,13 @@
             return new Uri(BASE_URL + locationName.ToLower());
         }
 
-        private static string? GenerateShortName(string? name)
+        private static string GenerateShortName(string name)
         {
-            string? result = name;
+            string result = name;
 
             foreach (var phrase in courtTypes)
             {
-                result = result?.Replace(phrase, "", StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (result == null)
-            {
-                return null;
+                result = result.Replace(phrase, "", StringComparison.OrdinalIgnoreCase);
             }
 
             return string.Join(" ", result.Split(' ', StringSplitOptions.RemoveEmptyEntries));

@@ -15,6 +15,22 @@
       "sourceFileMap": {
         "/opt/app-root/src": "${workspaceRoot}/"
       }
+    },
+    {
+      "name": ".NET Core Docker Attach (TP)",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickRemoteProcess}",
+      "pipeTransport": {
+        "pipeProgram": "docker",
+        "pipeArgs": ["exec", "-i", "jasper-transitory-documents-api-1"],
+        "debuggerPath": "/vsdbg/vsdbg",
+        "pipeCwd": "${workspaceRoot}",
+        "quoteArgs": false
+      },
+      "sourceFileMap": {
+        "/opt/app-root/src": "${workspaceRoot}/"
+      }
     }
   ]
 }

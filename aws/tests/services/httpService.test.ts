@@ -54,7 +54,30 @@ describe("HttpService", () => {
           password,
         },
         httpsAgent: expect.anything(),
-      })
+      }),
+    );
+  });
+
+  it("should initialize with url when baseUrl is absent and omit auth when credentials are missing", async () => {
+    const mockInstance = {
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+    };
+    axiosMock.create.mockReturnValue(mockInstance as any);
+
+    const tdSecret = JSON.stringify({
+      url: "https://wsgw.test.jag.gov.bc.ca/jasper/transitory-documents",
+    });
+
+    await httpService.init(tdSecret, mtlsSecret);
+
+    expect(axiosMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: "https://wsgw.test.jag.gov.bc.ca/jasper/transitory-documents",
+        auth: undefined,
+        httpsAgent: expect.anything(),
+      }),
     );
   });
 
@@ -85,14 +108,14 @@ describe("HttpService", () => {
     const response = await httpService.post(
       "/test",
       { name: "example" },
-      mockAxiosConfig
+      mockAxiosConfig,
     );
 
     expect(response.data).toEqual({ id: 1 });
     expect(mockInstance.post).toHaveBeenCalledWith(
       "/test",
       { name: "example" },
-      mockAxiosConfig
+      mockAxiosConfig,
     );
   });
 
@@ -108,14 +131,14 @@ describe("HttpService", () => {
     const response = await httpService.put(
       "/test",
       { name: "updated" },
-      mockAxiosConfig
+      mockAxiosConfig,
     );
 
     expect(response.data).toEqual({ updated: true });
     expect(mockInstance.put).toHaveBeenCalledWith(
       "/test",
       { name: "updated" },
-      mockAxiosConfig
+      mockAxiosConfig,
     );
   });
 
@@ -135,7 +158,7 @@ describe("HttpService", () => {
 
     await httpService.init(credentialsSecret, mtlsSecret);
     await expect(
-      httpService.get("/not-found", mockAxiosConfig)
+      httpService.get("/not-found", mockAxiosConfig),
     ).rejects.toMatchObject({ response: { status: 404 } });
   });
 });

@@ -1,4 +1,4 @@
-﻿namespace Scv.Models.archive
+﻿namespace Scv.Models.Archive
 {
     public class ArchiveRequest
     {

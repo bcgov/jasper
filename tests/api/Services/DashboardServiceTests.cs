@@ -17,8 +17,9 @@ using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Models.Calendar;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Calendar;
 using Xunit;
 using static PCSSCommon.Models.ActivityClassUsage;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -612,7 +613,7 @@ public class DashboardServiceTests : ServiceTestBase
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
         var mockFileCount = _faker.Random.Int();
-        
+
         // Use UTC time to match what ToClientTimezone() returns in test environment
         var currentDate = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.Now, "UTC");
 

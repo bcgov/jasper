@@ -2,7 +2,7 @@
 
 namespace Scv.Core.Helpers
 {
-    public class CustomClaimTypes
+    public static class CustomClaimTypes
     {
         public const string ApplicationCode = nameof(CustomClaimTypes) + nameof(ApplicationCode);
         public const string JcParticipantId = nameof(CustomClaimTypes) + nameof(JcParticipantId);

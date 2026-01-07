@@ -1,4 +1,4 @@
-﻿using JCCommon.Clients.FileServices;
+using JCCommon.Clients.FileServices;
 // ReSharper disable UnassignedGetOnlyAutoProperty
 
 namespace Scv.Models.Civil.Detail

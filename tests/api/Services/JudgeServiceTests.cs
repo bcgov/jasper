@@ -8,12 +8,12 @@ using LazyCache.Providers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using PCSSCommon.Clients.PersonServices;
-using Scv.Api.Models.Location;
 using Scv.Api.Services;
+using Scv.Models.Location;
 using tests.api.Fixtures;
 using Xunit;
 using PcssPersonSearchItem = PCSSCommon.Models.PersonSearchItem;
-using ScvPerson = Scv.Api.Models.Person;
+using ScvPerson = Scv.Models.Person;
 
 namespace tests.api.Services;
 

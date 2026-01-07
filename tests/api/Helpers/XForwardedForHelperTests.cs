@@ -1,10 +1,9 @@
-using System.Net;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using System.Net;
 using Bogus;
-using Scv.Api.Helpers;
-using Xunit;
 using Scv.Core.Helpers;
+using Xunit;
 
 namespace tests.api.Helpers
 {

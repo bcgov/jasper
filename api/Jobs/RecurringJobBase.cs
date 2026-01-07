@@ -1,8 +1,8 @@
-﻿using LazyCache;
+﻿using System.Threading.Tasks;
+using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Jobs;
 

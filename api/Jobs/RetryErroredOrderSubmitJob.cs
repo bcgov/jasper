@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Scv.Api.Infrastructure.Options;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
 

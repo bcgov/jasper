@@ -1,4 +1,4 @@
-﻿using JCCommon.Clients.FileServices;
+using JCCommon.Clients.FileServices;
 using Mapster;
 using Newtonsoft.Json;
 using Scv.Models.Civil.Detail;

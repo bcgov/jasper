@@ -4,7 +4,6 @@ using PCSSCommon.Common;
 
 #pragma warning disable 8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable 8603 // Disable "CS8603 Possible null reference return"
-#pragma warning disable 8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace PCSSCommon.Models
 {
@@ -468,4 +467,3 @@ namespace PCSSCommon.Models
 
 #pragma warning restore 8600
 #pragma warning restore 8603
-#pragma warning restore 8618

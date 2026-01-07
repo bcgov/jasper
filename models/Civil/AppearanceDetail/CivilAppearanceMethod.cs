@@ -1,4 +1,4 @@
-﻿namespace Scv.Models.Civil.AppearanceDetail
+namespace Scv.Models.Civil.AppearanceDetail
 {
     /// <summary>
     /// Extends CivilAppearanceMethod. 

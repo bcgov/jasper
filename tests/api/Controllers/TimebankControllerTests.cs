@@ -11,9 +11,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Services;
-using Scv.Db.Models;
 using Scv.Core.Helpers;
 using Scv.Core.Infrastructure;
+using Scv.Db.Models;
 using Scv.Models.Timebank;
 using Xunit;
 

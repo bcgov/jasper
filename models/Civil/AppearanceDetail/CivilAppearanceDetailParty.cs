@@ -1,4 +1,4 @@
-﻿using JCCommon.Clients.FileServices;
+using JCCommon.Clients.FileServices;
 using Scv.Models.Civil.CourtList;
 
 namespace Scv.Models.Civil.AppearanceDetail

@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Db.Models;
+using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Services
 {
@@ -18,11 +20,13 @@ namespace Scv.Api.Services
         IPcssAuthorizationService authorizationService,
         IGroupService groupService,
         IJudgeService judgeService,
+        IRepositoryBase<Group> groupRepo,
         ILogger<PcssSyncService> logger) : IPcssSyncService
     {
         private readonly IPcssAuthorizationService _authorizationService = authorizationService;
         private readonly IGroupService _groupService = groupService;
         private readonly IJudgeService _judgeService = judgeService;
+        private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
         public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false)
@@ -48,6 +52,21 @@ namespace Scv.Api.Services
                 }
 
                 var judgeId = await GetJudgeIdForUserAsync(matchingUser.UserId.Value, userDto.Email);
+
+                var currentGroupIds = userDto.GroupIds ?? [];
+                if (currentGroupIds.Any())
+                {
+                    var testingGroupId = (await _groupRepo.FindAsync(g => g.Name == Group.TESTING))
+                        .FirstOrDefault()
+                        ?.Id;
+
+                    if (!string.IsNullOrWhiteSpace(testingGroupId)
+                        && currentGroupIds.Contains(testingGroupId)
+                        && !groupIds.Contains(testingGroupId))
+                    {
+                        groupIds.Add(testingGroupId);
+                    }
+                }
 
                 return ApplyUserChanges(userDto, groupIds, judgeId, matchingUser);
             }

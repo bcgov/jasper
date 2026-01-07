@@ -7,9 +7,10 @@ using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using PCSSCommon.Clients.TimebankServices;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.Timebank;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Infrastructure;
+using Scv.Core.Services;
+using Scv.Models.Timebank;
 
 namespace Scv.Api.Services;
 

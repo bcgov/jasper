@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Scv.Api.Helpers.Documents;
+using Scv.Api.Helpers;
 using Scv.Api.Models.Criminal.Detail;
 
 namespace Scv.Api.Models.Criminal.AppearanceDetail;

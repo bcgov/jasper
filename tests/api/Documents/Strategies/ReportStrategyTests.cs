@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Models.Document;
+using Scv.Models.Document;
 using tests.api.Services;
 using Xunit;
 

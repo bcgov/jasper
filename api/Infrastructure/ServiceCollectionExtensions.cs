@@ -236,7 +236,7 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
-            
+
             // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
             services.AddTransient<DarsCookieHandler>();
             services
@@ -290,6 +290,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddScoped<IGroupService, GroupService>();
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
+                services.AddTransient<IOrderService, OrderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
 

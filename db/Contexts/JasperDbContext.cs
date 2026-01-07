@@ -16,6 +16,7 @@ namespace Scv.Db.Contexts
         public DbSet<DocumentCategory> DocumentCategories { get; set; }
         public DbSet<Case> Cases { get; set; }
         public DbSet<QuickLink> QuickLinks { get; set; }
+        public DbSet<Order> Orders { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -48,6 +49,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
             modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
             modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
+            modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));
         }
     }
 }

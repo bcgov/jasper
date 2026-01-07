@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using Scv.Api.Models.Criminal.Detail;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Documents;
 

@@ -9,9 +9,12 @@ using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.Calendar;
+using Scv.Models.Calendar;
 using Scv.Api.Services;
 using Xunit;
+using Scv.Core.Infrastructure;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 
 namespace tests.api.Controllers
 {

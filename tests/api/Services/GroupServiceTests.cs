@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;

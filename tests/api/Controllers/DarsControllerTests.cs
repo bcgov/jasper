@@ -3,42 +3,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bogus;
-using DARSCommon.Clients.LogNotesServices;
-using DARSCommon.Models;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scv.Api.Controllers;
-using Scv.Api.Documents;
-using Scv.Api.Models.Dars;
-using Scv.Api.Models.Document;
-using Scv.Api.Services;
 using Xunit;
-using ValidationResult = FluentValidation.Results.ValidationResult;
+using DarsSearchResults = DARSCommon.Models.DarsSearchResults;
+using ApiException = DARSCommon.Clients.LogNotesServices.ApiException;
+using DarsClientSearchResult = Scv.Api.Models.Dars.DarsClientSearchResult;
+using TranscriptDocument = Scv.Models.Dars.TranscriptDocument;
+using TranscriptAppearance = Scv.Models.Dars.TranscriptAppearance;
+using TranscriptSearchRequest = Scv.Models.Dars.TranscriptSearchRequest;
+using Scv.Models.Document;
 
 namespace tests.api.Controllers
 {
     public class DarsControllerTests
     {
         private readonly Faker _faker;
-        private readonly Mock<IDarsService> _mockDarsService;
-        private readonly Mock<ILogger<DarsController>> _mockLogger;
+        private readonly Mock<Scv.Api.Services.IDarsService> _mockDarsService;
+        private readonly Mock<ILogger<Scv.Api.Controllers.DarsController>> _mockLogger;
         private readonly Mock<IValidator<TranscriptSearchRequest>> _mockValidator;
-        private readonly Mock<IDocumentMerger> _mockDocumentMerger;
-        private readonly DarsController _controller;
+        private readonly Mock<Scv.Api.Documents.IDocumentMerger> _mockDocumentMerger;
+        private readonly Scv.Api.Controllers.DarsController _controller;
 
         public DarsControllerTests()
         {
             _faker = new Faker();
-            _mockDarsService = new Mock<IDarsService>();
-            _mockLogger = new Mock<ILogger<DarsController>>();
+            _mockDarsService = new Mock<Scv.Api.Services.IDarsService>();
+            _mockLogger = new Mock<ILogger<Scv.Api.Controllers.DarsController>>();
             _mockValidator = new Mock<IValidator<TranscriptSearchRequest>>();
-            _mockDocumentMerger = new Mock<IDocumentMerger>();
+            _mockDocumentMerger = new Mock<Scv.Api.Documents.IDocumentMerger>();
 
-            _controller = new DarsController(
+            _controller = new Scv.Api.Controllers.DarsController(
                 _mockDarsService.Object,
                 _mockLogger.Object,
                 _mockValidator.Object,
@@ -302,7 +301,7 @@ namespace tests.api.Controllers
         {
             // Arrange
             var physicalFileId = _faker.Random.AlphaNumeric(10);
-            var validationResult = new ValidationResult(new List<ValidationFailure>
+            var validationResult = new FluentValidation.Results.ValidationResult(new List<ValidationFailure>
             {
                 new ValidationFailure("PhysicalFileId", "Invalid format")
             });
@@ -312,8 +311,8 @@ namespace tests.api.Controllers
                 .ReturnsAsync(validationResult);
 
             // Act
-            var result = await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            var result = await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -322,12 +321,12 @@ namespace tests.api.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
             Assert.Contains("Invalid format", errors);
-            
+
             _mockValidator.Verify(v => v.ValidateAsync(
-                It.Is<TranscriptSearchRequest>(r => 
-                    r.PhysicalFileId == physicalFileId && 
-                    r.MdocJustinNo == null && 
-                    r.ReturnChildRecords == true), 
+                It.Is<TranscriptSearchRequest>(r =>
+                    r.PhysicalFileId == physicalFileId &&
+                    r.MdocJustinNo == null &&
+                    r.ReturnChildRecords == true),
                 default), Times.Once);
         }
 
@@ -344,7 +343,7 @@ namespace tests.api.Controllers
                     OrderId = _faker.Random.Int(1, 1000),
                     Description = _faker.Lorem.Sentence(),
                     FileName = _faker.System.FileName("pdf"),
-                    PagesComplete = _faker.Random.Int(1, 100),
+                    PagesComplete = _faker.Random.Int(1, 1000),
                     StatusCodeId = 1,
                     Appearances = new List<TranscriptAppearance>()
                 },
@@ -362,15 +361,15 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
-                .ReturnsAsync(transcripts);
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(transcripts));
 
             // Act
-            var result = await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            var result = await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -389,15 +388,15 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
-                .ReturnsAsync(new List<TranscriptDocument>());
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(new List<TranscriptDocument>()));
 
             // Act
-            var result = await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            var result = await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -414,15 +413,15 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
-                .ReturnsAsync((IEnumerable<TranscriptDocument>)null);
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(null));
 
             // Act
-            var result = await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            var result = await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -439,15 +438,15 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
                 .ThrowsAsync(new DARSCommon.Clients.TranscriptsServices.ApiException("Not found", 404, "response", null, null));
 
             // Act
-            var result = await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            var result = await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -464,15 +463,15 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
                 .ThrowsAsync(new DARSCommon.Clients.TranscriptsServices.ApiException("Server error", 500, "response", null, null));
 
             // Act
-            var result = await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            var result = await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -491,18 +490,18 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
-                .ReturnsAsync(new List<TranscriptDocument>
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(new List<TranscriptDocument>
                 {
                     new TranscriptDocument { Id = 1, OrderId = 1, Description = "", FileName = "", PagesComplete = 0, StatusCodeId = 1, Appearances = new List<TranscriptAppearance>() }
-                });
+                }));
 
             // Act
-            await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 ReturnChildRecords = true
             });
@@ -510,10 +509,10 @@ namespace tests.api.Controllers
             // Assert
             _mockDarsService.Verify(s => s.GetCompletedDocuments(physicalFileId, null, true), Times.Once);
             _mockValidator.Verify(v => v.ValidateAsync(
-                It.Is<TranscriptSearchRequest>(r => 
-                    r.PhysicalFileId == physicalFileId && 
-                    r.MdocJustinNo == null && 
-                    r.ReturnChildRecords == true), 
+                It.Is<TranscriptSearchRequest>(r =>
+                    r.PhysicalFileId == physicalFileId &&
+                    r.MdocJustinNo == null &&
+                    r.ReturnChildRecords == true),
                 default), Times.Once);
         }
 
@@ -525,18 +524,18 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(null, mdocJustinNo, true))
-                .ReturnsAsync(new List<TranscriptDocument>
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(new List<TranscriptDocument>
                 {
                     new TranscriptDocument { Id = 1, OrderId = 1, Description = "", FileName = "", PagesComplete = 0, StatusCodeId = 1, Appearances = new List<TranscriptAppearance>() }
-                });
+                }));
 
             // Act
-            await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 MdocJustinNo = mdocJustinNo,
                 ReturnChildRecords = true
             });
@@ -544,10 +543,10 @@ namespace tests.api.Controllers
             // Assert
             _mockDarsService.Verify(s => s.GetCompletedDocuments(null, mdocJustinNo, true), Times.Once);
             _mockValidator.Verify(v => v.ValidateAsync(
-                It.Is<TranscriptSearchRequest>(r => 
-                    r.PhysicalFileId == null && 
-                    r.MdocJustinNo == mdocJustinNo && 
-                    r.ReturnChildRecords == true), 
+                It.Is<TranscriptSearchRequest>(r =>
+                    r.PhysicalFileId == null &&
+                    r.MdocJustinNo == mdocJustinNo &&
+                    r.ReturnChildRecords == true),
                 default), Times.Once);
         }
 
@@ -561,18 +560,18 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, mdocJustinNo, returnChildRecords))
-                .ReturnsAsync(new List<TranscriptDocument>
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(new List<TranscriptDocument>
                 {
                     new TranscriptDocument { Id = 1, OrderId = 1, Description = "", FileName = "", PagesComplete = 0, StatusCodeId = 1, Appearances = new List<TranscriptAppearance>() }
-                });
+                }));
 
             // Act
-            await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 MdocJustinNo = mdocJustinNo,
                 ReturnChildRecords = returnChildRecords
@@ -581,10 +580,10 @@ namespace tests.api.Controllers
             // Assert
             _mockDarsService.Verify(s => s.GetCompletedDocuments(physicalFileId, mdocJustinNo, returnChildRecords), Times.Once);
             _mockValidator.Verify(v => v.ValidateAsync(
-                It.Is<TranscriptSearchRequest>(r => 
-                    r.PhysicalFileId == physicalFileId && 
-                    r.MdocJustinNo == mdocJustinNo && 
-                    r.ReturnChildRecords == returnChildRecords), 
+                It.Is<TranscriptSearchRequest>(r =>
+                    r.PhysicalFileId == physicalFileId &&
+                    r.MdocJustinNo == mdocJustinNo &&
+                    r.ReturnChildRecords == returnChildRecords),
                 default), Times.Once);
         }
 
@@ -599,18 +598,18 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(expectedPhysicalFileId, expectedMdocJustinNo, true))
-                .ReturnsAsync(new List<TranscriptDocument>
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(new List<TranscriptDocument>
                 {
                     new TranscriptDocument { Id = 1, OrderId = 1, Description = "", FileName = "", PagesComplete = 0, StatusCodeId = 1, Appearances = new List<TranscriptAppearance>() }
-                });
+                }));
 
             // Act
-            await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId,
                 MdocJustinNo = mdocJustinNo,
                 ReturnChildRecords = true
@@ -618,13 +617,13 @@ namespace tests.api.Controllers
 
             // Assert - Service should receive trimmed values
             _mockDarsService.Verify(s => s.GetCompletedDocuments(expectedPhysicalFileId, expectedMdocJustinNo, true), Times.Once);
-            
+
             // Assert - Validator should receive the original request with untrimmed values
             _mockValidator.Verify(v => v.ValidateAsync(
-                It.Is<TranscriptSearchRequest>(r => 
-                    r.PhysicalFileId == physicalFileId && 
-                    r.MdocJustinNo == mdocJustinNo && 
-                    r.ReturnChildRecords == true), 
+                It.Is<TranscriptSearchRequest>(r =>
+                    r.PhysicalFileId == physicalFileId &&
+                    r.MdocJustinNo == mdocJustinNo &&
+                    r.ReturnChildRecords == true),
                 default), Times.Once);
         }
 
@@ -636,18 +635,18 @@ namespace tests.api.Controllers
 
             _mockValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<TranscriptSearchRequest>(), default))
-                .ReturnsAsync(new ValidationResult());
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
             _mockDarsService
                 .Setup(s => s.GetCompletedDocuments(physicalFileId, null, true))
-                .ReturnsAsync(new List<TranscriptDocument>
+                .Returns(Task.FromResult<IEnumerable<TranscriptDocument>>(new List<TranscriptDocument>
                 {
                     new TranscriptDocument { Id = 1, OrderId = 1, Description = "", FileName = "", PagesComplete = 0, StatusCodeId = 1, Appearances = new List<TranscriptAppearance>() }
-                });
+                }));
 
             // Act - Using default value from TranscriptSearchRequest
-            await _controller.GetTranscripts(new TranscriptSearchRequest 
-            { 
+            await _controller.GetTranscripts(new TranscriptSearchRequest
+            {
                 PhysicalFileId = physicalFileId
                 // ReturnChildRecords will use default value of true from the model
             });
@@ -699,8 +698,8 @@ namespace tests.api.Controllers
             var expectedBase64 = Convert.ToBase64String(_faker.Random.Bytes(100));
 
             _mockDocumentMerger
-                .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
-                .ReturnsAsync(new PdfDocumentResponse { Base64Pdf = expectedBase64 });
+                .Setup(m => m.MergeDocuments(It.IsAny<Scv.Models.Document.PdfDocumentRequest[]>()))
+                .ReturnsAsync(new Scv.Models.Document.PdfDocumentResponse { Base64Pdf = expectedBase64 });
 
             // Act
             var result = await _controller.GetTranscriptDocument(orderId, documentId);
@@ -731,7 +730,7 @@ namespace tests.api.Controllers
             _mockDocumentMerger.Verify(m => m.MergeDocuments(
                 It.Is<PdfDocumentRequest[]>(reqs =>
                     reqs.Length == 1 &&
-                    reqs[0].Type == Scv.Api.Documents.DocumentType.Transcript &&
+                    reqs[0].Type == Scv.Models.DocumentType.Transcript &&
                     reqs[0].Data.OrderId == orderId &&
                     reqs[0].Data.DocumentId == documentId)),
                 Times.Once);

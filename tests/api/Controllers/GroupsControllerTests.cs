@@ -8,9 +8,11 @@ using MongoDB.Bson;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Xunit;
+using Scv.Core.Services;
+using Scv.Core.Infrastructure;
 
 namespace tests.api.Controllers;
 public class GroupsControllerTests

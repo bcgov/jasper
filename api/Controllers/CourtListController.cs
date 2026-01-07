@@ -1,13 +1,13 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.CourtList;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers
 {

@@ -1,5 +1,5 @@
 using Mapster;
-using Scv.Api.Models.Timebank;
+using Scv.Models.Timebank;
 using PCSS = PCSSCommon.Clients.TimebankServices;
 
 namespace Scv.Api.Infrastructure.Mappings;

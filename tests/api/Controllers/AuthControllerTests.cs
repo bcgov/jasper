@@ -10,6 +10,7 @@ using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Xunit;
 

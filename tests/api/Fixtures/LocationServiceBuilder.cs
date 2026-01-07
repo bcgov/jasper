@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Moq;
-using Scv.Api.Models.Location;
+using Scv.Models.Location;
 
 namespace tests.api.Fixtures;
 

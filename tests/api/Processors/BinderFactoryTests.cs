@@ -14,7 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Documents;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Contants;

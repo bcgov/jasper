@@ -1,26 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Criminal.AppearanceDetail;
-using Scv.Api.Models.Criminal.Appearances;
 using Scv.Api.Models.Criminal.Detail;
-using Scv.Api.Models.Search;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models.Criminal.AppearanceDetail;
+using Scv.Models.Criminal.Appearances;
+using Scv.Models.Criminal.Detail;
+using Scv.Models.Search;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
-using CriminalAppearanceMethod = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
+using CriminalAppearanceMethod = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
 using CriminalParticipant = Scv.Api.Models.Criminal.Detail.CriminalParticipant;
-using CriminalWitness = Scv.Api.Models.Criminal.Detail.CriminalWitness;
+using CriminalWitness = Scv.Models.Criminal.Detail.CriminalWitness;
 
 namespace Scv.Api.Services.Files
 {

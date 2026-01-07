@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using LazyCache;
+﻿using LazyCache;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +6,10 @@ using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.ConfigurationServices;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Jobs;
 

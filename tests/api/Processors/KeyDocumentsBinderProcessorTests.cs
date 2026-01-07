@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentValidation;
 using Moq;
-using Scv.Api.Models;
+using Scv.Models;
 using Scv.Api.Processors;
 using Scv.Db.Contants;
 using Xunit;

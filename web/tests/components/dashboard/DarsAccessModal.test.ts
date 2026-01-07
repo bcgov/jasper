@@ -49,6 +49,7 @@ describe('DarsAccessModal tests', () => {
       code: 'TL1',
       locationId: '1',
       active: true,
+      agencyIdentifierCd: '1234',
       courtRooms: [
         { room: 'Room 101', locationId: '1', type: 'courtroom' },
         { room: 'Room 102', locationId: '1', type: 'courtroom' },
@@ -62,6 +63,7 @@ describe('DarsAccessModal tests', () => {
       code: 'TL2',
       locationId: '2',
       active: true,
+      agencyIdentifierCd: '5678',
       courtRooms: [{ room: 'Room 201', locationId: '2', type: 'courtroom' }],
       infoLink: '',
       agencyIdentifierCd: 'TL2',
@@ -185,22 +187,28 @@ describe('DarsAccessModal tests', () => {
       expect(darsStore.isModalVisible).toBe(true);
     });
 
-    it('sets the correct locationId based on openModal parameter', async () => {
+    it('updates locationId and clears room when room parameter is null', async () => {
       await mountComponent();
+
+      darsStore.setSearchCriteria(new Date('2025-10-28'), '1', 'Room 101');
 
       darsStore.openModal(null, '1', null);
       await nextTick();
 
       expect(darsStore.searchLocationId).toBe('1');
+      expect(darsStore.searchRoom).toBe('');
     });
 
-    it('sets the correct locationId when called with string parameter', async () => {
+    it('updates locationId and preserves existing room when not overridden', async () => {
       await mountComponent();
 
-      darsStore.openModal(null, '2', null);
+      darsStore.setSearchCriteria(new Date('2025-10-28'), '1', 'Room 101');
+
+      darsStore.openModal(null, '2');
       await nextTick();
 
       expect(darsStore.searchLocationId).toBe('2');
+      expect(darsStore.searchRoom).toBe('Room 101');
     });
   });
 

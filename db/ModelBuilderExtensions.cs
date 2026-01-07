@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
 
 // Credits to PIMS for this. 
 namespace SS.Db

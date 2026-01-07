@@ -1,16 +1,15 @@
-﻿using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services.Files
 {

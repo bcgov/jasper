@@ -2,11 +2,10 @@
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;

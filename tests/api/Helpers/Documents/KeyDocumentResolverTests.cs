@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
-using Scv.Api.Helpers.Documents;
+using Scv.Api.Helpers;
 using Scv.Api.Models.Criminal.Detail;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
+using Scv.Models.Criminal.Detail;
 using Xunit;
 
 namespace tests.api.Helpers.Documents;

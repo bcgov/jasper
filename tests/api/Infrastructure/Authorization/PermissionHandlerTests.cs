@@ -8,10 +8,12 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Xunit;
+using Scv.Core.Infrastructure.Authorization;
+using Scv.Core.Helpers;
 
 namespace tests.api.Infrastructure.Authorization;
 public class PermissionHandlerTests

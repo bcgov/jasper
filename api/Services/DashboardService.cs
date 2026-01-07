@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using LazyCache;
+﻿using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using NJsonSchema;
@@ -11,8 +6,14 @@ using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.Calendar;
+using Scv.Core.Infrastructure;
+using Scv.Core.Services;
+using Scv.Models.Calendar;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Services;

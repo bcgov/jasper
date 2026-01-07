@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using MongoDB.EntityFrameworkCore;
+﻿using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
+using System.Collections.Generic;
 
 namespace Scv.Db.Models
 {
@@ -51,6 +51,11 @@ namespace Scv.Db.Models
         public const string VIEW_MULTIPLE_DOCUMENTS = "VIEW_MULTIPLE_DOCUMENTS";
         public const string VIEW_SIDE_BY_SIDE_DOCUMENTS = "VIEW_SIDE_BY_SIDE_DOCUMENTS ";
         public const string ADD_EDIT_OWN_DOCUMENT_ANNOTATIONS_ONLY = "ADD_EDIT_OWN_DOCUMENT_ANNOTATIONS_ONLY ";
+
+        // Transitory Documents
+        public const string LIST_TRANSITORY_DOCUMENTS = "LIST_TRANSITORY_DOCUMENTS";
+        public const string VIEW_TRANSITORY_DOCUMENTS = "VIEW_TRANSITORY_DOCUMENTS";
+        public const string DOWNLOAD_TRANSITORY_DOCUMENTS = "DOWNLOAD_TRANSITORY_DOCUMENTS";
 
         // Others
         public const string ACCESS_DARS = "ACCESS_DARS";
@@ -300,6 +305,29 @@ namespace Scv.Db.Models
                 Code = ADD_EDIT_OWN_DOCUMENT_ANNOTATIONS_ONLY,
                 Name = "Add/Edit Own Document Annotations Only",
                 Description = "Permissions to add/edit own document annotations only",
+                IsActive = true
+            },
+
+            // Transitory Documents
+            new Permission
+            {
+                Code = LIST_TRANSITORY_DOCUMENTS,
+                Name = "List Transitory Documents",
+                Description = "Permissions to list transitory documents",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = VIEW_TRANSITORY_DOCUMENTS,
+                Name = "View Transitory Documents",
+                Description = "Permissions to view transitory documents",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = DOWNLOAD_TRANSITORY_DOCUMENTS,
+                Name = "Download Transitory Documents",
+                Description = "Permissions to download transitory documents",
                 IsActive = true
             },
 

@@ -62,6 +62,7 @@ services:
       - Keycloak__PresReqConfId=${KeycloakPresReqConfId}
       - Keycloak__Secret=${KeycloakSecret}
       - Keycloak__VcIdpHint=${KeycloakVcIdpHint}
+      - TDKeycloak__Secret=${TDKeycloakServiceSecret}
       - LocationServicesClient__Password=${LocationServicesClientPassword}
       - LocationServicesClient__Url=${LocationServicesClientUrl}
       - LocationServicesClient__Username=${LocationServicesClientUsername}
@@ -82,6 +83,7 @@ services:
       - DARS__Password=${DARS_PASSWORD}
       - DARS__Url=${DARS_URL}
       - DARS__Username=${DARS_USERNAME}
+      - TD__Url=${TD_URL}
       - DARS__LogsheetUrl=${DARS_LOGSHEET_URL}
       - Request__AgencyIdentifierId=${RequestAgencyIdentifierId}
       - Request__ApplicationCd=${RequestApplicationCd}
@@ -108,6 +110,9 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-..}/jc-interface-client/:/opt/app-root/src/jc-interface-client
       - ${LOCAL_WORKSPACE_FOLDER-..}/pcss-client/:/opt/app-root/src/pcss-client
       - ${LOCAL_WORKSPACE_FOLDER-..}/dars-client/:/opt/app-root/src/dars-client
+      - ${LOCAL_WORKSPACE_FOLDER-..}/transitory-documents-client/:/opt/app-root/src/transitory-documents-client
+      - ${LOCAL_WORKSPACE_FOLDER-..}/models/:/opt/app-root/src/models
+      - ${LOCAL_WORKSPACE_FOLDER-..}/core/:/opt/app-root/src/core
       - api-dev-bin:/opt/app-root/src/api/bin
       - api-dev-obj:/opt/app-root/src/api/obj
       - ${LOCAL_WORKSPACE_FOLDER-.}/seed:/opt/app-root/data
@@ -119,6 +124,41 @@ services:
       /bin/bash -c "
         echo Waiting for the database service to start up ...;
         dotnet watch run --project /opt/app-root/src/api/api.csproj --urls='http://+:5000';"
+
+  transitory-documents-api:
+    image: '${COMPOSE_PROJECT_NAME}-transitory-documents-api'
+    environment:
+      - ASPNETCORE_URLS=${ASPNETCORE_TD_URLS}
+      - AuthorizerKey=${AuthorizerKey}
+      - DataProtectionKeyEncryptionKey=${DataProtectionKeyEncryptionKey}
+      - Keycloak__Audience=${TDKeycloakAudience}
+      - Keycloak__Authority=${TDKeycloakAuthority}
+      - Keycloak__ClientId=${TDKeycloakClient}
+      - Keycloak__Secret=${TdKeycloakSecret}
+      - SplunkCollectorId=${SplunkCollectorId}
+      - SplunkCollectorUrl=${SplunkCollectorUrl}
+      - SplunkToken=${SplunkToken}
+      - SharedDrive__SmbServer=${SMB_HOST}
+      - SharedDrive__SmbShareName=${SMB_SHARE}
+      - SharedDrive__BasePath=${SMB_BASE}
+      - SharedDrive__SmbUsername=${SMB_USER}
+      - SharedDrive__SmbPassword=${SMB_PASS}
+      - CORS_DOMAIN='http://localhost:8080'
+
+    ports:
+      - 5001:5001
+    volumes:
+      - ${LOCAL_WORKSPACE_FOLDER-..}/transitory-documents-api/:/opt/app-root/src/transitory-documents-api
+      - ${LOCAL_WORKSPACE_FOLDER-..}/models/:/opt/app-root/src/models
+      - ${LOCAL_WORKSPACE_FOLDER-..}/core/:/opt/app-root/src/core
+      - ${LOCAL_WORKSPACE_FOLDER-..}/jc-interface-client/:/opt/app-root/src/jc-interface-client
+      - transitory-documents-api-dev-bin:/opt/app-root/src/transitory-documents-api/bin
+      - transitory-documents-api-dev-obj:/opt/app-root/src/transitory-documents-api/obj
+      - /mnt/smb:/mnt/smb:ro
+
+    command: >
+      /bin/bash -c "
+        dotnet watch run --project /opt/app-root/src/transitory-documents-api/transitory-documents-api.csproj --urls='http://+:5001';"
 
   db-pg:
     image: centos/postgresql-12-centos8
@@ -145,3 +185,5 @@ services:
 volumes:
   api-dev-bin:
   api-dev-obj:
+  transitory-documents-api-dev-bin:
+  transitory-documents-api-dev-obj:

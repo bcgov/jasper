@@ -63,7 +63,7 @@ public class CaseServiceTests
     [Fact]
     public async Task AddReservedJudgementAsync_ShouldReturnSuccess()
     {
-        var mockJudgement = new Scv.Api.Models.CaseDto();
+        var mockJudgement = new Scv.Models.CaseDto();
         _mockRepo.Setup(r => r.AddAsync(It.IsAny<Case>())).Returns(Task.CompletedTask);
 
         var result = await _caseService.AddAsync(mockJudgement);
@@ -76,7 +76,7 @@ public class CaseServiceTests
     [Fact]
     public async Task AddRangeReservedJudgementAsync_ShouldReturnSuccess()
     {
-        var mockJudgements = new List<Scv.Api.Models.CaseDto>();
+        var mockJudgements = new List<Scv.Models.CaseDto>();
         _mockRepo.Setup(r => r.AddRangeAsync(It.IsAny<List<Case>>())).Returns(Task.CompletedTask);
 
         var result = await _caseService.AddRangeAsync(mockJudgements);
@@ -89,8 +89,8 @@ public class CaseServiceTests
     [Fact]
     public async Task DeleteRangeReservedJudgementAsync_ShouldInvokeWhenEntitiesFound()
     {
-        var mockJudgementDto = new Scv.Api.Models.CaseDto() { Id = "test-id" };
-        var mockJudgements = new List<Scv.Api.Models.CaseDto>() { mockJudgementDto };
+        var mockJudgementDto = new Scv.Models.CaseDto() { Id = "test-id" };
+        var mockJudgements = new List<Scv.Models.CaseDto>() { mockJudgementDto };
         _mockRepo.Setup(r => r.DeleteRangeAsync(It.IsAny<List<Case>>())).Returns(Task.CompletedTask);
         var mockJudgementEntity = new Case();
         _mockRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).Returns(Task.FromResult(mockJudgementEntity));
@@ -105,8 +105,8 @@ public class CaseServiceTests
     [Fact]
     public async Task DeleteRangeReservedJudgementAsync_ShouldNotInvokeWhenEntitiesNotFound()
     {
-        var mockJudgementDto = new Scv.Api.Models.CaseDto() { Id = "test-id" };
-        var mockJudgements = new List<Scv.Api.Models.CaseDto>() { mockJudgementDto };
+        var mockJudgementDto = new Scv.Models.CaseDto() { Id = "test-id" };
+        var mockJudgements = new List<Scv.Models.CaseDto>() { mockJudgementDto };
         _mockRepo.Setup(r => r.DeleteRangeAsync(It.IsAny<List<Case>>())).Returns(Task.CompletedTask);
         var mockJudgementEntity = new Case();
 

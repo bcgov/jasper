@@ -1,5 +1,5 @@
 using FluentValidation;
-using Scv.Api.Models.Timebank;
+using Scv.Models.Timebank;
 
 namespace Scv.Api.Validators.Timebank;
 

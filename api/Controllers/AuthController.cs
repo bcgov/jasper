@@ -1,19 +1,19 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Models.auth;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Models.Auth;
+using Scv.Models.auth;
+using System;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers
 {

@@ -1,10 +1,10 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Models;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers;
 

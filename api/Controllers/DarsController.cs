@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Dars;
 using Scv.Api.Services;
+using Scv.Models.Dars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -233,10 +233,10 @@ namespace Scv.Api.Controllers
 
             try
             {
-                var documentRequest = new Scv.Api.Models.Document.PdfDocumentRequest
+                var documentRequest = new Scv.Models.Document.PdfDocumentRequest
                 {
-                    Type = Scv.Api.Documents.DocumentType.Transcript,
-                    Data = new Scv.Api.Models.Document.PdfDocumentRequestDetails
+                    Type = Scv.Models.DocumentType.Transcript,
+                    Data = new Scv.Models.Document.PdfDocumentRequestDetails
                     {
                         OrderId = sanitizedOrderId,
                         DocumentId = sanitizedDocumentId

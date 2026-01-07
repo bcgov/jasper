@@ -1,24 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using JCCommon.Clients.FileServices;
+﻿using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Civil.AppearanceDetail;
-using Scv.Api.Models.Civil.Appearances;
-using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Search;
+using Scv.Models.Civil.AppearanceDetail;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Contants;
 using Scv.Db.Models;
-using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
+using Scv.Models.Civil.Appearances;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Search;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
+using Scv.Api.Models.Civil.Detail;
 
 namespace Scv.Api.Services.Files
 {

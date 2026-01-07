@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.DataProtection.XmlEncryption;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Text;
 using System.Xml.Linq;
-using Microsoft.AspNetCore.DataProtection.XmlEncryption;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Scv.Api.Infrastructure.Encryption
 {

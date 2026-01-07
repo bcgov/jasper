@@ -9,8 +9,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.TimebankServices;
-using Scv.Api.Models.Timebank;
 using Scv.Api.Services;
+using Scv.Models.Timebank;
 using Xunit;
 using TimebankApiException = PCSSCommon.Clients.TimebankServices.ApiException;
 

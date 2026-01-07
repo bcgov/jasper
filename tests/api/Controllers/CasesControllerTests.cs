@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Controllers;

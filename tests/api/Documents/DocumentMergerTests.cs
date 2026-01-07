@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Moq;
 using Scv.Api.Documents;
-using Scv.Api.Models.Document;
+using Scv.Models.Document;
 using Xunit;
 using tests.api.Services;
 using Microsoft.Extensions.Logging;

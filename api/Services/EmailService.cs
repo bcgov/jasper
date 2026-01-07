@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
 
 namespace Scv.Api.Services;
 

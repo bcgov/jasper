@@ -1,4 +1,4 @@
-﻿using Scv.Api.Helpers.Exceptions;
+﻿using Scv.Core.Helpers.Exceptions;
 
 namespace Scv.Api.Helpers
 {

@@ -1,5 +1,5 @@
-using System;
 using CsvHelper.Configuration.Attributes;
+using System;
 
 namespace Scv.Api.Documents.Parsers.Models;
 

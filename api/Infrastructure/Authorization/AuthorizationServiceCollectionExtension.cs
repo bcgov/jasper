@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
-using Scv.Api.Services;
+using Scv.Core.Infrastructure.Authorization;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 
 namespace Scv.Api.Infrastructure.Authorization

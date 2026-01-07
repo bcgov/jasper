@@ -1,6 +1,8 @@
 ﻿using JCCommon.Clients.FileServices;
-using Scv.Api.Models.Criminal.Appearances;
+using Scv.Models.Criminal.Appearances;
+using Scv.Models.Criminal.Detail;
 using System.Collections.Generic;
+
 
 namespace Scv.Api.Models.Criminal.Detail
 {
@@ -50,7 +52,7 @@ namespace Scv.Api.Models.Criminal.Detail
         /// <summary>
         /// We need this for our witness page.
         /// </summary>
-        public ICollection<CriminalWitness> Witness { get; set; }
+        public ICollection<Scv.Models.Criminal.Detail.CriminalWitness> Witness { get; set; }
 
         /// <summary>
         /// Extended.

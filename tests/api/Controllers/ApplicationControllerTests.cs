@@ -3,7 +3,7 @@ using Bogus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers.Exceptions;
+using Scv.Core.Helpers.Exceptions;
 using Xunit;
 
 namespace tests.api.Controllers;

@@ -1,11 +1,11 @@
+using Microsoft.Extensions.Logging;
+using Scv.Api.Documents.Strategies;
+using Scv.Models.Document;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Scv.Api.Documents.Strategies;
-using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents;
 

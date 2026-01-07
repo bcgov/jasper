@@ -1,9 +1,9 @@
-﻿using System;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Scv.Db.Models.Auth;
 using SS.Db;
+using System;
 
 namespace Scv.Db.Models
 {

@@ -16,8 +16,10 @@ using Scv.Api.Models;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Processors;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Contants;
 using Scv.Db.Models;
+using Scv.Models;
 using tests.api.Fixtures;
 using Xunit;
 

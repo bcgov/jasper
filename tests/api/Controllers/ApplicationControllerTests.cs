@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers.Exceptions;
+using Scv.Core.Helpers.Exceptions;
 using Scv.Api.Models.Configuration;
 using Scv.Api.Services;
 using Xunit;

@@ -2,11 +2,11 @@
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Core.Infrastructure;
 using Scv.Api.Models.Location;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -16,18 +16,12 @@ using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
 
-public interface IUserService : ICrudService<UserDto>
-{
-    Task<UserDto> GetWithPermissionsAsync(string email);
     Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
-    Task<UserDto> GetByIdWithPermissionsAsync(string userId);
     Task<UserDto> GetByJudgeIdAsync(int judgeId);
     Task<OperationResult<UserDto>> MarkReleaseNotesViewedAsync(string userId, string version, DateTime viewedAtUtc);
     Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user);
     Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
     Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
-}
-
 public class UserService(
     IAppCache cache,
     IMapper mapper,

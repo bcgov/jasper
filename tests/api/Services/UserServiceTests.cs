@@ -16,7 +16,7 @@ using MongoDB.Bson;
 using Moq;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Models.Location;
 using Scv.Api.Services;
 using Scv.Db.Models;

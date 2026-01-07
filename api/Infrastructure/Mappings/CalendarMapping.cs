@@ -1,5 +1,5 @@
 ﻿using Mapster;
-using Scv.Api.Models.Calendar;
+using Scv.Models.Calendar;
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;

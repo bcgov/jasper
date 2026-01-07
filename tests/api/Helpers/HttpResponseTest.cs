@@ -1,13 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Xunit;

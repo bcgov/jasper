@@ -1,4 +1,3 @@
-﻿
 namespace Scv.Models.Civil.Appearances
 {
     public class CivilAppearanceResponse : JCCommon.Clients.FileServices.CivilFileAppearancesResponse

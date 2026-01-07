@@ -9,14 +9,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Scv.Models.Document;
 using Xunit;
-using DarsSearchResults = DARSCommon.Models.DarsSearchResults;
 using ApiException = DARSCommon.Clients.LogNotesServices.ApiException;
 using DarsClientSearchResult = Scv.Api.Models.Dars.DarsClientSearchResult;
-using TranscriptDocument = Scv.Models.Dars.TranscriptDocument;
+using DarsSearchResults = DARSCommon.Models.DarsSearchResults;
 using TranscriptAppearance = Scv.Models.Dars.TranscriptAppearance;
+using TranscriptDocument = Scv.Models.Dars.TranscriptDocument;
 using TranscriptSearchRequest = Scv.Models.Dars.TranscriptSearchRequest;
-using Scv.Models.Document;
 
 namespace tests.api.Controllers
 {

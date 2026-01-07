@@ -1,6 +1,6 @@
-﻿using Scv.Models.AccessControlManagement;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text.Json;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Core.Helpers.Extensions
 {

@@ -1,4 +1,8 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
@@ -10,16 +14,10 @@ using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Core.Helpers.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Scv.Models;
-using Scv.Core.Helpers.Exceptions;
 
 namespace Scv.Api.Jobs;
 

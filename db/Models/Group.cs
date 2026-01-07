@@ -1,6 +1,6 @@
-﻿using MongoDB.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
-using System.Collections.Generic;
 
 namespace Scv.Db.Models
 {
@@ -9,6 +9,7 @@ namespace Scv.Db.Models
     {
         public const string TRAINING_AND_ADMIN = "Training and Administration";
         public const string JUDICIARY = "Judiciary";
+        public const string TESTING = "Testing";
 
         public static readonly List<Group> ALL_GROUPS =
         [
@@ -21,6 +22,11 @@ namespace Scv.Db.Models
             {
                 Name = Group.JUDICIARY,
                 Description = "Judiciary group",
+            },
+            new Group
+            {
+                Name = Group.TESTING,
+                Description = "Testing",
             }
         ];
 

@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Scv.Db.Seeders
 {

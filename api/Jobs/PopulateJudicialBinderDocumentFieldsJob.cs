@@ -7,11 +7,11 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Models;
-using Scv.Api.Models.Binder;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contants;
+using Scv.Models;
+using Scv.Models.Binder;
 
 namespace Scv.Api.Jobs;
 
@@ -110,8 +110,7 @@ public class PopulateJudicialBinderDocumentFieldsJob(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Fatal error in PopulateJudicialBinderDocumentFieldsJob: {Message}", ex.Message);
-            throw;
+            throw new InvalidOperationException($"Fatal error in PopulateJudicialBinderDocumentFieldsJob: {ex.Message}");
         }
     }
 

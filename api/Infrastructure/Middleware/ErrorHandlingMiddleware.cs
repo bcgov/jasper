@@ -1,4 +1,10 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -9,12 +15,6 @@ using Scv.Core.Helpers.Exceptions;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Infrastructure.Middleware
 {

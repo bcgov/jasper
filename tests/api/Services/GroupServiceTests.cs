@@ -13,13 +13,14 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace tests.api.Services;
+
 public class GroupServiceTests
 {
     private readonly Faker _faker;

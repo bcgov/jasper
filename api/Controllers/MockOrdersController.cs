@@ -18,12 +18,12 @@ namespace Scv.Api.Controllers;
 public class MockOrdersController(
     IValidator<OrderActionDto> orderActionValidator,
     IKeycloakTokenService tokenService,
-    IOptions<KeycloakClientOptions> keycloakClientOptions,
+    IOptions<CsoKeycloakClientOptions> keycloakClientOptions,
     ILogger<MockOrdersController> logger) : ControllerBase
 {
     private readonly IValidator<OrderActionDto> _orderActionValidator = orderActionValidator;
     private readonly IKeycloakTokenService _tokenService = tokenService;
-    private readonly KeycloakClientOptions _keycloakClientOptions = keycloakClientOptions.Value;
+    private readonly CsoKeycloakClientOptions _keycloakClientOptions = keycloakClientOptions.Value;
     private readonly ILogger<MockOrdersController> _logger = logger;
 
     /// <summary>

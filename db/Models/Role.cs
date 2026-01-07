@@ -12,6 +12,7 @@ namespace Scv.Db.Models
         public const string TRAINER = "Trainer";
         public const string PO_MANAGER = "Product Owner/Manager";
         public const string OCJ_SERVICE_DESK = "OCJ Service Desk";
+        public const string DEVELOPER = "Developer";
 
         public const string JUDGE = "Judge";
         public const string ACJ_CHIEF_JUDGE = "ACJ/Chief Judge";
@@ -39,6 +40,11 @@ namespace Scv.Db.Models
             {
                 Name = OCJ_SERVICE_DESK,
                 Description = "Role for OCJ service desk"
+            },
+            new Role
+            {
+                Name = DEVELOPER,
+                Description = "Role for developers"
             },
             // Judiciary
             new Role

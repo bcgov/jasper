@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Jobs;
 using Scv.Api.Models;
-using Scv.Api.Models.AccessControlManagement;
-using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Models.AccessControlManagement;
+using Scv.Models.Order;
 using Xunit;
 
 namespace tests.api.Jobs;

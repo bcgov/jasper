@@ -14,10 +14,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Documents;
-using Scv.Models;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Contants;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Processors;

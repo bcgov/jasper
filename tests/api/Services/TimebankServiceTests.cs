@@ -211,8 +211,6 @@ public class TimebankServiceTests : ServiceTestBase
         var (timebankService, mockTimebankClient, _) = SetupTimebankService();
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
-
-#pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
         mockTimebankClient
             .Setup(c => c.GetTimebankSummaryForJudgeAsync(
                 period,
@@ -220,8 +218,6 @@ public class TimebankServiceTests : ServiceTestBase
                 It.IsAny<bool?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ArgumentNullException("judgeId", "Parameter cannot be null"));
-#pragma warning restore S3928
-
         var result = await timebankService.GetTimebankSummaryForJudgeAsync(period, judgeId);
 
         Assert.False(result.Succeeded);
@@ -496,8 +492,6 @@ public class TimebankServiceTests : ServiceTestBase
         var period = _faker.Random.Int(2020, 2025);
         var judgeId = _faker.Random.Int(1, 1000);
         var rate = _faker.Random.Double(100, 500);
-
-#pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
         mockTimebankClient
             .Setup(c => c.GetTimebankPayoutsForJudgesAsync(
                 period,
@@ -506,8 +500,6 @@ public class TimebankServiceTests : ServiceTestBase
                 rate,
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ArgumentNullException("period", "Parameter cannot be null"));
-#pragma warning restore S3928
-
         var result = await timebankService.GetTimebankPayoutsForJudgesAsync(period, judgeId, null, rate);
 
         Assert.False(result.Succeeded);

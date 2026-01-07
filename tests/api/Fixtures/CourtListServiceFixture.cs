@@ -14,7 +14,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.SearchDateServices;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Scv.Core.Helpers;

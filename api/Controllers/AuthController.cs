@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -12,8 +14,6 @@ using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Models.Auth;
 using Scv.Models.auth;
-using System;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers
 {

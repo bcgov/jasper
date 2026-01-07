@@ -1,7 +1,7 @@
-﻿using FluentValidation;
+﻿using System.Collections.Generic;
+using FluentValidation;
 using Scv.Db.Contants;
 using Scv.Models;
-using System.Collections.Generic;
 
 namespace Scv.Api.Validators;
 

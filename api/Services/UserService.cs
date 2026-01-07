@@ -1,21 +1,22 @@
-﻿using LazyCache;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.PersonServices;
+using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Threading.Tasks;
+using Scv.Models.Location;
 
 namespace Scv.Api.Services;
 
-    Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
-    Task<UserDto> GetByJudgeIdAsync(int judgeId);
 public class UserService(
     IAppCache cache,
     IMapper mapper,
@@ -100,6 +101,17 @@ public class UserService(
 
         return await PopulateUserPermissionsAndRolesAsync(user);
     }
+    public async Task<UserDto> GetByJudgeIdAsync(int judgeId)
+    {
+        var result = await this.Repo.FindAsync(u => u.JudgeId == judgeId);
+        if (result == null || !result.Any())
+        {
+            this.Logger.LogInformation("User with judge id: {JudgeId} is not found", judgeId);
+            return null;
+        }
+
+        return Mapper.Map<UserDto>(result.Single());
+    }
 
     private async Task<UserDto> PopulateUserPermissionsAndRolesAsync(UserDto user)
     {
@@ -134,15 +146,4 @@ public class UserService(
         return user;
     }
 
-    public async Task<UserDto> GetByJudgeIdAsync(int judgeId)
-    {
-        var result = await this.Repo.FindAsync(u => u.JudgeId == judgeId);
-        if (result == null || !result.Any())
-        {
-            this.Logger.LogInformation("User with judge id: {JudgeId} is not found", judgeId);
-            return null;
-        }
-
-        return Mapper.Map<UserDto>(result.Single());
-    }
 }

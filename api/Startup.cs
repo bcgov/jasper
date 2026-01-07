@@ -20,18 +20,19 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
-using Scv.Api.Repositories;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services.EF;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models;
 
 namespace Scv.Api
 {
@@ -121,6 +122,8 @@ namespace Scv.Api
             services.AddHttpClientsAndScvServices(Configuration);
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+            services.Configure<TdApiOptions>(Configuration.GetSection("TDApi"));
 
             #endregion Setup Services
 

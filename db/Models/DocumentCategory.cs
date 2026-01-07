@@ -1,6 +1,6 @@
-﻿using MongoDB.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
-using System.Collections.Generic;
 
 namespace Scv.Db.Models;
 
@@ -50,12 +50,12 @@ public class DocumentCategory : EntityBase
         }
 
         var upperCategory = category.ToUpper();
-        
+
         // Special mappings for display
         if (upperCategory == PSR) return "Report";
         if (upperCategory == ROP) return "ROP";
         if (upperCategory == CSR) return "CSR";
-        
+
         // Default: Title case (first letter uppercase, rest lowercase)
         return char.ToUpper(category[0]) + category[1..].ToLower();
     }

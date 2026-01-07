@@ -1,10 +1,12 @@
-﻿using FluentValidation;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using FluentValidation;
 using JCCommon.Clients.FileServices;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using MapsterMapper;
-using Scv.Api.Documents;
-using Scv.Api.Helpers;
 using Scv.Api.Services;
 using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
@@ -16,10 +18,6 @@ using Scv.Db.Models;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 using Scv.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Processors;
 

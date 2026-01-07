@@ -1,4 +1,10 @@
-﻿using JCCommon.Clients.FileServices;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -8,20 +14,14 @@ using PCSSCommon.Clients.ReportServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
 using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Models.Civil.CourtList;
 using Scv.Models.CourtList;
 using Scv.Models.Criminal.CourtList;
 using Scv.Models.Criminal.Detail;
 using JasperRole = Scv.Db.Models.Role;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {
@@ -102,9 +102,9 @@ namespace Scv.Api.Services
 
             ValidUserHelper.CheckIfValidUser(courtCalendarDetails.ResponseMessageTxt);
 
-            var civilCourtCalendarAppearances = courtCalendarDetails?.Appearance
+            var civilCourtCalendarAppearances = courtCalendarDetails.Appearance
                 .WhereToList(app => app.CourtDivisionCd == CourtCalendarDetailAppearanceCourtDivisionCd.I);
-            var criminalCourtCalendarAppearances = courtCalendarDetails?.Appearance
+            var criminalCourtCalendarAppearances = courtCalendarDetails.Appearance
                 .WhereToList(app => app.CourtDivisionCd == CourtCalendarDetailAppearanceCourtDivisionCd.R);
 
             var civilFileIds = civilCourtCalendarAppearances.SelectToList(ccl => ccl.PhysicalFileId);
@@ -352,11 +352,11 @@ namespace Scv.Api.Services
                 var targetAppearance = targetAppearanceResponse?.ApprDetail.FirstOrDefault(ad => ad.AppearanceId == courtListFile.AppearanceId);
                 if (targetAppearance != null)
                 {
-                    courtListFile.AppearanceReasonCd = targetAppearance?.AppearanceReasonCd;
+                    courtListFile.AppearanceReasonCd = targetAppearance.AppearanceReasonCd;
                     courtListFile.AppearanceReasonDesc =
-                        await _lookupService.GetCivilAppearanceReasonsDescription(targetAppearance?.AppearanceReasonCd);
+                        await _lookupService.GetCivilAppearanceReasonsDescription(targetAppearance.AppearanceReasonCd);
 
-                    courtListFile.AppearanceStatusCd = targetAppearance?.AppearanceStatusCd.ToString();
+                    courtListFile.AppearanceStatusCd = targetAppearance.AppearanceStatusCd.ToString();
                     courtListFile.JudgeInitials = targetAppearance.JudgeInitials;
                     courtListFile.EstimatedTimeHour = targetAppearance.EstimatedTimeHour?.ReturnNullIfEmpty();
                     courtListFile.EstimatedTimeMin = targetAppearance.EstimatedTimeMin?.ReturnNullIfEmpty();
@@ -406,8 +406,6 @@ namespace Scv.Api.Services
                 if (courtListFile.ActivityClassCd == courtListFile.ActivityClassDesc)
                     courtListFile.ActivityClassCd = fileDetail?.CourtClassCd.ToString();
                 courtListFile.Crown = PopulateCrown(fileDetail);
-                //courtListFile.TrialRemark = fileDetail?.TrialRemark; This hide Crown Notes to JCM.
-                //courtListFile.TrialRemarkTxt = fileDetail?.TrialRemarkTxt;
                 var participant = fileDetail?.Participant.FirstOrDefault(p => p.PartId == courtListFile.FileInformation.PartId);
                 if (participant != null)
                 {
@@ -419,7 +417,7 @@ namespace Scv.Api.Services
                 {
                     hearingRestriction.HearingRestrictionTypeDesc = await _lookupService.GetHearingRestrictionDescription(hearingRestriction.HearingRestrictiontype);
                 }
-                courtListFile.CourtLevelCd = fileDetail.CourtLevelCd.ToString();
+                courtListFile.CourtLevelCd = fileDetail?.CourtLevelCd.ToString();
             }
 
             return courtList;
@@ -435,12 +433,9 @@ namespace Scv.Api.Services
                     targetAppearanceResponse?.ApprDetail.FirstOrDefault(ad => ad.AppearanceId == courtListFile.CriminalAppearanceID);
                 if (targetAppearance != null)
                 {
-                    courtListFile.AppearanceReasonCd = targetAppearance?.AppearanceReasonCd;
-                    courtListFile.AppearanceReasonDesc = await _lookupService.GetCriminalAppearanceReasonsDescription(targetAppearance?.AppearanceReasonCd);
-                    courtListFile.AppearanceStatusCd = targetAppearance?.AppearanceStatusCd.ToString();
-                    //courtListFile.OutOfTownJudge = targetAppearance.OutOfTownJudgeTxt;
-                    //courtListFile.SecurityRestriction = targetAppearance.SecurityRestrictionTxt;
-                    //courtListFile.SupplementalEquipment = targetAppearance.SupplementalEquipmentTxt;
+                    courtListFile.AppearanceReasonCd = targetAppearance.AppearanceReasonCd;
+                    courtListFile.AppearanceReasonDesc = await _lookupService.GetCriminalAppearanceReasonsDescription(targetAppearance.AppearanceReasonCd);
+                    courtListFile.AppearanceStatusCd = targetAppearance.AppearanceStatusCd.ToString();
                     courtListFile.JudgeInitials = targetAppearance.JudgeInitials;
                     courtListFile.EstimatedTimeHour = targetAppearance.EstimatedTimeHour?.ReturnNullIfEmpty();
                     courtListFile.EstimatedTimeMin = targetAppearance.EstimatedTimeMin?.ReturnNullIfEmpty();
@@ -453,7 +448,7 @@ namespace Scv.Api.Services
         private ICollection<CrownWitness> PopulateCrown(CriminalFileDetailResponse fileDetail)
         {
             if (fileDetail == null)
-                return null;
+                return [];
 
             var crown =
                 _mapper.Map<ICollection<CrownWitness>>(fileDetail.Witness.Where(w => w.RoleTypeCd == CriminalWitnessRoleTypeCd.CRN)

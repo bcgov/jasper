@@ -26,11 +26,11 @@ public class QuickLinkServiceTest
 
     public QuickLinkServiceTest()
     {
-        _quickLinks = [ 
+        _quickLinks = [
             new() { Id = "ql1", Name = "Quick Link 1", ParentName = "", Order = 1, JudgeId = null },
-            new() { Id = "ql2", Name = "Quick Link 2", ParentName = "", Order = 2, JudgeId = null } 
+            new() { Id = "ql2", Name = "Quick Link 2", ParentName = "", Order = 2, JudgeId = null }
             ];
-        
+
         var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 

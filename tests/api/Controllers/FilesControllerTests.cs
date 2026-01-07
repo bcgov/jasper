@@ -19,21 +19,20 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Documents;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Models.archive;
-using Scv.Models.Search;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Exceptions;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models.Archive;
+using Scv.Models.Search;
 using tests.api.Helpers;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
-using Scv.Core.Helpers;
-using Scv.Core.Helpers.Exceptions;
-using Scv.Core.Helpers.Extensions;
 
 namespace tests.api.Controllers
 {

@@ -8,12 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Infrastructure;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
-using Xunit;
-using Scv.Core.Services;
 using Scv.Core.Infrastructure;
+using Scv.Models.AccessControlManagement;
+using Xunit;
 
 namespace tests.api.Controllers;
 

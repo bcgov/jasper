@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.IdentityModel.Tokens;
 using Scv.Api.Controllers;
 using Scv.Api.Infrastructure.Authentication;
+using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 
 namespace Scv.Api.Infrastructure.Authorization

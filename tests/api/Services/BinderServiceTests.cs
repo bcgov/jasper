@@ -12,8 +12,10 @@ using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Binder;
 
 namespace tests.api.Services;
+
 public class BinderServiceTests
 {
     private readonly Bogus.Faker _faker;

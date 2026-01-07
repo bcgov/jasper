@@ -1,4 +1,9 @@
-﻿using DnsClient.Internal;
+﻿using System;
+using DnsClient.Internal;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.AspNetCore.WebUtilities;
@@ -14,12 +19,8 @@ using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models;
+using Scv.Models.Binder;
 using Scv.Models.Document;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
 

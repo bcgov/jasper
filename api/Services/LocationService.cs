@@ -7,9 +7,9 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Models.Location;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Location;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
@@ -65,7 +65,7 @@ namespace Scv.Api.Services
 
             await Task.WhenAll(getJCLocationsTask, getPCSSLocationsTask);
 
-            return Models.Location.Locations.Create(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
+            return Scv.Models.Location.Locations.Create(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
         });
 
         #endregion Collection Methods

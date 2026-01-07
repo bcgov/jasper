@@ -260,6 +260,24 @@ resource "aws_secretsmanager_secret_version" "nutrient_secret_value" {
   }
 }
 
+resource "aws_secretsmanager_secret" "order_secret" {
+  name       = "external/${var.app_name}-order-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "order_secret_value" {
+  secret_id = aws_secretsmanager_secret.order_secret.id
+  secret_string = jsonencode({
+    orderMaxReassignmentNotifications = "",
+    orderMaxReminderNotifications     = "",
+    orderReassignmentThresholdDays    = "",
+    orderReminderThresholdDays        = "",
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 
 data "aws_secretsmanager_secret_version" "current_misc_secret_value" {
   secret_id = aws_secretsmanager_secret.misc_secret.id
@@ -425,11 +443,14 @@ resource "aws_secretsmanager_secret" "keycloak_td_secret" {
 resource "aws_secretsmanager_secret_version" "keycloak_td_secret_value" {
   secret_id = aws_secretsmanager_secret.keycloak_td_secret.id
   secret_string = jsonencode({
-    audience  = "",
-    authority = "",
-    client    = "",
-    secret    = "",
-    url       = ""
+    audience             = "",
+    authority            = "",
+    client               = "",
+    serviceAccountSecret = "",
+    scope                = "",
+    refreshSkewSeconds   = 60,
+    clockSkewSeconds     = 0,
+    url                  = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

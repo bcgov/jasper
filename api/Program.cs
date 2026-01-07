@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using dotenv.net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,6 +14,7 @@ namespace Scv.Api
     {
         public static async Task Main(string[] args)
         {
+            DotEnv.Load();
             var host = CreateHostBuilder(args).Build();
             var logger = host.Services.GetRequiredService<ILogger<object>>();
 

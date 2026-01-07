@@ -44,7 +44,10 @@
         v-for="pairing in filteredTablePairings"
         :key="pairing.card.courtListLocationID"
       >
-        <court-list-card :cardInfo="pairing.card" class="w-100" />
+        <court-list-card
+            :cardInfo="pairing.card"
+            :date="formatDateInstanceToYYYYMMDD(appliedDate)"
+          />
         <court-list-table
           :search="search"
           :data="pairing.table"
@@ -78,6 +81,7 @@
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
+    formatDateInstanceToYYYYMMDD,
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';

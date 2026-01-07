@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -7,10 +11,6 @@ using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Models.JCUserService;
-using System;
-using System.Security.Claims;
-using System.Text.Encodings.Web;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

@@ -16,10 +16,12 @@ using MongoDB.Bson;
 using Moq;
 using PCSSCommon.Clients.PersonServices;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
+using Scv.Models.Location;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
@@ -318,7 +320,7 @@ public class UserServiceTests : ServiceTestBase
     {
         _mockUserRepo
             .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
-            .ReturnsAsync((IEnumerable<User>)[]);
+            .ReturnsAsync([]);
 
         var result = await _userService.GetWithPermissionsAsync(_faker.Internet.Email());
 
@@ -362,7 +364,7 @@ public class UserServiceTests : ServiceTestBase
             ]);
         _mockGroupRepo
             .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
-            .ReturnsAsync((IEnumerable<Group>)[]);
+            .ReturnsAsync([]);
 
         var result = await _userService.GetWithPermissionsAsync(_faker.Internet.Email());
 

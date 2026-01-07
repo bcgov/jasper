@@ -8,14 +8,13 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using Scv.Api.Helpers;
-using Scv.Api.Models;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Models;
+using Scv.Models.Civil.Detail;
 using Xunit;
 
 namespace tests.api.Processors;

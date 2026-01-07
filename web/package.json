@@ -45,12 +45,13 @@
     "vue-router": "^4.6.3",
     "vue3-snapshot-serializer": "^2.13.0",
     "vuedraggable": "^4.1.0",
-    "vuetify": "3.11.0"
+    "vuetify": "3.11.2",
+    "vue3-snapshot-serializer": "^2.13.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
     "@mdi/js": "^7.4.47",
-    "@typescript-eslint/parser": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",

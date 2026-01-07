@@ -27,7 +27,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Scv.Api.Infrastructure.Authentication;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

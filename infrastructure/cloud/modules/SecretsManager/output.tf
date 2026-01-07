@@ -83,6 +83,10 @@ output "api_secrets" {
     ["SplunkCollectorId", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorId::"],
     ["SplunkCollectorUrl", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorUrl::"],
     ["SplunkToken", "${aws_secretsmanager_secret.splunk_secret.arn}:token::"],
+    ["TD__Url", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:url::"],
+    ["TDKeycloak__Audience", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:audience::"],
+    ["TDKeycloak__ClientId", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:client::"],
+    ["TDKeycloak__Secret", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:secret::"],
     ["UserServicesClient__Username", "${aws_secretsmanager_secret.user_services_client_secret.arn}:username::"],
     ["UserServicesClient__Password", "${aws_secretsmanager_secret.user_services_client_secret.arn}:password::"],
     ["UserServicesClient__Url", "${aws_secretsmanager_secret.user_services_client_secret.arn}:baseUrl::"]

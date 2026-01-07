@@ -19,16 +19,19 @@
     <PackageReference Include="ColeSoft.Extensions.Logging.Splunk" Version="1.0.72" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="dotenv.net" Version="4.0.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="GdPicture.API" Version="14.3.21" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.20.13" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageReference Include="Microsoft.Graph" Version="5.97.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.6.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.11" />
+    <PackageReference Include="NETStandard.Library" Version="2.0.3" />
     <PackageReference Include="IdentityModel" Version="6.2.0" />
     <PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="LazyCache" Version="2.4.0" />
@@ -38,11 +41,15 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.6" />
     <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\dars-client\dars-client.csproj" />
+    <ProjectReference Include="..\core\core.csproj" />
     <ProjectReference Include="..\db\db.csproj" />
     <ProjectReference Include="..\jc-interface-client\jc-interface-client.csproj" />
+    <ProjectReference Include="..\models\models.csproj" />
     <ProjectReference Include="..\pcss-client\pcss-client.csproj" />
+    <ProjectReference Include="..\transitory-documents-client\transitory-documents-client.csproj" />
   </ItemGroup>
 </Project>

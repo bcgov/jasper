@@ -1,0 +1,124 @@
+name: Deploy transitory-documents-api
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'transitory-documents-api/**'
+
+  workflow_dispatch:
+    inputs:
+      gitops-branch:
+        description: GitOps repository branch to update
+        required: false
+        default: main
+      gitops-environment:
+        description: GitOps environment (dev, test, prod)
+        required: false
+        default: dev
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  WORKING_DIRECTORY: .
+  IMAGE_NAME: jasper-transitory-documents-api
+  GITHUB_IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/jasper
+  GITOPS_REPOSITORY: bcgov-c/tenant-gitops-e4161f
+  GITOPS_BRANCH: ${{ github.event.inputs.gitops-branch || 'master' }}
+  GITOPS_ENVIRONMENT: ${{ github.event.inputs.gitops-environment || 'dev' }}
+  GITOPS_FILE_PATH: deploy/transitory-documents-api/${{ github.event.inputs.gitops-environment || 'dev' }}_values.yaml
+
+jobs:
+  build:
+    name: Build, Create and Push Image
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
+
+    strategy:
+      matrix:
+        dotnet-major-version: [9]
+        dotnet-minor-version: [0]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Build API codebase
+        uses: ./.github/workflows/actions/build-transitory-documents-api
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          dotnet_version: ${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
+
+      - name: Log in to the GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short SHA
+        id: short_sha
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Setup Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Image to ghcr.io
+        id: build_image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ./docker/transitory-documents-api/Dockerfile.release
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          build-args: |
+            dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
+
+      - name: Checkout tenant gitops repository
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.GITOPS_REPOSITORY }}
+          ssh-key: ${{ secrets.TENANT_GITOPS_E4161F_DEPLOY_KEY }}
+          ref: ${{ env.GITOPS_BRANCH }}
+          path: tenant-gitops-e4161f
+
+      - name: Update transitory-documents-api dev image reference
+        uses: fjogeleit/yaml-update-action@v0.15.0
+        with:
+          workDir: tenant-gitops-e4161f
+          valueFile: ${{ env.GITOPS_FILE_PATH }}
+          changes: |
+            {
+              "$['transitory-documents-api'].image.repository": "${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}",
+              "$['transitory-documents-api'].image.tag": "${{ steps.short_sha.outputs.SHORT_SHA }}"
+            }
+          commitChange: false
+
+      - name: Load SSH deploy key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENANT_GITOPS_E4161F_DEPLOY_KEY }}
+
+      - name: Commit and push gitops update
+        uses: EndBug/add-and-commit@v9
+        with:
+          cwd: tenant-gitops-e4161f
+          add: ${{ env.GITOPS_FILE_PATH }}
+          message: Update transitory-documents-api dev image to ${{ steps.short_sha.outputs.SHORT_SHA }}
+          push: true

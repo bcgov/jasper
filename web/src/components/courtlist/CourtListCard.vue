@@ -27,7 +27,14 @@
             }}
           </h5>
         </v-col>
-        <v-col />
+        <v-col v-if="canViewSharedFolder">
+          <v-btn
+            data-test="view-shared-folder-btn"
+            @click.prevent="dialogOpen = true"
+          >
+            View Shared Folder
+          </v-btn>
+        </v-col>
       </v-row>
 
       <v-row>
@@ -52,6 +59,15 @@
         </v-col>
       </v-row>
     </v-card-text>
+
+    <TransitoryDocumentsDialog
+      v-if="canViewSharedFolder"
+      v-model="dialogOpen"
+      :location-id="cardInfo.courtListLocationID.toString()"
+      :location="cardInfo.courtListLocation"
+      :room-cd="cardInfo.courtListRoom"
+      :date="date"
+    />
   </v-card>
 </template>
 
@@ -59,16 +75,30 @@
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
   import { mdiOpenInNew } from '@mdi/js';
-  import { computed, PropType } from 'vue';
+  import { computed, PropType, ref } from 'vue';
+  import TransitoryDocumentsDialog from './TransitoryDocumentsDialog.vue';
 
   const props = defineProps({
     cardInfo: {
       type: Object as PropType<CourtListCardInfo>,
       required: true,
     },
+    date: {
+      type: String,
+      required: true,
+    },
   });
 
   const commonStore = useCommonStore();
+  const dialogOpen = ref(false);
+  const LIST_TRANSITORY_DOCUMENTS = 'LIST_TRANSITORY_DOCUMENTS';
+
+  const canViewSharedFolder = computed(
+    () =>
+      commonStore.userInfo?.permissions?.includes(LIST_TRANSITORY_DOCUMENTS) ??
+      false
+  );
+
   const infoAddress = computed<string>(() => {
     // Try to get the location from the store using the id since it is the most reliable.
     // Failing that, try to get the location from the name

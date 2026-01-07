@@ -52,9 +52,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _filesClient = filesClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
 
-        _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
-        _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
-        _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
+        _applicationCode = _configuration.GetNonEmptyValue("Request:ApplicationCd");
+        _requestAgencyIdentifierId = _configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
+        _requestPartId = _configuration.GetNonEmptyValue("Request:PartId");
     }
 
     public override async Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
@@ -120,26 +120,40 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
     public async Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto)
     {
-        // Determine if the order already exists. If it is, this is an edit request. Otherwise, create a new one.
-        var fileId = dto.CourtFile.PhysicalFileId;
-        var existingOrders = await this.Repo
-            .FindAsync(o => o.CourtFile.PhysicalFileId == fileId
-                && o.Referral.SentToPartId == dto.Referral.SentToPartId
-                && o.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
-
-        var existingOrder = existingOrders?.FirstOrDefault();
-
-        if (existingOrder != null)
+        try
         {
-            this.Logger.LogInformation("Updating existing order for fileId: {fileId}, sentToPartId: {sentToPartId}, referredDocumentId: {referredDocumentId} ",
-                fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
-            return await this.UpdateAsync(dto);
+            // Determine if the order already exists. If it is, this is an edit request. Otherwise, create a new one.
+            var fileId = dto.CourtFile.PhysicalFileId;
+            var existingOrders = await this.Repo
+                .FindAsync(o => o.CourtFile.PhysicalFileId == fileId
+                    && o.Referral.SentToPartId == dto.Referral.SentToPartId
+                    && o.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
+
+            var existingOrder = existingOrders?.FirstOrDefault();
+
+            if (existingOrder != null)
+            {
+                this.Logger.LogInformation("Updating existing order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
+                    fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
+
+                // Set the ID to ensure we update the existing record
+                dto.Id = existingOrder.Id;
+
+                return await this.UpdateAsync(dto);
+            }
+            else
+            {
+                this.Logger.LogInformation("Creating new order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
+                    fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
+
+                return await this.AddAsync(dto);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            this.Logger.LogInformation("Creating new order for fileId: {fileId}, sentToPartId: {sentToPartId}, referredDocumentId: {referredDocumentId} ",
-                fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
-            return await this.AddAsync(dto);
+            this.Logger.LogError(ex, "Something went wrong when upserting the Order: {Message}", ex.Message);
+            return OperationResult<OrderDto>.Failure("Something went wrong when upserting the Order");
         }
+
     }
 }

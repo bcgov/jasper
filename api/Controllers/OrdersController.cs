@@ -2,8 +2,10 @@
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.Order;
 using Scv.Api.Services;
@@ -35,25 +37,27 @@ public class OrdersController(
     /// <param name="orderDto">The Order payload</param>
     /// <returns>Processed order</returns>
     [HttpPut]
+    [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertOrder([FromBody] OrderDto orderDto)
     {
         var basicValidation = await _validator.ValidateAsync(orderDto);
 
         if (!basicValidation.IsValid)
         {
-            return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
+            return UnprocessableEntity(basicValidation.Errors.Select(e => e.ErrorMessage));
         }
 
         var businessValidation = await _orderService.ValidateAsync(orderDto);
         if (!businessValidation.Succeeded)
         {
-            return BadRequest(new { error = businessValidation.Errors });
+            return UnprocessableEntity(new { error = businessValidation.Errors });
         }
 
         var result = await _orderService.UpsertAsync(orderDto);
         if (!result.Succeeded)
         {
-            return BadRequest(new { error = result.Errors });
+            return UnprocessableEntity(new { error = result.Errors });
         }
 
         return Ok(result);

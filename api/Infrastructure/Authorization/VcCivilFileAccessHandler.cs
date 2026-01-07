@@ -1,9 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Scv.Core.Helpers.Extensions;
-using Scv.Db.Models;
-using System;
+﻿using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Scv.Core.Helpers.Extensions;
+using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Authorization
 {

@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
 using Scv.Models.Location;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers
 {

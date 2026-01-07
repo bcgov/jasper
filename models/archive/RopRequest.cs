@@ -1,6 +1,6 @@
-﻿using JCCommon.Clients.FileServices;
+using JCCommon.Clients.FileServices;
 
-namespace Scv.Models.archive
+namespace Scv.Models.Archive
 {
     public class RopRequest
     {

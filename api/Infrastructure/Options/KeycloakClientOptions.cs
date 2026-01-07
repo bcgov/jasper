@@ -5,7 +5,7 @@ namespace Scv.Api.Infrastructure.Options
     /// <summary>
     /// Configuration options for service account token requests.
     /// </summary>
-    public sealed class KeycloakClientOptions
+    public class KeycloakClientOptions
     {
         /// <summary>
         /// Keycloak authority URL (e.g., https://keycloak.example.com/realms/your-realm)
@@ -16,8 +16,7 @@ namespace Scv.Api.Infrastructure.Options
         /// <summary>
         /// Expected audience in the JWT token.
         /// </summary>
-        [Required]
-        public string Audience { get; set; } = default!;
+        public string Audience { get; set; }
 
         /// <summary>
         /// Client ID for the service account.
@@ -36,5 +35,30 @@ namespace Scv.Api.Infrastructure.Options
         /// </summary>
         [Range(0, 3600)]
         public int RefreshSkewSeconds { get; set; } = 60;
+
+        /// <summary>
+        /// Optional token scope for the client credentials request.
+        /// </summary>
+        public string Scope { get; set; }
+
+        /// <summary>
+        /// Additional clock skew in seconds used when determining token freshness.
+        /// </summary>
+        [Range(0, 3600)]
+        public int ClockSkewSeconds { get; set; } = 0;
+    }
+
+    /// <summary>
+    /// Keycloak client options for Transitory Documents integrations.
+    /// </summary>
+    public sealed class TdKeycloakClientOptions : KeycloakClientOptions
+    {
+    }
+
+    /// <summary>
+    /// Keycloak client options for CSO integrations.
+    /// </summary>
+    public sealed class CsoKeycloakClientOptions : KeycloakClientOptions
+    {
     }
 }

@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
 using LazyCache.Providers;
@@ -6,13 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace tests.api.Services;

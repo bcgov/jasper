@@ -1,5 +1,6 @@
 ﻿namespace Scv.Models.Calendar
 {
+
     public enum Period
     {
         AM,
@@ -23,6 +24,7 @@
         public int FilesCount { get; set; }
         public int ContinuationsCount { get; set; }
         public int JudgeId { get; set; }
+        public string JudgeName { get; set; }
         public string JudgeInitials { get; set; }
         public bool IsJudgeAway { get; set; }
         public bool IsJudgeBorrowed { get; set; }

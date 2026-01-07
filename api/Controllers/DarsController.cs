@@ -1,4 +1,8 @@
-﻿using DARSCommon.Clients.LogNotesServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -9,10 +13,6 @@ using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
 using Scv.Models.Dars;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers
 {

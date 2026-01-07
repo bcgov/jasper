@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
+using Scv.Models.Order;
 
 namespace Scv.Db.Models;
 
@@ -30,22 +31,7 @@ public class OrderRequest
     public List<RelevantCeisDocument> RelevantCeisDocuments { get; set; } = [];
 }
 
-public enum OrderStatus
-{
-    Unapproved,
-    Pending,
-    Approved,
     AwaitingDocumentation
-}
-
-public enum SubmitStatus
-{
-    Pending,
-    Sending,
-    Submitted,
-    Error,
-}
-
 public class CourtFile
 {
     public string CourtFileNo { get; set; }

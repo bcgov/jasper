@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Scv.Db.Seeders
 {
@@ -28,12 +28,17 @@ namespace Scv.Db.Seeders
                 Role.ACJ_CHIEF_JUDGE,
                 Role.RAJ
             };
+            var developerRoles = new List<string>
+            {
+                Role.DEVELOPER,
+            };
             var groups = Group.ALL_GROUPS;
 
             var groupRoles = new Dictionary<string, IEnumerable<string>>
             {
                 [Group.TRAINING_AND_ADMIN] = trainingAdminRoles,
-                [Group.JUDICIARY] = judiciaryRoles
+                [Group.JUDICIARY] = judiciaryRoles,
+                [Group.TESTING] = developerRoles
             };
 
             foreach (var group in groups)

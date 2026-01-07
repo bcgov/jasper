@@ -28,7 +28,7 @@ public class QuickLinkService(
         quickLinkRepo), IQuickLinkService
 {
     public override string CacheName => nameof(QuickLinkService);
-    
+
     public async Task<IEnumerable<QuickLinkDto>> GetJudgeQuickLinks()
     {
         // For now we are only retrieving default quick links (JudgeId == null)

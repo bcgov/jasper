@@ -1,11 +1,11 @@
-﻿using JCCommon.Clients.FileServices;
-using MapsterMapper;
-using Scv.Api.Models.Criminal.Detail;
-using Scv.Api.Services;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
+using MapsterMapper;
+using Scv.Api.Services;
+using Scv.Models.Criminal.Detail;
 
 namespace Scv.Api.Documents;
 

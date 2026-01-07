@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
 
 namespace Scv.Api.Services

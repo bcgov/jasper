@@ -17,6 +17,7 @@ using Scv.Db.Models;
 using Xunit;
 
 namespace tests.api.Services;
+
 public class DocumentCategoryServiceTests : ServiceTestBase
 {
     private readonly Faker _faker;

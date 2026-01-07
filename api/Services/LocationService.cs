@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using JCCommon.Clients.LocationServices;
+﻿using JCCommon.Clients.LocationServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Models.Location;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Location;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
@@ -18,7 +18,7 @@ namespace Scv.Api.Services
     /// <summary>
     /// This should handle caching and LocationServicesClient.
     /// </summary>
-    public class LocationService
+    public class LocationService : ILocationService
     {
         #region Variables
 
@@ -65,7 +65,7 @@ namespace Scv.Api.Services
 
             await Task.WhenAll(getJCLocationsTask, getPCSSLocationsTask);
 
-            return Models.Location.Locations.Create(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
+            return Scv.Models.Location.Locations.Create(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
         });
 
         #endregion Collection Methods
@@ -96,6 +96,8 @@ namespace Scv.Api.Services
         public async Task<string> GetLocationAgencyIdentifier(string code) => FindShortDescriptionFromCode(await GetLocations(), code);
 
         public virtual async Task<string> GetRegionName(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionNameByLocation-{code}", async () => (await _locationClient.LocationsRegionAsync(code))?.RegionName);
+
+        public virtual async Task<Region> GetRegion(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionByLocation-{code}", async () => (await _locationClient.LocationsRegionAsync(code)));
 
         public async Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd)
         {
@@ -166,6 +168,7 @@ namespace Scv.Api.Services
                     .CourtRooms
                     .OrderBy(cr => cr.Room)
                 ];
+                var pcssLocation = pcssLocations.FirstOrDefault(pcssLocation => pcssLocation.LocationId.ToString() == location.LocationId);
             }
 
             return locations;

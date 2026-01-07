@@ -13,14 +13,20 @@ FROM mcr.microsoft.com/dotnet/sdk:${dotnet_version} AS build
 
 WORKDIR /src
 
-COPY ["api/api.csproj", "api/"]
-COPY ["db/db.csproj", "db/"]
-COPY ["jc-interface-client/jc-interface-client.csproj", "jc-interface-client/"]
-COPY ["pcss-client/pcss-client.csproj", "pcss-client/"]
+COPY ["api/", "api/"]
+COPY ["db/", "db/"]
+COPY ["core/", "core/"]
+COPY ["models/", "models/"]
 COPY ["dars-client/dars-client.csproj", "dars-client/"]
+COPY ["jc-interface-client/", "jc-interface-client/"]
+COPY ["pcss-client/", "pcss-client/"]
+COPY ["transitory-documents-client/", "transitory-documents-client/"]
 RUN dotnet restore api/api.csproj
 RUN dotnet restore dars-client/dars-client.csproj
-COPY . .
+RUN dotnet restore core/core.csproj
+RUN dotnet restore models/models.csproj
+RUN dotnet restore transitory-documents-client/transitory-documents-client.csproj
+
 RUN dotnet build "api/api.csproj" -c Release
 # build
 FROM build AS publish

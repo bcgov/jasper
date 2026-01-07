@@ -1,0 +1,36 @@
+name: Build transitory-documents-api
+description: Builds the transitory-documents-api codebase
+
+inputs:
+  working_directory:
+    description: The working directory where the code will be built.
+    required: true
+  dotnet_version:
+    description: The .NET version that will be used.
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet_version }}
+
+    - run: dotnet format --verify-no-changes --severity info
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}/transitory-documents-api
+      continue-on-error: true
+
+    - run: dotnet restore
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+
+    - run: dotnet build --configuration Release --no-restore
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}/transitory-documents-api
+
+    - run: dotnet test --no-restore --verbosity normal
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}/tests

@@ -1,0 +1,42 @@
+# Dockerfile used by Github Action
+ARG dotnet_version=9.0
+FROM mcr.microsoft.com/dotnet/aspnet:${dotnet_version} AS base
+WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://*:8080
+ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+ENV DOTNET_gcServer=1
+ARG VERSION
+ENV VERSION=$VERSION
+
+FROM mcr.microsoft.com/dotnet/sdk:${dotnet_version} AS build
+
+WORKDIR /src
+
+COPY ["models/", "models/"]
+COPY ["core/", "core/"]
+COPY ["transitory-documents-api/", "transitory-documents-api/"]
+COPY ["jc-interface-client/", "jc-interface-client/"]
+RUN dotnet restore transitory-documents-api/transitory-documents-api.csproj
+RUN dotnet restore core/core.csproj
+RUN dotnet restore models/models.csproj
+RUN dotnet restore jc-interface-client/jc-interface-client.csproj
+
+RUN dotnet build "transitory-documents-api/transitory-documents-api.csproj" -c Release
+# build
+FROM build AS publish
+RUN dotnet publish "transitory-documents-api/transitory-documents-api.csproj" -c Release -o /app/publish --runtime linux-musl-x64 --no-self-contained
+
+FROM base AS final
+
+# copy app
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+RUN chgrp -R 0 /app /tmp \
+    && chmod -R g=u /app /tmp
+
+USER 1001
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "transitory-documents-api.dll"]

@@ -31,7 +31,6 @@ using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
-using Scv.Api.Infrastructure.Authentication;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

@@ -1,5 +1,5 @@
 ﻿using Hangfire.Dashboard;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Authorization;

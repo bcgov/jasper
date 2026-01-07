@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
-using JCCommon.Clients.FileServices;
-using Scv.Api.Models.Civil.Appearances;
+﻿using JCCommon.Clients.FileServices;
+using Scv.Models.Civil.Appearances;
+using Scv.Models.Civil.Detail;
+using System.Collections.Generic;
 
 namespace Scv.Api.Models.Civil.Detail
 {

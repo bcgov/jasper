@@ -2,9 +2,9 @@ using Mapster;
 using MapsterMapper;
 using Scv.Api.Infrastructure.Mappings;
 using Xunit;
-using CourtRoom = Scv.Api.Models.Location.CourtRoom;
+using CourtRoom = Scv.Models.Location.CourtRoom;
 using JC = JCCommon.Clients.LocationServices;
-using Location = Scv.Api.Models.Location.Location;
+using Location = Scv.Models.Location.Location;
 using PCSS = PCSSCommon.Models;
 
 namespace tests.api.Infrastructure.Mappings;

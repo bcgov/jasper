@@ -1,5 +1,5 @@
+using Scv.Models.Document;
 using System.Threading.Tasks;
-using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents;
 

@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using MongoDB.Bson;
-using Scv.Api.Models;
+using Scv.Models;
 
 namespace Scv.Api.Validators;
 

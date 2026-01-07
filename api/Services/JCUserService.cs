@@ -1,12 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
-using JCCommon.Clients.UserService;
+﻿using JCCommon.Clients.UserService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Models.JCUserService;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.JCUserService;
+using System;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services
 {

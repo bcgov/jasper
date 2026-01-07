@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Models.Document;
+using Scv.Models;
+using Scv.Models.Document;
 using Xunit;
 
 namespace tests.api.Documents;

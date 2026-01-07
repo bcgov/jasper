@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LazyCache;
+﻿using LazyCache;
 using MapsterMapper;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
@@ -11,15 +6,20 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Scv.Api.Documents;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
 using Scv.Api.Models.Binder;
-using Scv.Api.Models.Document;
 using Scv.Api.Processors;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
+using Scv.Models.Document;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
 

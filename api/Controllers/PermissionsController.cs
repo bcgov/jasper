@@ -1,12 +1,11 @@
-﻿using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.AccessControlManagement;
-
 using Scv.Api.Services;
+using Scv.Models.AccessControlManagement;
+using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers;
 

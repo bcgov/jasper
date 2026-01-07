@@ -1,5 +1,6 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Scv.Core.Infrastructure.Authorization;
+using System;
 
 namespace Scv.Api.Infrastructure.Authorization;
 

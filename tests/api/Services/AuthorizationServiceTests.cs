@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using System;
 using System.Collections.Generic;

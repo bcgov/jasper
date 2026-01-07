@@ -4,12 +4,13 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Scv.Api.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Api.Models.Dars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Scv.Models.Dars;
 
 namespace Scv.Api.Services
 {

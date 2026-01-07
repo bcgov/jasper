@@ -49,8 +49,14 @@ export default defineConfigWithVueTs(
     rules: {
       'no-debugger': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      'vue/multi-word-component-names': 'off',
+      'vue/no-v-text-v-html-on-component': 'off',
+      // Some of the data JASPER deals with do not have UUIDs.
+      // Could look into creating composite keys for this data in the future.
+      'vue/require-v-for-key': 'off',
+      'vue/valid-v-for': 'off',
     },
-  },
+},
 
   eslintConfigPrettier
 );

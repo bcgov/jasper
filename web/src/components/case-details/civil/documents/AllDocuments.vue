@@ -42,7 +42,7 @@
     class="my-3"
     height="400"
   >
-    <template v-slot:item.documentTypeDescription="{ item }">
+    <template v-slot:[`item.documentTypeDescription`]="{ item }">
       <a
         v-if="item.imageId"
         href="javascript:void(0)"
@@ -54,28 +54,28 @@
         {{ item.documentTypeDescription }}
       </span>
     </template>
-    <template v-slot:item.activity="{ item }">
+    <template v-slot:[`item.activity`]="{ item }">
       <v-chip-group>
         <div v-for="info in item.documentSupport" :key="info.actCd">
           <v-chip rounded="lg">{{ info.actCd }}</v-chip>
         </div>
       </v-chip-group>
     </template>
-    <template v-slot:item.filedBy="{ item }">
+    <template v-slot:[`item.filedBy`]="{ item }">
       <LabelWithTooltip
         v-if="item.filedBy?.length > 0"
         :values="item.filedBy.map((p) => p.filedByName)"
         :location="Anchor.Top"
       />
     </template>
-    <template v-slot:item.issue="{ item }">
+    <template v-slot:[`item.issue`]="{ item }">
       <LabelWithTooltip
         v-if="item.issue?.length > 0"
         :values="item.issue.map((issue) => issue.issueDsc)"
         :location="Anchor.Top"
       />
     </template>
-    <template v-slot:item.binderMenu="{ item }">
+    <template v-slot:[`item.binderMenu`]="{ item }">
       <EllipsesMenu :menuItems="getAllDocumentsMenuItems(item)" />
     </template>
   </v-data-table-virtual>

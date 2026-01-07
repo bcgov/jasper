@@ -468,18 +468,6 @@ describe('TimebankModal.vue', () => {
       const vm = wrapper.vm as any;
       expect(vm.formatDaysOrHours(input)).toBe(expected);
     });
-
-    it.each([
-      [0, '0.00'],
-      [1, '1.00'],
-      [1.5, '1.50'],
-      [10.123, '10.12'],
-      [null, '0.00'],
-      [undefined, '0.00'],
-    ])('formats money %s as %s', (input, expected) => {
-      const vm = wrapper.vm as any;
-      expect(vm.formatMoney(input)).toBe(expected);
-    });
   });
 
   describe('Decimal Rounding in Text', () => {

@@ -5,7 +5,7 @@
     :items="documents"
     item-value="appearanceId"
   >
-    <template v-slot:item.documentTypeDescription="{ item }">
+    <template v-slot:[`item.documentTypeDescription`]="{ item }">
       <a
         v-if="item.imageId"
         href="javascript:void(0)"
@@ -17,12 +17,12 @@
         {{ item.documentTypeDescription }}
       </span>
     </template>
-    <template v-slot:item.activity="{ item }">
+    <template v-slot:[`item.activity`]="{ item }">
       <div v-for="info in item.documentSupport" :key="info.actCd">
         {{ info.actCd }}
       </div>
     </template>
-    <template v-slot:item.issue="{ item }">
+    <template v-slot:[`item.issue`]="{ item }">
       <LabelWithTooltip
         v-if="item.issue?.length > 0"
         :values="item.issue.map((issue) => issue.issueDsc)"

@@ -49,10 +49,10 @@
             </td>
           </tr>
         </template>
-        <template #item.sealStatusCd="{ item }">
+        <template #[`item.sealStatusCd`]="{ item }">
           <span v-if="item.sealStatusCd != 'NA'" class="sealed">(Sealed)</span>
         </template>
-        <template #item.participant="{ item }">
+        <template #[`item.participant`]="{ item }">
           <a href="#" @click.prevent="emitFilesViewed(item)">
             {{ [...new Set(item.participant.map((p) => p.fullNm))].join('; ') }}
           </a>

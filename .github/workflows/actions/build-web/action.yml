@@ -26,7 +26,6 @@ runs:
     - run: npm run lint
       shell: bash
       working-directory: ${{ inputs.working_directory }}
-      continue-on-error: true
 
     - run: npm run prettier:check
       shell: bash

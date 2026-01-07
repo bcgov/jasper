@@ -9,10 +9,10 @@
   <v-btn v-if="showReset" text="Reset" @click="() => emit('reset')" :size />
 </template>
 
-<script setup>
+<script setup lang="ts">
   const emit = defineEmits(['reset']);
 
-  const props = defineProps({
+  defineProps({
     showSearch: {
       type: Boolean,
       default: true,

@@ -27,10 +27,16 @@
     show-expand
     variant="hover"
   >
-    <template v-slot:header.appearanceTm> TIME<br />EST. /DURATION </template>
-    <template v-slot:header.courtLocation> LOCATION ROOM </template>
+    <template v-slot:[`header.appearanceTm`]>
+      TIME<br />EST. /DURATION
+    </template>
+    <template v-slot:[`header.courtLocation`]> LOCATION ROOM </template>
     <template
-      v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }"
+      v-slot:[`item.data-table-expand`]="{
+        internalItem,
+        isExpanded,
+        toggleExpand,
+      }"
     >
       <v-icon
         color="primary"
@@ -38,7 +44,7 @@
         @click="toggleExpand(internalItem)"
       />
     </template>
-    <template v-slot:expanded-row="{ columns, item }">
+    <template v-slot:[`expanded-row`]="{ columns, item }">
       <tr class="expanded">
         <td :colspan="columns.length">
           <CivilAppearanceDetails
@@ -56,10 +62,10 @@
         </td>
       </tr>
     </template>
-    <template v-slot:item.appearanceDt="{ value }">
+    <template v-slot:[`item.appearanceDt`]="{ value }">
       <span> {{ value }} </span>
     </template>
-    <template v-slot:item.transcripts="{ item }">
+    <template v-slot:[`item.transcripts`]="{ item }">
       <v-icon
         v-if="getAppearanceTranscripts(item.appearanceId).length > 0"
         :icon="mdiFileDocumentOutline"
@@ -87,7 +93,7 @@
         </v-list>
       </v-menu>
     </template>
-    <template v-slot:item.DARS="{ item }">
+    <template v-slot:[`item.DARS`]="{ item }">
       <v-icon
         v-if="item.appearanceStatusCd === 'SCHD'"
         :icon="mdiHeadphones"
@@ -96,23 +102,23 @@
         @click="openDarsModal(item)"
       />
     </template>
-    <template v-slot:item.appearanceReasonCd="{ value, item }">
+    <template v-slot:[`item.appearanceReasonCd`]="{ value, item }">
       <v-tooltip :text="item.appearanceReasonDsc" location="top">
-        <template v-slot:activator="{ props }">
+        <template v-slot:[`activator`]="{ props }">
           <span v-bind="props" class="has-tooltip">{{ value }}</span>
         </template>
       </v-tooltip>
     </template>
-    <template v-slot:item.appearanceTm="{ value, item }">
+    <template v-slot:[`item.appearanceTm`]="{ value, item }">
       {{ value ? extractTime(value) : '' }} <br />
       <span style="color: gray">
         {{ hoursMinsFormatter(item.estimatedTimeHour, item.estimatedTimeMin) }}
       </span>
     </template>
-    <template v-slot:item.courtLocation="{ value, item }">
+    <template v-slot:[`item.courtLocation`]="{ value, item }">
       {{ value }} &nbsp; <span style="color: gray">{{ item.courtRoomCd }}</span>
     </template>
-    <template v-slot:item.appearanceStatusCd="{ value }">
+    <template v-slot:[`item.appearanceStatusCd`]="{ value }">
       <AppearanceStatusChip :status="value" />
     </template>
   </v-data-table-virtual>
@@ -213,8 +219,6 @@
 
   const selectedAccused = ref<string>();
   const sortBy = ref([{ key: 'appearanceDt', order: 'desc' }] as const);
-  const now = new Date();
-
   const darsStore = useDarsStore();
   const transcriptMenus = ref<Record<string, boolean>>({});
 

@@ -237,6 +237,7 @@
 
   const binderDocuments = computed(() => {
     const binderDocumentIds = currentBinder.value?.documents
+      .slice()
       .sort((d) => d.order)
       .map((d) => d.documentId);
 

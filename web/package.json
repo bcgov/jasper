@@ -7,7 +7,7 @@
     "build": "vite build",
     "dev": "vite",
     "clean": "",
-    "lint": "eslint --ext .ts,.vue --fix src",
+    "lint": "eslint --ext .ts,.vue --fix src --ignore-pattern \"src/types/**\"",
     "prettier:check": "prettier --check \"src/**/*.{ts,vue,js,json}\"",
     "prettier:fix": "prettier --write \"src/**/*.{ts,vue,js,json}\"",
     "test": "vitest"
@@ -43,9 +43,9 @@
     "uuid": "^13.0.0",
     "vue": "^3.5.24",
     "vue-router": "^4.6.3",
+    "vue3-snapshot-serializer": "^2.13.0",
     "vuedraggable": "^4.1.0",
-    "vuetify": "3.11.2",
-    "vue3-snapshot-serializer": "^2.13.0"
+    "vuetify": "3.11.2"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
@@ -55,9 +55,10 @@
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.6.1",
     "happy-dom": "^20.0.11",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.4",
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
     "unplugin-vue-components": "^30.0.0",

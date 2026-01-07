@@ -21,7 +21,7 @@
           hide-details
           :items="documentCategories"
         >
-          <template v-slot:item="{ props: itemProps, item }">
+          <template v-slot:[`item`]="{ props: itemProps, item }">
             <v-list-item
               v-bind="itemProps"
               :title="item.raw + ' (' + categoryCount(item.raw) + ')'"
@@ -62,7 +62,7 @@
       style="max-height: 50vh; overflow: auto"
     >
       <template
-        v-slot:group-header="{ item, columns, isGroupOpen, toggleGroup }"
+        v-slot:[`group-header`]="{ item, columns, isGroupOpen, toggleGroup }"
       >
         <tr>
           <td class="pa-0" style="height: 1rem" :colspan="columns.length">
@@ -79,11 +79,15 @@
           </td>
         </tr>
       </template>
-      <template v-slot:item.category="{ item }: { item: documentType }">
+      <template v-slot:[`item.category`]="{ item }: { item: documentType }">
         {{ item.category }}
       </template>
       <template
-        v-slot:item.documentTypeDescription="{ item }: { item: documentType }"
+        v-slot:[`item.documentTypeDescription`]="{
+          item,
+        }: {
+          item: documentType;
+        }"
       >
         <v-row>
           <v-col>

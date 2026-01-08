@@ -115,6 +115,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult<OrderDto>.Failure([.. errors]);
         }
 
+        // More business rules validation will be added here in the future
+
         return OperationResult<OrderDto>.Success(dto);
     }
 

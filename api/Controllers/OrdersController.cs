@@ -23,13 +23,17 @@ public class OrdersController(
     private readonly IValidator<OrderDto> _validator = validator;
     private readonly IOrderService _orderService = orderService;
 
+    /// <summary>
+    /// Retrieves all orders assigned to the judge.
+    /// </summary>
+    /// <param name="judgeId">The override judge id.</param>
+    /// <returns>List of orders for the judge.</returns>
     [HttpGet]
     public async Task<IActionResult> GetMyOrders(int? judgeId = null)
     {
         var orders = await _orderService.GetAllAsync();
         return Ok(orders.Where(o => o.Referral.SentToPartId == this.User.JudgeId(judgeId)));
     }
-
 
     /// <summary>
     /// Endpoint used to notify that there is a documnt requiring annotation for a judge.

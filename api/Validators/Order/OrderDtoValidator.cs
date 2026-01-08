@@ -47,7 +47,7 @@ public class OrderDtoValidator : AbstractValidator<OrderDto>
             return false;
         }
 
-        if (!Enum.TryParse<FileDetailPcssCourtDivisionCd>(division, out var divisionEnum))
+        if (!Enum.TryParse<FileDetailPcssCourtDivisionCd>(division, true, out var divisionEnum))
         {
             return false;
         }
@@ -63,7 +63,7 @@ public class OrderDtoValidator : AbstractValidator<OrderDto>
             return false;
         }
 
-        if (!Enum.TryParse<CourtClassCd>(courtClass, out var courtClassEnum))
+        if (!Enum.TryParse<CourtClassCd>(courtClass, true, out var courtClassEnum))
         {
             return false;
         }

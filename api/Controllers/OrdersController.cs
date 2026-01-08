@@ -42,6 +42,7 @@ public class OrdersController(
     /// <returns>Processed order</returns>
     [HttpPut]
     [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertOrder([FromBody] OrderDto orderDto)
     {
@@ -61,7 +62,7 @@ public class OrdersController(
         var result = await _orderService.UpsertAsync(orderDto);
         if (!result.Succeeded)
         {
-            return UnprocessableEntity(new { error = result.Errors });
+            return BadRequest(new { error = result.Errors });
         }
 
         return Ok(result);

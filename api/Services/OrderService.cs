@@ -100,22 +100,18 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 break;
         }
 
-        if (errors.Count > 0)
-        {
-            return OperationResult<OrderDto>.Failure([.. errors]);
-        }
-
         // Validate judge existence
         var judges = await _dashboardService.GetJudges();
         if (!judges.Any(j => j.PersonId == dto.Referral.SentToPartId))
         {
             errors.Add($"Judge with id: {dto.Referral.SentToPartId} is not found.");
-            return OperationResult<OrderDto>.Failure([.. errors]);
         }
 
         // More business rules validation will be added here in the future
 
-        return OperationResult<OrderDto>.Success(dto);
+        return errors.Count > 0
+            ? OperationResult<OrderDto>.Failure([.. errors])
+            : OperationResult<OrderDto>.Success(dto);
     }
 
     public async Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto)

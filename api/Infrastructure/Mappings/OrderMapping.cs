@@ -8,7 +8,9 @@ public class OrderMapping : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.NewConfig<Order, OrderDto>();
+        config.NewConfig<Order, OrderDto>()
+            .Map(dest => dest.CreatedDate, src => src.Ent_Dtm)
+            .Map(dest => dest.UpdatedDate, src => src.Upd_Dtm);
 
         config.NewConfig<OrderDto, Order>()
             .Ignore(dest => dest.Id)

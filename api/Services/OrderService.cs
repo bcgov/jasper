@@ -25,7 +25,6 @@ public interface IOrderService : ICrudService<OrderDto>
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
 {
     private readonly FileServicesClient _filesClient;
-    private readonly IConfiguration _configuration;
     private readonly IDashboardService _dashboardService;
     private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
@@ -47,14 +46,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             logger,
             orderRepo)
     {
-        _configuration = configuration;
         _dashboardService = dashboardService;
         _filesClient = filesClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
 
-        _applicationCode = _configuration.GetNonEmptyValue("Request:ApplicationCd");
-        _requestAgencyIdentifierId = _configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
-        _requestPartId = _configuration.GetNonEmptyValue("Request:PartId");
+        _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
+        _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
+        _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
     }
 
     public override async Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)

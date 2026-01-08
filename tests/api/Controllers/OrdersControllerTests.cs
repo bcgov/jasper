@@ -177,8 +177,8 @@ public class OrdersControllerTests
 
         var result = await _controller.UpsertOrder(orderDto);
 
-        var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
-        Assert.NotNull(unprocessableResult.Value);
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
         _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
         _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
         _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);

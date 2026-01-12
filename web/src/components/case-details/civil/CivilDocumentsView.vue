@@ -174,15 +174,22 @@
       : [{ key: 'fileSeqNo', order: 'desc' as const }];
   });
 
-  const headers: DataTableHeader[] = [
-    ...shared.getBaseCivilDocumentTableHeaders(),
-    {
-      title: 'ACTIONS',
-      key: 'binderMenu',
-      align: 'end' as const,
-      sortable: false,
-    },
-  ];
+  const headers = computed<DataTableHeader[]>(() => {
+    const baseHeaders = shared.getBaseCivilDocumentTableHeaders(
+      selectedCategory.value === SCHEDULED_CATEGORY
+    );
+    
+    return [
+      ...baseHeaders,
+      {
+        title: 'ACTIONS',
+        key: 'binderMenu',
+        align: 'end' as const,
+        sortable: false,
+      },
+    ];
+  });
+  
   const labels = {
     ['physicalFileId']: props.fileId,
     ['courtClassCd']: props.courtClassCd,

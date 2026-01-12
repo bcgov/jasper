@@ -53,9 +53,9 @@
       <span v-else>
         {{ item.documentTypeDescription }}
       </span>
-      <span v-if="selectedCategory === 'Scheduled' && item.nextAppearanceDt">
+      <span v-if="selectedCategory === 'Scheduled' && item.filedDt" class="text-caption">
         <br />
-        Scheduled Date: {{ formatDateToDDMMMYYYY(item.nextAppearanceDt) }}
+        Date Filed: {{ formatDateToDDMMMYYYY(item.filedDt) }}
       </span>
     </template>
     <template v-slot:[`item.activity`]="{ item }">

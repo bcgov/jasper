@@ -29,11 +29,9 @@ public static class KeyDocumentResolver
             return [];
         }
 
-        // Get most recent Report document
-        var reportDoc = documents
-            .Where(d => (d.Category?.ToUpper()) == DocumentCategory.REPORT)
-            .OrderByDescendingIssueDate()
-            .FirstOrDefault();
+        // Get all Reports
+        var reportDocs = documents
+            .Where(d => (d.Category?.ToUpper()) == DocumentCategory.REPORT);
 
         // Get other key documents (excluding PSR)
         var otherKeyDocs = documents
@@ -49,7 +47,7 @@ public static class KeyDocumentResolver
             .OrderByDescendingIssueDate()
             .FirstOrDefault();
 
-        return new[] { reportDoc }
+        return reportDocs
             .Where(d => d != null)
             .Concat(otherKeyDocs)
             .Concat(bailDoc != null ? [bailDoc] : Array.Empty<CriminalDocument>());

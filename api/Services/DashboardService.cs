@@ -257,6 +257,7 @@ public class DashboardService(
                     a.ShowDars = showDars;
                     a.JudgeId = calendar.Id;
                     a.JudgeInitials = calendar.RotaInitials;
+                    a.JudgeName = calendar.Name;
                     // True when currently logged on judge is away from home location
                     a.IsJudgeAway = judgeId.HasValue
                         && judgeId.Value == calendar.Id

@@ -3,7 +3,8 @@
     <div
       class="mb-2"
       data-testid="activity-detail"
-      v-for="[locationName, judgeActivities] in groupedData"
+      v-for="{ locationName, judgeActivities } in groupedData"
+      :key="locationName"
     >
       <b
         ><span data-testid="short-name">{{ locationName }}</span></b
@@ -11,14 +12,19 @@
 
       <div
         data-testid="judge-activities"
-        v-for="[judgeInitials, activities] in judgeActivities"
+        v-for="{ judgeInitials, judgeName, activities } in judgeActivities"
+        :key="judgeInitials"
         :class="[
           'd-flex justify-space-between border-b mb-1',
           activities.every((a) => a.isJudgeAway) ? 'is-away' : '',
           activities.every((a) => a.isJudgeBorrowed) ? 'is-borrowed' : '',
         ]"
       >
-        <span data-testid="judge-initials">{{ judgeInitials }}</span>
+        <v-tooltip :text="judgeName" data-testid="judge-initials">
+          <template #activator="{ props }">
+            <span v-bind="props">{{ judgeInitials }}</span>
+          </template>
+        </v-tooltip>
         <div class="d-flex flex-column">
           <div
             class="d-flex justify-end align-center"
@@ -66,10 +72,10 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { CalendarDayActivity } from '@/types';
+  import { useDarsStore } from '@/stores/DarsStore';
+  import { CalendarDayActivity, LocationGroup } from '@/types';
   import { mdiHeadphones } from '@mdi/js';
   import { computed } from 'vue';
-  import { useDarsStore } from '@/stores/DarsStore';
 
   const props = defineProps<{
     activities: CalendarDayActivity[];
@@ -95,34 +101,37 @@
       .toLowerCase();
   };
 
-  const groupedData = computed<[string, [string, CalendarDayActivity[]][]][]>(
-    () => {
-      const data: Record<string, Record<string, CalendarDayActivity[]>> = {};
+  const groupedData = computed<LocationGroup[]>(() => {
+    const locationMap = new Map<string, Map<string, CalendarDayActivity[]>>();
 
-      for (const activity of props.activities) {
-        const locationKey = activity.locationShortName;
-        const judgeKey = activity.judgeInitials;
-
-        if (!data[locationKey]) {
-          data[locationKey] = {};
-        }
-
-        if (!data[locationKey][judgeKey]) {
-          data[locationKey][judgeKey] = [];
-        }
-
-        data[locationKey][judgeKey].push(activity);
+    // Group by location and judge
+    for (const activity of props.activities) {
+      if (!locationMap.has(activity.locationShortName)) {
+        locationMap.set(activity.locationShortName, new Map());
       }
 
-      return Object.entries(data).map(([locationName, judgeActivities]) => [
-        locationName,
-        Object.entries(judgeActivities).map(([judgeInitials, activities]) => [
-          judgeInitials,
-          [...activities],
-        ]),
-      ]);
+      const judgeMap = locationMap.get(activity.locationShortName)!;
+      if (!judgeMap.has(activity.judgeInitials)) {
+        judgeMap.set(activity.judgeInitials, []);
+      }
+
+      judgeMap.get(activity.judgeInitials)!.push(activity);
     }
-  );
+
+    // Transform to output structure
+    return Array.from(locationMap.entries()).map(
+      ([locationName, judgeMap]) => ({
+        locationName,
+        judgeActivities: Array.from(judgeMap.entries()).map(
+          ([judgeInitials, activities]) => ({
+            judgeInitials,
+            judgeName: activities[0]?.judgeName || '',
+            activities,
+          })
+        ),
+      })
+    );
+  });
 </script>
 <style scoped>
   .calendar-day {

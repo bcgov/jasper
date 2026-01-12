@@ -40,7 +40,7 @@
     item-value="civilDocumentId"
     show-select
     class="my-3"
-    height="400"
+    height="800"
   >
     <template v-slot:[`item.documentTypeDescription`]="{ item }">
       <a
@@ -52,6 +52,13 @@
       </a>
       <span v-else>
         {{ item.documentTypeDescription }}
+      </span>
+      <span
+        v-if="selectedCategory === 'Scheduled' && item.filedDt"
+        class="text-caption"
+      >
+        <br />
+        Date Filed: {{ formatDateToDDMMMYYYY(item.filedDt) }}
       </span>
     </template>
     <template v-slot:[`item.activity`]="{ item }">
@@ -86,6 +93,7 @@
   import { Anchor, LookupCode } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { mdiNotebookOutline } from '@mdi/js';
+  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
   const props = defineProps<{
     selectedItems: civilDocumentType[];

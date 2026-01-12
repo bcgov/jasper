@@ -241,7 +241,7 @@
   const headers = [
     { key: 'data-table-group' },
     {
-      title: 'DATE FILED/ISSUES',
+      title: 'DATE FILED/ISSUED',
       key: 'issueDate',
       value: (item) => formatDateToDDMMMYYYY(item.issueDate),
       sortRaw: (a: documentType, b: documentType) =>

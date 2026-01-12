@@ -305,7 +305,9 @@ export default {
     return newWindow;
   },
 
-  getBaseCivilDocumentTableHeaders(): DataTableHeader[] {
+  getBaseCivilDocumentTableHeaders(
+    isScheduledCategory = false
+  ): DataTableHeader[] {
     return [
       {
         title: 'SEQ',
@@ -321,15 +323,28 @@ export default {
         title: 'ACT',
         key: 'activity',
       },
-      {
-        title: 'DATE FILED',
-        key: 'filedDt',
-        width: '8.5rem',
-        maxWidth: '8.5rem',
-        value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
-        sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-          new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
-      },
+      isScheduledCategory
+        ? {
+            title: 'DATE SCHEDULED',
+            key: 'nextAppearanceDt',
+            width: '8.5rem',
+            maxWidth: '8.5rem',
+            value: (item: civilDocumentType) =>
+              formatDateToDDMMMYYYY(item.nextAppearanceDt),
+            sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
+              new Date(a.nextAppearanceDt).getTime() -
+              new Date(b.nextAppearanceDt).getTime(),
+          }
+        : {
+            title: 'DATE FILED',
+            key: 'filedDt',
+            width: '8.5rem',
+            maxWidth: '8.5rem',
+            value: (item: civilDocumentType) =>
+              formatDateToDDMMMYYYY(item.filedDt),
+            sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
+              new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
+          },
       {
         title: 'ORDER MADE',
         key: 'orderMadeDt',

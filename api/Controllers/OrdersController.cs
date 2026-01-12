@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
@@ -38,12 +39,12 @@ public class OrdersController(
     /// <summary>
     /// Endpoint used to notify that there is a documnt requiring annotation for a judge.
     /// </summary>
-    /// <param name="orderDto">The Order payload</param>
+    /// <param name="orderDto">The Order payload (supports snake_case, PascalCase, camelCase, and case-insensitive)</param>
     /// <returns>Processed order</returns>
     [HttpPut]
     [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpsertOrder([FromBody] OrderDto orderDto)
     {
         var basicValidation = await _validator.ValidateAsync(orderDto);
@@ -62,7 +63,7 @@ public class OrdersController(
         var result = await _orderService.UpsertAsync(orderDto);
         if (!result.Succeeded)
         {
-            return BadRequest(new { error = result.Errors });
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
 
         return Ok(result);

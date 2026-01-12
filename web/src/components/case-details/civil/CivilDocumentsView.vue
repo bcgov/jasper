@@ -178,7 +178,7 @@
     const baseHeaders = shared.getBaseCivilDocumentTableHeaders(
       selectedCategory.value === SCHEDULED_CATEGORY
     );
-    
+
     return [
       ...baseHeaders,
       {
@@ -189,7 +189,7 @@
       },
     ];
   });
-  
+
   const labels = {
     ['physicalFileId']: props.fileId,
     ['courtClassCd']: props.courtClassCd,

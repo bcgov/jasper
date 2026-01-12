@@ -53,7 +53,10 @@
       <span v-else>
         {{ item.documentTypeDescription }}
       </span>
-      <span v-if="selectedCategory === 'Scheduled' && item.filedDt" class="text-caption">
+      <span
+        v-if="selectedCategory === 'Scheduled' && item.filedDt"
+        class="text-caption"
+      >
         <br />
         Date Filed: {{ formatDateToDDMMMYYYY(item.filedDt) }}
       </span>

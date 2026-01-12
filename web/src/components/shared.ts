@@ -305,7 +305,9 @@ export default {
     return newWindow;
   },
 
-  getBaseCivilDocumentTableHeaders(isScheduledCategory = false): DataTableHeader[] {
+  getBaseCivilDocumentTableHeaders(
+    isScheduledCategory = false
+  ): DataTableHeader[] {
     return [
       {
         title: 'SEQ',
@@ -327,16 +329,19 @@ export default {
             key: 'nextAppearanceDt',
             width: '8.5rem',
             maxWidth: '8.5rem',
-            value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.nextAppearanceDt),
+            value: (item: civilDocumentType) =>
+              formatDateToDDMMMYYYY(item.nextAppearanceDt),
             sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-              new Date(a.nextAppearanceDt).getTime() - new Date(b.nextAppearanceDt).getTime(),
+              new Date(a.nextAppearanceDt).getTime() -
+              new Date(b.nextAppearanceDt).getTime(),
           }
         : {
             title: 'DATE FILED',
             key: 'filedDt',
             width: '8.5rem',
             maxWidth: '8.5rem',
-            value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
+            value: (item: civilDocumentType) =>
+              formatDateToDDMMMYYYY(item.filedDt),
             sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
               new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
           },

@@ -37,9 +37,9 @@ public class OrdersController(
     }
 
     /// <summary>
-    /// Endpoint used to notify that there is a documnt requiring annotation for a judge.
+    /// Create/Update an order to notify that there is a documnt requiring annotation for a judge.
     /// </summary>
-    /// <param name="orderDto">The Order payload (supports snake_case, PascalCase, camelCase, and case-insensitive)</param>
+    /// <param name="orderDto">The Order payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>
     /// <returns>Processed order</returns>
     [HttpPut]
     [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]

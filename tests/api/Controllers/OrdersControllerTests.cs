@@ -159,7 +159,7 @@ public class OrdersControllerTests
     }
 
     [Fact]
-    public async Task UpsertOrder_ReturnsUnprocessableEntity_WhenUpsertFails()
+    public async Task UpsertOrder_ReturnsInternalServerError_WhenUpsertFails()
     {
         var orderDto = CreateValidOrderDto();
 
@@ -177,8 +177,9 @@ public class OrdersControllerTests
 
         var result = await _controller.UpsertOrder(orderDto);
 
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.NotNull(badRequestResult.Value);
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+        Assert.NotNull(objectResult.Value);
         _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
         _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
         _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);

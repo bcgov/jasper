@@ -10,7 +10,6 @@
     :removeDocumentFromBinder
     :deleteBinder="deleteCurrentBinder"
     :viewBinder="() => openMergedDocuments(binderDocuments)"
-    :baseHeaders="headers"
     @update:reordered="(documentData) => handleReordering(documentData)"
   />
 

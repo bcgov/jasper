@@ -115,6 +115,10 @@
                 <td>
                   {{ formatDateToDDMMMYYYY(element.filedDt) }}
                 </td>
+                <!-- Order Made column -->
+                <td>
+                  {{ formatDateToDDMMMYYYY(element.orderMadeDt) }}
+                </td>
                 <td>
                   <!-- Filed By column -->
                   <LabelWithTooltip
@@ -153,11 +157,11 @@
 </template>
 
 <script setup lang="ts">
+  import shared from '@/components/shared';
   import ConfirmButton from '@/components/shared/ConfirmButton.vue';
   import EllipsesMenu from '@/components/shared/EllipsesMenu.vue';
   import { civilDocumentType } from '@/types/civil/jsonTypes';
   import { Anchor, LookupCode } from '@/types/common';
-  import { DataTableHeader } from '@/types/shared';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { mdiDragVertical, mdiNotebookOutline } from '@mdi/js';
   import { ref, watch } from 'vue';
@@ -168,7 +172,6 @@
     courtClassCdStyle: string;
     rolesLoading: boolean;
     roles: LookupCode[];
-    baseHeaders: DataTableHeader[];
     binderDocuments: civilDocumentType[];
     removeDocumentFromBinder: (documentId: string) => void;
     openIndividualDocument: (data: civilDocumentType) => void;
@@ -205,7 +208,7 @@
   );
 
   const headers = [
-    ...props.baseHeaders,
+    ...shared.getBaseCivilDocumentTableHeaders(),
     {
       title: '',
       key: 'drag',

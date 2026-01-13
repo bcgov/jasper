@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,16 +12,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
-using Scv.Db.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -64,9 +61,9 @@ namespace Scv.Api.Infrastructure.Authentication
                             SiteMinderAuthenticationHandler.SiteMinder)
                             return;
 
-                        var accessTokenExpiration = DateTimeOffset.Parse(cookieCtx.Properties.GetTokenValue("expires_at"));
+                        var accessTokenExpiration = DateTimeOffset.Parse(cookieCtx.Properties.GetTokenValue("expires_at"), CultureInfo.InvariantCulture);
                         var timeRemaining = accessTokenExpiration.Subtract(DateTimeOffset.UtcNow);
-                        var refreshThreshold = TimeSpan.Parse(configuration.GetNonEmptyValue("TokenRefreshThreshold"));
+                        var refreshThreshold = TimeSpan.Parse(configuration.GetNonEmptyValue("TokenRefreshThreshold"), CultureInfo.InvariantCulture);
 
                         if (timeRemaining > refreshThreshold)
                             return;
@@ -92,7 +89,7 @@ namespace Scv.Api.Infrastructure.Authentication
                         {
                             var expiresInSeconds = response.ExpiresIn;
                             var updatedExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds);
-                            cookieCtx.Properties.UpdateTokenValue("expires_at", updatedExpiresAt.ToString());
+                            cookieCtx.Properties.UpdateTokenValue("expires_at", updatedExpiresAt.ToString(CultureInfo.InvariantCulture));
                             cookieCtx.Properties.UpdateTokenValue("refresh_token", response.RefreshToken);
 
                             // Indicate to the cookie middleware that the cookie should be remade (since we have updated it)
@@ -132,7 +129,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                         var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
                         var logger = loggerFactory.CreateLogger("OnTokenValidated");
-                        logger.LogInformation($"OpenIdConnect UserId - {context.Principal.ExternalUserId()} - logged in.");
+                        logger.LogInformation("OpenIdConnect UserId - {ExternalUserId} - logged in.", context.Principal.ExternalUserId());
 
                         //Cleanup keycloak claims, that are unused.
                         foreach (var claim in identity.Claims.WhereToList(c =>
@@ -235,7 +232,6 @@ namespace Scv.Api.Infrastructure.Authentication
             PersonSearchItem judge = null;
             try
             {
-                // Try to get judge from external judge id claim first
                 if (int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId))
                 {
                     judge = await GetJudgeById(context, externalJudgeId);
@@ -251,7 +247,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                     if (userDto?.JudgeId.HasValue == true)
                     {
-                        judge = (await GetJudgeById(context, userDto.JudgeId.Value)) ?? judge; // Attempt to override with PCSS-mapped judge if available
+                        judge = (await GetJudgeById(context, userDto.JudgeId.Value)) ?? judge; // Attempt to override the default Judge Id and HomeLocationId if the current user has been mapped.
                     }
                 }
             }
@@ -274,11 +270,12 @@ namespace Scv.Api.Infrastructure.Authentication
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
                 var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<PcssSyncService>();
-                userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
+                var provjudUserGuid = context.Principal.ProvjudUserGuid();
 
+                userDto = provjudUserGuid != null ? await userService.GetByGuidWithPermissionsAsync(provjudUserGuid) : await userService.GetWithPermissionsAsync(context.Principal.Email());
                 if (userDto == null)
                 {
-                    var newUser = await BuildNewUser(context, logger, pcssSyncService);
+                    var newUser = await BuildNewUser(context, pcssSyncService);
                     logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(newUser));
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
@@ -288,7 +285,7 @@ namespace Scv.Api.Infrastructure.Authentication
                     }
                     userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;
                 }
-                else
+                else if (provjudUserGuid != null)
                 {
                     // Update existing user with latest PCSS data
                     logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
@@ -306,7 +303,6 @@ namespace Scv.Api.Infrastructure.Authentication
                         }
                     }
                 }
-
                 AddUserClaims(claims, userDto);
             }
             catch (Exception ex)
@@ -318,7 +314,6 @@ namespace Scv.Api.Infrastructure.Authentication
 
         private static async Task<UserDto> BuildNewUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            ILogger logger,
             PcssSyncService pcssSyncService)
         {
             UserDto userDto = new()
@@ -331,7 +326,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 IsActive = false,
             };
 
-            await pcssSyncService.UpdateUserFromPcss(userDto);
+            await pcssSyncService.UpdateUserFromPcss(userDto, true);
 
             return userDto;
         }

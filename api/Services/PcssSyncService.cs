@@ -10,19 +10,17 @@ using Scv.Api.Models.AccessControlManagement;
 namespace Scv.Api.Services
 {
     public class PcssSyncService(
-        IAuthorizationServicesClient pcssAuthServiceClient,
-        AuthorizationService authorizationService,
+        IPcssAuthorizationService authorizationService,
         IGroupService groupService,
         IDashboardService dashboardService,
         ILogger<PcssSyncService> logger)
     {
-        private readonly IAuthorizationServicesClient _pcssAuthServiceClient = pcssAuthServiceClient;
-        private readonly AuthorizationService _authorizationService = authorizationService;
+        private readonly IPcssAuthorizationService _authorizationService = authorizationService;
         private readonly IGroupService _groupService = groupService;
         private readonly IDashboardService _dashboardService = dashboardService;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
-        public async Task<bool> UpdateUserFromPcss(UserDto userDto)
+        public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false)
         {
             if (string.IsNullOrEmpty(userDto.NativeGuid))
             {
@@ -32,7 +30,7 @@ namespace Scv.Api.Services
 
             try
             {
-                var matchingUser = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email);
+                var matchingUser = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
                 if (matchingUser == null)
                 {
                     return false;
@@ -46,7 +44,7 @@ namespace Scv.Api.Services
 
                 var judgeId = await GetJudgeIdForUserAsync(matchingUser.UserId.Value, userDto.Email);
 
-                return ApplyUserChanges(userDto, groupIds, judgeId, matchingUser.Email);
+                return ApplyUserChanges(userDto, groupIds, judgeId, matchingUser);
             }
             catch (Exception e)
             {
@@ -55,11 +53,10 @@ namespace Scv.Api.Services
             }
         }
 
-        private async Task<UserItem> GetMatchingPcssUserAsync(string nativeGuid, string email)
+        private async Task<UserItem> GetMatchingPcssUserAsync(string nativeGuid, string email, bool forceUpdateCache = false)
         {
             _logger.LogInformation("Requesting user information from PCSS for {Email}.", email);
-            var pcssUsers = await _pcssAuthServiceClient.GetUsersAsync();
-            var matchingUser = pcssUsers?.FirstOrDefault(u => u.GUID == nativeGuid);
+            var matchingUser = await _authorizationService.GetUserByGuid(nativeGuid, forceUpdateCache);
 
             _logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
                 nativeGuid,
@@ -112,7 +109,7 @@ namespace Scv.Api.Services
             return null;
         }
 
-        private bool ApplyUserChanges(UserDto userDto, List<string> groupIds, int? judgeId, string email)
+        private bool ApplyUserChanges(UserDto userDto, List<string> groupIds, int? judgeId, UserItem user)
         {
             var isActive = groupIds.Count > 0;
             var hasChanges = false;
@@ -123,9 +120,21 @@ namespace Scv.Api.Services
                 hasChanges = true;
             }
 
-            if (email != null && userDto.Email != email)
+            if (userDto.FirstName != user.GivenName)
             {
-                userDto.Email = email;
+                userDto.FirstName = user.GivenName;
+                hasChanges = true;
+            }
+
+            if (userDto.LastName != user.Surname)
+            {
+                userDto.LastName = user.Surname;
+                hasChanges = true;
+            }
+
+            if (userDto.Email != null && userDto.Email != user.Email)
+            {
+                userDto.Email = user.Email;
                 hasChanges = true;
             }
 

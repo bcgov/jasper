@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -15,8 +14,7 @@ namespace Scv.Api.Tests.Services
 {
     public class PcssSyncServiceTests
     {
-        private readonly Mock<IAuthorizationServicesClient> _pcssAuthorizationServiceClientMock;
-        private readonly Mock<AuthorizationService> _authorizationServiceMock;
+        private readonly Mock<IPcssAuthorizationService> _authorizationServiceMock;
         private readonly Mock<IGroupService> _groupServiceMock;
         private readonly Mock<IDashboardService> _dashboardServiceMock;
         private readonly Mock<ILogger<PcssSyncService>> _loggerMock;
@@ -24,32 +22,13 @@ namespace Scv.Api.Tests.Services
 
         public PcssSyncServiceTests()
         {
-            _pcssAuthorizationServiceClientMock = new Mock<IAuthorizationServicesClient>();
-            
-            var configMock = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
-            
-            var configSectionMock = new Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
-            configSectionMock.Setup(x => x.Value).Returns("60");
-            configMock.Setup(x => x.GetSection("Caching:UserExpiryMinutes")).Returns(configSectionMock.Object);
-            
-            var cacheMock = new Mock<LazyCache.IAppCache>();
-            var cachePolicy = new LazyCache.CacheDefaults();
-            cacheMock.Setup(x => x.DefaultCachePolicy).Returns(cachePolicy);
+            _authorizationServiceMock = new Mock<IPcssAuthorizationService>();
 
-            var loggerMock = new Mock<ILogger<AuthorizationService>>();
-            
-            _authorizationServiceMock = new Mock<AuthorizationService>(
-                configMock.Object, 
-                _pcssAuthorizationServiceClientMock.Object, 
-                cacheMock.Object, 
-                loggerMock.Object);
-            
             _groupServiceMock = new Mock<IGroupService>();
             _dashboardServiceMock = new Mock<IDashboardService>();
             _loggerMock = new Mock<ILogger<PcssSyncService>>();
-            
+
             _pcssSyncService = new PcssSyncService(
-                _pcssAuthorizationServiceClientMock.Object,
                 _authorizationServiceMock.Object,
                 _groupServiceMock.Object,
                 _dashboardServiceMock.Object,
@@ -70,12 +49,70 @@ namespace Scv.Api.Tests.Services
         }
 
         [Fact]
+        public async Task UpdateUserFromPcss_ShouldCallGetUserByGuid_WithForceRefreshFalse_ByDefault()
+        {
+            // Arrange
+            var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
+            _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
+                .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
+
+            var groups = new List<GroupDto> { new GroupDto { Id = "group1" } };
+            _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
+            _dashboardServiceMock.Setup(x => x.GetJudges())
+                .ReturnsAsync(judges);
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
+
+            // Assert
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", false), Times.Once);
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid(It.IsAny<string>(), true), Times.Never);
+        }
+
+        [Fact]
+        public async Task UpdateUserFromPcss_ShouldCallGetUserByGuid_WithForceRefreshTrue_WhenForceUpdateCacheIsTrue()
+        {
+            // Arrange
+            var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
+                .ReturnsAsync(pcssUser);
+
+            _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
+                .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
+
+            var groups = new List<GroupDto> { new GroupDto { Id = "group1" } };
+            _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
+            _dashboardServiceMock.Setup(x => x.GetJudges())
+                .ReturnsAsync(judges);
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
+
+            // Assert
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", true), Times.Once);
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid(It.IsAny<string>(), false), Times.Never);
+        }
+
+        [Fact]
         public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenMatchingUserNotFound()
         {
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem>());
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync((UserItem)null);
 
             // Act
             var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
@@ -85,14 +122,30 @@ namespace Scv.Api.Tests.Services
         }
 
         [Fact]
+        public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenMatchingUserNotFoundWithForceRefresh()
+        {
+            // Arrange
+            var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
+                .ReturnsAsync((UserItem)null);
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
+
+            // Assert
+            Assert.False(result);
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", true), Times.Once);
+        }
+
+        [Fact]
         public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenGetPcssUserRoleNamesFails()
         {
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
             var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Failure("error"));
 
@@ -109,9 +162,9 @@ namespace Scv.Api.Tests.Services
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
             var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
 
@@ -129,18 +182,18 @@ namespace Scv.Api.Tests.Services
         public async Task UpdateUserFromPcss_ShouldReturnTrue_WhenChangesDetected()
         {
             // Arrange
-            var userDto = new UserDto 
-            { 
-                Email = "test@test.com", 
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
                 NativeGuid = "guid",
                 JudgeId = null,
                 IsActive = false,
                 GroupIds = new List<string>()
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
 
@@ -163,21 +216,61 @@ namespace Scv.Api.Tests.Services
         }
 
         [Fact]
+        public async Task UpdateUserFromPcss_WithForceRefresh_ShouldReturnTrue_WhenChangesDetected()
+        {
+            // Arrange
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
+                NativeGuid = "guid",
+                JudgeId = null,
+                IsActive = false,
+                GroupIds = new List<string>()
+            };
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
+                .ReturnsAsync(pcssUser);
+
+            _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
+                .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
+
+            var groups = new List<GroupDto> { new GroupDto { Id = "group1" } };
+            _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
+            _dashboardServiceMock.Setup(x => x.GetJudges())
+                .ReturnsAsync(judges);
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal(456, userDto.JudgeId);
+            Assert.True(userDto.IsActive);
+            Assert.Contains("group1", userDto.GroupIds);
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", true), Times.Once);
+        }
+
+        [Fact]
         public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenNoChangesDetected()
         {
             // Arrange
-            var userDto = new UserDto 
-            { 
-                Email = "test@test.com", 
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
                 NativeGuid = "guid",
                 JudgeId = 456,
                 IsActive = true,
-                GroupIds = new List<string> { "group1" }
+                GroupIds = new List<string> { "group1" },
+                FirstName = "John",
+                LastName = "Doe"
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
 
@@ -201,7 +294,7 @@ namespace Scv.Api.Tests.Services
         {
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
                 .ThrowsAsync(new Exception("error"));
 
             // Act
@@ -212,13 +305,29 @@ namespace Scv.Api.Tests.Services
         }
 
         [Fact]
+        public async Task UpdateUserFromPcss_WithForceRefresh_ShouldReturnFalse_WhenExceptionThrown()
+        {
+            // Arrange
+            var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
+                .ThrowsAsync(new Exception("error"));
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
+
+            // Assert
+            Assert.False(result);
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", true), Times.Once);
+        }
+
+        [Fact]
         public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenMatchingUserHasNoUserId()
         {
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
-            var pcssUser = new UserItem { GUID = "guid", UserId = null }; // UserId is null
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
+            var pcssUser = new UserItem { GUID = "guid", UserId = null };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
 
             // Act
             var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
@@ -231,26 +340,26 @@ namespace Scv.Api.Tests.Services
         public async Task UpdateUserFromPcss_ShouldReturnTrue_WhenJudgeNotFound_And_JudgeIdChanged()
         {
             // Arrange
-            var userDto = new UserDto 
-            { 
-                Email = "test@test.com", 
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
                 NativeGuid = "guid",
-                JudgeId = 456, // Currently has a judge ID
+                JudgeId = 456,
                 IsActive = false,
                 GroupIds = new List<string>()
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
 
-            var groups = new List<GroupDto>(); // No groups
+            var groups = new List<GroupDto>();
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
-            var judges = new List<PersonSearchItem>(); // No judges found
+            var judges = new List<PersonSearchItem>();
             _dashboardServiceMock.Setup(x => x.GetJudges())
                 .ReturnsAsync(judges);
 
@@ -259,7 +368,7 @@ namespace Scv.Api.Tests.Services
 
             // Assert
             Assert.True(result);
-            Assert.Null(userDto.JudgeId); // Should be updated to null
+            Assert.Null(userDto.JudgeId);
         }
 
         [Fact]
@@ -268,9 +377,9 @@ namespace Scv.Api.Tests.Services
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
             var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync((OperationResult<IEnumerable<string>>)null);
 
@@ -287,9 +396,9 @@ namespace Scv.Api.Tests.Services
             // Arrange
             var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
             var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
 
@@ -307,18 +416,18 @@ namespace Scv.Api.Tests.Services
         public async Task UpdateUserFromPcss_ShouldReturnTrue_WhenUserDtoGroupIdsIsNull()
         {
             // Arrange
-            var userDto = new UserDto 
-            { 
-                Email = "test@test.com", 
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
                 NativeGuid = "guid",
                 JudgeId = 456,
                 IsActive = true,
-                GroupIds = null // Null group IDs
+                GroupIds = null
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
 
@@ -343,22 +452,22 @@ namespace Scv.Api.Tests.Services
         public async Task UpdateUserFromPcss_ShouldReturnTrue_WhenRolesExistButNoGroups_And_IsActiveChanges()
         {
             // Arrange
-            var userDto = new UserDto 
-            { 
-                Email = "test@test.com", 
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
                 NativeGuid = "guid",
                 JudgeId = 456,
-                IsActive = true, // Currently active
+                IsActive = true,
                 GroupIds = new List<string> { "group1" }
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role1" }));
 
-            var groups = new List<GroupDto>(); // No groups mapped
+            var groups = new List<GroupDto>();
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
@@ -371,7 +480,7 @@ namespace Scv.Api.Tests.Services
 
             // Assert
             Assert.True(result);
-            Assert.False(userDto.IsActive); // Should become inactive
+            Assert.False(userDto.IsActive);
             Assert.Empty(userDto.GroupIds);
         }
 
@@ -379,18 +488,18 @@ namespace Scv.Api.Tests.Services
         public async Task UpdateUserFromPcss_ShouldReturnTrue_WhenGroupIdsChange()
         {
             // Arrange
-            var userDto = new UserDto 
-            { 
-                Email = "test@test.com", 
+            var userDto = new UserDto
+            {
+                Email = "test@test.com",
                 NativeGuid = "guid",
                 JudgeId = 456,
                 IsActive = true,
                 GroupIds = new List<string> { "group1" }
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
-            _pcssAuthorizationServiceClientMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserItem> { pcssUser });
-            
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role2" }));
 
@@ -409,6 +518,56 @@ namespace Scv.Api.Tests.Services
             Assert.True(result);
             Assert.Contains("group2", userDto.GroupIds);
             Assert.DoesNotContain("group1", userDto.GroupIds);
+        }
+
+        [Fact]
+        public async Task UpdateUserFromPcss_ShouldUpdateUserProperties_WhenForceRefreshUsed()
+        {
+            // Arrange
+            var userDto = new UserDto
+            {
+                Email = "old@test.com",
+                NativeGuid = "guid",
+                FirstName = "OldName",
+                LastName = "OldLastName",
+                JudgeId = null,
+                IsActive = false,
+                GroupIds = new List<string>()
+            };
+            var pcssUser = new UserItem
+            {
+                GUID = "guid",
+                UserId = 123,
+                GivenName = "NewName",
+                Surname = "NewSurname",
+                Email = "new@test.com"
+            };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
+                .ReturnsAsync(pcssUser);
+
+            _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
+                .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(new List<string> { "role" }));
+
+            var groups = new List<GroupDto> { new GroupDto { Id = "group1" } };
+            _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 789 } };
+            _dashboardServiceMock.Setup(x => x.GetJudges())
+                .ReturnsAsync(judges);
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal("NewName", userDto.FirstName);
+            Assert.Equal("NewSurname", userDto.LastName);
+            Assert.Equal("new@test.com", userDto.Email);
+            Assert.Equal(789, userDto.JudgeId);
+            Assert.True(userDto.IsActive);
+            Assert.Contains("group1", userDto.GroupIds);
+            _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", true), Times.Once);
         }
     }
 }

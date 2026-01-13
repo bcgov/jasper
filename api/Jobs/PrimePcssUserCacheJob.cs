@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using MapsterMapper;
 using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
+using Hangfire;
 
 namespace Scv.Api.Jobs
 {
@@ -20,9 +21,14 @@ namespace Scv.Api.Jobs
 
         public override string JobName => nameof(PrimePcssUserCacheJob);
 
-        // Run every 8 hours by default
-        public override string CronSchedule =>
-            this.Configuration.GetValue<string>("JOBS:PRIME_PCSS_USER_CACHE_SCHEDULE") ?? "* */8 * * *";
+        public override string CronSchedule
+        {
+            get
+            {
+                var cacheExpiryMinutes = int.Parse(this.Configuration.GetNonEmptyValue("Caching:UserExpiryMinutes"));
+                return ConvertMinutesToCronExpression(cacheExpiryMinutes);
+            }
+        }
 
         public override async Task Execute()
         {
@@ -45,6 +51,31 @@ namespace Scv.Api.Jobs
             {
                 throw new InvalidOperationException("Error occurred while priming PCSS user cache.", ex);
             }
+        }
+
+        private static string ConvertMinutesToCronExpression(int minutes)
+        {
+            if (minutes <= 0)
+            {
+                throw new ArgumentException("Cache expiry minutes must be greater than 0.", nameof(minutes));
+            }
+
+            if (minutes < 60)
+            {
+                return Cron.MinuteInterval(minutes);
+            }
+
+            if (minutes % 60 == 0 && minutes < 1440)
+            {
+                return Cron.HourInterval(minutes / 60);
+            }
+
+            if (minutes % 1440 == 0)
+            {
+                return Cron.DayInterval(minutes / 1440);
+            }
+
+            throw new ArgumentException("Cache expiry minutes must align to Hangfire minute, hour, or day intervals.", nameof(minutes));
         }
     }
 }

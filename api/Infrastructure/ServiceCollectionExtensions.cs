@@ -231,7 +231,7 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
-            
+
             // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
             services.AddTransient<DarsCookieHandler>();
             services
@@ -256,7 +256,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
-            services.AddScoped<AuthorizationService>();
+            services.AddScoped<IPcssAuthorizationService, PcssAuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<DarsService>();

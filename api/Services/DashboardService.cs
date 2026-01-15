@@ -12,6 +12,7 @@ using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
+using Scv.Api.Models;
 using Scv.Api.Models.Calendar;
 using PCSS = PCSSCommon.Models;
 
@@ -23,6 +24,7 @@ public interface IDashboardService
     Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
     Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate);
     Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges();
+    Task<Person> GetJudge(int judgeId);
 }
 
 public class DashboardService(
@@ -212,6 +214,7 @@ public class DashboardService(
         }
     }
 
+    // These below 2 Get Judge methods should be moved out of this service
     public async Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges()
     {
         // This is a temp solution to retrieve list of users(judge) from external source. 
@@ -223,6 +226,13 @@ public class DashboardService(
         var judges = await judicialListingTask;
 
         return judges.OrderBy(j => j.FullName);
+    }
+
+    public async Task<Person> GetJudge(int judgeId)
+    {
+        var judge = await _personClient.ReadPersonAsync(judgeId);
+        var jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(judge);
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<Person>(jsonString);
     }
 
     #endregion Public Methods

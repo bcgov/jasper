@@ -218,8 +218,9 @@ public class TransitoryDocumentsControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
-        Assert.Contains("fileMetadata is required.", errors);
+        var errorResponse = Assert.IsType<ValidatorErrorResponse>(badRequestResult.Value);
+        Assert.Contains("fileMetadata is required.", errorResponse.Errors);
+        Assert.Contains("fileMetadata is required.", errorResponse.Message);
 
         _mockTransitoryDocumentsService.Verify(
             s => s.DownloadFile(It.IsAny<string>()),
@@ -251,8 +252,9 @@ public class TransitoryDocumentsControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
-        Assert.Contains("RelativePath is required and must be non-empty.", errors);
+        var errorResponse = Assert.IsType<ValidatorErrorResponse>(badRequestResult.Value);
+        Assert.Contains("RelativePath is required and must be non-empty.", errorResponse.Errors);
+        Assert.Contains("RelativePath is required and must be non-empty.", errorResponse.Message);
 
         _mockTransitoryDocumentsService.Verify(
             s => s.DownloadFile(It.IsAny<string>()),
@@ -281,8 +283,9 @@ public class TransitoryDocumentsControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
-        Assert.Contains("SizeBytes must be greater than or equal to 0.", errors);
+        var errorResponse = Assert.IsType<ValidatorErrorResponse>(badRequestResult.Value);
+        Assert.Contains("SizeBytes must be greater than or equal to 0.", errorResponse.Errors);
+        Assert.Contains("SizeBytes must be greater than or equal to 0.", errorResponse.Message);
 
         _mockTransitoryDocumentsService.Verify(
             s => s.DownloadFile(It.IsAny<string>()),
@@ -313,8 +316,9 @@ public class TransitoryDocumentsControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(badRequestResult.Value);
-        Assert.Contains($"File size exceeds maximum allowed size of {maxSizeMB:F2} MB.", errors);
+        var errorResponse = Assert.IsType<ValidatorErrorResponse>(badRequestResult.Value);
+        Assert.Contains($"File size exceeds maximum allowed size of {maxSizeMB:F2} MB.", errorResponse.Errors);
+        Assert.Contains($"File size exceeds maximum allowed size of {maxSizeMB:F2} MB.", errorResponse.Message);
 
         _mockTransitoryDocumentsService.Verify(
             s => s.DownloadFile(It.IsAny<string>()),

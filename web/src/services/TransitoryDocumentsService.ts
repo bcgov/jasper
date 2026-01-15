@@ -27,7 +27,7 @@ export class TransitoryDocumentsService {
         relativePath: fileMetadata.relativePath,
         matchedRoomFolder: fileMetadata.matchedRoomFolder,
       },
-      { responseType: 'blob', skipErrorHandler: true }
+      { responseType: 'blob' }
     );
 
     // Extract filename from fileMetadata
@@ -55,7 +55,7 @@ export class TransitoryDocumentsService {
         relativePath: fileMetadata.relativePath,
         matchedRoomFolder: fileMetadata.matchedRoomFolder,
       },
-      { responseType: 'blob', skipErrorHandler: true }
+      { responseType: 'blob' }
     );
 
     // Convert blob to base64

@@ -13,15 +13,12 @@
       <v-card-text>
         <v-container>
           <v-row
-            v-if="error || (documents.length === 0 && !loading)"
+            v-if="documents.length === 0 && !loading"
             justify="center"
             class="my-5"
           >
             <v-col cols="12" md="6">
-              <v-alert v-if="error" type="error" border="start">
-                {{ error }}
-              </v-alert>
-              <v-alert v-else type="info" border="start">
+              <v-alert type="info" border="start">
                 No documents found for this location and date.
               </v-alert>
             </v-col>
@@ -42,6 +39,7 @@
               :item-value="(item) => item.relativePath"
               :item-selectable="(item) => canViewDocuments && isPdf(item)"
               data-testid="documents-table"
+              :items-per-page="-1"
             >
               <template v-slot:item.fileName="{ item }">
                 <a
@@ -105,13 +103,6 @@
         View documents
       </v-btn>
     </ActionBar>
-
-    <v-snackbar v-model="downloadError" color="error" :timeout="5000">
-      {{ downloadErrorMessage }}
-      <template v-slot:actions>
-        <v-btn variant="text" @click="downloadError = false">Close</v-btn>
-      </template>
-    </v-snackbar>
   </v-dialog>
 </template>
 
@@ -144,11 +135,8 @@
 
   const isOpen = ref(props.modelValue);
   const loading = ref(false);
-  const error = ref<string | null>(null);
   const documents = ref<FileMetadataDto[]>([]);
   const selectedDocuments = ref<FileMetadataDto[]>([]);
-  const downloadError = ref(false);
-  const downloadErrorMessage = ref('');
   const downloadingFiles = ref<Record<string, boolean>>({});
 
   const DOWNLOAD_TRANSITORY_DOCUMENTS = 'DOWNLOAD_TRANSITORY_DOCUMENTS';
@@ -198,7 +186,6 @@
     if (!props.locationId || !props.roomCd || !props.date) return;
 
     loading.value = true;
-    error.value = null;
     documents.value = [];
 
     try {
@@ -208,20 +195,6 @@
         props.date
       );
       documents.value = result || [];
-    } catch (e: any) {
-      console.error('Error fetching transitory documents:', e);
-
-      // Check for response status code
-      const status = e?.response?.status || e?.statusCode;
-
-      if (status === 404) {
-        error.value = 'No documents were found for this location and date.';
-      } else if (status === 401 || status === 403 || status >= 500) {
-        error.value =
-          'Server error occurred while retrieving documents. Please try again later or contact your administrator.';
-      } else {
-        error.value = 'Failed to load documents. Please try again.';
-      }
     } finally {
       loading.value = false;
     }
@@ -253,9 +226,6 @@
       });
       window.open(route.href, '_blank');
     } catch (e) {
-      downloadError.value = true;
-      downloadErrorMessage.value =
-        'Failed to open document in viewer. Please try again.';
       console.error('Error opening document in viewer:', e);
     }
   };
@@ -266,10 +236,6 @@
     downloadingFiles.value[item.relativePath] = true;
     try {
       await transitoryDocumentsService?.downloadFile(item);
-    } catch (e) {
-      downloadError.value = true;
-      downloadErrorMessage.value = 'Failed to download file. Please try again.';
-      console.error('Error downloading file:', e);
     } finally {
       downloadingFiles.value[item.relativePath] = false;
     }
@@ -282,37 +248,14 @@
 
     const pdfDocuments = selectedDocuments.value.filter((doc) => isPdf(doc));
 
-    if (pdfDocuments.length === 0) {
-      downloadError.value = true;
-      downloadErrorMessage.value =
-        'Please select PDF files to view in the document viewer.';
-      return;
-    }
+    sessionStorage.setItem('transitoryDocuments', JSON.stringify(pdfDocuments));
 
-    if (pdfDocuments.length !== selectedDocuments.value.length) {
-      downloadError.value = true;
-      downloadErrorMessage.value =
-        'Only PDF files can be viewed. Non-PDF files have been excluded.';
-    }
-
-    try {
-      sessionStorage.setItem(
-        'transitoryDocuments',
-        JSON.stringify(pdfDocuments)
-      );
-
-      // Open in new tab
-      const route = router.resolve({
-        name: 'NutrientContainer',
-        query: { type: 'transitory-bundle' },
-      });
-      window.open(route.href, '_blank');
-    } catch (e) {
-      downloadError.value = true;
-      downloadErrorMessage.value =
-        'Failed to open documents. Please try again.';
-      console.error('Error opening documents in viewer:', e);
-    }
+    // Open in new tab
+    const route = router.resolve({
+      name: 'NutrientContainer',
+      query: { type: 'transitory-bundle' },
+    });
+    window.open(route.href, '_blank');
   };
 
   watch(

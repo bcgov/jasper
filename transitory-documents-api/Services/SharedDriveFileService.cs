@@ -197,6 +197,7 @@ namespace Scv.TdApi.Services
                 .ThenBy(f => f.MatchedRoomFolder ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(f => f.FileName, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase)
+                .DistinctBy(f => $"{f.RelativePath} {f.FileName}", StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
     }

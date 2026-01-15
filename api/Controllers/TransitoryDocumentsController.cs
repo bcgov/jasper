@@ -126,10 +126,16 @@ namespace Scv.Api.Controllers
 
             if (!validationResult.IsValid)
             {
+                var errorMessages = validationResult.Errors
+                    .Select(e => e.ErrorMessage)
+                    .ToArray();
+
                 logger.LogWarning(
                     "Invalid download request - Errors: {Errors}",
-                    string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+                    string.Join(", ", errorMessages));
+
+                var errorResponse = ValidatorErrorResponse.FromErrors(errorMessages);
+                return BadRequest(errorResponse);
             }
 
             var fileResponse = await transitiveDocumentsService.DownloadFile(request.FileMetadata.RelativePath);

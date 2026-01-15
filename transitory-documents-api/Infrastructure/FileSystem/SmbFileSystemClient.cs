@@ -576,6 +576,7 @@ namespace Scv.TdApi.Infrastructure.FileSystem
 
                     var itemPath = SmbPathUtility.CombinePath(directoryPath, fileInfo.FileName);
                     var isDirectory = (fileInfo.FileAttributes & SMBLibrary.FileAttributes.Directory) != 0;
+                    _logger.LogDebug("processing item matching directory path: {DirectoryPath}, item: {ItemPath}", directoryPath, itemPath);
 
                     if (isDirectory)
                     {

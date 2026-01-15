@@ -1,6 +1,10 @@
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { CustomAxiosConfig } from '@/types';
-import { CustomAPIError } from '@/types/ApiResponse';
+import {
+  CustomAPIError,
+  isValidatorErrorResponse,
+  ValidatorErrorResponse,
+} from '@/types/ApiResponse';
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -66,7 +70,7 @@ export class HttpService implements IHttpService {
     return config;
   }
 
-  private handleError(error: any) {
+  private async handleError(error: any) {
     console.error(error);
 
     if (error.config?.skipErrorHandler) {
@@ -76,14 +80,24 @@ export class HttpService implements IHttpService {
       );
     }
 
+    const status = error.response?.status;
+
+    const validatorError = await this.getValidatorError(error);
+
     // todo: check for a 403 and handle it
-    if (error.response && error.response.status === 401) {
+    if (status === 401) {
       redirectHandlerService.handleUnauthorized(window.location.href);
-    } else if (error.response && error.response.status === 409) {
+    } else if (status === 409) {
       window.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
-    } else if (error.response.status !== 403) {
+    } else if (validatorError != null && status === 400) {
+      this.snackBarStore.showSnackbar(
+        `${validatorError.errors.join('\n')}`,
+        '#b84157',
+        'Validation Error'
+      );
+    } else if (status && status !== 403) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',
@@ -91,7 +105,52 @@ export class HttpService implements IHttpService {
         'Error'
       );
     }
+
     return Promise.reject(new CustomAPIError<AxiosError>(error.message, error));
+  }
+
+  private async getValidatorError(
+    error?: AxiosError
+  ): Promise<ValidatorErrorResponse | null> {
+    if (!error?.response) {
+      return null;
+    }
+
+    const response = error.response;
+    const data = response.data;
+
+    if (typeof Blob !== 'undefined' && data instanceof Blob) {
+      const contentType =
+        response.headers?.['content-type'] ??
+        response.headers?.['Content-Type'];
+
+      if (
+        typeof contentType === 'string' &&
+        contentType.includes('application/json')
+      ) {
+        try {
+          const text = await data.text();
+          return JSON.parse(text);
+        } catch {
+          return null;
+        }
+      }
+
+      return null;
+    }
+
+    if (typeof data === 'string') {
+      try {
+        const parsedError = JSON.parse(data);
+        if (isValidatorErrorResponse(parsedError)) {
+          return parsedError;
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   public async get<T>(

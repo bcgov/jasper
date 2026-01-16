@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using Microsoft.Graph.Users.Item.SendMail;
 
 namespace Scv.Api.Services;
 
@@ -122,7 +123,7 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
                 })];
         }
 
-        var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
+        var requestBody = new SendMailPostRequestBody
         {
             Message = message,
             SaveToSentItems = true

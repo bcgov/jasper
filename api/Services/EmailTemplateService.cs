@@ -44,12 +44,11 @@ public class EmailTemplateService(
 
             await emailService.SendEmailAsync(mailbox, recipient, subject, body);
 
-            logger.LogInformation("Template email '{TemplateName}' sent to {Recipient}", templateName, recipient);
+            logger.LogInformation("Template email '{TemplateName}' sent.", templateName);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to send template email '{TemplateName}' to {Recipient}: {Message}",
-                templateName, recipient, ex.Message);
+            logger.LogError(ex, "Failed to send template email '{TemplateName}': {Message}", templateName, ex.Message);
         }
     }
 }

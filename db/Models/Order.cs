@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
+using Scv.Api.Models.Order;
 
 namespace Scv.Db.Models;
 
@@ -11,6 +13,17 @@ public class Order : EntityBase
     public Referral Referral { get; set; }
     public List<PackageDocument> PackageDocuments { get; set; } = [];
     public List<RelevantCeisDocument> RelevantCeisDocuments { get; set; } = [];
+    public OrderStatus Status { get; set; }
+    public bool Signed { get; set; }
+    public DateTime? ProcessedDate { get; set; }
+    public string ReviewComments { get; set; }
+}
+
+public enum OrderStatus
+{
+    NotApproved,
+    AwaitingFurtherDocumentation,
+    Approved
 }
 
 public class CourtFile

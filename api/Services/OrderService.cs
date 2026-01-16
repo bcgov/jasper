@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using LazyCache;
+using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,7 @@ namespace Scv.Api.Services;
 public interface IOrderService : ICrudService<OrderDto>
 {
     Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto);
+    Task<OperationResult> ReviewOrder(string id, OrderReview orderReview);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -151,5 +153,21 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult<OrderDto>.Failure("Something went wrong when upserting the Order");
         }
 
+    }
+
+    public async Task<OperationResult> ReviewOrder(string id, OrderReview orderReview)
+    {
+        var order = await Repo.GetByIdAsync(id);
+
+        if(order is null)
+        {
+            return OperationResult.Failure("Order not found");
+        }
+        
+        orderReview.Adapt(order);
+
+        await Repo.UpdateAsync(order);
+
+        return OperationResult.Success();
     }
 }

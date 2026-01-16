@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using System;
+using Mapster;
 using Scv.Api.Models.Order;
 using Scv.Db.Models;
 
@@ -18,5 +19,10 @@ public class OrderMapping : IRegister
             .Ignore(dest => dest.Ent_UserId)
             .Ignore(dest => dest.Upd_Dtm)
             .Ignore(dest => dest.Upd_UserId);
+
+        config.NewConfig<OrderReview, Order>()
+            .IgnoreNullValues(true) // Don't overwrite existing values with nulls
+            .Map(dest => dest.ReviewComments, src => src.Comments)
+            .Map(dest => dest.ProcessedDate, src => DateTime.UtcNow);
     }
 }

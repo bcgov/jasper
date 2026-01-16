@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using Microsoft.Graph.Users.Item.SendMail;
 
 namespace Scv.Api.Services;
 
@@ -12,6 +13,14 @@ public interface IEmailService
 {
     Task<IEnumerable<Message>> GetFilteredEmailsAsync(string mailbox, string subjectPattern, string fromEmail, bool hasAttachment = true);
     Task<Dictionary<string, MemoryStream>> GetAttachmentsAsStreamsAsync(string mailbox, string messageId, string attachmentName);
+    Task SendEmailAsync(
+        string senderMailbox,
+        string recipientEmail,
+        string subject,
+        string htmlBody,
+        IEnumerable<(string Name, byte[] Content)> attachments = null,
+        IEnumerable<string> ccEmails = null,
+        IEnumerable<string> bccEmails = null);
 }
 
 public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
@@ -73,5 +82,53 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
                 att => att.Name,
                 att => new MemoryStream(att.ContentBytes))
             ?? [];
+    }
+
+    public async Task SendEmailAsync(
+        string senderMailbox,
+        string recipientEmail,
+        string subject,
+        string htmlBody,
+        IEnumerable<(string Name, byte[] Content)> attachments = null,
+        IEnumerable<string> ccEmails = null,
+        IEnumerable<string> bccEmails = null)
+    {
+        var message = new Message
+        {
+            Subject = subject,
+            Body = new ItemBody
+            {
+                ContentType = BodyType.Html,
+                Content = htmlBody
+            },
+            ToRecipients =
+            [
+                new Recipient
+                {
+                    EmailAddress = new EmailAddress { Address = recipientEmail }
+                }
+            ],
+            CcRecipients = [.. (ccEmails ?? []).Select(email => new Recipient { EmailAddress = new EmailAddress { Address = email } })],
+            BccRecipients = [.. (bccEmails ?? []).Select(email => new Recipient { EmailAddress = new EmailAddress { Address = email } })]
+        };
+
+        if (attachments != null)
+        {
+            message.Attachments = [..attachments
+                .Select(a => (Attachment)new FileAttachment
+                {
+                    OdataType = "#microsoft.graph.fileAttachment",
+                    Name = a.Name,
+                    ContentBytes = a.Content
+                })];
+        }
+
+        var requestBody = new SendMailPostRequestBody
+        {
+            Message = message,
+            SaveToSentItems = true
+        };
+
+        await _graphServiceClient.Users[senderMailbox].SendMail.PostAsync(requestBody);
     }
 }

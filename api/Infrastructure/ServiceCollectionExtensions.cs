@@ -115,6 +115,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<UserSeeder>();
             services.AddScoped<GroupAliasSeeder>();
             services.AddScoped<QuickLinkSeeder>();
+            services.AddScoped<EmailTemplateSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -144,6 +145,7 @@ namespace Scv.Api.Infrastructure
             });
 
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
             return services;
         }

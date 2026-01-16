@@ -216,7 +216,7 @@ public class EmailTemplateServiceTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("sent to")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("sent.")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);

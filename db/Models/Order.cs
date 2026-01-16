@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
-using Scv.Api.Models.Order;
 
 namespace Scv.Db.Models;
 
@@ -17,6 +16,7 @@ public class Order : EntityBase
     public bool Signed { get; set; }
     public DateTime? ProcessedDate { get; set; }
     public string ReviewComments { get; set; }
+    public string DocumentData { get; set; }
 }
 
 public enum OrderStatus

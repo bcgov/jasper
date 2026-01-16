@@ -15,14 +15,17 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_RECEIVED,
-            Subject = @"Order Received for {{CaseFileNumber}}",
-            Body = @"
-Dear Judge <b>{{LastName}}</b>,
-<br /><br />
-You are receiving this email because you have received an order Case File <b>{{CaseFileNumber}}</b>. Please login to JASPER to confirm and verify.
-<br /><br />
-Regards,<br />
-JASPER Support Team"
+            Subject = @"Order Received for {{ case_file_number }}",
+            Body = @"Dear Judge <b>{{ last_name }}</b>,<br /><br />
+                     You are receiving this email because you have received an order Case File <b>{{ case_file_number }}</b>. Please login to <a href='{{ jasper_url }}'>JASPER</a> to confirm and verify.<br /><br />
+                     Other pending orders for your review:<br />
+                     <ul id='orders'>
+                        {{ for order in orders }}
+                        <li><a href='{{ order.order_url }}'>{{ order.case_file_number }}</a></li>
+                        {{ end }}
+                     </ul>
+                     Regards,<br />
+                     JASPER Support Team"
         },
     ];
 

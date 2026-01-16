@@ -145,6 +145,7 @@ namespace Scv.Api.Infrastructure
             });
 
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
             return services;
         }

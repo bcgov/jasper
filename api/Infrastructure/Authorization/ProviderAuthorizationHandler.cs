@@ -8,7 +8,6 @@ using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Services;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 

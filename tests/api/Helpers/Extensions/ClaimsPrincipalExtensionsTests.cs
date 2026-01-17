@@ -158,4 +158,104 @@ public class ClaimsPrincipalExtensionsTests
 
         Assert.False(result);
     }
+
+    [Fact]
+    public void ClientRoles_ShouldReturnRoles_WhenResourceAccessClaimValid()
+    {
+        var resourceAccess = @"{
+  ""test-client"": {
+    ""roles"": [""role-one"", ""role-two""]
+  }
+}";
+        var claims = new List<Claim>
+        {
+            new("resource_access", resourceAccess)
+        };
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType"));
+
+        var roles = user.ClientRoles("test-client");
+
+        Assert.Collection(roles,
+            r => Assert.Equal("role-one", r),
+            r => Assert.Equal("role-two", r));
+    }
+
+    [Fact]
+    public void ClientRoles_ShouldReturnEmpty_WhenClaimMissingOrInvalid()
+    {
+        var claims = new List<Claim>
+        {
+            new("resource_access", "invalid json")
+        };
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType"));
+
+        var rolesMissingClient = user.ClientRoles("missing-client");
+        var rolesInvalidJson = user.ClientRoles("test-client");
+
+        Assert.Empty(rolesMissingClient);
+        Assert.Empty(rolesInvalidJson);
+    }
+
+    [Fact]
+    public void ClientRoles_ShouldReturnEmpty_WhenPrincipalIsNull()
+    {
+        ClaimsPrincipal user = null;
+
+        var roles = user.ClientRoles("test-client");
+
+        Assert.Empty(roles);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ClientRoles_ShouldReturnEmpty_WhenClientIdMissing(string clientId)
+    {
+        var claims = new List<Claim>
+        {
+            new("resource_access", "{}")
+        };
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType"));
+
+        var roles = user.ClientRoles(clientId);
+
+        Assert.Empty(roles);
+    }
+
+    [Fact]
+    public void ClientRoles_ShouldReturnEmpty_WhenClientNotPresent()
+    {
+        var resourceAccess = @"{ ""another-client"": { ""roles"": [""role-one""] } }";
+        var claims = new List<Claim>
+        {
+            new("resource_access", resourceAccess)
+        };
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType"));
+
+        var roles = user.ClientRoles("missing-client");
+
+        Assert.Empty(roles);
+    }
+
+    [Fact]
+    public void ClientRoles_ShouldFilterNullOrWhitespaceRoles()
+    {
+        var resourceAccess = @"{
+          ""test-client"": {
+            ""roles"": [""role-one"", null, ""   "", ""role-two""]
+          }
+        }";
+        var claims = new List<Claim>
+        {
+            new("resource_access", resourceAccess)
+        };
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType"));
+
+        var roles = user.ClientRoles("test-client");
+
+        Assert.Collection(roles,
+            r => Assert.Equal("role-one", r),
+            r => Assert.Equal("role-two", r));
+    }
 }

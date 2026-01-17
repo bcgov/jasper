@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,10 +16,10 @@ using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
-using Scv.Db.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +36,10 @@ namespace Scv.Api.Infrastructure.Authentication
         public static IServiceCollection AddScvAuthentication(this IServiceCollection services,
             IWebHostEnvironment env, IConfiguration configuration)
         {
+            services.AddOptions<KeycloakOptions>()
+                .Bind(configuration.GetSection("CsoKeycloak"))
+                .ValidateDataAnnotations();
+
             services.AddAuthentication(options =>
             {
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -218,6 +221,25 @@ namespace Scv.Api.Infrastructure.Authentication
                         context.Response.StatusCode = 403;
                         return Task.CompletedTask;
                     }
+                };
+            })
+            .AddJwtBearer(CsoPolicies.AuthenticationScheme, options =>
+            {
+                var csoOptions = new KeycloakOptions();
+                configuration.GetSection("CsoKeycloak").Bind(csoOptions);
+
+                options.Authority = csoOptions.Authority;
+                options.Audience = csoOptions.Audience;
+                options.RequireHttpsMetadata = csoOptions.RequireHttpsMetadata;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = csoOptions.ValidateIssuer,
+                    ValidIssuer = csoOptions.Authority,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = csoOptions.ValidateIssuer,
+                    ValidAudience = csoOptions.Audience,
+                    ClockSkew = TimeSpan.FromSeconds(5)
                 };
             })
             .AddScheme<AuthenticationSchemeOptions, SiteMinderAuthenticationHandler>(

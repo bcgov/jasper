@@ -566,6 +566,70 @@ public class SharedDriveFileServiceTests
             Times.AtLeastOnce);
     }
 
+    [Fact]
+    public async Task FindFilesAsync_UsesVirtualBailMapping_WhenRoomMatches()
+    {
+        // Arrange
+        const string roomCode = "CTR-VB";
+        const string virtualBailFolder = "VirtualBailMapped";
+
+        _defaultCorrectionMappingOptions.VirtualBailMappings = new List<CorrectionMapping>
+        {
+            new() { Target = roomCode, Replacement = virtualBailFolder }
+        };
+
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.RoomCd = roomCode;
+
+        _mockFileSystemClient
+            .Setup(c => c.ListFilesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SmbFileInfo>());
+
+        // Act
+        await service.FindFilesAsync(request);
+
+        // Assert
+        _mockFileSystemClient.Verify(
+            c => c.ListFilesAsync(
+                It.Is<string>(path => path.Contains(virtualBailFolder)),
+                roomCode,
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task FindFilesAsync_IgnoresRoomFilter_WhenMappingSpecifiesIgnoreRoom()
+    {
+        // Arrange
+        const string roomCode = "CTR-VB";
+        const string virtualBailFolder = "VirtualBailMapped";
+
+        _defaultCorrectionMappingOptions.VirtualBailMappings = new List<CorrectionMapping>
+        {
+            new() { Target = roomCode, Replacement = virtualBailFolder, IgnoreRoom = true }
+        };
+
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.RoomCd = roomCode;
+
+        _mockFileSystemClient
+            .Setup(c => c.ListFilesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SmbFileInfo>());
+
+        // Act
+        await service.FindFilesAsync(request);
+
+        // Assert
+        _mockFileSystemClient.Verify(
+            c => c.ListFilesAsync(
+                It.Is<string>(path => path.Contains(virtualBailFolder)),
+                null,
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
     #endregion
 
     #region OpenFileAsync Tests

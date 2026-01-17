@@ -43,13 +43,27 @@ namespace Scv.TdApi.Services
                 .FirstOrDefault(m => string.Equals(request.RegionCode, m.Target, StringComparison.OrdinalIgnoreCase))
                 ?.Replacement ?? request.RegionName;
 
-            var locationFolderName = _correctionMappingOptions.LocationMappings
-                .FirstOrDefault(m => string.Equals(request.AgencyIdentifierCd, m.Target, StringComparison.OrdinalIgnoreCase))
-                ?.Replacement ?? request.LocationShortName;
+            CorrectionMapping? locationMapping;
+
+            if (_correctionMappingOptions.VirtualBailMappings.Any(vb => string.Equals(vb.Target, request.RoomCd, StringComparison.OrdinalIgnoreCase)))
+            {
+                locationMapping = _correctionMappingOptions.VirtualBailMappings
+                    .FirstOrDefault(m => string.Equals(request.RoomCd, m.Target, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                locationMapping = _correctionMappingOptions.LocationMappings
+                    .FirstOrDefault(m => string.Equals(request.AgencyIdentifierCd, m.Target, StringComparison.OrdinalIgnoreCase));
+            }
+            string locationFolderName = locationMapping?.Replacement ?? request.LocationShortName;
+            if (locationMapping?.IgnoreRoom == true)
+            {
+                request.RoomCd = null;
+            }
 
             _logger.LogDebug(
-                "Mapped regionCode '{RegionCode}' to folder '{RegionFolder}', agencyIdentifierCd '{AgencyIdentifierCd}' to folder '{LocationFolder}'",
-                request.RegionCode, regionFolderName, request.AgencyIdentifierCd, locationFolderName);
+                "Mapped regionCode '{RegionCode}' to folder '{RegionFolder}', agencyIdentifierCd '{AgencyIdentifierCd}' to folder '{LocationFolder}', roomCd to '{RoomCd}'",
+                request.RegionCode, regionFolderName, request.AgencyIdentifierCd, locationFolderName, request.RoomCd);
 
 
             var locationPath = SmbPathUtility.CombinePathWithForwardSlashes(regionFolderName, locationFolderName);

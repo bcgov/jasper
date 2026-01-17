@@ -1,14 +1,16 @@
 namespace Scv.TdApi.Infrastructure.Options
 {
-    public sealed class CorrectionMappingOptions
+    public class CorrectionMappingOptions
     {
+        public List<CorrectionMapping> VirtualBailMappings { get; set; } = new() { };
         public List<CorrectionMapping> RegionMappings { get; set; } = new() { };
         public List<CorrectionMapping> LocationMappings { get; set; } = new() { };
     }
 
-    public sealed class CorrectionMapping
+    public class CorrectionMapping
     {
-        public string Target { get; set; } = default!;
-        public string Replacement { get; set; } = default!;
+        public string? Target { get; set; }
+        public string? Replacement { get; set; }
+        public bool? IgnoreRoom { get; set; }
     }
 }

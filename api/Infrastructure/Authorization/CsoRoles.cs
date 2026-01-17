@@ -9,7 +9,7 @@
         /// <summary>
         /// Allows write order operations from CSO. maps to the CsoAuthorization:WriteRoleName configuration option.
         /// </summary>
-        public const string Write = "cso:write";
+        public const string Write = "cso-order-write";
     }
 
     /// <summary>

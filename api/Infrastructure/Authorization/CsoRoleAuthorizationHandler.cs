@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Options;
 using System;
@@ -64,12 +63,9 @@ namespace Scv.Api.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
-            var hasRequiredRole = requirement.RequiredRole switch
-            {
-                // open to extension of more roles in future
-                CsoRoles.Write => HasWriteRole(clientRoles),
-                _ => false
-            };
+            var hasRequiredRole =
+                string.Equals(requirement.RequiredRole, _writeRoleName, StringComparison.OrdinalIgnoreCase) &&
+                clientRoles.Any(role => role.Equals(_writeRoleName, StringComparison.OrdinalIgnoreCase));
 
             if (hasRequiredRole)
             {
@@ -98,11 +94,6 @@ namespace Scv.Api.Infrastructure.Authorization
             }
 
             return Task.CompletedTask;
-        }
-
-        private bool HasWriteRole(string[] clientRoles)
-        {
-            return clientRoles.Contains(_writeRoleName, System.StringComparer.OrdinalIgnoreCase);
         }
     }
 

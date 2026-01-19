@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bogus;
 using FluentValidation;
 using FluentValidation.Results;
+using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -22,6 +23,7 @@ public class OrdersControllerTests
 {
     private readonly Mock<IValidator<OrderDto>> _mockValidator;
     private readonly Mock<IOrderService> _mockOrderService;
+    private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
     private readonly OrdersController _controller;
     private readonly Faker _faker;
     private readonly int _judgeId;
@@ -30,10 +32,14 @@ public class OrdersControllerTests
     {
         _mockValidator = new Mock<IValidator<OrderDto>>();
         _mockOrderService = new Mock<IOrderService>();
+        _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
         _faker = new Faker();
         _judgeId = _faker.Random.Int(1, 1000);
 
-        _controller = new OrdersController(_mockValidator.Object, _mockOrderService.Object);
+        _controller = new OrdersController(
+            _mockValidator.Object,
+            _mockOrderService.Object,
+            _mockBackgroundJobClient.Object);
 
         var claims = new List<Claim>
         {
@@ -210,6 +216,9 @@ public class OrdersControllerTests
         _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
         _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
         _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Once);
     }
 
     [Fact]
@@ -238,6 +247,9 @@ public class OrdersControllerTests
         _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
         _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
         _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Once);
     }
 
     [Fact]

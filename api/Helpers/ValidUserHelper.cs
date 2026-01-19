@@ -20,7 +20,7 @@ public class ValidUserHelper
 
     public static bool IsPersonActive(Person person)
     {
-        var latestStatus = person.Statuses.FirstOrDefault();
+        var latestStatus = person.Statuses?.FirstOrDefault();
         return latestStatus == null || 
                latestStatus.StatusDescription != INACTIVE || 
                latestStatus.EffDate > DateTime.Now;

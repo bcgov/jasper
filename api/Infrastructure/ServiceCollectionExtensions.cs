@@ -287,6 +287,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddScoped<IGroupService, GroupService>();
+                services.AddScoped<IOrderNotificationService, OrderNotificationService>();
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IOrderService, OrderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();

@@ -18,6 +18,7 @@ public interface IUserService : ICrudService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
     Task<UserDto> GetByIdWithPermissionsAsync(string userId);
+    Task<UserDto> GetByJudgeIdAsync(int judgeId);
 }
 
 public class UserService(
@@ -124,5 +125,17 @@ public class UserService(
         user.Roles = roles;
 
         return user;
+    }
+
+    public async Task<UserDto> GetByJudgeIdAsync(int judgeId)
+    {
+        var result = await this.Repo.FindAsync(u => u.JudgeId == judgeId);
+        if (result == null || !result.Any())
+        {
+            this.Logger.LogInformation("User with judge id: {JudgeId} is not found", judgeId);
+            return null;
+        }
+
+        return Mapper.Map<UserDto>(result.Single());
     }
 }

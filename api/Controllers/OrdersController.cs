@@ -1,13 +1,17 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Jobs;
 using Scv.Api.Models.Order;
 using Scv.Api.Services;
 
@@ -19,10 +23,12 @@ namespace Scv.Api.Controllers;
 [ApiController]
 public class OrdersController(
     IValidator<OrderDto> validator,
-    IOrderService orderService) : ControllerBase
+    IOrderService orderService,
+    ILogger<OrdersController> logger) : ControllerBase
 {
     private readonly IValidator<OrderDto> _validator = validator;
     private readonly IOrderService _orderService = orderService;
+    private readonly ILogger<OrdersController> _logger = logger;
 
     /// <summary>
     /// Retrieves all orders assigned to the judge.
@@ -65,6 +71,10 @@ public class OrdersController(
         {
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
+
+        // Enqueue notification job as a fire-and-forget background task
+        BackgroundJob.Enqueue<SendOrderNotificationJob>(
+            job => job.Execute(orderDto));
 
         return Ok(result);
     }

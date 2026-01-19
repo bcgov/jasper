@@ -1,28 +1,49 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using Scv.Api.Models.Order;
+using Scv.Api.Services;
 
-namespace Scv.Api.Services;
+namespace Scv.Api.Jobs;
 
-public interface IOrderNotificationService
-{
-    Task NotifyJudgeOfNewOrderAsync(OrderDto order);
-}
-
-public class OrderNotificationService(
+/// <summary>
+/// Background job for sending order notifications to judges.
+/// This is a fire-and-forget job triggered when new orders are created.
+/// </summary>
+public class SendOrderNotificationJob(
     IDashboardService dashboardService,
     IEmailTemplateService emailTemplateService,
     IUserService userService,
-    ILogger<OrderNotificationService> logger) : IOrderNotificationService
+    ILogger<SendOrderNotificationJob> logger)
 {
     private readonly IDashboardService _dashboardService = dashboardService;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
-    private readonly ILogger<OrderNotificationService> _logger = logger;
     private readonly IUserService _userService = userService;
+    private readonly ILogger<SendOrderNotificationJob> _logger = logger;
 
-    public async Task NotifyJudgeOfNewOrderAsync(OrderDto order)
+    public async Task Execute(OrderDto order)
+    {
+        try
+        {
+            _logger.LogInformation("Processing order notification job for file {FileId}", 
+                order.CourtFile.PhysicalFileId);
+
+            await NotifyJudgeOfNewOrderAsync(order);
+
+            _logger.LogInformation("Order notification job completed for file {FileId}", 
+                order.CourtFile.PhysicalFileId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send order notification for file {FileId}", 
+                order.CourtFile.PhysicalFileId);
+            throw; // Hangfire will retry based on configured retry policy
+        }
+    }
+
+    private async Task NotifyJudgeOfNewOrderAsync(OrderDto order)
     {
         var judgeId = order.Referral.SentToPartId;
         if (!judgeId.HasValue)
@@ -47,13 +68,13 @@ public class OrderNotificationService(
         }
 
         var databaseUser = await _userService.GetByJudgeIdAsync(judgeId.Value);
-        if(databaseUser == null)
+        if (databaseUser == null)
         {
             _logger.LogWarning("No database user found for judge {JudgeId}", judgeId.Value);
             return;
         }
-        var judgeEmail = databaseUser.Email;
         
+        var judgeEmail = databaseUser.Email;
         if (string.IsNullOrWhiteSpace(judgeEmail))
         {
             _logger.LogWarning("Judge {JudgeId} has no email address - cannot send notification", judgeId.Value);

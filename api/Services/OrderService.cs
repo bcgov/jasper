@@ -19,7 +19,8 @@ namespace Scv.Api.Services;
 
 public interface IOrderService : ICrudService<OrderDto>
 {
-    Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto);
+    Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto);
+    Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -55,7 +56,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
     }
 
-    public override async Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
+    public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
     {
         var errors = new List<string>();
 
@@ -110,40 +111,50 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         // More business rules validation will be added here in the future
 
         return errors.Count > 0
-            ? OperationResult<OrderDto>.Failure([.. errors])
-            : OperationResult<OrderDto>.Success(dto);
+            ? OperationResult.Failure([.. errors])
+            : OperationResult.Success();
     }
 
-    public async Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto)
+    public async Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto)
     {
         try
         {
             // Determine if the order already exists. If it is, this is an edit request. Otherwise, create a new one.
             var fileId = dto.CourtFile.PhysicalFileId;
             var existingOrders = await this.Repo
-                .FindAsync(o => o.CourtFile.PhysicalFileId == fileId
-                    && o.Referral.SentToPartId == dto.Referral.SentToPartId
-                    && o.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
+                .FindAsync(o => o.OrderRequest.CourtFile.PhysicalFileId == fileId
+                    && o.OrderRequest.Referral.SentToPartId == dto.Referral.SentToPartId
+                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
 
             var existingOrder = existingOrders?.FirstOrDefault();
+            OrderDto orderDto;
 
             if (existingOrder != null)
             {
-                this.Logger.LogInformation("Updating existing order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
+                this.Logger.LogInformation("Updating existing order's request for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
                     fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
-                // Set the ID to ensure we update the existing record
-                dto.Id = existingOrder.Id;
+                orderDto = this.Mapper.Map<OrderDto>(existingOrder);
 
-                return await this.UpdateAsync(dto);
+                // Update the existing order's request
+                orderDto.Id = existingOrder.Id;
+                orderDto.OrderRequest = dto;
+
+                await this.UpdateAsync(orderDto);
             }
             else
             {
                 this.Logger.LogInformation("Creating new order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
                     fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
-                return await this.AddAsync(dto);
+                orderDto = new OrderDto { OrderRequest = dto };
+
+                await this.AddAsync(orderDto);
             }
+
+            this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);
+
+            return OperationResult<OrderDto>.Success(orderDto);
         }
         catch (Exception ex)
         {
@@ -151,5 +162,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult<OrderDto>.Failure("Something went wrong when upserting the Order");
         }
 
+    }
+
+    public override Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -125,10 +125,10 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenInvalidCourtClassCd()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         orderDto.CourtFile.CourtClassCd = "INVALID";
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderDto);
 
         Assert.False(result.Succeeded);
         Assert.Contains("Invalid CourtClassCd: INVALID", result.Errors);
@@ -137,8 +137,8 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenCriminalFileNotFound()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "A";
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "A";
 
         _mockFileServicesClient
             .Setup(c => c.FilesCriminalFilecontentAsync(
@@ -146,20 +146,20 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync((CriminalFileContent)null);
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Criminal file with id: {orderDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Criminal file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenCriminalFileHasNoAccusedFiles()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "A";
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "A";
 
         _mockFileServicesClient
             .Setup(c => c.FilesCriminalFilecontentAsync(
@@ -167,13 +167,13 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [] });
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Criminal file with id: {orderDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Criminal file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Theory]
@@ -182,8 +182,8 @@ public class OrderServiceTests : ServiceTestBase
     [InlineData("T")]
     public async Task ValidateAsync_ValidatesCriminalFile_ForCriminalCourtClasses(string courtClass)
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = courtClass;
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = courtClass;
         var judgeId = _faker.Random.Int(1, 1000);
 
         _mockFileServicesClient
@@ -192,16 +192,16 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockDashboardService
             .Setup(d => d.GetJudges())
             .ReturnsAsync([new PersonSearchItem { PersonId = judgeId }]);
 
-        orderDto.Referral.SentToPartId = judgeId;
+        orderRequestDto.Referral.SentToPartId = judgeId;
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
         _mockFileServicesClient.Verify(c => c.FilesCriminalFilecontentAsync(
@@ -209,7 +209,7 @@ public class OrderServiceTests : ServiceTestBase
             _requestPartId,
             _applicationCode,
             null, null, null, null,
-            orderDto.CourtFile.PhysicalFileId.ToString()), Times.Once);
+            orderRequestDto.CourtFile.PhysicalFileId.ToString()), Times.Once);
     }
 
     #endregion
@@ -219,8 +219,8 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenCivilFileNotFound()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "C";
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "C";
 
         _mockFileServicesClient
             .Setup(c => c.FilesCivilFilecontentAsync(
@@ -228,20 +228,20 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync((CivilFileContent)null);
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Civil file with id: {orderDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Civil file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenCivilFileHasNoCivilFiles()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "F";
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "F";
 
         _mockFileServicesClient
             .Setup(c => c.FilesCivilFilecontentAsync(
@@ -249,13 +249,13 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CivilFileContent { CivilFile = [] });
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Civil file with id: {orderDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Civil file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Theory]
@@ -265,8 +265,8 @@ public class OrderServiceTests : ServiceTestBase
     [InlineData("M")]
     public async Task ValidateAsync_ValidatesCivilFile_ForCivilCourtClasses(string courtClass)
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = courtClass;
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = courtClass;
         var judgeId = _faker.Random.Int(1, 1000);
 
         _mockFileServicesClient
@@ -275,16 +275,16 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CivilFileContent { CivilFile = [new()] });
 
         _mockDashboardService
             .Setup(d => d.GetJudges())
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
-        orderDto.Referral.SentToPartId = judgeId;
+        orderRequestDto.Referral.SentToPartId = judgeId;
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
         _mockFileServicesClient.Verify(c => c.FilesCivilFilecontentAsync(
@@ -292,16 +292,16 @@ public class OrderServiceTests : ServiceTestBase
             _requestPartId,
             _applicationCode,
             null, null, null, null,
-            orderDto.CourtFile.PhysicalFileId.ToString()), Times.Once);
+            orderRequestDto.CourtFile.PhysicalFileId.ToString()), Times.Once);
     }
 
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenUnsupportedCourtClass()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "B";
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "B";
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
         Assert.Contains("Unsupported CourtClassCd: B.", result.Errors);
@@ -314,8 +314,8 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_WhenJudgeNotFound()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "A";
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "A";
 
         _mockFileServicesClient
             .Setup(c => c.FilesCriminalFilecontentAsync(
@@ -323,25 +323,25 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockDashboardService
             .Setup(d => d.GetJudges())
             .ReturnsAsync([]);
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Judge with id: {orderDto.Referral.SentToPartId} is not found.", result.Errors);
+        Assert.Contains($"Judge with id: {orderRequestDto.Referral.SentToPartId} is not found.", result.Errors);
     }
 
     [Fact]
     public async Task ValidateAsync_ReturnsSuccess_WhenJudgeExists()
     {
-        var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "A";
-        var judgeId = orderDto.Referral.SentToPartId.GetValueOrDefault();
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtFile.CourtClassCd = "A";
+        var judgeId = orderRequestDto.Referral.SentToPartId.GetValueOrDefault();
 
         _mockFileServicesClient
             .Setup(c => c.FilesCriminalFilecontentAsync(
@@ -349,17 +349,16 @@ public class OrderServiceTests : ServiceTestBase
                 _requestPartId,
                 _applicationCode,
                 null, null, null, null,
-                orderDto.CourtFile.PhysicalFileId.ToString()))
+                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockDashboardService
             .Setup(d => d.GetJudges())
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
-        var result = await _orderService.ValidateAsync(orderDto);
+        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
-        Assert.NotNull(result.Payload);
     }
 
     #endregion
@@ -369,7 +368,7 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_CreatesNewOrder_WhenOrderDoesNotExist()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -379,7 +378,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.AddAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        var result = await _orderService.UpsertAsync(orderDto);
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
         _mockOrderRepo.Verify(r => r.AddAsync(It.IsAny<Order>()), Times.Once);
@@ -389,11 +388,11 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_UpdatesExistingOrder_WhenOrderExists()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
-        existingOrder.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
-        existingOrder.Referral.SentToPartId = orderDto.Referral.SentToPartId;
-        existingOrder.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
+        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderRequestDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.Referral.SentToPartId = orderRequestDto.Referral.SentToPartId;
+        existingOrder.OrderRequest.Referral.ReferredDocumentId = orderRequestDto.Referral.ReferredDocumentId;
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -407,7 +406,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        var result = await _orderService.UpsertAsync(orderDto);
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
         Assert.Equal(existingOrder.Id, result.Payload.Id);
@@ -418,13 +417,13 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_SetsIdFromExistingOrder_BeforeUpdate()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         var existingOrderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var existingOrder = CreateOrder();
         existingOrder.Id = existingOrderId;
-        existingOrder.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
-        existingOrder.Referral.SentToPartId = orderDto.Referral.SentToPartId;
-        existingOrder.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
+        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.Referral.SentToPartId = orderDto.Referral.SentToPartId;
+        existingOrder.OrderRequest.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -438,7 +437,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        var result = await _orderService.UpsertAsync(orderDto);
+        var result = await _orderService.ProcessOrderRequestAsync(orderDto);
 
         Assert.True(result.Succeeded);
         Assert.Equal(existingOrderId, result.Payload.Id);
@@ -447,13 +446,13 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_ReturnsFailure_WhenExceptionThrown()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        var result = await _orderService.UpsertAsync(orderDto);
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
         Assert.Contains("Something went wrong when upserting the Order", result.Errors);
@@ -462,7 +461,7 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_LogsInformation_WhenCreatingNewOrder()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -472,7 +471,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.AddAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        await _orderService.UpsertAsync(orderDto);
+        await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         _mockLogger.Verify(
             l => l.Log(
@@ -487,11 +486,11 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_LogsInformation_WhenUpdatingExistingOrder()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
-        existingOrder.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
-        existingOrder.Referral.SentToPartId = orderDto.Referral.SentToPartId;
-        existingOrder.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
+        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.Referral.SentToPartId = orderDto.Referral.SentToPartId;
+        existingOrder.OrderRequest.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -505,7 +504,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        await _orderService.UpsertAsync(orderDto);
+        await _orderService.ProcessOrderRequestAsync(orderDto);
 
         _mockLogger.Verify(
             l => l.Log(
@@ -520,13 +519,13 @@ public class OrderServiceTests : ServiceTestBase
     [Fact]
     public async Task UpsertAsync_LogsError_WhenExceptionOccurs()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        await _orderService.UpsertAsync(orderDto);
+        await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         _mockLogger.Verify(
             l => l.Log(
@@ -542,9 +541,9 @@ public class OrderServiceTests : ServiceTestBase
 
     #region Helper Methods
 
-    private OrderDto CreateValidOrderDto()
+    private OrderRequestDto CreateValidOrderRequestDto()
     {
-        return new OrderDto
+        return new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -574,26 +573,29 @@ public class OrderServiceTests : ServiceTestBase
         return new Order
         {
             Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
-            CourtFile = new CourtFile
+            OrderRequest = new OrderRequest
             {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = _faker.PickRandom("R", "I"),
-                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                CourtFileNo = _faker.Random.AlphaNumeric(10)
-            },
-            Referral = new Referral
-            {
-                SentToPartId = _faker.Random.Int(1, 1000),
-                ReferredDocumentId = _faker.Random.Int(1, 1000)
-            },
-            PackageDocuments =
-            [
-                new()
+                CourtFile = new CourtFile
                 {
-                    DocumentId = _faker.Random.Int(1, 1000),
-                    DocumentTypeCd = _faker.Lorem.Word()
-                }
-            ]
+                    PhysicalFileId = _faker.Random.Int(1, 10000),
+                    CourtDivisionCd = _faker.PickRandom("R", "I"),
+                    CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+                    CourtFileNo = _faker.Random.AlphaNumeric(10)
+                },
+                Referral = new Referral
+                {
+                    SentToPartId = _faker.Random.Int(1, 1000),
+                    ReferredDocumentId = _faker.Random.Int(1, 1000)
+                },
+                PackageDocuments =
+                [
+                    new()
+                    {
+                        DocumentId = _faker.Random.Int(1, 1000),
+                        DocumentTypeCd = _faker.Lorem.Word()
+                    }
+                ]
+            }
         };
     }
 

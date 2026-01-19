@@ -20,7 +20,7 @@ namespace tests.api.Controllers;
 
 public class OrdersControllerTests
 {
-    private readonly Mock<IValidator<OrderDto>> _mockValidator;
+    private readonly Mock<IValidator<OrderRequestDto>> _mockOrderRequestValidator;
     private readonly Mock<IOrderService> _mockOrderService;
     private readonly OrdersController _controller;
     private readonly Faker _faker;
@@ -28,12 +28,12 @@ public class OrdersControllerTests
 
     public OrdersControllerTests()
     {
-        _mockValidator = new Mock<IValidator<OrderDto>>();
+        _mockOrderRequestValidator = new Mock<IValidator<OrderRequestDto>>();
         _mockOrderService = new Mock<IOrderService>();
         _faker = new Faker();
         _judgeId = _faker.Random.Int(1, 1000);
 
-        _controller = new OrdersController(_mockValidator.Object, _mockOrderService.Object);
+        _controller = new OrdersController(_mockOrderRequestValidator.Object, _mockOrderService.Object);
 
         var claims = new List<Claim>
         {
@@ -57,18 +57,27 @@ public class OrdersControllerTests
         {
             new()
             {
-                CourtFile = new CourtFileDto { PhysicalFileId = 123 },
-                Referral = new ReferralDto { SentToPartId = _judgeId }
+                OrderRequest = new()
+                {
+                    CourtFile = new CourtFileDto { PhysicalFileId = 123 },
+                    Referral = new ReferralDto { SentToPartId = _judgeId }
+                }
             },
             new()
             {
-                CourtFile = new CourtFileDto { PhysicalFileId = 456 },
-                Referral = new ReferralDto { SentToPartId = _faker.Random.Int(2000, 3000) }
+                OrderRequest = new()
+                {
+                    CourtFile = new CourtFileDto { PhysicalFileId = 456 },
+                    Referral = new ReferralDto { SentToPartId = _faker.Random.Int(2000, 3000) }
+                }
             },
             new()
             {
-                CourtFile = new CourtFileDto { PhysicalFileId = 789 },
-                Referral = new ReferralDto { SentToPartId = _judgeId }
+                OrderRequest = new()
+                {
+                    CourtFile = new CourtFileDto { PhysicalFileId = 789 },
+                    Referral = new ReferralDto { SentToPartId = _judgeId }
+                }
             }
         };
 
@@ -81,7 +90,7 @@ public class OrdersControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedOrders = Assert.IsAssignableFrom<IEnumerable<OrderDto>>(okResult.Value);
         Assert.Equal(2, returnedOrders.Count());
-        Assert.All(returnedOrders, order => Assert.Equal(_judgeId, order.Referral.SentToPartId));
+        Assert.All(returnedOrders, order => Assert.Equal(_judgeId, order.OrderRequest.Referral.SentToPartId));
         _mockOrderService.Verify(s => s.GetAllAsync(), Times.Once);
     }
 
@@ -92,8 +101,11 @@ public class OrdersControllerTests
         {
             new()
             {
-                CourtFile = new CourtFileDto { PhysicalFileId = 123 },
-                Referral = new ReferralDto { SentToPartId = _faker.Random.Int(2000, 3000) }
+                OrderRequest = new()
+                {
+                    CourtFile = new CourtFileDto { PhysicalFileId = 123 },
+                    Referral = new ReferralDto { SentToPartId = _faker.Random.Int(2000, 3000) }
+                }
             }
         };
 
@@ -116,14 +128,14 @@ public class OrdersControllerTests
     [Fact]
     public async Task UpsertOrder_ReturnsUnprocessableEntity_WhenBasicValidationFails()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         var validationFailures = new List<ValidationFailure>
         {
             new("CourtFile", "CourtFile is required.")
         };
         var validationResult = new ValidationResult(validationFailures);
 
-        _mockValidator
+        _mockOrderRequestValidator
             .Setup(v => v.ValidateAsync(orderDto, default))
             .ReturnsAsync(validationResult);
 
@@ -132,118 +144,118 @@ public class OrdersControllerTests
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
         var errors = Assert.IsAssignableFrom<IEnumerable<string>>(unprocessableResult.Value);
         Assert.Contains("CourtFile is required.", errors);
-        _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
+        _mockOrderRequestValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
         _mockOrderService.Verify(s => s.ValidateAsync(It.IsAny<OrderDto>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
     public async Task UpsertOrder_ReturnsUnprocessableEntity_WhenBusinessValidationFails()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
-        _mockValidator
-            .Setup(v => v.ValidateAsync(orderDto, default))
+        _mockOrderRequestValidator
+            .Setup(v => v.ValidateAsync(orderRequestDto, default))
             .ReturnsAsync(new ValidationResult());
 
         _mockOrderService
-            .Setup(s => s.ValidateAsync(orderDto, false))
+            .Setup(s => s.ValidateOrderRequestAsync(orderRequestDto))
             .ReturnsAsync(OperationResult<OrderDto>.Failure("Criminal file with id: 123 is not found."));
 
-        var result = await _controller.UpsertOrder(orderDto);
+        var result = await _controller.UpsertOrder(orderRequestDto);
 
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
         Assert.NotNull(unprocessableResult.Value);
-        _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
-        _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
-        _mockOrderService.Verify(s => s.UpsertAsync(It.IsAny<OrderDto>()), Times.Never);
+        _mockOrderRequestValidator.Verify(v => v.ValidateAsync(orderRequestDto, default), Times.Once);
+        _mockOrderService.Verify(s => s.ValidateOrderRequestAsync(orderRequestDto), Times.Once);
+        _mockOrderService.Verify(s => s.ProcessOrderRequestAsync(It.IsAny<OrderRequestDto>()), Times.Never);
     }
 
     [Fact]
     public async Task UpsertOrder_ReturnsInternalServerError_WhenUpsertFails()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
-        _mockValidator
-            .Setup(v => v.ValidateAsync(orderDto, default))
+        _mockOrderRequestValidator
+            .Setup(v => v.ValidateAsync(orderRequestDto, default))
             .ReturnsAsync(new ValidationResult());
 
         _mockOrderService
-            .Setup(s => s.ValidateAsync(orderDto, false))
-            .ReturnsAsync(OperationResult<OrderDto>.Success(orderDto));
+            .Setup(s => s.ValidateOrderRequestAsync(orderRequestDto))
+            .ReturnsAsync(OperationResult<OrderDto>.Success(new OrderDto()));
 
         _mockOrderService
-            .Setup(s => s.UpsertAsync(orderDto))
+            .Setup(s => s.ProcessOrderRequestAsync(orderRequestDto))
             .ReturnsAsync(OperationResult<OrderDto>.Failure("Database error occurred."));
 
-        var result = await _controller.UpsertOrder(orderDto);
+        var result = await _controller.UpsertOrder(orderRequestDto);
 
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
         Assert.NotNull(objectResult.Value);
-        _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
-        _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
-        _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);
+        _mockOrderRequestValidator.Verify(v => v.ValidateAsync(orderRequestDto, default), Times.Once);
+        _mockOrderService.Verify(s => s.ValidateOrderRequestAsync(orderRequestDto), Times.Once);
+        _mockOrderService.Verify(s => s.ProcessOrderRequestAsync(orderRequestDto), Times.Once);
     }
 
     [Fact]
     public async Task UpsertOrder_ReturnsOk_WhenOrderIsCreatedSuccessfully()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
-        _mockValidator
-            .Setup(v => v.ValidateAsync(orderDto, default))
+        _mockOrderRequestValidator
+            .Setup(v => v.ValidateAsync(orderRequestDto, default))
             .ReturnsAsync(new ValidationResult());
 
         _mockOrderService
-            .Setup(s => s.ValidateAsync(orderDto, false))
-            .ReturnsAsync(OperationResult<OrderDto>.Success(orderDto));
+            .Setup(s => s.ValidateOrderRequestAsync(orderRequestDto))
+            .ReturnsAsync(OperationResult.Success());
 
         _mockOrderService
-            .Setup(s => s.UpsertAsync(orderDto))
-            .ReturnsAsync(OperationResult<OrderDto>.Success(orderDto));
+            .Setup(s => s.ProcessOrderRequestAsync(orderRequestDto))
+            .ReturnsAsync(OperationResult<OrderDto>.Success(new OrderDto()));
 
-        var result = await _controller.UpsertOrder(orderDto);
+        var result = await _controller.UpsertOrder(orderRequestDto);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var operationResult = Assert.IsType<OperationResult<OrderDto>>(okResult.Value);
         Assert.True(operationResult.Succeeded);
-        _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
-        _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
-        _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);
+        _mockOrderRequestValidator.Verify(v => v.ValidateAsync(orderRequestDto, default), Times.Once);
+        _mockOrderService.Verify(s => s.ValidateOrderRequestAsync(orderRequestDto), Times.Once);
+        _mockOrderService.Verify(s => s.ProcessOrderRequestAsync(orderRequestDto), Times.Once);
     }
 
     [Fact]
     public async Task UpsertOrder_ReturnsOk_WhenOrderIsUpdatedSuccessfully()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderRequestDto = CreateValidOrderRequestDto();
 
-        _mockValidator
-            .Setup(v => v.ValidateAsync(orderDto, default))
+        _mockOrderRequestValidator
+            .Setup(v => v.ValidateAsync(orderRequestDto, default))
             .ReturnsAsync(new ValidationResult());
 
         _mockOrderService
-            .Setup(s => s.ValidateAsync(orderDto, false))
-            .ReturnsAsync(OperationResult<OrderDto>.Success(orderDto));
+            .Setup(s => s.ValidateOrderRequestAsync(orderRequestDto))
+            .ReturnsAsync(OperationResult.Success);
 
         _mockOrderService
-            .Setup(s => s.UpsertAsync(orderDto))
-            .ReturnsAsync(OperationResult<OrderDto>.Success(orderDto));
+            .Setup(s => s.ProcessOrderRequestAsync(orderRequestDto))
+            .ReturnsAsync(OperationResult<OrderDto>.Success(new OrderDto()));
 
-        var result = await _controller.UpsertOrder(orderDto);
+        var result = await _controller.UpsertOrder(orderRequestDto);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var operationResult = Assert.IsType<OperationResult<OrderDto>>(okResult.Value);
         Assert.True(operationResult.Succeeded);
         Assert.NotNull(operationResult.Payload);
-        _mockValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
-        _mockOrderService.Verify(s => s.ValidateAsync(orderDto, false), Times.Once);
-        _mockOrderService.Verify(s => s.UpsertAsync(orderDto), Times.Once);
+        _mockOrderRequestValidator.Verify(v => v.ValidateAsync(orderRequestDto, default), Times.Once);
+        _mockOrderService.Verify(s => s.ValidateOrderRequestAsync(orderRequestDto), Times.Once);
+        _mockOrderService.Verify(s => s.ProcessOrderRequestAsync(orderRequestDto), Times.Once);
     }
 
     [Fact]
     public async Task UpsertOrder_HandlesMultipleValidationErrors()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         var validationFailures = new List<ValidationFailure>
         {
             new ("CourtFile", "CourtFile is required."),
@@ -252,7 +264,7 @@ public class OrdersControllerTests
         };
         var validationResult = new ValidationResult(validationFailures);
 
-        _mockValidator
+        _mockOrderRequestValidator
             .Setup(v => v.ValidateAsync(orderDto, default))
             .ReturnsAsync(validationResult);
 
@@ -269,7 +281,7 @@ public class OrdersControllerTests
     [Fact]
     public async Task UpsertOrder_ValidatesCourtDivisionCd()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         orderDto.CourtFile.CourtDivisionCd = "INVALID";
 
         var validationFailures = new List<ValidationFailure>
@@ -278,7 +290,7 @@ public class OrdersControllerTests
         };
         var validationResult = new ValidationResult(validationFailures);
 
-        _mockValidator
+        _mockOrderRequestValidator
             .Setup(v => v.ValidateAsync(orderDto, default))
             .ReturnsAsync(validationResult);
 
@@ -292,7 +304,7 @@ public class OrdersControllerTests
     [Fact]
     public async Task UpsertOrder_ValidatesCourtClassCd()
     {
-        var orderDto = CreateValidOrderDto();
+        var orderDto = CreateValidOrderRequestDto();
         orderDto.CourtFile.CourtClassCd = "Z";
 
         var validationFailures = new List<ValidationFailure>
@@ -301,7 +313,7 @@ public class OrdersControllerTests
         };
         var validationResult = new ValidationResult(validationFailures);
 
-        _mockValidator
+        _mockOrderRequestValidator
             .Setup(v => v.ValidateAsync(orderDto, default))
             .ReturnsAsync(validationResult);
 
@@ -316,7 +328,7 @@ public class OrdersControllerTests
 
     #region Helper Methods
 
-    private OrderDto CreateValidOrderDto()
+    private OrderRequestDto CreateValidOrderRequestDto()
     {
         return new()
         {

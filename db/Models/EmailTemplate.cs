@@ -15,9 +15,9 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_RECEIVED,
-            Subject = @"Order Received for {{ case_file_number }}",
+            Subject = @" <<Priority>>> Order Received for {{ location_shortname }} {{ case_file_number }}",
             Body = @"Dear Judge <b>{{ last_name }}</b>,<br /><br />
-                     You are receiving this email because you have received an order Case File <b>{{ case_file_number }}</b>. Please login to <a href='{{ jasper_url }}'>JASPER</a> to confirm and verify.<br /><br />
+                     You have received an order for <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> on {{ date_received }}. <br /><br />
                      Other pending orders for your review:<br />
                      <ul id='orders'>
                         {{ for order in orders }}

@@ -7,6 +7,11 @@ namespace Scv.Db.Models;
 [Collection(CollectionNameConstants.ORDERS)]
 public class Order : EntityBase
 {
+    public OrderRequest OrderRequest { get; set; }
+}
+
+public class OrderRequest
+{
     public CourtFile CourtFile { get; set; }
     public Referral Referral { get; set; }
     public List<PackageDocument> PackageDocuments { get; set; } = [];

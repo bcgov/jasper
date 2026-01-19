@@ -5,9 +5,9 @@ using Scv.Api.Models.Order;
 
 namespace Scv.Api.Validators.Order;
 
-public class OrderDtoValidator : AbstractValidator<OrderDto>
+public class OrderRequestDtoValidator : AbstractValidator<OrderRequestDto>
 {
-    public OrderDtoValidator()
+    public OrderRequestDtoValidator()
     {
         RuleFor(r => r.CourtFile)
             .NotNull().WithMessage("CourtFile is required.");

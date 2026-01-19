@@ -140,7 +140,11 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 orderDto.Id = existingOrder.Id;
                 orderDto.OrderRequest = dto;
 
-                await this.UpdateAsync(orderDto);
+                var result = await this.UpdateAsync(orderDto);
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
             }
             else
             {
@@ -149,7 +153,11 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
                 orderDto = new OrderDto { OrderRequest = dto };
 
-                await this.AddAsync(orderDto);
+                var result = await this.AddAsync(orderDto);
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
             }
 
             this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);

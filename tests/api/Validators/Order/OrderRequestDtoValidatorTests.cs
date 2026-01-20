@@ -7,14 +7,14 @@ using Xunit;
 
 namespace tests.api.Validators.Order;
 
-public class OrderDtoValidatorTests
+public class OrderRequestDtoValidatorTests
 {
-    private readonly OrderDtoValidator _validator;
+    private readonly OrderRequestDtoValidator _validator;
     private readonly Faker _faker;
 
-    public OrderDtoValidatorTests()
+    public OrderRequestDtoValidatorTests()
     {
-        _validator = new OrderDtoValidator();
+        _validator = new OrderRequestDtoValidator();
         _faker = new Faker();
     }
 
@@ -23,7 +23,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveError_WhenCourtFileIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = null,
             Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
@@ -39,7 +39,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveError_WhenPhysicalFileIdIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -137,7 +137,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldNotValidateCourtDivisionCd_WhenCourtFileIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = null,
             Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
@@ -223,7 +223,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldNotValidateCourtClassCd_WhenCourtFileIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = null,
             Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
@@ -243,7 +243,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveError_WhenReferralIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -287,7 +287,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldNotValidateSentToPartId_WhenReferralIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -312,7 +312,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveError_WhenPackageDocumentsIsNull()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -333,7 +333,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveError_WhenPackageDocumentsIsEmpty()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -394,7 +394,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveMultipleErrors_WhenMultipleFieldsAreInvalid()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = null,
             Referral = null,
@@ -411,7 +411,7 @@ public class OrderDtoValidatorTests
     [Fact]
     public async Task Validate_ShouldHaveMultipleErrors_ForCourtFile()
     {
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -490,9 +490,9 @@ public class OrderDtoValidatorTests
 
     #region Helper Methods
 
-    private OrderDto CreateValidOrderDto()
+    private OrderRequestDto CreateValidOrderDto()
     {
-        return new OrderDto
+        return new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {

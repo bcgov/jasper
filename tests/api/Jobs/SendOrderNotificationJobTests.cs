@@ -284,7 +284,7 @@ public class SendOrderNotificationJobTests
         var referralNotes = _faker.Lorem.Sentence();
         var referredBy = _faker.Name.FullName();
 
-        var orderDto = new OrderDto
+        var orderDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -477,9 +477,9 @@ public class SendOrderNotificationJobTests
             Times.Once);
     }
 
-    private OrderDto CreateValidOrderDto(int? judgeId)
+    private OrderRequestDto CreateValidOrderDto(int? judgeId)
     {
-        return new OrderDto
+        return new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {

@@ -23,7 +23,7 @@ public class SendOrderNotificationJob(
     private readonly IUserService _userService = userService;
     private readonly ILogger<SendOrderNotificationJob> _logger = logger;
 
-    public async Task Execute(OrderDto order)
+    public async Task Execute(OrderRequestDto order)
     {
         try
         {
@@ -43,7 +43,7 @@ public class SendOrderNotificationJob(
         }
     }
 
-    private async Task NotifyJudgeOfNewOrderAsync(OrderDto order)
+    private async Task NotifyJudgeOfNewOrderAsync(OrderRequestDto order)
     {
         var judgeId = order.Referral.SentToPartId;
         if (!judgeId.HasValue)
@@ -85,10 +85,12 @@ public class SendOrderNotificationJob(
         var emailData = new
         {
             JudgeName = GetJudgeName(judge),
-            CourtFileNumber = order.CourtFile.FullFileNo,
-            StyleOfCause = order.CourtFile.StyleOfCause,
+            LastName = judge.Names?.FirstOrDefault()?.LastName ?? "",
+            CaseFileNumber = order.CourtFile.FullFileNo,
             ReferralNotes = order.Referral.ReferralNotesTxt,
-            ReferredBy = order.Referral.ReferredByName
+            ReferredBy = order.Referral.ReferredByName,
+            LocationShortname = order.CourtFile.CourtLocationDesc,
+            LocationName = order.CourtFile.CourtLocationDesc
         };
 
         await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);

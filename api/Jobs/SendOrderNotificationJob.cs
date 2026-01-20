@@ -93,8 +93,8 @@ public class SendOrderNotificationJob(
 
         await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);
         
-        _logger.LogInformation("Notification sent to judge {JudgeId} at {Email} for order on file {FileId}", 
-            judgeId.Value, judgeEmail, order.CourtFile.PhysicalFileId);
+        _logger.LogInformation("Notification sent to judge {JudgeId} for order on file {FileId}", 
+            judgeId.Value, order.CourtFile.PhysicalFileId);
     }
 
     private static string GetJudgeName(Models.Person judge)

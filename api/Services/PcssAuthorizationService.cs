@@ -12,7 +12,7 @@ using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
 namespace Scv.Api.Services
 {
     /// <summary>
-    /// This should handle caching and LocationServicesClient.
+    /// This should handle communicating with PCSS auth services, and caching that information.
     /// </summary>
     public class PcssAuthorizationService : IPcssAuthorizationService
     {

@@ -1,19 +1,25 @@
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using PCSSCommon.Clients.AuthorizationServices;
+using Scv.Api.Models;
+using Scv.Api.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Services
 {
+    public interface IPcssSyncService
+    {
+        public Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false);
+    }
+
     public class PcssSyncService(
         IPcssAuthorizationService authorizationService,
         IGroupService groupService,
         IDashboardService dashboardService,
-        ILogger<PcssSyncService> logger)
+        ILogger<PcssSyncService> logger) : IPcssSyncService
     {
         private readonly IPcssAuthorizationService _authorizationService = authorizationService;
         private readonly IGroupService _groupService = groupService;

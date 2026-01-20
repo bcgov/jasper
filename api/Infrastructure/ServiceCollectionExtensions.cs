@@ -268,7 +268,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ITimebankService, TimebankService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
             services.AddScoped<ICsvParser, CsvParser>();
-            services.AddScoped<PcssSyncService>();
+            services.AddScoped<IPcssSyncService, PcssSyncService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))

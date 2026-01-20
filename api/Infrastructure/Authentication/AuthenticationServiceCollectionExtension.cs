@@ -269,7 +269,7 @@ namespace Scv.Api.Infrastructure.Authentication
             try
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<PcssSyncService>();
+                var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<IPcssSyncService>();
                 var provjudUserGuid = context.Principal.ProvjudUserGuid();
 
                 userDto = provjudUserGuid != null ? await userService.GetByGuidWithPermissionsAsync(provjudUserGuid) : await userService.GetWithPermissionsAsync(context.Principal.Email());
@@ -314,7 +314,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
         private static async Task<UserDto> BuildNewUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            PcssSyncService pcssSyncService)
+            IPcssSyncService pcssSyncService)
         {
             UserDto userDto = new()
             {

@@ -23,12 +23,10 @@ namespace Scv.Api.Controllers;
 [ApiController]
 public class OrdersController(
     IValidator<OrderDto> validator,
-    IOrderService orderService,
-    IBackgroundJobClient backgroundJobClient) : ControllerBase
+    IOrderService orderService) : ControllerBase
 {
     private readonly IValidator<OrderDto> _validator = validator;
     private readonly IOrderService _orderService = orderService;
-    private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
 
     /// <summary>
     /// Retrieves all orders assigned to the judge.
@@ -71,10 +69,6 @@ public class OrdersController(
         {
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
-
-        // Enqueue notification job as a fire-and-forget background task
-        _backgroundJobClient.Enqueue<SendOrderNotificationJob>(
-            job => job.Execute(orderDto));
 
         return Ok(result);
     }

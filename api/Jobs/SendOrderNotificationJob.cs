@@ -86,7 +86,7 @@ public class SendOrderNotificationJob(
         {
             JudgeName = GetJudgeName(judge),
             LastName = judge.Names?.FirstOrDefault()?.LastName ?? "",
-            CaseFileNumber = order.CourtFile?.FullFileNo,
+            CaseFileNumber = order.CourtFile?.CourtFileNo,
             ReferralNotes = order.Referral?.ReferralNotesTxt,
             ReferredBy = order.Referral?.ReferredByName,
             LocationShortname = order.CourtFile?.CourtLocationDesc,

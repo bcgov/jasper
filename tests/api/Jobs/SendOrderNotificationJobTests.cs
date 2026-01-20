@@ -71,7 +71,7 @@ public class SendOrderNotificationJobTests
             "Order Received",
             judgeEmail,
             It.Is<object>(data =>
-                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderDto.CourtFile.FullFileNo)),
+                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderDto.CourtFile.CourtFileNo)),
             Times.Once);
 
         _mockLogger.Verify(
@@ -289,7 +289,7 @@ public class SendOrderNotificationJobTests
             CourtFile = new CourtFileDto
             {
                 PhysicalFileId = _faker.Random.Int(1, 9999),
-                FullFileNo = courtFileNumber,
+                CourtFileNo = courtFileNumber,
                 StyleOfCause = styleOfCause
             },
             Referral = new ReferralDto
@@ -483,7 +483,7 @@ public class SendOrderNotificationJobTests
             CourtFile = new CourtFileDto
             {
                 PhysicalFileId = _faker.Random.Int(1, 9999),
-                FullFileNo = _faker.Random.AlphaNumeric(10),
+                CourtFileNo = _faker.Random.AlphaNumeric(10),
                 StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
                 CourtLocationDesc = 0,
 

@@ -71,7 +71,7 @@ public class SendOrderNotificationJobTests
             "Order Received",
             judgeEmail,
             It.Is<object>(data =>
-                data.GetType().GetProperty("CourtFileNumber").GetValue(data).ToString() == orderDto.CourtFile.FullFileNo)),
+                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderDto.CourtFile.FullFileNo)),
             Times.Once);
 
         _mockLogger.Verify(
@@ -341,8 +341,7 @@ public class SendOrderNotificationJobTests
         Assert.NotNull(capturedEmailData);
         var emailDataType = capturedEmailData.GetType();
         Assert.Equal($"{firstName} {lastName}", emailDataType.GetProperty("JudgeName").GetValue(capturedEmailData));
-        Assert.Equal(courtFileNumber, emailDataType.GetProperty("CourtFileNumber").GetValue(capturedEmailData));
-        Assert.Equal(styleOfCause, emailDataType.GetProperty("StyleOfCause").GetValue(capturedEmailData));
+        Assert.Equal(courtFileNumber, emailDataType.GetProperty("CaseFileNumber").GetValue(capturedEmailData));
         Assert.Equal(referralNotes, emailDataType.GetProperty("ReferralNotes").GetValue(capturedEmailData));
         Assert.Equal(referredBy, emailDataType.GetProperty("ReferredBy").GetValue(capturedEmailData));
     }
@@ -485,14 +484,16 @@ public class SendOrderNotificationJobTests
             {
                 PhysicalFileId = _faker.Random.Int(1, 9999),
                 FullFileNo = _faker.Random.AlphaNumeric(10),
-                StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}"
+                StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
+                CourtLocationDesc = 0,
+
             },
             Referral = new ReferralDto
             {
                 SentToPartId = judgeId,
                 ReferralNotesTxt = _faker.Lorem.Sentence(),
-                ReferredByName = _faker.Name.FullName()
-            }
+                ReferredByName = _faker.Name.FullName(),
+            },
         };
     }
 

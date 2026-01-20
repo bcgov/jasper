@@ -86,11 +86,11 @@ public class SendOrderNotificationJob(
         {
             JudgeName = GetJudgeName(judge),
             LastName = judge.Names?.FirstOrDefault()?.LastName ?? "",
-            CaseFileNumber = order.CourtFile.FullFileNo,
-            ReferralNotes = order.Referral.ReferralNotesTxt,
-            ReferredBy = order.Referral.ReferredByName,
-            LocationShortname = order.CourtFile.CourtLocationDesc,
-            LocationName = order.CourtFile.CourtLocationDesc
+            CaseFileNumber = order.CourtFile?.FullFileNo,
+            ReferralNotes = order.Referral?.ReferralNotesTxt,
+            ReferredBy = order.Referral?.ReferredByName,
+            LocationShortname = order.CourtFile?.CourtLocationDesc,
+            LocationName = order.CourtFile?.CourtLocationDesc
         };
 
         await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);

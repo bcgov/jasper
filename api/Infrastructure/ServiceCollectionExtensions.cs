@@ -255,7 +255,7 @@ namespace Scv.Api.Infrastructure
                     // This is a workaround since we can't use the UpdateJsonSerializerSettings partial method
                 });
             services
-                .AddHttpClient<PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpClient<PCSSAuthorizationServices.IAuthorizationServicesClient, PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
@@ -263,7 +263,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
-            services.AddScoped<AuthorizationService>();
+            services.AddScoped<IPcssAuthorizationService, PcssAuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<DarsService>();
@@ -275,6 +275,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ITimebankService, TimebankService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
             services.AddScoped<ICsvParser, CsvParser>();
+            services.AddScoped<IPcssSyncService, PcssSyncService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -293,6 +294,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
                 services.AddTransient<SendOrderNotificationJob>();
+                services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }

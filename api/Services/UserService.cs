@@ -17,6 +17,7 @@ namespace Scv.Api.Services;
 public interface IUserService : ICrudService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
+    Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
     Task<UserDto> GetByIdWithPermissionsAsync(string userId);
     Task<UserDto> GetByJudgeIdAsync(int judgeId);
 }
@@ -76,6 +77,18 @@ public class UserService(
         if (result == null || !result.Any())
         {
             this.Logger.LogInformation("User with email: {Email} is not found", email.Replace(Environment.NewLine, ""));
+            return null;
+        }
+
+        return await PopulateUserPermissionsAndRolesAsync(this.Mapper.Map<UserDto>(result.Single()));
+    }
+
+    public async Task<UserDto> GetByGuidWithPermissionsAsync(string guid)
+    {
+        var result = await this.Repo.FindAsync(u => u.NativeGuid == guid);
+        if (result == null || !result.Any())
+        {
+            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.Replace(Environment.NewLine, ""));
             return null;
         }
 

@@ -6,8 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using System;
 using System.Collections.Generic;
@@ -21,30 +19,25 @@ namespace tests.api.Services;
 public class AuthorizationServiceTests
 {
     private readonly Faker _faker;
-    private readonly Mock<AuthorizationServicesClient> _mockPcssAuthorizationServiceClient;
-    private readonly AuthorizationService _authorizationService;
+    private readonly Mock<IAuthorizationServicesClient> _mockPcssAuthorizationServiceClient;
+    private readonly PcssAuthorizationService _authorizationService;
 
     public AuthorizationServiceTests()
     {
         _faker = new Faker();
 
-        // Mock IConfiguration
         var mockConfig = new Mock<IConfiguration>();
         var mockSection = new Mock<IConfigurationSection>();
-        var mockLogger = new Mock<ILogger<AuthorizationService>>();
-        mockSection.Setup(s => s.Value).Returns("60"); // Cache duration in minutes
+        var mockLogger = new Mock<ILogger<PcssAuthorizationService>>();
+        mockSection.Setup(s => s.Value).Returns("60");
         mockConfig.Setup(c => c.GetSection("Caching:UserExpiryMinutes")).Returns(mockSection.Object);
 
-        // Setup Cache
         var cachingService = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
 
-        // Mock ILogger
-        var logger = new Mock<ILogger<AuthorizationService>>();
+        _mockPcssAuthorizationServiceClient = new Mock<IAuthorizationServicesClient>();
 
-        _mockPcssAuthorizationServiceClient = new Mock<AuthorizationServicesClient>(MockBehavior.Strict, new object[] { null });
-
-        _authorizationService = new AuthorizationService(
+        _authorizationService = new PcssAuthorizationService(
             mockConfig.Object,
             _mockPcssAuthorizationServiceClient.Object,
             cachingService,
@@ -122,7 +115,7 @@ public class AuthorizationServiceTests
     }
 
     [Fact]
-    public async Task GetPcssUserRoleNames_ShouldReturnSuccess_WhenGroupsFound()
+    public async Task GetPcssUserRoleNames_ShouldReturnSuccess_WhenRolesFound()
     {
         // Arrange
         var userId = _faker.Random.Int();
@@ -132,13 +125,13 @@ public class AuthorizationServiceTests
             UserId = userId,
             Roles = new List<EffectiveRoleItem>
             {
-                new EffectiveRoleItem { Name = roleName }
+                new EffectiveRoleItem
+                {
+                    Name = roleName,
+                    EffectiveDate = DateTime.Now.AddDays(-1).ToString("o"),
+                    ExpiryDate = DateTime.Now.AddDays(30).ToString("o")
+                }
             }
-        };
-
-        var groups = new List<GroupDto>
-        {
-            new GroupDto { Name = _faker.Company.CompanyName(), Description = _faker.Lorem.Paragraph() }
         };
 
         _mockPcssAuthorizationServiceClient
@@ -152,6 +145,7 @@ public class AuthorizationServiceTests
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
         Assert.Single(result.Payload);
+        Assert.Equal(roleName, result.Payload.First());
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUserAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bogus;
 using FluentValidation;
 using FluentValidation.Results;
+using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -33,7 +34,9 @@ public class OrdersControllerTests
         _faker = new Faker();
         _judgeId = _faker.Random.Int(1, 1000);
 
-        _controller = new OrdersController(_mockOrderRequestValidator.Object, _mockOrderService.Object);
+        _controller = new OrdersController(
+            _mockOrderRequestValidator.Object,
+            _mockOrderService.Object);
 
         var claims = new List<Claim>
         {

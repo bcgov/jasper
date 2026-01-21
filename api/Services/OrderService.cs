@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hangfire;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
@@ -11,6 +12,7 @@ using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Infrastructure;
+using Scv.Api.Jobs;
 using Scv.Api.Models.Order;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -27,6 +29,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 {
     private readonly FileServicesClient _filesClient;
     private readonly IDashboardService _dashboardService;
+    private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
     private readonly string _requestPartId;
@@ -40,7 +43,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IRepositoryBase<Order> orderRepo,
         FileServicesClient filesClient,
         IConfiguration configuration,
-        IDashboardService dashboardService
+        IDashboardService dashboardService,
+        IBackgroundJobClient backgroundJobClient
     ) : base(
             cache,
             mapper,
@@ -49,6 +53,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     {
         _dashboardService = dashboardService;
         _filesClient = filesClient;
+        _backgroundJobClient = backgroundJobClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
 
         _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
@@ -158,6 +163,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 {
                     return result;
                 }
+                
+                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
             }
 
             this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);

@@ -30,6 +30,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<IDashboardService> _mockDashboardService;
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<ILogger<OrderService>> _mockLogger;
+    private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -54,6 +55,7 @@ public class OrderServiceTests : ServiceTestBase
         _mockFileServicesClient = new Mock<FileServicesClient>(MockBehavior.Strict, this.HttpClient);
         _mockDashboardService = new Mock<IDashboardService>();
         _mockConfiguration = new Mock<IConfiguration>();
+        _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
 
         _requestAgencyIdentifierId = _faker.Random.AlphaNumeric(10);
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -68,7 +70,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockOrderRepo.Object,
             _mockFileServicesClient.Object,
             _mockConfiguration.Object,
-            _mockDashboardService.Object);
+            _mockDashboardService.Object,
+            _mockBackgroundJobClient.Object);
     }
 
     private void SetupConfiguration()
@@ -535,6 +538,77 @@ public class OrderServiceTests : ServiceTestBase
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task UpsertAsync_EnqueuesNotificationJob_WhenCreatingNewOrder()
+    {
+        var orderRequestDto = CreateValidOrderRequestDto();
+
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([]);
+
+        _mockOrderRepo
+            .Setup(r => r.AddAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
+
+        Assert.True(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpsertAsync_DoesNotEnqueueNotificationJob_WhenCreationFails()
+    {
+        var orderRequestDto = CreateValidOrderRequestDto();
+
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([]);
+
+        _mockOrderRepo
+            .Setup(r => r.AddAsync(It.IsAny<Order>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
+
+        Assert.False(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessOrderRequestAsync_DoesNotEnqueueNotificationJob_WhenUpdatingExistingOrder()
+    {
+        var orderRequestDto = CreateValidOrderRequestDto();
+        var existingOrder = CreateOrder();
+        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderRequestDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.Referral.SentToPartId = orderRequestDto.Referral.SentToPartId;
+        existingOrder.OrderRequest.Referral.ReferredDocumentId = orderRequestDto.Referral.ReferredDocumentId;
+
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([existingOrder]);
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(existingOrder.Id))
+            .ReturnsAsync(existingOrder);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
+
+        Assert.True(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Never);
     }
 
     #endregion

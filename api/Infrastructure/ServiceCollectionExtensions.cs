@@ -28,6 +28,7 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Jobs;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
@@ -292,6 +293,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<IOrderService, OrderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
+                services.AddTransient<SendOrderNotificationJob>();
                 services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();

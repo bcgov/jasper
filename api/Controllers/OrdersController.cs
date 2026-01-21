@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
@@ -18,10 +17,10 @@ namespace Scv.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class OrdersController(
-    IValidator<OrderDto> validator,
+    IValidator<OrderRequestDto> orderRequestValidator,
     IOrderService orderService) : ControllerBase
 {
-    private readonly IValidator<OrderDto> _validator = validator;
+    private readonly IValidator<OrderRequestDto> _orderRequestValidator = orderRequestValidator;
     private readonly IOrderService _orderService = orderService;
 
     /// <summary>
@@ -33,34 +32,34 @@ public class OrdersController(
     public async Task<IActionResult> GetMyOrders(int? judgeId = null)
     {
         var orders = await _orderService.GetAllAsync();
-        return Ok(orders.Where(o => o.Referral.SentToPartId == this.User.JudgeId(judgeId)));
+        return Ok(orders.Where(o => o.OrderRequest.Referral.SentToPartId == this.User.JudgeId(judgeId)));
     }
 
     /// <summary>
-    /// Create/Update an order to notify that there is a documnt requiring annotation for a judge.
+    /// Create/Update an order to notify that there is a document requiring annotation for a judge. This endpoint is used by external systems to create or update orders.
     /// </summary>
-    /// <param name="orderDto">The Order payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>
+    /// <param name="orderRequestDto">The Order payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>
     /// <returns>Processed order</returns>
     [HttpPut]
     [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpsertOrder([FromBody] OrderDto orderDto)
+    public async Task<IActionResult> UpsertOrder([FromBody] OrderRequestDto orderRequestDto)
     {
-        var basicValidation = await _validator.ValidateAsync(orderDto);
+        var basicValidation = await _orderRequestValidator.ValidateAsync(orderRequestDto);
 
         if (!basicValidation.IsValid)
         {
             return UnprocessableEntity(basicValidation.Errors.Select(e => e.ErrorMessage));
         }
 
-        var businessValidation = await _orderService.ValidateAsync(orderDto);
+        var businessValidation = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
         if (!businessValidation.Succeeded)
         {
             return UnprocessableEntity(new { error = businessValidation.Errors });
         }
 
-        var result = await _orderService.UpsertAsync(orderDto);
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
         if (!result.Succeeded)
         {
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });

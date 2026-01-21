@@ -201,9 +201,11 @@
           profSeqNo: participant.profSeqNo,
           id:
             doc.category +
+            doc.issueDate +
             participant.fullName +
             doc.partId +
-            participant.profSeqNo,
+            participant.profSeqNo +
+            (doc.docmId || doc.imageId || ''),
         }))
       ) || []
   );
@@ -278,7 +280,7 @@
       title: 'CATEGORY',
       key: 'category',
       sortRaw: (a: documentType, b: documentType) => {
-        const order = ['Initiating', 'rop', 'Bail', 'PSR'];
+        const order = ['Initiating', 'ROP', 'Bail', 'Report'];
         const getOrder = (cat: string) => {
           const idx = order.indexOf(cat);
           return idx === -1 ? order.length : idx;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hangfire;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using Mapster;
@@ -12,6 +13,7 @@ using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Infrastructure;
+using Scv.Api.Jobs;
 using Scv.Api.Models.Order;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -20,7 +22,8 @@ namespace Scv.Api.Services;
 
 public interface IOrderService : ICrudService<OrderDto>
 {
-    Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto);
+    Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto);
+    Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto);
     Task<OperationResult> ReviewOrder(string id, OrderReview orderReview);
 }
 
@@ -28,6 +31,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 {
     private readonly FileServicesClient _filesClient;
     private readonly IDashboardService _dashboardService;
+    private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
     private readonly string _requestPartId;
@@ -41,7 +45,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IRepositoryBase<Order> orderRepo,
         FileServicesClient filesClient,
         IConfiguration configuration,
-        IDashboardService dashboardService
+        IDashboardService dashboardService,
+        IBackgroundJobClient backgroundJobClient
     ) : base(
             cache,
             mapper,
@@ -50,6 +55,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     {
         _dashboardService = dashboardService;
         _filesClient = filesClient;
+        _backgroundJobClient = backgroundJobClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
 
         _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
@@ -57,7 +63,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
     }
 
-    public override async Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
+    public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
     {
         var errors = new List<string>();
 
@@ -112,40 +118,60 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         // More business rules validation will be added here in the future
 
         return errors.Count > 0
-            ? OperationResult<OrderDto>.Failure([.. errors])
-            : OperationResult<OrderDto>.Success(dto);
+            ? OperationResult.Failure([.. errors])
+            : OperationResult.Success();
     }
 
-    public async Task<OperationResult<OrderDto>> UpsertAsync(OrderDto dto)
+    public async Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto)
     {
         try
         {
             // Determine if the order already exists. If it is, this is an edit request. Otherwise, create a new one.
             var fileId = dto.CourtFile.PhysicalFileId;
             var existingOrders = await this.Repo
-                .FindAsync(o => o.CourtFile.PhysicalFileId == fileId
-                    && o.Referral.SentToPartId == dto.Referral.SentToPartId
-                    && o.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
+                .FindAsync(o => o.OrderRequest.CourtFile.PhysicalFileId == fileId
+                    && o.OrderRequest.Referral.SentToPartId == dto.Referral.SentToPartId
+                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
 
             var existingOrder = existingOrders?.FirstOrDefault();
+            OrderDto orderDto;
 
             if (existingOrder != null)
             {
-                this.Logger.LogInformation("Updating existing order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
+                this.Logger.LogInformation("Updating existing order's request for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
                     fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
-                // Set the ID to ensure we update the existing record
-                dto.Id = existingOrder.Id;
+                orderDto = this.Mapper.Map<OrderDto>(existingOrder);
 
-                return await this.UpdateAsync(dto);
+                // Update the existing order's request
+                orderDto.Id = existingOrder.Id;
+                orderDto.OrderRequest = dto;
+
+                var result = await this.UpdateAsync(orderDto);
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
             }
             else
             {
                 this.Logger.LogInformation("Creating new order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
                     fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
-                return await this.AddAsync(dto);
+                orderDto = new OrderDto { OrderRequest = dto };
+
+                var result = await this.AddAsync(orderDto);
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
+                
+                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
             }
+
+            this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);
+
+            return OperationResult<OrderDto>.Success(orderDto);
         }
         catch (Exception ex)
         {
@@ -169,5 +195,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         await Repo.UpdateAsync(order);
 
         return OperationResult.Success();
+    }
+
+    public override Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
+    {
+        throw new NotImplementedException();
     }
 }

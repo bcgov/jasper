@@ -17,7 +17,9 @@ namespace Scv.Api.Services;
 public interface IUserService : ICrudService<UserDto>
 {
     Task<UserDto> GetWithPermissionsAsync(string email);
+    Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
     Task<UserDto> GetByIdWithPermissionsAsync(string userId);
+    Task<UserDto> GetByJudgeIdAsync(int judgeId);
 }
 
 public class UserService(
@@ -81,6 +83,18 @@ public class UserService(
         return await PopulateUserPermissionsAndRolesAsync(this.Mapper.Map<UserDto>(result.Single()));
     }
 
+    public async Task<UserDto> GetByGuidWithPermissionsAsync(string guid)
+    {
+        var result = await this.Repo.FindAsync(u => u.NativeGuid == guid);
+        if (result == null || !result.Any())
+        {
+            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.Replace(Environment.NewLine, ""));
+            return null;
+        }
+
+        return await PopulateUserPermissionsAndRolesAsync(this.Mapper.Map<UserDto>(result.Single()));
+    }
+
     public async Task<UserDto> GetByIdWithPermissionsAsync(string userId)
     {
         var user = await GetByIdAsync(userId);
@@ -124,5 +138,17 @@ public class UserService(
         user.Roles = roles;
 
         return user;
+    }
+
+    public async Task<UserDto> GetByJudgeIdAsync(int judgeId)
+    {
+        var result = await this.Repo.FindAsync(u => u.JudgeId == judgeId);
+        if (result == null || !result.Any())
+        {
+            this.Logger.LogInformation("User with judge id: {JudgeId} is not found", judgeId);
+            return null;
+        }
+
+        return Mapper.Map<UserDto>(result.Single());
     }
 }

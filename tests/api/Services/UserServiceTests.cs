@@ -466,4 +466,62 @@ public class UserServiceTests : ServiceTestBase
         _mockRoleRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Exactly(2));
         _mockPermissionRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Permission, bool>>>()), Times.Once());
     }
+
+    [Fact]
+    public async Task GetByJudgeIdAsync_ShouldReturnNull_WhenJudgeIdDoesNotExist()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+
+        _mockUserRepo
+            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync((IEnumerable<User>)null);
+
+        var result = await _userService.GetByJudgeIdAsync(judgeId);
+
+        Assert.Null(result);
+        _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
+    }
+
+    [Fact]
+    public async Task GetByJudgeIdAsync_ShouldReturnNull_WhenJudgeIdDoesNotExistAndReturnsEmpty()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+
+        _mockUserRepo
+            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([]);
+
+        var result = await _userService.GetByJudgeIdAsync(judgeId);
+
+        Assert.Null(result);
+        _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
+    }
+
+    [Fact]
+    public async Task GetByJudgeIdAsync_ShouldReturnUser_WhenJudgeIdExists()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var expectedUser = new User
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Internet.Email(),
+            JudgeId = judgeId
+        };
+
+        _mockUserRepo
+            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([expectedUser]);
+
+        var result = await _userService.GetByJudgeIdAsync(judgeId);
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedUser.Id, result.Id);
+        Assert.Equal(expectedUser.FirstName, result.FirstName);
+        Assert.Equal(expectedUser.LastName, result.LastName);
+        Assert.Equal(expectedUser.Email, result.Email);
+        Assert.Equal(expectedUser.JudgeId, result.JudgeId);
+        _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
+    }
 }

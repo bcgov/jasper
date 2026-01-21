@@ -38,7 +38,7 @@ public class FlexibleNamingJsonConverterTests
               ""created_date"": ""2026-01-12T10:00:00Z""
             }";
 
-        var dto = JsonConvert.DeserializeObject<OrderDto>(json, SettingsWithConverter());
+        var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
         Assert.NotNull(dto.CourtFile);
@@ -52,7 +52,6 @@ public class FlexibleNamingJsonConverterTests
         Assert.NotNull(dto.RelevantCeisDocuments);
         Assert.Single(dto.RelevantCeisDocuments);
         Assert.Equal(1011, dto.RelevantCeisDocuments[0].CivilDocumentId);
-        Assert.NotNull(dto.CreatedDate);
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public class FlexibleNamingJsonConverterTests
               ""referral"": { ""sentToPartId"": 999 }
             }";
 
-        var dto = JsonConvert.DeserializeObject<OrderDto>(json, SettingsWithConverter());
+        var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
         Assert.Equal("C", dto.CourtFile.CourtClassCd);
@@ -79,7 +78,7 @@ public class FlexibleNamingJsonConverterTests
               ""Referral"": { ""SentToPartId"": 42 }
             }";
 
-        var dto = JsonConvert.DeserializeObject<OrderDto>(json, SettingsWithConverter());
+        var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
         Assert.Equal("F", dto.CourtFile.CourtClassCd);
@@ -101,7 +100,7 @@ public class FlexibleNamingJsonConverterTests
               ]
             }";
 
-        var dto = JsonConvert.DeserializeObject<OrderDto>(json, SettingsWithConverter());
+        var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
         Assert.Equal("A", dto.CourtFile.CourtClassCd);
@@ -120,7 +119,7 @@ public class FlexibleNamingJsonConverterTests
     [Fact]
     public void Deserialize_Null_Token_Returns_Null()
     {
-        var dto = JsonConvert.DeserializeObject<OrderDto>("null", SettingsWithConverter());
+        var dto = JsonConvert.DeserializeObject<OrderRequestDto>("null", SettingsWithConverter());
         Assert.Null(dto);
     }
 
@@ -133,7 +132,7 @@ public class FlexibleNamingJsonConverterTests
               ""unknown_root"": ""ignored""
             }";
 
-        var dto = JsonConvert.DeserializeObject<OrderDto>(json, SettingsWithConverter());
+        var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
         Assert.Equal("Y", dto.CourtFile.CourtClassCd);

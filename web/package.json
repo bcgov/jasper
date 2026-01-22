@@ -41,7 +41,7 @@
     "splunk-logging": "^0.11.1",
     "underscore": "^1.13.7",
     "uuid": "^13.0.0",
-    "vue": "^3.5.24",
+    "vue": "^3.5.26",
     "vue-router": "^4.6.4",
     "vue3-snapshot-serializer": "^2.13.0",
     "vuedraggable": "^4.1.0",

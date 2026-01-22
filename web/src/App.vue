@@ -20,6 +20,11 @@
             @click="darsStore.openModal()"
             >DARS</v-btn
           >
+          <v-tab value="orders" to="/orders">
+            <v-badge content="5" color="error" offset-x="-10" offset-y="-10">
+              For Signing
+            </v-badge>
+          </v-tab>
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
             <JudgeSelector

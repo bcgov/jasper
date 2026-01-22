@@ -99,8 +99,7 @@ resource "aws_secretsmanager_secret_version" "keycloak_cso_secret_value" {
     authority     = "",
     secret        = "",
     audience      = "",
-    presReqConfId = "",
-    vcIdpHint     = ""
+    writeRole     = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

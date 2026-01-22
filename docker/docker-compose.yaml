@@ -62,6 +62,11 @@ services:
       - Keycloak__PresReqConfId=${KeycloakPresReqConfId}
       - Keycloak__Secret=${KeycloakSecret}
       - Keycloak__VcIdpHint=${KeycloakVcIdpHint}
+      - CsoKeycloak__Audience=${CsoKeycloakAudience}
+      - CsoKeycloak__Authority=${CsoKeycloakAuthority}
+      - CsoKeycloak__Client=${CsoKeycloakClient}
+      - CsoKeycloak__Secret=${CsoKeycloakSecret}
+      - CsoKeycloak__WriteRole=${CsoKeycloakWriteRole}
       - LocationServicesClient__Password=${LocationServicesClientPassword}
       - LocationServicesClient__Url=${LocationServicesClientUrl}
       - LocationServicesClient__Username=${LocationServicesClientUsername}

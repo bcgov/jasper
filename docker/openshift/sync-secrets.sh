@@ -26,7 +26,8 @@ secret_keys="\
   splunk \
   user_services_client \
   keycloak_td \
-  smb"
+  smb \
+  keycloak_cso"
 
 echo "Syncing secrets..."
 

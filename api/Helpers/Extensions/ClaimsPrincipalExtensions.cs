@@ -46,7 +46,7 @@ namespace Scv.Api.Helpers.Extensions
 
         public static bool IsCsoServiceAccountUser(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
-               claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername).Equals("service-account-cso-jasper-dev");
+               claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername).StartsWith("service-account-cso-jasper");
 
         public static bool IsIdirUser(this ClaimsPrincipal claimsPrincipal)
         => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&

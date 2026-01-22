@@ -86,7 +86,7 @@ public class OrdersController(
         
         if (!result.Succeeded)
         {
-            return result.Errors.Contains("not found") 
+            return result.Errors.Any(e => e.Contains("not found"))
                 ? NotFound(new { error = result.Errors })
                 : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }

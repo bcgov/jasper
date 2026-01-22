@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Scv.Api.Helpers;
+using Scv.Db.Models;
 
 namespace Scv.Api.Models.Order;
 

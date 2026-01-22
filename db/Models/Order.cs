@@ -26,8 +26,8 @@ public class OrderRequest
 
 public enum OrderStatus
 {
-    NotApproved,
-    AwaitingFurtherDocumentation,
+    Unapproved,
+    Pending,
     Approved
 }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Bogus;
 using JCCommon.Clients.FileServices;
@@ -8,6 +9,7 @@ using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -31,6 +33,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<ILogger<OrderService>> _mockLogger;
     private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -56,6 +59,7 @@ public class OrderServiceTests : ServiceTestBase
         _mockDashboardService = new Mock<IDashboardService>();
         _mockConfiguration = new Mock<IConfiguration>();
         _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
+        _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
 
         _requestAgencyIdentifierId = _faker.Random.AlphaNumeric(10);
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -71,7 +75,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockFileServicesClient.Object,
             _mockConfiguration.Object,
             _mockDashboardService.Object,
-            _mockBackgroundJobClient.Object);
+            _mockBackgroundJobClient.Object,
+            _mockHttpContextAccessor.Object);
     }
 
     private void SetupConfiguration()
@@ -613,6 +618,82 @@ public class OrderServiceTests : ServiceTestBase
 
     #endregion
 
+    #region ReviewOrder Tests
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsFailure_WhenOrderNotFound()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReview { Status = OrderStatus.Approved };
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync((Order)null);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Order not found", result.Errors);
+        _mockOrderRepo.Verify(r => r.GetByIdAsync(orderId), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsFailure_WhenJudgeNotAssignedToOrder()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var assignedJudgeId = _faker.Random.Int(1, 1000);
+        var differentJudgeId = assignedJudgeId + 1;
+        var orderReview = new OrderReview { Status = OrderStatus.Approved };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.OrderRequest.Referral.SentToPartId = assignedJudgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        SetupHttpContextWithJudge(differentJudgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Judge is not assigned to review this Order.", result.Errors);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsSuccess_WhenJudgeIsAssignedAndReviewIsValid()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReview 
+        { 
+            Status = OrderStatus.Approved,
+            Comments = "Test notes"
+        };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.OrderRequest.Referral.SentToPartId = judgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Once);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private OrderRequestDto CreateValidOrderRequestDto()
@@ -671,6 +752,25 @@ public class OrderServiceTests : ServiceTestBase
                 ]
             }
         };
+    }
+
+    private void SetupHttpContextWithJudge(int judgeId)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(Scv.Api.Helpers.CustomClaimTypes.JudgeId, judgeId.ToString())
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        
+        var httpContext = new DefaultHttpContext
+        {
+            User = claimsPrincipal
+        };
+
+        _mockHttpContextAccessor
+            .Setup(x => x.HttpContext)
+            .Returns(httpContext);
     }
 
     #endregion

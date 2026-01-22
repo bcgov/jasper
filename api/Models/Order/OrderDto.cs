@@ -1,4 +1,5 @@
 using System;
+using Scv.Db.Models;
 
 namespace Scv.Api.Models.Order;
 

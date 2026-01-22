@@ -25,7 +25,7 @@
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.15",
-    "@fullcalendar/vue3": "^6.1.19",
+    "@fullcalendar/vue3": "^6.1.20",
     "@nutrient-sdk/viewer": "^1.8.0",
     "@types/luxon": "^3.7.1",
     "@types/underscore": "^1.13.0",

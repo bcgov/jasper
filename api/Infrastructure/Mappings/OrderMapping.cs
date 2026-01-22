@@ -21,7 +21,7 @@ public class OrderMapping : IRegister
             .Ignore(dest => dest.Upd_UserId);
 
         config.NewConfig<OrderReview, OrderDto>()
-            .IgnoreNullValues(true) // Don't overwrite existing values with nulls
+            .IgnoreNullValues(true)
             .Map(dest => dest.ProcessedDate, src => DateTime.UtcNow)
             .Map(dest => dest.UpdatedDate, src => DateTime.UtcNow);
     }

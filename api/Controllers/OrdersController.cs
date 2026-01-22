@@ -69,10 +69,10 @@ public class OrdersController(
     }
 
     /// <summary>
-    /// Partially updates an order's review status, signature, and comments.
+    /// Partially updates an order's status, signature, comments and document info.
     /// </summary>
     /// <param name="id">The order id</param>
-    /// <param name="orderReview">The order review payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>
+    /// <param name="orderReview">The order review payload</param>
     /// <returns>No content on success</returns>
     [HttpPatch]
     [Route("{id}/review")]

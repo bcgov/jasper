@@ -8,6 +8,7 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.database_secret.arn,
     aws_secretsmanager_secret.file_services_client_secret.arn,
     aws_secretsmanager_secret.jobs_secret.arn,
+    aws_secretsmanager_secret.keycloak_cso_secret.arn,
     aws_secretsmanager_secret.keycloak_secret.arn,
     aws_secretsmanager_secret.keycloak_cso_secret.arn,
     aws_secretsmanager_secret.location_services_client_secret.arn,

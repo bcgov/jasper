@@ -38,9 +38,9 @@ module "lambda_ecr" {
   repo_name   = "lambda"
 }
 
-# SSM Parameter Store
-module "ssm" {
-  source      = "../SSM"
-  environment = var.environment
-  app_name    = var.app_name
-}
+# # SSM Parameter Store
+# module "ssm" {
+#   source      = "../SSM"
+#   environment = var.environment
+#   app_name    = var.app_name
+# }

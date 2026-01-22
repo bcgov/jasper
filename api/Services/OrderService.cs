@@ -7,11 +7,13 @@ using JCCommon.Clients.FileServices;
 using LazyCache;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Jobs;
 using Scv.Api.Models.Order;
@@ -35,6 +37,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
     private readonly string _requestPartId;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -46,7 +49,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         FileServicesClient filesClient,
         IConfiguration configuration,
         IDashboardService dashboardService,
-        IBackgroundJobClient backgroundJobClient
+        IBackgroundJobClient backgroundJobClient,
+        IHttpContextAccessor httpContextAccessor
     ) : base(
             cache,
             mapper,
@@ -61,6 +65,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
         _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
         _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -189,10 +194,18 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         {
             return OperationResult.Failure("Order not found");
         }
-        
-        orderReview.Adapt(order);
 
-        await Repo.UpdateAsync(order);
+        var assignedJudgeId = order.OrderRequest.Referral.SentToPartId;
+        var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
+
+        if (assignedJudgeId != judgeId)
+        {
+            return OperationResult.Failure("Judge is not assigned to review this Order.");
+        }
+        var orderDto = Mapper.Map<OrderDto>(order);
+        orderReview.Adapt(orderDto);
+
+        await UpdateAsync(orderDto);
 
         return OperationResult.Success();
     }

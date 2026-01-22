@@ -2,7 +2,7 @@ namespace Scv.Api.Models.Order;
 
 public enum OrderStatus
 {
-    NotApproved,
-    AwaitingFurtherDocumentation,
+    Unapproved,
+    Pending,
     Approved
 }

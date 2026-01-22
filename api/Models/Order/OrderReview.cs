@@ -7,9 +7,7 @@ namespace Scv.Api.Models.Order;
 public class OrderReview
 {
     public OrderStatus Status { get; set; }
-    public bool Signed { get; set; }
+    public bool Signed { get; set; } = false;
     public string Comments { get; set; }
     public string DocumentData { get; set; }
-
-    //SentToPartId
 }

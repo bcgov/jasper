@@ -20,9 +20,9 @@ public class OrderMapping : IRegister
             .Ignore(dest => dest.Upd_Dtm)
             .Ignore(dest => dest.Upd_UserId);
 
-        config.NewConfig<OrderReview, Order>()
+        config.NewConfig<OrderReview, OrderDto>()
             .IgnoreNullValues(true) // Don't overwrite existing values with nulls
-            .Map(dest => dest.ReviewComments, src => src.Comments)
-            .Map(dest => dest.ProcessedDate, src => DateTime.UtcNow);
+            .Map(dest => dest.ProcessedDate, src => DateTime.UtcNow)
+            .Map(dest => dest.UpdatedDate, src => DateTime.UtcNow);
     }
 }

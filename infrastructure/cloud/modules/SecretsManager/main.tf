@@ -88,18 +88,18 @@ resource "aws_secretsmanager_secret_version" "keycloak_secret_value" {
 }
 
 resource "aws_secretsmanager_secret" "keycloak_cso_secret" {
-  name       = "external/${var.app_name}-keycloak_cso_secret-${var.environment}"
+  name       = "external/${var.app_name}-keycloak-cso-secret-${var.environment}"
   kms_key_id = var.kms_key_arn
 }
 
 resource "aws_secretsmanager_secret_version" "keycloak_cso_secret_value" {
   secret_id = aws_secretsmanager_secret.keycloak_cso_secret.id
   secret_string = jsonencode({
-    client        = "",
-    authority     = "",
-    secret        = "",
-    audience      = "",
-    writeRole     = ""
+    client    = "",
+    authority = "",
+    secret    = "",
+    audience  = "",
+    writeRole = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

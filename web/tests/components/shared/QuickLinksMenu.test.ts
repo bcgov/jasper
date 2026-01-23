@@ -1,7 +1,7 @@
-import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import QuickLinksMenu from 'CMP/shared/QuickLinksMenu.vue';
 import type { QuickLink } from '@/types';
+import { mount } from '@vue/test-utils';
+import QuickLinksMenu from 'CMP/shared/QuickLinksMenu.vue';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
 const mockQuickLinks: QuickLink[] = [
@@ -173,7 +173,7 @@ describe('QuickLinksMenu.vue', () => {
   });
 
   it('opens URL in new tab when child item is clicked', async () => {
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const openSpy = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
 
     await nextTick();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -195,8 +195,54 @@ describe('QuickLinksMenu.vue', () => {
     openSpy.mockRestore();
   });
 
+  it('opens SharePoint .docx files in Word app', async () => {
+    const originalHref = globalThis.location.href;
+    delete (globalThis.location as any).href;
+    globalThis.location.href = '';
+
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const docxUrl = 'https://example.sharepoint.com/document.docx';
+    wrapper.vm.handleChildClick({
+      id: '6',
+      name: 'Word Document',
+      parentName: 'Documents',
+      url: docxUrl,
+      order: 6,
+      judgeId: '',
+    });
+
+    expect(globalThis.location.href).toBe(`ms-word:ofv|u|${docxUrl}`);
+
+    globalThis.location.href = originalHref;
+  });
+
+  it('opens non-SharePoint .docx files in new tab', async () => {
+    const openSpy = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
+
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    wrapper.vm.handleChildClick({
+      id: '7',
+      name: 'Other Word Document',
+      parentName: 'Documents',
+      url: 'https://otherdomain.com/document.docx',
+      order: 7,
+      judgeId: '',
+    });
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://otherdomain.com/document.docx',
+      '_blank'
+    );
+
+    openSpy.mockRestore();
+  });
+
   it('does not open URL if child has no URL', async () => {
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const openSpy = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
 
     await nextTick();
 

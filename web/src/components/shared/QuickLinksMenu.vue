@@ -90,7 +90,14 @@
   });
 
   const handleChildClick = (child: QuickLink) => {
-    if (child.url) {
+    if (!child.url) {
+      return;
+    }
+
+    if (child.url.includes('.docx') && child.url.includes('sharepoint.com')) {
+      // Open in Word app - read-only mode
+      globalThis.location.href = `ms-word:ofv|u|${child.url}`;
+    } else {
       window.open(child.url, '_blank');
     }
   };

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
 
@@ -8,6 +9,11 @@ namespace Scv.Db.Models;
 public class Order : EntityBase
 {
     public OrderRequest OrderRequest { get; set; }
+    public OrderStatus Status { get; set; }
+    public DateTime? ProcessedDate { get; set; }
+    public bool Signed { get; set; }
+    public string Comments { get; set; }
+    public string DocumentData { get; set; }
 }
 
 public class OrderRequest
@@ -16,6 +22,13 @@ public class OrderRequest
     public Referral Referral { get; set; }
     public List<PackageDocument> PackageDocuments { get; set; } = [];
     public List<RelevantCeisDocument> RelevantCeisDocuments { get; set; } = [];
+}
+
+public enum OrderStatus
+{
+    Unapproved,
+    Pending,
+    Approved
 }
 
 public class CourtFile

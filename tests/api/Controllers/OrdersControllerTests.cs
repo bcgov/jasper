@@ -14,6 +14,7 @@ using Scv.Api.Helpers;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Db.Models;
 using Xunit;
 using ValidationResult = FluentValidation.Results.ValidationResult;
 
@@ -325,6 +326,216 @@ public class OrdersControllerTests
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
         var errors = Assert.IsAssignableFrom<IEnumerable<string>>(unprocessableResult.Value);
         Assert.Contains("CourtClassCd is unsupported.", errors);
+    }
+
+    #endregion
+
+    #region ReviewOrder Tests
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsNoContent_WhenReviewIsSuccessful()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Approved with no changes"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Success());
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        Assert.IsType<NoContentResult>(result);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, orderReview), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsNotFound_WhenOrderDoesNotExist()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Failure("Order not found"));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.NotNull(notFoundResult.Value);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, orderReview), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsInternalServerError_WhenJudgeNotAssigned()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Failure("Judge is not assigned to review this Order."));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+        Assert.NotNull(objectResult.Value);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, orderReview), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsInternalServerError_WhenUnexpectedErrorOccurs()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Failure("Database connection failed"));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, orderReview), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_AcceptsApprovedStatus()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Looks good"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Success());
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        Assert.IsType<NoContentResult>(result);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
+            r.Status == OrderStatus.Approved && r.Comments == "Looks good")), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_AcceptsUnapprovedStatus()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Unapproved,
+            Comments = "Needs corrections"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Success());
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        Assert.IsType<NoContentResult>(result);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
+            r.Status == OrderStatus.Unapproved && r.Comments == "Needs corrections")), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_AcceptsNullComments()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = null
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Success());
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        Assert.IsType<NoContentResult>(result);
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
+            r.Status == OrderStatus.Approved && r.Comments == null)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_PassesCorrectOrderIdToService()
+    {
+        var orderId = "507f1f77bcf86cd799439011";
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Success());
+
+        await _controller.ReviewOrder(orderId, orderReview);
+
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, orderReview), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_HandlesEmptyOrderId()
+    {
+        var orderId = string.Empty;
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Failure("Order not found"));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.NotNull(notFoundResult.Value);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsNotFound_WhenErrorContainsNotFound()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Failure("The order was not found in the database"));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.NotNull(notFoundResult.Value);
     }
 
     #endregion

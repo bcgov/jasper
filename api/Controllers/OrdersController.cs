@@ -67,4 +67,32 @@ public class OrdersController(
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Partially updates an order's status, signature, comments and document info.
+    /// </summary>
+    /// <param name="id">The order id</param>
+    /// <param name="orderReview">The order review payload</param>
+    /// <returns>No content on success</returns>
+    [HttpPatch]
+    [Route("{id}/review")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ReviewOrder(string id, [FromBody] OrderReviewDto orderReview)
+    {
+        var result = await _orderService.ReviewOrder(id, orderReview);
+        
+        if (!result.Succeeded)
+        {
+            return result.Errors.Any(e => e.Contains("not found"))
+                ? NotFound(new { error = result.Errors })
+                : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
+        }
+
+        return NoContent();
+    }
 }
+
+

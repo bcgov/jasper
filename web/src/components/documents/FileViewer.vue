@@ -7,17 +7,19 @@
     </v-col>
   </v-row>
 
-  <ReviewModal v-model="showReviewModal" :can-approve="canApprove" />
+  <ReviewModal v-model="showReviewModal" :can-approve="canApprove" @approveOrder="(comments: string) => approveOrder(comments)" />
 
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
 
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';
-  import { onMounted, onUnmounted, ref, computed } from 'vue';
-  import { mdiNotebookOutline, mdiFileDocumentArrowRightOutline, mdiCheckBold, mdiClose, mdiPencilBoxOutline, mdiAccountClock } from '@mdi/js';
+  import { onMounted, onUnmounted, ref, inject } from 'vue';
+  import { mdiNotebookOutline, mdiFileDocumentArrowRightOutline } from '@mdi/js';
   import { useCourtFileSearchStore } from '@/stores';
   import { KeyValueInfo } from '@/types/common';
+  import { OrderService } from '@/services';
+  import { OrderReview } from '@/types/OrderReview';
   import ReviewModal from './ReviewModal.vue';
   //import NutrientViewer from '@nutrient-sdk/viewer';
 
@@ -57,6 +59,9 @@
 
     // Cleanup function
     cleanup(): void;
+
+    // Shows order review options
+    showOrderReviewOptions?: boolean;
   }
 
   export interface OutlineItem {
@@ -79,6 +84,11 @@
   const emptyStore = ref(false);
   const showReviewModal = ref(false);
   const canApprove = ref<boolean>(false);
+
+  const orderService = inject<OrderService>('orderService');
+  if (!orderService) {
+    throw new Error('Service(s) is undefined.');
+  }
   
   let instance = {} as any; // NutrientViewer.Instance
 
@@ -134,7 +144,7 @@
         id: "open-information",
         title: "Supporting information",
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
-        onPress: (event) => {
+        onPress: () => {
           console.log(rawData);
           // Extract all groupKeyOne values and their corresponding physicalFileIds
           const files: KeyValueInfo[] = [];
@@ -167,7 +177,7 @@
         id: "open-document-review",
         title: "Open document review",
         icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
-        onPress: (event) => {
+        onPress: () => {
           showReviewModal.value = true;
         }
       };
@@ -185,8 +195,8 @@
         )
       );
       instance.setToolbarItems((items) => {
-        items.push(openInfoItem);
-        items.push(reviewItem);
+        props.strategy.showOrderReviewOptions ? items.push(openInfoItem) : null;
+        props.strategy.showOrderReviewOptions ? items.push(reviewItem) : null;
         return items;
       });
 
@@ -240,6 +250,41 @@
             : undefined,
       });
     }
+  };
+
+  const approveOrder = async (comments: string) => {
+    try {
+      const arrayBuffer = await instance.exportPDF();
+      const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+      
+      // Extract physicalFileId from raw data
+      const rawData = props.strategy.getRawData();
+      let physicalFileId: string | undefined;
+      
+      Object.values(rawData).forEach(personDocuments => {
+        Object.values(personDocuments as any).flat().forEach((doc: any) => {
+          if (doc?.physicalFileId) {
+            physicalFileId ??= doc.physicalFileId;
+          }
+        });
+      });
+      
+      const review: OrderReview = {
+        signed: true,
+        comments: comments,
+        documentData: btoa(await blob.text()), // base64 representation
+        status: "Approved"
+      }
+      var response = await orderService.review(physicalFileId, review);
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+      console.log("PDF uploaded successfully");
+    } catch (error) {
+      console.error("Failed to save PDF to server:", error.message);
+    }
+    showReviewModal.value = false;
   };
 
   onMounted(() => {

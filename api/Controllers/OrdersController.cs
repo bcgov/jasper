@@ -80,7 +80,7 @@ public class OrdersController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ReviewOrder(string id, [FromBody] OrderReview orderReview)
+    public async Task<IActionResult> ReviewOrder(string id, [FromBody] OrderReviewDto orderReview)
     {
         var result = await _orderService.ReviewOrder(id, orderReview);
         

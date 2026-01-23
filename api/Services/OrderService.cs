@@ -26,7 +26,7 @@ public interface IOrderService : ICrudService<OrderDto>
 {
     Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto);
     Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto);
-    Task<OperationResult> ReviewOrder(string id, OrderReview orderReview);
+    Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -186,7 +186,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
     }
 
-    public async Task<OperationResult> ReviewOrder(string id, OrderReview orderReview)
+    public async Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview)
     {
         var order = await Repo.GetByIdAsync(id);
 
@@ -205,8 +205,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         var orderDto = Mapper.Map<OrderDto>(order);
         orderReview.Adapt(orderDto);
 
-        await UpdateAsync(orderDto);
+        var result = await UpdateAsync(orderDto);
 
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+        
         return OperationResult.Success();
     }
 

@@ -624,7 +624,7 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ReviewOrder_ReturnsFailure_WhenOrderNotFound()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview { Status = OrderStatus.Approved };
+        var orderReview = new OrderReviewDto { Status = OrderStatus.Approved };
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(orderId))
@@ -643,7 +643,7 @@ public class OrderServiceTests : ServiceTestBase
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var assignedJudgeId = _faker.Random.Int(1, 1000);
         var differentJudgeId = assignedJudgeId + 1;
-        var orderReview = new OrderReview { Status = OrderStatus.Approved };
+        var orderReview = new OrderReviewDto { Status = OrderStatus.Approved };
 
         var order = CreateOrder();
         order.Id = orderId;
@@ -666,7 +666,7 @@ public class OrderServiceTests : ServiceTestBase
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderReview = new OrderReview 
+        var orderReview = new OrderReviewDto 
         { 
             Status = OrderStatus.Approved,
             Comments = "Test notes"

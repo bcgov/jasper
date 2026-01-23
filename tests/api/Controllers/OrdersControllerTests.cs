@@ -336,7 +336,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_ReturnsNoContent_WhenReviewIsSuccessful()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Approved with no changes"
@@ -356,7 +356,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_ReturnsNotFound_WhenOrderDoesNotExist()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Test"
@@ -377,7 +377,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_ReturnsInternalServerError_WhenJudgeNotAssigned()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Test"
@@ -399,7 +399,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_ReturnsInternalServerError_WhenUnexpectedErrorOccurs()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Test"
@@ -420,7 +420,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_AcceptsApprovedStatus()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Looks good"
@@ -433,7 +433,7 @@ public class OrdersControllerTests
         var result = await _controller.ReviewOrder(orderId, orderReview);
 
         Assert.IsType<NoContentResult>(result);
-        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReview>(r => 
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
             r.Status == OrderStatus.Approved && r.Comments == "Looks good")), Times.Once);
     }
 
@@ -441,7 +441,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_AcceptsUnapprovedStatus()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Unapproved,
             Comments = "Needs corrections"
@@ -454,7 +454,7 @@ public class OrdersControllerTests
         var result = await _controller.ReviewOrder(orderId, orderReview);
 
         Assert.IsType<NoContentResult>(result);
-        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReview>(r => 
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
             r.Status == OrderStatus.Unapproved && r.Comments == "Needs corrections")), Times.Once);
     }
 
@@ -462,7 +462,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_AcceptsNullComments()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = null
@@ -475,7 +475,7 @@ public class OrdersControllerTests
         var result = await _controller.ReviewOrder(orderId, orderReview);
 
         Assert.IsType<NoContentResult>(result);
-        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReview>(r => 
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
             r.Status == OrderStatus.Approved && r.Comments == null)), Times.Once);
     }
 
@@ -483,7 +483,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_PassesCorrectOrderIdToService()
     {
         var orderId = "507f1f77bcf86cd799439011";
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Test"
@@ -502,7 +502,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_HandlesEmptyOrderId()
     {
         var orderId = string.Empty;
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Test"
@@ -522,7 +522,7 @@ public class OrdersControllerTests
     public async Task ReviewOrder_ReturnsNotFound_WhenErrorContainsNotFound()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
-        var orderReview = new OrderReview
+        var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
             Comments = "Test"

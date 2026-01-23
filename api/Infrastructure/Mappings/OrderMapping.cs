@@ -20,7 +20,7 @@ public class OrderMapping : IRegister
             .Ignore(dest => dest.Upd_Dtm)
             .Ignore(dest => dest.Upd_UserId);
 
-        config.NewConfig<OrderReview, OrderDto>()
+        config.NewConfig<OrderReviewDto, OrderDto>()
             .IgnoreNullValues(true)
             .Map(dest => dest.ProcessedDate, src => DateTime.UtcNow)
             .Map(dest => dest.UpdatedDate, src => DateTime.UtcNow);

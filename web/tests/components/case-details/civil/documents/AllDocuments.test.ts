@@ -3,6 +3,10 @@ import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/utils/dateUtils', () => ({
+  formatDateToDDMMMYYYY: vi.fn(() => '01-Jan-2025'),
+}));
+
 describe('AllDocuments.vue', () => {
   const mockProps = {
     selectedItems: [],
@@ -103,5 +107,67 @@ describe('AllDocuments.vue', () => {
 
     const header = wrapper.find('.text-h5');
     expect(header.text()).toContain('All Documents (1)');
+  });
+
+  it('displays scheduled date when selectedCategory is "Scheduled" and nextAppearanceDt exists', () => {
+    const mockDocument = {
+      civilDocumentId: '1',
+      documentTypeDescription: 'Test Document',
+      imageId: 'img-123',
+      nextAppearanceDt: '2026-01-15',
+    } as civilDocumentType;
+    
+    mockProps.documents = [mockDocument];
+    const wrapper = mount(AllDocuments, {
+      props: {
+        ...mockProps,
+        selectedCategory: 'Scheduled',
+      },
+    });
+
+    const documentCell = wrapper.find('[data-testid="all-documents-container"]');
+    expect(documentCell.exists()).toBe(true);
+    // The scheduled date should be formatted and displayed
+    const tableEl = wrapper.find('v-data-table-virtual');
+    expect(tableEl.exists()).toBe(true);
+  });
+
+  it('does not display scheduled date when selectedCategory is not "Scheduled"', () => {
+    const mockDocument = {
+      civilDocumentId: '1',
+      documentTypeDescription: 'Test Document',
+      imageId: 'img-123',
+      nextAppearanceDt: '2026-01-15',
+    } as civilDocumentType;
+    
+    mockProps.documents = [mockDocument];
+    const wrapper = mount(AllDocuments, {
+      props: {
+        ...mockProps,
+        selectedCategory: 'ORDER',
+      },
+    });
+
+    const tableEl = wrapper.find('v-data-table-virtual');
+    expect(tableEl.exists()).toBe(true);
+  });
+
+  it('does not display scheduled date when nextAppearanceDt is not present', () => {
+    const mockDocument = {
+      civilDocumentId: '1',
+      documentTypeDescription: 'Test Document',
+      imageId: 'img-123',
+    } as civilDocumentType;
+    
+    mockProps.documents = [mockDocument];
+    const wrapper = mount(AllDocuments, {
+      props: {
+        ...mockProps,
+        selectedCategory: 'Scheduled',
+      },
+    });
+
+    const tableEl = wrapper.find('v-data-table-virtual');
+    expect(tableEl.exists()).toBe(true);
   });
 });

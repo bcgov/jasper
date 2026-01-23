@@ -40,7 +40,7 @@
 
   watch(
     () => commonStore.userInfo?.judgeId,
-    async (newVal, _oldVal) => (judgeId.value = newVal)
+    async (newVal) => (judgeId.value = newVal)
   );
 
   watch(isCourtCalendar, (newVal) => {

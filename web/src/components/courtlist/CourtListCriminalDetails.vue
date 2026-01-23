@@ -24,10 +24,10 @@
         density="compact"
         class="p-2"
       >
-        <template v-slot:item.docmClassification="{ item }">
+        <template v-slot:[`item.docmClassification`]="{ item }">
           {{ item.category }}
         </template>
-        <template v-slot:item.docmFormDsc="{ item }">
+        <template v-slot:[`item.docmFormDsc`]="{ item }">
           <a
             v-if="item.imageId"
             href="javascript:void(0)"
@@ -65,16 +65,16 @@
         density="compact"
         class="p-2"
       >
-        <template v-slot:item.lastResults="{ value, item }">
+        <template v-slot:[`item.lastResults`]="{ item }">
           <v-tooltip :text="item.appearanceResultDesc" location="top">
-            <template v-slot:activator="{ props }">
+            <template v-slot:[`activator`]="{ props }">
               <span v-bind="props" class="has-tooltip">{{
                 item.appearanceResultCd
               }}</span>
             </template>
           </v-tooltip>
         </template>
-        <template v-slot:item.pleaCode="{ value, item }">
+        <template v-slot:[`item.pleaCode`]="{ value, item }">
           <v-row>
             <v-col>
               {{ value }}

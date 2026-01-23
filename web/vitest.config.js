@@ -29,6 +29,7 @@ export default defineConfig({
     mockReset: true,
     setupFiles: ['./vitest.setup.ts'],
     snapshotSerializers: ['./node_modules/vue3-snapshot-serializer/index.js'],
+    pool: "vmThreads",
     // We want to silence any warnings relating to Vuetify components
     // not being recognized as existing Vue components.
     onConsoleLog: (log) => !log.includes('Failed to resolve component: v-'),

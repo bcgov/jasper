@@ -13,7 +13,7 @@
   </v-snackbar>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { useSnackbarStore } from '@/stores/SnackbarStore';
   import { mdiCloseCircle } from '@mdi/js';
   const snackbarStore = useSnackbarStore();

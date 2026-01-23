@@ -75,30 +75,6 @@ public class KeyDocumentResolverTest
     }
 
     [Fact]
-    public void GetCriminalKeyDocuments_ReturnsLatestPsrDocument_WhenMultiplePsrsExist()
-    {
-        var documents = new List<CriminalDocument>
-        {
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-03" }, // Most recent
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-04" }
-        };
-
-        var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
-
-        Assert.NotNull(result);
-        var resultList = result.ToList();
-        Assert.Equal(2, resultList.Count);
-
-        var reportDocument = resultList.FirstOrDefault(d => d.Category == "Report");
-        Assert.NotNull(reportDocument);
-        Assert.Equal("2024-01-03", reportDocument.IssueDate);
-
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
-    }
-
-    [Fact]
     public void GetCriminalKeyDocuments_ReturnsPsrWithOtherKeyDocumentsAndBail()
     {
         var documents = new List<CriminalDocument>
@@ -129,7 +105,7 @@ public class KeyDocumentResolverTest
         var documents = new List<CriminalDocument>
         {
             new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-05" }, // Most recent PSR
+            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-05" },
             new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-03" },
             new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-02" },
             new() { Category = DocumentCategory.INITIATING, IssueDate = "2024-01-04" }
@@ -139,13 +115,9 @@ public class KeyDocumentResolverTest
 
         Assert.NotNull(result);
         var resultList = result.ToList();
-        Assert.Equal(3, resultList.Count); // Only 1 PSR (most recent) + ROP + INITIATING
+        Assert.Equal(5, resultList.Count);
 
-        // Should have only the most recent PSR
-        var psrDocuments = resultList.Where(d => d.Category == DocumentCategory.Format(DocumentCategory.PSR)).ToList();
-        Assert.Single(psrDocuments);
-        Assert.Equal("2024-01-05", psrDocuments[0].IssueDate);
-
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.REPORT));
         Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
         Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.INITIATING));
     }

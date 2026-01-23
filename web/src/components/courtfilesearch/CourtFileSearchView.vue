@@ -154,7 +154,7 @@
   const courtFileSearchStore = useCourtFileSearchStore();
   const commonStore = useCommonStore();
   let defaultLocation = undefined;
-  let searchCriteria: CourtFileSearchCriteria = reactive({
+  const searchCriteria: CourtFileSearchCriteria = reactive({
     isCriminal: true,
     isFamily: false,
     isSmallClaims: false,

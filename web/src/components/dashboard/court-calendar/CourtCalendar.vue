@@ -117,10 +117,6 @@
     }))
   );
 
-  const calendarEventsWithActivities = computed(() =>
-    calendarData.value.filter((d) => d.activities.length > 0 && d.showCourtList)
-  );
-
   const calendarOptions: CalendarOptions = {
     initialView: calendarView.value,
     plugins: [dayGridPlugin],

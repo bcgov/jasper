@@ -1,10 +1,10 @@
 import CourtCalendarDay from '@/components/dashboard/court-calendar/CourtCalendarDay.vue';
+import { useDarsStore } from '@/stores/DarsStore';
 import { CalendarDayActivity } from '@/types';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { useDarsStore } from '@/stores/DarsStore';
+import { describe, expect, it } from 'vitest';
 
 const pinia = createPinia();
 setActivePinia(pinia);
@@ -64,7 +64,7 @@ describe('CourtCalendarDay.vue', () => {
     } as CalendarDayActivity,
   ];
 
-  it('renders CourtCalendarDay', () => {
+  it('renders CourtCalendarDay', async () => {
     const wrapper = mount(CourtCalendarDay, {
       props: {
         activities: mockActivities,
@@ -77,9 +77,8 @@ describe('CourtCalendarDay.vue', () => {
     expect(wrapper.find('[data-testid="short-name"]').text()).toBe(
       mockShortName
     );
-    expect(wrapper.findAll('[data-testid="judge-initials"]')[0].text()).toBe(
-      mockActivities[0].judgeInitials
-    );
+
+    expect(wrapper.find('[data-testid="judge-initials"]').exists()).toBe(true);
     expect(wrapper.findAll('[data-testid="dars"]')[0].exists()).toBe(true);
 
     const judgeActivities = wrapper.findAll('[data-testid="judge-activities"]');

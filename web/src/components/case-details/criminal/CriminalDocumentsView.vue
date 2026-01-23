@@ -21,7 +21,7 @@
           hide-details
           :items="documentCategories"
         >
-          <template v-slot:item="{ props: itemProps, item }">
+          <template v-slot:[`item`]="{ props: itemProps, item }">
             <v-list-item
               v-bind="itemProps"
               :title="item.raw + ' (' + categoryCount(item.raw) + ')'"
@@ -62,7 +62,7 @@
       style="max-height: 50vh; overflow: auto"
     >
       <template
-        v-slot:group-header="{ item, columns, isGroupOpen, toggleGroup }"
+        v-slot:[`group-header`]="{ item, columns, isGroupOpen, toggleGroup }"
       >
         <tr>
           <td class="pa-0" style="height: 1rem" :colspan="columns.length">
@@ -79,11 +79,15 @@
           </td>
         </tr>
       </template>
-      <template v-slot:item.category="{ item }: { item: documentType }">
+      <template v-slot:[`item.category`]="{ item }: { item: documentType }">
         {{ item.category }}
       </template>
       <template
-        v-slot:item.documentTypeDescription="{ item }: { item: documentType }"
+        v-slot:[`item.documentTypeDescription`]="{
+          item,
+        }: {
+          item: documentType;
+        }"
       >
         <v-row>
           <v-col>
@@ -197,9 +201,11 @@
           profSeqNo: participant.profSeqNo,
           id:
             doc.category +
+            doc.issueDate +
             participant.fullName +
             doc.partId +
-            participant.profSeqNo,
+            participant.profSeqNo +
+            (doc.docmId || doc.imageId || ''),
         }))
       ) || []
   );
@@ -237,7 +243,7 @@
   const headers = [
     { key: 'data-table-group' },
     {
-      title: 'DATE FILED/ISSUES',
+      title: 'DATE FILED/ISSUED',
       key: 'issueDate',
       value: (item) => formatDateToDDMMMYYYY(item.issueDate),
       sortRaw: (a: documentType, b: documentType) =>
@@ -274,7 +280,7 @@
       title: 'CATEGORY',
       key: 'category',
       sortRaw: (a: documentType, b: documentType) => {
-        const order = ['Initiating', 'rop', 'Bail', 'PSR'];
+        const order = ['Initiating', 'ROP', 'Bail', 'Report'];
         const getOrder = (cat: string) => {
           const idx = order.indexOf(cat);
           return idx === -1 ? order.length : idx;

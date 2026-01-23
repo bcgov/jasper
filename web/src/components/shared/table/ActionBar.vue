@@ -25,11 +25,11 @@
   </div>
 </template>
 
-<script setup>
-  const props = defineProps({
+<script setup lang="ts">
+  defineProps({
     selected: {
       type: Array,
-      default: true,
+      default: () => [],
     },
     selectionPrependText: {
       type: String,

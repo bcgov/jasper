@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,16 +12,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
-using Scv.Db.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -64,9 +61,9 @@ namespace Scv.Api.Infrastructure.Authentication
                             SiteMinderAuthenticationHandler.SiteMinder)
                             return;
 
-                        var accessTokenExpiration = DateTimeOffset.Parse(cookieCtx.Properties.GetTokenValue("expires_at"));
+                        var accessTokenExpiration = DateTimeOffset.Parse(cookieCtx.Properties.GetTokenValue("expires_at"), CultureInfo.InvariantCulture);
                         var timeRemaining = accessTokenExpiration.Subtract(DateTimeOffset.UtcNow);
-                        var refreshThreshold = TimeSpan.Parse(configuration.GetNonEmptyValue("TokenRefreshThreshold"));
+                        var refreshThreshold = TimeSpan.Parse(configuration.GetNonEmptyValue("TokenRefreshThreshold"), CultureInfo.InvariantCulture);
 
                         if (timeRemaining > refreshThreshold)
                             return;
@@ -92,7 +89,7 @@ namespace Scv.Api.Infrastructure.Authentication
                         {
                             var expiresInSeconds = response.ExpiresIn;
                             var updatedExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds);
-                            cookieCtx.Properties.UpdateTokenValue("expires_at", updatedExpiresAt.ToString());
+                            cookieCtx.Properties.UpdateTokenValue("expires_at", updatedExpiresAt.ToString(CultureInfo.InvariantCulture));
                             cookieCtx.Properties.UpdateTokenValue("refresh_token", response.RefreshToken);
 
                             // Indicate to the cookie middleware that the cookie should be remade (since we have updated it)
@@ -132,7 +129,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
                         var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
                         var logger = loggerFactory.CreateLogger("OnTokenValidated");
-                        logger.LogInformation($"OpenIdConnect UserId - {context.Principal.ExternalUserId()} - logged in.");
+                        logger.LogInformation("OpenIdConnect UserId - {ExternalUserId} - logged in.", context.Principal.ExternalUserId());
 
                         //Cleanup keycloak claims, that are unused.
                         foreach (var claim in identity.Claims.WhereToList(c =>
@@ -232,8 +229,6 @@ namespace Scv.Api.Infrastructure.Authentication
             ILogger logger,
             List<Claim> claims)
         {
-            var judgeId = configuration.GetNonEmptyValue("PCSS:JudgeId");
-            var homeLocationId = configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
             PersonSearchItem judge = null;
             try
             {
@@ -258,9 +253,9 @@ namespace Scv.Api.Infrastructure.Authentication
             }
             finally
             {
-                logger.LogDebug("Logged user in, with potential fallback values judge person id: {JudgePersonId}, judge id: {JudgeId} judge home location id: {JudgeLocationId} homeLocationId: {HomeLocationId}", judge?.PersonId, judgeId, judge?.HomeLocationId, homeLocationId);
-                judgeId = judge?.PersonId.ToString() ?? judgeId;
-                homeLocationId = judge?.HomeLocationId.ToString() ?? homeLocationId;
+                var judgeId = judge?.PersonId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeId");
+                var homeLocationId = judge?.HomeLocationId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
+                logger.LogDebug("Logged user in with judge person id: {JudgePersonId}, judge home location id: {JudgeLocationId}", judge?.PersonId, judge?.HomeLocationId);
                 AddDefaultJudgeClaims(logger, claims, judgeId, homeLocationId);
             }
         }
@@ -274,18 +269,39 @@ namespace Scv.Api.Infrastructure.Authentication
             try
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                userDto = await userService.GetWithPermissionsAsync(context.Principal.Email());
+                var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<IPcssSyncService>();
+                var provjudUserGuid = context.Principal.ProvjudUserGuid();
+
+                userDto = provjudUserGuid != null ? await userService.GetByGuidWithPermissionsAsync(provjudUserGuid) : await userService.GetWithPermissionsAsync(context.Principal.Email());
                 if (userDto == null)
                 {
-                    var newUser = await BuildNewUser(context, logger);
-                    logger.LogInformation("Creating new user in SCV database: {NewUser}", JsonConvert.SerializeObject(newUser));
+                    var newUser = await BuildNewUser(context, pcssSyncService);
+                    logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(newUser));
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
                     {
-                        logger.LogError("Error creating new user in SCV database: {Errors}", string.Join(", ", result.Errors));
+                        logger.LogError("Error creating new user in JASPER database: {Errors}", string.Join(", ", result.Errors));
                         return null;
                     }
                     userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;
+                }
+                else if (provjudUserGuid != null)
+                {
+                    // Update existing user with latest PCSS data
+                    logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
+                    var updated = await pcssSyncService.UpdateUserFromPcss(userDto);
+                    if (updated)
+                    {
+                        var updateResult = await userService.UpdateAsync(userDto);
+                        if (updateResult.Errors.Any())
+                        {
+                            logger.LogError("Error updating user in JASPER database: {Errors}", string.Join(", ", updateResult.Errors));
+                        }
+                        else
+                        {
+                            userDto = await userService.GetByIdWithPermissionsAsync(userDto.Id); // re-fetch to get updated permissions and roles
+                        }
+                    }
                 }
                 AddUserClaims(claims, userDto);
             }
@@ -298,7 +314,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
         private static async Task<UserDto> BuildNewUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            ILogger logger)
+            IPcssSyncService pcssSyncService)
         {
             UserDto userDto = new()
             {
@@ -310,56 +326,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 IsActive = false,
             };
 
-            // If there is no ProvJud GUID, we cannot map this user to PCSS, so return early.
-            if (userDto.NativeGuid == null)
-            {
-                return userDto;
-            }
-
-            var pcssAuthServiceClient = context.HttpContext.RequestServices.GetRequiredService<AuthorizationServicesClient>();
-            var authorizationService = context.HttpContext.RequestServices.GetRequiredService<AuthorizationService>();
-            var groupService = context.HttpContext.RequestServices.GetRequiredService<IGroupService>();
-
-            UserItem matchingUser = null;
-            try
-            {
-                logger.LogInformation("Requesting user information from PCSS.");
-                var pcssUsers = await pcssAuthServiceClient.GetUsersAsync();
-                matchingUser = pcssUsers?.FirstOrDefault(u => u.GUID == userDto.NativeGuid);
-                logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
-                    context.Principal.IdirUserGuid(),
-                    matchingUser != null ? JsonConvert.SerializeObject(matchingUser) : "No match");
-
-                if (matchingUser == null || !matchingUser.UserId.HasValue)
-                {
-                    return userDto;
-                }
-
-                var roleNameResult = await authorizationService.GetPcssUserRoleNames(matchingUser.UserId.Value);
-                if (roleNameResult == null || roleNameResult.Errors.Any())
-                {
-                    return userDto;
-                }
-
-                var groupResult = await groupService.GetGroupsByAliases(roleNameResult.Payload);
-                if (groupResult == null || groupResult.Errors.Any())
-                {
-                    return userDto;
-                }
-
-                var groupIds = groupResult.Payload.Select(g => g.Id).ToList();
-                userDto.GroupIds = groupIds;
-                userDto.IsActive = groupIds.Count > 0;
-                if (matchingUser.UserId.HasValue)
-                {
-                    var judge = await GetJudgeByUserId(context, matchingUser.UserId.Value);
-                    userDto.JudgeId = judge.PersonId;
-                }
-            }
-            catch (Exception e)
-            {
-                logger.LogError(e, "Unable to get user or groups from PCSS.");
-            }
+            await pcssSyncService.UpdateUserFromPcss(userDto, true);
 
             return userDto;
         }
@@ -372,14 +339,6 @@ namespace Scv.Api.Infrastructure.Authentication
             return judges.FirstOrDefault(j => j.PersonId == judgeId);
         }
 
-        private static async Task<PersonSearchItem> GetJudgeByUserId(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int userId)
-        {
-            var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
-            var judges = await dashboardService.GetJudges();
-
-            return judges.FirstOrDefault(j => j.UserId == userId);
-        }
-
         private static bool IsMongoDbConfigured(IConfiguration configuration)
         {
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
@@ -389,8 +348,14 @@ namespace Scv.Api.Infrastructure.Authentication
         private static void AddDefaultJudgeClaims(ILogger logger, List<Claim> claims, string judgeId, string homeLocationId)
         {
             logger.LogInformation("Acting as Judge Id - {JudgeId} with Home Location Id - {HomeLocationId}.", judgeId, homeLocationId);
-            claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
-            claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+            if (!string.IsNullOrEmpty(judgeId))
+            {
+                claims.Add(new Claim(CustomClaimTypes.JudgeId, judgeId));
+            }
+            if (!string.IsNullOrEmpty(homeLocationId))
+            {
+                claims.Add(new Claim(CustomClaimTypes.JudgeHomeLocationId, homeLocationId));
+            }
         }
 
         private static void AddUserClaims(List<Claim> claims, UserDto userDto)

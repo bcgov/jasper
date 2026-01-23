@@ -10,7 +10,6 @@
     :removeDocumentFromBinder
     :deleteBinder="deleteCurrentBinder"
     :viewBinder="() => openMergedDocuments(binderDocuments)"
-    :baseHeaders="headers"
     @update:reordered="(documentData) => handleReordering(documentData)"
   />
 
@@ -174,15 +173,22 @@
       : [{ key: 'fileSeqNo', order: 'desc' as const }];
   });
 
-  const headers: DataTableHeader[] = [
-    ...shared.getBaseCivilDocumentTableHeaders(),
-    {
-      title: 'ACTIONS',
-      key: 'binderMenu',
-      align: 'end' as const,
-      sortable: false,
-    },
-  ];
+  const headers = computed<DataTableHeader[]>(() => {
+    const baseHeaders = shared.getBaseCivilDocumentTableHeaders(
+      selectedCategory.value === SCHEDULED_CATEGORY
+    );
+
+    return [
+      ...baseHeaders,
+      {
+        title: 'ACTIONS',
+        key: 'binderMenu',
+        align: 'end' as const,
+        sortable: false,
+      },
+    ];
+  });
+
   const labels = {
     ['physicalFileId']: props.fileId,
     ['courtClassCd']: props.courtClassCd,
@@ -237,6 +243,7 @@
 
   const binderDocuments = computed(() => {
     const binderDocumentIds = currentBinder.value?.documents
+      .slice()
       .sort((d) => d.order)
       .map((d) => d.documentId);
 

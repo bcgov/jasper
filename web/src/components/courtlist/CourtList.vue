@@ -43,10 +43,13 @@
       <template
         v-for="pairing in filteredTablePairings"
         :key="pairing.card.courtListLocationID"
-        class="w-100"
       >
-        <court-list-card :cardInfo="pairing.card" />
-        <court-list-table :search="search" :data="pairing.table" />
+        <court-list-card :cardInfo="pairing.card" class="w-100" />
+        <court-list-table
+          :search="search"
+          :data="pairing.table"
+          class="w-100"
+        />
       </template>
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"
@@ -241,7 +244,7 @@
       groupKeyOne: string;
     }> = [];
     for (const value of uniqueMap.values()) {
-      let documentData: Record<string, any> = {
+      const documentData: Record<string, any> = {
         courtDivisionCd: value.division,
         courtClass: value.class,
         date: value.date,

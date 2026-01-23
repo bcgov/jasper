@@ -99,3 +99,7 @@ tbody tr:nth-of-type(odd) {
 .specialty {
   color: var(--text-blue-900);
 }
+
+.text-caption {
+  font-family: inherit !important;
+}

@@ -19,6 +19,7 @@
           v-for="(
             { locationName, activities, showVideo }, index
           ) in groupedActivities"
+          :key="index"
         >
           <div class="mb-2 d-flex justify-space-between">
             <span class="location" data-testid="name">{{ locationName }}</span>

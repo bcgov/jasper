@@ -208,7 +208,7 @@ export const formatFromFullname = (fullName: string): string => {
   const nameParts = fullName.split(' ');
   const lastName = nameParts.pop() ?? '';
   const givenNames = nameParts.join(' ');
-  let name = lastName;
+  const name = lastName;
 
   return lastName.trim() && givenNames.trim() ? name + `, ${givenNames}` : name;
 };

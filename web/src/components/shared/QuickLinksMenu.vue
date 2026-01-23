@@ -94,11 +94,23 @@
       return;
     }
 
-    if (child.url.includes('.docx') && child.url.includes('sharepoint.com')) {
+    let isSharePointDocx = false;
+    try {
+      const parsedUrl = new URL(child.url);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const isSharePointHost =
+        hostname === 'sharepoint.com' || hostname.endsWith('.sharepoint.com');
+      const isDocxFile = child.url.toLowerCase().includes('.docx');
+      isSharePointDocx = isSharePointHost && isDocxFile;
+    } catch {
+      isSharePointDocx = false;
+    }
+
+    if (isSharePointDocx) {
       // Open in Word app - read-only mode
       globalThis.location.href = `ms-word:ofv|u|${child.url}`;
     } else {
-      window.open(child.url, '_blank');
+      globalThis.open(child.url, '_blank');
     }
   };
 </script>

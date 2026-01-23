@@ -1,0 +1,24 @@
+# Build artifacts and dependencies
+**/node_modules/
+**/bin/
+**/obj/
+**/coverage/
+**/.nuget/
+
+# Temporary and cache files
+**/tmp/
+**/tmp-mongo/
+**/.vscode/
+**/.vs/
+
+# Test results
+**/[Tt]est[Rr]esult*/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes

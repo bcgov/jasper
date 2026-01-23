@@ -47,14 +47,5 @@
   "containerEnv": {
     "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
   },
-  "forwardPorts": [9006],
-  "mounts": [
-    "source=jasper-web-node_modules,target=${containerWorkspaceFolder}/web/node_modules,type=volume",
-    "source=jasper-aws-node_modules,target=${containerWorkspaceFolder}/aws/node_modules,type=volume",
-    "source=jasper-web-coverage,target=${containerWorkspaceFolder}/web/coverage,type=volume",
-    "source=jasper-aws-coverage,target=${containerWorkspaceFolder}/aws/coverage,type=volume",
-    "source=jasper-nuget-packages,target=/root/.nuget/packages,type=volume"
-  ],
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/jasper,type=bind,consistency=cached",
-  "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+  "forwardPorts": [9006]
 }

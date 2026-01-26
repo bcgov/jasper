@@ -97,14 +97,18 @@
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
   };
 
-  async function hasAnnotations(pageIndex: number) {
+  async function hasImageAnnotation(pageIndex: number) {
     const annotations = await instance.getAnnotations(pageIndex);
-    return annotations.size > 0;
+    // As long as it has one image signature, we consider the document signed
+    const imageAnnotations = annotations.filter(annotation => 
+      annotation.contentType?.includes('image')
+    );
+    return imageAnnotations.size > 0;
   }
 
   async function checkDocumentForAnnotations() {
     for (let i = 0; i < instance.totalPageCount; i++) {
-      if (await hasAnnotations(i)) {
+      if (await hasImageAnnotation(i)) {
         return true;
       }
     }

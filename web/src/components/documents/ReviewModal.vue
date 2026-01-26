@@ -110,12 +110,10 @@
     };
 
     const approveOrder = () => {
-        if (canReject.value || !props.canApprove) {
+      if (props.canApprove) {
         emit('approveOrder', comments.value);
         closeReviewModal();
-        } else {
-        //props.canApprove = true;
-        }
+      }
     }
 
 </script>

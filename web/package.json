@@ -26,7 +26,7 @@
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.20",
-    "@nutrient-sdk/viewer": "^1.8.0",
+    "@nutrient-sdk/viewer": "^1.10.0",
     "@types/luxon": "^3.7.1",
     "@types/underscore": "^1.13.0",
     "@vitejs/plugin-basic-ssl": "^2.1.0",
@@ -45,7 +45,7 @@
     "vue-router": "^4.6.4",
     "vue3-snapshot-serializer": "^2.13.0",
     "vuedraggable": "^4.1.0",
-    "vuetify": "3.11.4"
+    "vuetify": "3.11.5"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",

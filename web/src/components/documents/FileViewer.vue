@@ -7,7 +7,7 @@
     </v-col>
   </v-row>
 
-  <ReviewModal v-model="showReviewModal" :can-approve="canApprove" @approveOrder="(comments: string) => approveOrder(comments)" />
+  <ReviewModal v-model="showReviewModal" :can-approve="canApprove" @approveOrder="approveOrder" />
 
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
@@ -19,14 +19,12 @@
   import { useCourtFileSearchStore } from '@/stores';
   import { KeyValueInfo } from '@/types/common';
   import { OrderService } from '@/services';
-  import { OrderReview } from '@/types/OrderReview';
   import ReviewModal from './ReviewModal.vue';
-  //import NutrientViewer from '@nutrient-sdk/viewer';
 
   // Declare NutrientViewer global
-  // declare global {
-  //   const NutrientViewer: any;
-  // }
+  declare global {
+    const NutrientViewer: any;
+  }
 
   // Base interfaces for the strategy pattern
   export interface PDFViewerStrategy<
@@ -99,18 +97,12 @@
 
   async function hasImageAnnotation(pageIndex: number) {
     const annotations = await instance.getAnnotations(pageIndex);
-    // As long as it has one image signature, we consider the document signed
-    const imageAnnotations = annotations.filter(annotation => 
-      annotation.contentType?.includes('image')
-    );
-    return imageAnnotations.size > 0;
+    return annotations.filter(a => a.contentType?.includes('image')).size > 0;
   }
 
   async function checkDocumentForAnnotations() {
     for (let i = 0; i < instance.totalPageCount; i++) {
-      if (await hasImageAnnotation(i)) {
-        return true;
-      }
+      if (await hasImageAnnotation(i)) return true;
     }
     return false;
   }
@@ -149,18 +141,13 @@
         title: "Supporting information",
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
-          console.log(rawData);
-          // Extract all groupKeyOne values and their corresponding physicalFileIds
           const files: KeyValueInfo[] = [];
           let firstPhysicalFileId: string | undefined;
 
           Object.values(rawData).forEach(personDocuments => {
             Object.values(personDocuments as any).flat().forEach((doc: any) => {
               if (doc?.groupKeyOne && doc?.physicalFileId) {
-                files.push({
-                  key: doc.physicalFileId,
-                  value: doc.groupKeyOne,
-                });
+                files.push({ key: doc.physicalFileId, value: doc.groupKeyOne });
                 firstPhysicalFileId ??= doc.physicalFileId;
               }
             });
@@ -199,8 +186,10 @@
         )
       );
       instance.setToolbarItems((items) => {
-        props.strategy.showOrderReviewOptions ? items.push(openInfoItem) : null;
-        props.strategy.showOrderReviewOptions ? items.push(reviewItem) : null;
+        if(props.strategy.showOrderReviewOptions){
+          items.push(openInfoItem);
+          items.push(reviewItem);
+        }
         return items;
       });
 
@@ -227,67 +216,28 @@
   };
 
   const createOutlineElement = (item: OutlineItem): any => {
-    if (item.children && item.children.length > 0) {
-      // It's a group
+    const baseElement = {
+      title: item.title,
+      action: item.pageIndex !== undefined
+        ? new NutrientViewer.Actions.GoToAction({ pageIndex: item.pageIndex })
+        : undefined,
+    };
+
+    if (item.children?.length) {
       return new NutrientViewer.OutlineElement({
-        title: item.title,
+        ...baseElement,
         isExpanded: item.isExpanded ?? true,
         children: NutrientViewer.Immutable.List(
           item.children.map((child) => createOutlineElement(child))
         ),
-        action:
-          item.pageIndex !== undefined
-            ? new NutrientViewer.Actions.GoToAction({
-                pageIndex: item.pageIndex,
-              })
-            : undefined,
-      });
-    } else {
-      // It's a document
-      return new NutrientViewer.OutlineElement({
-        title: item.title,
-        action:
-          item.pageIndex !== undefined
-            ? new NutrientViewer.Actions.GoToAction({
-                pageIndex: item.pageIndex,
-              })
-            : undefined,
       });
     }
+
+    return new NutrientViewer.OutlineElement(baseElement)
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const approveOrder = async (comments: string) => {
-    try {
-      const arrayBuffer = await instance.exportPDF();
-      const blob = new Blob([arrayBuffer], { type: "application/pdf" });
-      
-      // Extract physicalFileId from raw data
-      const rawData = props.strategy.getRawData();
-      let physicalFileId: string | undefined;
-      
-      Object.values(rawData).forEach(personDocuments => {
-        Object.values(personDocuments as any).flat().forEach((doc: any) => {
-          if (doc?.physicalFileId) {
-            physicalFileId ??= doc.physicalFileId;
-          }
-        });
-      });
-      
-      const review: OrderReview = {
-        signed: true,
-        comments: comments,
-        documentData: btoa(await blob.text()), // base64 representation
-        status: "Approved"
-      }
-      var response = await orderService.review(physicalFileId, review);
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-      console.log("PDF uploaded successfully");
-    } catch (error) {
-      console.error("Failed to save PDF to server:", error.message);
-    }
     showReviewModal.value = false;
   };
 

@@ -97,7 +97,7 @@
         canApprove: boolean;
     }>();
 
-    const emit = defineEmits<(e: 'approveOrder', value: any[]) => void>();
+    const emit = defineEmits<(e: 'approveOrder', value: string) => void>();
 
     const show = defineModel<boolean>({ type: Boolean, required: true });
     //const approveBlocked = ref<boolean>(false);

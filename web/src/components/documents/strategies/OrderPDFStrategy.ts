@@ -24,7 +24,7 @@ export class OrderPDFStrategy implements PDFViewerStrategy<
     }
     this.filesService = service;
   }
-  
+
   hasData(): boolean {
     return this.pdfStore.documents.length > 0;
   }

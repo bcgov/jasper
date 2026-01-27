@@ -1,10 +1,10 @@
 <template>
-<v-dialog v-model="show" persistent max-width="750">
+  <v-dialog v-model="show" persistent max-width="750">
     <v-card>
       <!-- Header -->
       <v-card-title class="d-flex align-center">
         <v-icon class="me-2" :icon="mdiPencilBoxOutline" />
-          Review Order
+        Review Order
         <v-spacer />
         <v-btn
           icon
@@ -21,7 +21,8 @@
       <!-- Body -->
       <v-card-text>
         <p class="text-body-2 text-medium-emphasis">
-          Add any notes or reasoning for your decision. These comments will be saved with the order. <br/>
+          Add any notes or reasoning for your decision. These comments will be
+          saved with the order. <br />
           Note: Comments are required for any action other than Approval.
         </p>
 
@@ -35,12 +36,12 @@
           variant="outlined"
         />
         <v-alert
-            v-if="!canApprove"
-            type="warning"
-            variant="tonal"
-            density="comfortable"
-            class="mx-6 mt-2"
-          >
+          v-if="!canApprove"
+          type="warning"
+          variant="tonal"
+          density="comfortable"
+          class="mx-6 mt-2"
+        >
           Document signature is required before Approval.
         </v-alert>
       </v-card-text>
@@ -91,20 +92,25 @@
 
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-  import { mdiClose, mdiCheckBold, mdiPencilBoxOutline, mdiAccountClock } from '@mdi/js';
+  import {
+    mdiClose,
+    mdiCheckBold,
+    mdiPencilBoxOutline,
+    mdiAccountClock,
+  } from '@mdi/js';
 
   const props = defineProps<{
-      canApprove: boolean;
+    canApprove: boolean;
   }>();
 
   const emit = defineEmits<(e: 'approveOrder', value: string) => void>();
   const show = defineModel<boolean>({ type: Boolean, required: true });
 
   const comments = ref();
-  const canReject = computed<boolean>(() => comments.value?.length > 0 );
+  const canReject = computed<boolean>(() => comments.value?.length > 0);
 
   const closeReviewModal = () => {
-      show.value = false;
+    show.value = false;
   };
 
   const approveOrder = () => {

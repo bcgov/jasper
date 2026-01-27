@@ -7,7 +7,11 @@
     </v-col>
   </v-row>
 
-  <ReviewModal v-model="showReviewModal" :can-approve="canApprove" @approveOrder="approveOrder" />
+  <ReviewModal
+    v-model="showReviewModal"
+    :can-approve="canApprove"
+    @approveOrder="approveOrder"
+  />
 
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
@@ -15,8 +19,10 @@
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';
   import { onMounted, onUnmounted, ref, inject } from 'vue';
-  import { mdiNotebookOutline, mdiFileDocumentArrowRightOutline } from '@mdi/js';
-  import { useCourtFileSearchStore } from '@/stores';
+  import {
+    mdiNotebookOutline,
+    mdiFileDocumentArrowRightOutline,
+  } from '@mdi/js';
   import { KeyValueInfo } from '@/types/common';
   import { OrderService } from '@/services';
   import ReviewModal from './ReviewModal.vue';
@@ -77,7 +83,6 @@
 
   const props = defineProps<Props>();
   const commonStore = useCommonStore();
-  const courtFileSearchStore = useCourtFileSearchStore();
   const loading = ref(false);
   const emptyStore = ref(false);
   const showReviewModal = ref(false);
@@ -87,7 +92,7 @@
   if (!orderService) {
     throw new Error('Service(s) is undefined.');
   }
-  
+
   let instance = {} as any;
 
   const configuration = {
@@ -97,7 +102,7 @@
 
   async function hasImageAnnotation(pageIndex: number) {
     const annotations = await instance.getAnnotations(pageIndex);
-    return annotations.filter(a => a.contentType?.includes('image')).size > 0;
+    return annotations.filter((a) => a.contentType?.includes('image')).size > 0;
   }
 
   async function checkDocumentForAnnotations() {
@@ -136,41 +141,43 @@
       const nutrientOutline = createNutrientOutline(outline);
 
       const openInfoItem = {
-        type: "custom",
-        id: "open-information",
-        title: "Supporting information",
+        type: 'custom',
+        id: 'open-information',
+        title: 'Supporting information',
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
           const files: KeyValueInfo[] = [];
           let firstPhysicalFileId: string | undefined;
 
-          Object.values(rawData).forEach(personDocuments => {
-            Object.values(personDocuments as any).flat().forEach((doc: any) => {
-              if (doc?.groupKeyOne && doc?.physicalFileId) {
-                files.push({ key: doc.physicalFileId, value: doc.groupKeyOne });
-                firstPhysicalFileId ??= doc.physicalFileId;
-              }
-            });
-          });
-          
-          courtFileSearchStore.addFilesForViewing({
-            searchCriteria: {},
-            searchResults: [],
-            files,
+          Object.values(rawData).forEach((personDocuments) => {
+            Object.values(personDocuments as any)
+              .flat()
+              .forEach((doc: any) => {
+                if (doc?.groupKeyOne && doc?.physicalFileId) {
+                  files.push({
+                    key: doc.physicalFileId,
+                    value: doc.groupKeyOne,
+                  });
+                  firstPhysicalFileId ??= doc.physicalFileId;
+                }
+              });
           });
 
-          window.open(`criminal-file/${firstPhysicalFileId}`, 'relatedCaseInfo');
-        }
+          window.open(
+            `criminal-file/${firstPhysicalFileId}`,
+            'relatedCaseInfo'
+          );
+        },
       };
 
       const reviewItem = {
-        type: "custom",
-        id: "open-document-review",
-        title: "Open document review",
+        type: 'custom',
+        id: 'open-document-review',
+        title: 'Open document review',
         icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
         onPress: () => {
           showReviewModal.value = true;
-        }
+        },
       };
 
       instance = await NutrientViewer.load({
@@ -186,7 +193,7 @@
         )
       );
       instance.setToolbarItems((items) => {
-        if(props.strategy.showOrderReviewOptions){
+        if (props.strategy.showOrderReviewOptions) {
           items.push(openInfoItem);
           items.push(reviewItem);
         }
@@ -207,8 +214,6 @@
     }
   };
 
-
-
   const createNutrientOutline = (outlineData: OutlineItem[]): any => {
     return NutrientViewer.Immutable.List(
       outlineData.map((item) => createOutlineElement(item))
@@ -218,9 +223,10 @@
   const createOutlineElement = (item: OutlineItem): any => {
     const baseElement = {
       title: item.title,
-      action: item.pageIndex !== undefined
-        ? new NutrientViewer.Actions.GoToAction({ pageIndex: item.pageIndex })
-        : undefined,
+      action:
+        item.pageIndex !== undefined
+          ? new NutrientViewer.Actions.GoToAction({ pageIndex: item.pageIndex })
+          : undefined,
     };
 
     if (item.children?.length) {
@@ -233,7 +239,7 @@
       });
     }
 
-    return new NutrientViewer.OutlineElement(baseElement)
+    return new NutrientViewer.OutlineElement(baseElement);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

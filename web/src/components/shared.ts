@@ -97,8 +97,7 @@ export default {
       },
     ]);
 
-    // Override to order for now
-    const newWindow = window.open('/file-viewer?type=order', '_blank');
+    const newWindow = window.open('/file-viewer?type=file', '_blank');
 
     this.replaceWindowTitle(newWindow, fileName);
   },

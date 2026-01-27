@@ -64,59 +64,6 @@ describe('ReviewModal.vue', () => {
     });
   });
 
-//   describe('Comments functionality', () => {
-//     it('should update comments when user types', async () => {
-//       const wrapper = createWrapper();
-      
-//       // Set comments directly on the component instance
-//       wrapper.vm.comments = 'Test comment';
-//       await nextTick();
-      
-//       // Test the component's internal state
-//       expect(wrapper.vm.comments).toBe('Test comment');
-      
-//       // Verify the v-textarea receives the correct v-model binding
-//       const textarea = wrapper.findComponent({ name: 'VTextarea' });
-//       expect(textarea.props('modelValue')).toBe('Test comment');
-//     });
-
-//     it('should compute canReject as false when comments are empty', () => {
-//       const wrapper = createWrapper();
-//       const rejectButton = wrapper.findAll('button').find(btn => btn.text().includes('Reject'));
-//       expect(rejectButton?.classes()).toContain('v-btn--disabled');
-//     });
-
-//     it('should compute canReject as true when comments have content', async () => {
-//       const wrapper = createWrapper();
-//       const textarea = wrapper.find('textarea');
-//       await textarea.setValue('Test comment');
-//       await nextTick();
-      
-//       const rejectButton = wrapper.findAll('button').find(btn => btn.text().includes('Reject'));
-//       expect(rejectButton?.classes()).not.toContain('v-btn--disabled');
-//     });
-
-//     it('should enable Awaiting documentation button when comments are present', async () => {
-//       const wrapper = createWrapper();
-//       const textarea = wrapper.find('textarea');
-//       await textarea.setValue('Waiting for more documents');
-//       await nextTick();
-      
-//       const awaitingButton = wrapper.findAll('button').find(btn => 
-//         btn.text().includes('Awaiting documentation')
-//       );
-//       expect(awaitingButton?.classes()).not.toContain('v-btn--disabled');
-//     });
-
-//     it('should disable Awaiting documentation button when comments are empty', () => {
-//       const wrapper = createWrapper();
-//       const awaitingButton = wrapper.findAll('button').find(btn => 
-//         btn.text().includes('Awaiting documentation')
-//       );
-//       expect(awaitingButton?.classes()).toContain('v-btn--disabled');
-//     });
-//   });
-
   describe('Action buttons', () => {
     it('should render all three action buttons', () => {
       const wrapper = createWrapper();

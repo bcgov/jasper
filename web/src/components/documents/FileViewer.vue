@@ -58,7 +58,7 @@
     // Cleanup function
     cleanup(): void;
 
-    // Shows order review options
+    // Shows options related to refviewing order files
     showOrderReviewOptions?: boolean;
   }
 
@@ -88,7 +88,7 @@
     throw new Error('Service(s) is undefined.');
   }
   
-  let instance = {} as any; // NutrientViewer.Instance
+  let instance = {} as any;
 
   const configuration = {
     container: '.pdf-container',

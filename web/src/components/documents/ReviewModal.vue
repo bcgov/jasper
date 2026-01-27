@@ -90,30 +90,27 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, computed } from 'vue';
-    import { mdiClose, mdiCheckBold, mdiPencilBoxOutline, mdiAccountClock } from '@mdi/js';
+  import { ref, computed } from 'vue';
+  import { mdiClose, mdiCheckBold, mdiPencilBoxOutline, mdiAccountClock } from '@mdi/js';
 
-    const props = defineProps<{
-        canApprove: boolean;
-    }>();
+  const props = defineProps<{
+      canApprove: boolean;
+  }>();
 
-    const emit = defineEmits<(e: 'approveOrder', value: string) => void>();
+  const emit = defineEmits<(e: 'approveOrder', value: string) => void>();
+  const show = defineModel<boolean>({ type: Boolean, required: true });
 
-    const show = defineModel<boolean>({ type: Boolean, required: true });
-    //const approveBlocked = ref<boolean>(false);
-    const comments = ref();
-    const canReject = computed<boolean>(() => comments.value?.length > 0 );
+  const comments = ref();
+  const canReject = computed<boolean>(() => comments.value?.length > 0 );
 
-    const closeReviewModal = () => {
-        show.value = false;
-        //approveBlocked.value = false;
-    };
+  const closeReviewModal = () => {
+      show.value = false;
+  };
 
-    const approveOrder = () => {
-      if (props.canApprove) {
-        emit('approveOrder', comments.value);
-        closeReviewModal();
-      }
+  const approveOrder = () => {
+    if (props.canApprove) {
+      emit('approveOrder', comments.value);
+      closeReviewModal();
     }
-
+  };
 </script>

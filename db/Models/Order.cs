@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
 
@@ -9,6 +10,7 @@ namespace Scv.Db.Models;
 public class Order : EntityBase
 {
     public OrderRequest OrderRequest { get; set; }
+    [BsonRepresentation(MongoDB.Bson.BsonType.Int32)]
     public OrderStatus Status { get; set; }
     public DateTime? ProcessedDate { get; set; }
     public bool Signed { get; set; }

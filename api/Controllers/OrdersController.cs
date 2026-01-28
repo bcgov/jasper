@@ -31,8 +31,8 @@ public class OrdersController(
     [HttpGet]
     public async Task<IActionResult> GetMyOrders(int? judgeId = null)
     {
-        var orders = await _orderService.GetAllAsync();
-        return Ok(orders.Where(o => o.OrderRequest.Referral.SentToPartId == this.User.JudgeId(judgeId)));
+        var judgeOrders = await _orderService.GetJudgeOrdersAsync(this.User.JudgeId(judgeId));
+        return Ok(judgeOrders);
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class OrdersController(
     public async Task<IActionResult> ReviewOrder(string id, [FromBody] OrderReviewDto orderReview)
     {
         var result = await _orderService.ReviewOrder(id, orderReview);
-        
+
         if (!result.Succeeded)
         {
             return result.Errors.Any(e => e.Contains("not found"))

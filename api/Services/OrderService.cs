@@ -27,6 +27,7 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto);
     Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto);
     Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
+    Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -163,14 +164,18 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 this.Logger.LogInformation("Creating new order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
                     fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
-                orderDto = new OrderDto { OrderRequest = dto };
+                orderDto = new OrderDto
+                {
+                    OrderRequest = dto,
+                    Status = OrderStatus.Pending,
+                };
 
                 var result = await this.AddAsync(orderDto);
                 if (!result.Succeeded)
                 {
                     return result;
                 }
-                
+
                 _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
             }
 
@@ -190,7 +195,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     {
         var order = await Repo.GetByIdAsync(id);
 
-        if(order is null)
+        if (order is null)
         {
             return OperationResult.Failure("Order not found");
         }
@@ -211,12 +216,18 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         {
             return result;
         }
-        
+
         return OperationResult.Success();
     }
 
     public override Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId)
+    {
+        var judgeOrders = await this.Repo.FindAsync(o => o.OrderRequest.Referral.SentToPartId == judgeId);
+        return this.Mapper.Map<List<OrderViewDto>>(judgeOrders);
     }
 }

@@ -23,7 +23,6 @@
     mdiNotebookOutline,
     mdiFileDocumentArrowRightOutline,
   } from '@mdi/js';
-  import { KeyValueInfo } from '@/types/common';
   import { OrderService } from '@/services';
   import ReviewModal from './ReviewModal.vue';
 
@@ -146,18 +145,13 @@
         title: 'Supporting information',
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
-          const files: KeyValueInfo[] = [];
           let firstPhysicalFileId: string | undefined;
 
           Object.values(rawData).forEach((personDocuments) => {
             Object.values(personDocuments as any)
               .flat()
               .forEach((doc: any) => {
-                if (doc?.groupKeyOne && doc?.physicalFileId) {
-                  files.push({
-                    key: doc.physicalFileId,
-                    value: doc.groupKeyOne,
-                  });
+                if (doc?.physicalFileId) {
                   firstPhysicalFileId ??= doc.physicalFileId;
                 }
               });
@@ -192,10 +186,9 @@
           NutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
-      instance.setToolbarItems((items) => {
+      instance.setToolbarItems((items: any) => {
         if (props.strategy.showOrderReviewOptions) {
-          items.push(openInfoItem);
-          items.push(reviewItem);
+          items.push(openInfoItem, reviewItem);
         }
         return items;
       });

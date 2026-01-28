@@ -83,10 +83,10 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
     const children: OutlineItem[] = [];
     const pageIndex = apiResponse.pageRanges?.[this.pageIndex]?.start;
     Object.entries(userGroup).forEach(([name, docs]) => {
-      if (name !== '') {
-        children.push(this.makeSecondGroup(name, docs, apiResponse));
-      } else {
+      if (name === '') {
         children.push(...this.makeDocElements(docs, apiResponse));
+      } else {
+        children.push(this.makeSecondGroup(name, docs, apiResponse));
       }
     });
 

@@ -19,6 +19,8 @@
       switch (queryType.toLowerCase()) {
         case 'bundle':
           return usePDFStrategy(PDFViewerType.BUNDLE);
+        case 'order':
+          return usePDFStrategy(PDFViewerType.ORDER);
         case 'nutrient':
         case 'file':
         case 'pdf':

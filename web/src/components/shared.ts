@@ -93,6 +93,7 @@ export default {
         groupKeyOne: documentData.fileNumberText ?? '',
         groupKeyTwo: documentData.partyName ?? '',
         documentName: documentData.documentDescription ?? 'Document',
+        physicalFileId: documentData.fileId || '',
       },
     ]);
 
@@ -107,6 +108,7 @@ export default {
       groupKeyOne: string;
       groupKeyTwo: string;
       documentName: string;
+      physicalFileId: string;
     }[]
   ): void {
     if (!documents || documents.length === 0) return;
@@ -187,6 +189,7 @@ export default {
       groupKeyOne: string;
       groupKeyTwo: string;
       documentName: string;
+      physicalFileId: string;
     }[]
   ): void {
     const pdfStore = usePDFViewerStore();
@@ -221,6 +224,7 @@ export default {
         groupKeyOne: doc.groupKeyOne,
         groupKeyTwo: doc.groupKeyTwo,
         documentName: doc.documentName,
+        physicalFileId: doc.physicalFileId,
       });
     });
   },

@@ -40,4 +40,5 @@ export type StoreDocument = {
   groupKeyOne: string;
   groupKeyTwo: string;
   documentName: string;
+  physicalFileId: string;
 };

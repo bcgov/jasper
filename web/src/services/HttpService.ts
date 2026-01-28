@@ -28,6 +28,13 @@ export interface IHttpService {
     responseType?: 'json' | 'blob',
     config?: CustomAxiosConfig
   ): Promise<T>;
+  patch<T>(
+    resource: string,
+    data: any,
+    headers?: Record<string, string>,
+    responseType?: 'json' | 'blob',
+    config?: CustomAxiosConfig
+  ): Promise<T>;
   delete<T>(
     resource: string,
     headers?: Record<string, string>,
@@ -151,6 +158,26 @@ export class HttpService implements IHttpService {
       return response.data;
     } catch (error) {
       console.error('Error in PUT request: ', error);
+      throw error;
+    }
+  }
+
+  public async patch<T>(
+    resource: string,
+    data: any,
+    headers: Record<string, string> = {},
+    responseType: 'json' | 'blob' = 'json',
+    config: CustomAxiosConfig = {}
+  ): Promise<T> {
+    try {
+      const response = await this.client.patch<T>(resource, data, {
+        headers,
+        responseType,
+        ...config,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error in PATCH request: ', error);
       throw error;
     }
   }

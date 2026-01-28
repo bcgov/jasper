@@ -7,12 +7,24 @@
     </v-col>
   </v-row>
 
+  <ReviewModal
+    v-model="showReviewModal"
+    :can-approve="canApprove"
+    @approveOrder="approveOrder"
+  />
+
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
 
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';
-  import { onMounted, onUnmounted, ref } from 'vue';
+  import { onMounted, onUnmounted, ref, inject } from 'vue';
+  import {
+    mdiNotebookOutline,
+    mdiFileDocumentArrowRightOutline,
+  } from '@mdi/js';
+  import { OrderService } from '@/services';
+  import ReviewModal from './ReviewModal.vue';
 
   // Declare NutrientViewer global
   declare global {
@@ -50,6 +62,9 @@
 
     // Cleanup function
     cleanup(): void;
+
+    // Shows options related to refviewing order files
+    showOrderReviewOptions?: boolean;
   }
 
   export interface OutlineItem {
@@ -69,10 +84,36 @@
   const commonStore = useCommonStore();
   const loading = ref(false);
   const emptyStore = ref(false);
+  const showReviewModal = ref(false);
+  const canApprove = ref<boolean>(false);
+
+  const orderService = inject<OrderService>('orderService');
+  if (!orderService) {
+    throw new Error('Service(s) is undefined.');
+  }
+
+  let instance = {} as any;
+
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
   };
+
+  async function hasImageAnnotation(pageIndex: number) {
+    const annotations = await instance.getAnnotations(pageIndex);
+    return annotations.filter((a) => a.contentType?.includes('image')).size > 0;
+  }
+
+  async function checkDocumentForAnnotations() {
+    for (let i = 0; i < instance.totalPageCount; i++) {
+      if (await hasImageAnnotation(i)) return true;
+    }
+    return false;
+  }
+
+  async function updateCanApprove() {
+    canApprove.value = await checkDocumentForAnnotations();
+  }
 
   const loadNutrient = async () => {
     loading.value = true;
@@ -98,7 +139,45 @@
 
       const nutrientOutline = createNutrientOutline(outline);
 
-      const instance = await NutrientViewer.load({
+      const openInfoItem = {
+        type: 'custom',
+        id: 'open-information',
+        title: 'Supporting information',
+        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
+        onPress: () => {
+          let firstPhysicalFileId: string | undefined;
+          let isCriminal: boolean | undefined;
+          Object.values(rawData).forEach((personDocuments) => {
+            Object.values(personDocuments as any)
+              .flat()
+              .forEach((doc: any) => {
+                if (doc?.physicalFileId) {
+                  firstPhysicalFileId ??= doc.physicalFileId;
+                }
+                if (doc?.request?.data?.isCriminal !== undefined) {
+                  isCriminal ??= doc.request.data.isCriminal;
+                }
+              });
+          });
+
+          window.open(
+            `${isCriminal ? 'criminal-file/' : 'civil-file/'}${firstPhysicalFileId}`,
+            'relatedCaseInfo'
+          );
+        },
+      };
+
+      const reviewItem = {
+        type: 'custom',
+        id: 'open-document-review',
+        title: 'Open document review',
+        icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
+        onPress: () => {
+          showReviewModal.value = true;
+        },
+      };
+
+      instance = await NutrientViewer.load({
         ...configuration,
         document: `data:application/pdf;base64,${base64Pdf}`,
       });
@@ -110,6 +189,20 @@
           NutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
+      instance.setToolbarItems((items: any) => {
+        if (props.strategy.showOrderReviewOptions) {
+          items.push(openInfoItem, reviewItem);
+        }
+        return items;
+      });
+
+      // Listen for annotation changes to update canApprove
+      instance.addEventListener('annotations.create', updateCanApprove);
+      instance.addEventListener('annotations.update', updateCanApprove);
+      instance.addEventListener('annotations.delete', updateCanApprove);
+
+      // Check if document can be approved initially
+      await updateCanApprove();
     } catch (error) {
       console.error('Error loading PDF:', error);
       loading.value = false;
@@ -124,33 +217,30 @@
   };
 
   const createOutlineElement = (item: OutlineItem): any => {
-    if (item.children && item.children.length > 0) {
-      // It's a group
+    const baseElement = {
+      title: item.title,
+      action:
+        item.pageIndex !== undefined
+          ? new NutrientViewer.Actions.GoToAction({ pageIndex: item.pageIndex })
+          : undefined,
+    };
+
+    if (item.children?.length) {
       return new NutrientViewer.OutlineElement({
-        title: item.title,
+        ...baseElement,
         isExpanded: item.isExpanded ?? true,
         children: NutrientViewer.Immutable.List(
           item.children.map((child) => createOutlineElement(child))
         ),
-        action:
-          item.pageIndex !== undefined
-            ? new NutrientViewer.Actions.GoToAction({
-                pageIndex: item.pageIndex,
-              })
-            : undefined,
-      });
-    } else {
-      // It's a document
-      return new NutrientViewer.OutlineElement({
-        title: item.title,
-        action:
-          item.pageIndex !== undefined
-            ? new NutrientViewer.Actions.GoToAction({
-                pageIndex: item.pageIndex,
-              })
-            : undefined,
       });
     }
+
+    return new NutrientViewer.OutlineElement(baseElement);
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const approveOrder = async (comments: string) => {
+    showReviewModal.value = false;
   };
 
   onMounted(() => {

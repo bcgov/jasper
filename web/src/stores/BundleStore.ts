@@ -29,6 +29,7 @@ export const useBundleStore = defineStore('BundleStore', {
         groupKeyOne: '',
         groupKeyTwo: '',
         documentName: '',
+        physicalFileId: '',
         requests: {} as DocumentBundleRequest,
       });
     },
@@ -50,6 +51,7 @@ export type Bundle = {
   id: UUIDTypes;
   groupKeyOne: string;
   groupKeyTwo: string;
+  physicalFileId: string;
   documentName: string;
   requests: DocumentBundleRequest;
   binders: Binder[];

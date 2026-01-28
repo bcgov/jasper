@@ -9,7 +9,7 @@ export class OrderService extends ServiceBase {
     super(httpService);
   }
 
-  review = (fileId: string, review: OrderReview): Promise<void> => {
-    return this.httpService.patch(`${this.baseUrl}/${fileId}/review`, review);
+  review = (orderId: string, review: OrderReview): Promise<void> => {
+    return this.httpService.patch(`${this.baseUrl}/${orderId}/review`, review);
   };
 }

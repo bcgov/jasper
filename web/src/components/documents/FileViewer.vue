@@ -146,7 +146,7 @@
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
           let firstPhysicalFileId: string | undefined;
-
+          let isCriminal: boolean | undefined;
           Object.values(rawData).forEach((personDocuments) => {
             Object.values(personDocuments as any)
               .flat()
@@ -154,11 +154,14 @@
                 if (doc?.physicalFileId) {
                   firstPhysicalFileId ??= doc.physicalFileId;
                 }
+                if (doc?.request?.data?.isCriminal !== undefined) {
+                  isCriminal ??= doc.request.data.isCriminal;
+                }
               });
           });
 
           window.open(
-            `criminal-file/${firstPhysicalFileId}`,
+            `${isCriminal ? 'criminal-file/' : 'civil-file/'}${firstPhysicalFileId}`,
             'relatedCaseInfo'
           );
         },

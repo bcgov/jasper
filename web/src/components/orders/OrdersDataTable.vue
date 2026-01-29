@@ -5,7 +5,7 @@
     :sort-by="sortBy"
     fixed-header
   >
-  <template #[`item.packageNumber`]="{ item }">
+    <template #[`item.packageNumber`]="{ item }">
       <a href="#" @click.prevent="viewOrderDetails(item)">
         {{ item.packageNumber }}
       </a>
@@ -26,8 +26,8 @@
   import { Order } from '@/types';
   import { DataTableHeader } from '@/types/shared';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
-  import { computed, ref } from 'vue';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
+  import { computed, ref } from 'vue';
 
   const props = defineProps<{
     data: Order[];

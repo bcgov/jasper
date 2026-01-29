@@ -12,6 +12,7 @@ export * from './JudicialCalendarActivity';
 export * from './JudicialCalendarAssignment';
 export * from './Location';
 export * from './Order';
+export * from './OrderReview';
 export * from './PersonSearchItem';
 export * from './Presider';
 export * from './QuickLink';

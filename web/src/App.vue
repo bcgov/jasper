@@ -21,9 +21,16 @@
             >DARS</v-btn
           >
           <v-tab value="orders" to="/orders">
-            <v-badge content="5" color="error" offset-x="-10" offset-y="-10">
+            <v-badge
+              v-if="pendingOrdersCount > 0"
+              :content="pendingOrdersCount"
+              color="error"
+              offset-x="-10"
+              offset-y="-10"
+            >
               For Signing
             </v-badge>
+            <template v-else>For Signing</template>
           </v-tab>
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
@@ -63,9 +70,9 @@
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
   import { useCommonStore } from '@/stores';
-  import { UserInfo } from '@/types/common';
+  import { UserInfo, OrderStatusEnum } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
-  import { inject, onMounted, ref, watch } from 'vue';
+  import { inject, onMounted, ref, watch, computed } from 'vue';
   import { useRoute } from 'vue-router';
   import DarsAccessModal from './components/dashboard/DarsAccessModal.vue';
   import JudgeSelector from './components/shared/JudgeSelector.vue';
@@ -73,22 +80,33 @@
   import Snackbar from './components/shared/Snackbar.vue';
   import { DashboardService } from './services';
   import { useDarsStore } from './stores/DarsStore';
+  import { useOrdersStore } from './stores/OrdersStore';
   import { useThemeStore } from './stores/ThemeStore';
   import { PersonSearchItem } from './types';
 
   const themeStore = useThemeStore();
   const commonStore = useCommonStore();
   const darsStore = useDarsStore();
+  const ordersStore = useOrdersStore();
   const theme = ref(themeStore.state);
   const profile = ref(false);
 
   const route = useRoute();
   const selectedTab = ref('/dashboard');
   const userService = inject<DashboardService>('dashboardService');
+  const orderService = inject<DashboardService>('orderService');
   const judges = ref<PersonSearchItem[]>([]);
 
+  if (!userService || !orderService) {
+    throw new Error('Service is not available!');
+  }
+
   onMounted(async () => {
-    judges.value = (await userService?.getJudges()) ?? [];
+    const [judgesData] = await Promise.all([
+      userService?.getJudges(),
+      ordersStore.fetchOrders(orderService),
+    ]);
+    judges.value = judgesData ?? [];
   });
 
   watch(
@@ -115,6 +133,12 @@
       }
       userName.value = newUserInfo.userTitle || '';
     }
+  );
+
+  const pendingOrdersCount = computed(
+    () =>
+      ordersStore.orders.filter((o) => o.status === OrderStatusEnum.Pending)
+        .length
   );
 </script>
 

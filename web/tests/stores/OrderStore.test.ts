@@ -16,7 +16,7 @@ describe('OrdersStore', () => {
   const mockOrders: Order[] = [
     {
       id: '1',
-      packageNumber: 12345,
+      packageId: 12345,
       receivedDate: '2026-01-15',
       processedDate: '2026-01-20',
       courtClass: 'CC',
@@ -27,7 +27,7 @@ describe('OrdersStore', () => {
     },
     {
       id: '2',
-      packageNumber: 67890,
+      packageId: 67890,
       receivedDate: '2026-01-14',
       processedDate: '2026-01-21',
       courtClass: 'CV',

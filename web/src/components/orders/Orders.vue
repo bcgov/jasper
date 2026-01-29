@@ -25,7 +25,7 @@
             :viewCaseDetails="viewCaseDetails"
             :viewOrderDetails="viewOrderDetails"
             :columns="[
-              'packageNumber',
+              'packageId',
               'receivedDate',
               'division',
               'fileNumber',
@@ -44,7 +44,7 @@
             :viewCaseDetails="viewCaseDetails"
             :viewOrderDetails="viewOrderDetails"
             :columns="[
-              'packageNumber',
+              'packageId',
               'receivedDate',
               'processedDate',
               'division',
@@ -59,11 +59,13 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { useOrdersStore, useCourtFileSearchStore } from '@/stores';
-  import { computed } from 'vue';
-  import { OrderStatusEnum } from '@/types/common';
+  import shared from '@/components/shared';
+  import { useCourtFileSearchStore, useOrdersStore } from '@/stores';
   import { Order } from '@/types';
+  import { KeyValueInfo, OrderStatusEnum } from '@/types/common';
+  import { DocumentData } from '@/types/shared';
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
+  import { computed } from 'vue';
 
   const ordersStore = useOrdersStore();
   const courtFileSearchStore = useCourtFileSearchStore();
@@ -103,7 +105,19 @@
     window.open(caseDetailUrl, '_blank');
   };
   const viewOrderDetails = (order: Order) => {
-    console.log(order.id);
+    const courtClassLabel = getCourtClassLabel(order.courtClass);
+    const isCriminal = isCourtClassLabelCriminal(courtClassLabel);
+    const documentData: DocumentData = {
+      courtClass: order.courtClass,
+      fileId: order.physicalFileId,
+      fileNumberText: order.courtFileNumber,
+      documentId: order.packageDocumentId,
+      documentDescription: order.packageName,
+      isCriminal,
+      orderId: order.id,
+    };
+
+    shared.openOrderDocuments(documentData);
   };
 </script>
 <style scoped>

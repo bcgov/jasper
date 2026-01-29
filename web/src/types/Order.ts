@@ -2,7 +2,9 @@ import { OrderStatusEnum } from './common';
 
 export interface Order {
   id: string;
-  packageNumber: number;
+  packageId: number;
+  packageDocumentId: string;
+  packageName: string;
   receivedDate: string;
   processedDate: string;
   courtClass: string;

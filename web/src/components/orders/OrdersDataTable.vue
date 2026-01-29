@@ -5,9 +5,9 @@
     :sort-by="sortBy"
     fixed-header
   >
-    <template #[`item.packageNumber`]="{ item }">
+    <template #[`item.packageId`]="{ item }">
       <a href="#" @click.prevent="viewOrderDetails(item)">
-        {{ item.packageNumber }}
+        {{ item.packageId }}
       </a>
     </template>
     <template #[`item.courtClass`]="{ item }">
@@ -34,7 +34,7 @@
     viewOrderDetails: (item: Order) => void;
     viewCaseDetails: (item: Order) => void;
     columns?: (
-      | 'packageNumber'
+      | 'packageId'
       | 'receivedDate'
       | 'processedDate'
       | 'division'
@@ -47,9 +47,9 @@
   const sortBy = ref(props.sortBy || [{ key: 'receivedDate', order: 'asc' }]);
 
   const allColumns: Record<string, DataTableHeader> = {
-    packageNumber: {
+    packageId: {
       title: 'PACKAGE #',
-      key: 'packageNumber',
+      key: 'packageId',
     },
     receivedDate: {
       title: 'DATE RECEIVED',
@@ -83,7 +83,7 @@
 
   const headers = computed<DataTableHeader[]>(() => {
     const columnKeys = props.columns || [
-      'packageNumber',
+      'packageId',
       'receivedDate',
       'division',
       'fileNumber',

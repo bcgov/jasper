@@ -22,7 +22,9 @@ vi.mock('@/utils/utils', () => ({
 const mockData: Order[] = [
   {
     id: '1',
-    packageNumber: 12345,
+    packageId: 12345,
+    packageDocumentId: '340',
+    packageName: 'test 1',
     receivedDate: '2026-01-15',
     processedDate: '2026-01-20',
     courtClass: 'CC',
@@ -33,7 +35,9 @@ const mockData: Order[] = [
   },
   {
     id: '2',
-    packageNumber: 67890,
+    packageId: 67890,
+    packageDocumentId: '341',
+    packageName: 'test 2',
     receivedDate: '2026-01-14',
     processedDate: '2026-01-21',
     courtClass: 'CV',
@@ -76,7 +80,7 @@ describe('OrdersDataTable.vue', () => {
         viewOrderDetails: mockViewOrderDetails,
         viewCaseDetails: mockViewCaseDetails,
         columns: [
-          'packageNumber',
+          'packageId',
           'receivedDate',
           'processedDate',
           'division',
@@ -172,12 +176,12 @@ describe('OrdersDataTable.vue', () => {
         data: mockData,
         viewOrderDetails: mockViewOrderDetails,
         viewCaseDetails: mockViewCaseDetails,
-        sortBy: [{ key: 'packageNumber', order: 'desc' }],
+        sortBy: [{ key: 'packageId', order: 'desc' }],
       },
     });
 
     const sortBy = (wrapper.vm as any).sortBy;
-    expect(sortBy[0].key).toBe('packageNumber');
+    expect(sortBy[0].key).toBe('packageId');
     expect(sortBy[0].order).toBe('desc');
   });
 
@@ -255,13 +259,13 @@ describe('OrdersDataTable.vue', () => {
         data: mockData,
         viewOrderDetails: mockViewOrderDetails,
         viewCaseDetails: mockViewCaseDetails,
-        columns: ['packageNumber', 'fileNumber'],
+        columns: ['packageId', 'fileNumber'],
       },
     });
 
     const headers = (wrapper.vm as any).headers;
     expect(headers).toHaveLength(2);
-    expect(headers[0].key).toBe('packageNumber');
+    expect(headers[0].key).toBe('packageId');
     expect(headers[1].key).toBe('courtFileNumber');
   });
 });

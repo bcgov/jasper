@@ -32,7 +32,9 @@ describe('Orders.vue', () => {
 
   const mockPendingOrder: Order = {
     id: '1',
-    packageNumber: 12345,
+    packageId: 12345,
+    packageDocumentId: '340',
+    packageName: 'test 1',
     receivedDate: '2026-01-15',
     processedDate: '',
     courtClass: 'Criminal',
@@ -44,7 +46,9 @@ describe('Orders.vue', () => {
 
   const mockApprovedOrder: Order = {
     id: '2',
-    packageNumber: 12346,
+    packageId: 12346,
+    packageDocumentId: '341',
+    packageName: 'test 2',
     receivedDate: '2026-01-14',
     processedDate: '2026-01-20',
     courtClass: 'Civil',

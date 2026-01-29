@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -40,6 +41,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly string _requestAgencyIdentifierId;
     private readonly string _requestPartId;
     private readonly string _applicationCode;
+    private readonly int _judgeId;
 
     public OrderServiceTests()
     {
@@ -66,6 +68,8 @@ public class OrderServiceTests : ServiceTestBase
         _applicationCode = "SCV";
 
         SetupConfiguration();
+
+        _judgeId = _faker.Random.Int(1, 1000);
 
         _orderService = new OrderService(
             _cache,
@@ -94,10 +98,10 @@ public class OrderServiceTests : ServiceTestBase
         _mockConfiguration.Setup(c => c.GetSection("Request:PartId")).Returns(mockPartIdSection.Object);
     }
 
-    #region GetAllAsync Tests
+    #region GetJudgeOrders Tests
 
     [Fact]
-    public async Task GetAllAsync_ReturnsAllOrders()
+    public async Task GetJudgeOrdersAsync_ReturnsAllOrders()
     {
         var orders = new List<Order>
         {
@@ -105,33 +109,37 @@ public class OrderServiceTests : ServiceTestBase
             CreateOrder()
         };
 
-        _mockOrderRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync(orders);
 
-        var result = await _orderService.GetAllAsync();
+        var result = await _orderService.GetJudgeOrdersAsync(_judgeId);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result.Count);
-        _mockOrderRepo.Verify(r => r.GetAllAsync(), Times.Once);
+        Assert.Equal(2, result.Count());
+        _mockOrderRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()), Times.Once);
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsEmptyList_WhenNoOrders()
+    public async Task GetJudgeOrdersAsync_ReturnsEmptyList_WhenNoOrders()
     {
-        _mockOrderRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Order>());
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([]);
 
-        var result = await _orderService.GetAllAsync();
+        var result = await _orderService.GetJudgeOrdersAsync(_judgeId);
 
         Assert.NotNull(result);
         Assert.Empty(result);
-        _mockOrderRepo.Verify(r => r.GetAllAsync(), Times.Once);
+        _mockOrderRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()), Times.Once);
     }
 
     #endregion
 
-    #region ValidateAsync Tests - Criminal Files
+    #region ValidateOrderRequestAsync Tests - Criminal Files
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenInvalidCourtClassCd()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenInvalidCourtClassCd()
     {
         var orderDto = CreateValidOrderRequestDto();
         orderDto.CourtFile.CourtClassCd = "INVALID";
@@ -143,7 +151,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenCriminalFileNotFound()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCriminalFileNotFound()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "A";
@@ -164,7 +172,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenCriminalFileHasNoAccusedFiles()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCriminalFileHasNoAccusedFiles()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "A";
@@ -188,7 +196,7 @@ public class OrderServiceTests : ServiceTestBase
     [InlineData("A")]
     [InlineData("Y")]
     [InlineData("T")]
-    public async Task ValidateAsync_ValidatesCriminalFile_ForCriminalCourtClasses(string courtClass)
+    public async Task ValidateOrderRequestAsync_ValidatesCriminalFile_ForCriminalCourtClasses(string courtClass)
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = courtClass;
@@ -222,10 +230,10 @@ public class OrderServiceTests : ServiceTestBase
 
     #endregion
 
-    #region ValidateAsync Tests - Civil Files
+    #region ValidateOrderRequestAsync Tests - Civil Files
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenCivilFileNotFound()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCivilFileNotFound()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "C";
@@ -246,7 +254,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenCivilFileHasNoCivilFiles()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCivilFileHasNoCivilFiles()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "F";
@@ -271,7 +279,7 @@ public class OrderServiceTests : ServiceTestBase
     [InlineData("F")]
     [InlineData("L")]
     [InlineData("M")]
-    public async Task ValidateAsync_ValidatesCivilFile_ForCivilCourtClasses(string courtClass)
+    public async Task ValidateOrderRequestAsync_ValidatesCivilFile_ForCivilCourtClasses(string courtClass)
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = courtClass;
@@ -304,7 +312,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenUnsupportedCourtClass()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenUnsupportedCourtClass()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "B";
@@ -317,10 +325,10 @@ public class OrderServiceTests : ServiceTestBase
 
     #endregion
 
-    #region ValidateAsync Tests - Judge Validation
+    #region ValidateOrderRequestAsync Tests - Judge Validation
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenJudgeNotFound()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenJudgeNotFound()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "A";
@@ -345,7 +353,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ValidateAsync_ReturnsSuccess_WhenJudgeExists()
+    public async Task ValidateOrderRequestAsync_ReturnsSuccess_WhenJudgeExists()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         orderRequestDto.CourtFile.CourtClassCd = "A";
@@ -371,10 +379,10 @@ public class OrderServiceTests : ServiceTestBase
 
     #endregion
 
-    #region UpsertAsync Tests
+    #region ProcessOrderRequestAsync Tests
 
     [Fact]
-    public async Task UpsertAsync_CreatesNewOrder_WhenOrderDoesNotExist()
+    public async Task ProcessOrderRequestAsync_CreatesNewOrder_WhenOrderDoesNotExist()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
 
@@ -394,7 +402,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_UpdatesExistingOrder_WhenOrderExists()
+    public async Task ProcessOrderRequestAsync_UpdatesExistingOrder_WhenOrderExists()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
@@ -423,7 +431,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_SetsIdFromExistingOrder_BeforeUpdate()
+    public async Task ProcessOrderRequestAsync_SetsIdFromExistingOrder_BeforeUpdate()
     {
         var orderDto = CreateValidOrderRequestDto();
         var existingOrderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
@@ -452,7 +460,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_ReturnsFailure_WhenExceptionThrown()
+    public async Task ProcessOrderRequestAsync_ReturnsFailure_WhenExceptionThrown()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
 
@@ -467,7 +475,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_LogsInformation_WhenCreatingNewOrder()
+    public async Task ProcessOrderRequestAsync_LogsInformation_WhenCreatingNewOrder()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
 
@@ -492,7 +500,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_LogsInformation_WhenUpdatingExistingOrder()
+    public async Task ProcessOrderRequestAsync_LogsInformation_WhenUpdatingExistingOrder()
     {
         var orderDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
@@ -525,7 +533,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_LogsError_WhenExceptionOccurs()
+    public async Task ProcessOrderRequestAsync_LogsError_WhenExceptionOccurs()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
 
@@ -546,7 +554,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_EnqueuesNotificationJob_WhenCreatingNewOrder()
+    public async Task ProcessOrderRequestAsync_EnqueuesNotificationJob_WhenCreatingNewOrder()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
 
@@ -567,7 +575,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task UpsertAsync_DoesNotEnqueueNotificationJob_WhenCreationFails()
+    public async Task ProcessOrderRequestAsync_DoesNotEnqueueNotificationJob_WhenCreationFails()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
 
@@ -666,8 +674,8 @@ public class OrderServiceTests : ServiceTestBase
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderReview = new OrderReviewDto 
-        { 
+        var orderReview = new OrderReviewDto
+        {
             Status = OrderStatus.Approved,
             Comments = "Test notes"
         };
@@ -762,7 +770,7 @@ public class OrderServiceTests : ServiceTestBase
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var claimsPrincipal = new ClaimsPrincipal(identity);
-        
+
         var httpContext = new DefaultHttpContext
         {
             User = claimsPrincipal

@@ -90,6 +90,11 @@ const routes: RouteRecordRaw[] = [
     name: 'RequestAccess',
     component: () => import('@/components/dashboard/RequestAccess.vue'),
   },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('@/components/orders/Orders.vue'),
+  },
 ];
 
 const router = createRouter({

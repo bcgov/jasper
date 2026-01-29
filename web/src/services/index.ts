@@ -10,10 +10,10 @@ import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
+import { OrderService } from './OrderService';
+import { QuickLinkService } from './QuickLinkService';
 import { TimebankService } from './TimebankService';
 import { UserService } from './UserService';
-import { QuickLinkService } from './QuickLinkService';
-import { OrderService } from './OrderService';
 
 export function registerRouter(app: App) {
   const httpService = new HttpService(import.meta.env.BASE_URL);
@@ -58,8 +58,8 @@ export * from './DashboardService';
 export * from './FilesService';
 export * from './LocationService';
 export * from './LookupService';
+export * from './OrderService';
+export * from './QuickLinkService';
 export * from './RedirectHandlerService';
 export * from './TimebankService';
 export * from './UserService';
-export * from './QuickLinkService';
-export * from './OrderService';

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Bogus;
 using FluentValidation;
 using FluentValidation.Results;
-using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -57,72 +56,40 @@ public class OrdersControllerTests
     [Fact]
     public async Task GetMyOrders_ReturnsOk_WithFilteredOrders()
     {
-        var orders = new List<OrderDto>
+        var orders = new List<OrderViewDto>
         {
+            new(),
+            new(),
             new()
-            {
-                OrderRequest = new()
-                {
-                    CourtFile = new CourtFileDto { PhysicalFileId = 123 },
-                    Referral = new ReferralDto { SentToPartId = _judgeId }
-                }
-            },
-            new()
-            {
-                OrderRequest = new()
-                {
-                    CourtFile = new CourtFileDto { PhysicalFileId = 456 },
-                    Referral = new ReferralDto { SentToPartId = _faker.Random.Int(2000, 3000) }
-                }
-            },
-            new()
-            {
-                OrderRequest = new()
-                {
-                    CourtFile = new CourtFileDto { PhysicalFileId = 789 },
-                    Referral = new ReferralDto { SentToPartId = _judgeId }
-                }
-            }
         };
 
         _mockOrderService
-            .Setup(s => s.GetAllAsync())
+            .Setup(s => s.GetJudgeOrdersAsync(_judgeId))
             .ReturnsAsync(orders);
 
         var result = await _controller.GetMyOrders();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedOrders = Assert.IsAssignableFrom<IEnumerable<OrderDto>>(okResult.Value);
-        Assert.Equal(2, returnedOrders.Count());
-        Assert.All(returnedOrders, order => Assert.Equal(_judgeId, order.OrderRequest.Referral.SentToPartId));
-        _mockOrderService.Verify(s => s.GetAllAsync(), Times.Once);
+        var returnedOrders = Assert.IsType<IEnumerable<OrderViewDto>>(okResult.Value, exactMatch: false);
+        Assert.Equal(3, returnedOrders.Count());
+        _mockOrderService.Verify(s => s.GetJudgeOrdersAsync(_judgeId), Times.Once);
     }
 
     [Fact]
     public async Task GetMyOrders_ReturnsOk_WithEmptyList_WhenNoOrdersMatch()
     {
-        var orders = new List<OrderDto>
-        {
-            new()
-            {
-                OrderRequest = new()
-                {
-                    CourtFile = new CourtFileDto { PhysicalFileId = 123 },
-                    Referral = new ReferralDto { SentToPartId = _faker.Random.Int(2000, 3000) }
-                }
-            }
-        };
+        var orders = new List<OrderViewDto>();
 
         _mockOrderService
-            .Setup(s => s.GetAllAsync())
+            .Setup(s => s.GetJudgeOrdersAsync(_judgeId))
             .ReturnsAsync(orders);
 
         var result = await _controller.GetMyOrders();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedOrders = Assert.IsAssignableFrom<IEnumerable<OrderDto>>(okResult.Value);
+        var returnedOrders = Assert.IsType<IEnumerable<OrderViewDto>>(okResult.Value, exactMatch: false);
         Assert.Empty(returnedOrders);
-        _mockOrderService.Verify(s => s.GetAllAsync(), Times.Once);
+        _mockOrderService.Verify(s => s.GetJudgeOrdersAsync(_judgeId), Times.Once);
     }
 
     #endregion
@@ -433,7 +400,7 @@ public class OrdersControllerTests
         var result = await _controller.ReviewOrder(orderId, orderReview);
 
         Assert.IsType<NoContentResult>(result);
-        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r =>
             r.Status == OrderStatus.Approved && r.Comments == "Looks good")), Times.Once);
     }
 
@@ -454,7 +421,7 @@ public class OrdersControllerTests
         var result = await _controller.ReviewOrder(orderId, orderReview);
 
         Assert.IsType<NoContentResult>(result);
-        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r =>
             r.Status == OrderStatus.Unapproved && r.Comments == "Needs corrections")), Times.Once);
     }
 
@@ -475,7 +442,7 @@ public class OrdersControllerTests
         var result = await _controller.ReviewOrder(orderId, orderReview);
 
         Assert.IsType<NoContentResult>(result);
-        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r => 
+        _mockOrderService.Verify(s => s.ReviewOrder(orderId, It.Is<OrderReviewDto>(r =>
             r.Status == OrderStatus.Approved && r.Comments == null)), Times.Once);
     }
 

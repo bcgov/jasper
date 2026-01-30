@@ -57,7 +57,7 @@ namespace Scv.Api.Infrastructure.Authorization
             if (clientRoles == null || !clientRoles.Any())
             {
                 _logger.LogWarning(
-                    "No client roles found for client: {ClientId}",
+                    "No client roles found for audience: {ClientId}",
                     _audience);
                 context.Fail();
                 return Task.CompletedTask;

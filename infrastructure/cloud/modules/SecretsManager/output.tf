@@ -40,7 +40,7 @@ output "api_secrets" {
     ["AZURE__TENANT_ID", "${aws_secretsmanager_secret.azure_secret.arn}:tenantId::"],
     ["CsoKeycloak__Audience", "${aws_secretsmanager_secret.keycloak_cso_secret.arn}:audience::"],
     ["CsoKeycloak__Authority", "${aws_secretsmanager_secret.keycloak_cso_secret.arn}:authority::"],
-    ["CsoKeycloak__Client", "${aws_secretsmanager_secret.keycloak_cso_secret.arn}:client::"],
+    ["CsoKeycloak__ClientId", "${aws_secretsmanager_secret.keycloak_cso_secret.arn}:client::"],
     ["CsoKeycloak__Secret", "${aws_secretsmanager_secret.keycloak_cso_secret.arn}:secret::"],
     ["CsoKeycloak__WriteRole", "${aws_secretsmanager_secret.keycloak_cso_secret.arn}:writeRole::"],
     ["DARS__Username", "${aws_secretsmanager_secret.dars_secret.arn}:username::"],

@@ -20,7 +20,6 @@ public class JudgesController(IJudgeService judgeService) : ControllerBase
     /// </summary>
     /// <returns>List of active judges.</returns>
     [HttpGet]
-    [Route("judges")]
     public async Task<IActionResult> GetJudges()
     {
         if (!this.User.CanViewOthersSchedule())

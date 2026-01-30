@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Scv.Api.Helpers.Extensions
 {
@@ -42,6 +43,10 @@ namespace Scv.Api.Helpers.Extensions
         public static bool IsServiceAccountUser(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
                claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername).Equals("service-account-scv");
+
+        public static bool IsCsoServiceAccountUser(this ClaimsPrincipal claimsPrincipal)
+            => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
+               claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername).StartsWith("service-account-cso-jasper");
 
         public static bool IsIdirUser(this ClaimsPrincipal claimsPrincipal)
         => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
@@ -86,7 +91,7 @@ namespace Scv.Api.Helpers.Extensions
                 return IDIR;
             if (claimsPrincipal.IsVcUser())
                 return VC;
-                
+
             return JUDICIARY;
         }
 
@@ -174,6 +179,40 @@ namespace Scv.Api.Helpers.Extensions
 
         public static string ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)
             => claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalJudgeId);
+
+        public static string[] ClientRoles(this ClaimsPrincipal claimsPrincipal, string audience)
+        {
+            if (claimsPrincipal == null || string.IsNullOrWhiteSpace(audience))
+            {
+                return Array.Empty<string>();
+            }
+
+            var resourceAccessClaim = claimsPrincipal.FindFirst("resource_access")?.Value;
+            if (string.IsNullOrWhiteSpace(resourceAccessClaim))
+            {
+                return Array.Empty<string>();
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(resourceAccessClaim);
+                if (document.RootElement.TryGetProperty(audience, out var clientElement) &&
+                    clientElement.TryGetProperty("roles", out var rolesElement))
+                {
+                    return rolesElement
+                        .EnumerateArray()
+                        .Select(role => role.GetString())
+                        .Where(role => !string.IsNullOrWhiteSpace(role))
+                        .ToArray();
+                }
+            }
+            catch (JsonException)
+            {
+                return Array.Empty<string>();
+            }
+
+            return Array.Empty<string>();
+        }
 
         // Check if any of the user's claims have meaningfully changed compared to the current user data
         public static bool HasChanged(this ClaimsPrincipal claimsPrincipal, UserDto currentUser)

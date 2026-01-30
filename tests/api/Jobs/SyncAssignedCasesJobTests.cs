@@ -38,7 +38,7 @@ public class SyncAssignedCasesJobTests
     private readonly Mock<IConfiguration> _mockConfig;
     private readonly Mock<IEmailService> _mockEmailService;
     private readonly Mock<ICsvParser> _mockCsvParser;
-    private readonly Mock<IDashboardService> _mockDashboardService;
+    private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly Mock<ICaseService> _mockCaseService;
     private readonly Mock<ILambdaInvokerService> _mockLambdaInvokerService;
 
@@ -62,7 +62,7 @@ public class SyncAssignedCasesJobTests
         _mockConfig = new Mock<IConfiguration>();
         _mockEmailService = new Mock<IEmailService>();
         _mockCsvParser = new Mock<ICsvParser>();
-        _mockDashboardService = new Mock<IDashboardService>();
+        _mockJudgeService = new Mock<IJudgeService>();
         _mockCaseService = new Mock<ICaseService>();
         _mockLambdaInvokerService = new Mock<ILambdaInvokerService>();
 
@@ -92,7 +92,7 @@ public class SyncAssignedCasesJobTests
             _mockLogger.Object,
             _mockEmailService.Object,
             _mockCsvParser.Object,
-            _mockDashboardService.Object,
+            _mockJudgeService.Object,
             _mockCaseService.Object,
             _courtListServiceFixture.MockCourtListService.Object,
             _mockJcServiceClient.Object,
@@ -219,7 +219,7 @@ public class SyncAssignedCasesJobTests
         _mockCsvParser.Setup(p => p.Parse<CsvReservedJudgement>(It.IsAny<MemoryStream>(), "\t"))
             .Returns(csvData);
 
-        _mockDashboardService.Setup(s => s.GetJudges())
+        _mockJudgeService.Setup(s => s.GetJudges(null))
             .ReturnsAsync([]);
 
         _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))

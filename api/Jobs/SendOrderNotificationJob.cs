@@ -13,12 +13,12 @@ namespace Scv.Api.Jobs;
 /// This is a fire-and-forget job triggered when new orders are created.
 /// </summary>
 public class SendOrderNotificationJob(
-    IDashboardService dashboardService,
+    IJudgeService judgeService,
     IEmailTemplateService emailTemplateService,
     IUserService userService,
     ILogger<SendOrderNotificationJob> logger)
 {
-    private readonly IDashboardService _dashboardService = dashboardService;
+    private readonly IJudgeService _judgeService = judgeService;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
     private readonly IUserService _userService = userService;
     private readonly ILogger<SendOrderNotificationJob> _logger = logger;
@@ -27,17 +27,17 @@ public class SendOrderNotificationJob(
     {
         try
         {
-            _logger.LogInformation("Processing order notification job for file {FileId}", 
+            _logger.LogInformation("Processing order notification job for file {FileId}",
                 order.CourtFile.PhysicalFileId);
 
             await NotifyJudgeOfNewOrderAsync(order);
 
-            _logger.LogInformation("Order notification job completed for file {FileId}", 
+            _logger.LogInformation("Order notification job completed for file {FileId}",
                 order.CourtFile.PhysicalFileId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send order notification for file {FileId}", 
+            _logger.LogError(ex, "Failed to send order notification for file {FileId}",
                 order.CourtFile.PhysicalFileId);
             throw; // Hangfire will retry based on configured retry policy
         }
@@ -48,12 +48,12 @@ public class SendOrderNotificationJob(
         var judgeId = order.Referral.SentToPartId;
         if (!judgeId.HasValue)
         {
-            _logger.LogWarning("Cannot send notification - no judge assigned to order for file {FileId}", 
+            _logger.LogWarning("Cannot send notification - no judge assigned to order for file {FileId}",
                 order.CourtFile.PhysicalFileId);
             return;
         }
 
-        var judge = await _dashboardService.GetJudge(judgeId.Value);
+        var judge = await _judgeService.GetJudge(judgeId.Value);
         if (judge == null)
         {
             _logger.LogWarning("Judge with id {JudgeId} not found", judgeId.Value);
@@ -73,7 +73,7 @@ public class SendOrderNotificationJob(
             _logger.LogWarning("No database user found for judge {JudgeId}", judgeId.Value);
             return;
         }
-        
+
         var judgeEmail = databaseUser.Email;
         if (string.IsNullOrWhiteSpace(judgeEmail))
         {
@@ -94,8 +94,8 @@ public class SendOrderNotificationJob(
         };
 
         await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);
-        
-        _logger.LogInformation("Notification sent to judge {JudgeId} for order on file {FileId}", 
+
+        _logger.LogInformation("Notification sent to judge {JudgeId} for order on file {FileId}",
             judgeId.Value, order.CourtFile.PhysicalFileId);
     }
 

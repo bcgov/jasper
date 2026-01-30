@@ -1,4 +1,13 @@
-﻿using IdentityModel.Client;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,15 +28,6 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Infrastructure.Authentication
 {
@@ -358,8 +358,8 @@ namespace Scv.Api.Infrastructure.Authentication
 
         private static async Task<PersonSearchItem> GetJudgeById(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int judgeId)
         {
-            var dashboardService = context.HttpContext.RequestServices.GetRequiredService<IDashboardService>();
-            var judges = await dashboardService.GetJudges();
+            var judgeService = context.HttpContext.RequestServices.GetRequiredService<IJudgeService>();
+            var judges = await judgeService.GetJudges();
 
             return judges.FirstOrDefault(j => j.PersonId == judgeId);
         }

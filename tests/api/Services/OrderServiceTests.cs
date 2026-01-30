@@ -30,7 +30,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Faker _faker;
     private readonly Mock<IRepositoryBase<Order>> _mockOrderRepo;
     private readonly Mock<FileServicesClient> _mockFileServicesClient;
-    private readonly Mock<IDashboardService> _mockDashboardService;
+    private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<ILogger<OrderService>> _mockLogger;
     private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
@@ -58,7 +58,7 @@ public class OrderServiceTests : ServiceTestBase
         _mockLogger = new Mock<ILogger<OrderService>>();
         _mockOrderRepo = new Mock<IRepositoryBase<Order>>();
         _mockFileServicesClient = new Mock<FileServicesClient>(MockBehavior.Strict, this.HttpClient);
-        _mockDashboardService = new Mock<IDashboardService>();
+        _mockJudgeService = new Mock<IJudgeService>();
         _mockConfiguration = new Mock<IConfiguration>();
         _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
@@ -78,7 +78,7 @@ public class OrderServiceTests : ServiceTestBase
             _mockOrderRepo.Object,
             _mockFileServicesClient.Object,
             _mockConfiguration.Object,
-            _mockDashboardService.Object,
+            _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
             _mockHttpContextAccessor.Object);
     }
@@ -211,8 +211,8 @@ public class OrderServiceTests : ServiceTestBase
                 orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
-        _mockDashboardService
-            .Setup(d => d.GetJudges())
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null))
             .ReturnsAsync([new PersonSearchItem { PersonId = judgeId }]);
 
         orderRequestDto.Referral.SentToPartId = judgeId;
@@ -294,8 +294,8 @@ public class OrderServiceTests : ServiceTestBase
                 orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CivilFileContent { CivilFile = [new()] });
 
-        _mockDashboardService
-            .Setup(d => d.GetJudges())
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null))
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
         orderRequestDto.Referral.SentToPartId = judgeId;
@@ -342,8 +342,8 @@ public class OrderServiceTests : ServiceTestBase
                 orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
-        _mockDashboardService
-            .Setup(d => d.GetJudges())
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null))
             .ReturnsAsync([]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
@@ -368,8 +368,8 @@ public class OrderServiceTests : ServiceTestBase
                 orderRequestDto.CourtFile.PhysicalFileId.ToString()))
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
-        _mockDashboardService
-            .Setup(d => d.GetJudges())
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null))
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);

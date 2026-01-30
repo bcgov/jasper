@@ -8,6 +8,7 @@ import { DarsService } from './DarsService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
 import { HttpService } from './HttpService';
+import { JudgeService } from './JudgeService';
 import { LocationService } from './LocationService';
 import { LookupService } from './LookupService';
 import { OrderService } from './OrderService';
@@ -31,6 +32,7 @@ export function registerRouter(app: App) {
   const darsService = new DarsService(httpService);
   const quickLinkService = new QuickLinkService(httpService);
   const orderService = new OrderService(httpService);
+  const judgeService = new JudgeService(httpService);
 
   app.provide('httpService', httpService);
   app.provide('authService', authService);
@@ -47,6 +49,7 @@ export function registerRouter(app: App) {
   app.provide('darsService', darsService);
   app.provide('quickLinkService', quickLinkService);
   app.provide('orderService', orderService);
+  app.provide('judgeService', judgeService);
 }
 
 export * from './AuthService';
@@ -56,6 +59,7 @@ export * from './CourtListService';
 export * from './DarsService';
 export * from './DashboardService';
 export * from './FilesService';
+export * from './JudgeService';
 export * from './LocationService';
 export * from './LookupService';
 export * from './OrderService';

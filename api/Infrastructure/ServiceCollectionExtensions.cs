@@ -28,7 +28,6 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Jobs;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
@@ -274,6 +273,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<ITimebankService, TimebankService>();
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
+            services.AddScoped<IJudgeService, JudgeService>();
             services.AddScoped<ICsvParser, CsvParser>();
             services.AddScoped<IPcssSyncService, PcssSyncService>();
 

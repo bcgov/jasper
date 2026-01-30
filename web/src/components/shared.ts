@@ -182,6 +182,32 @@ export default {
     ).join(', ');
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
+  openOrderDocuments(documentData: DocumentData): void {
+    if (!documentData) {
+      return;
+    }
+
+    this.addDocumentsToPdfStore([
+      {
+        documentType: DocumentRequestType.File,
+        documentData: documentData,
+        groupKeyOne: documentData.fileNumberText ?? '',
+        groupKeyTwo: documentData.partyName ?? '',
+        documentName: documentData.documentDescription ?? 'Document',
+        physicalFileId: documentData.fileId || '',
+      },
+    ]);
+
+    const newWindow = window.open(
+      `/file-viewer?type=order&id=${documentData.orderId}`,
+      '_blank'
+    );
+
+    this.replaceWindowTitle(
+      newWindow,
+      documentData.documentDescription || 'Order'
+    );
+  },
   addDocumentsToPdfStore(
     documents: {
       documentType: DocumentRequestType;

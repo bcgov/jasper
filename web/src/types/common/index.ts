@@ -160,3 +160,9 @@ export interface DocumentBundleResponse {
   binders: Binder[];
   pdfResponse: GeneratePdfResponse;
 }
+
+export enum OrderStatusEnum {
+  Unapproved = 'Unapproved',
+  Pending = 'Pending',
+  Approved = 'Approved',
+}

@@ -134,7 +134,7 @@ public class BinderService(
     public async Task<OperationResult<DocumentBundleResponse>> CreateDocumentBundle(List<Dictionary<string, string>> contexts, Dictionary<string, List<string>> filters = null)
     {
         var correlationId = Guid.NewGuid();
-        this.Logger.LogInformation("Starting document bundling/merging process. CorrelationId: {CorrelationId}", correlationId);
+        Logger.LogInformation("Starting document bundling/merging process. CorrelationId: {CorrelationId}", correlationId);
 
         try
         {
@@ -142,7 +142,7 @@ public class BinderService(
 
             if (binders.Count == 0)
             {
-                this.Logger.LogWarning("No binders to process. CorrelationId: {CorrelationId}", correlationId);
+                Logger.LogWarning("No binders to process. CorrelationId: {CorrelationId}", correlationId);
                 return OperationResult<DocumentBundleResponse>.Success(new DocumentBundleResponse
                 {
                     Binders = [],
@@ -152,21 +152,23 @@ public class BinderService(
             var requests = GeneratePdfDocumentRequests(binders, correlationId, filters);
             if (requests.Length == 0)
             {
-                this.Logger.LogWarning("No binders to merge. CorrelationId: {CorrelationId}", correlationId);
+                Logger.LogWarning("No binders to merge. CorrelationId: {CorrelationId}", correlationId);
                 return OperationResult<DocumentBundleResponse>.Failure("No documents found to merge.");
             }
 
             var response = await _documentMerger.MergeDocuments(requests);
 
-            // Apply filters to binders before returning
-            if (filters != null && filters.Count > 0)
+            // Apply filters and sort documents by category
+            foreach (var binder in binders)
             {
-                foreach (var binder in binders)
+                if (filters != null && filters.Count > 0)
                 {
                     binder.Documents = ApplyDocumentFilters(binder.Documents, filters);
                 }
+                
+                binder.Documents = [.. binder.Documents.OrderBy(d => GetCategoryOrder(d.Category))];
             }
-
+            
             return OperationResult<DocumentBundleResponse>.Success(new DocumentBundleResponse
             {
                 Binders = binders,
@@ -181,6 +183,15 @@ public class BinderService(
     }
 
     #region Helpers
+
+    private static int GetCategoryOrder(string category) => category switch
+    {
+        "Initiating" => 0,
+        "ROP" => 1,
+        "Bail" => 2,
+        "Report" => 3,
+        _ => 4
+    };
 
     private async Task<List<BinderDto>> InitializeBinders(List<Dictionary<string, string>> contexts)
     {
@@ -279,6 +290,8 @@ public class BinderService(
                 // Excludes DocumentType.File documents where the FileName = DocumentId.
                 // This means that there is no document to view.
                 .Where(d => d.DocumentType != DocumentType.File || d.DocumentId != null)
+                // Default ordering is dictated by category, then the document's Order property
+                .OrderBy(d => GetCategoryOrder(d.Category))
                 .Select(d => new PdfDocumentRequest
                 {
                     Type = d.DocumentType,

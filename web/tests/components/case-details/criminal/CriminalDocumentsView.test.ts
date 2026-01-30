@@ -533,7 +533,7 @@ describe('CriminalDocumentsView.vue', () => {
       });
 
       wrapper.vm.selectedItems = [
-        { ...doc, fullName: 'John Doe', profSeqNo: 1 },
+        { ...doc, fullNameLastFirst: 'John Doe', profSeqNo: 1 },
       ];
       wrapper.vm.openMergedDocuments();
 

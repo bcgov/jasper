@@ -10,6 +10,7 @@ export interface DocumentData {
   documentId?: string;
   fileId?: string;
   fileNumberText?: string;
+  fullNameLastFirst?: string;
   location?: string;
   partId?: string;
   partyName?: string;

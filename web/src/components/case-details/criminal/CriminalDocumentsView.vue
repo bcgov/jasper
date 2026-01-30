@@ -162,7 +162,7 @@
     () => selectedItems.value.filter((item) => item.imageId).length > 1
   );
   const sortBy = ref([{ key: 'issueDate', order: 'desc' }] as const);
-  const keyDocumentsSortBy = ref([{ key: 'category', order: 'desc' }] as const);
+  const keyDocumentsSortBy = ref([{ key: 'category', order: 'asc' }] as const);
   const selectedCategory = ref<string>();
   const selectedAccused = ref<string>();
 
@@ -198,6 +198,7 @@
         (participant.keyDocuments || []).map((doc) => ({
           ...doc,
           fullName: participant.fullName || '',
+          fullNameLastFirst: participant.fullNameLastFirst || '',
           profSeqNo: participant.profSeqNo,
           id:
             doc.category +
@@ -285,7 +286,7 @@
           const idx = order.indexOf(cat);
           return idx === -1 ? order.length : idx;
         };
-        return getOrder(b.category) - getOrder(a.category);
+        return getOrder(a.category) - getOrder(b.category);
       },
     },
     {
@@ -302,6 +303,12 @@
   };
 
   const openMergedDocuments = () => {
+    const order = ['Initiating', 'ROP', 'Bail', 'Report'];
+    // const getOrder = (cat: string) => {
+    //   const idx = order.indexOf(cat);
+    //   return idx === -1 ? order.length : idx;
+    // };
+
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
@@ -310,9 +317,12 @@
       documentName: string;
       physicalFileId: string;
     }[] = [];
+    
     selectedItems.value
       .filter((item) => item.imageId)
-      .forEach((item: documentType & { fullName?: string }) => {
+      //.sort((a, b) => getOrder(a.category) - getOrder(b.category))
+      .forEach((item: documentType) => {
+        console.log(item);
         const criminalDocType = getCriminalDocumentType(item);
         let documentType: DocumentRequestType;
 
@@ -329,7 +339,7 @@
           documentType,
           documentData,
           groupKeyOne: documentData.fileNumberText || '',
-          groupKeyTwo: item.fullName || '',
+          groupKeyTwo: documentData.fullNameLastFirst || '',
           documentName: documentData.documentDescription || '',
           physicalFileId: documentData.fileId || '',
         });

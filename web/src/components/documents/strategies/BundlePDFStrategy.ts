@@ -41,7 +41,7 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
 
     appearanceRequests.forEach((req) => {
       const fileNumber = req.fileNumber;
-      const fullName = req.fullName;
+      const fullName = req.fullName ?? '';
 
       if (!groupedRequests[fileNumber]) {
         groupedRequests[fileNumber] = {};
@@ -120,7 +120,15 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
     Object.entries(userGroup).forEach(([name, docs]) => {
       const secondGroup = this.makeSecondGroup(name, docs, apiResponse);
       if (secondGroup) {
-        children.push(secondGroup);
+        if (name) {
+          // Keep second grouping if name exists
+          children.push(secondGroup);
+        } else {
+          // Flatten: add documents directly to first group
+          if (secondGroup.children) {
+            children.push(...secondGroup.children);
+          }
+        }
       }
     });
 

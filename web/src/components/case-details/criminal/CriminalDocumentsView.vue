@@ -303,12 +303,6 @@
   };
 
   const openMergedDocuments = () => {
-    const order = ['Initiating', 'ROP', 'Bail', 'Report'];
-    // const getOrder = (cat: string) => {
-    //   const idx = order.indexOf(cat);
-    //   return idx === -1 ? order.length : idx;
-    // };
-
     const documents: {
       documentType: DocumentRequestType;
       documentData: DocumentData;
@@ -320,7 +314,6 @@
     
     selectedItems.value
       .filter((item) => item.imageId)
-      //.sort((a, b) => getOrder(a.category) - getOrder(b.category))
       .forEach((item: documentType) => {
         console.log(item);
         const criminalDocType = getCriminalDocumentType(item);

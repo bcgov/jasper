@@ -311,7 +311,7 @@
       documentName: string;
       physicalFileId: string;
     }[] = [];
-    
+
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item: documentType) => {

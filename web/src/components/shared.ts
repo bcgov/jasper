@@ -191,7 +191,7 @@ export default {
         documentType: DocumentRequestType.File,
         documentData: documentData,
         groupKeyOne: documentData.fileNumberText ?? '',
-        groupKeyTwo:  '',
+        groupKeyTwo: '',
         documentName: documentData.documentDescription ?? 'Document',
         physicalFileId: documentData.fileId || '',
       },

@@ -12,8 +12,7 @@ using Scv.Api.Services;
 
 namespace Scv.Api.Controllers;
 
-// This will be replaced with another OAuth scheme so that the other team can call this API.
-[Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
+
 [Route("api/[controller]")]
 [ApiController]
 public class OrdersController(
@@ -29,6 +28,7 @@ public class OrdersController(
     /// <param name="judgeId">The override judge id.</param>
     /// <returns>List of orders for the judge.</returns>
     [HttpGet]
+    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     public async Task<IActionResult> GetMyOrders(int? judgeId = null)
     {
         var judgeOrders = await _orderService.GetJudgeOrdersAsync(this.User.JudgeId(judgeId));
@@ -41,6 +41,7 @@ public class OrdersController(
     /// <param name="orderRequestDto">The Order payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>
     /// <returns>Processed order</returns>
     [HttpPut]
+    [Authorize(AuthenticationSchemes = CsoPolicies.AuthenticationScheme, Policy = CsoPolicies.RequireWriteRole)]
     [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

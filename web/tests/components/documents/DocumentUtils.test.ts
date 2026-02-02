@@ -53,6 +53,7 @@ describe('DocumentUtils', () => {
         partId: 10,
         profSeqNo: 20,
         location: 'Vancouver',
+        aslCourtFileNumber: 'CR-12345',
       });
     });
 

@@ -17,6 +17,8 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
   protected readonly filesService: FilesService;
   protected pageIndex = 0;
 
+  abstract defaultDocumentName: string;
+
   constructor() {
     const service = inject<FilesService>('filesService');
     if (!service) {
@@ -28,6 +30,9 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
   hasData(): boolean {
     return this.pdfStore.documents.length > 0;
   }
+
+  // Optional method that OrderPDFStrategy will implement
+  approveOrder?(comments: string, pdfString: string): Promise<void>;
 
   getRawData(): Record<string, Record<string, StoreDocument[]>> {
     return this.pdfStore.groupedDocuments;
@@ -124,10 +129,11 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
     return {
-      title: doc.documentName,
+      title: doc.documentName != '' ? doc.documentName : this.defaultDocumentName,
       pageIndex: apiResponse.pageRanges?.[this.pageIndex++]?.start,
     };
   }
+  
 
   cleanup(): void {
     this.pdfStore.clearDocuments();

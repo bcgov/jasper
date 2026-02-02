@@ -63,8 +63,10 @@
     // Cleanup function
     cleanup(): void;
 
-    // Shows options related to refviewing order files
+    // Shows options related to reviewing order files
     showOrderReviewOptions?: boolean;
+
+    approveOrder?(comments: string, pdfString: string): Promise<void>;
   }
 
   export interface OutlineItem {
@@ -239,8 +241,23 @@
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const approveOrder = async (comments: string) => {
+  // const approveOrder = async (comments: string) => {
+  //   showReviewModal.value = false;
+  // };
+
+   const approveOrder = async (comments: string) => {
     showReviewModal.value = false;
+    
+    // Check if strategy supports order approval
+    if (props.strategy.approveOrder) {
+      try {
+        await props.strategy.approveOrder(comments);
+        // Add success notification/handling here
+      } catch (error) {
+        console.error('Error approving order:', error);
+        // Add error notification/handling here
+      }
+    }
   };
 
   onMounted(() => {

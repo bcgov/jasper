@@ -123,11 +123,9 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
         if (name) {
           // Keep second grouping if name exists
           children.push(secondGroup);
-        } else {
+        } else if (secondGroup.children) {
           // Flatten: add documents directly to first group
-          if (secondGroup.children) {
-            children.push(...secondGroup.children);
-          }
+          children.push(...secondGroup.children);
         }
       }
     });

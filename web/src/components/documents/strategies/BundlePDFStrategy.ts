@@ -119,7 +119,7 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
 
     Object.entries(userGroup).forEach(([name, docs]) => {
       const secondGroup = this.makeSecondGroup(name, docs, apiResponse);
-      if(!secondGroup) {
+      if (!secondGroup) {
         return;
       }
       if (name) {

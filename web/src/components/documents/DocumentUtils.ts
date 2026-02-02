@@ -39,6 +39,11 @@ export const prepareCriminalDocumentData = (data) => {
     fullNameLastFirst: data.fullNameLastFirst,
     isCriminal: true,
     partyName: data.fullNameLastFirst,
+    aslCourtFileNumber:
+      data.aslCourtFileNumber ??
+      criminalFileStore.criminalFileInformation.detailsData.courtClassCd +
+        '-' +
+        criminalFileStore.criminalFileInformation.detailsData.fileNumberTxt,
   };
 
   // Add transcript metadata if this is a transcript document

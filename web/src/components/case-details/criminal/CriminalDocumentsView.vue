@@ -315,7 +315,6 @@
     selectedItems.value
       .filter((item) => item.imageId)
       .forEach((item: documentType) => {
-        console.log(item);
         const criminalDocType = getCriminalDocumentType(item);
         let documentType: DocumentRequestType;
 
@@ -331,13 +330,12 @@
         documents.push({
           documentType,
           documentData,
-          groupKeyOne: documentData.fileNumberText || '',
+          groupKeyOne: documentData.aslCourtFileNumber || '',
           groupKeyTwo: documentData.fullNameLastFirst || '',
           documentName: documentData.documentDescription || '',
           physicalFileId: documentData.fileId || '',
         });
       });
-
     shared.openMergedDocuments(documents);
   };
 </script>

@@ -36,7 +36,6 @@ export const prepareCriminalDocumentData = (data) => {
     location:
       criminalFileStore.criminalFileInformation.detailsData
         .homeLocationAgencyName,
-    fullNameLastFirst: data.fullNameLastFirst,
     isCriminal: true,
     partyName: data.fullNameLastFirst,
     aslCourtFileNumber:

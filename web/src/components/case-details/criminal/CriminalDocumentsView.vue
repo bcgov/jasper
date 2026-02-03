@@ -331,7 +331,7 @@
           documentType,
           documentData,
           groupKeyOne: documentData.aslCourtFileNumber || '',
-          groupKeyTwo: documentData.fullNameLastFirst || '',
+          groupKeyTwo: documentData.partyName || '',
           documentName: documentData.documentDescription || '',
           physicalFileId: documentData.fileId || '',
         });

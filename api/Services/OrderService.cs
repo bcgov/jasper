@@ -33,7 +33,7 @@ public interface IOrderService : ICrudService<OrderDto>
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
 {
     private readonly FileServicesClient _filesClient;
-    private readonly IDashboardService _dashboardService;
+    private readonly IJudgeService _judgeService;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
@@ -49,7 +49,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IRepositoryBase<Order> orderRepo,
         FileServicesClient filesClient,
         IConfiguration configuration,
-        IDashboardService dashboardService,
+        IJudgeService judgeService,
         IBackgroundJobClient backgroundJobClient,
         IHttpContextAccessor httpContextAccessor
     ) : base(
@@ -58,7 +58,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             logger,
             orderRepo)
     {
-        _dashboardService = dashboardService;
+        _judgeService = judgeService;
         _filesClient = filesClient;
         _backgroundJobClient = backgroundJobClient;
         _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -115,7 +115,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         // Validate judge existence
-        var judges = await _dashboardService.GetJudges();
+        var judges = await _judgeService.GetJudges();
         if (!judges.Any(j => j.PersonId == dto.Referral.SentToPartId))
         {
             errors.Add($"Judge with id: {dto.Referral.SentToPartId} is not found.");

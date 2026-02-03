@@ -58,7 +58,7 @@ namespace Scv.Api.Services
 
         #region Collection Methods
 
-        public async Task<ICollection<Location>> GetLocations(bool includeChildRecords = false) => await GetDataFromCache($"Locations{includeChildRecords}", async () =>
+        public virtual async Task<ICollection<Location>> GetLocations(bool includeChildRecords = false) => await GetDataFromCache($"Locations{includeChildRecords}", async () =>
         {
             var getJCLocationsTask = this.GetJCLocations(includeChildRecords);
             var getPCSSLocationsTask = this.GetPCSSLocations(includeChildRecords);

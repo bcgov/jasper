@@ -1,12 +1,11 @@
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Api.Models;
-using Scv.Api.Models.AccessControlManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using PCSSCommon.Clients.AuthorizationServices;
+using Scv.Api.Models.AccessControlManagement;
 
 namespace Scv.Api.Services
 {
@@ -18,12 +17,12 @@ namespace Scv.Api.Services
     public class PcssSyncService(
         IPcssAuthorizationService authorizationService,
         IGroupService groupService,
-        IDashboardService dashboardService,
+        IJudgeService judgeService,
         ILogger<PcssSyncService> logger) : IPcssSyncService
     {
         private readonly IPcssAuthorizationService _authorizationService = authorizationService;
         private readonly IGroupService _groupService = groupService;
-        private readonly IDashboardService _dashboardService = dashboardService;
+        private readonly IJudgeService _judgeService = judgeService;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
         public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false)
@@ -102,7 +101,7 @@ namespace Scv.Api.Services
 
         private async Task<int?> GetJudgeIdForUserAsync(int pcssUserId, string email)
         {
-            var judges = await _dashboardService.GetJudges();
+            var judges = await _judgeService.GetJudges();
             var judge = judges.FirstOrDefault(j => j.UserId == pcssUserId);
 
             if (judge != null)

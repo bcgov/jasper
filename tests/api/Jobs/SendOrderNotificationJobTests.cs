@@ -15,7 +15,7 @@ namespace tests.api.Jobs;
 public class SendOrderNotificationJobTests
 {
     private readonly Faker _faker;
-    private readonly Mock<IDashboardService> _mockDashboardService;
+    private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly Mock<IEmailTemplateService> _mockEmailTemplateService;
     private readonly Mock<IUserService> _mockUserService;
     private readonly Mock<ILogger<SendOrderNotificationJob>> _mockLogger;
@@ -24,13 +24,13 @@ public class SendOrderNotificationJobTests
     public SendOrderNotificationJobTests()
     {
         _faker = new Faker();
-        _mockDashboardService = new Mock<IDashboardService>();
+        _mockJudgeService = new Mock<IJudgeService>();
         _mockEmailTemplateService = new Mock<IEmailTemplateService>();
         _mockUserService = new Mock<IUserService>();
         _mockLogger = new Mock<ILogger<SendOrderNotificationJob>>();
 
         _job = new SendOrderNotificationJob(
-            _mockDashboardService.Object,
+            _mockJudgeService.Object,
             _mockEmailTemplateService.Object,
             _mockUserService.Object,
             _mockLogger.Object);
@@ -53,7 +53,7 @@ public class SendOrderNotificationJobTests
             JudgeId = judgeId
         };
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
@@ -100,7 +100,7 @@ public class SendOrderNotificationJobTests
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
 
-        _mockDashboardService.Verify(s => s.GetJudge(It.IsAny<int>()), Times.Never);
+        _mockJudgeService.Verify(s => s.GetJudge(It.IsAny<int>()), Times.Never);
         _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),
@@ -113,7 +113,7 @@ public class SendOrderNotificationJobTests
         var judgeId = _faker.Random.Int(1, 1000);
         var orderDto = CreateValidOrderDto(judgeId);
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync((Scv.Api.Models.Person)null);
 
         await _job.Execute(orderDto);
@@ -142,7 +142,7 @@ public class SendOrderNotificationJobTests
 
         var inactiveJudge = CreateInactiveJudge(judgeId);
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(inactiveJudge);
 
         await _job.Execute(orderDto);
@@ -171,7 +171,7 @@ public class SendOrderNotificationJobTests
 
         var judge = CreateActiveJudge(judgeId);
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
@@ -210,7 +210,7 @@ public class SendOrderNotificationJobTests
             JudgeId = judgeId
         };
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
@@ -249,7 +249,7 @@ public class SendOrderNotificationJobTests
             JudgeId = judgeId
         };
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
@@ -322,7 +322,7 @@ public class SendOrderNotificationJobTests
             JudgeId = judgeId
         };
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
@@ -368,7 +368,7 @@ public class SendOrderNotificationJobTests
             JudgeId = judgeId
         };
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
@@ -395,7 +395,7 @@ public class SendOrderNotificationJobTests
         var judgeId = _faker.Random.Int(1, 1000);
         var orderDto = CreateValidOrderDto(judgeId);
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ThrowsAsync(new InvalidOperationException("Service error"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute(orderDto));
@@ -418,7 +418,7 @@ public class SendOrderNotificationJobTests
         var orderDto = CreateValidOrderDto(judgeId);
         orderDto.CourtFile.PhysicalFileId = physicalFileId;
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync((Scv.Api.Models.Person)null);
 
         await _job.Execute(orderDto);
@@ -452,7 +452,7 @@ public class SendOrderNotificationJobTests
             JudgeId = judgeId
         };
 
-        _mockDashboardService.Setup(s => s.GetJudge(judgeId))
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync(judge);
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))

@@ -75,22 +75,5 @@ namespace Scv.Api.Controllers
 
             return Ok(result);
         }
-
-        /// <summary>
-        /// Temp solution to allow viewing of other judge's calendar/court list.
-        /// </summary>
-        /// <returns>List of active judges.</returns>
-        [HttpGet]
-        [Route("judges")]
-        public async Task<IActionResult> GetJudges()
-        {
-            if (!this.User.CanViewOthersSchedule())
-            {
-                return Unauthorized();
-            }
-
-            var result = await _dashboardService.GetJudges();
-            return Ok(result);
-        }
     }
 }

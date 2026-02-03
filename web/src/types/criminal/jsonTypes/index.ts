@@ -124,6 +124,7 @@ export interface PersonType {
 
 export interface criminalParticipantType extends PersonType {
   fullName: string;
+  fullNameLastFirst: string;
   document: documentType[];
   keyDocuments: documentType[];
   hideJustinCounsel: boolean;

@@ -60,5 +60,5 @@ export type Bundle = {
 export type appearanceRequest = {
   appearance: AppearanceDocumentRequest;
   fileNumber: string;
-  fullName: string;
+  fullName?: string;
 };

@@ -22,6 +22,7 @@ export interface DocumentData {
   isCriminal?: boolean;
   additionsList?: string;
   orderId?: string;
+  aslCourtFileNumber?: string;
 }
 
 export enum CourtDocumentType {

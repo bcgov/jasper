@@ -90,7 +90,8 @@ export default {
       {
         documentType: type,
         documentData: documentData,
-        groupKeyOne: documentData.fileNumberText ?? '',
+        groupKeyOne:
+          documentData.aslCourtFileNumber ?? documentData.fileNumberText ?? '',
         groupKeyTwo: documentData.partyName ?? '',
         documentName: documentData.documentDescription ?? 'Document',
         physicalFileId: documentData.fileId || '',
@@ -134,7 +135,7 @@ export default {
         participantId: app.profPartId,
         courtClassCd: app.courtClassCd,
       } as AppearanceDocumentRequest,
-      fileNumber: app.courtFileNumber,
+      fileNumber: app.aslCourtFileNumber,
       fullName: app.accusedNm,
     }));
     const bundleRequest = {
@@ -148,7 +149,7 @@ export default {
     const url = '/file-viewer?type=bundle' + categoryParams;
     const newWindow = window.open(url, '_blank');
     const caseNumbers = Array.from(
-      new Set(appearances.map((d) => d.courtFileNumber))
+      new Set(appearances.map((d) => d.aslCourtFileNumber))
     ).join(', ');
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
@@ -161,14 +162,13 @@ export default {
     const bundleStore = useBundleStore();
     const appearanceRequests = appearances.map((app) => ({
       appearance: {
-        physicalFileId: app.physicalFileId, // temp
+        physicalFileId: app.physicalFileId,
         appearanceId: app.appearanceId,
         participantId: app.profPartId,
         courtClassCd: app.courtClassCd,
         judgeId,
       } as AppearanceDocumentRequest,
-      fileNumber: app.courtFileNumber,
-      fullName: app.styleOfCause,
+      fileNumber: app.aslCourtFileNumber,
     }));
     const bundleRequest = {
       appearances: appearanceRequests.map((app) => app.appearance),
@@ -178,7 +178,7 @@ export default {
 
     const newWindow = window.open('/file-viewer?type=bundle', '_blank');
     const caseNumbers = Array.from(
-      new Set(appearances.map((d) => d.courtFileNumber))
+      new Set(appearances.map((d) => d.aslCourtFileNumber))
     ).join(', ');
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
@@ -192,7 +192,7 @@ export default {
         documentType: DocumentRequestType.File,
         documentData: documentData,
         groupKeyOne: documentData.fileNumberText ?? '',
-        groupKeyTwo: documentData.partyName ?? '',
+        groupKeyTwo: '',
         documentName: documentData.documentDescription ?? 'Document',
         physicalFileId: documentData.fileId || '',
       },

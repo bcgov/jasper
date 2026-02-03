@@ -8,11 +8,9 @@ using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
-using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models;
 using Scv.Api.Models.Calendar;
 using PCSS = PCSSCommon.Models;
 
@@ -23,8 +21,6 @@ public interface IDashboardService
     Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId);
     Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
     Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate);
-    Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges();
-    Task<Person> GetJudge(int judgeId);
 }
 
 public class DashboardService(
@@ -33,8 +29,7 @@ public class DashboardService(
     SearchDateClient searchDateClient,
     LocationService locationService,
     IMapper mapper,
-    ILogger<DashboardService> logger,
-    PersonServicesClient personClient
+    ILogger<DashboardService> logger
 ) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
@@ -48,7 +43,6 @@ public class DashboardService(
     private readonly LocationService _locationService = locationService;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<DashboardService> _logger = logger;
-    private readonly PersonServicesClient _personClient = personClient;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -212,27 +206,6 @@ public class DashboardService(
             _logger.LogError(ex, "Something went wrong when querying Court Calendar: {Message}", ex.Message);
             return OperationResult<CourtCalendarSchedule>.Failure("Something went wrong when querying Court Calendar");
         }
-    }
-
-    // These below 2 Get Judge methods should be moved out of this service
-    public async Task<IEnumerable<PCSS.PersonSearchItem>> GetJudges()
-    {
-        // This is a temp solution to retrieve list of users(judge) from external source. 
-        var date = DateTime.Now.ToClientTimezone().ToString("dd-MMM-yyyy");
-        var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
-
-        async Task<ICollection<PCSS.PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
-        var judicialListingTask = this.GetDataFromCache($"{JudicialListing}-{date}-{string.Join(",", locationsIds)}", JudicialListing);
-        var judges = await judicialListingTask;
-
-        return judges.OrderBy(j => j.FullName);
-    }
-
-    public async Task<Person> GetJudge(int judgeId)
-    {
-        var judge = await _personClient.ReadPersonAsync(judgeId);
-        var jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(judge);
-        return Newtonsoft.Json.JsonConvert.DeserializeObject<Person>(jsonString);
     }
 
     #endregion Public Methods

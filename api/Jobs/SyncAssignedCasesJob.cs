@@ -14,7 +14,6 @@ using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
 using Scv.Api.Services;
@@ -29,7 +28,7 @@ public class SyncAssignedCasesJob(
     ILogger<SyncAssignedCasesJob> logger,
     IEmailService emailService,
     ICsvParser csvParser,
-    IDashboardService dashboardService,
+    IJudgeService judgeService,
     ICaseService caseService,
     CourtListService courtListService,
     JudicialCalendarServicesClient jcServiceClient,
@@ -40,7 +39,7 @@ public class SyncAssignedCasesJob(
 {
     private readonly IEmailService _emailService = emailService;
     private readonly ICsvParser _csvParser = csvParser;
-    private readonly IDashboardService _dashboardService = dashboardService;
+    private readonly IJudgeService _judgeService = judgeService;
     private readonly ICaseService _caseService = caseService;
     private readonly CourtListService _courtListService = courtListService;
     private readonly JudicialCalendarServicesClient _jcServiceClient = jcServiceClient;
@@ -172,7 +171,7 @@ public class SyncAssignedCasesJob(
             return null;
         }
 
-        var judges = await _dashboardService.GetJudges();
+        var judges = await _judgeService.GetJudges();
         if (judges == null || !judges.Any())
         {
             return null;

@@ -16,7 +16,7 @@ namespace Scv.Api.Tests.Services
     {
         private readonly Mock<IPcssAuthorizationService> _authorizationServiceMock;
         private readonly Mock<IGroupService> _groupServiceMock;
-        private readonly Mock<IDashboardService> _dashboardServiceMock;
+        private readonly Mock<IJudgeService> _judgeServiceMock;
         private readonly Mock<ILogger<PcssSyncService>> _loggerMock;
         private readonly PcssSyncService _pcssSyncService;
 
@@ -25,13 +25,13 @@ namespace Scv.Api.Tests.Services
             _authorizationServiceMock = new Mock<IPcssAuthorizationService>();
 
             _groupServiceMock = new Mock<IGroupService>();
-            _dashboardServiceMock = new Mock<IDashboardService>();
+            _judgeServiceMock = new Mock<IJudgeService>();
             _loggerMock = new Mock<ILogger<PcssSyncService>>();
 
             _pcssSyncService = new PcssSyncService(
                 _authorizationServiceMock.Object,
                 _groupServiceMock.Object,
-                _dashboardServiceMock.Object,
+                _judgeServiceMock.Object,
                 _loggerMock.Object);
         }
 
@@ -66,7 +66,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -95,7 +95,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -202,7 +202,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -239,7 +239,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -279,7 +279,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -360,7 +360,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem>();
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -436,7 +436,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -472,7 +472,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -508,7 +508,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 456 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act
@@ -553,7 +553,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
             var judges = new List<PersonSearchItem> { new PersonSearchItem { UserId = 123, PersonId = 789 } };
-            _dashboardServiceMock.Setup(x => x.GetJudges())
+            _judgeServiceMock.Setup(x => x.GetJudges(null))
                 .ReturnsAsync(judges);
 
             // Act

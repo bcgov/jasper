@@ -69,20 +69,20 @@
 
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
+  import { JudgeService, OrderService } from '@/services';
   import { useCommonStore } from '@/stores';
-  import { UserInfo, OrderStatusEnum } from '@/types/common';
+  import { PersonSearchItem } from '@/types';
+  import { OrderStatusEnum, UserInfo } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
-  import { inject, onMounted, ref, watch, computed } from 'vue';
+  import { computed, inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import DarsAccessModal from './components/dashboard/DarsAccessModal.vue';
   import JudgeSelector from './components/shared/JudgeSelector.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
-  import { DashboardService } from './services';
   import { useDarsStore } from './stores/DarsStore';
   import { useOrdersStore } from './stores/OrdersStore';
   import { useThemeStore } from './stores/ThemeStore';
-  import { PersonSearchItem } from './types';
 
   const themeStore = useThemeStore();
   const commonStore = useCommonStore();
@@ -93,17 +93,17 @@
 
   const route = useRoute();
   const selectedTab = ref('/dashboard');
-  const userService = inject<DashboardService>('dashboardService');
-  const orderService = inject<DashboardService>('orderService');
+  const orderService = inject<OrderService>('orderService');
+  const judgeService = inject<JudgeService>('judgeService');
   const judges = ref<PersonSearchItem[]>([]);
 
-  if (!userService || !orderService) {
+  if (!judgeService || !orderService) {
     throw new Error('Service is not available!');
   }
 
   onMounted(async () => {
     const [judgesData] = await Promise.all([
-      userService?.getJudges(),
+      judgeService?.getJudges(),
       ordersStore.fetchOrders(orderService),
     ]);
     judges.value = judgesData ?? [];

@@ -184,7 +184,7 @@ public class BinderService(
 
     #region Helpers
 
-    private static int GetCategoryOrder(string category) => category.ToUpper() switch
+    private static int GetCategoryOrder(string category) => category?.ToUpper() switch
     {
         DocumentCategory.INITIATING => 0,
         DocumentCategory.ROP => 1,

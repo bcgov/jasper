@@ -25,7 +25,7 @@ public class JudgeService(
 {
     private readonly LocationService _locationService = locationService;
     private readonly PersonServicesClient _personClient = personClient;
-    public override string CacheName => nameof(DashboardService);
+    public override string CacheName => nameof(JudgeService);
 
     public const string CHIEF_JUDGE = "CJ";
     public const string ASSOC_CHIEF_JUDGE = "ACJ";
@@ -39,8 +39,9 @@ public class JudgeService(
         var date = DateTime.Now.ToClientTimezone().ToString("dd-MMM-yyyy");
         var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
 
-        async Task<ICollection<PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, string.Join(",", locationsIds), false, "");
-        var judicialListingTask = this.GetDataFromCache($"{JudicialListing}-{date}-{string.Join(",", locationsIds)}-{string.Join(",", positionCodes)}", JudicialListing);
+        var concatenatedLocationsIds = string.Join(",", locationsIds);
+        async Task<ICollection<PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, concatenatedLocationsIds, false, "");
+        var judicialListingTask = this.GetDataFromCache($"JudicialListing-{date}-{concatenatedLocationsIds}-{string.Join(",", positionCodes)}", JudicialListing);
         var judges = await judicialListingTask;
 
         // Filter by position codes if provided

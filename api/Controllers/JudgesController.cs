@@ -16,7 +16,7 @@ public class JudgesController(IJudgeService judgeService) : ControllerBase
     private readonly IJudgeService _judgeService = judgeService;
 
     /// <summary>
-    /// Retrieves the list of active judge. This list only includes the following judge positions: CH, ACH, RAJ, PJ and SJ.
+    /// Retrieves the list of active judge. This list only includes the following judge positions: CJ, ACJ, RAJ, PJ and SJ.
     /// </summary>
     /// <returns>List of active judges.</returns>
     [HttpGet]

@@ -11,7 +11,7 @@ export class JudgeService extends ServiceBase {
 
   getJudges(): Promise<PersonSearchItem[]> {
     return this.httpService.get<PersonSearchItem[]>(
-      `api/judges`,
+      this.baseUrl,
       {},
       { skipErrorHandler: true }
     );

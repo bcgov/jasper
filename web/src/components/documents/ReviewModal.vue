@@ -116,10 +116,10 @@
       comments: comments.value,
       status: status,
       signed: status === OrderReviewStatus.Approved,
-      documentData: "",
+      documentData: '',
     };
     emit('reviewOrder', review);
-    
+
     show.value = false;
   };
 </script>

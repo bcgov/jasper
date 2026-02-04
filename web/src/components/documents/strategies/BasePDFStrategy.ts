@@ -129,11 +129,11 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
     return {
-      title: doc.documentName != '' ? doc.documentName : this.defaultDocumentName,
+      title:
+        doc.documentName != '' ? doc.documentName : this.defaultDocumentName,
       pageIndex: apiResponse.pageRanges?.[this.pageIndex++]?.start,
     };
   }
-  
 
   cleanup(): void {
     this.pdfStore.clearDocuments();

@@ -241,9 +241,9 @@
     return new NutrientViewer.OutlineElement(baseElement);
   };
 
-   const reviewOrder = async (orderReview: OrderReview) => {
+  const reviewOrder = async (orderReview: OrderReview) => {
     showReviewModal.value = false;
-    
+
     // Check if strategy supports order approval
     if (props.strategy.reviewOrder) {
       try {

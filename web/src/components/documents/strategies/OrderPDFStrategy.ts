@@ -4,9 +4,8 @@ import { OrderService } from '@/services/OrderService';
 import { inject } from 'vue';
 import { OrderReviewStatus } from '@/types/common';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
-  
+
 export class OrderPDFStrategy extends BasePDFStrategy {
-  
   showOrderReviewOptions = true;
   defaultDocumentName = 'Order';
   private snackBarStore = useSnackbarStore();
@@ -28,7 +27,7 @@ export class OrderPDFStrategy extends BasePDFStrategy {
     if (!orderId) {
       throw new Error('Order ID not found in URL');
     }
-    
+
     await this.orderService.review(orderId, review);
 
     // Show appropriate snackbar based on status

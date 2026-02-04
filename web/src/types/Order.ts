@@ -1,4 +1,4 @@
-import { OrderReviewStatus } from "./common";
+import { OrderReviewStatus } from './common';
 
 export interface Order {
   id: string;

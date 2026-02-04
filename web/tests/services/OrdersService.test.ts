@@ -1,7 +1,7 @@
 import { IHttpService } from '@/services/HttpService';
 import { OrderService } from '@/services/OrderService';
 import { Order } from '@/types';
-import { OrderStatusEnum } from '@/types/common';
+import { OrderReviewStatus } from '@/types/common';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 const mockHttpService = {
@@ -29,24 +29,28 @@ describe('OrderService', () => {
     {
       id: '1',
       packageId: 12345,
+      packageDocumentId: '340',
+      packageName: 'test 1',
       receivedDate: '2026-01-15',
       processedDate: '2026-01-20',
       courtClass: 'CC',
       courtFileNumber: 'CF-2026-001',
       styleOfCause: 'R v Smith',
       physicalFileId: 'file-001',
-      status: OrderStatusEnum.Pending,
+      status: OrderReviewStatus.Pending,
     },
     {
       id: '2',
       packageId: 67890,
+      packageDocumentId: '341',
+      packageName: 'test 2',
       receivedDate: '2026-01-14',
       processedDate: '2026-01-21',
       courtClass: 'CV',
       courtFileNumber: 'CV-2026-001',
       styleOfCause: 'Jones v Brown',
       physicalFileId: 'file-002',
-      status: OrderStatusEnum.Approved,
+      status: OrderReviewStatus.Approved,
     },
   ];
 

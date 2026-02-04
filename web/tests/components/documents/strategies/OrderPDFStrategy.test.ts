@@ -7,7 +7,7 @@ import { inject } from 'vue';
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { DocumentRequestType } from '@/types/shared';
 import { createPinia, setActivePinia } from 'pinia';
-import { OrderStatusEnum } from '@/types/common';
+import { OrderReviewStatus } from '@/types/common';
 
 vi.mock('@/stores', () => ({
   usePDFViewerStore: vi.fn(),
@@ -242,16 +242,21 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       mockOrderService.review.mockResolvedValue(undefined);
       
-      await strategy.reviewOrder(OrderStatusEnum.Approved, 'Looks good', 'base64pdf');
+      await strategy.reviewOrder({
+        comments: 'Looks good',
+        signed: true,
+        status: OrderReviewStatus.Approved,
+        documentData: 'base64pdf'
+      });
       
       expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
         comments: 'Looks good',
         signed: true,
-        status: OrderStatusEnum.Approved,
+        status: OrderReviewStatus.Approved,
         documentData: 'base64pdf'
       });
       expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-        'The order has been approved successfully.',
+        'The order has been approved.',
         'rgb(46, 139, 43)',
         '✅ Approved!'
       );
@@ -261,18 +266,23 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       mockOrderService.review.mockResolvedValue(undefined);
       
-      await strategy.reviewOrder(OrderStatusEnum.Unapproved, 'Needs changes', 'base64pdf');
+      await strategy.reviewOrder({
+        comments: 'Needs changes',
+        signed: false,
+        status: OrderReviewStatus.Unapproved,
+        documentData: 'base64pdf'
+      });
       
       expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
         comments: 'Needs changes',
         signed: false,
-        status: OrderStatusEnum.Unapproved,
+        status: OrderReviewStatus.Unapproved,
         documentData: 'base64pdf'
       });
       expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
         'The order has been rejected.',
-        'rgb(211, 47, 47)',
-        '❌ Rejected'
+        'rgb(46, 139, 43)',
+        '📋 Rejected'
       );
     });
 
@@ -280,17 +290,22 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       mockOrderService.review.mockResolvedValue(undefined);
       
-      await strategy.reviewOrder(OrderStatusEnum.Pending, 'Under review', 'base64pdf');
+      await strategy.reviewOrder({
+        comments: 'Under review',
+        signed: false,
+        status: OrderReviewStatus.Pending,
+        documentData: 'base64pdf'
+      });
       
       expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
         comments: 'Under review',
         signed: false,
-        status: OrderStatusEnum.Pending,
+        status: OrderReviewStatus.Pending,
         documentData: 'base64pdf'
       });
       expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-        'The order review is pending.',
-        'rgb(237, 108, 2)',
+        'The order review is awaiting documentation.',
+        'rgb(46, 139, 43)',
         '⏳ Pending'
       );
     });
@@ -303,7 +318,12 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       
       await expect(
-        strategy.reviewOrder(OrderStatusEnum.Approved, 'Test', 'base64pdf')
+        strategy.reviewOrder({
+          comments: 'Test',
+          signed: true,
+          status: OrderReviewStatus.Approved,
+          documentData: 'base64pdf'
+        })
       ).rejects.toThrow('Order ID not found in URL');
       
       expect(mockOrderService.review).not.toHaveBeenCalled();
@@ -318,7 +338,12 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       
       await expect(
-        strategy.reviewOrder(OrderStatusEnum.Approved, 'Test', 'base64pdf')
+        strategy.reviewOrder({
+          comments: 'Test',
+          signed: true,
+          status: OrderReviewStatus.Approved,
+          documentData: 'base64pdf'
+        })
       ).rejects.toThrow('Order ID not found in URL');
     });
   });

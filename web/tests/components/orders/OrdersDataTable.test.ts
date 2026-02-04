@@ -1,5 +1,5 @@
 import { Order } from '@/types';
-import { OrderStatusEnum } from '@/types/common';
+import { OrderReviewStatus } from '@/types/common';
 import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { mount } from '@vue/test-utils';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
@@ -31,7 +31,7 @@ const mockData: Order[] = [
     courtFileNumber: 'CF-2026-001',
     styleOfCause: 'R v Smith',
     physicalFileId: 'file-001',
-    status: OrderStatusEnum.Pending,
+    status: OrderReviewStatus.Pending,
   },
   {
     id: '2',
@@ -44,7 +44,7 @@ const mockData: Order[] = [
     courtFileNumber: 'CV-2026-001',
     styleOfCause: 'Jones v Brown',
     physicalFileId: 'file-002',
-    status: OrderStatusEnum.Approved,
+    status: OrderReviewStatus.Approved,
   },
 ];
 

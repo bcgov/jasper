@@ -116,11 +116,6 @@ describe('OrderPDFStrategy', () => {
     });
   });
 
-  // it('throws error if FilesService is not injected', () => {
-  //   mockedInject.mockReturnValueOnce(undefined);
-  //   expect(() => new OrderPDFStrategy()).toThrow('FilesService is not available!');
-  // });
-
   it('hasData returns true if documents exist', () => {
     const strategy = new OrderPDFStrategy();
     expect(strategy.hasData()).toBe(true);

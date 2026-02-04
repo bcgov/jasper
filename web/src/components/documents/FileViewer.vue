@@ -241,11 +241,6 @@
     return new NutrientViewer.OutlineElement(baseElement);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // const approveOrder = async (comments: string) => {
-  //   showReviewModal.value = false;
-  // };
-
    const reviewOrder = async (orderReview: OrderReview) => {
     showReviewModal.value = false;
     

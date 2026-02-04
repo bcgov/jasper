@@ -89,6 +89,7 @@ export interface UserInfo {
   email: string;
   userTitle: string;
   permissions?: string[];
+  groups?: string[];
 }
 
 export interface LookupCode {
@@ -165,4 +166,14 @@ export enum OrderStatusEnum {
   Unapproved = 'Unapproved',
   Pending = 'Pending',
   Approved = 'Approved',
+}
+
+export enum RolesEnum {
+  Admin = 'System Administrator',
+  Trainer = 'Trainer',
+  PoManager = 'Product Owner/Manager',
+  OcjServiceDesk = 'OCJ Service Desk',
+  Judge = 'Judge',
+  AcjChiefJudge = 'ACJ/Chief Judge',
+  Raj = 'RAJ',
 }

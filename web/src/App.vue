@@ -20,7 +20,7 @@
             @click="darsStore.openModal()"
             >DARS</v-btn
           >
-          <v-tab value="orders" to="/orders">
+          <v-tab value="orders" to="/orders" v-if="showOrders">
             <v-badge
               v-if="pendingOrdersCount > 0"
               :content="pendingOrdersCount"
@@ -72,7 +72,7 @@
   import { JudgeService, OrderService } from '@/services';
   import { useCommonStore } from '@/stores';
   import { PersonSearchItem } from '@/types';
-  import { OrderStatusEnum, UserInfo } from '@/types/common';
+  import { OrderStatusEnum, RolesEnum } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
@@ -123,16 +123,14 @@
     }
   );
 
-  const userName = ref<string>(commonStore.userInfo?.userTitle || '');
-
-  watch(
-    () => commonStore.userInfo,
-    (newUserInfo: UserInfo | null) => {
-      if (!newUserInfo) {
-        return;
-      }
-      userName.value = newUserInfo.userTitle || '';
-    }
+  const userName = computed(() => commonStore.userInfo?.userTitle || '');
+  // Only users with Admin role can see Orders tab for now.
+  const requiredOrderRoles = [RolesEnum.Admin] as const;
+  const showOrders = computed(
+    () =>
+      requiredOrderRoles.every((requiredRole) =>
+        commonStore.userInfo?.roles?.includes(requiredRole)
+      ) ?? false
   );
 
   const pendingOrdersCount = computed(

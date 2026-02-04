@@ -248,10 +248,8 @@
     if (props.strategy.reviewOrder) {
       try {
         await props.strategy.reviewOrder(orderReview);
-        // Add success notification/handling here
       } catch (error) {
         console.error('Error reviewing order:', error);
-        // Add error notification/handling here
       }
     }
   };

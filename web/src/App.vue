@@ -72,7 +72,7 @@
   import { JudgeService, OrderService } from '@/services';
   import { useCommonStore } from '@/stores';
   import { PersonSearchItem } from '@/types';
-  import { OrderStatusEnum, UserInfo } from '@/types/common';
+  import { OrderReviewStatus, UserInfo } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
@@ -137,7 +137,7 @@
 
   const pendingOrdersCount = computed(
     () =>
-      ordersStore.orders.filter((o) => o.status === OrderStatusEnum.Pending)
+      ordersStore.orders.filter((o) => o.status === OrderReviewStatus.Pending)
         .length
   );
 </script>

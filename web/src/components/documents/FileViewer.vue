@@ -10,7 +10,7 @@
   <ReviewModal
     v-model="showReviewModal"
     :can-approve="canApprove"
-    @approveOrder="approveOrder"
+    @reviewOrder="reviewOrder"
   />
 
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
@@ -25,6 +25,7 @@
   } from '@mdi/js';
   import { OrderService } from '@/services';
   import ReviewModal from './ReviewModal.vue';
+  import { OrderReview } from '@/types';
 
   // Declare NutrientViewer global
   declare global {
@@ -66,7 +67,7 @@
     // Shows options related to reviewing order files
     showOrderReviewOptions?: boolean;
 
-    approveOrder?(comments: string, pdfString: string): Promise<void>;
+    reviewOrder?(orderReview: OrderReview): Promise<void>;
   }
 
   export interface OutlineItem {
@@ -245,16 +246,16 @@
   //   showReviewModal.value = false;
   // };
 
-   const approveOrder = async (comments: string) => {
+   const reviewOrder = async (orderReview: OrderReview) => {
     showReviewModal.value = false;
     
     // Check if strategy supports order approval
-    if (props.strategy.approveOrder) {
+    if (props.strategy.reviewOrder) {
       try {
-        await props.strategy.approveOrder(comments);
+        await props.strategy.reviewOrder(orderReview);
         // Add success notification/handling here
       } catch (error) {
-        console.error('Error approving order:', error);
+        console.error('Error reviewing order:', error);
         // Add error notification/handling here
       }
     }

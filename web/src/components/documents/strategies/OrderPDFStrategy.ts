@@ -2,14 +2,14 @@ import { OrderReview } from '@/types/OrderReview';
 import { BasePDFStrategy } from './BasePDFStrategy';
 import { OrderService } from '@/services/OrderService';
 import { inject } from 'vue';
-import { OrderStatusEnum } from '@/types/common';
+import { OrderReviewStatus } from '@/types/common';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
   
 export class OrderPDFStrategy extends BasePDFStrategy {
   
   showOrderReviewOptions = true;
   defaultDocumentName = 'Order';
-  snackBarStore;
+  private snackBarStore = useSnackbarStore();
   private orderService: OrderService;
 
   constructor() {
@@ -19,30 +19,41 @@ export class OrderPDFStrategy extends BasePDFStrategy {
       throw new Error('Service(s) is undefined.');
     }
     this.orderService = orderService;
-    this.snackBarStore = useSnackbarStore();
   }
 
-  async approveOrder(comments: string, pdfString: string): Promise<void> {
-    const review: OrderReview = {
-      comments,
-      signed: true,
-      status: OrderStatusEnum.Approved,
-      documentData: pdfString
-    };
-        // Get order ID from URL query parameter
+  async reviewOrder(review: OrderReview): Promise<void> {
+    // Get order ID from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
-    if (!id) {
+    const orderId = urlParams.get('id');
+    if (!orderId) {
       throw new Error('Order ID not found in URL');
     }
-    const orderId = id;
+    
     await this.orderService.review(orderId, review);
 
-    
-  this.snackBarStore.showSnackbar(
-     'The order has been approved successfully.',
-      'rgb(46, 139, 43)',
-      '✅ Approved!'
-    );
+    // Show appropriate snackbar based on status
+    switch (review.status) {
+      case OrderReviewStatus.Approved:
+        this.snackBarStore.showSnackbar(
+          'The order has been approved.',
+          'rgb(46, 139, 43)',
+          '✅ Approved!'
+        );
+        break;
+      case OrderReviewStatus.Unapproved:
+        this.snackBarStore.showSnackbar(
+          'The order has been rejected.',
+          'rgb(46, 139, 43)',
+          '📋 Rejected'
+        );
+        break;
+      case OrderReviewStatus.Pending:
+        this.snackBarStore.showSnackbar(
+          'The order review is awaiting documentation.',
+          'rgb(46, 139, 43)',
+          '⏳ Pending'
+        );
+        break;
+    }
   }
 }

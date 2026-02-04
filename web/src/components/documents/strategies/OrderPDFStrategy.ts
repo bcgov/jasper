@@ -8,8 +8,8 @@ import { useSnackbarStore } from '@/stores/SnackbarStore';
 export class OrderPDFStrategy extends BasePDFStrategy {
   showOrderReviewOptions = true;
   defaultDocumentName = 'Order';
-  private snackBarStore = useSnackbarStore();
-  private orderService: OrderService;
+  private readonly snackBarStore = useSnackbarStore();
+  private readonly orderService: OrderService;
 
   constructor() {
     super();
@@ -22,7 +22,7 @@ export class OrderPDFStrategy extends BasePDFStrategy {
 
   async reviewOrder(review: OrderReview): Promise<void> {
     // Get order ID from URL query parameter
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(globalThis.location.search);
     const orderId = urlParams.get('id');
     if (!orderId) {
       throw new Error('Order ID not found in URL');

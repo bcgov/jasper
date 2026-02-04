@@ -130,7 +130,7 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
   ): OutlineItem {
     return {
       title:
-        doc.documentName != '' ? doc.documentName : this.defaultDocumentName,
+        doc.documentName == '' ? this.defaultDocumentName : doc.documentName,
       pageIndex: apiResponse.pageRanges?.[this.pageIndex++]?.start,
     };
   }

@@ -31,9 +31,6 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
     return this.pdfStore.documents.length > 0;
   }
 
-  // Optional method that OrderPDFStrategy will implement
-  approveOrder?(comments: string, pdfString: string): Promise<void>;
-
   getRawData(): Record<string, Record<string, StoreDocument[]>> {
     return this.pdfStore.groupedDocuments;
   }

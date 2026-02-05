@@ -162,7 +162,7 @@ export interface DocumentBundleResponse {
   pdfResponse: GeneratePdfResponse;
 }
 
-export enum OrderStatusEnum {
+export enum OrderReviewStatus {
   Unapproved = 'Unapproved',
   Pending = 'Pending',
   Approved = 'Approved',

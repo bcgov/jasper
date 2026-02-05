@@ -1,4 +1,4 @@
-import { OrderStatusEnum } from './common';
+import { OrderReviewStatus } from './common';
 
 export interface Order {
   id: string;
@@ -11,5 +11,5 @@ export interface Order {
   courtFileNumber: string;
   styleOfCause: string;
   physicalFileId: string;
-  status: OrderStatusEnum;
+  status: OrderReviewStatus;
 }

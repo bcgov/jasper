@@ -10,7 +10,7 @@
           icon
           variant="text"
           density="comfortable"
-          @click="closeReviewModal()"
+          @click="show = false"
           aria-label="Close dialog"
         >
           <v-icon :icon="mdiClose" />
@@ -57,7 +57,7 @@
             variant="text"
             :prepend-icon="mdiClose"
             :disabled="!canReject"
-            @click="closeReviewModal()"
+            @click="reviewOrder(OrderReviewStatus.Unapproved)"
           >
             Reject
           </v-btn>
@@ -67,7 +67,7 @@
             variant="outlined"
             :prepend-icon="mdiAccountClock"
             :disabled="!canReject"
-            @click="closeReviewModal()"
+            @click="reviewOrder(OrderReviewStatus.Pending)"
           >
             Awaiting documentation
           </v-btn>
@@ -81,7 +81,7 @@
           size="large"
           :prepend-icon="mdiCheckBold"
           :disabled="!canApprove"
-          @click="approveOrder()"
+          @click="reviewOrder(OrderReviewStatus.Approved)"
         >
           Approve
         </v-btn>
@@ -98,25 +98,28 @@
     mdiPencilBoxOutline,
     mdiAccountClock,
   } from '@mdi/js';
+  import { OrderReviewStatus } from '@/types/common';
+  import { OrderReview } from '@/types';
 
-  const props = defineProps<{
+  defineProps<{
     canApprove: boolean;
   }>();
 
-  const emit = defineEmits<(e: 'approveOrder', value: string) => void>();
+  const emit = defineEmits<(e: 'reviewOrder', review: OrderReview) => void>();
   const show = defineModel<boolean>({ type: Boolean, required: true });
 
-  const comments = ref();
+  const comments = ref<string>('');
   const canReject = computed<boolean>(() => comments.value?.length > 0);
 
-  const closeReviewModal = () => {
-    show.value = false;
-  };
+  const reviewOrder = (status: OrderReviewStatus) => {
+    const review: OrderReview = {
+      comments: comments.value,
+      status: status,
+      signed: status === OrderReviewStatus.Approved,
+      documentData: '',
+    };
+    emit('reviewOrder', review);
 
-  const approveOrder = () => {
-    if (props.canApprove) {
-      emit('approveOrder', comments.value);
-      closeReviewModal();
-    }
+    show.value = false;
   };
 </script>

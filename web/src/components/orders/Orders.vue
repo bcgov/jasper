@@ -62,7 +62,7 @@
   import shared from '@/components/shared';
   import { useCourtFileSearchStore, useOrdersStore } from '@/stores';
   import { Order } from '@/types';
-  import { KeyValueInfo, OrderStatusEnum } from '@/types/common';
+  import { KeyValueInfo, OrderReviewStatus } from '@/types/common';
   import { DocumentData } from '@/types/shared';
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
   import { computed } from 'vue';
@@ -73,14 +73,14 @@
   const pendingOrders = computed(
     () =>
       ordersStore?.orders?.filter(
-        (order) => order.status === OrderStatusEnum.Pending
+        (order) => order.status === OrderReviewStatus.Pending
       ) ?? []
   );
 
   const completedOrders = computed(
     () =>
       ordersStore?.orders?.filter(
-        (order) => order.status === OrderStatusEnum.Approved
+        (order) => order.status === OrderReviewStatus.Approved
       ) ?? []
   );
 

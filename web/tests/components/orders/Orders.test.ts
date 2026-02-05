@@ -1,5 +1,5 @@
 import type { Order } from '@/types';
-import { OrderStatusEnum } from '@/types/common';
+import { OrderReviewStatus } from '@/types/common';
 import { mount } from '@vue/test-utils';
 import Orders from 'CMP/orders/Orders.vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -41,7 +41,7 @@ describe('Orders.vue', () => {
     courtFileNumber: 'CF-2026-001',
     styleOfCause: 'R v Smith',
     physicalFileId: 'file-001',
-    status: OrderStatusEnum.Pending,
+    status: OrderReviewStatus.Pending,
   };
 
   const mockApprovedOrder: Order = {
@@ -55,7 +55,7 @@ describe('Orders.vue', () => {
     courtFileNumber: 'CV-2026-001',
     styleOfCause: 'Jones v Brown',
     physicalFileId: 'file-002',
-    status: OrderStatusEnum.Approved,
+    status: OrderReviewStatus.Approved,
   };
 
   beforeEach(async () => {
@@ -141,7 +141,7 @@ describe('Orders.vue', () => {
     const vm = wrapper.vm as any;
     expect(vm.pendingOrders).toHaveLength(1);
     expect(vm.pendingOrders[0].id).toBe('1');
-    expect(vm.pendingOrders[0].status).toBe(OrderStatusEnum.Pending);
+    expect(vm.pendingOrders[0].status).toBe(OrderReviewStatus.Pending);
   });
 
   it('filters completed orders correctly', () => {
@@ -154,7 +154,7 @@ describe('Orders.vue', () => {
     const vm = wrapper.vm as any;
     expect(vm.completedOrders).toHaveLength(1);
     expect(vm.completedOrders[0].id).toBe('2');
-    expect(vm.completedOrders[0].status).toBe(OrderStatusEnum.Approved);
+    expect(vm.completedOrders[0].status).toBe(OrderReviewStatus.Approved);
   });
 
   it('handles empty orders array', () => {

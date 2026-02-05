@@ -17,6 +17,8 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
   protected readonly filesService: FilesService;
   protected pageIndex = 0;
 
+  abstract defaultDocumentName: string;
+
   constructor() {
     const service = inject<FilesService>('filesService');
     if (!service) {
@@ -124,7 +126,8 @@ export abstract class BasePDFStrategy implements PDFViewerStrategy<
     apiResponse: GeneratePdfResponse
   ): OutlineItem {
     return {
-      title: doc.documentName,
+      title:
+        doc.documentName == '' ? this.defaultDocumentName : doc.documentName,
       pageIndex: apiResponse.pageRanges?.[this.pageIndex++]?.start,
     };
   }

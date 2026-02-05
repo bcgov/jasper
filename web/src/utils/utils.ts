@@ -34,10 +34,10 @@ export const SessionManager = {
         succeeded = false;
       }
       commonStore.setLoggedInUserInfo(userInfo ?? null);
-      if(!commonStore.userInfo){
+      if (!commonStore.userInfo) {
         commonStore.setUserInfo(userInfo ?? null);
       }
-      
+
       commonStore.appInfo = appInfo ?? null;
       return succeeded;
     } catch (error) {

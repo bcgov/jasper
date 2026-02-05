@@ -33,7 +33,11 @@ export const SessionManager = {
         console.error('Application info not available.');
         succeeded = false;
       }
-      commonStore.setUserInfo(userInfo ?? null);
+      commonStore.setLoggedInUserInfo(userInfo ?? null);
+      if(!commonStore.userInfo){
+        commonStore.setUserInfo(userInfo ?? null);
+      }
+      
       commonStore.appInfo = appInfo ?? null;
       return succeeded;
     } catch (error) {

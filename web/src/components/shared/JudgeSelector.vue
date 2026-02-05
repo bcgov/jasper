@@ -3,7 +3,6 @@
     <v-autocomplete
       ref="autocompleteRef"
       v-model="selectedJudgeId"
-      v-model:menu="menuOpen"
       item-title="fullName"
       item-value="personId"
       :items="judges"
@@ -14,7 +13,6 @@
       variant="outlined"
       clearable
       auto-select-first
-      validate-on="blur eager"
     >
       <template #clear>
         <v-icon
@@ -43,9 +41,7 @@
   const selectedJudgeId = ref<number | null>(
     commonStore.userInfo?.judgeId ?? null
   );
-  const menuOpen = ref(false);
   const resetToOriginalJudge = () => {
-    menuOpen.value = false;
     selectedJudgeId.value = commonStore.loggedInUserInfo?.judgeId ?? null;
     autocompleteRef.value?.blur();
   };

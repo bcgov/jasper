@@ -52,7 +52,6 @@
 
   watch(selectedJudgeId, (newVal) => {
     if (!newVal) {
-      //selectedJudgeId.value = commonStore.loggedInUserInfo?.judgeId ?? null;
       return;
     }
 
@@ -60,7 +59,6 @@
       const { homeLocationId } = props.judges.find(
         (j) => j.personId === newVal
       );
-      console.log('Updating judge to', newVal);
       commonStore.setUserInfo({
         ...commonStore.userInfo,
         judgeId: newVal,

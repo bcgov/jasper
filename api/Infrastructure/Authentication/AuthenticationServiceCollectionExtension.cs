@@ -332,7 +332,7 @@ namespace Scv.Api.Infrastructure.Authentication
                     }
                     userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;
                 }
-                else if (provjudUserGuid != null)
+                else if (provjudUserGuid != null && (provjudUserGuid == userDto.NativeGuid || string.IsNullOrEmpty(userDto.NativeGuid)))
                 {
                     if (string.IsNullOrEmpty(userDto.NativeGuid))
                     {

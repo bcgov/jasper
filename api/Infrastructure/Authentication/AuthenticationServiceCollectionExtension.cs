@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
@@ -28,6 +29,7 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Polly;
 
 namespace Scv.Api.Infrastructure.Authentication
 {
@@ -297,7 +299,27 @@ namespace Scv.Api.Infrastructure.Authentication
                 var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<IPcssSyncService>();
                 var provjudUserGuid = context.Principal.ProvjudUserGuid();
 
-                userDto = provjudUserGuid != null ? await userService.GetByGuidWithPermissionsAsync(provjudUserGuid) : await userService.GetWithPermissionsAsync(context.Principal.Email());
+                if (string.IsNullOrWhiteSpace(provjudUserGuid) && IsProvincialCourtEmail(context.Principal.Email()))
+                {
+                    logger.LogInformation("provjud user unexpectedly missing guid - retrying. User {Email}", context.Principal.Email());
+                    try
+                    {
+                        await RefreshKeycloakUserInfoAsync(context, logger); // When a new user is created in keycloak, the IDP mapper runs after initial login, so re-request user info in order to populate the user object GUID.
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to refresh Keycloak userinfo; continuing with existing claims.");
+                    }
+                    provjudUserGuid = context.Principal.ProvjudUserGuid();
+                }
+
+                userDto = null;
+                if (!string.IsNullOrWhiteSpace(provjudUserGuid))
+                {
+                    userDto = await userService.GetByGuidWithPermissionsAsync(provjudUserGuid);
+                }
+
+                userDto ??= await userService.GetWithPermissionsAsync(context.Principal.Email()); // Fall back to email as ProvjudUserGuid may not be populated for new users.
                 if (userDto == null)
                 {
                     var newUser = await BuildNewUser(context, pcssSyncService);
@@ -312,6 +334,10 @@ namespace Scv.Api.Infrastructure.Authentication
                 }
                 else if (provjudUserGuid != null)
                 {
+                    if (string.IsNullOrEmpty(userDto.NativeGuid))
+                    {
+                        userDto.NativeGuid = provjudUserGuid; // For new keycloak users, the initial logon may not have the ProvjudUserGuid claim populated. If we have it now, add it for more reliable mapping.
+                    }
                     // Update existing user with latest PCSS data
                     logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
                     var updated = await pcssSyncService.UpdateUserFromPcss(userDto);
@@ -391,6 +417,74 @@ namespace Scv.Api.Infrastructure.Authentication
             claims.AddRange(userDto.Permissions.Select(p => new Claim(CustomClaimTypes.Permission, p)));
             claims.AddRange(userDto.Roles.Select(r => new Claim(CustomClaimTypes.Role, r)));
             claims.AddRange(userDto.GroupIds.Select(g => new Claim(CustomClaimTypes.Groups, g)));
+        }
+
+        private static bool IsProvincialCourtEmail(string email)
+            => !string.IsNullOrWhiteSpace(email)
+                && email.EndsWith("@provincialcourt.bc.ca", StringComparison.OrdinalIgnoreCase);
+
+        private static async Task RefreshKeycloakUserInfoAsync(
+            Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
+            ILogger logger)
+        {
+            if (context.Principal?.Identity is not ClaimsIdentity identity)
+            {
+                return;
+            }
+
+            var accessToken = context.TokenEndpointResponse?.AccessToken
+                ?? context.Properties.GetTokenValue("access_token");
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                logger.LogWarning("Unable to refresh Keycloak userinfo because access token is missing.");
+                return;
+            }
+
+            var configuration = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+            var httpClientFactory = context.HttpContext.RequestServices.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient(nameof(OpenIdConnectEvents));
+            var userInfoEndpoint = configuration.GetNonEmptyValue("Keycloak:Authority") + "/protocol/openid-connect/userinfo";
+
+            var policy = Policy<UserInfoResponse>
+                .Handle<Exception>()
+                .OrResult(result => result.IsError)
+                .WaitAndRetryAsync(
+                    2,
+                    attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
+                    (outcome, delay, attempt, _) =>
+                    {
+                        var reason = outcome.Exception?.Message ?? outcome.Result?.Error;
+                        logger.LogWarning(
+                            "Retrying Keycloak userinfo request (attempt {Attempt}) after {Delay}s. Reason: {Reason}",
+                            attempt,
+                            delay.TotalSeconds,
+                            reason);
+                    });
+
+            var response = await policy.ExecuteAsync(ct => httpClient.GetUserInfoAsync(
+                new UserInfoRequest
+                {
+                    Address = userInfoEndpoint,
+                    Token = accessToken
+                }, ct),
+                CancellationToken.None);
+
+            if (response.IsError)
+            {
+                logger.LogWarning("Failed to refresh Keycloak userinfo: {Error}", response.Error);
+                return;
+            }
+
+            foreach (var claim in response.Claims)
+            {
+                foreach (var existing in identity.FindAll(claim.Type).ToList())
+                {
+                    identity.RemoveClaim(existing);
+                }
+
+                identity.AddClaim(claim);
+            }
         }
     }
 }

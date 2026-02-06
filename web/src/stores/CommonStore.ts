@@ -14,8 +14,10 @@ enum appearanceStatus {
 }
 
 export const useCommonStore = defineStore('CommonStore', {
+  persist: true,
   state: () => ({
     displayName: '',
+    loggedInUserInfo: null as UserInfo | null,
     userInfo: null as UserInfo | null,
     appInfo: null as ApplicationInfo | null,
     time: '',
@@ -28,6 +30,9 @@ export const useCommonStore = defineStore('CommonStore', {
     email: '',
   }),
   actions: {
+    setLoggedInUserInfo(loggedInUserInfo: UserInfo | null): void {
+      this.loggedInUserInfo = loggedInUserInfo;
+    },
     setUserInfo(userInfo: UserInfo | null): void {
       this.userInfo = userInfo;
     },

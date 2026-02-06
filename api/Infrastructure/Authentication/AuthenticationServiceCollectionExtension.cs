@@ -319,7 +319,12 @@ namespace Scv.Api.Infrastructure.Authentication
                     userDto = await userService.GetByGuidWithPermissionsAsync(provjudUserGuid);
                 }
 
-                userDto ??= await userService.GetWithPermissionsAsync(context.Principal.Email()); // Fall back to email as ProvjudUserGuid may not be populated for new users.
+                var email = context.Principal.Email();
+
+                if (userDto == null && !string.IsNullOrWhiteSpace(email))
+                {
+                    userDto = await userService.GetWithPermissionsAsync(email);
+                }
                 if (userDto == null)
                 {
                     var newUser = await BuildNewUser(context, pcssSyncService);
@@ -332,11 +337,16 @@ namespace Scv.Api.Infrastructure.Authentication
                     }
                     userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;
                 }
-                else if (provjudUserGuid != null && (provjudUserGuid == userDto.NativeGuid || string.IsNullOrEmpty(userDto.NativeGuid)))
+                else if (provjudUserGuid != null)
                 {
                     if (string.IsNullOrEmpty(userDto.NativeGuid))
                     {
                         userDto.NativeGuid = provjudUserGuid; // For new keycloak users, the initial logon may not have the ProvjudUserGuid claim populated. If we have it now, add it for more reliable mapping.
+                    }
+                    else if (userDto.NativeGuid != provjudUserGuid)
+                    {
+                        logger.LogWarning("User with keycloak guid returned mismatched guid from JASPER database. {NativeGuid} {ProvjudUserGuid}", userDto.NativeGuid, provjudUserGuid);
+                        return userDto;
                     }
                     // Update existing user with latest PCSS data
                     logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
@@ -476,14 +486,13 @@ namespace Scv.Api.Infrastructure.Authentication
                 return;
             }
 
-            foreach (var claim in response.Claims)
+            if (string.IsNullOrWhiteSpace(identity.FindFirst(CustomClaimTypes.ProvjudUserGuid)?.Value))
             {
-                foreach (var existing in identity.FindAll(claim.Type).ToList())
+                var provjudClaim = response.Claims.FirstOrDefault(claim => claim.Type == CustomClaimTypes.ProvjudUserGuid);
+                if (provjudClaim != null)
                 {
-                    identity.RemoveClaim(existing);
+                    identity.AddClaim(provjudClaim);
                 }
-
-                identity.AddClaim(claim);
             }
         }
     }

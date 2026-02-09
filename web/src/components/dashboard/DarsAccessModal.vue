@@ -17,6 +17,7 @@
                 prepend-inner-icon="$calendar"
                 :rules="[(v) => !!v || 'Date is required']"
                 :disabled="isSearching"
+                hide-details
                 required
               />
             </v-col>
@@ -32,6 +33,7 @@
                 placeholder="Select a location"
                 :rules="[(v) => !!v || 'Location is required']"
                 :disabled="isSearching"
+                hide-details
                 required
               />
             </v-col>
@@ -47,6 +49,7 @@
                 label="Room"
                 :disabled="!searchParams.location || isSearching"
                 placeholder="Select a room"
+                hide-details
                 required
               />
             </v-col>

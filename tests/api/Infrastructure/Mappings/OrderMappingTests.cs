@@ -361,6 +361,320 @@ public class OrderMappingTests
 
     #endregion
 
+    #region Order -> ReviewedOrderDto Mapping Tests
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsReferredDocumentId()
+    {
+        var expectedDocumentId = _faker.Random.Int(1, 10000);
+        var order = CreateOrder();
+        order.OrderRequest.Referral.ReferredDocumentId = expectedDocumentId;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(expectedDocumentId, result.ReferredDocumentId);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsJudicialActionDt_WhenProcessedDateIsNull()
+    {
+        var order = CreateOrder();
+        order.ProcessedDate = null;
+        var beforeMapping = DateTime.UtcNow;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        var afterMapping = DateTime.UtcNow;
+        Assert.InRange(result.JudicialActionDt, beforeMapping, afterMapping);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsJudicialActionDt_WhenProcessedDateHasValue()
+    {
+        var expectedDate = new DateTime(2026, 1, 15, 10, 30, 0, DateTimeKind.Utc);
+        var order = CreateOrder();
+        order.ProcessedDate = expectedDate;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(expectedDate, result.JudicialActionDt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsCommentTxt()
+    {
+        var expectedComments = _faker.Lorem.Paragraph();
+        var order = CreateOrder();
+        order.Comments = expectedComments;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(expectedComments, result.CommentTxt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsReviewedByAgenId_ToNull()
+    {
+        var order = CreateOrder();
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.ReviewedByAgenId);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsReviewedByPartId_ToNull()
+    {
+        var order = CreateOrder();
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.ReviewedByPartId);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsReviewedByPassSeqNo_ToNull()
+    {
+        var order = CreateOrder();
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.ReviewedByPassSeqNo);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsJudicialDecisionCd_Approved()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Approved;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(JudicialDecisionCode.APPR, result.JudicialDecisionCd);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsJudicialDecisionCd_Unapproved()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Unapproved;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(JudicialDecisionCode.NAPP, result.JudicialDecisionCd);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsJudicialDecisionCd_Pending()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Pending;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(JudicialDecisionCode.AFDC, result.JudicialDecisionCd);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsDigitalSignatureApplied_True()
+    {
+        var order = CreateOrder();
+        order.Signed = true;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.True(result.DigitalSignatureApplied);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsDigitalSignatureApplied_False()
+    {
+        var order = CreateOrder();
+        order.Signed = false;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.False(result.DigitalSignatureApplied);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsRejectedDt_WhenUnapprovedAndProcessedDateHasValue()
+    {
+        var expectedDate = new DateTime(2026, 1, 20, 14, 15, 0, DateTimeKind.Utc);
+        var order = CreateOrder();
+        order.Status = OrderStatus.Unapproved;
+        order.ProcessedDate = expectedDate;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.NotNull(result.RejectedDt);
+        Assert.Equal(expectedDate, result.RejectedDt.Value);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsRejectedDt_ToNull_WhenApproved()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Approved;
+        order.ProcessedDate = DateTime.UtcNow;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.RejectedDt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsRejectedDt_ToNull_WhenPending()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Pending;
+        order.ProcessedDate = DateTime.UtcNow;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.RejectedDt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsRejectedDt_ToNull_WhenUnapprovedButProcessedDateIsNull()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Unapproved;
+        order.ProcessedDate = null;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.RejectedDt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsSignedDt_WhenApproved()
+    {
+        var expectedDate = new DateTime(2026, 1, 18, 9, 45, 0, DateTimeKind.Utc);
+        var order = CreateOrder();
+        order.Status = OrderStatus.Approved;
+        order.ProcessedDate = expectedDate;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.NotNull(result.SignedDt);
+        Assert.Equal(expectedDate, result.SignedDt.Value);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsSignedDt_ToNull_WhenUnapproved()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Unapproved;
+        order.ProcessedDate = DateTime.UtcNow;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.SignedDt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsSignedDt_ToNull_WhenPending()
+    {
+        var order = CreateOrder();
+        order.Status = OrderStatus.Pending;
+        order.ProcessedDate = DateTime.UtcNow;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.SignedDt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsPdfObject()
+    {
+        var expectedPdfData = _faker.Random.String2(1000);
+        var order = CreateOrder();
+        order.DocumentData = expectedPdfData;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(expectedPdfData, result.PdfObject);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_HandlesNullComments()
+    {
+        var order = CreateOrder();
+        order.Comments = null;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.CommentTxt);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_HandlesNullDocumentData()
+    {
+        var order = CreateOrder();
+        order.DocumentData = null;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Null(result.PdfObject);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsAllPropertiesCorrectly_CompleteScenario()
+    {
+        var processedDate = new DateTime(2026, 1, 22, 11, 30, 0, DateTimeKind.Utc);
+        var order = CreateOrder();
+        order.Status = OrderStatus.Approved;
+        order.ProcessedDate = processedDate;
+        order.Signed = true;
+        order.Comments = "Order approved with conditions";
+        order.DocumentData = "base64encodedpdf";
+        order.OrderRequest.Referral.ReferredDocumentId = 12345;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(12345, result.ReferredDocumentId);
+        Assert.Equal(processedDate, result.JudicialActionDt);
+        Assert.Equal("Order approved with conditions", result.CommentTxt);
+        Assert.Null(result.ReviewedByAgenId);
+        Assert.Null(result.ReviewedByPartId);
+        Assert.Null(result.ReviewedByPassSeqNo);
+        Assert.Equal(JudicialDecisionCode.APPR, result.JudicialDecisionCd);
+        Assert.True(result.DigitalSignatureApplied);
+        Assert.Null(result.RejectedDt);
+        Assert.Equal(processedDate, result.SignedDt);
+        Assert.Equal("base64encodedpdf", result.PdfObject);
+    }
+
+    [Fact]
+    public void Order_To_ReviewedOrderDto_MapsAllPropertiesCorrectly_UnapprovedScenario()
+    {
+        var processedDate = new DateTime(2026, 1, 22, 15, 45, 0, DateTimeKind.Utc);
+        var order = CreateOrder();
+        order.Status = OrderStatus.Unapproved;
+        order.ProcessedDate = processedDate;
+        order.Signed = false;
+        order.Comments = "Order not approved due to insufficient evidence";
+        order.DocumentData = "base64encodedrejectedpdf";
+        order.OrderRequest.Referral.ReferredDocumentId = 67890;
+
+        var result = order.Adapt<ReviewedOrderDto>(_config);
+
+        Assert.Equal(67890, result.ReferredDocumentId);
+        Assert.Equal(processedDate, result.JudicialActionDt);
+        Assert.Equal("Order not approved due to insufficient evidence", result.CommentTxt);
+        Assert.Null(result.ReviewedByAgenId);
+        Assert.Null(result.ReviewedByPartId);
+        Assert.Null(result.ReviewedByPassSeqNo);
+        Assert.Equal(JudicialDecisionCode.NAPP, result.JudicialDecisionCd);
+        Assert.False(result.DigitalSignatureApplied);
+        Assert.Equal(processedDate, result.RejectedDt);
+        Assert.Null(result.SignedDt);
+        Assert.Equal("base64encodedrejectedpdf", result.PdfObject);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private Order CreateOrder()

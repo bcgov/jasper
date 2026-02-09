@@ -1,5 +1,6 @@
 using System;
 using Newtonsoft.Json;
+using Scv.Db.Models;
 
 namespace Scv.Api.Models.Order;
 
@@ -20,7 +21,7 @@ public class ReviewedOrderDto
     [JsonProperty("user_guid")]
     public Guid UserGuid { get; set; }
     [JsonProperty("judicial_decision_cd")]
-    public string JudicialDecisionCd { get; set; }
+    public JudicialDecisionCode JudicialDecisionCd { get; set; }
     [JsonProperty("digital_signature_applied")]
     public bool DigitalSignatureApplied { get; set; }
     [JsonProperty("rejected_dt")]

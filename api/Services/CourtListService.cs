@@ -184,8 +184,10 @@ namespace Scv.Api.Services
             }
             catch (Exception ex)
             {
+                var safeAgencyId = agencyId?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+                var safeRoomCode = roomCode?.Replace("\r", string.Empty).Replace("\n", string.Empty);
                 _logger.LogError(ex, "Error retrieving court list appearances for JudgeId: {JudgeId}, AgencyId: {AgencyId}, RoomCode: {RoomCode}, Proceeding: {Proceeding}",
-                    judgeId, agencyId, roomCode, proceeding);
+                    judgeId, safeAgencyId, safeRoomCode, proceeding);
                 return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure(ex.Message);
             }
         }

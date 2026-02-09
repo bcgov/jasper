@@ -90,9 +90,10 @@
 <script setup lang="ts">
   import { LocationService } from '@/services';
   import { CourtListService } from '@/services/CourtListService';
-  import { useCommonStore, useCourtListStore } from '@/stores';
+  import { useCommonStore } from '@/stores';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
-  import { LocationInfo } from '@/types/courtlist';
+  import { ApiResponse } from '@/types/ApiResponse';
+  import { CourtListSearchResult, LocationInfo } from '@/types/courtlist';
   import { mdiClose } from '@mdi/js';
   import {
     computed,
@@ -110,10 +111,15 @@
   const date = defineModel<Date>('date');
   const appliedDate = defineModel<Date | null>('appliedDate');
 
-  const emit = defineEmits<(e: 'courtListSearched', data: any) => void>();
+  const emit =
+    defineEmits<
+      (
+        e: 'courtListSearched',
+        data?: ApiResponse<CourtListSearchResult>
+      ) => void
+    >();
   const GREEN = '#62d3a4';
   const commonStore = useCommonStore();
-  const courtListStore = useCourtListStore();
   const isDataReady = ref(false);
   const isMounted = ref(false);
   const isLocationDataMounted = ref(false);
@@ -202,7 +208,7 @@
     isDataReady.value = false;
     isMounted.value = false;
     isSearching.value = true;
-    const data = await courtListService?.getCourtList(
+    const courtListResp = await courtListService?.getCourtList(
       selectedCourtLocation?.value?.locationId
         ? selectedCourtLocation.value.locationId.toString()
         : null,
@@ -211,10 +217,7 @@
       judgeId.value!
     );
 
-    if (data) {
-      courtListStore.courtListInformation.detailsData = data;
-    }
-    emit('courtListSearched', data);
+    emit('courtListSearched', courtListResp);
     isMounted.value = true;
     searchAllowed.value = true;
     isDataReady.value = true;

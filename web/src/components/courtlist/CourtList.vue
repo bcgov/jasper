@@ -56,14 +56,26 @@
         :on-generate="onGenerateClick"
       />
     </v-skeleton-loader>
+    <div
+      v-if="
+        !searchingRequest && !cardTablePairings.length && searchResultMessage
+      "
+    >
+      <p>{{ searchResultMessage }}</p>
+    </div>
   </v-container>
 </template>
 
 <script setup lang="ts">
   import shared from '@/components/shared';
   import { CourtListService } from '@/services';
+  import { ApiResponse } from '@/types/ApiResponse';
   import { DivisionEnum } from '@/types/common';
-  import { CourtListAppearance, CourtListCardInfo } from '@/types/courtlist';
+  import {
+    CourtListAppearance,
+    CourtListCardInfo,
+    CourtListSearchResult,
+  } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
     formatDateInstanceToDDMMMYYYY,
@@ -86,6 +98,7 @@
     parseDDMMMYYYYToDate(parseQueryStringToString(route.query.date)) ??
       new Date()
   );
+  const searchResultMessage = ref<string>('');
   const appliedDate = ref<Date | null>(null);
   const showDropdown = ref(false);
   const search = ref('');
@@ -164,11 +177,27 @@
     throw new Error('Service(s) is undefined.');
   }
 
-  const populateCardTablePairings = (data: any) => {
+  const populateCardTablePairings = (
+    resp?: ApiResponse<CourtListSearchResult>
+  ) => {
+    searchResultMessage.value = '';
     cardTablePairings.value = [];
-    if (!data?.items?.length) {
+    if (!resp) {
       return;
     }
+
+    if (!resp.succeeded && resp.errors?.length > 0) {
+      searchResultMessage.value = resp.errors[0];
+      return;
+    }
+
+    const items = resp.payload?.items;
+    if (resp.succeeded && (!items || items.length === 0)) {
+      searchResultMessage.value = 'No activities.';
+      return;
+    }
+
+    const data = resp.payload;
     for (const courtList of data.items) {
       const courtRoomDetails = courtList.courtRoomDetails[0];
       if (!courtRoomDetails) {
@@ -176,16 +205,15 @@
       }
       const adjudicatorDetails = courtRoomDetails.adjudicatorDetails[0];
       const card = {} as CourtListCardInfo;
-      const appearances = courtList.appearances as CourtListAppearance[];
-      card.fileCount = appearances.length;
+      card.fileCount = courtList.appearances.length;
       card.activity = courtList.activityDsc;
       card.presider = adjudicatorDetails?.adjudicatorNm;
       card.courtListRoom = courtRoomDetails.courtRoomCd;
-      card.courtListLocationID = courtList.locationId;
+      card.courtListLocationID = courtList.locationId ?? 0;
       card.courtListLocation = courtList.locationNm;
       card.amPM = adjudicatorDetails?.amPm;
 
-      cardTablePairings.value.push({ card, table: appearances });
+      cardTablePairings.value.push({ card, table: courtList.appearances });
     }
 
     // We always want AM pairings to appear before PM pairings

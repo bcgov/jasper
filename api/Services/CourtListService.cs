@@ -15,6 +15,7 @@ using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Infrastructure;
 using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Models.Criminal.CourtList;
@@ -33,6 +34,7 @@ namespace Scv.Api.Services
         private readonly SearchDateClient _searchDateClient;
         private readonly ReportServicesClient _reportServiceClient;
         private readonly IAppCache _cache;
+        private readonly IExternalConfigService _externalConfigService;
         private readonly IMapper _mapper;
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
@@ -52,12 +54,14 @@ namespace Scv.Api.Services
             SearchDateClient searchDateClient,
             ReportServicesClient reportServiceClient,
             IAppCache cache,
-            ClaimsPrincipal user)
+            ClaimsPrincipal user,
+            IExternalConfigService externalConfigService)
         {
             _logger = logger;
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _cache = cache;
+            _externalConfigService = externalConfigService;
             _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:FileExpiryMinutes")) * 60;
             _mapper = mapper;
 
@@ -153,6 +157,37 @@ namespace Scv.Api.Services
                 request.RoomCode,
                 request.AdditionsList,
                 request.ReportType);
+        }
+
+        public virtual async Task<OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtListAsync(
+            DateTime proceeding,
+            int judgeId,
+            string agencyId = null,
+            string roomCode = null)
+        {
+            try
+            {
+                var today = DateTime.Now.ToClientTimezone().Date;
+                var lookAheadWindow = await _externalConfigService.GetLookAheadWindowAsync(today);
+                var isOutsideLookAheadWindow = proceeding.Date > today.AddDays(lookAheadWindow);
+                if (isOutsideLookAheadWindow)
+                {
+                    return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure(
+                        "The court list is not available at this time.");
+                }
+
+                var result = (agencyId == null && roomCode == null)
+                    ? await this.GetJudgeCourtListAppearances(judgeId, proceeding)
+                    : await this.GetCourtListAppearances(agencyId, judgeId, roomCode, proceeding);
+
+                return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving court list appearances for JudgeId: {JudgeId}, AgencyId: {AgencyId}, RoomCode: {RoomCode}, Proceeding: {Proceeding}",
+                    judgeId, agencyId, roomCode, proceeding);
+                return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure(ex.Message);
+            }
         }
 
         public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetCourtListAppearances(string locationId, int judgeId, string roomCode, DateTime date)

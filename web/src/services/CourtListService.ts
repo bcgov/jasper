@@ -1,4 +1,5 @@
-import { courtListType } from '@/types/courtlist/jsonTypes';
+import { ApiResponse } from '@/types/ApiResponse';
+import { CourtListSearchResult } from '@/types/courtlist';
 import { HttpService } from './HttpService';
 
 export class CourtListService {
@@ -20,7 +21,7 @@ export class CourtListService {
     roomCode: string | null,
     proceeding: string,
     judgeId: number | null
-  ): Promise<courtListType> {
+  ): Promise<ApiResponse<CourtListSearchResult>> {
     const url = `api/courtlist`;
     const params = {
       agencyId: agencyId,
@@ -29,7 +30,7 @@ export class CourtListService {
       judgeId: judgeId ?? '',
     };
     return this.httpService.client
-      .get<courtListType>(url, { params })
+      .get<ApiResponse<CourtListSearchResult>>(url, { params })
       .then((res) => res.data);
   }
 }

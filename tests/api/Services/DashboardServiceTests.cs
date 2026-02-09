@@ -32,6 +32,7 @@ public class DashboardServiceTests : ServiceTestBase
     private readonly IMapper _mapper;
     private readonly CachingService _cachingService;
     private readonly Mock<IConfiguration> _mockConfig;
+    private readonly Mock<IExternalConfigService> _mockExternalConfigClient;
 
     public DashboardServiceTests()
     {
@@ -53,6 +54,8 @@ public class DashboardServiceTests : ServiceTestBase
         config.Apply(new LocationMapping());
         _mapper = new Mapper(config);
 
+        // IExternalConfigService setup
+        _mockExternalConfigClient = new Mock<IExternalConfigService>();
     }
 
     private (
@@ -88,7 +91,8 @@ public class DashboardServiceTests : ServiceTestBase
             mockSearchDateClient.Object,
             mockLocationService.Object,
             _mapper,
-            new Mock<ILogger<DashboardService>>().Object);
+            new Mock<ILogger<DashboardService>>().Object,
+            _mockExternalConfigClient.Object);
 
         return (
             dashboardService,
@@ -194,7 +198,7 @@ public class DashboardServiceTests : ServiceTestBase
 
         Assert.Single(result.Payload);
 
-        var activity = result.Payload.First().Activities.First();
+        var activity = result.Payload[0].Activities.First();
 
         Assert.Single(result.Payload[0].Activities);
         Assert.Equal(mockLocationId, activity.LocationId);
@@ -272,8 +276,8 @@ public class DashboardServiceTests : ServiceTestBase
         Assert.Single(result.Payload);
         Assert.Equal(2, result.Payload[0].Activities.Count());
 
-        var firstActivity = result.Payload.First().Activities.First();
-        var secondActivity = result.Payload.First().Activities.Skip(1).First();
+        var firstActivity = result.Payload[0].Activities.First();
+        var secondActivity = result.Payload[0].Activities.Skip(1).First();
 
         Assert.Equal(mockLocationId1, firstActivity.LocationId);
         Assert.Equal(mockLocationName, firstActivity.LocationName);
@@ -342,7 +346,7 @@ public class DashboardServiceTests : ServiceTestBase
                     }
                 }
             ]
-        }; ;
+        };
 
         var mockCourtList = new ActivityClassUsage.ActivityAppearanceResultsCollection
         {
@@ -744,7 +748,6 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
-        var mockFileCount = _faker.Random.Int();
 
         var presider1 = new
         {

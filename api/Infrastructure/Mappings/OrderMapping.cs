@@ -38,5 +38,21 @@ public class OrderMapping : IRegister
             .Map(dest => dest.ProcessedDate, src => src.ProcessedDate.HasValue
                 ? src.ProcessedDate.Value.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture)
                 : null);
+        
+        config.NewConfig<Order, ReviewedOrderDto>()
+            .Map(dest => dest.ReferredDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId)
+            .Map(dest => dest.JudicialActionDt, src => src.ProcessedDate ?? DateTime.UtcNow)
+            .Map(dest => dest.CommentTxt, src => src.Comments)
+            .Map(dest => dest.ReviewedByAgenId, null)
+            .Map(dest => dest.ReviewedByPartId, null)
+            .Map(dest => dest.ReviewedByPassSeqNo, null)
+            .Map(dest => dest.JudicialDecisionCd, src => (JudicialDecisionCode)src.Status)
+            .Map(dest => dest.DigitalSignatureApplied, src => src.Signed)
+            .Map(dest => dest.RejectedDt, src => 
+                src.Status == OrderStatus.Unapproved && src.ProcessedDate.HasValue 
+                    ? src.ProcessedDate 
+                    : null)
+            .Map(dest => dest.SignedDt, src => src.Status == OrderStatus.Approved ? src.ProcessedDate : null)
+            .Map(dest => dest.PdfObject, src => src.DocumentData);
     }
 }

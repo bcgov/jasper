@@ -33,6 +33,13 @@ public enum OrderStatus
     Approved
 }
 
+public enum JudicialDecisionCode
+{
+    NAPP, // Not Approved
+    AFDC,  // Awaiting Further Directions or Conditions
+    APPR // Approved
+}
+
 public class CourtFile
 {
     public string CourtFileNo { get; set; }

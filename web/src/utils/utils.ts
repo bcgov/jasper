@@ -100,6 +100,15 @@ enum appearanceStatus {
   SCHD = 'Scheduled',
 }
 
+export const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
 // This helper function is created to resolve duplication errors found by SonarCloud.
 // It might be better to put this logic as part of the Parent component and pass it as prop
 export const extractCriminalAppearanceInfo = (

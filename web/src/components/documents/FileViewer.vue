@@ -26,6 +26,7 @@
   import { OrderService } from '@/services';
   import ReviewModal from './ReviewModal.vue';
   import { OrderReview } from '@/types';
+  import { arrayBufferToBase64 } from '@/utils/utils';
 
   // Declare NutrientViewer global
   declare global {
@@ -243,14 +244,16 @@
 
   const reviewOrder = async (orderReview: OrderReview) => {
     showReviewModal.value = false;
-
-    // Check if strategy supports order approval
-    if (props.strategy.reviewOrder) {
-      try {
-        await props.strategy.reviewOrder(orderReview);
-      } catch (error) {
-        console.error('Error reviewing order:', error);
-      }
+    if (!props.strategy.reviewOrder) {
+      return;
+    }
+    // Check if strategy supports order review
+    try {
+      const arrayBuffer = await instance.exportPDF();
+      orderReview.documentData = arrayBufferToBase64(arrayBuffer);
+      await props.strategy.reviewOrder(orderReview);
+    } catch (error) {
+      console.error('Error reviewing order:', error);
     }
   };
 

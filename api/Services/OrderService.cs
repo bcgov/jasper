@@ -220,6 +220,16 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         return OperationResult.Success();
     }
 
+    public async Task<OperationResult> SubmitReview(string id)
+    {
+        //var order = await Repo.GetByIdAsync(id);
+        //var reviewedOrder = Mapper.Map<ReviewedOrderDto>(order);
+
+        // Call external system and pass reviewedOrder
+
+        throw new NotImplementedException();
+    }
+
     public override Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
     {
         throw new NotImplementedException();

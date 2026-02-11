@@ -4,5 +4,5 @@ export interface OrderReview {
   comments: string;
   signed: boolean;
   status: OrderReviewStatus;
-  documentData: string;
+  documentData: Blob | null;
 }

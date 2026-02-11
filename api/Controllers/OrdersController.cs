@@ -41,7 +41,6 @@ public class OrdersController(
     /// <param name="orderRequestDto">The Order payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>
     /// <returns>Processed order</returns>
     [HttpPut]
-    [Authorize(AuthenticationSchemes = CsoPolicies.AuthenticationScheme, Policy = CsoPolicies.RequireWriteRole)]
     [ProducesResponseType(typeof(OperationResult<OrderDto>), 200)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -81,7 +80,7 @@ public class OrdersController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ReviewOrder(string id, [FromBody] OrderReviewDto orderReview)
+    public async Task<IActionResult> ReviewOrder(string id, [FromForm] OrderReviewDto orderReview)
     {
         var result = await _orderService.ReviewOrder(id, orderReview);
 

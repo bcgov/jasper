@@ -4,6 +4,7 @@ import { CustomAPIError } from '@/types/ApiResponse';
 import axios, {
   AxiosError,
   AxiosInstance,
+  AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from 'axios';
 import redirectHandlerService from './RedirectHandlerService';
@@ -29,6 +30,13 @@ export interface IHttpService {
     config?: CustomAxiosConfig
   ): Promise<T>;
   patch<T>(
+    resource: string,
+    data: any,
+    headers?: Record<string, string>,
+    responseType?: 'json' | 'blob',
+    config?: CustomAxiosConfig
+  ): Promise<T>;
+  patchOG<T>(
     resource: string,
     data: any,
     headers?: Record<string, string>,
@@ -163,6 +171,36 @@ export class HttpService implements IHttpService {
   }
 
   public async patch<T>(
+    resource: string,
+    data: any,
+    headers: Record<string, string> = {},
+    responseType: 'json' | 'blob' = 'json',
+    config: CustomAxiosConfig = {}
+  ): Promise<T> {
+    try {
+      const finalConfig: AxiosRequestConfig = {
+        responseType,
+        ...config,
+      };
+
+      // If FormData, allow browser to set Content-Type with correct boundary
+      if (data instanceof FormData) {
+        finalConfig.headers = {
+          ...headers,
+          'Content-Type': undefined,
+        };
+      } else {
+        finalConfig.headers = { ...this.client.defaults.headers.common, ...headers };
+      }
+
+      const response = await this.client.patch<T>(resource, data, finalConfig);
+      return response.data;
+    } catch (error) {
+      console.error('Error in PATCH request: ', error);
+      throw error;
+    }
+  }
+  public async patchOG<T>(
     resource: string,
     data: any,
     headers: Record<string, string> = {},

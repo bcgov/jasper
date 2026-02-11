@@ -20,7 +20,7 @@ export class OrderPDFStrategy extends BasePDFStrategy {
     this.orderService = orderService;
   }
 
-  async reviewOrder(review: OrderReview): Promise<void> {
+  async reviewOrder(review: FormData): Promise<void> {
     // Get order ID from URL query parameter
     const urlParams = new URLSearchParams(globalThis.location.search);
     const orderId = urlParams.get('id');

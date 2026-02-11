@@ -116,7 +116,7 @@
       comments: comments.value,
       status: status,
       signed: status === OrderReviewStatus.Approved,
-      documentData: '',
+      documentData: null
     };
     emit('reviewOrder', review);
 

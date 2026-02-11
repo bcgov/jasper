@@ -21,6 +21,7 @@ using Scv.Api.Models.Order;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Api.Repositories;
 using Xunit;
 
 namespace tests.api.Services;
@@ -35,6 +36,8 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<ILogger<OrderService>> _mockLogger;
     private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
+    private readonly Mock<ICsoClient> _mockCsoClient;
+    private readonly Mock<IUserService> _mockUserService;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -62,6 +65,8 @@ public class OrderServiceTests : ServiceTestBase
         _mockConfiguration = new Mock<IConfiguration>();
         _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        _mockCsoClient = new Mock<ICsoClient>();
+        _mockUserService = new Mock<IUserService>();
 
         _requestAgencyIdentifierId = _faker.Random.AlphaNumeric(10);
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -80,7 +85,9 @@ public class OrderServiceTests : ServiceTestBase
             _mockConfiguration.Object,
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
-            _mockHttpContextAccessor.Object);
+            _mockHttpContextAccessor.Object,
+            _mockCsoClient.Object,
+            _mockUserService.Object);
     }
 
     private void SetupConfiguration()
@@ -702,6 +709,101 @@ public class OrderServiceTests : ServiceTestBase
 
     #endregion
 
+    #region SubmitOrder Tests
+
+    [Fact]
+    public async Task SubmitOrder_ReturnsFailure_WhenOrderNotFound()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync((Order)null);
+
+        var result = await _orderService.SubmitOrder(orderId);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Order not found", result.Errors);
+    }
+
+    [Fact]
+    public async Task SubmitOrder_ReturnsFailure_WhenMappingFails()
+    {
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.ReferredDocumentId = null;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Failed to map Order to OrderAction.", result.Errors);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+        _mockCsoClient.Verify(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task SubmitOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
+    {
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockCsoClient
+            .Setup(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default))
+            .ReturnsAsync(true);
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockCsoClient.Verify(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default), Times.Once);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitOrder_ReturnsFailure_WhenCsoSubmitFails()
+    {
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockCsoClient
+            .Setup(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default))
+            .ReturnsAsync(false);
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Failed to submit order to CSO.", result.Errors);
+        _mockCsoClient.Verify(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default), Times.Once);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private OrderRequestDto CreateValidOrderRequestDto()
@@ -767,6 +869,28 @@ public class OrderServiceTests : ServiceTestBase
         var claims = new List<Claim>
         {
             new Claim(Scv.Api.Helpers.CustomClaimTypes.JudgeId, judgeId.ToString())
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+
+        var httpContext = new DefaultHttpContext
+        {
+            User = claimsPrincipal
+        };
+
+        _mockHttpContextAccessor
+            .Setup(x => x.HttpContext)
+            .Returns(httpContext);
+    }
+
+    private void SetupHttpContextWithGuid()
+    {
+        var guidBytes = Guid.NewGuid().ToByteArray();
+        var base64Guid = Convert.ToBase64String(guidBytes);
+        var claims = new List<Claim>
+        {
+            new Claim(Scv.Api.Helpers.CustomClaimTypes.UserGuid, Guid.NewGuid().ToString()),
+            new Claim(Scv.Api.Helpers.CustomClaimTypes.ProvjudUserGuid, base64Guid)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var claimsPrincipal = new ClaimsPrincipal(identity);

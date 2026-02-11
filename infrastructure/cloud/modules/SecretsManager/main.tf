@@ -279,6 +279,7 @@ resource "aws_secretsmanager_secret_rotation" "api_authorizer_secret_rotation" {
 
   rotation_rules {
     schedule_expression = "cron(0 8 * * ? *)" # Daily @ 8AM UTC (12AM PST)
+    duration            = "3h"                # Rotation window: must complete within 3 hours
   }
 }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using Amazon;
@@ -7,6 +8,7 @@ using Azure.Identity;
 using DARSCommon.Handlers;
 using GdPicture14;
 using Hangfire;
+using Hangfire.Common;
 using Hangfire.PostgreSql;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
@@ -28,6 +30,7 @@ using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
+using Scv.Api.Infrastructure.Hangfire;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
@@ -52,6 +55,9 @@ using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
 using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
+using Microsoft.Extensions.Options;
+using Scv.Api.Infrastructure.Options;
+using Scv.Api.Repositories;
 
 namespace Scv.Api.Infrastructure
 {
@@ -191,6 +197,12 @@ namespace Scv.Api.Infrastructure
         {
             services.AddTransient<TimingHandler>();
 
+            services.AddHttpClient<ICsoClient, CsoClient>((sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
+            });
+
             // JC Interface
             services
                 .AddHttpClient<FileServicesClient>(client => { ConfigureHttpClient(client, configuration, "FileServicesClient", 300); })
@@ -299,7 +311,9 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
                 services.AddTransient<SendOrderNotificationJob>();
+                services.AddTransient<SubmitOrderJob>();
                 services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
+                services.AddTransient<IRecurringJob, RetryErroredOrderSubmitJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }
@@ -313,6 +327,16 @@ namespace Scv.Api.Infrastructure
             if (string.IsNullOrEmpty(connectionString))
             {
                 return services;
+            }
+
+            var submitOrderRetryCount = configuration
+                .GetSection("JOBS:SubmitOrder")
+                .Get<JobsSubmitOrderOptions>()?.RetryCount
+                ?? new JobsSubmitOrderOptions().RetryCount;
+
+            if (!JobFilterProviders.Providers.OfType<SubmitOrderJobRetryFilterProvider>().Any())
+            {
+                JobFilterProviders.Providers.Add(new SubmitOrderJobRetryFilterProvider(submitOrderRetryCount));
             }
 
             services.AddHangfire(config => config

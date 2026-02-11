@@ -28,6 +28,8 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
+using Scv.Api.Repositories;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
 
@@ -49,6 +51,14 @@ namespace Scv.Api
         {
             services.AddExceptionHandler<CustomExceptionHandler>();
             services.AddProblemDetails();
+
+            services.AddOptions<CsoOptions>()
+                .Bind(Configuration.GetSection("CSO"))
+                .ValidateDataAnnotations();
+
+            services.Configure<JobsSubmitOrderOptions>(Configuration.GetSection("JOBS:SubmitOrder"));
+            services.Configure<JobsFailureEmailOptions>(Configuration.GetSection("JOBS:FailureEmail"));
+            services.Configure<JobsRetrySubmitOrderOptions>(Configuration.GetSection("JOBS:RetrySubmitOrder"));
 
             services.AddLogging(options =>
             {

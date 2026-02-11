@@ -178,6 +178,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                     OrderRequest = dto,
                     Status = OrderStatus.Pending,
                     SubmitStatus = SubmitStatus.Pending,
+                    SubmitAttempts = 0,
                 };
 
                 var result = await this.AddAsync(orderDto);
@@ -186,7 +187,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                     return result;
                 }
 
-                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
+                if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved)
+                {
+                    _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
+                }
             }
 
             this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);

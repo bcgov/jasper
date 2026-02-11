@@ -187,10 +187,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                     return result;
                 }
 
-                if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved)
-                {
-                    _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
-                }
+                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
             }
 
             this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);
@@ -231,7 +228,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
+        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved)
+        {
+            _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
+        }
 
         return OperationResult.Success();
     }

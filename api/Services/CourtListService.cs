@@ -20,6 +20,7 @@ using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Models.Criminal.CourtList;
 using Scv.Api.Models.Criminal.Detail;
+using JasperRole = Scv.Db.Models.Role;
 
 namespace Scv.Api.Services
 {
@@ -34,7 +35,8 @@ namespace Scv.Api.Services
         private readonly SearchDateClient _searchDateClient;
         private readonly ReportServicesClient _reportServiceClient;
         private readonly IAppCache _cache;
-        private readonly IExternalConfigService _externalConfigService;
+        private readonly ClaimsPrincipal _user;
+        private readonly IPcssConfigService _pcssConfigService;
         private readonly IMapper _mapper;
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
@@ -55,13 +57,14 @@ namespace Scv.Api.Services
             ReportServicesClient reportServiceClient,
             IAppCache cache,
             ClaimsPrincipal user,
-            IExternalConfigService externalConfigService)
+            IPcssConfigService pcssConfigService)
         {
             _logger = logger;
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _cache = cache;
-            _externalConfigService = externalConfigService;
+            _user = user;
+            _pcssConfigService = pcssConfigService;
             _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:FileExpiryMinutes")) * 60;
             _mapper = mapper;
 
@@ -167,10 +170,10 @@ namespace Scv.Api.Services
         {
             try
             {
-                var today = DateTime.Now.ToClientTimezone().Date;
-                var lookAheadWindow = await _externalConfigService.GetLookAheadWindowAsync(today);
+                var today = DateTime.Now.Date;
+                var lookAheadWindow = await _pcssConfigService.GetLookAheadWindowAsync(today, agencyId);
                 var isOutsideLookAheadWindow = proceeding.Date > today.AddDays(lookAheadWindow);
-                if (isOutsideLookAheadWindow)
+                if (!_user.HasRoles([JasperRole.ADMIN]) && isOutsideLookAheadWindow)
                 {
                     return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure(
                         "The court list is not available at this time.");
@@ -188,7 +191,7 @@ namespace Scv.Api.Services
                 var safeRoomCode = roomCode?.Replace("\r", string.Empty).Replace("\n", string.Empty);
                 _logger.LogError(ex, "Error retrieving court list appearances for JudgeId: {JudgeId}, AgencyId: {AgencyId}, RoomCode: {RoomCode}, Proceeding: {Proceeding}",
                     judgeId, safeAgencyId, safeRoomCode, proceeding);
-                return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure(ex.Message);
+                return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure("Something went wrong when retrieving court list appearances.");
             }
         }
 

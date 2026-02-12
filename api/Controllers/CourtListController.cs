@@ -39,6 +39,10 @@ namespace Scv.Api.Controllers
         public async Task<ActionResult> GetCourtList(DateTime proceeding, string agencyId = null, string roomCode = null, int? judgeId = null)
         {
             var result = await _courtListService.GetCourtListAsync(proceeding, this.User.JudgeId(judgeId), agencyId, roomCode);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result);
+            }
 
             return Ok(result);
         }

@@ -38,7 +38,7 @@ public class CourtListServiceFixture : IDisposable
     public Mock<FileServicesClient> MockFileServicesClient { get; }
     public Mock<SearchDateClient> MockSearchDateClient { get; }
     public Mock<PCSSReportServices.ReportServicesClient> MockReportServicesClient { get; }
-    public Mock<IExternalConfigService> MockExternalConfigService { get; }
+    public Mock<IPcssConfigService> MockExternalConfigService { get; }
     public Mock<LookupService> MockLookupService { get; }
     public Mock<LocationService> MockLocationService { get; }
     public IAppCache CachingService { get; }
@@ -73,7 +73,7 @@ public class CourtListServiceFixture : IDisposable
         var mockLookupCodeServicesClient = new Mock<LookupCodeServicesClient>(MockBehavior.Strict, _httpClient);
         var mockPCSSLookupServicesClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, _httpClient);
         MockReportServicesClient = new Mock<PCSSReportServices.ReportServicesClient>(MockBehavior.Strict, _httpClient);
-        MockExternalConfigService = new Mock<IExternalConfigService>(MockBehavior.Strict);
+        MockExternalConfigService = new Mock<IPcssConfigService>(MockBehavior.Strict);
 
         // Cache setup
         CachingService = new CachingService(new Lazy<ICacheProvider>(() =>

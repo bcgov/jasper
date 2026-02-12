@@ -32,7 +32,7 @@ public class DashboardServiceTests : ServiceTestBase
     private readonly IMapper _mapper;
     private readonly CachingService _cachingService;
     private readonly Mock<IConfiguration> _mockConfig;
-    private readonly Mock<IExternalConfigService> _mockExternalConfigClient;
+    private readonly Mock<IPcssConfigService> _mockExternalConfigClient;
 
     public DashboardServiceTests()
     {
@@ -55,7 +55,7 @@ public class DashboardServiceTests : ServiceTestBase
         _mapper = new Mapper(config);
 
         // IExternalConfigService setup
-        _mockExternalConfigClient = new Mock<IExternalConfigService>();
+        _mockExternalConfigClient = new Mock<IPcssConfigService>();
     }
 
     private (

@@ -8,7 +8,7 @@ namespace Scv.Api.Helpers.Extensions;
 /// <summary>
 /// Extension methods for retrieving typed configuration values from a collection of PcssConfiguration objects
 /// </summary>
-public static class ConfigurationHelper
+public static class PcssConfigHelper
 {
     /// <summary>
     /// Gets an integer configuration value by key, returning a default value if not found or invalid

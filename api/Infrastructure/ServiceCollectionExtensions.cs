@@ -280,8 +280,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IJudgeService, JudgeService>();
             services.AddScoped<ICsvParser, CsvParser>();
             services.AddScoped<IPcssSyncService, PcssSyncService>();
-            services.AddScoped<IPcssSyncService, PcssSyncService>();
-            services.AddScoped<IExternalConfigService, ExternalConfigService>();
+            services.AddScoped<IPcssConfigService, PcssConfigService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))

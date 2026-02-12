@@ -23,6 +23,7 @@ using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
 using Xunit;
 using static PCSSCommon.Models.ActivityClassUsage;
+using JasperRole = Scv.Db.Models.Role;
 
 namespace tests.api.Services;
 
@@ -31,13 +32,11 @@ public class CourtListServiceTests : ServiceTestBase
     private readonly Mock<IConfiguration> _mockConfig;
     private readonly Faker _faker;
     private readonly IMapper _mapper;
-    private readonly Mock<IExternalConfigService> _mockExternalConfigClient;
-    private readonly int _testLocationId;
+    private readonly Mock<IPcssConfigService> _mockExternalConfigClient;
 
     public CourtListServiceTests()
     {
         _faker = new Faker();
-        _testLocationId = _faker.Random.Int();
 
         // IConfiguration setup
         _mockConfig = new Mock<IConfiguration>();
@@ -58,7 +57,7 @@ public class CourtListServiceTests : ServiceTestBase
         _mapper = new Mapper(config);
 
         // IExternalConfigService setup
-        _mockExternalConfigClient = new Mock<IExternalConfigService>();
+        _mockExternalConfigClient = new Mock<IPcssConfigService>();
     }
 
     private (
@@ -66,7 +65,7 @@ public class CourtListServiceTests : ServiceTestBase
         Mock<ReportServicesClient> mockReportClient,
         Mock<FileServicesClient> mockFileClient,
         Mock<SearchDateClient> mockSearchDateClient
-        ) SetupCourtListService()
+        ) SetupCourtListService(string role = JasperRole.ADMIN)
     {
         // Setup Service Clients
         var mockFileClient = new Mock<FileServicesClient>(MockBehavior.Strict, this.HttpClient);
@@ -83,6 +82,7 @@ public class CourtListServiceTests : ServiceTestBase
                 new(CustomClaimTypes.ApplicationCode, "TESTAPP"),
                 new(CustomClaimTypes.JcAgencyCode, "TESTAGENCY"),
                 new(CustomClaimTypes.JcParticipantId, "TESTPART"),
+                new(CustomClaimTypes.Role, role)
             ],
             "mock");
 
@@ -246,14 +246,14 @@ public class CourtListServiceTests : ServiceTestBase
     public async Task GetCourtListAsync_ShouldReturnFailure_WhenProceedingDateIsOutsideLookAheadWindow()
     {
         // Arrange
-        var (courtListService, _, _, _) = SetupCourtListService();
+        var (courtListService, _, _, _) = SetupCourtListService(JasperRole.RAJ);
         var lookAheadWindow = 30;
         var today = DateTime.Now.ToClientTimezone().Date;
         var proceedingDate = today.AddDays(lookAheadWindow + 1);
         var judgeId = _faker.Random.Int();
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         // Act
@@ -262,7 +262,7 @@ public class CourtListServiceTests : ServiceTestBase
         // Assert
         Assert.False(result.Succeeded);
         Assert.Equal("The court list is not available at this time.", result.Errors[0]);
-        _mockExternalConfigClient.Verify(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()), Times.Once);
+        _mockExternalConfigClient.Verify(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -280,7 +280,7 @@ public class CourtListServiceTests : ServiceTestBase
         };
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         mockSearchDateClient
@@ -295,7 +295,7 @@ public class CourtListServiceTests : ServiceTestBase
         // Assert
         Assert.True(result.Succeeded);
         Assert.Equal(mockResult, result.Payload);
-        _mockExternalConfigClient.Verify(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()), Times.Once);
+        _mockExternalConfigClient.Verify(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()), Times.Once);
         mockSearchDateClient.Verify(s => s.GetJudgeCourtListAppearancesAsync(judgeId, proceedingDate.ToString("dd-MMM-yyyy")), Times.Once);
     }
 
@@ -314,7 +314,7 @@ public class CourtListServiceTests : ServiceTestBase
         };
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         mockSearchDateClient
@@ -354,7 +354,7 @@ public class CourtListServiceTests : ServiceTestBase
         };
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         mockSearchDateClient
@@ -396,7 +396,7 @@ public class CourtListServiceTests : ServiceTestBase
         var exceptionMessage = "Test exception message";
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         mockSearchDateClient
@@ -413,7 +413,7 @@ public class CourtListServiceTests : ServiceTestBase
 
         // Assert
         Assert.False(result.Succeeded);
-        Assert.Equal(exceptionMessage, result.Errors[0]);
+        Assert.Equal("Something went wrong when retrieving court list appearances.", result.Errors[0]);
     }
 
     [Fact]
@@ -430,7 +430,7 @@ public class CourtListServiceTests : ServiceTestBase
         };
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         mockSearchDateClient
@@ -462,7 +462,7 @@ public class CourtListServiceTests : ServiceTestBase
         };
 
         _mockExternalConfigClient
-            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<int?>()))
+            .Setup(e => e.GetLookAheadWindowAsync(It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(lookAheadWindow);
 
         mockSearchDateClient

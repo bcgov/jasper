@@ -30,7 +30,7 @@ public class DashboardService(
     LocationService locationService,
     IMapper mapper,
     ILogger<DashboardService> logger,
-    IExternalConfigService externalConfigService
+    IPcssConfigService pcssConfigService
 ) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
@@ -44,7 +44,7 @@ public class DashboardService(
     private readonly LocationService _locationService = locationService;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<DashboardService> _logger = logger;
-    private readonly IExternalConfigService _externalConfigService = externalConfigService;
+    private readonly IPcssConfigService _pcssConfigService = pcssConfigService;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -217,7 +217,7 @@ public class DashboardService(
     private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar, int? judgeId = null)
     {
         var today = DateTime.Now.ToClientTimezone().Date;
-        var lookAheadWindow = await _externalConfigService.GetLookAheadWindowAsync(today);
+        var lookAheadWindow = await _pcssConfigService.GetLookAheadWindowAsync(today);
 
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)

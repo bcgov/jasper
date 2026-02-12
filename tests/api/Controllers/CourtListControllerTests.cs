@@ -43,7 +43,7 @@ public class CourtListControllerTests
     private readonly Faker _faker;
     private readonly Mock<IValidator<CourtListReportRequest>> _mockReportValidator;
     private readonly Mock<HttpContext> _httpContext;
-    private readonly Mock<IExternalConfigService> _mockExternalConfigClient;
+    private readonly Mock<IPcssConfigService> _mockExternalConfigClient;
 
     #endregion Variables
 
@@ -65,7 +65,7 @@ public class CourtListControllerTests
         _httpContext.Setup(c => c.User).Returns(mockUser);
 
         // IExternalConfigService setup
-        _mockExternalConfigClient = new Mock<IExternalConfigService>();
+        _mockExternalConfigClient = new Mock<IPcssConfigService>();
     }
 
     #endregion Constructor
@@ -227,8 +227,8 @@ public class CourtListControllerTests
                 It.IsAny<string>()),
                 Times.Once);
 
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var operationResult = Assert.IsType<OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>>(okResult.Value);
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var operationResult = Assert.IsType<OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>>(badRequestResult.Value);
 
         // Assert the OperationResult properties
         Assert.False(operationResult.Succeeded);

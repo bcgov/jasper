@@ -186,8 +186,10 @@
       return;
     }
 
-    if (!resp.succeeded && resp.errors?.length > 0) {
-      searchResultMessage.value = resp.errors[0];
+    if (!resp.succeeded) {
+      searchResultMessage.value =
+        resp.errors?.[0] ??
+        'An error occurred while searching. Please try again.';
       return;
     }
 
@@ -209,7 +211,7 @@
       card.activity = courtList.activityDsc;
       card.presider = adjudicatorDetails?.adjudicatorNm;
       card.courtListRoom = courtRoomDetails.courtRoomCd;
-      card.courtListLocationID = courtList.locationId ?? 0;
+      card.courtListLocationID = courtList.locationId;
       card.courtListLocation = courtList.locationNm;
       card.amPM = adjudicatorDetails?.amPm;
 

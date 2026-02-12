@@ -199,7 +199,7 @@ export interface CourtListSearchResult {
 
 export interface CourtListItemSearchResult {
   dateStr?: string;
-  locationId?: number;
+  locationId: number;
   locationNm: string;
   activityCd?: string;
   activityDsc: string;

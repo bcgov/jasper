@@ -208,16 +208,24 @@
     isDataReady.value = false;
     isMounted.value = false;
     isSearching.value = true;
-    const courtListResp = await courtListService?.getCourtList(
-      selectedCourtLocation?.value?.locationId
-        ? selectedCourtLocation.value.locationId.toString()
-        : null,
-      selectedCourtRoom?.value,
-      shortHandDate.value,
-      judgeId.value!
-    );
 
-    emit('courtListSearched', courtListResp);
+    let courtListResp: ApiResponse<CourtListSearchResult> | undefined;
+    try {
+      courtListResp = await courtListService?.getCourtList(
+        selectedCourtLocation?.value?.locationId
+          ? selectedCourtLocation.value.locationId.toString()
+          : null,
+        selectedCourtRoom?.value,
+        shortHandDate.value,
+        judgeId.value!
+      );
+      emit('courtListSearched', courtListResp);
+    } catch (error: CustomAPIError<ApiResponse<CourtListSearchResult>>) {
+      courtListResp = error.originalError.response.data;
+    } finally {
+      emit('courtListSearched', courtListResp);
+    }
+
     isMounted.value = true;
     searchAllowed.value = true;
     isDataReady.value = true;

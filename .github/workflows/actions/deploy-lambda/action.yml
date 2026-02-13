@@ -40,11 +40,11 @@ runs:
         GH_LAMBDA: ${{ inputs.lambda }}
       run: |
         echo "Lambda: $GH_LAMBDA"
-        
+
         # Extract RESOURCE and LAMBDA
         RESOURCE="${GH_LAMBDA%%/*}"
         LAMBDA="${GH_LAMBDA##*/}"
-        
+
         # Save variables as ENV var
         echo "RESOURCE=$RESOURCE" >> $GITHUB_ENV
         echo "LAMBDA=$LAMBDA" >> $GITHUB_ENV
@@ -93,8 +93,8 @@ runs:
       run: |
         IMAGE_TAG="${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
         REPOSITORY_NAME="${GH_APP_NAME}-lambda-repo-${GH_ENVIRONMENT}"
-        
-        IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
+
+        IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
         if [ -z "$IMAGE_EXISTS" ]; then
           echo "Image with tag $IMAGE_TAG does not exist."

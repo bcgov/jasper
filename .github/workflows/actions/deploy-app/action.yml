@@ -84,13 +84,6 @@ runs:
         IMAGE_TAG="${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
         REPOSITORY_NAME="${GH_APP_NAME}-app-repo-${GH_ENVIRONMENT}"
 
-        echo "Looking for image tag: ${IMAGE_TAG}"
-        echo "Repository: ${REPOSITORY_NAME}"
-
-        # Show all existing tags for debugging
-        echo "Existing image tags in repository:"
-        aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[*].imageTags[*]" --output text || echo "No images found or error listing images"
-
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
         if [ -z "$IMAGE_EXISTS" ]; then

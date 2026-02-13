@@ -1,15 +1,15 @@
-import { courtListType } from '@/types/courtlist/jsonTypes';
-import { HttpService } from './HttpService';
+import { ApiResponse } from '@/types/ApiResponse';
+import { CourtListSearchResult } from '@/types/courtlist';
+import { IHttpService } from './HttpService';
+import { ServiceBase } from './ServiceBase';
 
-export class CourtListService {
-  private readonly httpService: HttpService;
-
-  constructor(httpService: HttpService) {
-    this.httpService = httpService;
+export class CourtListService extends ServiceBase {
+  constructor(httpService: IHttpService) {
+    super(httpService);
   }
 
   generateReportUrl(params: Record<string, any> = {}): string {
-    return this.httpService.client.getUri({
+    return this.httpService.getUri({
       url: 'api/courtlist/generate-report',
       params,
     });
@@ -20,16 +20,16 @@ export class CourtListService {
     roomCode: string | null,
     proceeding: string,
     judgeId: number | null
-  ): Promise<courtListType> {
-    const url = `api/courtlist`;
-    const params = {
-      agencyId: agencyId,
-      roomCode,
-      proceeding,
-      judgeId: judgeId ?? '',
-    };
-    return this.httpService.client
-      .get<courtListType>(url, { params })
-      .then((res) => res.data);
+  ): Promise<ApiResponse<CourtListSearchResult>> {
+    return this.httpService.get<ApiResponse<CourtListSearchResult>>(
+      `api/courtlist`,
+      {
+        agencyId,
+        roomCode,
+        proceeding,
+        judgeId: judgeId ?? '',
+      },
+      { skipErrorHandler: true }
+    );
   }
 }

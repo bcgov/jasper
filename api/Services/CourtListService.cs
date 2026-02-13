@@ -15,10 +15,12 @@ using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Infrastructure;
 using Scv.Api.Models.Civil.CourtList;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Models.Criminal.CourtList;
 using Scv.Api.Models.Criminal.Detail;
+using JasperRole = Scv.Db.Models.Role;
 
 namespace Scv.Api.Services
 {
@@ -33,6 +35,8 @@ namespace Scv.Api.Services
         private readonly SearchDateClient _searchDateClient;
         private readonly ReportServicesClient _reportServiceClient;
         private readonly IAppCache _cache;
+        private readonly ClaimsPrincipal _user;
+        private readonly IPcssConfigService _pcssConfigService;
         private readonly IMapper _mapper;
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
@@ -52,12 +56,15 @@ namespace Scv.Api.Services
             SearchDateClient searchDateClient,
             ReportServicesClient reportServiceClient,
             IAppCache cache,
-            ClaimsPrincipal user)
+            ClaimsPrincipal user,
+            IPcssConfigService pcssConfigService)
         {
             _logger = logger;
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _cache = cache;
+            _user = user;
+            _pcssConfigService = pcssConfigService;
             _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:FileExpiryMinutes")) * 60;
             _mapper = mapper;
 
@@ -153,6 +160,39 @@ namespace Scv.Api.Services
                 request.RoomCode,
                 request.AdditionsList,
                 request.ReportType);
+        }
+
+        public virtual async Task<OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>> GetCourtListAsync(
+            DateTime proceeding,
+            int judgeId,
+            string agencyId = null,
+            string roomCode = null)
+        {
+            try
+            {
+                var today = DateTime.Now.Date;
+                var lookAheadWindow = await _pcssConfigService.GetLookAheadWindowAsync(today, agencyId);
+                var isOutsideLookAheadWindow = proceeding.Date > today.AddDays(lookAheadWindow);
+                if (!_user.HasRoles([JasperRole.ADMIN]) && isOutsideLookAheadWindow)
+                {
+                    return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure(
+                        "The court list is not available at this time.");
+                }
+
+                var result = (agencyId == null && roomCode == null)
+                    ? await this.GetJudgeCourtListAppearances(judgeId, proceeding)
+                    : await this.GetCourtListAppearances(agencyId, judgeId, roomCode, proceeding);
+
+                return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                var safeAgencyId = agencyId?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+                var safeRoomCode = roomCode?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+                _logger.LogError(ex, "Error retrieving court list appearances for JudgeId: {JudgeId}, AgencyId: {AgencyId}, RoomCode: {RoomCode}, Proceeding: {Proceeding}",
+                    judgeId, safeAgencyId, safeRoomCode, proceeding);
+                return OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>.Failure("Something went wrong when retrieving court list appearances.");
+            }
         }
 
         public virtual async Task<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection> GetCourtListAppearances(string locationId, int judgeId, string roomCode, DateTime date)

@@ -38,6 +38,7 @@ public class CourtListServiceFixture : IDisposable
     public Mock<FileServicesClient> MockFileServicesClient { get; }
     public Mock<SearchDateClient> MockSearchDateClient { get; }
     public Mock<PCSSReportServices.ReportServicesClient> MockReportServicesClient { get; }
+    public Mock<IPcssConfigService> MockExternalConfigService { get; }
     public Mock<LookupService> MockLookupService { get; }
     public Mock<LocationService> MockLocationService { get; }
     public IAppCache CachingService { get; }
@@ -72,6 +73,7 @@ public class CourtListServiceFixture : IDisposable
         var mockLookupCodeServicesClient = new Mock<LookupCodeServicesClient>(MockBehavior.Strict, _httpClient);
         var mockPCSSLookupServicesClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, _httpClient);
         MockReportServicesClient = new Mock<PCSSReportServices.ReportServicesClient>(MockBehavior.Strict, _httpClient);
+        MockExternalConfigService = new Mock<IPcssConfigService>(MockBehavior.Strict);
 
         // Cache setup
         CachingService = new CachingService(new Lazy<ICacheProvider>(() =>
@@ -122,7 +124,8 @@ public class CourtListServiceFixture : IDisposable
             MockSearchDateClient.Object,
             MockReportServicesClient.Object,
             CachingService,
-            Principal);
+            Principal,
+            MockExternalConfigService.Object);
     }
 
     public CourtListServiceFixture WithPrincipal(ClaimsPrincipal principal)
@@ -162,6 +165,7 @@ public class CourtListServiceFixture : IDisposable
         MockFileServicesClient.Reset();
         MockSearchDateClient.Reset();
         MockReportServicesClient.Reset();
+        MockExternalConfigService.Reset();
         MockLookupService.Reset();
         MockLocationService.Reset();
     }

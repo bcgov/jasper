@@ -29,7 +29,8 @@ public class DashboardService(
     SearchDateClient searchDateClient,
     LocationService locationService,
     IMapper mapper,
-    ILogger<DashboardService> logger
+    ILogger<DashboardService> logger,
+    IPcssConfigService pcssConfigService
 ) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
@@ -43,6 +44,7 @@ public class DashboardService(
     private readonly LocationService _locationService = locationService;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<DashboardService> _logger = logger;
+    private readonly IPcssConfigService _pcssConfigService = pcssConfigService;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -214,6 +216,9 @@ public class DashboardService(
 
     private async Task<List<CalendarDay>> GetDays(PCSS.JudicialCalendar calendar, int? judgeId = null)
     {
+        var today = DateTime.Now.ToClientTimezone().Date;
+        var lookAheadWindow = await _pcssConfigService.GetLookAheadWindowAsync(today);
+
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
@@ -222,7 +227,8 @@ public class DashboardService(
             var activities = await GetDayActivities(day);
 
             var isWeekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
-            var showCourtList = activities
+            var isWithinLookaheadWindow = date.Date <= today.AddDays(lookAheadWindow);
+            var showCourtList = isWithinLookaheadWindow && activities
                 .Any(a => a.ActivityClassCode != SITTING_ACTIVITY_CODE
                     && a.ActivityClassCode != NON_SITTING_ACTIVITY_CODE);
             // Show DARS icon (headset) when judge is sitting, assigned to an activity and date today or earlier

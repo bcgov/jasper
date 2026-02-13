@@ -191,6 +191,32 @@ export interface CourtListCardInfo {
   email?: string;
 }
 
+export interface CourtListSearchResult {
+  items: CourtListItemSearchResult[];
+  isCourtListFiltered?: boolean;
+  isStat?: boolean;
+}
+
+export interface CourtListItemSearchResult {
+  dateStr?: string;
+  locationId: number;
+  locationNm: string;
+  activityCd?: string;
+  activityDsc: string;
+  activityClassCd?: string;
+  activityClassDsc?: string;
+  courtRooms?: string[];
+  capacityTargetNumerator?: number;
+  capacityTargetDenominator?: number;
+  casesTarget?: number;
+  totalHours?: number;
+  capacityConstraintCd?: string;
+  capacityConstraintDsc?: string;
+  appearances: CourtListAppearance[];
+  courtActivityDetails: CourtActivityDetail[];
+  courtRoomDetails: CourtRoomDetail[];
+}
+
 export interface CourtListAppearance {
   aslSortOrder?: number;
   courtDivisionCd: string;
@@ -274,6 +300,30 @@ export interface CourtListAppearance {
   otherRepresentedYn: string;
   linkedCounsel?: PcssCounsel;
   aslFeederAdjudicators?: any[];
+}
+
+export interface CourtActivityDetail {
+  courtActivityId?: number;
+  noAdditionsYn?: string;
+  noAdditionsCommentTxt?: string;
+  courtSittingCd?: string;
+}
+
+export interface CourtRoomDetail {
+  courtRoomCd: string;
+  assignmentListRoomYn: string;
+  casesTarget?: number;
+  totalHours?: number;
+  isAM: string;
+  isPM: string;
+  adjudicatorDetails: AdjudicatorDetail[];
+}
+
+export interface AdjudicatorDetail {
+  adjudicatorId?: number;
+  adjudicatorNm: string;
+  adjudicatorInitials: string;
+  amPm: string;
 }
 
 export interface AppearanceMethod {

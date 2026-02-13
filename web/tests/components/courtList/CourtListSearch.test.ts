@@ -44,7 +44,9 @@ describe('CourtListSearch.vue', () => {
       ]),
     };
     courtListService = {
-      getCourtList: vi.fn().mockResolvedValue(Promise.resolve({})),
+      getCourtList: vi
+        .fn()
+        .mockResolvedValue(Promise.resolve({ succeeded: true, payload: {} })),
       getMyCourtList: vi.fn().mockResolvedValue(Promise.resolve({})),
     };
 
@@ -123,7 +125,12 @@ describe('CourtListSearch.vue', () => {
     );
     await nextTick();
 
-    expect(courtListStore.courtListInformation.detailsData).toEqual({});
+    expect(wrapper.emitted().courtListSearched).toBeTruthy();
+    expect(wrapper.vm.isMounted).toBe(true);
+    expect(wrapper.vm.searchAllowed).toBe(true);
+    expect(wrapper.vm.isDataReady).toBe(true);
+    expect(wrapper.vm.isSearching).toBe(false);
+    expect(wrapper.vm.formSubmit).toBe(false);
   });
 
   it('emits courtListSearched event', async () => {

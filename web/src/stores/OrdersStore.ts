@@ -13,12 +13,15 @@ export const useOrdersStore = defineStore('orders', () => {
     lastFetched.value = new Date();
   };
 
-  const fetchOrders = async (orderService: OrderService) => {
+  const fetchOrders = async (
+    orderService: OrderService,
+    judgeId?: number | null
+  ) => {
     if (isLoading.value) return;
 
     isLoading.value = true;
     try {
-      const ordersData = await orderService.getOrders();
+      const ordersData = await orderService.getOrders(judgeId);
       setOrders(ordersData ?? []);
     } catch {
       console.error('Failed to fetch orders');

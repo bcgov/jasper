@@ -60,15 +60,35 @@
 </template>
 <script lang="ts" setup>
   import shared from '@/components/shared';
-  import { useCourtFileSearchStore, useOrdersStore } from '@/stores';
+  import { OrderService } from '@/services';
+  import {
+    useCommonStore,
+    useCourtFileSearchStore,
+    useOrdersStore,
+  } from '@/stores';
   import { Order } from '@/types';
   import { KeyValueInfo, OrderReviewStatus } from '@/types/common';
   import { DocumentData } from '@/types/shared';
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
-  import { computed } from 'vue';
+  import { computed, inject, ref, watch } from 'vue';
 
   const ordersStore = useOrdersStore();
   const courtFileSearchStore = useCourtFileSearchStore();
+  const commonStore = useCommonStore();
+  const judgeId = ref(commonStore.userInfo?.judgeId);
+  const orderService = inject<OrderService>('orderService');
+
+  if (!orderService) {
+    throw new Error('Service is not available!');
+  }
+
+  watch(
+    () => commonStore.userInfo?.judgeId,
+    async (newVal) => {
+      judgeId.value = newVal;
+      await ordersStore.fetchOrders(orderService, judgeId.value);
+    }
+  );
 
   const pendingOrders = computed(
     () =>

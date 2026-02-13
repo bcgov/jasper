@@ -34,14 +34,7 @@
           </v-tab>
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
-            <JudgeSelector
-              v-if="
-                (selectedTab === 'dashboard' || selectedTab === 'court-list') &&
-                judges &&
-                judges?.length > 0
-              "
-              :judges="judges"
-            />
+            <JudgeSelector v-if="showJudgeSelector" :judges="judges" />
             <v-btn
               spaced="end"
               size="x-large"
@@ -131,6 +124,15 @@
       requiredOrderRoles.every((requiredRole) =>
         commonStore.userInfo?.roles?.includes(requiredRole)
       ) ?? false
+  );
+
+  const showJudgeSelector = computed(
+    () =>
+      (selectedTab.value === 'dashboard' ||
+        selectedTab.value === 'court-list' ||
+        selectedTab.value === 'orders') &&
+      judges.value &&
+      judges.value.length > 0
   );
 
   const pendingOrdersCount = computed(

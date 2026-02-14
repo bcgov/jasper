@@ -28,6 +28,7 @@ namespace Scv.Api.Infrastructure.Options
         /// <summary>
         /// Service account secret used to retrieve tokens. Value is expected from environment variables.
         /// </summary>
+        [Required]
         public string ServiceAccountSecret { get; set; } = default!;
 
         /// <summary>

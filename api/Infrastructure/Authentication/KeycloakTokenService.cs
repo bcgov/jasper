@@ -64,13 +64,13 @@ namespace Scv.Api.Infrastructure.Authentication
                 var token = await RequestServiceAccountTokenAsync(options, cancellationToken);
                 var cacheDuration = GetCacheDuration(token.ExpiresAt, options.RefreshSkewSeconds);
 
-                if (cacheDuration.Seconds <= options.RefreshSkewSeconds)
+                if (cacheDuration.TotalSeconds > options.RefreshSkewSeconds)
                 {
                     _cache.Set(cacheKey, token, cacheDuration);
                 }
                 else
                 {
-                    _logger.LogWarning("Unable to set valid cache duration, below skew thereshold.");
+                    _logger.LogWarning("Unable to set valid cache duration, below skew threshold.");
                 }
 
 
@@ -110,8 +110,8 @@ namespace Scv.Api.Infrastructure.Authentication
             if (response.IsError || string.IsNullOrWhiteSpace(response.AccessToken))
             {
                 _logger.LogError(
-                    "Failed to retrieve Keycloak service account token. Error: {Error}.",
-                    response.Error ?? "unknown");
+                    "Failed to retrieve Keycloak service account token. Error: {Error}. Description: {ErrorDescription}",
+                    response.Error ?? "unknown", response.ErrorDescription);
                 throw new InvalidOperationException("Unable to retrieve service account token from Keycloak.");
             }
 

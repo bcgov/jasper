@@ -59,10 +59,9 @@ public class CsoClient : ICsoClient
                 : await response.Content.ReadAsStringAsync(cancellationToken);
 
             _logger.LogWarning(
-                "CSO order submit failed with status {StatusCode} {ReasonPhrase}. Response: {ResponseBody}",
+                "CSO order submit failed with status {StatusCode} {ReasonPhrase}.",
                 (int)response.StatusCode,
-                response.ReasonPhrase,
-                body);
+                response.ReasonPhrase);
         }
 
         return response.IsSuccessStatusCode;

@@ -3,12 +3,11 @@ using System.Linq;
 using Hangfire;
 using Hangfire.Common;
 using Hangfire.Server;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
+using Scv.Db.Models;
 
 namespace Scv.Api.Jobs;
 
@@ -39,8 +38,7 @@ public class JobFailureEmailFilterAttribute : JobFilterAttribute, IServerFilter
             return;
         }
 
-        var emailService = Resolve<IEmailService>(context);
-        var configuration = Resolve<IConfiguration>(context);
+        var emailTemplateService = Resolve<IEmailTemplateService>(context);
         var options = Resolve<IOptions<JobsFailureEmailOptions>>(context).Value;
 
         var recipients = options.Recipients?.Where(r => !string.IsNullOrWhiteSpace(r)).ToArray() ?? [];
@@ -57,14 +55,23 @@ public class JobFailureEmailFilterAttribute : JobFilterAttribute, IServerFilter
         var args = context.BackgroundJob?.Job?.Args ?? [];
         var argsText = string.Join(", ", args.Select(a => a?.ToString() ?? "null"));
         var reason = context.Exception.Message ?? "Unknown error";
-        var body = $"<p>Background job failed.</p><p>Job: {jobType}</p><p>Arguments: {argsText}</p><p>Reason: {reason}</p>";
-        var mailbox = configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
+        var templateData = new
+        {
+            subject,
+            job_type = jobType,
+            job_id = jobId,
+            args = argsText,
+            reason,
+            occurred_at = DateTime.UtcNow.ToString("u")
+        };
 
         foreach (var recipient in recipients)
         {
             try
             {
-                emailService.SendEmailAsync(mailbox, recipient, subject, body).GetAwaiter().GetResult();
+                emailTemplateService.SendEmailTemplateAsync(EmailTemplate.JOB_FAILURE, recipient, templateData)
+                    .GetAwaiter()
+                    .GetResult();
             }
             catch (Exception ex)
             {

@@ -9,6 +9,7 @@ namespace Scv.Db.Models;
 public class EmailTemplate : EntityBase
 {
     public const string ORDER_RECEIVED = "Order Received";
+    public const string JOB_FAILURE = "Job Failure";
 
     public static readonly List<EmailTemplate> ALL_EMAIL_TEMPLATES =
     [
@@ -26,6 +27,17 @@ public class EmailTemplate : EntityBase
                      </ul>
                      Regards,<br />
                      JASPER Support Team"
+        },
+        new EmailTemplate
+        {
+            TemplateName = JOB_FAILURE,
+            Subject = @"{{ subject }}",
+            Body = @"<p>Background job failed.</p>
+                     <p>Job: {{ job_type }}</p>
+                     <p>Job Id: {{ job_id }}</p>
+                     <p>Arguments: {{ args }}</p>
+                     <p>Reason: {{ reason }}</p>
+                     <p>Occurred At (UTC): {{ occurred_at }}</p>"
         },
     ];
 

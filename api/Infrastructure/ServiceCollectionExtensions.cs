@@ -29,6 +29,7 @@ using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Hangfire;
 using Scv.Api.Infrastructure.Handler;
@@ -196,12 +197,19 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();
+            services.AddSingleton<IKeycloakTokenService, KeycloakTokenService>();
+            services.AddTransient<CsoBearerTokenHandler>();
+            services.AddHttpClient(KeycloakTokenService.HttpClientName);
+            services.AddOptions<KeycloakClientOptions>()
+                .Bind(configuration.GetSection("CsoClientKeycloak"))
+                .ValidateDataAnnotations();
 
             services.AddHttpClient<ICsoClient, CsoClient>((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
                 client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
-            });
+            })
+            .AddHttpMessageHandler<CsoBearerTokenHandler>();
 
             // JC Interface
             services

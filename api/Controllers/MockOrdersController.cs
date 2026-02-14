@@ -4,7 +4,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Scv.Api.Infrastructure.Authentication;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Models.Order;
 
 namespace Scv.Api.Controllers;
@@ -14,9 +17,13 @@ namespace Scv.Api.Controllers;
 [ApiController]
 public class MockOrdersController(
     IValidator<OrderActionDto> orderActionValidator,
+    IKeycloakTokenService tokenService,
+    IOptions<KeycloakClientOptions> keycloakClientOptions,
     ILogger<MockOrdersController> logger) : ControllerBase
 {
     private readonly IValidator<OrderActionDto> _orderActionValidator = orderActionValidator;
+    private readonly IKeycloakTokenService _tokenService = tokenService;
+    private readonly KeycloakClientOptions _keycloakClientOptions = keycloakClientOptions.Value;
     private readonly ILogger<MockOrdersController> _logger = logger;
 
     /// <summary>
@@ -32,6 +39,30 @@ public class MockOrdersController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ReviewOrder([FromBody] OrderActionDto orderActionDto)
     {
+        var authHeader = Request.Headers.Authorization.ToString();
+        if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer "))
+        {
+            _logger.LogWarning("Missing or invalid Authorization header for mock order endpoint.");
+            return Unauthorized();
+        }
+
+        var providedToken = authHeader.Substring("Bearer ".Length).Trim();
+        if (string.IsNullOrWhiteSpace(providedToken))
+        {
+            _logger.LogWarning("Empty bearer token received for mock order endpoint.");
+            return Unauthorized();
+        }
+
+        var expectedToken = await _tokenService.GetServiceAccountTokenAsync(
+            _keycloakClientOptions,
+            HttpContext.RequestAborted);
+
+        if (!string.Equals(providedToken, expectedToken, System.StringComparison.Ordinal))
+        {
+            _logger.LogWarning("Bearer token mismatch for mock order endpoint.");
+            return Unauthorized();
+        }
+
         _logger.LogInformation("Received order action payload: {Payload}", JsonConvert.SerializeObject(orderActionDto));
 
         var basicValidation = await _orderActionValidator.ValidateAsync(orderActionDto);

@@ -76,6 +76,7 @@ public class OrdersController(
     /// <param name="orderReview">The order review payload</param>
     /// <returns>No content on success</returns>
     [HttpPatch]
+    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("{id}/review")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

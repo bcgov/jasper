@@ -106,6 +106,24 @@ resource "aws_secretsmanager_secret_version" "keycloak_cso_secret_value" {
   }
 }
 
+resource "aws_secretsmanager_secret" "keycloak_cso_client_secret" {
+  name       = "external/${var.app_name}-keycloak-cso-client-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "keycloak_cso_client_secret_value" {
+  secret_id = aws_secretsmanager_secret.keycloak_cso_client_secret.id
+  secret_string = jsonencode({
+    client    = "",
+    authority = "",
+    secret    = "",
+    audience  = ""
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 resource "aws_secretsmanager_secret" "cso_secret" {
   name       = "external/${var.app_name}-cso-secret-${var.environment}"
   kms_key_id = var.kms_key_arn

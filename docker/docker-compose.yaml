@@ -67,6 +67,12 @@ services:
       - CsoKeycloak__ClientId=${CsoKeycloakClient}
       - CsoKeycloak__Secret=${CsoKeycloakSecret}
       - CsoKeycloak__WriteRole=${CsoKeycloakWriteRole}
+      - CsoClientKeycloak__Audience=${CsoClientKeycloakAudience}
+      - CsoClientKeycloak__Authority=${CsoClientKeycloakAuthority:-https://common-sso.justice.gov.bc.ca/auth/realms/Judiciary}
+      - CsoClientKeycloak__Audience=${CsoClientKeycloakAudience:-CSO}
+      - CsoClientKeycloak__ClientId=${CsoClientKeycloakClientId:-JASPER-CSO-Mock}
+      - CsoClientKeycloak__ServiceAccountSecret=${CsoClientKeycloakSecret:-}
+      - CsoClientKeycloak__RefreshSkewSeconds=${CsoClientKeycloakRefreshSkewSeconds:-60}
       - CSO__BaseUrl=${CsoBaseUrl:-http://localhost:5000/api}
       - CSO__ActionUri=${CsoActionUri:-/MockOrders/action}
       - LocationServicesClient__Password=${LocationServicesClientPassword}

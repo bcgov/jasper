@@ -228,7 +228,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved)
+        if ((orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved) && !string.IsNullOrEmpty(orderDto.Comments))
         {
             _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
         }

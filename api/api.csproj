@@ -27,7 +27,7 @@
     <PackageReference Include="Microsoft.Graph" Version="5.102.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.6.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.3" />
     <PackageReference Include="IdentityModel" Version="6.2.0" />
     <PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="LazyCache" Version="2.4.0" />

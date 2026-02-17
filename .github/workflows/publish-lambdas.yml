@@ -109,6 +109,7 @@ jobs:
           context: ./aws
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
           build-args: |
             TARGET_FUNCTION=${{ matrix.lambda }}
             NODE_VERSION=${{ env.NODE_VERSION }}

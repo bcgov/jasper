@@ -76,6 +76,7 @@ jobs:
           file: ./docker/web/Dockerfile.release
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
           build-args: |
             NODE_VERSION=${{ matrix.node-major-version }}
             WEB_BASE_HREF=${{ env.WEB_BASE_HREF }}

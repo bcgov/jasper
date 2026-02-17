@@ -136,6 +136,7 @@ jobs:
           push: true
           file: ./docker/dummy-image/Dockerfile.release
           context: .
+          provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 

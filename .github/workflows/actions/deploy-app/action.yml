@@ -83,8 +83,8 @@ runs:
       run: |
         IMAGE_TAG="${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
         REPOSITORY_NAME="${GH_APP_NAME}-app-repo-${GH_ENVIRONMENT}"
-        
-        IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
+
+        IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
         if [ -z "$IMAGE_EXISTS" ]; then
           echo "Image with tag $IMAGE_TAG does not exist."

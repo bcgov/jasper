@@ -3600,4 +3600,74 @@ public partial class AppearanceReason
     public string ShortDesc { get; set; }
 }
 
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
+public partial class NonSittingDay
+{
+    [Newtonsoft.Json.JsonProperty("nonSittingDayId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? NonSittingDayId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("activityType", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public ActivityType ActivityType { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("nonSittingDt", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.DateTimeOffset? NonSittingDt { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("nonSittingDayDsc", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string NonSittingDayDsc { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("globalYn", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string GlobalYn { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("amYn", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string AmYn { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("pmYn", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string PmYn { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("entDtm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.DateTimeOffset? EntDtm { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("entUserId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string EntUserId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("updDtm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.DateTimeOffset? UpdDtm { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("updUserId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string UpdUserId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("repeatCount", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? RepeatCount { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("nonSittingPresiderTypes", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.Collections.Generic.ICollection<NonSittingPresiderType> NonSittingPresiderTypes { get; set; }
+
+}
+
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
+public partial class NonSittingPresiderType
+{
+    [Newtonsoft.Json.JsonProperty("nonSittingPresiderTypeId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public int? NonSittingPresiderTypeId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("nonSittingDay", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public NonSittingDay NonSittingDay { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("judiciaryType", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public JudiciaryType JudiciaryType { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("entDtm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.DateTimeOffset? EntDtm { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("entUserId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string EntUserId { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("updDtm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public System.DateTimeOffset? UpdDtm { get; set; }
+
+    [Newtonsoft.Json.JsonProperty("updUserId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public string UpdUserId { get; set; }
+
+}
+
 #pragma warning restore 8618

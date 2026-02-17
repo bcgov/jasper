@@ -43,6 +43,7 @@ using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
 using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
+using PCSSGlobalNonSittingDaysServices = PCSSCommon.Clients.GlobalNonSittingDaysServicesClient;
 using PCSSJudicialCalendarServices = PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
@@ -234,6 +235,9 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSPersonServices.PersonServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSGlobalNonSittingDaysServices.GlobalNonSittingDaysServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
             services.AddTransient<DarsCookieHandler>();
@@ -276,6 +280,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IJudgeService, JudgeService>();
             services.AddScoped<ICsvParser, CsvParser>();
             services.AddScoped<IPcssSyncService, PcssSyncService>();
+            services.AddScoped<IPcssConfigService, PcssConfigService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))

@@ -24,6 +24,7 @@ using Moq;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers;
+using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.CourtList;
 using Scv.Api.Services;
@@ -31,7 +32,6 @@ using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
-
 
 namespace tests.api.Controllers;
 
@@ -43,6 +43,7 @@ public class CourtListControllerTests
     private readonly Faker _faker;
     private readonly Mock<IValidator<CourtListReportRequest>> _mockReportValidator;
     private readonly Mock<HttpContext> _httpContext;
+    private readonly Mock<IPcssConfigService> _mockExternalConfigClient;
 
     #endregion Variables
 
@@ -62,6 +63,9 @@ public class CourtListControllerTests
         var identity = new ClaimsIdentity(claims, _faker.Random.Word());
         var mockUser = new ClaimsPrincipal(identity);
         _httpContext.Setup(c => c.User).Returns(mockUser);
+
+        // IExternalConfigService setup
+        _mockExternalConfigClient = new Mock<IPcssConfigService>();
     }
 
     #endregion Constructor
@@ -151,7 +155,8 @@ public class CourtListControllerTests
             mockPCSSSearchDateClient.Object,
             mockPCSSReportServicesClient.Object,
             cachingService,
-            principal);
+            principal,
+            _mockExternalConfigClient.Object);
 
         return mockCourtListService;
     }
@@ -163,12 +168,13 @@ public class CourtListControllerTests
     {
         var mockCourtListService = this.SetupCourtListService();
         mockCourtListService
-            .Setup(c => c.GetCourtListAppearances(
-                It.IsAny<string>(),
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>()))
-            .ReturnsAsync(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection());
+           .Setup(c => c.GetCourtListAsync(
+               It.IsAny<DateTime>(),
+               It.IsAny<int>(),
+               It.IsAny<string>(),
+               It.IsAny<string>()))
+           .ReturnsAsync(OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>
+               .Success(new PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection()));
 
         var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object)
         {
@@ -177,15 +183,57 @@ public class CourtListControllerTests
                 HttpContext = _httpContext.Object
             }
         };
-        var actionResult = await controller.GetCourtList(DateTime.Parse("2016-04-04"), "4801", "101");
+
+        await controller.GetCourtList(DateTime.Parse("2016-04-04"), "4801", "101");
 
         mockCourtListService
-            .Verify(c => c.GetCourtListAppearances(
-                It.IsAny<string>(),
+            .Verify(c => c.GetCourtListAsync(
+                It.IsAny<DateTime>(),
                 It.IsAny<int>(),
                 It.IsAny<string>(),
-                It.IsAny<DateTime>()),
+                It.IsAny<string>()),
                 Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCourtList_ShouldReturn_Fail()
+    {
+        var mockCourtListService = this.SetupCourtListService();
+        var errorMessage = "test error";
+        mockCourtListService
+           .Setup(c => c.GetCourtListAsync(
+               It.IsAny<DateTime>(),
+               It.IsAny<int>(),
+               It.IsAny<string>(),
+               It.IsAny<string>()))
+           .ReturnsAsync(OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>
+               .Failure(errorMessage));
+
+        var controller = new CourtListController(mockCourtListService.Object, _mockReportValidator.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = _httpContext.Object
+            }
+        };
+
+        var result = await controller.GetCourtList(DateTime.Parse("2016-04-04"), "4801", "101");
+
+        mockCourtListService
+            .Verify(c => c.GetCourtListAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+                Times.Once);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var operationResult = Assert.IsType<OperationResult<PCSSCommon.Models.ActivityClassUsage.ActivityAppearanceResultsCollection>>(badRequestResult.Value);
+
+        // Assert the OperationResult properties
+        Assert.False(operationResult.Succeeded);
+        Assert.Single(operationResult.Errors);
+        Assert.Equal(errorMessage, operationResult.Errors[0]);
     }
 
     [Fact]

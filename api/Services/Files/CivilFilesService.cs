@@ -530,7 +530,8 @@ namespace Scv.Api.Services.Files
                     Category = DocumentCategory.LITIGANT,
                     ImageId = refDoc.ObjectGuid,
                     FiledDt = refDoc.EnterDtm,
-                    Issue = []
+                    Issue = [],
+                    FiledBy = refDoc.ReferenceDocumentInterest?.Select(p => new ClFiledBy { FiledByName = p.PartyName })?.ToList() ?? []
                 };
                 documents.Add(referenceDoc);
             }

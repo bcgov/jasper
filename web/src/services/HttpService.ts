@@ -14,6 +14,7 @@ export interface IHttpService {
     queryParams?: Record<string, any>,
     config?: CustomAxiosConfig
   ): Promise<T>;
+  getUri(config: { url: string; params?: Record<string, any> }): string;
   post<T>(
     resource: string,
     data: any,
@@ -120,6 +121,10 @@ export class HttpService implements IHttpService {
       console.error('Error in GET request: ', error);
       throw error;
     }
+  }
+
+  public getUri(config: { url: string; params?: Record<string, any> }): string {
+    return this.client.getUri(config);
   }
 
   public async post<T>(

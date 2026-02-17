@@ -6,15 +6,15 @@ on:
     branches:
       - master
     paths:
-      - 'infrastructure/**'
+      - "infrastructure/**"
 
   # Manual trigger via GH Actions UI
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Select target environment'
+        description: "Select target environment"
         required: true
-        default: 'lz-dev'
+        default: "lz-dev"
         type: choice
         options:
           - lz-dev
@@ -66,7 +66,7 @@ jobs:
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
+          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars"
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4.32.2
@@ -149,7 +149,7 @@ jobs:
           IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
           REPOSITORY_NAME=${{ vars.APP_NAME }}-app-repo-${{ env.environment }}
 
-          IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+          IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
           if [ -z "$IMAGE_EXISTS" ]; then
             echo "Image with tag $IMAGE_TAG does not exist."
@@ -174,7 +174,7 @@ jobs:
           IMAGE_TAG=${{ env.DUMMY_IMAGE_NAME }}
           REPOSITORY_NAME=${{ vars.APP_NAME }}-lambda-repo-${{ env.environment }}
 
-          IMAGE_EXISTS=$(aws ecr describe-images --repository-name $REPOSITORY_NAME --query "imageDetails[?contains(imageTags, '$IMAGE_TAG')]" --output text)
+          IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
 
           if [ -z "$IMAGE_EXISTS" ]; then
             echo "Image with tag $IMAGE_TAG does not exist."
@@ -188,7 +188,7 @@ jobs:
         if: steps.lambda-ecr-check.outputs.exists == 'false'
         shell: bash
         run: |
-          echo 'Deploying ${{ env.env.DUMMY_IMAGE_NAME }} to Lambda ECR'
+          echo 'Deploying ${{ env.DUMMY_IMAGE_NAME }} to Lambda ECR'
           docker tag  ${{ env.GITHUB_IMAGE_REPO }}/${{ env.DUMMY_IMAGE_NAME }}:latest ${{ env.LAMBDA_ECR_REPO_URL }}:${{ env.DUMMY_IMAGE_NAME }}
           docker push ${{ env.LAMBDA_ECR_REPO_URL }}:${{ env.DUMMY_IMAGE_NAME }}
 

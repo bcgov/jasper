@@ -68,6 +68,7 @@ jobs:
           push: true
           context: .
           tags: ${{ steps.meta.outputs.tags }}
+          provenance: false
           labels: ${{ steps.meta.outputs.labels }}
           file: ${{ env.DOCKERFILE }}
           build-args: |

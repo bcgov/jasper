@@ -81,6 +81,7 @@ jobs:
           file: ./docker/api/Dockerfile.release
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
           load: true
           build-args: |
             dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}

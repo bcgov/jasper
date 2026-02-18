@@ -9,14 +9,18 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { inject } from 'vue';
 
+// Create mock snackbar store before mocking the module
+const mockSnackbarStore = {
+  showSnackbar: vi.fn(),
+};
+
 vi.mock('@/stores', () => ({
   usePDFViewerStore: vi.fn(),
   useCommonStore: vi.fn(),
-  useSnackbarStore: vi.fn(),
+  useSnackbarStore: vi.fn(() => mockSnackbarStore),
 }));
 vi.mock('@/stores/SnackbarStore', () => ({
-  useSnackbarStore: vi.fn(),
-  showSnackbar: vi.fn(),
+  useSnackbarStore: vi.fn(() => mockSnackbarStore),
 }));
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue')>();
@@ -86,10 +90,6 @@ const mockFilesService = {
 
 const mockOrderService = {
   review: vi.fn(),
-};
-
-const mockSnackbarStore = {
-  showSnackbar: vi.fn(),
 };
 
 const mockApiResponse: GeneratePdfResponse = {

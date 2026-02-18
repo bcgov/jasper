@@ -1,14 +1,33 @@
 import type { Order } from '@/types';
-import { OrderReviewStatus } from '@/types/common';
+import { OrderReviewStatus, RolesEnum, UserInfo } from '@/types/common';
+import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import Orders from 'CMP/orders/Orders.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const mockUserInfo: UserInfo = {
+  userType: faker.helpers.arrayElement(['Judge', 'Staff', 'Admin']),
+  enableArchive: faker.datatype.boolean(),
+  roles: [RolesEnum.Admin],
+  subRole: faker.person.jobTitle(),
+  isSupremeUser: faker.helpers.arrayElement(['true', 'false']),
+  isActive: true,
+  agencyCode: faker.string.alpha({ length: 5 }).toUpperCase(),
+  userId: faker.string.uuid(),
+  judgeId: faker.number.int({ min: 1, max: 10000 }),
+  judgeHomeLocationId: faker.number.int({ min: 1, max: 100 }),
+  email: faker.internet.email(),
+  userTitle: `Judge ${faker.person.fullName()}`,
+};
+
 // Mock the stores
 vi.mock('@/stores', () => ({
   useOrdersStore: vi.fn(),
   useCourtFileSearchStore: vi.fn(),
+  useCommonStore: () => ({
+    userInfo: mockUserInfo,
+  }),
 }));
 
 // Mock the utils
@@ -25,38 +44,48 @@ vi.mock('CMP/orders/OrdersDataTable.vue', () => ({
   },
 }));
 
+// Mock orderService
+const mockOrderService = {
+  getOrders: vi.fn(),
+};
+
+// Helper function to generate test orders
+const generateOrder = (
+  status: OrderReviewStatus,
+  courtClass: 'Criminal' | 'Civil' = 'Criminal'
+): Order => ({
+  id: faker.string.uuid(),
+  packageId: faker.number.int({ min: 10000, max: 99999 }),
+  packageDocumentId: faker.string.uuid(),
+  packageName: faker.lorem.word(),
+  receivedDate: faker.date.past().toISOString().split('T')[0],
+  processedDate:
+    status === OrderReviewStatus.Approved
+      ? faker.date.recent().toISOString().split('T')[0]
+      : '',
+  courtClass,
+  courtFileNumber: `${courtClass === 'Criminal' ? 'CF' : 'CV'}-${faker.number.int({ min: 2020, max: 2026 })}-${faker.string.numeric(3)}`,
+  styleOfCause:
+    courtClass === 'Criminal'
+      ? `R v ${faker.person.lastName()}`
+      : `${faker.person.lastName()} v ${faker.person.lastName()}`,
+  physicalFileId: `file-${faker.string.alphanumeric(3)}`,
+  status,
+});
+
 describe('Orders.vue', () => {
   let pinia: any;
   let mockOrdersStore: any;
   let mockCourtFileSearchStore: any;
-
-  const mockPendingOrder: Order = {
-    id: '1',
-    packageId: 12345,
-    packageDocumentId: '340',
-    packageName: 'test 1',
-    receivedDate: '2026-01-15',
-    processedDate: '',
-    courtClass: 'Criminal',
-    courtFileNumber: 'CF-2026-001',
-    styleOfCause: 'R v Smith',
-    physicalFileId: 'file-001',
-    status: OrderReviewStatus.Pending,
-  };
-
-  const mockApprovedOrder: Order = {
-    id: '2',
-    packageId: 12346,
-    packageDocumentId: '341',
-    packageName: 'test 2',
-    receivedDate: '2026-01-14',
-    processedDate: '2026-01-20',
-    courtClass: 'Civil',
-    courtFileNumber: 'CV-2026-001',
-    styleOfCause: 'Jones v Brown',
-    physicalFileId: 'file-002',
-    status: OrderReviewStatus.Approved,
-  };
+  let mockCommonStore: any;
+  const mockPendingOrder: Order = generateOrder(
+    OrderReviewStatus.Pending,
+    'Criminal'
+  );
+  const mockApprovedOrder: Order = generateOrder(
+    OrderReviewStatus.Approved,
+    'Civil'
+  );
 
   beforeEach(async () => {
     pinia = createPinia();
@@ -80,25 +109,28 @@ describe('Orders.vue', () => {
     );
   });
 
+  const createWrapper = () => {
+    return mount(Orders, {
+      global: {
+        plugins: [pinia],
+        provide: {
+          orderService: mockOrderService,
+        },
+      },
+    });
+  };
+
   it('renders skeleton loader when loading', () => {
     mockOrdersStore.isLoading = true;
 
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     expect(wrapper.find('v-skeleton-loader').exists()).toBe(true);
     expect(wrapper.find('.my-4').exists()).toBe(false);
   });
 
   it('renders expansion panels when not loading', () => {
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     expect(wrapper.find('v-skeleton-loader').exists()).toBe(false);
     expect(wrapper.find('.my-4').exists()).toBe(true);
@@ -106,11 +138,7 @@ describe('Orders.vue', () => {
   });
 
   it('displays correct count of pending orders in title', () => {
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     const title = wrapper.find('h5').text();
     expect(title).toContain('For signing');
@@ -120,11 +148,7 @@ describe('Orders.vue', () => {
   it('does not show count when there are no pending orders', () => {
     mockOrdersStore.orders = [mockApprovedOrder];
 
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     const title = wrapper.find('h5').text();
     expect(title).toBe('For signing');
@@ -132,39 +156,27 @@ describe('Orders.vue', () => {
   });
 
   it('filters pending orders correctly', () => {
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
     expect(vm.pendingOrders).toHaveLength(1);
-    expect(vm.pendingOrders[0].id).toBe('1');
+    expect(vm.pendingOrders[0].id).toBe(mockPendingOrder.id);
     expect(vm.pendingOrders[0].status).toBe(OrderReviewStatus.Pending);
   });
 
   it('filters completed orders correctly', () => {
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
     expect(vm.completedOrders).toHaveLength(1);
-    expect(vm.completedOrders[0].id).toBe('2');
+    expect(vm.completedOrders[0].id).toBe(mockApprovedOrder.id);
     expect(vm.completedOrders[0].status).toBe(OrderReviewStatus.Approved);
   });
 
   it('handles empty orders array', () => {
     mockOrdersStore.orders = [];
 
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
     expect(vm.pendingOrders).toHaveLength(0);
@@ -174,11 +186,7 @@ describe('Orders.vue', () => {
   it('handles undefined orders array', () => {
     mockOrdersStore.orders = undefined;
 
-    const wrapper = mount(Orders, {
-      global: {
-        plugins: [pinia],
-      },
-    });
+    const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
     expect(vm.pendingOrders).toHaveLength(0);
@@ -194,14 +202,10 @@ describe('Orders.vue', () => {
       vi.mocked(isCourtClassLabelCriminal).mockReturnValue(true);
 
       const windowOpenSpy = vi
-        .spyOn(window, 'open')
+        .spyOn(globalThis, 'open')
         .mockImplementation(() => null);
 
-      const wrapper = mount(Orders, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       const vm = wrapper.vm as any;
       vm.viewCaseDetails(mockPendingOrder);
@@ -218,7 +222,7 @@ describe('Orders.vue', () => {
       });
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        '/criminal-file/file-001',
+        `/criminal-file/${mockPendingOrder.physicalFileId}`,
         '_blank'
       );
 
@@ -233,14 +237,10 @@ describe('Orders.vue', () => {
       vi.mocked(isCourtClassLabelCriminal).mockReturnValue(false);
 
       const windowOpenSpy = vi
-        .spyOn(window, 'open')
+        .spyOn(globalThis, 'open')
         .mockImplementation(() => null);
 
-      const wrapper = mount(Orders, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       const vm = wrapper.vm as any;
       vm.viewCaseDetails(mockApprovedOrder);
@@ -257,7 +257,7 @@ describe('Orders.vue', () => {
       });
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        '/civil-file/file-002',
+        `/civil-file/${mockApprovedOrder.physicalFileId}`,
         '_blank'
       );
 

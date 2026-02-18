@@ -70,9 +70,7 @@
   import { useRoute } from 'vue-router';
   import JudgeSelector from './JudgeSelector.vue';
 
-  const emit = defineEmits<{
-    (e: 'open-profile'): void;
-  }>();
+  const emit = defineEmits<(e: 'open-profile') => void>();
 
   const commonStore = useCommonStore();
   const darsStore = useDarsStore();

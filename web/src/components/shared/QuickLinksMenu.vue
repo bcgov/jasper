@@ -41,7 +41,7 @@
           class="text-subtitle-2"
           rounded="shaped"
           @click="handleChildClick(child)"
-          >
+        >
           <a href="#" class="no-style">
             {{ child.name }}
           </a>

@@ -4,5 +4,7 @@ declare global {
   interface Window {
     // Nutrient Web SDK will be available on window.NutrientViewer once loaded
     NutrientViewer?: typeof NutrientViewer;
+    // Snowplow analytics tracker
+    snowplow?: (command: string, ...args: any[]) => void;
   }
 }

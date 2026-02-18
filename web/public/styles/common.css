@@ -103,3 +103,9 @@ tbody tr:nth-of-type(odd) {
 .text-caption {
   font-family: inherit !important;
 }
+
+a.no-style {
+  all: revert;
+  color: inherit;
+  text-decoration: none; 
+}

@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
   const plugins = [vue(), svgLoader(), Components({}), basicSsl()];
 
   // Conditionally add static copy for prod-only files
-  if (!isProd) {
+  if (isProd) {
     plugins.push(
       viteStaticCopy({
         targets: [

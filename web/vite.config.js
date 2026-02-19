@@ -9,18 +9,17 @@ const path = require('path');
 const vueSrc = 'src';
 
 export default defineConfig(({ mode }) => {
-  const isProd = Boolean(process.env.VITE_ENV?.includes('prod'));
-  console.log('VITE_ENV:', process.env.VITE_ENV, 'isProd:', isProd);
+  const isTest = Boolean(process.env.VITE_ENV?.includes('test'));
 
   // Base plugins array
   const plugins = [vue(), svgLoader(), Components({}), basicSsl()];
 
-  // Conditionally add static copy for prod-only files
-  if (isProd) {
+  // Conditionally add static copy for test-only files
+  if (isTest) {
     plugins.push(
       viteStaticCopy({
         targets: [
-          // Add your prod-only files here
+          // Add your test-only files here
           {
             src: path.resolve(__dirname, 'snowplow.js'),
             dest: '.',
@@ -29,7 +28,7 @@ export default defineConfig(({ mode }) => {
       })
     );
     
-    // Inject snowplow script tag in HTML for prod builds
+    // Inject snowplow script tag in HTML for test builds
     plugins.push({
       name: 'inject-snowplow',
       transformIndexHtml(html) {

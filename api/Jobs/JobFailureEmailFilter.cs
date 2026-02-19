@@ -14,23 +14,19 @@ namespace Scv.Api.Jobs;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class JobFailureEmailFilterAttribute : JobFilterAttribute, IServerFilter
 {
-    private static T Resolve<T>(PerformContext context)
-    {
-        using var scope = JobActivator.Current.BeginScope(context);
-        return (T)scope.Resolve(typeof(T));
-    }
-
     public void OnPerforming(PerformingContext context)
     {
+        using var scope = JobActivator.Current.BeginScope(context);
         var jobId = context.BackgroundJob?.Id ?? "unknown";
-        var logger = Resolve<ILogger<JobFailureEmailFilterAttribute>>(context);
+        var logger = (ILogger<JobFailureEmailFilterAttribute>)scope.Resolve(typeof(ILogger<JobFailureEmailFilterAttribute>));
         logger.LogInformation("Hangfire job {JobId} is starting.", jobId);
     }
 
     public void OnPerformed(PerformedContext context)
     {
+        using var scope = JobActivator.Current.BeginScope(context);
         var jobId = context.BackgroundJob?.Id ?? "unknown";
-        var logger = Resolve<ILogger<JobFailureEmailFilterAttribute>>(context);
+        var logger = (ILogger<JobFailureEmailFilterAttribute>)scope.Resolve(typeof(ILogger<JobFailureEmailFilterAttribute>));
         logger.LogInformation("Hangfire job {JobId} finished.", jobId);
 
         if (context.Exception is null)
@@ -38,8 +34,8 @@ public class JobFailureEmailFilterAttribute : JobFilterAttribute, IServerFilter
             return;
         }
 
-        var emailTemplateService = Resolve<IEmailTemplateService>(context);
-        var options = Resolve<IOptions<JobsFailureEmailOptions>>(context).Value;
+        var emailTemplateService = (IEmailTemplateService)scope.Resolve(typeof(IEmailTemplateService));
+        var options = ((IOptions<JobsFailureEmailOptions>)scope.Resolve(typeof(IOptions<JobsFailureEmailOptions>))).Value;
 
         var recipients = options.Recipients?.Where(r => !string.IsNullOrWhiteSpace(r)).ToArray() ?? [];
         if (recipients.Length == 0)

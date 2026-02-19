@@ -132,8 +132,8 @@ resource "aws_secretsmanager_secret" "cso_secret" {
 resource "aws_secretsmanager_secret_version" "cso_secret_value" {
   secret_id = aws_secretsmanager_secret.cso_secret.id
   secret_string = jsonencode({
-    csoBaseUrl   = "",
-    csoActionUri = ""
+    baseUrl   = "",
+    actionUri = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

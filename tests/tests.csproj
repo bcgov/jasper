@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\api\api.csproj" />
+		<ProjectReference Include="..\cso-client\cso-client.csproj" />
     <ProjectReference Include="..\db\db.csproj" />
   </ItemGroup>
 </Project>

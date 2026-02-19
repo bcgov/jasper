@@ -7,9 +7,11 @@ AWS_SECRET_PREFIX="${AWS_SECRET_PREFIX}"
 
 aws_secret_format="external/jasper-X-secret-$AWS_SECRET_PREFIX$VAULT_SECRET_ENV"
 secret_keys="\
+  api_authorizer \
   aspnet_core \
   auth \
   azure \
+  cso \
   dars \
   database \
   file_services_client \
@@ -27,6 +29,7 @@ secret_keys="\
   user_services_client \
   keycloak_td \
   keycloak_cso \
+  keycloak_cso_client \
   smb"
 
 echo "Syncing secrets..."

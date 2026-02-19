@@ -35,8 +35,50 @@ public class OrderMapping : IRegister
             .Map(dest => dest.PackageId, src => src.OrderRequest.Referral.PackageId)
             .Map(dest => dest.PackageDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId)
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))
-            .Map(dest => dest.ProcessedDate, src => src.ProcessedDate.HasValue
-                ? src.ProcessedDate.Value.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture)
-                : null);
+            .AfterMapping((src, dest) =>
+            {
+                if (src.ProcessedDate.HasValue)
+                {
+                    dest.ProcessedDate = src.ProcessedDate.Value.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    dest.ProcessedDate = null;
+                }
+            });
+
+        config.NewConfig<OrderDto, OrderActionDto>()
+            .Map(dest => dest.ReferredDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId.GetValueOrDefault())
+            .Map(dest => dest.ReviewedByAgenId, src => src.OrderRequest.Referral.ReferredByAgenId)
+            .Map(dest => dest.ReviewedByPartId, src => src.OrderRequest.Referral.ReferredByPartId)
+            .Map(dest => dest.ReviewedByPaasSeqNo, src => src.OrderRequest.Referral.ReferredByPaasSeqNo)
+            .Map(dest => dest.SentToAgenId, src => src.OrderRequest.Referral.SentToAgenId)
+            .Map(dest => dest.SentToPartId, src => src.OrderRequest.Referral.SentToPartId)
+            .Map(dest => dest.DigitalSignatureApplied, src => src.Signed)
+            .Map(dest => dest.CommentTxt, src => src.Comments)
+            .Map(dest => dest.PdfObject, src => src.DocumentData)
+            .Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
+            .AfterMapping((src, dest) =>
+            {
+                dest.JudicialActionDt = src.ProcessedDate.HasValue
+                    ? src.ProcessedDate.Value.ToString(CultureInfo.InvariantCulture)
+                    : null;
+
+                switch (src.Status)
+                {
+                    case OrderStatus.Approved:
+                        dest.JudicialDecisionCd = nameof(JudicialDecisionCd.APPR);
+                        break;
+                    case OrderStatus.Unapproved:
+                        dest.JudicialDecisionCd = nameof(JudicialDecisionCd.NAPP);
+                        break;
+                    case OrderStatus.Pending:
+                        dest.JudicialDecisionCd = nameof(JudicialDecisionCd.AFDC);
+                        break;
+                    default:
+                        dest.JudicialDecisionCd = null;
+                        break;
+                }
+            });
     }
 }

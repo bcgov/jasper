@@ -12,6 +12,8 @@ public class Order : EntityBase
     public OrderRequest OrderRequest { get; set; }
     [BsonRepresentation(MongoDB.Bson.BsonType.Int32)]
     public OrderStatus Status { get; set; }
+    public SubmitStatus? SubmitStatus { get; set; }
+    public int? SubmitAttempts { get; set; }
     public DateTime? ProcessedDate { get; set; }
     public bool Signed { get; set; }
     public string Comments { get; set; }
@@ -30,7 +32,15 @@ public enum OrderStatus
 {
     Unapproved,
     Pending,
-    Approved
+    Approved,
+}
+
+public enum SubmitStatus
+{
+    Pending,
+    Sending,
+    Submitted,
+    Error,
 }
 
 public class CourtFile

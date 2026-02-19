@@ -1,14 +1,15 @@
-import { OrderReview } from '@/types/OrderReview';
-import { BasePDFStrategy } from './BasePDFStrategy';
 import { OrderService } from '@/services/OrderService';
-import { inject } from 'vue';
+import { useCommonStore, useSnackbarStore } from '@/stores';
 import { OrderReviewStatus } from '@/types/common';
-import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { OrderReview } from '@/types/OrderReview';
+import { inject } from 'vue';
+import { BasePDFStrategy } from './BasePDFStrategy';
 
 export class OrderPDFStrategy extends BasePDFStrategy {
   showOrderReviewOptions = true;
   defaultDocumentName = 'Order';
   private readonly snackBarStore = useSnackbarStore();
+  private readonly commonStore = useCommonStore();
   private readonly orderService: OrderService;
 
   constructor() {
@@ -18,6 +19,11 @@ export class OrderPDFStrategy extends BasePDFStrategy {
       throw new Error('Service(s) is undefined.');
     }
     this.orderService = orderService;
+
+    // Only show review options if the logged-in user is viewing their own data
+    this.showOrderReviewOptions =
+      this.commonStore.userInfo?.judgeId ===
+      this.commonStore.loggedInUserInfo?.judgeId;
   }
 
   async reviewOrder(review: OrderReview): Promise<void> {

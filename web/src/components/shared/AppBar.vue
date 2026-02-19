@@ -38,7 +38,11 @@
       </v-tab>
       <v-spacer></v-spacer>
       <div class="d-flex align-center">
-        <JudgeSelector v-if="showJudgeSelector" :judges="judges" />
+        <JudgeSelector
+          data-testid="judge-selector"
+          v-if="showJudgeSelector"
+          :judges="judges"
+        />
         <v-btn
           spaced="end"
           size="x-large"
@@ -81,19 +85,19 @@
   const orderService = inject<OrderService>('orderService');
   const judgeService = inject<JudgeService>('judgeService');
   const judges = ref<PersonSearchItem[]>([]);
+  // Only users with Admin role can see Orders tab for now.
+  const requiredOrderRoles = [RolesEnum.Admin] as const;
 
   if (!judgeService || !orderService) {
     throw new Error('Service is not available!');
   }
 
+  // Create a reactive reference to judgeId for the orders store
+  const judgeId = computed(() => commonStore.userInfo?.judgeId ?? null);
+
   onMounted(async () => {
-    const [judgesData] = await Promise.all([
-      judgeService?.getJudges(),
-      ordersStore.fetchOrders(
-        orderService,
-        commonStore.userInfo?.judgeId ?? null
-      ),
-    ]);
+    // Fetch judges
+    const judgesData = await judgeService?.getJudges();
     judges.value = judgesData ?? [];
   });
 
@@ -112,13 +116,23 @@
   );
 
   const userName = computed(() => commonStore.userInfo?.userTitle || '');
-  // Only users with Admin role can see Orders tab for now.
-  const requiredOrderRoles = [RolesEnum.Admin] as const;
+
   const showOrders = computed(
     () =>
       requiredOrderRoles.every((requiredRole) =>
         commonStore.userInfo?.roles?.includes(requiredRole)
       ) ?? false
+  );
+
+  // Initialize orders store only when user has permission to view orders
+  watch(
+    showOrders,
+    (canViewOrders) => {
+      if (canViewOrders) {
+        ordersStore.initialize(orderService, judgeId);
+      }
+    },
+    { immediate: true }
   );
 
   const showJudgeSelector = computed(

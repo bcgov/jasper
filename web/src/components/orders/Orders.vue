@@ -70,25 +70,24 @@
   import { KeyValueInfo, OrderReviewStatus } from '@/types/common';
   import { DocumentData } from '@/types/shared';
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
-  import { computed, inject, ref, watch } from 'vue';
+  import { computed, inject, onMounted } from 'vue';
 
   const ordersStore = useOrdersStore();
   const courtFileSearchStore = useCourtFileSearchStore();
   const commonStore = useCommonStore();
-  const judgeId = ref(commonStore.userInfo?.judgeId);
   const orderService = inject<OrderService>('orderService');
 
   if (!orderService) {
     throw new Error('Service is not available!');
   }
 
-  watch(
-    () => commonStore.userInfo?.judgeId,
-    async (newVal) => {
-      judgeId.value = newVal;
-      await ordersStore.fetchOrders(orderService, judgeId.value);
-    }
-  );
+  // Create a reactive reference to judgeId for the orders store
+  const judgeId = computed(() => commonStore.userInfo?.judgeId ?? null);
+
+  onMounted(async () => {
+    // Initialize orders store with reactive judgeId source
+    ordersStore.initialize(orderService, judgeId);
+  });
 
   const pendingOrders = computed(
     () =>

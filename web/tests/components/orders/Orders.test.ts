@@ -94,11 +94,14 @@ describe('Orders.vue', () => {
     mockOrdersStore = {
       isLoading: false,
       orders: [mockPendingOrder, mockApprovedOrder],
+      initialize: vi.fn(),
     };
 
     mockCourtFileSearchStore = {
       addFilesForViewing: vi.fn(),
     };
+
+    mockOrderService.getOrders.mockResolvedValue([]);
 
     const { useOrdersStore, useCourtFileSearchStore } = await import(
       '@/stores'

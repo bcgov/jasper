@@ -1,4 +1,4 @@
-import { useCommonStore, useDarsStore, useOrdersStore } from '@/stores';
+import { useCommonStore, useDarsStore } from '@/stores';
 import { PersonSearchItem } from '@/types';
 import { OrderReviewStatus, RolesEnum, UserInfo } from '@/types/common';
 import { faker } from '@faker-js/faker';
@@ -37,7 +37,7 @@ const generateJudge = (): PersonSearchItem => ({
 const generateUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
   userType: faker.helpers.arrayElement(['Judge', 'Staff', 'Admin']),
   enableArchive: faker.datatype.boolean(),
-  roles: [],
+  roles: [RolesEnum.Admin],
   subRole: faker.person.jobTitle(),
   isSupremeUser: faker.helpers.arrayElement(['true', 'false']),
   isActive: true,
@@ -276,15 +276,16 @@ describe('AppBar.vue', () => {
       const commonStore = useCommonStore();
       commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
 
-      const ordersStore = useOrdersStore();
-      ordersStore.orders = [
+      const mockOrders = [
         generateOrder(OrderReviewStatus.Pending),
         generateOrder(OrderReviewStatus.Pending),
         generateOrder(OrderReviewStatus.Approved),
       ];
 
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+
       const wrapper = createWrapper();
-      await wrapper.vm.$nextTick();
+      await flushPromises();
 
       const badge = wrapper.find('[data-testid="order-badge"]');
 
@@ -296,11 +297,12 @@ describe('AppBar.vue', () => {
       const commonStore = useCommonStore();
       commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
 
-      const ordersStore = useOrdersStore();
-      ordersStore.orders = [generateOrder(OrderReviewStatus.Approved)];
+      const mockOrders = [generateOrder(OrderReviewStatus.Approved)];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
 
       const wrapper = createWrapper();
-      await wrapper.vm.$nextTick();
+      await flushPromises();
 
       expect((wrapper.vm as any).pendingOrdersCount).toBe(0);
     });
@@ -318,7 +320,8 @@ describe('AppBar.vue', () => {
       (wrapper.vm as any).selectedTab = 'dashboard';
       await wrapper.vm.$nextTick();
 
-      expect((wrapper.vm as any).showJudgeSelector).toBe(true);
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(true);
     });
 
     it('should show judge selector on court-list tab', async () => {
@@ -332,7 +335,8 @@ describe('AppBar.vue', () => {
       (wrapper.vm as any).selectedTab = 'court-list';
       await wrapper.vm.$nextTick();
 
-      expect((wrapper.vm as any).showJudgeSelector).toBe(true);
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(true);
     });
 
     it('should show judge selector on orders tab', async () => {
@@ -346,7 +350,8 @@ describe('AppBar.vue', () => {
       (wrapper.vm as any).selectedTab = 'orders';
       await wrapper.vm.$nextTick();
 
-      expect((wrapper.vm as any).showJudgeSelector).toBe(true);
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(true);
     });
 
     it('should not show judge selector when there are no judges', async () => {
@@ -358,7 +363,8 @@ describe('AppBar.vue', () => {
       (wrapper.vm as any).selectedTab = 'dashboard';
       await wrapper.vm.$nextTick();
 
-      expect((wrapper.vm as any).showJudgeSelector).toBe(false);
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(false);
     });
 
     it('should not show judge selector on court-file-search tab', async () => {
@@ -372,7 +378,8 @@ describe('AppBar.vue', () => {
       (wrapper.vm as any).selectedTab = 'court-file-search';
       await wrapper.vm.$nextTick();
 
-      expect((wrapper.vm as any).showJudgeSelector).toBe(false);
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(false);
     });
   });
 

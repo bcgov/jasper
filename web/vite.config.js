@@ -25,19 +25,18 @@ export default defineConfig(({ mode }) => {
             dest: '.',
           },
         ],
-      })
+      }),
+      // Inject snowplow script tag in HTML for test builds
+      {
+        name: 'inject-snowplow',
+        transformIndexHtml(html) {
+          return html.replace(
+            '</head>',
+            '    <script src="/snowplow.js" charset="UTF-8"></script>\n  </head>'
+          );
+        },
+      }
     );
-    
-    // Inject snowplow script tag in HTML for test builds
-    plugins.push({
-      name: 'inject-snowplow',
-      transformIndexHtml(html) {
-        return html.replace(
-          '</head>',
-          '    <script src="/snowplow.js" charset="UTF-8"></script>\n  </head>'
-        );
-      },
-    });
   }
 
   return {

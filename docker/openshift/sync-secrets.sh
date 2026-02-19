@@ -10,6 +10,7 @@ secret_keys="\
   aspnet_core \
   auth \
   azure \
+  cso \
   dars \
   database \
   file_services_client \

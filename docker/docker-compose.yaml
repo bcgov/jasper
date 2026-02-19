@@ -73,8 +73,8 @@ services:
       - CsoClientKeycloak__ClientId=${CsoClientKeycloakClientId:-JASPER-CSO-Mock}
       - CsoClientKeycloak__ServiceAccountSecret=${CsoClientKeycloakSecret:-}
       - CsoClientKeycloak__RefreshSkewSeconds=${CsoClientKeycloakRefreshSkewSeconds:-60}
-      - CSO__BaseUrl=${CsoBaseUrl:-http://localhost:5000/api}
-      - CSO__ActionUri=${CsoActionUri:-/MockOrders/action}
+      - CSO__BaseUrl=${BaseUrl:-http://localhost:5000/api}
+      - CSO__ActionUri=${ActionUri:-/MockOrders/action}
       - LocationServicesClient__Password=${LocationServicesClientPassword}
       - LocationServicesClient__Url=${LocationServicesClientUrl}
       - LocationServicesClient__Username=${LocationServicesClientUsername}

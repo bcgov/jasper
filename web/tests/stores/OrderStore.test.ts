@@ -1,8 +1,10 @@
+import { OrderService } from '@/services';
 import { useOrdersStore } from '@/stores/OrdersStore';
 import { Order } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick, ref } from 'vue';
 
 // Mock OrderService
 vi.mock('@/services', () => ({
@@ -90,90 +92,189 @@ describe('OrdersStore', () => {
     });
   });
 
-  describe('fetchOrders', () => {
-    it('should fetch orders successfully', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockOrders);
+  describe('initialize', () => {
+    it('should fetch orders successfully with judgeId', async () => {
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(mockOrders);
 
-      await store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await nextTick();
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
-      expect(mockOrderService.getOrders).toHaveBeenCalledTimes(1);
+      expect(mockOrderService.getOrders).toHaveBeenCalledWith(123);
       expect(store.orders).toEqual(mockOrders);
-      expect(store.isLoading).toBe(false);
       expect(store.lastFetched).toBeInstanceOf(Date);
     });
 
+    it('should fetch orders when judgeId changes', async () => {
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(mockOrders);
+
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
+
+      expect(mockOrderService.getOrders).toHaveBeenCalledWith(123);
+
+      // Change judgeId
+      const newOrders = [mockOrders[0]];
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(newOrders);
+
+      judgeIdRef.value = 456;
+      await vi.waitFor(() => {
+        expect(store.orders).toEqual(newOrders);
+      });
+
+      expect(mockOrderService.getOrders).toHaveBeenCalledWith(456);
+      expect(mockOrderService.getOrders).toHaveBeenCalledTimes(2);
+    });
+
     it('should set isLoading to true during fetch', async () => {
+      const judgeIdRef = ref<number | null>(123);
       let isLoadingDuringFetch = false;
 
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockImplementation(async () => {
         isLoadingDuringFetch = store.isLoading;
         return mockOrders;
       });
 
-      await store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
       expect(isLoadingDuringFetch).toBe(true);
       expect(store.isLoading).toBe(false);
     });
 
     it('should set isLoading to false after fetch completes', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockOrders);
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(mockOrders);
 
-      await store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
       expect(store.isLoading).toBe(false);
     });
 
     it('should set isLoading to false if fetch fails', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('API Error'));
+      const judgeIdRef = ref<number | null>(123);
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockRejectedValueOnce(new Error('API Error'));
+
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
       expect(store.isLoading).toBe(false);
+      consoleErrorSpy.mockRestore();
     });
 
     it('should handle null response from service', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(null);
 
-      await store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
       expect(store.orders).toEqual([]);
       expect(store.isLoading).toBe(false);
     });
 
     it('should handle undefined response from service', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(undefined);
 
-      await store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
       expect(store.orders).toEqual([]);
       expect(store.isLoading).toBe(false);
     });
 
     it('should not fetch if already loading', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockImplementation(
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockImplementation(
         () =>
           new Promise((resolve) => setTimeout(() => resolve(mockOrders), 100))
       );
 
-      // Start first fetch
-      const firstFetch = store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
 
-      // Try to start second fetch while first is in progress
-      await store.fetchOrders(mockOrderService as OrderService);
+      // Try to trigger another fetch while first is in progress
+      judgeIdRef.value = 456;
+      await nextTick();
 
-      // Complete first fetch
-      await firstFetch;
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
-      // Should only be called once
+      // Should only be called once (second call was prevented by isLoading check)
       expect(mockOrderService.getOrders).toHaveBeenCalledTimes(1);
     });
 
     it('should handle empty array response', async () => {
-      (mockOrderService.getOrders as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce([]);
 
-      await store.fetchOrders(mockOrderService as OrderService);
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
 
       expect(store.orders).toEqual([]);
       expect(store.isLoading).toBe(false);
+    });
+
+    it('should not initialize twice', async () => {
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValue(mockOrders);
+
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
+
+      // Try to initialize again
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await nextTick();
+
+      // Should still only be called once
+      expect(mockOrderService.getOrders).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -199,6 +300,32 @@ describe('OrdersStore', () => {
       expect(store.orders).toEqual([]);
       expect(store.lastFetched).toBeNull();
       expect(store.isLoading).toBe(false);
+    });
+
+    it('should allow re-initialization after reset', async () => {
+      const judgeIdRef = ref<number | null>(123);
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValue(mockOrders);
+
+      // Initialize
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.isLoading).toBe(false);
+      });
+
+      expect(mockOrderService.getOrders).toHaveBeenCalledTimes(1);
+
+      // Reset
+      store.reset();
+
+      // Should be able to initialize again
+      store.initialize(mockOrderService as OrderService, judgeIdRef);
+      await vi.waitFor(() => {
+        expect(store.orders).toEqual(mockOrders);
+      });
+
+      expect(mockOrderService.getOrders).toHaveBeenCalledTimes(2);
     });
   });
 });

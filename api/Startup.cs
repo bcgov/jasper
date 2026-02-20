@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,8 +29,12 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
+using Scv.Api.Hubs;
+using Scv.Api.Services;
+using Scv.Api.SignalR;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
+using System.Linq;
 
 namespace Scv.Api
 {
@@ -92,15 +97,29 @@ namespace Scv.Api
             services.AddHangfire(Configuration);
             services.AddGraphService(Configuration);
 
+            services.AddSignalR(options =>
+            {
+                options.MaximumReceiveMessageSize = 64 * 1024;
+            });
+            services.AddSingleton<IUserIdProvider, UserIdProvider>();
+            services.AddScoped<INotificationPublisher, NotificationPublisher>();
+
             #region Cors
 
-            string corsDomain = Configuration.GetValue<string>("CORS_DOMAIN");
+            var corsDomain = Configuration.GetValue<string>("CORS_DOMAIN");
+            var origins = corsDomain?
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(o => o.Trim().Trim('"', '\''))
+                .ToArray() ?? Array.Empty<string>();
 
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins(corsDomain);
+                    builder.WithOrigins(origins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 
@@ -248,6 +267,7 @@ namespace Scv.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<NotificationsHub>("/hubs/notifications");
             });
         }
     }

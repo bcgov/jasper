@@ -23,7 +23,6 @@
       "launchBrowser": true,
       "launchUrl": "api/values",
       "environmentVariables": {
-        "CORS_DOMAIN": "http://localhost:8080",
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "http://localhost:5000"

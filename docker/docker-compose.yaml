@@ -24,6 +24,9 @@ services:
       - NPM_CONFIG_LOGLEVEL=notice
       - VITE_PORT=1339
       - CHOKIDAR_USEPOLLING=true
+      - VITE_WS_PROXY_INSECURE=${VITE_WS_PROXY_INSECURE}
+      - VITE_WS_PROXY_ORIGIN=${VITE_WS_PROXY_ORIGIN}
+      - DEBUG=http-proxy*
     ports:
       - '8080:1339'
     volumes:
@@ -104,6 +107,7 @@ services:
       - UserServicesClient__Username=${UserServicesClientUsername}
       - NUTRIENT_BE_LICENSE_KEY=${NUTRIENT_BE_LICENSE_KEY}
       - NUTRIENT_FE_LICENSE_KEY=${NUTRIENT_FE_LICENSE_KEY}
+      - CORS_DOMAIN=${CORS_DOMAIN}
 
     ports:
       - 5000:5000

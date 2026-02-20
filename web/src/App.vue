@@ -34,6 +34,15 @@
           </v-tab>
           <v-spacer></v-spacer>
           <div class="d-flex align-center">
+            <v-btn
+              class="mr-2"
+              size="small"
+              variant="outlined"
+              :loading="isSendingNotification"
+              @click="sendDemoNotification"
+            >
+              Test Notification
+            </v-btn>
             <JudgeSelector
               v-if="
                 (selectedTab === 'dashboard' || selectedTab === 'court-list') &&
@@ -70,7 +79,12 @@
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
   import { JudgeService, OrderService } from '@/services';
-  import { useCommonStore } from '@/stores';
+  import type { HttpService } from '@/services/HttpService';
+  import { useCommonStore, useSnackbarStore } from '@/stores';
+  import {
+    type NotificationDto,
+    type NotificationsService,
+  } from '@/signalr/notifications';
   import { PersonSearchItem } from '@/types';
   import { OrderReviewStatus, RolesEnum } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
@@ -86,6 +100,7 @@
 
   const themeStore = useThemeStore();
   const commonStore = useCommonStore();
+  const snackbarStore = useSnackbarStore();
   const darsStore = useDarsStore();
   const ordersStore = useOrdersStore();
   const theme = ref(themeStore.state);
@@ -95,13 +110,23 @@
   const selectedTab = ref('/dashboard');
   const orderService = inject<OrderService>('orderService');
   const judgeService = inject<JudgeService>('judgeService');
+  const notificationsService = inject<NotificationsService>(
+    'notificationsService'
+  );
+  const httpService = inject<HttpService>('httpService');
   const judges = ref<PersonSearchItem[]>([]);
+  const isSendingNotification = ref(false);
 
-  if (!judgeService || !orderService) {
+  if (!judgeService || !orderService || !notificationsService || !httpService) {
     throw new Error('Service is not available!');
   }
 
   onMounted(async () => {
+    notificationsService.onNotification((notification: NotificationDto) => {
+      snackbarStore.showSnackbar(notification.message, 'info', 'Notification');
+    });
+    await notificationsService.start();
+
     const [judgesData] = await Promise.all([
       judgeService?.getJudges(),
       ordersStore.fetchOrders(orderService),
@@ -138,6 +163,19 @@
       ordersStore.orders.filter((o) => o.status === OrderReviewStatus.Pending)
         .length
   );
+
+  const sendDemoNotification = async () => {
+    if (isSendingNotification.value) {
+      return;
+    }
+
+    isSendingNotification.value = true;
+    try {
+      await httpService.post('api/notifications/demo', {});
+    } finally {
+      isSendingNotification.value = false;
+    }
+  };
 </script>
 
 <style>

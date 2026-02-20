@@ -50,8 +50,6 @@ jobs:
         with:
           working_directory: ${{ env.WORKING_DIRECTORY }}
           node_version: ${{ matrix.node-major-version }}.${{ matrix.node-minor-version }}
-        env:
-          VITE_ENV: ${{ github.event.inputs.environment }}
 
       - name: Log in to the GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -94,6 +92,7 @@ jobs:
             NGINX_RUNTIME_SRC=../../docker/nginx-runtime
             VUE_ON_NGINX_SRC=../../docker/vue-on-nginx
             WEB_SRC=../../web
+            VITE_ENV=${{ github.event.inputs.environment }}
 
   deploy2env:
     name: Deploy to ENV

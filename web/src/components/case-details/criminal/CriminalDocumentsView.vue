@@ -93,8 +93,8 @@
           <v-col>
             <a
               v-if="item.imageId"
-              href="javascript:void(0)"
-              @click="openIndividualDocument(item)"
+              href="#"
+              @click.prevent="openIndividualDocument(item)"
             >
               {{ formatDocumentType(item) }}
             </a>

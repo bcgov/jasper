@@ -1,6 +1,7 @@
 import { useCommonStore } from '@/stores';
 import { isPositiveInteger, SessionManager } from '@/utils/utils';
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { callTrackPageView } from '@/utils/snowplowUtils';
 
 async function authGuard(to: any, from: any, next: any) {
   const commonStore = useCommonStore();
@@ -63,12 +64,6 @@ const routes: RouteRecordRaw[] = [
     props: true,
   },
   {
-    path: '/criminal-file/:fileNumber',
-    name: 'CriminalCaseDetails',
-    component: () => import('@/components/criminal/CriminalCaseDetails.vue'),
-    props: true,
-  },
-  {
     path: '/dashboard',
     name: 'DashboardView',
     component: () => import('@/components/dashboard/Dashboard.vue'),
@@ -108,6 +103,10 @@ router.beforeEach((to, from, next) => {
   } else {
     authGuard(to, from, next);
   }
+});
+
+router.afterEach(() => {
+  callTrackPageView();
 });
 
 export default router;

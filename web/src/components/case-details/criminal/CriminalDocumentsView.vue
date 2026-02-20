@@ -94,7 +94,7 @@
             <a
               v-if="item.imageId"
               href="#"
-              @click="openIndividualDocument(item)"
+              @click.prevent="openIndividualDocument(item)"
             >
               {{ formatDocumentType(item) }}
             </a>

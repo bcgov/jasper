@@ -24,10 +24,19 @@ app.mount('#app');
 // Initialize Snowplow link click tracking after app mounts
 callRefreshLinkClickTracking();
 
+// Debounce helper to limit how often the refresh is called
+const debounce = (fn: () => void, delay: number) => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return () => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(), delay);
+  };
+};
+
 // Set up MutationObserver to refresh link tracking when DOM changes
-const observer = new MutationObserver(() => {
-  callRefreshLinkClickTracking();
-});
+// Debounced to avoid excessive calls in SPA with frequent DOM updates
+const debouncedRefresh = debounce(callRefreshLinkClickTracking, 300);
+const observer = new MutationObserver(debouncedRefresh);
 
 observer.observe(document.body, {
   childList: true,

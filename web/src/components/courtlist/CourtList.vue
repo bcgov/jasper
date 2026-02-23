@@ -44,12 +44,13 @@
         v-for="pairing in filteredTablePairings"
         :key="pairing.card.courtListLocationID"
       >
-        <court-list-card :cardInfo="pairing.card" class="w-100" />
-        <court-list-table
-          :search="search"
-          :data="pairing.table"
-          class="w-100"
-        />
+        <div class="w-100">
+          <court-list-card :cardInfo="pairing.card" />
+          <court-list-table
+            :search="search"
+            :data="pairing.tableData"
+          />
+        </div>
       </template>
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"
@@ -103,7 +104,7 @@
   const showDropdown = ref(false);
   const search = ref('');
   const selectedFilesFilter = ref();
-  const selectedAMPMFilter = ref();
+  const selectedAMPMFilter = ref<string | null>(null);
   const documentUrls = ref<string[]>([]);
   const cardTablePairings = ref<
     {
@@ -128,24 +129,24 @@
       appliedDate.value.setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0)
   );
 
-  const filterByAMPM = (pairing: any) =>
-    !selectedAMPMFilter.value || pairing.card.amPM === selectedAMPMFilter.value;
+  const filterByAMPM = (table: CourtListAppearance[]) =>
+    selectedAMPMFilter.value 
+      ? table.filter((appearance: CourtListAppearance) => appearance.appearanceTm.includes(selectedAMPMFilter.value || ''))
+      : table;
 
-  const filterByFiles = (table: any) => {
-    return selectedFilesFilter.value
+  const filterByFiles = (table: CourtListAppearance[]) => 
+    selectedFilesFilter.value
       ? table.filter(filesFilterMap[selectedFilesFilter.value])
       : table;
-  };
 
   const filteredTablePairings = computed<
     {
       card: CourtListCardInfo;
-      table: CourtListAppearance[];
+      tableData: CourtListAppearance[];
     }[]
   >(() => {
     return cardTablePairings.value
-      .filter(filterByAMPM)
-      .map((pairing) => ({ ...pairing, table: filterByFiles(pairing.table) }));
+      .map((pairing) => ({ ...pairing, tableData: filterByFiles(filterByAMPM(pairing.table)) }));
   });
 
   const shortHandDate = computed(() =>
@@ -214,6 +215,17 @@
       card.courtListLocationID = courtList.locationId;
       card.courtListLocation = courtList.locationNm;
       card.amPM = adjudicatorDetails?.amPm;
+
+      // In some cases, the adjudicatorDetails won't have AMPM information, but the courtRoomDetails may
+      if (!card.amPM) {
+        if (courtRoomDetails.isAM === 'Y' && courtRoomDetails.isPM !== 'Y') {
+          card.amPM = 'AM';
+        } else if (courtRoomDetails.isPM === 'Y' && courtRoomDetails.isAM !== 'Y') {
+          card.amPM = 'PM';
+        } else {
+          card.amPM = 'AM/PM';
+        }
+      }
 
       cardTablePairings.value.push({ card, table: courtList.appearances });
     }

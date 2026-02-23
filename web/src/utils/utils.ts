@@ -217,6 +217,15 @@ export const formatFromFullname = (fullName: string): string => {
   return lastName.trim() && givenNames.trim() ? name + `, ${givenNames}` : name;
 };
 
+export const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
 /**
  * Retrieves the list of roles, either from the common store if already available,
  * or by fetching them using the lookup service. The roles are then stored in the

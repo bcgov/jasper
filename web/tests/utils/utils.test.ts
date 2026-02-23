@@ -1,4 +1,4 @@
-import { isPositiveInteger, parseQueryStringToString, isCourtClassLabelCriminal } from '@/utils/utils';
+import { isPositiveInteger, parseQueryStringToString, isCourtClassLabelCriminal, arrayBufferToBase64 } from '@/utils/utils';
 import { describe, expect, it } from 'vitest';
 
 describe('utils', () => {
@@ -90,6 +90,40 @@ describe('utils', () => {
 
       it('returns false for unrelated label', () => {
         expect(isCourtClassLabelCriminal('Civil')).toBe(false);
+      });
+    });
+
+    describe('arrayBufferToBase64', () => {
+      it('converts empty buffer to empty base64 string', () => {
+        const buffer = new ArrayBuffer(0);
+        const result = arrayBufferToBase64(buffer);
+        expect(result).toBe('');
+      });
+
+      it('converts simple ASCII text buffer to base64', () => {
+        const text = 'Hello';
+        const buffer = new TextEncoder().encode(text).buffer;
+        const result = arrayBufferToBase64(buffer);
+        expect(result).toBe('SGVsbG8=');
+      });
+
+      it('converts buffer with various byte values to base64', () => {
+        const bytes = new Uint8Array([0, 1, 2, 127, 128, 255]);
+        const buffer = bytes.buffer;
+        const result = arrayBufferToBase64(buffer);
+        expect(result).toBeTruthy();
+        expect(typeof result).toBe('string');
+        // Verify it's valid base64 (only contains valid base64 characters)
+        expect(/^[A-Za-z0-9+/]*={0,2}$/.test(result)).toBe(true);
+      });
+
+      it('handles buffer with binary data', () => {
+        const bytes = new Uint8Array([0xFF, 0xFE, 0xFD, 0xFC]);
+        const buffer = bytes.buffer;
+        const result = arrayBufferToBase64(buffer);
+        expect(result).toBeTruthy();
+        expect(typeof result).toBe('string');
+        expect(result.length).toBeGreaterThan(0);
       });
     });
   });

@@ -46,10 +46,7 @@
       >
         <div class="w-100">
           <court-list-card :cardInfo="pairing.card" />
-          <court-list-table
-            :search="search"
-            :data="pairing.tableData"
-          />
+          <court-list-table :search="search" :data="pairing.tableData" />
         </div>
       </template>
       <court-list-table-search-dialog
@@ -130,11 +127,13 @@
   );
 
   const filterByAMPM = (table: CourtListAppearance[]) =>
-    selectedAMPMFilter.value 
-      ? table.filter((appearance: CourtListAppearance) => appearance.appearanceTm.includes(selectedAMPMFilter.value || ''))
+    selectedAMPMFilter.value
+      ? table.filter((appearance: CourtListAppearance) =>
+          appearance.appearanceTm.includes(selectedAMPMFilter.value || '')
+        )
       : table;
 
-  const filterByFiles = (table: CourtListAppearance[]) => 
+  const filterByFiles = (table: CourtListAppearance[]) =>
     selectedFilesFilter.value
       ? table.filter(filesFilterMap[selectedFilesFilter.value])
       : table;
@@ -145,8 +144,10 @@
       tableData: CourtListAppearance[];
     }[]
   >(() => {
-    return cardTablePairings.value
-      .map((pairing) => ({ ...pairing, tableData: filterByFiles(filterByAMPM(pairing.table)) }));
+    return cardTablePairings.value.map((pairing) => ({
+      ...pairing,
+      tableData: filterByFiles(filterByAMPM(pairing.table)),
+    }));
   });
 
   const shortHandDate = computed(() =>
@@ -177,6 +178,16 @@
   if (!courtListService) {
     throw new Error('Service(s) is undefined.');
   }
+
+  const determineAMPM = (courtRoomDetails: any): string => {
+    if (courtRoomDetails.isAM === 'Y' && courtRoomDetails.isPM !== 'Y') {
+      return 'AM';
+    }
+    if (courtRoomDetails.isPM === 'Y' && courtRoomDetails.isAM !== 'Y') {
+      return 'PM';
+    }
+    return 'AM/PM';
+  };
 
   const populateCardTablePairings = (
     resp?: ApiResponse<CourtListSearchResult>
@@ -214,18 +225,7 @@
       card.courtListRoom = courtRoomDetails.courtRoomCd;
       card.courtListLocationID = courtList.locationId;
       card.courtListLocation = courtList.locationNm;
-      card.amPM = adjudicatorDetails?.amPm;
-
-      // In some cases, the adjudicatorDetails won't have AMPM information, but the courtRoomDetails may
-      if (!card.amPM) {
-        if (courtRoomDetails.isAM === 'Y' && courtRoomDetails.isPM !== 'Y') {
-          card.amPM = 'AM';
-        } else if (courtRoomDetails.isPM === 'Y' && courtRoomDetails.isAM !== 'Y') {
-          card.amPM = 'PM';
-        } else {
-          card.amPM = 'AM/PM';
-        }
-      }
+      card.amPM = adjudicatorDetails?.amPm || determineAMPM(courtRoomDetails);
 
       cardTablePairings.value.push({ card, table: courtList.appearances });
     }

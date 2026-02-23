@@ -83,6 +83,7 @@ jobs:
             NGINX_RUNTIME_SRC=../../docker/nginx-runtime
             VUE_ON_NGINX_SRC=../../docker/vue-on-nginx
             WEB_SRC=../../web
+            VITE_ENV=${{ github.event.inputs.environment }}
 
   deploy2dev:
     name: Deploy to DEV

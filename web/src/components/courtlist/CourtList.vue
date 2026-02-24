@@ -73,6 +73,7 @@
     CourtListAppearance,
     CourtListCardInfo,
     CourtListSearchResult,
+    CourtRoomDetail,
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
@@ -179,7 +180,7 @@
     throw new Error('Service(s) is undefined.');
   }
 
-  const determineAMPM = (courtRoomDetails: any): string => {
+  const determineAMPM = (courtRoomDetails: CourtRoomDetail): string => {
     if (courtRoomDetails.isAM === 'Y' && courtRoomDetails.isPM !== 'Y') {
       return 'AM';
     }

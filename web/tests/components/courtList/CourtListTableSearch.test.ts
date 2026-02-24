@@ -21,8 +21,8 @@ describe('CourtListTableSearch.vue', () => {
         await wrapper.find('v-btn').trigger('click');
 
         expect(wrapper.vm.selectedFiles).toEqual('Complete');
-        expect(wrapper.vm.selectedAMPM).toBeUndefined();
-        expect(wrapper.vm.search).toBeUndefined();
+        expect(wrapper.vm.selectedAMPM).toBeNull();
+        expect(wrapper.vm.search).toBe('');
     });
 
     it.each([

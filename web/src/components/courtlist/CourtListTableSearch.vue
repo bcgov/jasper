@@ -63,13 +63,13 @@
     isFuture: boolean;
   }>();
   const selectedFiles = defineModel<string>('filesFilter');
-  const selectedAMPM = defineModel<string>('AMPMFilter');
+  const selectedAMPM = defineModel<string | null>('AMPMFilter');
   const search = defineModel<string>('search');
   const onMenuClicked = inject<(value: string) => void>('menuClicked')!;
   const setDefaultFilters = () => {
     selectedFiles.value = props.isFuture ? 'To be called' : 'Complete';
-    selectedAMPM.value = undefined;
-    search.value = undefined;
+    selectedAMPM.value = null;
+    search.value = '';
   };
   const reset = () => {
     setDefaultFilters();

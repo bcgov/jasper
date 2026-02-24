@@ -44,12 +44,10 @@
         v-for="pairing in filteredTablePairings"
         :key="pairing.card.courtListLocationID"
       >
-        <court-list-card :cardInfo="pairing.card" class="w-100" />
-        <court-list-table
-          :search="search"
-          :data="pairing.table"
-          class="w-100"
-        />
+        <div class="w-100">
+          <court-list-card :cardInfo="pairing.card" />
+          <court-list-table :search="search" :data="pairing.tableData" />
+        </div>
       </template>
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"
@@ -75,6 +73,7 @@
     CourtListAppearance,
     CourtListCardInfo,
     CourtListSearchResult,
+    CourtRoomDetail,
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
@@ -103,7 +102,7 @@
   const showDropdown = ref(false);
   const search = ref('');
   const selectedFilesFilter = ref();
-  const selectedAMPMFilter = ref();
+  const selectedAMPMFilter = ref<string | null>(null);
   const documentUrls = ref<string[]>([]);
   const cardTablePairings = ref<
     {
@@ -128,24 +127,28 @@
       appliedDate.value.setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0)
   );
 
-  const filterByAMPM = (pairing: any) =>
-    !selectedAMPMFilter.value || pairing.card.amPM === selectedAMPMFilter.value;
+  const filterByAMPM = (table: CourtListAppearance[]) =>
+    selectedAMPMFilter.value
+      ? table.filter((appearance: CourtListAppearance) =>
+          appearance.appearanceTm.includes(selectedAMPMFilter.value || '')
+        )
+      : table;
 
-  const filterByFiles = (table: any) => {
-    return selectedFilesFilter.value
+  const filterByFiles = (table: CourtListAppearance[]) =>
+    selectedFilesFilter.value
       ? table.filter(filesFilterMap[selectedFilesFilter.value])
       : table;
-  };
 
   const filteredTablePairings = computed<
     {
       card: CourtListCardInfo;
-      table: CourtListAppearance[];
+      tableData: CourtListAppearance[];
     }[]
   >(() => {
-    return cardTablePairings.value
-      .filter(filterByAMPM)
-      .map((pairing) => ({ ...pairing, table: filterByFiles(pairing.table) }));
+    return cardTablePairings.value.map((pairing) => ({
+      ...pairing,
+      tableData: filterByFiles(filterByAMPM(pairing.table)),
+    }));
   });
 
   const shortHandDate = computed(() =>
@@ -176,6 +179,16 @@
   if (!courtListService) {
     throw new Error('Service(s) is undefined.');
   }
+
+  const determineAMPM = (courtRoomDetails: CourtRoomDetail): string => {
+    if (courtRoomDetails.isAM === 'Y' && courtRoomDetails.isPM !== 'Y') {
+      return 'AM';
+    }
+    if (courtRoomDetails.isPM === 'Y' && courtRoomDetails.isAM !== 'Y') {
+      return 'PM';
+    }
+    return 'AM/PM';
+  };
 
   const populateCardTablePairings = (
     resp?: ApiResponse<CourtListSearchResult>
@@ -213,7 +226,7 @@
       card.courtListRoom = courtRoomDetails.courtRoomCd;
       card.courtListLocationID = courtList.locationId;
       card.courtListLocation = courtList.locationNm;
-      card.amPM = adjudicatorDetails?.amPm;
+      card.amPM = adjudicatorDetails?.amPm || determineAMPM(courtRoomDetails);
 
       cardTablePairings.value.push({ card, table: courtList.appearances });
     }

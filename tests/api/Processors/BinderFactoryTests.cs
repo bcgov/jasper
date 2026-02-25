@@ -59,7 +59,8 @@ public class BinderFactoryTests
             new Mock<IConfiguration>().Object,
             new Mock<IDocumentConverter>().Object,
             mapper,
-            mockDarsService.Object);
+            mockDarsService.Object,
+            null);
     }
 
     private static Dictionary<string, string> Labels(string courtClass) =>

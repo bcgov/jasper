@@ -77,6 +77,7 @@
   } from '@/types/civil/jsonTypes';
   import { inject, onMounted, ref } from 'vue';
   import JudicialBinder from '../case-details/civil/appearances/JudicialBinder.vue';
+  import { useCommonStore } from '@/stores';
 
   const props = withDefaults(
     defineProps<{
@@ -90,10 +91,13 @@
     }
   );
 
-  const filesService = inject<FilesService>('filesService');
+  const commonStore = useCommonStore();
 
-  if (!filesService) {
-    throw new Error('Service is undefined.');
+  const filesService = inject<FilesService>('filesService');
+  const binderService = inject<BinderService>('binderService');
+
+  if (!filesService || !binderService) {
+    throw new Error('Service(s) is undefined.');
   }
 
   const tab = ref('documents');
@@ -105,7 +109,7 @@
   );
   const documentsLoading = ref(false);
   const binderLoading = ref(false);
-  const binderDocuments = ref<civilDocumentType[]>([]);
+  const binderDocuments = ref<BinderDocument[]>([]);
 
   onMounted(async () => {
     try {
@@ -148,9 +152,29 @@
   const loadBinderDocuments = async () => {
     binderLoading.value = true;
     try {
-      binderDocuments.value = await filesService.civilBinderDocuments(
-        props.fileId
-      );
+      const labels = {
+        physicalFileId: props.fileId,
+        courtClassCd: props.courtClassCd,
+        judgeId: commonStore.loggedInUserInfo?.userId,
+      };
+
+      const getBindersResp = await binderService.getBinders(labels);
+      const binderDocs = getBindersResp?.payload?.[0]?.documents ?? [];
+
+      binderDocuments.value = binderDocs.map((doc) => ({
+        civilDocumentId: doc.documentId,
+        category: doc.category,
+        imageId: doc.imageId,
+        documentTypeDescription: doc.fileName,
+        fileSeqNo: doc.fileSeqNo,
+        filedBy: doc.filedBy,
+        issue: doc.issues,
+        swornByNm: doc.swornByNm,
+        filedDt: doc.filedDt,
+        orderMadeDt: doc.dateGranted,
+        DateGranted: doc.dateGranted,
+        documentSupport: doc.documentSupport,
+      }));
     } catch (error) {
       console.error(`Error occured while retrieving user's binders: ${error}`);
     } finally {

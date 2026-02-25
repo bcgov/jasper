@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using JCCommon.Clients.FileServices;
 using Mapster;
 using Scv.Api.Documents;
@@ -38,16 +39,22 @@ public class BinderMapping : IRegister
                     : DocumentType.File)
             .Map(dest => dest.Category, src => src.Category);
 
-        config.NewConfig<CvfcDocument, BinderDocumentDto>()
+        config.NewConfig<CivilDocument, BinderDocumentDto>()
             .Map(dest => dest.DocumentId, src =>
                 string.IsNullOrWhiteSpace(src.ImageId)
                     ? null
-                    : src.DocumentId)
+                    : src.CivilDocumentId)
             .Map(dest => dest.FileName, src => src.DocumentTypeDescription)
             .Map(dest => dest.DocumentType, src =>
                 string.Equals(src.DocumentTypeCd, DocumentCategory.CSR, StringComparison.OrdinalIgnoreCase)
                     ? DocumentType.CourtSummary
                     : DocumentType.File)
-            .Map(dest => dest.Category, src => src.DocumentTypeCd);
+            .Map(dest => dest.Category, src => src.DocumentTypeCd)
+            .Map(dest => dest.Issues, src => src.Issue != null ? src.Issue.Adapt<List<IssueDto>>() : new List<IssueDto>());
+
+        config.NewConfig<CvfcIssue, IssueDto>();
+        config.NewConfig<CivilIssue, IssueDto>();
+        config.NewConfig<ClFiledBy, FiledByDto>();
+        config.NewConfig<CvfcDocumentSupport, DocumentSupportDto>();
     }
 }

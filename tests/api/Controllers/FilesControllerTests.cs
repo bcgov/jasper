@@ -4,8 +4,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using DARSCommon.Clients.LogNotesServices;
-using FluentValidation;
 using JCCommon.Clients.FileServices;
 using JCCommon.Clients.LocationServices;
 using JCCommon.Clients.LookupCodeServices;
@@ -107,8 +105,7 @@ namespace tests.api.Controllers
                 new CachingService(),
                 principal,
                 fileServices.LogFactory,
-                new Mock<IDocumentConverter>().Object,
-                new Mock<IBinderService>().Object);
+                new Mock<IDocumentConverter>().Object);
 
             var mockDocumentMerger = new Mock<IDocumentMerger>();
 

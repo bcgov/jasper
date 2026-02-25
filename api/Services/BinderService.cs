@@ -87,6 +87,8 @@ public class BinderService(
             return OperationResult<BinderDto>.Failure([.. processorValidation.Errors]);
         }
 
+        await binderProcessor.ProcessAsync();
+
         return await base.AddAsync(binderProcessor.Binder);
     }
 
@@ -102,6 +104,8 @@ public class BinderService(
 
         // Since business rules passed, prep binder
         await binderProcessor.PreProcessAsync();
+
+        await binderProcessor.ProcessAsync();
 
         return await base.UpdateAsync(binderProcessor.Binder);
     }
@@ -165,10 +169,10 @@ public class BinderService(
                 {
                     binder.Documents = ApplyDocumentFilters(binder.Documents, filters);
                 }
-                
+
                 binder.Documents = [.. binder.Documents.OrderBy(d => GetCategoryOrder(d.Category))];
             }
-            
+
             return OperationResult<DocumentBundleResponse>.Success(new DocumentBundleResponse
             {
                 Binders = binders,
@@ -280,7 +284,7 @@ public class BinderService(
         foreach (var binder in binders)
         {
             var isCriminal = bool.TryParse(binder.Labels.GetValue(LabelConstants.IS_CRIMINAL), out var result) && result;
-            
+
             // Apply filters to get only the documents that should be included
             var documentsToInclude = filters != null && filters.Count > 0
                 ? ApplyDocumentFilters(binder.Documents, filters)

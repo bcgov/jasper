@@ -18,7 +18,7 @@ runs:
       with:
         node-version: ${{ env.node_version }}
 
-    - run: npm ci
+    - run: npm i
       shell: bash
       working-directory: ${{ inputs.working_directory }}
 

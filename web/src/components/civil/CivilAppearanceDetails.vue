@@ -70,14 +70,13 @@
   import ScheduledDocuments from '@/components/case-details/civil/appearances/ScheduledDocuments.vue';
   import ScheduledParties from '@/components/case-details/civil/appearances/ScheduledParties.vue';
   import { FilesService } from '@/services';
+  import { useCommonStore } from '@/stores';
   import {
     CivilAppearanceDetailDocuments,
     CivilAppearanceDetailMethods,
-    civilDocumentType,
   } from '@/types/civil/jsonTypes';
   import { inject, onMounted, ref } from 'vue';
   import JudicialBinder from '../case-details/civil/appearances/JudicialBinder.vue';
-  import { useCommonStore } from '@/stores';
 
   const props = withDefaults(
     defineProps<{

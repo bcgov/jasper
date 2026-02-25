@@ -69,30 +69,28 @@ public class JudicialBinderProcessor : BinderProcessorBase
 
     public override async Task<OperationResult> ProcessAsync()
     {
-        try
+        if (this.Binder.Documents == null || this.Binder.Documents.Count == 0)
         {
-            var fileId = Binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
-            var binderDocumentIds = this.Binder.Documents.Select(d => d.DocumentId).ToList();
-
-            // Preserve the original ordering
-            var documentOrder = this.Binder.Documents
-                .Select((doc, index) => new { doc.DocumentId, Index = index })
-                .ToDictionary(x => x.DocumentId, x => x.Index);
-
-            // Retrieve the full document details for the documents in the binder
-            var fileDocuments = await _civilFilesService.GetDocumentsByIds(fileId, binderDocumentIds);
-
-            var mappedDocuments = _mapper.Map<List<BinderDocumentDto>>(fileDocuments);
-
-            // Apply the original ordering
-            this.Binder.Documents = [.. mappedDocuments.OrderBy(d => documentOrder.TryGetValue(d.DocumentId, out var index) ? index : int.MaxValue)];
-
             return OperationResult.Success();
         }
-        catch (Exception ex)
-        {
-            return OperationResult.Failure($"Error processing binder: {ex.Message}");
-        }
+
+        var fileId = Binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
+        var binderDocumentIds = this.Binder.Documents.Select(d => d.DocumentId).ToList();
+
+        // Preserve the original ordering
+        var documentOrder = this.Binder.Documents
+            .Select((doc, index) => new { doc.DocumentId, Index = index })
+            .ToDictionary(x => x.DocumentId, x => x.Index);
+
+        // Retrieve the full document details for the documents in the binder
+        var fileDocuments = await _civilFilesService.GetDocumentsByIds(fileId, binderDocumentIds);
+
+        var mappedDocuments = _mapper.Map<List<BinderDocumentDto>>(fileDocuments);
+
+        // Apply the original ordering
+        this.Binder.Documents = [.. mappedDocuments.OrderBy(d => documentOrder.TryGetValue(d.DocumentId, out var index) ? index : int.MaxValue)];
+
+        return OperationResult.Success();
     }
 
     public override async Task<OperationResult> ValidateAsync()

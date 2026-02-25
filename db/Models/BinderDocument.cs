@@ -11,6 +11,7 @@ public class BinderDocument
     public string DocumentId { get; set; }
     public string Category { get; set; }
     public string FileName { get; set; }
+    public string ImageId { get; set; }
     /// <summary>
     /// Zero-based integer to determine how BinderDocuments are sorted
     /// </summary>

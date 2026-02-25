@@ -353,6 +353,11 @@ namespace Scv.Api.Services.Files
 
         public async Task<IList<CivilDocument>> GetDocumentsByIds(string fileId, List<string> documentIds)
         {
+            if (string.IsNullOrWhiteSpace(fileId) || documentIds == null || documentIds.Count == 0)
+            {
+                return [];
+            }
+
             async Task<CivilFileDetailResponse> FileDetails() => await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
             async Task<CivilFileContent> FileContent() => await _filesClient.FilesCivilFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
 

@@ -40,10 +40,7 @@ public class BinderMapping : IRegister
             .Map(dest => dest.Category, src => src.Category);
 
         config.NewConfig<CivilDocument, BinderDocumentDto>()
-            .Map(dest => dest.DocumentId, src =>
-                string.IsNullOrWhiteSpace(src.ImageId)
-                    ? null
-                    : src.CivilDocumentId)
+            .Map(dest => dest.DocumentId, src => src.CivilDocumentId)
             .Map(dest => dest.FileName, src => src.DocumentTypeDescription)
             .Map(dest => dest.DocumentType, src =>
                 string.Equals(src.DocumentTypeCd, DocumentCategory.CSR, StringComparison.OrdinalIgnoreCase)

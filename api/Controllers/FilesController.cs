@@ -125,19 +125,6 @@ namespace Scv.Api.Controllers
             return Ok(civilAppearanceDocuments);
         }
 
-        /// <summary>
-        /// Get judicial binder documents for a given civil file id which includes all document information.
-        /// </summary>
-        /// <param name="fileId">The civil file id.</param>
-        /// <returns>List of civil binder documents</returns>
-        [HttpGet]
-        [Route("civil/{fileId}/binder-documents")]
-        public async Task<ActionResult<IList<CivilDocument>>> GetCivilBinderDocuments(string fileId)
-        {
-            var binderDocuments = await _civilFilesService.GetBinderDocumentsAsync(fileId);
-
-            return Ok(binderDocuments);
-        }
 
         /// <summary>
         /// Gets detailed party information regarding an appearance given civil file id and appearance id.

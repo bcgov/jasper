@@ -16,7 +16,6 @@ using Scv.Api.Models.Civil.AppearanceDetail;
 using Scv.Api.Models.Civil.Appearances;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Search;
-using Scv.Db.Contants;
 using Scv.Db.Models;
 using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
 
@@ -27,7 +26,6 @@ namespace Scv.Api.Services.Files
         #region Variables
 
         private readonly ILogger<CivilFilesService> _logger;
-        private readonly IBinderService _binderService;
         private readonly IAppCache _cache;
         private readonly FileServicesClient _filesClient;
         private readonly IMapper _mapper;
@@ -50,8 +48,7 @@ namespace Scv.Api.Services.Files
             LocationService locationService,
             IAppCache cache,
             ClaimsPrincipal user,
-            ILogger<CivilFilesService> logger,
-            IBinderService binderService)
+            ILogger<CivilFilesService> logger)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -64,7 +61,6 @@ namespace Scv.Api.Services.Files
             _requestPartId = user?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
 
             _logger = logger;
-            this._binderService = binderService;
             _filterOutDocumentTypes = configuration.GetNonEmptyValue("ExcludeDocumentTypeCodesForCounsel").Split(",").ToList();
             _currentUser = user;
         }
@@ -355,46 +351,29 @@ namespace Scv.Api.Services.Files
                 appearanceId, physicalFileId);
         }
 
-        public async Task<IList<CivilDocument>> GetBinderDocumentsAsync(string fileId)
+        public async Task<IList<CivilDocument>> GetDocumentsByIds(string fileId, List<string> documentIds)
         {
+            if (string.IsNullOrWhiteSpace(fileId) || documentIds == null || documentIds.Count == 0)
+            {
+                return [];
+            }
+
             async Task<CivilFileDetailResponse> FileDetails() => await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
             async Task<CivilFileContent> FileContent() => await _filesClient.FilesCivilFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
 
-            var fileDetailTask = _cache.GetOrAddAsync($"GetBinderDocumentsAsync-CivilFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
-            var fileContentTask = _cache.GetOrAddAsync($"GetBinderDocumentsAsync-CivilFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
+            var fileDetailTask = _cache.GetOrAddAsync($"GetDocumentsByIds-CivilFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
+            var fileContentTask = _cache.GetOrAddAsync($"GetDocumentsByIds-CivilFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
 
             await Task.WhenAll(fileDetailTask, fileContentTask);
 
             var detail = _mapper.Map<RedactedCivilFileDetailResponse>(fileDetailTask.Result);
             var fileContentCivilFile = fileContentTask.Result?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
 
-            var labels = new Dictionary<string, string>
-            {
-                { LabelConstants.PHYSICAL_FILE_ID, detail.PhysicalFileId },
-                { LabelConstants.COURT_CLASS_CD, detail.CourtClassCd.ToString() },
-                { LabelConstants.JUDGE_ID, _currentUser.UserId().ToString() }
-            };
+            var csrDocs = PopulateDetailCsrsDocuments([.. fileDetailTask.Result.Appearance.Where(a => documentIds.Contains(a.AppearanceId))]);
 
-            var binders = await _binderService.GetByLabels(labels);
+            var otherDocs = detail.Document.Where(d => documentIds.Contains(d.CivilDocumentId));
 
-            if (!binders.Succeeded || binders.Payload.Count == 0)
-            {
-                return [];
-            }
-
-            var binder = binders.Payload[0];
-            var binderDocIds = binder.Documents.Select(d => d.DocumentId);
-
-            var binderDocIdsOrdered = binder.Documents.Select((d, index) => new { d.DocumentId, Order = index }).ToDictionary(x => x.DocumentId, x => x.Order);
-
-            var csrDocs = PopulateDetailCsrsDocuments([.. fileDetailTask.Result.Appearance.Where(a => binderDocIds.Contains(a.AppearanceId))]);
-
-            var otherDocs = detail.Document.Where(d => binderDocIds.Contains(d.CivilDocumentId));
-
-            var orderedDocs = csrDocs.Concat(otherDocs)
-                .OrderBy(d => binderDocIdsOrdered.TryGetValue(d.CivilDocumentId, out var order) ? order : int.MaxValue);
-
-            var binderDocuments = await PopulateDetailDocuments([.. orderedDocs], detail, fileContentCivilFile, false, false);
+            var binderDocuments = await PopulateDetailDocuments([.. csrDocs.Concat(otherDocs)], detail, fileContentCivilFile, false, false);
 
             return binderDocuments;
         }

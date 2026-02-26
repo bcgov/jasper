@@ -77,33 +77,61 @@ public class BinderService(
 
     public override async Task<OperationResult<BinderDto>> AddAsync(BinderDto dto)
     {
-        var binderProcessor = _binderFactory.Create(dto);
-
-        await binderProcessor.PreProcessAsync();
-
-        var processorValidation = await binderProcessor.ValidateAsync();
-        if (!processorValidation.Succeeded)
+        try
         {
-            return OperationResult<BinderDto>.Failure([.. processorValidation.Errors]);
-        }
+            var binderProcessor = _binderFactory.Create(dto);
 
-        return await base.AddAsync(binderProcessor.Binder);
+            await binderProcessor.PreProcessAsync();
+
+            var processorValidation = await binderProcessor.ValidateAsync();
+            if (!processorValidation.Succeeded)
+            {
+                return OperationResult<BinderDto>.Failure([.. processorValidation.Errors]);
+            }
+
+            var processResult = await binderProcessor.ProcessAsync();
+            if (!processResult.Succeeded)
+            {
+                return OperationResult<BinderDto>.Failure([.. processResult.Errors]);
+            }
+
+            return await base.AddAsync(binderProcessor.Binder);
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Something went wrong while adding a binder: {Error}", ex.Message);
+            return OperationResult<BinderDto>.Failure("Something went wrong while adding the binder.");
+        }
     }
 
     public override async Task<OperationResult<BinderDto>> UpdateAsync(BinderDto dto)
     {
-        var binderProcessor = _binderFactory.Create(dto);
-
-        var processorValidation = await binderProcessor.ValidateAsync();
-        if (!processorValidation.Succeeded)
+        try
         {
-            return OperationResult<BinderDto>.Failure([.. processorValidation.Errors]);
+            var binderProcessor = _binderFactory.Create(dto);
+
+            var processorValidation = await binderProcessor.ValidateAsync();
+            if (!processorValidation.Succeeded)
+            {
+                return OperationResult<BinderDto>.Failure([.. processorValidation.Errors]);
+            }
+
+            // Since business rules passed, prep binder
+            await binderProcessor.PreProcessAsync();
+
+            var processResult = await binderProcessor.ProcessAsync();
+            if (!processResult.Succeeded)
+            {
+                return OperationResult<BinderDto>.Failure([.. processResult.Errors]);
+            }
+
+            return await base.UpdateAsync(binderProcessor.Binder);
         }
-
-        // Since business rules passed, prep binder
-        await binderProcessor.PreProcessAsync();
-
-        return await base.UpdateAsync(binderProcessor.Binder);
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Something went wrong while updating a binder: {Error}", ex.Message);
+            return OperationResult<BinderDto>.Failure("Something went wrong while updating the binder.");
+        }
     }
 
     public override async Task<OperationResult> DeleteAsync(string id)
@@ -165,10 +193,11 @@ public class BinderService(
                 {
                     binder.Documents = ApplyDocumentFilters(binder.Documents, filters);
                 }
-                
-                binder.Documents = [.. binder.Documents.OrderBy(d => GetCategoryOrder(d.Category))];
+
+                // Exclude documents that does not have ImageId because there is no document to view, and sort by category
+                binder.Documents = [.. binder.Documents.Where(d => d.ImageId != null).OrderBy(d => GetCategoryOrder(d.Category))];
             }
-            
+
             return OperationResult<DocumentBundleResponse>.Success(new DocumentBundleResponse
             {
                 Binders = binders,
@@ -280,16 +309,16 @@ public class BinderService(
         foreach (var binder in binders)
         {
             var isCriminal = bool.TryParse(binder.Labels.GetValue(LabelConstants.IS_CRIMINAL), out var result) && result;
-            
+
             // Apply filters to get only the documents that should be included
             var documentsToInclude = filters != null && filters.Count > 0
                 ? ApplyDocumentFilters(binder.Documents, filters)
                 : binder.Documents;
 
             var binderDocRequests = documentsToInclude
-                // Excludes DocumentType.File documents where the FileName = DocumentId.
+                // Excludes DocumentType.File documents that does not have ImageId
                 // This means that there is no document to view.
-                .Where(d => d.DocumentType != DocumentType.File || d.DocumentId != null)
+                .Where(d => d.DocumentType != DocumentType.File || d.ImageId != null)
                 // Default ordering is dictated by category, then the document's Order property
                 .OrderBy(d => GetCategoryOrder(d.Category))
                 .Select(d => new PdfDocumentRequest

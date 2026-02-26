@@ -18,14 +18,19 @@ using Scv.Api.Models;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Contants;
+using tests.api.Fixtures;
 using Xunit;
 
 namespace tests.api.Processors;
 
-public class BinderFactoryTests
+[Collection("ServiceFixture")]
+public class BinderFactoryTests(FilesServiceFixture filesServiceFixture)
 {
+    private readonly FilesServiceFixture _filesServiceFixture = filesServiceFixture;
+
     private static BinderFactory CreateFactory(
         Mock<ILogger<BinderFactory>> loggerMock,
+        FilesServiceFixture filesServiceFixture,
         out Mock<IValidator<BinderDto>> validatorMock)
     {
         var httpClient = new HttpClient();
@@ -60,7 +65,7 @@ public class BinderFactoryTests
             new Mock<IDocumentConverter>().Object,
             mapper,
             mockDarsService.Object,
-            null);
+            filesServiceFixture.MockFilesService.Object);
     }
 
     private static Dictionary<string, string> Labels(string courtClass) =>
@@ -77,7 +82,7 @@ public class BinderFactoryTests
     public void BinderFactory_ReturnsJudicialBinderProcessor_WhenCourtClassIsCivil(string courtClass)
     {
         var logger = new Mock<ILogger<BinderFactory>>();
-        var factory = CreateFactory(logger, out _);
+        var factory = CreateFactory(logger, _filesServiceFixture, out _);
 
         var processor = factory.Create(Labels(courtClass));
 
@@ -93,7 +98,7 @@ public class BinderFactoryTests
     public void BinderFactory_ReturnsJudicialBinderProcessor_WhenCourtClassIsCriminal(string courtClass)
     {
         var logger = new Mock<ILogger<BinderFactory>>();
-        var factory = CreateFactory(logger, out _);
+        var factory = CreateFactory(logger, _filesServiceFixture, out _);
 
         var processor = factory.Create(Labels(courtClass));
 
@@ -106,7 +111,7 @@ public class BinderFactoryTests
     public void BinderFactoryReturns_JudicialBinderProcessor_WhenCourtClassIsLowercase()
     {
         var logger = new Mock<ILogger<BinderFactory>>();
-        var factory = CreateFactory(logger, out _);
+        var factory = CreateFactory(logger, _filesServiceFixture, out _);
 
         var processor = factory.Create(Labels("c"));
 
@@ -118,7 +123,7 @@ public class BinderFactoryTests
     public void BinderFactoryReturns_ThrowsAndLogsError_WhenCourtClassIsInvalid()
     {
         var logger = new Mock<ILogger<BinderFactory>>();
-        var factory = CreateFactory(logger, out _);
+        var factory = CreateFactory(logger, _filesServiceFixture, out _);
 
         var ex = Assert.Throws<ArgumentException>(() => factory.Create(Labels("Z")));
         Assert.Contains("processor", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -137,7 +142,7 @@ public class BinderFactoryTests
     public void BinderFactory_ReturnsKeyDocumentProcessor_WhenBinderDtoIsPassed()
     {
         var logger = new Mock<ILogger<BinderFactory>>();
-        var factory = CreateFactory(logger, out _);
+        var factory = CreateFactory(logger, _filesServiceFixture, out _);
         var dto = new BinderDto
         {
             Labels = Labels("A"),

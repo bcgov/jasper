@@ -1,3 +1,4 @@
+import { BinderService } from '@/services/BinderService';
 import { FilesService } from '@/services/FilesService';
 import { flushPromises, mount } from '@vue/test-utils';
 import CivilAppearanceDetails from 'CMP/civil/CivilAppearanceDetails.vue';
@@ -5,9 +6,11 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/services/FilesService');
+vi.mock('@/services/BinderService');
 
 describe('CivilAppearanceDetails.vue', () => {
   let filesService: any;
+  let binderService: any;
 
   const mockDocumentDetails = {
     agencyId: 'AGENCY123',
@@ -22,16 +25,47 @@ describe('CivilAppearanceDetails.vue', () => {
     ],
   };
 
-  const mockBinderDocuments = [
-    { civilDocumentId: '1', name: 'Document 1' },
-    { civilDocumentId: '2', name: 'Document 2' },
-  ];
+  const mockBinderResponse = {
+    payload: [
+      {
+        documents: [
+          {
+            documentId: '1',
+            fileName: 'Document 1',
+            category: 'Filing',
+            imageId: 'img1',
+            fileSeqNo: '1',
+            filedBy: [],
+            issues: [],
+            swornByNm: '',
+            filedDt: '',
+            dateGranted: '',
+            documentSupport: [],
+          },
+          {
+            documentId: '2',
+            fileName: 'Document 2',
+            category: 'Filing',
+            imageId: 'img2',
+            fileSeqNo: '2',
+            filedBy: [],
+            issues: [],
+            swornByNm: '',
+            filedDt: '',
+            dateGranted: '',
+            documentSupport: [],
+          },
+        ],
+      },
+    ],
+  };
 
   const mountComponent = (showBinder = true, courtClassCd = 'C') => {
     return mount(CivilAppearanceDetails, {
       global: {
         provide: {
           filesService,
+          binderService,
         },
       },
       props: {
@@ -48,10 +82,13 @@ describe('CivilAppearanceDetails.vue', () => {
     filesService = {
       civilAppearanceDocuments: vi.fn().mockResolvedValue(mockDocumentDetails),
       civilAppearanceMethods: vi.fn().mockResolvedValue(mockMethods),
-      civilBinderDocuments: vi.fn().mockResolvedValue(mockBinderDocuments),
       civilAppearanceParty: vi.fn().mockResolvedValue({}),
     };
+    binderService = {
+      getBinders: vi.fn().mockResolvedValue(mockBinderResponse),
+    };
     (FilesService as any).mockReturnValue(filesService);
+    (BinderService as any).mockReturnValue(binderService);
   });
 
   it('renders the tabs correctly', async () => {
@@ -77,13 +114,17 @@ describe('CivilAppearanceDetails.vue', () => {
       '123',
       '456'
     );
-    expect(filesService.civilBinderDocuments).toHaveBeenCalledWith('123');
+    expect(binderService.getBinders).toHaveBeenCalledWith({
+      physicalFileId: '123',
+      courtClassCd: 'C',
+      judgeId: undefined,
+    });
   });
 
   it('calls binder service with correct parameters when showBinder is true', async () => {
     mountComponent(true, 'C');
     await flushPromises();
-    expect(filesService.civilBinderDocuments).toHaveBeenCalled();
+    expect(binderService.getBinders).toHaveBeenCalled();
   });
 
   it('renders ScheduledDocuments component when "documents" tab is active', async () => {
@@ -134,7 +175,9 @@ describe('CivilAppearanceDetails.vue', () => {
   });
 
   it('disables binder tab when binder is loading or has no documents', async () => {
-    filesService.civilBinderDocuments = vi.fn().mockResolvedValue([]);
+    binderService.getBinders = vi
+      .fn()
+      .mockResolvedValue({ payload: [{ documents: [] }] });
 
     const wrapper: any = mountComponent();
     await flushPromises();
@@ -162,9 +205,7 @@ describe('CivilAppearanceDetails.vue', () => {
   });
 
   it('handles error in binder loading gracefully', async () => {
-    filesService.civilBinderDocuments.mockRejectedValue(
-      new Error('Binder error')
-    );
+    binderService.getBinders.mockRejectedValue(new Error('Binder error'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mountComponent();

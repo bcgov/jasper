@@ -69,11 +69,12 @@
   import CivilAppearanceMethods from '@/components/case-details/civil/appearances/CivilAppearanceMethods.vue';
   import ScheduledDocuments from '@/components/case-details/civil/appearances/ScheduledDocuments.vue';
   import ScheduledParties from '@/components/case-details/civil/appearances/ScheduledParties.vue';
-  import { FilesService } from '@/services';
+  import { BinderService, FilesService } from '@/services';
   import { useCommonStore } from '@/stores';
   import {
     CivilAppearanceDetailDocuments,
     CivilAppearanceDetailMethods,
+    civilDocumentType,
   } from '@/types/civil/jsonTypes';
   import { inject, onMounted, ref } from 'vue';
   import JudicialBinder from '../case-details/civil/appearances/JudicialBinder.vue';
@@ -108,7 +109,7 @@
   );
   const documentsLoading = ref(false);
   const binderLoading = ref(false);
-  const binderDocuments = ref<BinderDocument[]>([]);
+  const binderDocuments = ref<civilDocumentType[]>([]);
 
   onMounted(async () => {
     try {
@@ -160,20 +161,23 @@
       const getBindersResp = await binderService.getBinders(labels);
       const binderDocs = getBindersResp?.payload?.[0]?.documents ?? [];
 
-      binderDocuments.value = binderDocs.map((doc) => ({
-        civilDocumentId: doc.documentId,
-        category: doc.category,
-        imageId: doc.imageId,
-        documentTypeDescription: doc.fileName,
-        fileSeqNo: doc.fileSeqNo,
-        filedBy: doc.filedBy,
-        issue: doc.issues,
-        swornByNm: doc.swornByNm,
-        filedDt: doc.filedDt,
-        orderMadeDt: doc.dateGranted,
-        DateGranted: doc.dateGranted,
-        documentSupport: doc.documentSupport,
-      }));
+      binderDocuments.value = binderDocs.map(
+        (doc) =>
+          ({
+            civilDocumentId: doc.documentId,
+            category: doc.category,
+            imageId: doc.imageId,
+            documentTypeDescription: doc.fileName,
+            fileSeqNo: doc.fileSeqNo,
+            filedBy: doc.filedBy,
+            issue: doc.issues,
+            swornByNm: doc.swornByNm,
+            filedDt: doc.filedDt,
+            orderMadeDt: doc.dateGranted,
+            DateGranted: doc.dateGranted,
+            documentSupport: doc.documentSupport,
+          }) as civilDocumentType
+      );
     } catch (error) {
       console.error(`Error occured while retrieving user's binders: ${error}`);
     } finally {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Bogus;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -16,10 +17,13 @@ using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Contants;
+using Scv.Db.Models;
+using tests.api.Fixtures;
 using Xunit;
 
 namespace tests.api.Processors;
 
+[Collection("ServiceFixture")]
 public class JudicialBinderProcessorTests
 {
     private readonly Mock<FileServicesClient> _mockFilesClient;
@@ -29,8 +33,10 @@ public class JudicialBinderProcessorTests
     private readonly Mock<IMapper> _mockMapper;
     private readonly Mock<IValidator<BinderDto>> _mockValidator;
     private readonly ClaimsPrincipal _mockUser;
-
-    public JudicialBinderProcessorTests()
+    private readonly FilesServiceFixture _filesServiceFixture;
+    private readonly Faker _faker;
+    private readonly string _fileId;
+    public JudicialBinderProcessorTests(FilesServiceFixture filesServiceFixture)
     {
         var httpClient = new System.Net.Http.HttpClient();
         _mockFilesClient = new Mock<FileServicesClient>(httpClient);
@@ -39,6 +45,7 @@ public class JudicialBinderProcessorTests
         _mockConfiguration = new Mock<IConfiguration>();
         _mockMapper = new Mock<IMapper>();
         _mockValidator = new Mock<IValidator<BinderDto>>();
+        _filesServiceFixture = filesServiceFixture;
 
         var claims = new List<Claim>
         {
@@ -56,6 +63,9 @@ public class JudicialBinderProcessorTests
         _mockConfiguration
             .Setup(x => x.GetSection("Request:ApplicationCd").Value)
             .Returns("TEST_APP");
+
+        _faker = new Faker();
+        _fileId = _faker.Random.Int(10000, 99999).ToString();
     }
 
     #region PreProcessAsync Tests
@@ -80,7 +90,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             }
         };
 
@@ -105,14 +115,25 @@ public class JudicialBinderProcessorTests
             CourtClassCd = CivilFileDetailResponseCourtClassCd.F,
             Appearance = [],
             Document = [
-                new CvfcDocument3 { CivilDocumentId = "doc-1" }
+                new CvfcDocument3
+                {
+                    CivilDocumentId = "doc-1",
+                    DocumentTypeCd = DocumentCategory.BAIL,
+                    Issue = []
+                }
             ],
             ReferenceDocument = []
         };
 
         var fileContent = new CivilFileContent
         {
-            CivilFile = []
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
         };
 
         var redactedDetail = new RedactedCivilFileDetailResponse
@@ -132,6 +153,7 @@ public class JudicialBinderProcessorTests
         };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -145,7 +167,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" },
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId },
                 { LabelConstants.JUDGE_ID, "test-judge-123" }
             },
             Documents = [
@@ -194,7 +216,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = []
         };
@@ -220,14 +242,23 @@ public class JudicialBinderProcessorTests
                 new CvfcAppearance { AppearanceId = "app-1" }
             ],
             Document = [
-                new CvfcDocument3 { CivilDocumentId = "doc-1" }
+                new CvfcDocument3 { CivilDocumentId = "doc-1", Issue = [] }
             ],
             ReferenceDocument = [
                 new CvfcRefDocument3 { ReferenceDocumentId = "ref-1", ReferenceDocumentInterest = [] }
             ]
         };
 
-        var fileContent = new CivilFileContent { CivilFile = [] };
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
         var redactedDetail = new RedactedCivilFileDetailResponse
         {
             Document = [
@@ -236,6 +267,7 @@ public class JudicialBinderProcessorTests
         };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -253,7 +285,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "doc-1", Order = 2 },
@@ -302,10 +334,20 @@ public class JudicialBinderProcessorTests
             ReferenceDocument = []
         };
 
-        var fileContent = new CivilFileContent { CivilFile = [] };
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
         var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -321,7 +363,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "app-1", Order = 0 }
@@ -353,10 +395,20 @@ public class JudicialBinderProcessorTests
             ReferenceDocument = []
         };
 
-        var fileContent = new CivilFileContent { CivilFile = [] };
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
         var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.CSR);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -377,7 +429,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "app-1", Order = 0 }
@@ -413,10 +465,20 @@ public class JudicialBinderProcessorTests
             ]
         };
 
-        var fileContent = new CivilFileContent { CivilFile = [] };
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
         var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.LITIGANT);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -432,7 +494,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "ref-1", Order = 0 }
@@ -454,8 +516,8 @@ public class JudicialBinderProcessorTests
     public async Task ProcessAsync_Should_Return_Failure_When_FileClient_Throws_Exception()
     {
         // Arrange
-        _mockFilesClient
-            .Setup(x => x.FilesCivilGetAsync(
+        _filesServiceFixture.MockFileServicesClient
+            .Setup(s => s.FilesCivilGetAsync(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
@@ -466,9 +528,9 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
-            Documents = []
+            Documents = [new() { DocumentId = "doc-1", Order = 0 }]
         };
 
         var processor = CreateProcessor(dto);
@@ -488,25 +550,34 @@ public class JudicialBinderProcessorTests
         var fileDetail = new CivilFileDetailResponse
         {
             Appearance = [],
-            Document = [],
+            Document = [new() { DocumentTypeCd = DocumentCategory.BAIL }],
             ReferenceDocument = []
         };
 
-        var fileContent = new CivilFileContent { CivilFile = [] };
-
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
-            .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
+            .Setup(x => x.Map<List<BinderDocumentDto>>(It.IsAny<List<CivilDocument>>()))
             .Throws(new Exception("Mapping error"));
 
         var dto = new BinderDto
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
-            Documents = []
+            Documents = [new() { DocumentId = "doc-1", Order = 0 }]
         };
 
         var processor = CreateProcessor(dto);
@@ -522,14 +593,18 @@ public class JudicialBinderProcessorTests
     [Fact]
     public async Task ProcessAsync_Should_Handle_Mixed_Document_Types()
     {
-        // Arrange
         var fileDetail = new CivilFileDetailResponse
         {
             Appearance = [
                 new CvfcAppearance { AppearanceId = "app-1" }
             ],
-            Document = [
-                new CvfcDocument3 { CivilDocumentId = "doc-1" }
+            Document =
+            [
+                new CvfcDocument3
+                {
+                    CivilDocumentId = "doc-1", Issue = [],
+                    DocumentTypeCd = DocumentCategory.BAIL
+                }
             ],
             ReferenceDocument = [
                 new CvfcRefDocument3
@@ -537,18 +612,35 @@ public class JudicialBinderProcessorTests
                     ReferenceDocumentId = "ref-1",
                     ReferenceDocumentInterest = []
                 }
-            ]
+            ],
         };
 
-        var fileContent = new CivilFileContent { CivilFile = [] };
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
         var redactedDetail = new RedactedCivilFileDetailResponse
         {
             Document = [
-                new CivilDocument { CivilDocumentId = "doc-1" }
+                new CivilDocument
+                {
+                    CivilDocumentId = "doc-1",
+                    Issue = [ new CivilIssue
+                    {
+                        IssueTypeDesc = "issue-1"
+                    }]
+                }
             ]
         };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -566,7 +658,7 @@ public class JudicialBinderProcessorTests
         {
             Labels = new Dictionary<string, string>
             {
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "doc-1", Order = 1 },
@@ -599,7 +691,7 @@ public class JudicialBinderProcessorTests
             Labels = new Dictionary<string, string>
             {
                 { LabelConstants.JUDGE_ID, "different-judge-456" },
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             }
         };
 
@@ -639,7 +731,7 @@ public class JudicialBinderProcessorTests
             Labels = new Dictionary<string, string>
             {
                 { LabelConstants.JUDGE_ID, "test-judge-123" },
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "invalid-doc-id", DocumentType = DocumentType.File }
@@ -682,7 +774,7 @@ public class JudicialBinderProcessorTests
             Labels = new Dictionary<string, string>
             {
                 { LabelConstants.JUDGE_ID, "test-judge-123" },
-                { LabelConstants.PHYSICAL_FILE_ID, "12345" }
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
             },
             Documents = [
                 new BinderDocumentDto { DocumentId = "appearance-1", DocumentType = DocumentType.CourtSummary },
@@ -713,7 +805,7 @@ public class JudicialBinderProcessorTests
             _mockMapper.Object,
             _mockConfiguration.Object,
             _mockDarsService.Object,
-            null);
+            _filesServiceFixture.MockFilesService.Object.Civil);
     }
 
     private void SetupFileClientMocks(CivilFileDetailResponse fileDetail, CivilFileContent fileContent)
@@ -739,5 +831,41 @@ public class JudicialBinderProcessorTests
             .ReturnsAsync(fileContent);
     }
 
-    #endregion    
+    private void SetupFileServiceMocks(
+        CivilFileDetailResponse fileDetail,
+        CivilFileContent fileContent,
+        string documentCategory)
+    {
+        _filesServiceFixture.MockFileServicesClient
+            .Setup(s => s.FilesCivilGetAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(fileDetail);
+
+        _filesServiceFixture.MockFileServicesClient
+            .Setup(s => s.FilesCivilFilecontentAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(fileContent);
+
+        _filesServiceFixture.MockLookupService
+            .Setup(s => s.GetDocumentCategory(
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(documentCategory);
+
+        _filesServiceFixture.MockLookupService
+            .Setup(s => s.GetDocumentDescriptionAsync(It.IsAny<string>()))
+            .ReturnsAsync("Test Document Description");
+    }
+
+    #endregion
 }

@@ -275,7 +275,7 @@ namespace Scv.Api.Services
 
         public async Task<string> GetCriminalParticipantRoleDescription(string code) => FindLongDescriptionFromCode(await GetParticipantRoles(), code);
 
-        public async Task<string> GetDocumentDescriptionAsync(string code) => FindShortDescriptionFromCode(await GetDocuments(), code);
+        public virtual async Task<string> GetDocumentDescriptionAsync(string code) => FindShortDescriptionFromCode(await GetDocuments(), code);
 
         public async Task<string> GetWitnessRoleTypeDescription(string code) => FindShortDescriptionFromCode(await GetWitnessRoles(), code);
 
@@ -287,7 +287,7 @@ namespace Scv.Api.Services
         /// <param name="documentCode"></param>
         /// <param name="docmClassification"></param>
         /// <returns></returns>
-        public async Task<string> GetDocumentCategory(string documentCode, string docmClassification = null)
+        public virtual async Task<string> GetDocumentCategory(string documentCode, string docmClassification = null)
         {
             var documentCategories = await _dcService.GetAllAsync();
 

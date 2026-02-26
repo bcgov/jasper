@@ -47,7 +47,8 @@ public class BinderMapping : IRegister
                     ? DocumentType.CourtSummary
                     : DocumentType.File)
             .Map(dest => dest.Category, src => src.DocumentTypeCd)
-            .Map(dest => dest.Issues, src => src.Issue != null ? src.Issue.Adapt<List<IssueDto>>() : new List<IssueDto>());
+            .Map(dest => dest.Issues, src => src.Issue != null ? src.Issue.Adapt<List<IssueDto>>() : new List<IssueDto>())
+            .Map(dest => dest.FiledBy, src => src.FiledBy != null ? src.FiledBy.Adapt<List<FiledByDto>>() : new List<FiledByDto>());
 
         config.NewConfig<CvfcIssue, IssueDto>();
         config.NewConfig<CivilIssue, IssueDto>();

@@ -74,23 +74,30 @@ public class JudicialBinderProcessor : BinderProcessorBase
             return OperationResult.Success();
         }
 
-        var fileId = Binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
-        var binderDocumentIds = this.Binder.Documents.Select(d => d.DocumentId).ToList();
+        try
+        {
+            var fileId = Binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID);
+            var binderDocumentIds = this.Binder.Documents.Select(d => d.DocumentId).ToList();
 
-        // Preserve the original ordering
-        var documentOrder = this.Binder.Documents
-            .Select((doc, index) => new { doc.DocumentId, Index = index })
-            .ToDictionary(x => x.DocumentId, x => x.Index);
+            // Preserve the original ordering
+            var documentOrder = this.Binder.Documents
+                .Select((doc) => new { doc.DocumentId, doc.Order })
+                .ToDictionary(x => x.DocumentId, x => x.Order);
 
-        // Retrieve the full document details for the documents in the binder
-        var fileDocuments = await _civilFilesService.GetDocumentsByIds(fileId, binderDocumentIds);
+            // Retrieve the full document details for the documents in the binder
+            var fileDocuments = await _civilFilesService.GetDocumentsByIds(fileId, binderDocumentIds);
 
-        var mappedDocuments = _mapper.Map<List<BinderDocumentDto>>(fileDocuments);
+            var mappedDocuments = _mapper.Map<List<BinderDocumentDto>>(fileDocuments);
 
-        // Apply the original ordering
-        this.Binder.Documents = [.. mappedDocuments.OrderBy(d => documentOrder.TryGetValue(d.DocumentId, out var index) ? index : int.MaxValue)];
+            // Apply the original ordering
+            this.Binder.Documents = [.. mappedDocuments.OrderBy(d => documentOrder.TryGetValue(d.DocumentId, out var index) ? index : int.MaxValue)];
 
-        return OperationResult.Success();
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Failure($"Error processing binder: {ex.Message}");
+        }
     }
 
     public override async Task<OperationResult> ValidateAsync()

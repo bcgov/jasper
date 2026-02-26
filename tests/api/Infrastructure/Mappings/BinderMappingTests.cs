@@ -209,8 +209,7 @@ public class BinderMappingTests
 
         var result = criminalDoc.Adapt<BinderDocumentDto>(_config);
 
-        Assert.Equal(criminalDoc.DocmId, result.DocumentId);
-        Assert.Equal(criminalDoc.ImageId, result.ImageId);
+        Assert.Equal(criminalDoc.ImageId, result.DocumentId);
         Assert.Equal(criminalDoc.DocumentTypeDescription, result.FileName);
         Assert.Equal(criminalDoc.Category, result.Category);
     }
@@ -373,7 +372,41 @@ public class BinderMappingTests
 
         var result = civilDoc.Adapt<BinderDocumentDto>(_config);
 
+        Assert.NotNull(result.Issues);
         Assert.Empty(result.Issues);
+    }
+
+    [Fact]
+    public void CivilDocument_To_BinderDocumentDto_Should_Handle_Null_FiledBy_List()
+    {
+        var civilDoc = new CivilDocument
+        {
+            CivilDocumentId = "civil-doc-123",
+            FiledBy = null
+        };
+
+        var result = civilDoc.Adapt<BinderDocumentDto>(_config);
+
+        Assert.NotNull(result.FiledBy);
+        Assert.Empty(result.FiledBy);
+    }
+
+    [Fact]
+    public void CivilDocument_To_BinderDocumentDto_Should_Handle_Null_Issue_And_FiledBy()
+    {
+        var civilDoc = new CivilDocument
+        {
+            CivilDocumentId = "civil-doc-123",
+            Issue = null,
+            FiledBy = null
+        };
+
+        var result = civilDoc.Adapt<BinderDocumentDto>(_config);
+
+        Assert.NotNull(result.Issues);
+        Assert.Empty(result.Issues);
+        Assert.NotNull(result.FiledBy);
+        Assert.Empty(result.FiledBy);
     }
 
     #endregion

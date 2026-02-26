@@ -222,18 +222,18 @@ namespace Scv.Api.Services.Files
                 var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
                 if (latestApprearance != null)
                 {
-                    //var agencyId = await _locationService.GetLocationAgencyIdentifier(latestApprearance.CourtAgencyId);
-                    //var courtList = await _filesClient.FilesCourtlistAsync(
-                    //    _requestAgencyIdentifierId,
-                    //    _requestPartId,
-                    //    _applicationCode,
-                    //    agencyId,
-                    //    latestApprearance.CourtRoomCd,
-                    //    latestApprearance.AppearanceDt,
-                    //    "CV",
-                    //    detail.FileNumberTxt);
-                    //var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
-                    //courtListParties = civilCourtListFileDetail?.Parties ?? [];
+                    var agencyId = await _locationService.GetLocationAgencyIdentifier(latestApprearance.CourtAgencyId);
+                    var courtList = await _filesClient.FilesCourtlistAsync(
+                        _requestAgencyIdentifierId,
+                        _requestPartId,
+                        _applicationCode,
+                        agencyId,
+                        latestApprearance.CourtRoomCd,
+                        latestApprearance.AppearanceDt,
+                        "CV",
+                        detail.FileNumberTxt);
+                    var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
+                    courtListParties = civilCourtListFileDetail?.Parties ?? [];
                 }
             }
 

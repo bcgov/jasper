@@ -145,10 +145,10 @@ namespace Scv.Api.Services.Files
                 var latestAppearance = appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
                 if (latestAppearance != null)
                 {
-                    // var agencyId = await _locationService.GetLocationAgencyIdentifier(fileDetail.HomeLocationAgenId);
-                    // var courtList = await _cache.GetOrAddAsync($"CriminalCourtList-{agencyId}-{latestAppearance.CourtRoomCd}-{latestAppearance.AppearanceDt}-{fileDetail.FileNumberTxt}-{_requestAgencyIdentifierId}",
-                    //     () => CourtList(agencyId, latestAppearance.CourtRoomCd, latestAppearance.AppearanceDt, fileDetail.FileNumberTxt));
-                    // criminalCourtLists = courtList.CriminalCourtList;
+                    var agencyId = await _locationService.GetLocationAgencyIdentifier(fileDetail.HomeLocationAgenId);
+                    var courtList = await _cache.GetOrAddAsync($"CriminalCourtList-{agencyId}-{latestAppearance.CourtRoomCd}-{latestAppearance.AppearanceDt}-{fileDetail.FileNumberTxt}-{_requestAgencyIdentifierId}",
+                        () => CourtList(agencyId, latestAppearance.CourtRoomCd, latestAppearance.AppearanceDt, fileDetail.FileNumberTxt));
+                    criminalCourtLists = courtList.CriminalCourtList;
                 }
             }
 

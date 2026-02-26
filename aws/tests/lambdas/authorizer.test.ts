@@ -2,12 +2,12 @@ import { APIGatewayRequestAuthorizerEvent, Context } from "aws-lambda";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "../../lambdas/auth/authorizer/index";
 
+const mockGetSecret = vi.fn();
+
 vi.mock("../../services/secretsManagerService", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    getSecret: vi
-      .fn()
-      .mockResolvedValue(JSON.stringify({ verifyKey: "test-secret-key" })),
-  })),
+  default: class SecretsManagerService {
+    getSecret = mockGetSecret;
+  },
 }));
 
 describe("Authorizer Lambda Handler", () => {
@@ -15,6 +15,13 @@ describe("Authorizer Lambda Handler", () => {
   let mockContext: Partial<Context>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Reset mock to default behavior
+    mockGetSecret.mockResolvedValue(
+      JSON.stringify({ verifyKey: "test-secret-key" }),
+    );
+
     process.env.VERIFY_SECRET_NAME = "test-secret";
 
     mockEvent = {
@@ -29,7 +36,7 @@ describe("Authorizer Lambda Handler", () => {
   it("should return an Allow policy when token matches secret", async () => {
     const response = await handler(
       mockEvent as APIGatewayRequestAuthorizerEvent,
-      mockContext as Context
+      mockContext as Context,
     );
     expect(response.policyDocument.Statement[0].Effect).toBe("Allow");
   });
@@ -39,8 +46,8 @@ describe("Authorizer Lambda Handler", () => {
     await expect(
       handler(
         mockEvent as APIGatewayRequestAuthorizerEvent,
-        mockContext as Context
-      )
+        mockContext as Context,
+      ),
     ).rejects.toThrow("Unauthorized");
   });
 
@@ -49,8 +56,8 @@ describe("Authorizer Lambda Handler", () => {
     await expect(
       handler(
         mockEvent as APIGatewayRequestAuthorizerEvent,
-        mockContext as Context
-      )
+        mockContext as Context,
+      ),
     ).rejects.toThrow("Unauthorized");
   });
 
@@ -59,8 +66,8 @@ describe("Authorizer Lambda Handler", () => {
     await expect(
       handler(
         mockEvent as APIGatewayRequestAuthorizerEvent,
-        mockContext as Context
-      )
+        mockContext as Context,
+      ),
     ).rejects.toThrow("Unauthorized");
   });
 });

@@ -10,6 +10,8 @@ public class EmailTemplate : EntityBase
 {
     public const string ORDER_RECEIVED = "Order Received";
     public const string JOB_FAILURE = "Job Failure";
+    public const string ORDER_REMINDER = "Order Reminder";
+    public const string ORDER_REASSIGNMENT = "Order Reassignment";
 
     public static readonly List<EmailTemplate> ALL_EMAIL_TEMPLATES =
     [
@@ -39,6 +41,26 @@ public class EmailTemplate : EntityBase
                      <p>Reason: {{ reason }}</p>
                      <p>Occurred At (UTC): {{ occurred_at }}</p>"
         },
+        new EmailTemplate
+        {
+            TemplateName = ORDER_REMINDER,
+            Subject = @"Reminder: Unresolved Order for {{ location_shortname }} {{ case_file_number }}",
+            Body = @"Dear Judge {{ judge_name }},<br /><br />
+                     The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
+                     Please select the link above to review the order.<br /><br />
+                     Regards,<br />
+                     JASPER Support Team"
+        },
+        new EmailTemplate
+        {
+            TemplateName = ORDER_REASSIGNMENT,
+            Subject = @"<<Priority>>> Order {{ location_shortname }} {{ case_file_number }} is overdue and has been assigned to you.",
+            Body = @"Dear Judge {{ judge_name }},<br /><br />
+                     The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
+                     Please select the link above to review the order.<br /><br />
+                     Regards,<br />
+                     JASPER Support Team"
+        }
     ];
 
     public string TemplateName { get; set; }

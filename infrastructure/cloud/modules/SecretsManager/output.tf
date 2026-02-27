@@ -86,6 +86,8 @@ output "api_secrets" {
     ["MONGODB_NAME", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbName::"],
     ["NUTRIENT_BE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientBeLicenseKey::"],
     ["NUTRIENT_FE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientFeLicenseKey::"],
+    ["ORDER_REASSIGNMENT_THRESHOLD_DAYS", "${aws_secretsmanager_secret.misc_secret.arn}:orderReassignmentThresholdDays::"],
+    ["ORDER_REMINDER_THRESHOLD_DAYS", "${aws_secretsmanager_secret.misc_secret.arn}:orderReminderThresholdDays::"],
     ["PCSS__Username", "${aws_secretsmanager_secret.pcss_secret.arn}:username::"],
     ["PCSS__Password", "${aws_secretsmanager_secret.pcss_secret.arn}:password::"],
     ["PCSS__Url", "${aws_secretsmanager_secret.pcss_secret.arn}:baseUrl::"],

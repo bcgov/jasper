@@ -8,7 +8,7 @@ import { SecretsManagerService } from "../../services/secretsManagerService";
 
 vi.mock(
   "@aws-sdk/client-secrets-manager",
-  () => import("../../mocks/aws-sdk-secrets-manager")
+  () => import("../../mocks/aws-sdk-secrets-manager"),
 );
 
 describe("SecretsManagerService", () => {
@@ -38,7 +38,7 @@ describe("SecretsManagerService", () => {
     mockSend.mockResolvedValueOnce(mockResponse);
 
     await expect(service.getSecret(secretName)).rejects.toThrow(
-      `Secret with ID ${secretName} does not contain SecretString`
+      `Secret with ID ${secretName} does not contain SecretString`,
     );
 
     expect(mockSend).toHaveBeenCalledWith(expect.any(GetSecretValueCommand));

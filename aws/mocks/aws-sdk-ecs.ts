@@ -2,12 +2,20 @@ import { vi } from "vitest";
 
 const mockSend = vi.fn();
 
-export const ECSClient = vi.fn().mockImplementation(() => ({
-  send: mockSend,
-}));
+export class ECSClient {
+  send = mockSend;
+}
 
-export const ListServicesCommand = vi.fn();
-export const DescribeServicesCommand = vi.fn();
-export const UpdateServiceCommand = vi.fn();
+export class ListServicesCommand {
+  constructor(public input: unknown) {}
+}
+
+export class DescribeServicesCommand {
+  constructor(public input: unknown) {}
+}
+
+export class UpdateServiceCommand {
+  constructor(public input: unknown) {}
+}
 
 export { mockSend };

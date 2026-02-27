@@ -1,19 +1,22 @@
 import { APIGatewayEvent, Context } from "aws-lambda";
-import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "../../lambdas/auth/rotate-key/index";
-import SecretsManagerService from "../../services/secretsManagerService";
+
+const mockGetECSServices = vi.fn();
+const mockRestartServices = vi.fn();
+const mockUpdateSecret = vi.fn();
 
 vi.mock("../../services/ecsService", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    getECSServices: vi.fn().mockResolvedValue(["service1", "service2"]),
-    restartServices: vi.fn().mockResolvedValue(undefined),
-  })),
+  default: class ECSService {
+    getECSServices = mockGetECSServices;
+    restartServices = mockRestartServices;
+  },
 }));
 
 vi.mock("../../services/secretsManagerService", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    updateSecret: vi.fn().mockResolvedValue(undefined),
-  })),
+  default: class SecretsManagerService {
+    updateSecret = mockUpdateSecret;
+  },
 }));
 
 describe("Rotate Key Lambda Handler", () => {
@@ -21,6 +24,13 @@ describe("Rotate Key Lambda Handler", () => {
   let mockContext: Partial<Context>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Reset mocks to default behavior
+    mockGetECSServices.mockResolvedValue(["service1", "service2"]);
+    mockRestartServices.mockResolvedValue(undefined);
+    mockUpdateSecret.mockResolvedValue(undefined);
+
     process.env.VERIFY_SECRET_NAME = "test-secret";
     process.env.CLUSTER_NAME = "test-cluster";
 
@@ -31,22 +41,18 @@ describe("Rotate Key Lambda Handler", () => {
   it("should successfully rotate key and restart ECS services", async () => {
     const response = await handler(
       mockEvent as APIGatewayEvent,
-      mockContext as Context
+      mockContext as Context,
     );
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain("Successfully rotated the key");
   });
 
   it("should return an error if an exception occurs", async () => {
-    (SecretsManagerService as unknown as Mock).mockImplementation(() => ({
-      updateSecret: vi
-        .fn()
-        .mockRejectedValue(new Error("Secret update failed")),
-    }));
+    mockUpdateSecret.mockRejectedValueOnce(new Error("Secret update failed"));
 
     const response = await handler(
       mockEvent as APIGatewayEvent,
-      mockContext as Context
+      mockContext as Context,
     );
     expect(response.statusCode).toBe(500);
     expect(response.body).toContain("Something went wrong");

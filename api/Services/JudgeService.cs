@@ -13,7 +13,7 @@ namespace Scv.Api.Services;
 
 public interface IJudgeService
 {
-    Task<IEnumerable<PersonSearchItem>> GetJudges(List<string> positionCodes = null);
+    Task<IEnumerable<PersonSearchItem>> GetJudges(List<string> positionCodes = null, List<string> locationIds = null);
     Task<Person> GetJudge(int judgeId);
 }
 
@@ -33,11 +33,23 @@ public class JudgeService(
     public const string PUISNE_JUDGE = "PJ";
     public const string SENIOR_JUDGE = "SJ";
 
-    public async Task<IEnumerable<PersonSearchItem>> GetJudges(List<string> positionCodes = null)
+    public async Task<IEnumerable<PersonSearchItem>> GetJudges(List<string> positionCodes = null, List<string> locationIds = null)
     {
         positionCodes ??= [];
         var date = DateTime.Now.ToClientTimezone().ToString("dd-MMM-yyyy");
-        var locationsIds = (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId);
+        IEnumerable<string> locationsIds;
+        if (locationIds != null && locationIds.Count > 0)
+        {
+            locationsIds = locationIds
+                .Where(locationId => !string.IsNullOrWhiteSpace(locationId))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+        else
+        {
+            locationsIds = (await _locationService.GetLocations())
+                .Where(l => !string.IsNullOrWhiteSpace(l.LocationId))
+                .Select(l => l.LocationId);
+        }
 
         var concatenatedLocationsIds = string.Join(",", locationsIds);
         async Task<ICollection<PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, concatenatedLocationsIds, false, "");

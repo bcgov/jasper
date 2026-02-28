@@ -231,6 +231,31 @@ public class JudgeServiceTests : ServiceTestBase, IClassFixture<LocationServiceF
     }
 
     [Fact]
+    public async Task GetJudges_UsesProvidedLocationIds_WhenLocationIdsProvided()
+    {
+        var judges = CreateJudgesList(2);
+
+        _mockPersonClient
+            .Setup(c => c.GetJudicialListingAsync(
+                It.IsAny<string>(),
+                "1,2",
+                false,
+                ""))
+            .ReturnsAsync(judges);
+
+        var locationIds = new List<string> { "1", "2", " ", "1" };
+        var result = await _judgeService.GetJudges(locationIds: locationIds);
+
+        Assert.NotNull(result);
+        _mockPersonClient.Verify(c => c.GetJudicialListingAsync(
+            It.IsAny<string>(),
+            "1,2",
+            false,
+            ""), Times.Once);
+        _locationServiceFixture.VerifyGetLocationsCalled(Times.Never());
+    }
+
+    [Fact]
     public async Task GetJudges_CallsLocationServiceOnce()
     {
         var locations = CreateLocationsList(1);

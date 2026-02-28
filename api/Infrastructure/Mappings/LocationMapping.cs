@@ -36,6 +36,7 @@ public class LocationMapping : IRegister
                 src.LocationId != null ? src.LocationId.ToString() : null,
                 src.ActiveYn == "Y",
                 new List<CourtRoom>()))
+            .Map(dest => dest.RegionCd, src => src.WorkArea != null ? src.WorkArea.RegionCd : null)
             .Ignore(dest => dest.InfoLink)
             .IgnoreIf((src, dest) => src.CourtRooms == null, dest => dest.CourtRooms);
     }

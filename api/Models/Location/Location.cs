@@ -18,20 +18,22 @@ public class Location
     public bool? Active { get; set; }
     public Uri InfoLink => ParseCourtLocationUrl(Name);
     public ICollection<CourtRoom> CourtRooms { get; set; }
+    public string RegionCd { get; set; }
 
-    private Location(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms)
+    private Location(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms, string regionCd)
     {
         Name = name;
         Code = code;
         LocationId = locationId;
         Active = active;
         CourtRooms = courtRooms;
+        RegionCd = regionCd;
         // Set Name as ShortName by default
         ShortName = name;
     }
 
-    private Location(string name, string shortName, string code, string locationId, string agencyIdentifierCd, bool? active, ICollection<CourtRoom> courtRooms)
-        : this(name, code, locationId, active, courtRooms)
+    private Location(string name, string shortName, string code, string locationId, string agencyIdentifierCd, bool? active, ICollection<CourtRoom> courtRooms, string regionCd)
+        : this(name, code, locationId, active, courtRooms, regionCd)
     {
         AgencyIdentifierCd = agencyIdentifierCd;
         // When short name is not available, use the location name and make it a short name
@@ -40,7 +42,7 @@ public class Location
 
     public static Location Create(string name, string code, string locationId, bool? active, ICollection<CourtRoom> courtRooms)
     {
-        return new Location(name, code, locationId, active, courtRooms);
+        return new Location(name, code, locationId, active, courtRooms, null);
     }
 
     public static Location Create(Location jcLocation, Location pcssLocation)
@@ -52,7 +54,8 @@ public class Location
             pcssLocation?.LocationId,
             jcLocation?.Code,
             pcssLocation?.Active ?? jcLocation?.Active,
-            pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms);
+            pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms,
+            pcssLocation?.RegionCd);
     }
 
     private static Uri ParseCourtLocationUrl(string locationName)

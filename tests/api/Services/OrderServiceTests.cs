@@ -219,7 +219,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([new PersonSearchItem { PersonId = judgeId }]);
 
         orderRequestDto.Referral.SentToPartId = judgeId;
@@ -302,7 +302,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CivilFileContent { CivilFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
         orderRequestDto.Referral.SentToPartId = judgeId;
@@ -350,7 +350,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
@@ -376,7 +376,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);

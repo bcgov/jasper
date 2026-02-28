@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PCSSCommon.Models;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
@@ -18,9 +19,10 @@ public class JudgesController(IJudgeService judgeService) : ControllerBase
     /// <summary>
     /// Retrieves the list of active judge. This list only includes the following judge positions: CJ, ACJ, RAJ, PJ and SJ.
     /// </summary>
+    /// <param name="locationIds">Optional list of location ids to filter judges.</param>
     /// <returns>List of active judges.</returns>
     [HttpGet]
-    public async Task<IActionResult> GetJudges()
+    public async Task<IActionResult> GetJudges([FromQuery] List<string> locationIds = null)
     {
         if (!this.User.CanViewOthersSchedule())
         {
@@ -35,7 +37,7 @@ public class JudgesController(IJudgeService judgeService) : ControllerBase
             JudgeService.PUISNE_JUDGE,
             JudgeService.SENIOR_JUDGE
         };
-        var result = await _judgeService.GetJudges(positionCodes);
+        var result = await _judgeService.GetJudges(positionCodes, locationIds);
         return Ok(result);
     }
 }

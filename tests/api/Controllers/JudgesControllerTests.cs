@@ -38,7 +38,7 @@ public class JudgesControllerTests
         var result = await _controller.GetJudges();
 
         Assert.IsType<UnauthorizedResult>(result);
-        _mockJudgeService.Verify(s => s.GetJudges(It.IsAny<List<string>>()), Times.Never);
+        _mockJudgeService.Verify(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()), Times.Never);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class JudgesControllerTests
         var judges = CreateJudgesList(5);
 
         _mockJudgeService
-            .Setup(s => s.GetJudges(It.IsAny<List<string>>()))
+            .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .ReturnsAsync(judges);
 
         var result = await _controller.GetJudges();
@@ -187,7 +187,7 @@ public class JudgesControllerTests
         SetupUserWithPermissions(canViewOthersSchedule: true);
 
         _mockJudgeService
-            .Setup(s => s.GetJudges(It.IsAny<List<string>>()))
+            .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .ReturnsAsync((IEnumerable<PersonSearchItem>)null);
 
         var result = await _controller.GetJudges();
@@ -209,7 +209,7 @@ public class JudgesControllerTests
         var judges = CreateJudgesList(1);
 
         _mockJudgeService
-            .Setup(s => s.GetJudges(It.IsAny<List<string>>()))
+            .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .ReturnsAsync(judges);
 
         var result = await _controller.GetJudges();

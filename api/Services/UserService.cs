@@ -2,14 +2,18 @@
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.PersonServices;
+using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Models.Location;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
@@ -20,6 +24,9 @@ public interface IUserService : ICrudService<UserDto>
     Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
     Task<UserDto> GetByIdWithPermissionsAsync(string userId);
     Task<UserDto> GetByJudgeIdAsync(int judgeId);
+    Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user);
+    Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
+    Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
 }
 
 public class UserService(
@@ -29,7 +36,8 @@ public class UserService(
     IRepositoryBase<User> userRepo,
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
-    IPermissionRepository permissionRepo
+    IPermissionRepository permissionRepo,
+    LocationService locationService
 ) : CrudServiceBase<IRepositoryBase<User>, User, UserDto>(
         cache,
         mapper,
@@ -39,6 +47,7 @@ public class UserService(
     private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
     private readonly IRepositoryBase<Role> _roleRepo = roleRepo;
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
+    private readonly LocationService _locationService = locationService;
 
     public override string CacheName => "GetUsersAsync";
 
@@ -151,4 +160,118 @@ public class UserService(
 
         return Mapper.Map<UserDto>(result.Single());
     }
+
+    public async Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user)
+    {
+        if (!TryGetHomeLocationIdValue(user, out var homeLocationIdValue))
+        {
+            return [];
+        }
+
+        var homeLocations = await GetUserHomeLocations(homeLocationIdValue);
+        return await GetLocationsForPermissions(
+            user,
+            Permission.COURT_CALENDAR_ACTIVITY_REGION,
+            Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
+            homeLocationIdValue,
+            homeLocations);
+    }
+
+    public async Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user)
+    {
+        if (!TryGetHomeLocationIdValue(user, out var homeLocationIdValue))
+        {
+            return [];
+        }
+
+        var homeLocations = await GetUserHomeLocations(homeLocationIdValue);
+        return await GetLocationsForPermissions(
+            user,
+            Permission.JUDICIAL_LISTING_ACTIVITY_REGION,
+            Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+            homeLocationIdValue,
+            homeLocations);
+    }
+
+    public async Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user)
+    {
+        if (!TryGetHomeLocationIdValue(user, out var homeLocationIdValue))
+        {
+            return [];
+        }
+
+        var homeLocations = await GetUserHomeLocations(homeLocationIdValue);
+        return await GetLocationsForPermissions(
+            user,
+            Permission.ROTA_ADMIN_REGION,
+            Permission.ROTA_ADMIN_PROVINCE,
+            homeLocationIdValue,
+            homeLocations);
+    }
+
+    private async Task<List<Location>> GetLocationsForPermissions(
+        ClaimsPrincipal user,
+        string regionPermission,
+        string provincePermission,
+        string homeLocationIdValue,
+        List<Location> homeLocations)
+    {
+        var permissions = user.Permissions();
+
+        if (permissions.Contains(regionPermission))
+        {
+            return await GetUserRegionLocations(homeLocationIdValue);
+        }
+
+        if (permissions.Contains(provincePermission))
+        {
+            return (await _locationService.GetLocations()).ToList();
+        }
+
+        return homeLocations;
+    }
+
+    private async Task<List<Location>> GetUserRegionLocations(string homeLocationIdValue)
+    {
+        var locations = await _locationService.GetLocations();
+        var homeLocation = locations.FirstOrDefault(loc => loc.LocationId == homeLocationIdValue);
+        if (homeLocation == null)
+        {
+            return locations.ToList();
+        }
+
+        var regionCd = homeLocation.RegionCd;
+        if (string.IsNullOrWhiteSpace(regionCd))
+        {
+            return locations.ToList();
+        }
+
+        return locations
+            .Where(loc => !string.IsNullOrWhiteSpace(loc.RegionCd) &&
+                string.Equals(loc.RegionCd, regionCd, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private async Task<List<Location>> GetUserHomeLocations(string homeLocationIdValue)
+    {
+        var locations = await _locationService.GetLocations();
+        return locations
+            .Where(loc => loc.LocationId == homeLocationIdValue)
+            .ToList();
+    }
+
+    private static bool TryGetHomeLocationIdValue(ClaimsPrincipal user, out string homeLocationIdValue)
+    {
+        homeLocationIdValue = null;
+
+        var homeLocationId = user?.JudgeHomeLocationId();
+        if (homeLocationId == null || homeLocationId == 0)
+        {
+            return false;
+        }
+
+        homeLocationIdValue = homeLocationId.ToString();
+        return true;
+    }
+
 }

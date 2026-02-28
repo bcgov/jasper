@@ -39,6 +39,17 @@ public class JudgeService(
         var date = DateTime.Now.ToClientTimezone().ToString("dd-MMM-yyyy");
         
         var locationsIds = locationIds ?? (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId).ToList();
+        {
+            locationsIds = locationIds
+                .Where(locationId => !string.IsNullOrWhiteSpace(locationId))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+        else
+        {
+            locationsIds = (await _locationService.GetLocations())
+                .Where(l => !string.IsNullOrWhiteSpace(l.LocationId))
+                .Select(l => l.LocationId);
+        }
 
         var concatenatedLocationsIds = string.Join(",", locationsIds);
         async Task<ICollection<PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, concatenatedLocationsIds, false, "");

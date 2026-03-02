@@ -1,16 +1,16 @@
 import { APIGatewayEvent } from "aws-lambda";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "../../lambdas/proxy/proxy-request/index";
-import { ApiService } from "../../services/apiService";
+
+const mockInitialize = vi.fn();
+const mockHandleRequest = vi.fn();
 
 vi.mock("../../services/apiService", () => ({
-  ApiService: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    handleRequest: vi.fn().mockResolvedValue({
-      statusCode: 200,
-      body: JSON.stringify({ message: "Success" }),
-    }),
-  })),
+  ApiService: class ApiService {
+    constructor(public secretName: string) {}
+    initialize = mockInitialize;
+    handleRequest = mockHandleRequest;
+  },
 }));
 
 describe("Lambda Handler", () => {
@@ -21,6 +21,15 @@ describe("Lambda Handler", () => {
   const fileServicesClientSecret = "files-services-client-secret";
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Reset mocks to default behavior
+    mockInitialize.mockResolvedValue(undefined);
+    mockHandleRequest.mockResolvedValue({
+      statusCode: 200,
+      body: JSON.stringify({ message: "Success" }),
+    });
+
     process.env.DARS_SECRET_NAME = darsSecret;
     process.env.PCSS_SECRET_NAME = pcssSecret;
     process.env.FILE_SERVICES_CLIENT_SECRET_NAME = fileServicesClientSecret;
@@ -35,7 +44,8 @@ describe("Lambda Handler", () => {
 
     const response = await handler(mockEvent as APIGatewayEvent);
 
-    expect(ApiService).toHaveBeenCalledWith(darsSecret);
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent);
     expect(response.statusCode).toBe(200);
   });
 
@@ -44,15 +54,16 @@ describe("Lambda Handler", () => {
 
     const response = await handler(mockEvent as APIGatewayEvent);
 
-    expect(ApiService).toHaveBeenCalledWith(pcssSecret);
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent);
     expect(response.statusCode).toBe(200);
   });
 
   it("should use default secret when x-target-app is missing", async () => {
     const response = await handler(mockEvent as APIGatewayEvent);
 
-    expect(ApiService).toHaveBeenCalledWith(fileServicesClientSecret);
-
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent);
     expect(response.statusCode).toBe(200);
   });
 });

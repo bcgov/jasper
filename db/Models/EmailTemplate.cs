@@ -18,7 +18,7 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_RECEIVED,
-            Subject = @" <<Priority>>> Order Received for {{ location_shortname }} {{ case_file_number }}",
+            Subject = @"<{{ priority }}> Order Received for {{ location_shortname }} {{ case_file_number }}",
             Body = @"Dear Judge <b>{{ last_name }}</b>,<br /><br />
                      You have received an order for <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> on {{ date_received }}. <br /><br />
                      Other pending orders for your review:<br />
@@ -44,7 +44,7 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_REMINDER,
-            Subject = @"Reminder: Unresolved Order for {{ location_shortname }} {{ case_file_number }}",
+            Subject = @"<{{ priority }}> Order {{ location_name }} {{ case_file_number }} is still waiting to be processed.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
                      Please select the link above to review the order.<br /><br />
@@ -54,7 +54,7 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_REASSIGNMENT,
-            Subject = @"<<Priority>>> Order {{ location_shortname }} {{ case_file_number }} is overdue and has been assigned to you.",
+            Subject = @"<{{ priority }}> Order {{ location_name }} {{ case_file_number }} is overdue and has been assigned to you.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
                      Please select the link above to review the order.<br /><br />

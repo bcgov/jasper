@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PCSSCommon.Models;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
@@ -128,10 +129,10 @@ public class OrderReminderJob(
             var emailData = new
             {
                 JudgeName = GetJudgeName(judge),
-                CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo, 
-                StyleOfCause = order.OrderRequest?.CourtFile?.StyleOfCause,
-                DaysPending = daysPending,
-                LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc
+                CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
+                DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
+                LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
+                Priority = order.OrderRequest.Referral.PriorityType
             };
 
             await _emailTemplateService.SendEmailTemplateAsync(
@@ -176,7 +177,7 @@ public class OrderReminderJob(
 
             // Reassign the order to the RAJ
             order.OrderRequest.Referral.SentToPartId = raj.UserId;
-            order.OrderRequest.Referral.SentToName = GetJudgeName(raj);
+            order.OrderRequest.Referral.SentToName = GetRajName(raj);
             await _orderRepo.UpdateAsync(order);
 
             _logger.LogInformation("Order {OrderId} reassigned from judge {JudgeId} to RAJ {RajId}",
@@ -191,32 +192,32 @@ public class OrderReminderJob(
         }
     }
 
-    private async Task<Models.Person> GetRAJForJudge(Models.Person judge)
+    private async Task<PersonSearchItem> GetRAJForJudge(Models.Person judge)
     {
-        // TODO: Implement logic to find the RAJ for a given judge
-        // This might involve looking up the judge's location/region and finding the corresponding RAJ
-        // For now, returning null - this needs to be implemented based on your business logic
+        var positionCodes = new List<string>
+        {
+            JudgeService.REGIONAL_ADMIN_JUDGE,
+        };
+        var relatedRaj = await _judgeService.GetJudges(positionCodes, [judge.HomeLocationId.ToString()]);
+
+        // log if we've found more than one
         
-        _logger.LogWarning("GetRAJForJudge not yet implemented - needs business logic for judge {JudgeId}",
-            judge.UserId);
-        return null;
+        return relatedRaj.FirstOrDefault(); // Placeholder - replace with actual logic to select the correct RAJ
     }
 
-    private async Task SendReassignmentNotifications(Order order, Models.Person originalJudge, Models.Person raj)
+    private async Task SendReassignmentNotifications(Order order, Models.Person originalJudge, PersonSearchItem raj)
     {
-        var daysPending = (DateTime.UtcNow - order.Ent_Dtm).Days;
         var emailData = new
         {
-            OriginalJudgeName = GetJudgeName(originalJudge),
-            RAJName = GetJudgeName(raj),
+            JudgeName = GetRajName(raj),
             CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
-            StyleOfCause = order.OrderRequest?.CourtFile?.StyleOfCause,
-            DaysPending = daysPending,
-            LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc
+            LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
+            DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
+            Priority = order.OrderRequest.Referral.PriorityType,
         };
 
         // Send email to RAJ
-        var rajUser = await _userService.GetByJudgeIdAsync(raj.UserId.GetValueOrDefault());
+        var rajUser = await _userService.GetByJudgeIdAsync(raj.UserId);
         if (rajUser != null && !string.IsNullOrWhiteSpace(rajUser.Email))
         {
             await _emailTemplateService.SendEmailTemplateAsync(
@@ -230,10 +231,10 @@ public class OrderReminderJob(
         // Send email to product manager
         if (!string.IsNullOrWhiteSpace(_options.ProductManagerEmail))
         {
-            await _emailTemplateService.SendEmailTemplateAsync(
-                "Order Reassignment Alert",
-                _options.ProductManagerEmail,
-                emailData);
+            // await _emailTemplateService.SendEmailTemplateAsync(
+            //     "Order Reassignment Alert",
+            //     _options.ProductManagerEmail,
+            //     emailData);
             _logger.LogInformation("Reassignment alert sent to product manager for order {OrderId}", order.Id);
         }
     }
@@ -246,4 +247,6 @@ public class OrderReminderJob(
 
         return $"{latestName.FirstName} {latestName.LastName}".Trim();
     }
+    
+    private static string GetRajName(PersonSearchItem raj) => $"{raj.FirstName} {raj.LastName}".Trim();
 }

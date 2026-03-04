@@ -11,7 +11,6 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
-using Scv.Api.Models;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
@@ -66,7 +65,10 @@ public class OrderReminderJobTests : ServiceTestBase
         {
             Id = _faker.Random.Guid().ToString(),
             Status = OrderStatus.Pending,
+            SubmitStatus = SubmitStatus.Pending,
             Ent_Dtm = entryDate,
+            ReminderNotificationsSent = 0,
+            ReassignmentNotificationsSent = 0,
             OrderRequest = new OrderRequest
             {
                 CourtFile = new CourtFile
@@ -134,7 +136,7 @@ public class OrderReminderJobTests : ServiceTestBase
         
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order>());
+            .ReturnsAsync([]);
 
         await _job.Execute();
 
@@ -145,13 +147,19 @@ public class OrderReminderJobTests : ServiceTestBase
         );
     }
 
-    private void SetupConfiguration(string reminderDays, string reassignmentDays)
+    private void SetupConfiguration(string reminderDays, string reassignmentDays, string maxReminders = "1", string maxReassignments = "1")
     {
         var reminderSection = new Mock<IConfigurationSection>();
         reminderSection.Setup(s => s.Value).Returns(reminderDays);
         
         var reassignmentSection = new Mock<IConfigurationSection>();
         reassignmentSection.Setup(s => s.Value).Returns(reassignmentDays);
+        
+        var maxRemindersSection = new Mock<IConfigurationSection>();
+        maxRemindersSection.Setup(s => s.Value).Returns(maxReminders);
+        
+        var maxReassignmentsSection = new Mock<IConfigurationSection>();
+        maxReassignmentsSection.Setup(s => s.Value).Returns(maxReassignments);
         
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REMINDER_THRESHOLD_DAYS"))
@@ -160,6 +168,14 @@ public class OrderReminderJobTests : ServiceTestBase
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REASSIGNMENT_THRESHOLD_DAYS"))
             .Returns(reassignmentSection.Object);
+        
+        _mockConfiguration
+            .Setup(c => c.GetSection("ORDER_MAX_REMINDER_NOTIFICATIONS"))
+            .Returns(maxRemindersSection.Object);
+        
+        _mockConfiguration
+            .Setup(c => c.GetSection("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"))
+            .Returns(maxReassignmentsSection.Object);
     }
 
     [Fact]
@@ -175,7 +191,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -192,6 +208,10 @@ public class OrderReminderJobTests : ServiceTestBase
                 It.IsAny<object>()))
             .Returns(Task.CompletedTask);
 
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
         await _job.Execute();
 
         _mockEmailTemplateService.Verify(
@@ -205,6 +225,11 @@ public class OrderReminderJobTests : ServiceTestBase
                     obj.GetType().GetProperty("LocationName") != null &&
                     obj.GetType().GetProperty("Priority") != null
                 )),
+            Times.Once
+        );
+
+        _mockOrderRepo.Verify(
+            r => r.UpdateAsync(It.Is<Order>(o => o.ReminderNotificationsSent == 1)),
             Times.Once
         );
     }
@@ -224,7 +249,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -234,7 +259,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.Is<List<string>>(l => l.Contains("RAJ")),
                 It.Is<List<string>>(l => l.Contains("123"))))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -257,7 +282,12 @@ public class OrderReminderJobTests : ServiceTestBase
             r => r.UpdateAsync(It.Is<Order>(o => 
                 o.OrderRequest.Referral.SentToPartId == rajId &&
                 o.OrderRequest.Referral.SentToName == $"{raj.FirstName} {raj.LastName}".Trim())),
-            Times.Once
+            Times.AtLeastOnce
+        );
+
+        _mockOrderRepo.Verify(
+            r => r.UpdateAsync(It.IsAny<Order>()),
+            Times.Exactly(2)
         );
 
         _mockEmailTemplateService.Verify(
@@ -281,7 +311,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         await Assert.ThrowsAsync<Scv.Api.Helpers.Exceptions.ConfigurationException>(async () =>
         {
@@ -304,7 +334,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         await _job.Execute();
 
@@ -326,7 +356,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -353,7 +383,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -384,7 +414,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -423,7 +453,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -476,7 +506,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -486,7 +516,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem>());
+            .ReturnsAsync([]);
 
         await _job.Execute();
 
@@ -512,7 +542,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -522,7 +552,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.Is<List<string>>(l => l.Contains("RAJ")),
                 It.Is<List<string>>(l => l.Contains(judge.HomeLocationId.ToString()))))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -546,7 +576,7 @@ public class OrderReminderJobTests : ServiceTestBase
             r => r.UpdateAsync(It.Is<Order>(o => 
                 o.OrderRequest.Referral.SentToPartId == rajId &&
                 o.OrderRequest.Referral.SentToName == expectedRajName)),
-            Times.Once
+            Times.AtLeastOnce
         );
     }
 
@@ -565,7 +595,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -575,7 +605,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -623,7 +653,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -633,7 +663,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -667,7 +697,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -677,7 +707,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -690,6 +720,52 @@ public class OrderReminderJobTests : ServiceTestBase
         await _job.Execute();
 
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Once);
+        _mockEmailTemplateService.Verify(
+            e => e.SendEmailTemplateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Execute_SendReminder_SkipsWhenMaxRemindersReached()
+    {
+        SetupConfiguration("5", "10", "2", "1");
+        
+        var judgeId = 101;
+        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var order = CreateTestOrder(judgeId, reminderDate);
+        order.ReminderNotificationsSent = 2; // Already at max
+
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+
+        await _job.Execute();
+
+        _mockJudgeService.Verify(j => j.GetJudge(It.IsAny<int>()), Times.Never);
+        _mockEmailTemplateService.Verify(
+            e => e.SendEmailTemplateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Execute_ReassignOrder_SkipsWhenMaxReassignmentsReached()
+    {
+        SetupConfiguration("5", "10", "1", "2");
+        
+        var judgeId = 101;
+        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var order = CreateTestOrder(judgeId, reassignmentDate);
+        order.ReassignmentNotificationsSent = 2; // Already at max
+
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+
+        await _job.Execute();
+
+        _mockJudgeService.Verify(j => j.GetJudge(It.IsAny<int>()), Times.Never);
         _mockEmailTemplateService.Verify(
             e => e.SendEmailTemplateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()),
             Times.Never
@@ -713,7 +789,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -723,7 +799,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem>());
+            .ReturnsAsync([]);
 
         await _job.Execute();
 
@@ -752,7 +828,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -762,7 +838,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem> { raj1, raj2 });
+            .ReturnsAsync([raj1, raj2]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(raj1Id))
@@ -783,7 +859,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.Is<Order>(o => o.OrderRequest.Referral.SentToPartId == raj1Id)),
-            Times.Once
+            Times.AtLeastOnce
         );
     }
 
@@ -805,7 +881,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -847,7 +923,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order });
+            .ReturnsAsync([order]);
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
@@ -857,7 +933,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -878,7 +954,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.Is<Order>(o => o.OrderRequest.Referral.SentToName == "John Doe")),
-            Times.Once
+            Times.AtLeastOnce
         );
     }
 
@@ -901,7 +977,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order1, order2 });
+            .ReturnsAsync([order1, order2]);
 
         // First judge throws exception
         _mockJudgeService
@@ -952,7 +1028,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
-            .ReturnsAsync(new List<Order> { order1, order2 });
+            .ReturnsAsync([order1, order2]);
 
         // First judge throws exception
         _mockJudgeService
@@ -968,7 +1044,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(j => j.GetJudges(
                 It.IsAny<List<string>>(),
                 It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem> { raj });
+            .ReturnsAsync([raj]);
 
         _mockUserService
             .Setup(u => u.GetByJudgeIdAsync(rajId))
@@ -989,7 +1065,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.Is<Order>(o => o.Id == order2.Id)),
-            Times.Once
+            Times.AtLeastOnce
         );
     }
 

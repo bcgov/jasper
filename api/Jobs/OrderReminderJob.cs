@@ -41,7 +41,7 @@ public class OrderReminderJob(
         _logger.LogInformation("Starting order reminder job");
 
         // Retrieve only orders that have not been processed and are pending submission
-        var unresolvedOrders = await _orderRepo.FindAsync(o => o.Status == OrderStatus.Unapproved && o.SubmitStatus == SubmitStatus.Pending);
+        var unresolvedOrders = await _orderRepo.FindAsync(o => o.Status == OrderStatus.Pending && o.SubmitStatus == SubmitStatus.Pending);
         if (unresolvedOrders == null || !unresolvedOrders.Any())
         {
             _logger.LogInformation("No unresolved orders found");
@@ -52,12 +52,23 @@ public class OrderReminderJob(
             ? reminderDays : 5;
         var reassignmentThresholdDays = int.TryParse(_configuration.GetNonEmptyValue("ORDER_REASSIGNMENT_THRESHOLD_DAYS"), out var reassignDays) 
             ? reassignDays : 10;
+        var maxReminderNotifications = int.TryParse(_configuration.GetNonEmptyValue("ORDER_MAX_REMINDER_NOTIFICATIONS"), out var maxReminders) 
+            ? maxReminders : 1;
+        var maxReassignmentNotifications = int.TryParse(_configuration.GetNonEmptyValue("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"), out var maxReassignments) 
+            ? maxReassignments : 1;
 
         var reminderFromNow = DateTime.UtcNow.AddDays(-reminderThresholdDays);
         var reassignmentFromNow = DateTime.UtcNow.AddDays(-reassignmentThresholdDays);
 
-        var ordersNeedingReminder = unresolvedOrders.Where(o => o.Ent_Dtm <= reminderFromNow && o.Ent_Dtm > reassignmentFromNow).ToList();
-        var ordersNeedingReassignment = unresolvedOrders.Where(o => o.Ent_Dtm <= reassignmentFromNow).ToList();
+        var ordersNeedingReminder = unresolvedOrders
+            .Where(o => o.Ent_Dtm <= reminderFromNow && 
+                       o.Ent_Dtm > reassignmentFromNow && 
+                       o.ReminderNotificationsSent < maxReminderNotifications)
+            .ToList();
+        var ordersNeedingReassignment = unresolvedOrders
+            .Where(o => o.Ent_Dtm <= reassignmentFromNow && 
+                       o.ReassignmentNotificationsSent < maxReassignmentNotifications)
+            .ToList();
 
         _logger.LogInformation(
             "Found {ReminderCount} orders needing reminders and {ReassignCount} orders needing reassignment",
@@ -87,7 +98,11 @@ public class OrderReminderJob(
                 user.Email,
                 emailData);
 
-            _logger.LogInformation("Reminder sent to judge {JudgeId} for order {OrderId}", user.JudgeId, order.Id);
+            order.ReminderNotificationsSent++;
+            await _orderRepo.UpdateAsync(order);
+
+            _logger.LogInformation("Reminder sent to judge {JudgeId} for order {OrderId} (count: {Count})", 
+                user.JudgeId, order.Id, order.ReminderNotificationsSent);
         }
         catch (Exception ex)
         {
@@ -146,8 +161,11 @@ public class OrderReminderJob(
             rajUser.Email,
             emailData);
         
-        _logger.LogInformation("Reassignment notification sent to RAJ {RajId} for order {OrderId}",
-            raj.UserId, order.Id);
+        order.ReassignmentNotificationsSent++;
+        await _orderRepo.UpdateAsync(order);
+        
+        _logger.LogInformation("Reassignment notification sent to RAJ {RajId} for order {OrderId} (count: {Count})",
+            raj.UserId, order.Id, order.ReassignmentNotificationsSent);
     }
 
     private async Task<(Models.Person judge, Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)

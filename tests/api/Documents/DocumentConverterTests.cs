@@ -18,6 +18,7 @@ using tests.api.Services;
 using Xunit;
 
 namespace tests.api.Documents;
+
 public class DocumentConverterTests : ServiceTestBase
 {
     private readonly Faker _faker;
@@ -87,6 +88,10 @@ public class DocumentConverterTests : ServiceTestBase
                 }
             ],
         };
+
+        _mockLookupService
+            .Setup(s => s.GetDocumentCategory(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync("ROP");
 
         var documentConverter = new DocumentConverter(_mapper, _mockLookupService.Object);
         var result = await documentConverter.GetCriminalDocuments(mockAccussedFile);

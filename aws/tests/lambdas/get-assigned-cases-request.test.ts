@@ -1,19 +1,24 @@
 import { Context } from "aws-lambda";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "../../lambdas/proxy/get-assigned-cases-request/index";
-import { AssignedCasesService } from "../../services/assignedCasesService";
 import {
   Case,
   GetAssignedCasesRequest,
   GetAssignedCasesResponse,
 } from "../../types/get-assigned-cases";
 
-vi.mock("../../services/assignedCasesService");
+const mockInitialize = vi.fn();
+const mockGetAssignedCases = vi.fn();
+
+vi.mock("../../services/assignedCasesService", () => ({
+  AssignedCasesService: class AssignedCasesService {
+    initialize = mockInitialize;
+    getAssignedCases = mockGetAssignedCases;
+  },
+}));
 
 describe("Get Assigned Cases Request Lambda Handler", () => {
   let mockContext: Partial<Context>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockAssignedCasesService: any;
   const mockCallback = vi.fn();
 
   const mockCases: Case[] = [
@@ -58,19 +63,18 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Reset mocks to default behavior
+    mockInitialize.mockResolvedValue(undefined);
+    mockGetAssignedCases.mockResolvedValue({
+      success: true,
+      data: [],
+      message: "Default response",
+    });
+
     mockContext = {
       invokedFunctionArn: "arn:aws:lambda:us-west-2:123456789012:function:test",
       awsRequestId: "test-request-id",
     };
-
-    mockAssignedCasesService = {
-      initialize: vi.fn().mockResolvedValue(undefined),
-      getAssignedCases: vi.fn(),
-    };
-
-    vi.mocked(AssignedCasesService).mockImplementation(
-      () => mockAssignedCasesService
-    );
   });
 
   it("should successfully retrieve assigned cases", async () => {
@@ -85,18 +89,16 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
       message: `Retrieved ${mockCases.length} scheduled cases`,
     };
 
-    mockAssignedCasesService.getAssignedCases.mockResolvedValue(mockResponse);
+    mockGetAssignedCases.mockResolvedValue(mockResponse);
 
     const result = await handler(
       mockRequest,
       mockContext as Context,
-      mockCallback
+      mockCallback,
     );
 
-    expect(mockAssignedCasesService.initialize).toHaveBeenCalledTimes(1);
-    expect(mockAssignedCasesService.getAssignedCases).toHaveBeenCalledWith(
-      mockRequest
-    );
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockGetAssignedCases).toHaveBeenCalledWith(mockRequest);
     expect(result).toEqual(mockResponse);
 
     const { success, data } = result as GetAssignedCasesResponse;
@@ -113,18 +115,16 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
       message: "Retrieved 0 scheduled cases",
     };
 
-    mockAssignedCasesService.getAssignedCases.mockResolvedValue(mockResponse);
+    mockGetAssignedCases.mockResolvedValue(mockResponse);
 
     const result = await handler(
       mockRequest,
       mockContext as Context,
-      mockCallback
+      mockCallback,
     );
 
-    expect(mockAssignedCasesService.initialize).toHaveBeenCalledTimes(1);
-    expect(mockAssignedCasesService.getAssignedCases).toHaveBeenCalledWith(
-      mockRequest
-    );
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockGetAssignedCases).toHaveBeenCalledWith(mockRequest);
     expect(result).toEqual(mockResponse);
     const { success, data } = result as GetAssignedCasesResponse;
     expect(success).toBe(true);
@@ -136,16 +136,14 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
       reasons: "Trial",
     };
 
-    mockAssignedCasesService.initialize.mockRejectedValue(
-      new Error("Failed to initialize service")
-    );
+    mockInitialize.mockRejectedValue(new Error("Failed to initialize service"));
 
     await expect(
-      handler(mockRequest, mockContext as Context, mockCallback)
+      handler(mockRequest, mockContext as Context, mockCallback),
     ).rejects.toThrow("Failed to initialize service");
 
-    expect(mockAssignedCasesService.initialize).toHaveBeenCalledTimes(1);
-    expect(mockAssignedCasesService.getAssignedCases).not.toHaveBeenCalled();
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockGetAssignedCases).not.toHaveBeenCalled();
   });
 
   it("should handle API failure gracefully", async () => {
@@ -161,20 +159,16 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
       error: "Connection timeout",
     };
 
-    mockAssignedCasesService.getAssignedCases.mockResolvedValue(
-      mockErrorResponse
-    );
+    mockGetAssignedCases.mockResolvedValue(mockErrorResponse);
 
     const result = await handler(
       mockRequest,
       mockContext as Context,
-      mockCallback
+      mockCallback,
     );
 
-    expect(mockAssignedCasesService.initialize).toHaveBeenCalledTimes(1);
-    expect(mockAssignedCasesService.getAssignedCases).toHaveBeenCalledWith(
-      mockRequest
-    );
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockGetAssignedCases).toHaveBeenCalledWith(mockRequest);
     expect(result).toEqual(mockErrorResponse);
     const { success, data } = result as GetAssignedCasesResponse;
     expect(success).toBe(false);
@@ -186,18 +180,14 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
       reasons: "Trial",
     };
 
-    mockAssignedCasesService.getAssignedCases.mockRejectedValue(
-      new Error("Network error")
-    );
+    mockGetAssignedCases.mockRejectedValue(new Error("Network error"));
 
     await expect(
-      handler(mockRequest, mockContext as Context, mockCallback)
+      handler(mockRequest, mockContext as Context, mockCallback),
     ).rejects.toThrow("Network error");
 
-    expect(mockAssignedCasesService.initialize).toHaveBeenCalledTimes(1);
-    expect(mockAssignedCasesService.getAssignedCases).toHaveBeenCalledWith(
-      mockRequest
-    );
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockGetAssignedCases).toHaveBeenCalledWith(mockRequest);
   });
 
   it("should pass through all request parameters correctly", async () => {
@@ -212,11 +202,11 @@ describe("Get Assigned Cases Request Lambda Handler", () => {
       message: `Retrieved ${mockCases.length} scheduled cases`,
     };
 
-    mockAssignedCasesService.getAssignedCases.mockResolvedValue(mockResponse);
+    mockGetAssignedCases.mockResolvedValue(mockResponse);
 
     await handler(mockRequest, mockContext as Context, mockCallback);
 
-    expect(mockAssignedCasesService.getAssignedCases).toHaveBeenCalledWith({
+    expect(mockGetAssignedCases).toHaveBeenCalledWith({
       reasons: "Trial,Hearing,Motion",
       restrictions: "Criminal,Civil",
     });

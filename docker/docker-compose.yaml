@@ -35,6 +35,7 @@ services:
   api:
     image: '${COMPOSE_PROJECT_NAME}-api'
     environment:
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
       - Auth__AllowSiteMinderUserType=${ALLOW_SITE_MINDER_USER_TYPE}
       - Auth__UserId=${USER_ID}

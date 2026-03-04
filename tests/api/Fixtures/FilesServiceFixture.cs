@@ -40,7 +40,6 @@ public class FilesServiceFixture : IDisposable
     public Mock<ILoggerFactory> MockLoggerFactory { get; }
     public Mock<ILogger<CivilFilesService>> MockCivilLogger { get; }
     public Mock<IDocumentConverter> MockDocumentConverter { get; }
-    public Mock<IBinderService> MockBinderService { get; }
     public IAppCache Cache { get; }
     public IMapper Mapper { get; }
     public ClaimsPrincipal Principal { get; private set; }
@@ -96,7 +95,6 @@ public class FilesServiceFixture : IDisposable
         // Client and service mocks
         MockFileServicesClient = new Mock<FileServicesClient>(MockBehavior.Strict, _httpClient);
         MockDocumentConverter = new Mock<IDocumentConverter>();
-        MockBinderService = new Mock<IBinderService>();
 
         // Logger setup
         MockLoggerFactory = new Mock<ILoggerFactory>();
@@ -166,8 +164,7 @@ public class FilesServiceFixture : IDisposable
             Cache,
             Principal,
             MockLoggerFactory.Object,
-            MockDocumentConverter.Object,
-            MockBinderService.Object);
+            MockDocumentConverter.Object);
     }
 
     public FilesServiceFixture WithPrincipal(ClaimsPrincipal principal)
@@ -208,7 +205,6 @@ public class FilesServiceFixture : IDisposable
         MockLookupService.Reset();
         MockLocationService.Reset();
         MockDocumentConverter.Reset();
-        MockBinderService.Reset();
     }
 
     public void Dispose()

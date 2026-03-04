@@ -219,22 +219,22 @@ namespace Scv.Api.Services.Files
                 // Call CourtList to get Party alias for Small Claims when case detail has an appearance.
                 // Division Code, File Number and CourtLevel params appears to be not working and may introduce performance issues
                 // because the endpoint returns all court list data.
-                var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
-                if (latestApprearance != null)
-                {
-                    var agencyId = await _locationService.GetLocationAgencyIdentifier(latestApprearance.CourtAgencyId);
-                    var courtList = await _filesClient.FilesCourtlistAsync(
-                        _requestAgencyIdentifierId,
-                        _requestPartId,
-                        _applicationCode,
-                        agencyId,
-                        latestApprearance.CourtRoomCd,
-                        latestApprearance.AppearanceDt,
-                        "CV",
-                        detail.FileNumberTxt);
-                    var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
-                    courtListParties = civilCourtListFileDetail?.Parties ?? [];
-                }
+                //var latestApprearance = detail.Appearances.ApprDetail.OrderByDescending(a => a.AppearanceDt).FirstOrDefault();
+                //if (latestApprearance != null)
+                //{
+                //    var agencyId = await _locationService.GetLocationAgencyIdentifier(latestApprearance.CourtAgencyId);
+                //    var courtList = await _filesClient.FilesCourtlistAsync(
+                //        _requestAgencyIdentifierId,
+                //        _requestPartId,
+                //        _applicationCode,
+                //        agencyId,
+                //        latestApprearance.CourtRoomCd,
+                //        latestApprearance.AppearanceDt,
+                //        "CV",
+                //        detail.FileNumberTxt);
+                //    var civilCourtListFileDetail = courtList.CivilCourtList.FirstOrDefault(c => c.PhysicalFile.PhysicalFileID == detail.PhysicalFileId);
+                //    courtListParties = civilCourtListFileDetail?.Parties ?? [];
+                //}
             }
 
             var fileContentCivilFile = fileContentTask.Result?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
@@ -304,10 +304,10 @@ namespace Scv.Api.Services.Files
 
             if (agencyId != null)
             {
-                async Task<CourtList> CourtList() => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, targetAppearance.CourtRoomCd, targetAppearance.AppearanceDt, "CV", detail.FileNumberTxt);
-                var courtListTask = _cache.GetOrAddAsync($"CivilCourtList-{agencyId}-{targetAppearance.CourtRoomCd}-{targetAppearance.AppearanceDt}-{detail.FileNumberTxt}-{_requestAgencyIdentifierId}", CourtList);
-                var courtList = await courtListTask;
-                civilCourtList = courtList.CivilCourtList.FirstOrDefault(cl => cl.AppearanceId == appearanceId);
+                //async Task<CourtList> CourtList() => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, targetAppearance.CourtRoomCd, targetAppearance.AppearanceDt, "CV", detail.FileNumberTxt);
+                //var courtListTask = _cache.GetOrAddAsync($"CivilCourtList-{agencyId}-{targetAppearance.CourtRoomCd}-{targetAppearance.AppearanceDt}-{detail.FileNumberTxt}-{_requestAgencyIdentifierId}", CourtList);
+                //var courtList = await courtListTask;
+                //civilCourtList = courtList.CivilCourtList.FirstOrDefault(cl => cl.AppearanceId == appearanceId);
             }
 
             var parties = await PopulateDetailedAppearancePartiesAsync(appearancePartyTask.Result.Party, civilCourtList?.Parties);

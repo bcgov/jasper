@@ -14,7 +14,7 @@ public class BinderDocumentDto
     /// Zero-based integer to determine how BinderDocuments are sorted
     /// </summary>
     public int Order { get; set; }
-    public DocumentType DocumentType { get; set; }
+    public DocumentType? DocumentType { get; set; }
 
     // Criminal-specific fields
     public int? DocumentPageCount { get; set; }

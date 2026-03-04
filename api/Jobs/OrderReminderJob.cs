@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -41,8 +40,8 @@ public class OrderReminderJob(
     {
         _logger.LogInformation("Starting order reminder job");
 
-        // Find all unresolved orders
-        var unresolvedOrders = await _orderRepo.FindAsync(o => o.Status == OrderStatus.Pending); // check this
+        // Retrieve only orders that have not been processed and are pending submission
+        var unresolvedOrders = await _orderRepo.FindAsync(o => o.Status == OrderStatus.Unapproved && o.SubmitStatus == SubmitStatus.Pending);
         if (unresolvedOrders == null || !unresolvedOrders.Any())
         {
             _logger.LogInformation("No unresolved orders found");
@@ -50,45 +49,26 @@ public class OrderReminderJob(
         }
 
         var reminderThresholdDays = int.TryParse(_configuration.GetNonEmptyValue("ORDER_REMINDER_THRESHOLD_DAYS"), out var reminderDays) 
-            ? reminderDays 
-            : 5;
+            ? reminderDays : 5;
         var reassignmentThresholdDays = int.TryParse(_configuration.GetNonEmptyValue("ORDER_REASSIGNMENT_THRESHOLD_DAYS"), out var reassignDays) 
-            ? reassignDays 
-            : 10;
+            ? reassignDays : 10;
 
-        var ordersNeedingReminder = new List<Order>();
-        var ordersNeedingReassignment = new List<Order>();
         var reminderFromNow = DateTime.UtcNow.AddDays(-reminderThresholdDays);
         var reassignmentFromNow = DateTime.UtcNow.AddDays(-reassignmentThresholdDays);
 
-        foreach (var order in unresolvedOrders)
-        {
-            if (order.Ent_Dtm <= reassignmentFromNow)
-            {
-                ordersNeedingReassignment.Add(order);
-            }
-            else if (order.Ent_Dtm <= reminderFromNow)
-            {
-                ordersNeedingReminder.Add(order);
-            }
-        }
+        var ordersNeedingReminder = unresolvedOrders.Where(o => o.Ent_Dtm <= reminderFromNow && o.Ent_Dtm > reassignmentFromNow).ToList();
+        var ordersNeedingReassignment = unresolvedOrders.Where(o => o.Ent_Dtm <= reassignmentFromNow).ToList();
 
         _logger.LogInformation(
             "Found {ReminderCount} orders needing reminders and {ReassignCount} orders needing reassignment",
             ordersNeedingReminder.Count,
             ordersNeedingReassignment.Count);
 
-        // Process reminders
         foreach (var order in ordersNeedingReminder)
-        {
             await SendReminderToJudge(order);
-        }
 
-        // Process reassignments
         foreach (var order in ordersNeedingReassignment)
-        {
             await ReassignOrderToRAJ(order);
-        }
 
         _logger.LogInformation("Order reminder job completed");
     }
@@ -97,50 +77,17 @@ public class OrderReminderJob(
     {
         try
         {
-            var judgeId = order.OrderRequest?.Referral?.SentToPartId;
-            if (!judgeId.HasValue)
-            {
-                _logger.LogWarning("Cannot send reminder - no judge assigned to order {OrderId}", order.Id);
-                return;
-            }
+            var (judge, user) = await GetJudgeAndUserAsync(order);
+            if (judge == null || user == null) return;
 
-            var judge = await _judgeService.GetJudge(judgeId.Value);
-            if (judge == null)
-            {
-                _logger.LogWarning("Judge with id {JudgeId} not found for order {OrderId}", judgeId.Value, order.Id);
-                return;
-            }
-
-            var databaseUser = await _userService.GetByJudgeIdAsync(judgeId.Value);
-            if (databaseUser == null)
-            {
-                _logger.LogWarning("No judge found for judge {JudgeId} for order {OrderId}",
-                    judgeId.Value, order.Id);
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(databaseUser.Email))
-            {
-                _logger.LogWarning("No email found for judge {JudgeId} for order {OrderId}",
-                    judgeId.Value, order.Id);
-                return;
-            }
-
-            var daysPending = (DateTime.UtcNow - order.Ent_Dtm).Days;
-            var emailData = new
-            {
-                JudgeName = GetJudgeName(judge),
-                CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
-                DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
-                LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
-                Priority = order.OrderRequest.Referral.PriorityType
-            };
+            var emailData = CreateEmailData(order, GetJudgeName(judge));
 
             await _emailTemplateService.SendEmailTemplateAsync(
                 "Order Reminder",
-                databaseUser.Email,
+                user.Email,
                 emailData);
 
-            _logger.LogInformation("Reminder sent to judge {JudgeId} for order {OrderId}", judgeId.Value, order.Id);
+            _logger.LogInformation("Reminder sent to judge {JudgeId} for order {OrderId}", user.JudgeId, order.Id);
         }
         catch (Exception ex)
         {
@@ -152,39 +99,25 @@ public class OrderReminderJob(
     {
         try
         {
-            var judgeId = order.OrderRequest?.Referral?.SentToPartId;
-            if (!judgeId.HasValue)
-            {
-                _logger.LogWarning("Cannot reassign - no judge assigned to order {OrderId}", order.Id);
-                return;
-            }
+            var (judge, _) = await GetJudgeAndUserAsync(order);
+            if (judge == null) return;
 
-            var judge = await _judgeService.GetJudge(judgeId.Value);
-            if (judge == null)
-            {
-                _logger.LogWarning("Judge with id {JudgeId} not found for order {OrderId}", judgeId.Value, order.Id);
-                return;
-            }
-
-            // Get the judge's RAJ (Regional Administrative Judge)
             var raj = await GetRAJForJudge(judge);
             if (raj == null)
             {
                 _logger.LogWarning("No RAJ found for judge {JudgeId} for order {OrderId}",
-                    judgeId.Value, order.Id);
+                    order.OrderRequest.Referral.SentToPartId, order.Id);
                 return;
             }
 
-            // Reassign the order to the RAJ
             order.OrderRequest.Referral.SentToPartId = raj.UserId;
             order.OrderRequest.Referral.SentToName = GetRajName(raj);
             await _orderRepo.UpdateAsync(order);
 
             _logger.LogInformation("Order {OrderId} reassigned from judge {JudgeId} to RAJ {RajId}",
-                order.Id, judgeId.Value, raj.UserId);
+                order.Id, judge.UserId, raj.UserId);
 
-            // Send notification emails
-            await SendReassignmentNotifications(order, judge, raj);
+            await SendReassignmentNotifications(order, raj);
         }
         catch (Exception ex)
         {
@@ -194,50 +127,63 @@ public class OrderReminderJob(
 
     private async Task<PersonSearchItem> GetRAJForJudge(Models.Person judge)
     {
-        var positionCodes = new List<string>
-        {
-            JudgeService.REGIONAL_ADMIN_JUDGE,
-        };
-        var relatedRaj = await _judgeService.GetJudges(positionCodes, [judge.HomeLocationId.ToString()]);
-
-        // log if we've found more than one
+        var relatedRaj = await _judgeService.GetJudges(
+            [JudgeService.REGIONAL_ADMIN_JUDGE],
+            [judge.HomeLocationId.ToString()]);
         
-        return relatedRaj.FirstOrDefault(); // Placeholder - replace with actual logic to select the correct RAJ
+        return relatedRaj.FirstOrDefault();
     }
 
-    private async Task SendReassignmentNotifications(Order order, Models.Person originalJudge, PersonSearchItem raj)
+    private async Task SendReassignmentNotifications(Order order, PersonSearchItem raj)
     {
-        var emailData = new
-        {
-            JudgeName = GetRajName(raj),
-            CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
-            LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
-            DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
-            Priority = order.OrderRequest.Referral.PriorityType,
-        };
-
-        // Send email to RAJ
         var rajUser = await _userService.GetByJudgeIdAsync(raj.UserId);
-        if (rajUser != null && !string.IsNullOrWhiteSpace(rajUser.Email))
+        if (rajUser == null || string.IsNullOrWhiteSpace(rajUser.Email)) return;
+
+        var emailData = CreateEmailData(order, GetRajName(raj));
+
+        await _emailTemplateService.SendEmailTemplateAsync(
+            "Order Reassignment",
+            rajUser.Email,
+            emailData);
+        
+        _logger.LogInformation("Reassignment notification sent to RAJ {RajId} for order {OrderId}",
+            raj.UserId, order.Id);
+    }
+
+    private async Task<(Models.Person judge, Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)
+    {
+        var judgeId = order.OrderRequest?.Referral?.SentToPartId;
+        if (!judgeId.HasValue)
         {
-            await _emailTemplateService.SendEmailTemplateAsync(
-                "Order Reassignment",
-                rajUser.Email,
-                emailData);
-            _logger.LogInformation("Reassignment notification sent to RAJ {RajId} for order {OrderId}",
-                raj.UserId, order.Id);
+            _logger.LogWarning("No judge assigned to order {OrderId}", order.Id);
+            return (null, null);
         }
 
-        // Send email to product manager
-        if (!string.IsNullOrWhiteSpace(_options.ProductManagerEmail))
+        var judge = await _judgeService.GetJudge(judgeId.Value);
+        if (judge == null)
         {
-            // await _emailTemplateService.SendEmailTemplateAsync(
-            //     "Order Reassignment Alert",
-            //     _options.ProductManagerEmail,
-            //     emailData);
-            _logger.LogInformation("Reassignment alert sent to product manager for order {OrderId}", order.Id);
+            _logger.LogWarning("Judge {JudgeId} not found for order {OrderId}", judgeId.Value, order.Id);
+            return (null, null);
         }
+
+        var user = await _userService.GetByJudgeIdAsync(judgeId.Value);
+        if (user == null || string.IsNullOrWhiteSpace(user.Email))
+        {
+            _logger.LogWarning("No valid user/email for judge {JudgeId} for order {OrderId}", judgeId.Value, order.Id);
+            return (judge, null);
+        }
+
+        return (judge, user);
     }
+
+    private static object CreateEmailData(Order order, string judgeName) => new
+    {
+        JudgeName = judgeName,
+        CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
+        DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
+        LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
+        Priority = order.OrderRequest.Referral.PriorityType
+    };
 
     private static string GetJudgeName(Models.Person judge)
     {

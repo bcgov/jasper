@@ -90,7 +90,9 @@ public class SendOrderNotificationJob(
             ReferralNotes = order.Referral?.ReferralNotesTxt,
             ReferredBy = order.Referral?.ReferredByName,
             LocationShortname = order.CourtFile?.CourtLocationDesc,
-            LocationName = order.CourtFile?.CourtLocationDesc
+            LocationName = order.CourtFile?.CourtLocationDesc,
+            Priority = order.Referral.PriorityType,
+            DateReceieved = DateTime.UtcNow.ToString("MMMM dd, yyyy"),
         };
 
         await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);

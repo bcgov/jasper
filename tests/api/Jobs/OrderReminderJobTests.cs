@@ -992,4 +992,6 @@ public class OrderReminderJobTests : ServiceTestBase
             Times.Once
         );
     }
+
+    #endregion
 }

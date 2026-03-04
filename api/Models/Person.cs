@@ -7,7 +7,7 @@ public class Person
 {
     public int? Id { get; set; }
     public int? UserId { get; set; }
-    public int? ParticipantId { get; set; }
+    public double? ParticipantId { get; set; }
     public int? HomeLocationId { get; set; }
     public string HomeLocationName { get; set; }
     public string GenderTypeCode { get; set; }

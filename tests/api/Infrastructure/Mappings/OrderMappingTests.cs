@@ -152,6 +152,26 @@ public class OrderMappingTests
         Assert.Null(result.Upd_UserId);
     }
 
+    [Fact]
+    public void OrderDto_To_Order_DoesNotSetReminderNotificationsSent()
+    {
+        var orderDto = CreateOrderDto();
+
+        var result = orderDto.Adapt<Order>(_config);
+
+        Assert.Equal(0, result.ReminderNotificationsSent);
+    }
+
+    [Fact]
+    public void OrderDto_To_Order_DoesNotSetReassignmentNotificationsSent()
+    {
+        var orderDto = CreateOrderDto();
+
+        var result = orderDto.Adapt<Order>(_config);
+
+        Assert.Equal(0, result.ReassignmentNotificationsSent);
+    }
+
     #endregion
 
     #region OrderReviewDto -> OrderDto Mapping Tests
@@ -397,7 +417,9 @@ public class OrderMappingTests
             Ent_Dtm = _faker.Date.Past(),
             Upd_Dtm = _faker.Date.Recent(),
             Ent_UserId = _faker.Random.AlphaNumeric(10),
-            Upd_UserId = _faker.Random.AlphaNumeric(10)
+            Upd_UserId = _faker.Random.AlphaNumeric(10),
+            ReminderNotificationsSent = _faker.Random.Int(0, 10),
+            ReassignmentNotificationsSent = _faker.Random.Int(0, 10)
         };
     }
 

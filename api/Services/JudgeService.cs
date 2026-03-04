@@ -59,14 +59,4 @@ public class JudgeService(
         var jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(judge);
         return Newtonsoft.Json.JsonConvert.DeserializeObject<Person>(jsonString);
     }
-
-    // Do we need this? What about GetJudicialListingAsync ?
-    // public async Task<Person> GetJudges(string locationIds)
-    // {
-    //     var judges = await _personClient.GetJudgesAsync(false, false, locationIds, null);
-    //     var jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(judges);
-
-    //     // Probably needs another return type
-    //     return Newtonsoft.Json.JsonConvert.DeserializeObject<Person>(jsonString);
-    // }
 }

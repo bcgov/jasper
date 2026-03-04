@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DnsClient.Internal;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.AspNetCore.WebUtilities;
@@ -15,6 +14,7 @@ using Scv.Api.Documents;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models;
+using Scv.Api.Models.Binder;
 using Scv.Api.Models.Document;
 using Scv.Api.Processors;
 using Scv.Db.Contants;
@@ -27,6 +27,8 @@ public interface IBinderService : ICrudService<BinderDto>
 {
     Task<OperationResult<List<BinderDto>>> GetByLabels(Dictionary<string, string> labels);
     Task<OperationResult<DocumentBundleResponse>> CreateDocumentBundle(List<Dictionary<string, string>> contexts, Dictionary<string, List<string>> filters = null);
+    Task<List<BinderDto>> SearchBinders(SearchBindersCriteria criteria = null);
+    Task<OperationResult<BinderDto>> InternalUpdateAsync(BinderDto dto);
 }
 
 public class BinderService(
@@ -53,6 +55,7 @@ public class BinderService(
         var processorValidation = await binderProcessor.ValidateAsync();
         if (!processorValidation.Succeeded)
         {
+            this.Logger.LogWarning("GetByLabels validation failed: {Errors}", string.Join(", ", processorValidation.Errors));
             return OperationResult<List<BinderDto>>
                 .Failure([.. processorValidation.Errors]);
         }
@@ -62,13 +65,17 @@ public class BinderService(
         var filterBuilder = Builders<Binder>.Filter;
         var filter = FilterDefinition<Binder>.Empty;
 
-        foreach (var label in binderProcessor.Binder.Labels)
+        this.Logger.LogInformation("GetByLabels searching with labels: {Labels}", string.Join(", ", labels.Select(l => $"{l.Key}={l.Value}")));
+
+        foreach (var label in labels)
         {
             var key = $"Labels.{label.Key}";
             filter &= filterBuilder.Eq(key, label.Value);
         }
 
         var entities = await this.Repo.FindAsync(CollectionNameConstants.BINDERS, filter);
+
+        this.Logger.LogInformation("GetByLabels found {Count} binders", entities.Count());
 
         var data = this.Mapper.Map<List<BinderDto>>(entities);
 
@@ -209,6 +216,39 @@ public class BinderService(
             this.Logger.LogError(ex, "Something went wrong during the document bundling/merging process: {Error}", ex.Message);
             return OperationResult<DocumentBundleResponse>.Failure("Something went wrong during the document bundling/merging process.");
         }
+    }
+
+    public async Task<List<BinderDto>> SearchBinders(SearchBindersCriteria criteria = null)
+    {
+        criteria ??= new SearchBindersCriteria();
+
+        var filter = BuildSearchFilter(criteria);
+
+        var entities = await this.Repo.FindAsync(
+            CollectionNameConstants.BINDERS,
+            filter,
+            options: null,
+            limit: criteria.Limit,
+            skip: criteria.Skip);
+
+        this.Logger.LogInformation(
+            "SearchBinders returned {Count} results. Criteria: LabelKeysExist={KeysExist}, LabelMatches={Matches}, UpdatedBefore={UpdatedBefore}",
+            entities.Count(),
+            string.Join(",", criteria.LabelKeysExist ?? []),
+            string.Join(",", criteria.LabelMatches?.Keys != null ? criteria.LabelMatches.Keys : Array.Empty<string>()),
+            criteria.UpdatedBefore?.ToString("o") ?? "N/A");
+
+        return this.Mapper.Map<List<BinderDto>>(entities);
+    }
+
+    /// <summary>
+    /// Bypasses processor validation and directly updates the binder. For internal use by jobs and processors only.
+    /// </summary>
+    /// <param name="dto">The binder dto</param>
+    /// <returns>Updated binder dto</returns>
+    public async Task<OperationResult<BinderDto>> InternalUpdateAsync(BinderDto dto)
+    {
+        return await base.UpdateAsync(dto);
     }
 
     #region Helpers
@@ -370,4 +410,38 @@ public class BinderService(
     }
 
     #endregion Helpers
+
+    #region Search Filter Building
+
+    private static FilterDefinition<Binder> BuildSearchFilter(SearchBindersCriteria criteria)
+    {
+        var filterBuilder = Builders<Binder>.Filter;
+        var filter = FilterDefinition<Binder>.Empty;
+
+        // Apply label existence filters
+        if (criteria.LabelKeysExist?.Count > 0)
+        {
+            filter = criteria.LabelKeysExist.Aggregate(
+                filter,
+                (current, key) => current & filterBuilder.Exists($"Labels.{key}", true));
+        }
+
+        // Apply exact label match filters
+        if (criteria.LabelMatches?.Count > 0)
+        {
+            filter = criteria.LabelMatches.Aggregate(
+                filter,
+                (current, label) => current & filterBuilder.Eq($"Labels.{label.Key}", label.Value));
+        }
+
+        // Apply date filter
+        if (criteria.UpdatedBefore.HasValue)
+        {
+            filter &= filterBuilder.Lt(b => b.Upd_Dtm, criteria.UpdatedBefore.Value);
+        }
+
+        return filter;
+    }
+
+    #endregion Search Filter Building
 }

@@ -15,7 +15,12 @@ public interface IRepositoryBase<TEntity> where TEntity : EntityBase
     Task<TEntity> GetByIdAsync(string id);
     Task<IEnumerable<TEntity>> GetAllAsync();
     Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
-    Task<IEnumerable<TEntity>> FindAsync(string collectionName, FilterDefinition<TEntity> filterDefinition);
+    Task<IEnumerable<TEntity>> FindAsync(
+        string collectionName,
+        FilterDefinition<TEntity> filterDefinition,
+        FindOptions options = null,
+        int? limit = null,
+        int? skip = null);
     Task AddAsync(TEntity entity);
     Task AddRangeAsync(IEnumerable<TEntity> entities);
     Task UpdateAsync(TEntity entity);
@@ -50,11 +55,28 @@ public class RepositoryBase<TEntity>(JasperDbContext context, IMongoDatabase mon
     /// </summary>
     /// <param name="filterDefinition"></param>
     /// <returns></returns>
-    public virtual async Task<IEnumerable<TEntity>> FindAsync(string collectionName, FilterDefinition<TEntity> filterDefinition)
+    public virtual async Task<IEnumerable<TEntity>> FindAsync(
+        string collectionName,
+        FilterDefinition<TEntity> filterDefinition,
+        FindOptions options = null,
+        int? limit = null,
+        int? skip = null)
     {
         var collection = _mongoDb.GetCollection<TEntity>(collectionName);
 
-        return await collection.Find(filterDefinition).ToListAsync();
+        var findFluent = collection.Find(filterDefinition, options);
+
+        if (limit.HasValue)
+        {
+            findFluent = findFluent.Limit(limit.Value);
+        }
+
+        if (skip.HasValue)
+        {
+            findFluent = findFluent.Skip(skip.Value);
+        }
+
+        return await findFluent.ToListAsync();
     }
 
     public virtual async Task AddAsync(TEntity entity)

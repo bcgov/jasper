@@ -32,7 +32,6 @@ public class PopulateJudicialBinderDocumentFieldsJob(
     private readonly CivilFilesService _civilFilesService = filesService.Civil;
 
     public override string JobName => nameof(PopulateJudicialBinderDocumentFieldsJob);
-
     public override string CronSchedule => Cron.Never(); // Manual trigger only
 
     public override async Task Execute()
@@ -68,24 +67,20 @@ public class PopulateJudicialBinderDocumentFieldsJob(
                 {
                     var result = await ProcessBinderAsync(binder);
 
-                    if (result == ProcessResult.Success)
+                    switch (result)
                     {
-                        processedCount++;
-                        this.Logger.LogInformation(
-                            "Progress: {Current}/{Total} - Processed binder {BinderId} successfully.",
-                            processedCount + errorCount + skippedCount,
-                            totalCount,
-                            binder.Id);
+                        case ProcessResult.Success:
+                            processedCount++;
+                            break;
+                        case ProcessResult.Skipped:
+                            skippedCount++;
+                            break;
+                        case ProcessResult.Error:
+                            errorCount++;
+                            break;
                     }
-                    else if (result == ProcessResult.Skipped)
-                    {
-                        skippedCount++;
-                        this.Logger.LogDebug(
-                            "Progress: {Current}/{Total} - Skipped binder {BinderId}.",
-                            processedCount + errorCount + skippedCount,
-                            totalCount,
-                            binder.Id);
-                    }
+
+                    LogProgress(result, processedCount + errorCount + skippedCount, totalCount, binder.Id);
                 }
                 catch (Exception ex)
                 {
@@ -152,6 +147,21 @@ public class PopulateJudicialBinderDocumentFieldsJob(
         }
 
         return ProcessResult.Success;
+    }
+
+    private void LogProgress(ProcessResult result, int current, int total, string binderId)
+    {
+        var message = result switch
+        {
+            ProcessResult.Success => "Progress: {Current}/{Total} - Processed binder {BinderId} successfully.",
+            ProcessResult.Skipped => "Progress: {Current}/{Total} - Skipped binder {BinderId}.",
+            ProcessResult.Error => "Progress: {Current}/{Total} - Error processing binder {BinderId}.",
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, null)
+        };
+
+        var logLevel = result == ProcessResult.Error ? LogLevel.Warning : LogLevel.Information;
+
+        this.Logger.Log(logLevel, message, current, total, binderId);
     }
 
     private enum ProcessResult

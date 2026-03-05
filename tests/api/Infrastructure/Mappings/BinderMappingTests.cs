@@ -199,12 +199,16 @@ public class BinderMappingTests
     [Fact]
     public void CriminalDocument_To_BinderDocumentDto_Should_Map_Properties_Correctly()
     {
+        var issueDate = DateTime.UtcNow.AddDays(-5).ToShortDateString();
         var criminalDoc = new CriminalDocument
         {
             DocmId = "crim-doc-123",
             ImageId = "image-456",
             DocumentTypeDescription = "Court Order",
-            Category = "GENERAL"
+            Category = "GENERAL",
+            PartId = "part-789",
+            HasFutureAppearance = true,
+            IssueDate = issueDate
         };
 
         var result = criminalDoc.Adapt<BinderDocumentDto>(_config);
@@ -212,6 +216,7 @@ public class BinderMappingTests
         Assert.Equal(criminalDoc.ImageId, result.DocumentId);
         Assert.Equal(criminalDoc.DocumentTypeDescription, result.FileName);
         Assert.Equal(criminalDoc.Category, result.Category);
+        Assert.Equal(issueDate, result.FiledDt);    
     }
 
     [Fact]

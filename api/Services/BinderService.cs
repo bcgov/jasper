@@ -55,7 +55,6 @@ public class BinderService(
         var processorValidation = await binderProcessor.ValidateAsync();
         if (!processorValidation.Succeeded)
         {
-            this.Logger.LogWarning("GetByLabels validation failed: {Errors}", string.Join(", ", processorValidation.Errors));
             return OperationResult<List<BinderDto>>
                 .Failure([.. processorValidation.Errors]);
         }
@@ -65,8 +64,6 @@ public class BinderService(
         var filterBuilder = Builders<Binder>.Filter;
         var filter = FilterDefinition<Binder>.Empty;
 
-        this.Logger.LogInformation("GetByLabels searching with labels: {Labels}", string.Join(", ", labels.Select(l => $"{l.Key}={l.Value}")));
-
         foreach (var label in labels)
         {
             var key = $"Labels.{label.Key}";
@@ -74,8 +71,6 @@ public class BinderService(
         }
 
         var entities = await this.Repo.FindAsync(CollectionNameConstants.BINDERS, filter);
-
-        this.Logger.LogInformation("GetByLabels found {Count} binders", entities.Count());
 
         var data = this.Mapper.Map<List<BinderDto>>(entities);
 
@@ -231,14 +226,16 @@ public class BinderService(
             limit: criteria.Limit,
             skip: criteria.Skip);
 
+        var binders = this.Mapper.Map<List<BinderDto>>(entities);
+
         this.Logger.LogInformation(
             "SearchBinders returned {Count} results. Criteria: LabelKeysExist={KeysExist}, LabelMatches={Matches}, UpdatedBefore={UpdatedBefore}",
-            entities.Count(),
+            binders.Count,
             string.Join(",", criteria.LabelKeysExist ?? []),
             string.Join(",", criteria.LabelMatches?.Keys != null ? criteria.LabelMatches.Keys : Array.Empty<string>()),
             criteria.UpdatedBefore?.ToString("o") ?? "N/A");
 
-        return this.Mapper.Map<List<BinderDto>>(entities);
+        return binders;
     }
 
     /// <summary>

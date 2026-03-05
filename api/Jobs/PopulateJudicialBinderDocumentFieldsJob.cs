@@ -35,7 +35,6 @@ public class PopulateJudicialBinderDocumentFieldsJob(
 
     public override string CronSchedule => Cron.Never(); // Manual trigger only
 
-    [AutomaticRetry(Attempts = 3, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
     public override async Task Execute()
     {
         try
@@ -46,7 +45,7 @@ public class PopulateJudicialBinderDocumentFieldsJob(
             var searchCriteria = new SearchBindersCriteria
             {
                 LabelKeysExist = [LabelConstants.JUDGE_ID],
-                UpdatedBefore = DateTime.UtcNow.AddMinutes(-30),
+                UpdatedBefore = DateTime.UtcNow.AddHours(-1), // Skip recently updated binders to avoid reprocessing
                 Limit = null
             };
 
@@ -123,13 +122,12 @@ public class PopulateJudicialBinderDocumentFieldsJob(
 
     private async Task<ProcessResult> ProcessBinderAsync(BinderDto binder)
     {
-        if (!binder.Labels.ContainsKey(LabelConstants.PHYSICAL_FILE_ID))
+        if (!binder.Labels.TryGetValue(LabelConstants.PHYSICAL_FILE_ID, out string fileId))
         {
             this.Logger.LogWarning("Binder {BinderId} has no physical file ID. Skipping.", binder.Id);
             return ProcessResult.Skipped;
         }
 
-        var fileId = binder.Labels[LabelConstants.PHYSICAL_FILE_ID];
         var documentIds = binder.Documents.Select(d => d.DocumentId).ToList();
 
         if (documentIds.Count == 0)
@@ -138,16 +136,10 @@ public class PopulateJudicialBinderDocumentFieldsJob(
             return ProcessResult.Skipped;
         }
 
-        // Fetch enriched documents from CivilFilesService
         var civilDocuments = await _civilFilesService.GetDocumentsByIds(fileId, documentIds);
-
-        // Map to BinderDocumentDto with enriched fields
         var enrichedDocuments = this.Mapper.Map<List<BinderDocumentDto>>(civilDocuments);
-
-        // Update binder documents
         binder.Documents = enrichedDocuments;
 
-        // Save to repository via service
         var updateResult = await _binderService.InternalUpdateAsync(binder);
 
         if (!updateResult.Succeeded)
@@ -158,11 +150,6 @@ public class PopulateJudicialBinderDocumentFieldsJob(
                 string.Join(", ", updateResult.Errors));
             return ProcessResult.Error;
         }
-
-        this.Logger.LogDebug(
-            "Enriched {Count} documents for binder {BinderId}",
-            enrichedDocuments.Count,
-            binder.Id);
 
         return ProcessResult.Success;
     }

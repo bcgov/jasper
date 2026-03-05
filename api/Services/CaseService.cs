@@ -34,6 +34,7 @@ public class CaseService(
     public const string DECISION_APPR_REASON_CD = "DEC";
     public const string CONTINUATION_APPR_REASON_CD = "CNT";
     public const string ADDTL_CNT_TIME_APPR_REASON_CD = "ACT";
+    public const string SENTENCE_HEARING_APPR_REASON_CD = "SNT";
 
     public const string SEIZED_RESTRICTION_CD = "S";
     public const string ASSIGNED_RESTRICTION_CD = "G";
@@ -41,7 +42,8 @@ public class CaseService(
     public static readonly ImmutableArray<string> ContinuationReasonCodes = [
         DECISION_APPR_REASON_CD,
         CONTINUATION_APPR_REASON_CD,
-        ADDTL_CNT_TIME_APPR_REASON_CD
+        ADDTL_CNT_TIME_APPR_REASON_CD,
+        SENTENCE_HEARING_APPR_REASON_CD
     ];
 
     public override Task<OperationResult<CaseDto>> ValidateAsync(CaseDto dto, bool isEdit = false)

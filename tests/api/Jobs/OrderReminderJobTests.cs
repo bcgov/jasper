@@ -45,7 +45,6 @@ public class OrderReminderJobTests : ServiceTestBase
         _options = Options.Create(new JobsOrderReminderOptions
         {
             CronSchedule = "0 0 * * *",
-            ProductManagerEmail = "pm@example.com"
         });
 
         _job = new OrderReminderJob(

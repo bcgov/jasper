@@ -59,11 +59,13 @@ public class EmailTemplate : EntityBase
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
                      Please select the link above to review the order.<br /><br />
                      Regards,<br />
-                     JASPER Support Team"
+                     JASPER Support Team",
+            Cc = "{{ support_account }}"
         }
     ];
 
     public string TemplateName { get; set; }
     public string Subject { get; set; }
     public string Body { get; set; }
+    public string Cc { get; set; }
 }

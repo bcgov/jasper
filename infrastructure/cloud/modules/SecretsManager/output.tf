@@ -106,6 +106,7 @@ output "api_secrets" {
     ["SplunkCollectorId", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorId::"],
     ["SplunkCollectorUrl", "${aws_secretsmanager_secret.splunk_secret.arn}:collectorUrl::"],
     ["SplunkToken", "${aws_secretsmanager_secret.splunk_secret.arn}:token::"],
+    ["SUPPORT_ACCOUNT", "${aws_secretsmanager_secret.misc_secret.arn}:supportAccount::"],
     ["UserServicesClient__Username", "${aws_secretsmanager_secret.user_services_client_secret.arn}:username::"],
     ["UserServicesClient__Password", "${aws_secretsmanager_secret.user_services_client_secret.arn}:password::"],
     ["UserServicesClient__Url", "${aws_secretsmanager_secret.user_services_client_secret.arn}:baseUrl::"]

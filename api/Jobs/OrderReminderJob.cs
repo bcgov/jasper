@@ -91,7 +91,8 @@ public class OrderReminderJob(
             var (judge, user) = await GetJudgeAndUserAsync(order);
             if (judge == null || user == null) return;
 
-            var emailData = CreateEmailData(order, GetJudgeName(judge));
+            var supportAccount = _configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
+            var emailData = CreateEmailData(order, GetJudgeName(judge), supportAccount);
 
             await _emailTemplateService.SendEmailTemplateAsync(
                 "Order Reminder",
@@ -154,7 +155,8 @@ public class OrderReminderJob(
         var rajUser = await _userService.GetByJudgeIdAsync(raj.UserId);
         if (rajUser == null || string.IsNullOrWhiteSpace(rajUser.Email)) return;
 
-        var emailData = CreateEmailData(order, GetRajName(raj));
+        var supportAccount = _configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
+        var emailData = CreateEmailData(order, GetRajName(raj), supportAccount);
 
         await _emailTemplateService.SendEmailTemplateAsync(
             "Order Reassignment",
@@ -194,13 +196,14 @@ public class OrderReminderJob(
         return (judge, user);
     }
 
-    private static object CreateEmailData(Order order, string judgeName) => new
+    private static object CreateEmailData(Order order, string judgeName, string supportAccount) => new
     {
         JudgeName = judgeName,
         CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
         DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
         LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
-        Priority = order.OrderRequest.Referral.PriorityType
+        Priority = order.OrderRequest.Referral.PriorityType,
+        SupportAccount = supportAccount
     };
 
     private static string GetJudgeName(Models.Person judge)

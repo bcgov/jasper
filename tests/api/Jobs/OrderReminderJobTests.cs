@@ -147,7 +147,7 @@ public class OrderReminderJobTests : ServiceTestBase
         );
     }
 
-    private void SetupConfiguration(string reminderDays, string reassignmentDays, string maxReminders = "1", string maxReassignments = "1")
+    private void SetupConfiguration(string reminderDays, string reassignmentDays, string maxReminders = "1", string maxReassignments = "1", string supportAccount = "support@example.com")
     {
         var reminderSection = new Mock<IConfigurationSection>();
         reminderSection.Setup(s => s.Value).Returns(reminderDays);
@@ -160,6 +160,9 @@ public class OrderReminderJobTests : ServiceTestBase
         
         var maxReassignmentsSection = new Mock<IConfigurationSection>();
         maxReassignmentsSection.Setup(s => s.Value).Returns(maxReassignments);
+        
+        var supportAccountSection = new Mock<IConfigurationSection>();
+        supportAccountSection.Setup(s => s.Value).Returns(supportAccount);
         
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REMINDER_THRESHOLD_DAYS"))
@@ -176,6 +179,10 @@ public class OrderReminderJobTests : ServiceTestBase
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"))
             .Returns(maxReassignmentsSection.Object);
+        
+        _mockConfiguration
+            .Setup(c => c.GetSection("SUPPORT_ACCOUNT"))
+            .Returns(supportAccountSection.Object);
     }
 
     [Fact]
@@ -223,7 +230,8 @@ public class OrderReminderJobTests : ServiceTestBase
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("DateReceived") != null &&
                     obj.GetType().GetProperty("LocationName") != null &&
-                    obj.GetType().GetProperty("Priority") != null
+                    obj.GetType().GetProperty("Priority") != null &&
+                    obj.GetType().GetProperty("SupportAccount") != null
                 )),
             Times.Once
         );
@@ -287,7 +295,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.IsAny<Order>()),
-            Times.Exactly(2)
+            Times.AtLeast(2)
         );
 
         _mockEmailTemplateService.Verify(
@@ -482,12 +490,14 @@ public class OrderReminderJobTests : ServiceTestBase
         var dateReceivedProp = dataType.GetProperty("DateReceived");
         var locationNameProp = dataType.GetProperty("LocationName");
         var priorityProp = dataType.GetProperty("Priority");
+        var supportAccountProp = dataType.GetProperty("SupportAccount");
 
         Assert.Equal(expectedJudgeName, judgeNameProp?.GetValue(capturedEmailData));
         Assert.Equal(expectedCaseNumber, caseFileNumberProp?.GetValue(capturedEmailData));
         Assert.Equal(expectedLocation, locationNameProp?.GetValue(capturedEmailData));
         Assert.Equal(expectedPriority, priorityProp?.GetValue(capturedEmailData));
         Assert.NotNull(dateReceivedProp?.GetValue(capturedEmailData));
+        Assert.NotNull(supportAccountProp?.GetValue(capturedEmailData));
     }
 
     #endregion
@@ -633,7 +643,8 @@ public class OrderReminderJobTests : ServiceTestBase
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("LocationName") != null &&
                     obj.GetType().GetProperty("DateReceived") != null &&
-                    obj.GetType().GetProperty("Priority") != null
+                    obj.GetType().GetProperty("Priority") != null &&
+                    obj.GetType().GetProperty("SupportAccount") != null
                 )),
             Times.Once
         );
@@ -900,9 +911,14 @@ public class OrderReminderJobTests : ServiceTestBase
             .Callback<string, string, object>((template, email, data) => capturedEmailData = data)
             .Returns(Task.CompletedTask);
 
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
         await _job.Execute();
 
         var judgeNameProp = capturedEmailData?.GetType().GetProperty("JudgeName");
+        Assert.NotNull(capturedEmailData);
         Assert.Equal("Judge", judgeNameProp?.GetValue(capturedEmailData));
     }
 

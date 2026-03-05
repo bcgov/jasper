@@ -42,7 +42,18 @@ public class EmailTemplateService(
 
             var mailbox = configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
 
-            await emailService.SendEmailAsync(mailbox, recipient, subject, body);
+            // Parse and render CC field if present
+            string[] ccEmails = null;
+            if (!string.IsNullOrWhiteSpace(emailTemplate.Cc))
+            {
+                var templateCc = Template.Parse(emailTemplate.Cc);
+                var cc = await templateCc.RenderAsync(data);
+                if (!string.IsNullOrWhiteSpace(cc))
+                {
+                    ccEmails = cc.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+            }
+            await emailService.SendEmailAsync(mailbox, recipient, subject, body, ccEmails: ccEmails);
 
             logger.LogInformation("Template email '{TemplateName}' sent.", templateName);
         }

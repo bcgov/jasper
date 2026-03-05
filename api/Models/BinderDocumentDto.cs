@@ -10,11 +10,12 @@ public class BinderDocumentDto
     public string Category { get; set; }
     public string FileName { get; set; }
     public string ImageId { get; set; }
+    public string FiledDt { get; set; }
     /// <summary>
     /// Zero-based integer to determine how BinderDocuments are sorted
     /// </summary>
     public int Order { get; set; }
-    public DocumentType? DocumentType { get; set; }
+    public DocumentType DocumentType { get; set; }
 
     // Criminal-specific fields
     public int? DocumentPageCount { get; set; }
@@ -22,7 +23,6 @@ public class BinderDocumentDto
     // Civil-specific fields
     public string FileSeqNo { get; set; }
     public string SwornByNm { get; set; }
-    public string FiledDt { get; set; }
     public string DateGranted { get; set; }
     public List<IssueDto> Issues { get; set; } = [];
     public List<FiledByDto> FiledBy { get; set; } = [];

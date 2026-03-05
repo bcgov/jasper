@@ -132,6 +132,18 @@ public class PopulateJudicialBinderDocumentFieldsJob(
         }
 
         var civilDocuments = await _civilFilesService.GetDocumentsByIds(fileId, documentIds);
+        var returnedDocumentIds = civilDocuments.Select(d => d.CivilDocumentId);
+        var missingDocumentIds = documentIds.Except(returnedDocumentIds).ToList();
+
+        if (missingDocumentIds.Count > 0)
+        {
+            this.Logger.LogWarning(
+                "Binder {BinderId}: {Count} document(s) not found in civil file service. Missing IDs: {MissingIds}",
+                binder.Id,
+                missingDocumentIds.Count,
+                string.Join(", ", missingDocumentIds));
+        }
+
         var enrichedDocuments = this.Mapper.Map<List<BinderDocumentDto>>(civilDocuments);
         binder.Documents = enrichedDocuments;
 

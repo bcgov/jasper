@@ -359,6 +359,82 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
     }
 
     [Fact]
+    public async Task Execute_Should_Log_Warning_When_Documents_Not_Found()
+    {
+        var documentId1 = _faker.Random.AlphaNumeric(10);
+        var documentId2 = _faker.Random.AlphaNumeric(10);
+        var documentId3 = _faker.Random.AlphaNumeric(10);
+
+        // Binder requests 3 documents, but only 2 are returned
+        var binder = CreateTestBinder(_fileId, [documentId1, documentId2, documentId3]);
+
+        _mockBinderService
+            .Setup(s => s.SearchBinders(It.IsAny<SearchBindersCriteria>()))
+            .ReturnsAsync([binder]);
+
+        _mockBinderService
+            .Setup(s => s.InternalUpdateAsync(It.IsAny<BinderDto>()))
+            .ReturnsAsync(OperationResult<BinderDto>.Success(binder));
+
+        // Only return 2 documents instead of 3
+        var fileDetail = new CivilFileDetailResponse
+        {
+            CourtClassCd = CivilFileDetailResponseCourtClassCd.F,
+            Appearance = [],
+            Document =
+            [
+                new CvfcDocument3
+                {
+                    CivilDocumentId = documentId1,
+                    DocumentTypeCd = DocumentCategory.BAIL,
+                    Issue = []
+                },
+                new CvfcDocument3
+                {
+                    CivilDocumentId = documentId2,
+                    DocumentTypeCd = DocumentCategory.BAIL,
+                    Issue = []
+                }
+            ],
+            ReferenceDocument = []
+        };
+
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
+
+        this.SetupFileServiceMocks(fileDetail, fileContent);
+        var job = CreateJob();
+        await job.Execute();
+
+        // Verify warning was logged with missing document IDs
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, _) =>
+                    o.ToString()!.Contains("document(s) not found in civil file service") &&
+                    o.ToString()!.Contains(documentId3)),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Once);
+
+        // Verify binder was still updated with the documents that were found
+        _mockBinderService.Verify(
+            s => s.InternalUpdateAsync(It.Is<BinderDto>(b =>
+                b.Id == binder.Id &&
+                b.Documents.Count == 2)),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task Execute_Should_Map_CivilDocuments_To_BinderDocuments()
     {
         var documentId = _faker.Random.AlphaNumeric(10);
@@ -404,7 +480,7 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
 
         this.SetupFileServiceMocks(fileDetail, fileContent);
         var job = CreateJob();
-        
+
         await job.Execute();
 
         Assert.NotNull(capturedBinder);
@@ -457,7 +533,7 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
                 }
             ]
         };
-        
+
         documentCategory ??= DocumentCategory.BAIL;
 
         _filesServiceFixture.MockFileServicesClient

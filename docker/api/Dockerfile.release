@@ -8,6 +8,7 @@ ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 ENV DOTNET_gcServer=1
 ARG VERSION
 ENV VERSION=$VERSION
+ARG BUILD_NUMBER=0
 
 FROM mcr.microsoft.com/dotnet/sdk:${dotnet_version} AS build
 
@@ -21,11 +22,13 @@ COPY ["dars-client/dars-client.csproj", "dars-client/"]
 COPY ["cso-client/cso-client.csproj", "cso-client/"]
 RUN dotnet restore api/api.csproj
 COPY . .
-RUN dotnet build "api/api.csproj" -c Release
+ARG BUILD_NUMBER=0
+RUN dotnet build "api/api.csproj" -c Release /p:BuildNumber=${BUILD_NUMBER}
 # build
 FROM build AS publish
+ARG BUILD_NUMBER=0
 RUN dotnet publish "api/api.csproj" -c Release -o /app/publish \
-    --runtime linux-musl-x64 --no-self-contained
+    --runtime linux-musl-x64 --no-self-contained /p:BuildNumber=${BUILD_NUMBER}
 
 FROM base AS final
 

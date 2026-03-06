@@ -320,7 +320,8 @@ public class CaseServiceTests
             CreateCase(CaseService.CONTINUATION_APPR_REASON_CD, CaseService.ASSIGNED_RESTRICTION_CD),
             CreateCase("UNKNOWN", CaseService.SEIZED_RESTRICTION_CD),
             CreateCase("UNKNOWN", CaseService.ASSIGNED_RESTRICTION_CD),
-            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD)
+            CreateCase(null, CaseService.SEIZED_RESTRICTION_CD),
+            CreateCase(CaseService.SENTENCE_HEARING_APPR_REASON_CD, CaseService.SEIZED_RESTRICTION_CD)
         };
 
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
@@ -330,7 +331,7 @@ public class CaseServiceTests
 
         Assert.True(result.Succeeded);
         Assert.Equal(2, result.Payload.ReservedJudgments.Count); // 1 DEC (S) + 1 reserved
-        Assert.Equal(2, result.Payload.ScheduledContinuations.Count); // DEC (S), CNT (S)
+        Assert.Equal(3, result.Payload.ScheduledContinuations.Count); // DEC (S), CNT (S), SNT (S)
         Assert.Single(result.Payload.Others); // UNKNOWN (S)
         Assert.Equal(3, result.Payload.FutureAssigned.Count); // All with restriction G
     }

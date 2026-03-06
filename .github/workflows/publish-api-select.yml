@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Environment to deploy to"
+        description: 'Environment to deploy to'
         required: true
-        default: "lz-dev"
+        default: 'lz-dev'
         type: choice
         options:
           - lz-dev
@@ -85,6 +85,7 @@ jobs:
           load: true
           build-args: |
             dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
+            BUILD_NUMBER=${{ github.run_number }}
 
   deploy2env:
     name: Deploy to ENV

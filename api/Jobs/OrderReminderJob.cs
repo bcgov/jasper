@@ -89,7 +89,11 @@ public class OrderReminderJob(
         try
         {
             var (judge, user) = await GetJudgeAndUserAsync(order);
-            if (judge == null || user == null) return;
+            if (judge == null || user == null)
+            {
+                _logger.LogWarning("Skipping reminder for order {OrderId} due to missing user judge information", order.Id);
+                return;
+            }
 
             var supportAccount = _configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
             var emailData = CreateEmailData(order, GetJudgeName(judge), supportAccount);
@@ -143,9 +147,15 @@ public class OrderReminderJob(
 
     private async Task<PersonSearchItem> GetRAJForJudge(Models.Person judge)
     {
+        if (!judge.HomeLocationId.HasValue)
+        {
+            _logger.LogWarning("Judge {JudgeId} has no HomeLocationId set", judge.UserId);
+            return null;
+        }
+
         var relatedRaj = await _judgeService.GetJudges(
             [JudgeService.REGIONAL_ADMIN_JUDGE],
-            [judge.HomeLocationId.ToString()]);
+            [judge.HomeLocationId.Value.ToString()]);
         
         return relatedRaj.FirstOrDefault();
     }
@@ -202,7 +212,7 @@ public class OrderReminderJob(
         CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
         DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
         LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
-        Priority = order.OrderRequest.Referral.PriorityType,
+        Priority = order.OrderRequest?.Referral?.PriorityType,
         SupportAccount = supportAccount
     };
 

@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,11 +23,15 @@ public class ApplicationController(IConfiguration configuration) : ControllerBas
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult GetApplicationInfo()
     {
+        var assembly = Assembly.GetExecutingAssembly();
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.
+            InformationalVersion ?? assembly.GetName().Version?.ToString() ?? "Unknown";
+
         return Ok(new
         {
+            Version = version,
             NutrientFeLicenseKey = _configuration.GetNonEmptyValue("NUTRIENT_FE_LICENSE_KEY"),
             Environment = _configuration.GetNonEmptyValue("ASPNETCORE_ENVIRONMENT"),
-            // Include JASPER version at a later point
         });
     }
 }

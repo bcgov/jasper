@@ -4,6 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bogus;
+using LazyCache;
+using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,6 +26,8 @@ public class OrderReminderJobTests : ServiceTestBase
 {
     private readonly Faker _faker;
     private readonly Mock<ILogger<OrderReminderJob>> _logger;
+    private readonly Mock<IAppCache> _mockCache;
+    private readonly Mock<IMapper> _mockMapper;
     private readonly Mock<IRepositoryBase<Order>> _mockOrderRepo;
     private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly Mock<IEmailTemplateService> _mockEmailTemplateService;
@@ -36,6 +40,8 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         _faker = new Faker();
         _logger = new Mock<ILogger<OrderReminderJob>>();
+        _mockCache = new Mock<IAppCache>();
+        _mockMapper = new Mock<IMapper>();
         _mockOrderRepo = new Mock<IRepositoryBase<Order>>();
         _mockJudgeService = new Mock<IJudgeService>();
         _mockEmailTemplateService = new Mock<IEmailTemplateService>();
@@ -48,13 +54,15 @@ public class OrderReminderJobTests : ServiceTestBase
         });
 
         _job = new OrderReminderJob(
+            _mockConfiguration.Object,
+            _mockCache.Object,
+            _mockMapper.Object,
+            _logger.Object,
             _mockOrderRepo.Object,
             _mockJudgeService.Object,
             _mockEmailTemplateService.Object,
             _mockUserService.Object,
-            _mockConfiguration.Object,
-            _options,
-            _logger.Object
+            _options
         );
     }
 

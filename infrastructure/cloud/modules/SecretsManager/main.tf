@@ -237,7 +237,8 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     mtlsCert                        = "",
     allowedIpRanges                 = "",
     keyDocsBinderRefreshHours       = "",
-    lazyCacheDefaultDurationSeconds = ""
+    lazyCacheDefaultDurationSeconds = "",
+    supportAccount                  = ""
   })
   lifecycle {
     ignore_changes = [secret_string]
@@ -254,6 +255,24 @@ resource "aws_secretsmanager_secret_version" "nutrient_secret_value" {
   secret_string = jsonencode({
     nutrientFeLicenseKey = "",
     nutrientBeLicenseKey = "",
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+resource "aws_secretsmanager_secret" "order_secret" {
+  name       = "external/${var.app_name}-order-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "order_secret_value" {
+  secret_id = aws_secretsmanager_secret.order_secret.id
+  secret_string = jsonencode({
+    orderMaxReassignmentNotifications = "",
+    orderMaxReminderNotifications    = "",
+    orderReassignmentThresholdDays   = "",
+    orderReminderThresholdDays       = "",
   })
   lifecycle {
     ignore_changes = [secret_string]

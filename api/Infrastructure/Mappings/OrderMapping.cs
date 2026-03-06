@@ -20,7 +20,9 @@ public class OrderMapping : IRegister
             .Ignore(dest => dest.Ent_Dtm)
             .Ignore(dest => dest.Ent_UserId)
             .Ignore(dest => dest.Upd_Dtm)
-            .Ignore(dest => dest.Upd_UserId);
+            .Ignore(dest => dest.Upd_UserId)
+            .Ignore(dest => dest.ReassignmentNotificationsSent)
+            .Ignore(dest => dest.ReminderNotificationsSent);
 
         config.NewConfig<OrderReviewDto, OrderDto>()
             .IgnoreNullValues(true)
@@ -64,21 +66,13 @@ public class OrderMapping : IRegister
                     ? src.ProcessedDate.Value.ToString(CultureInfo.InvariantCulture)
                     : null;
 
-                switch (src.Status)
+                dest.JudicialDecisionCd = src.Status switch
                 {
-                    case OrderStatus.Approved:
-                        dest.JudicialDecisionCd = nameof(JudicialDecisionCd.APPR);
-                        break;
-                    case OrderStatus.Unapproved:
-                        dest.JudicialDecisionCd = nameof(JudicialDecisionCd.NAPP);
-                        break;
-                    case OrderStatus.Pending:
-                        dest.JudicialDecisionCd = nameof(JudicialDecisionCd.AFDC);
-                        break;
-                    default:
-                        dest.JudicialDecisionCd = null;
-                        break;
-                }
+                    OrderStatus.Approved => nameof(JudicialDecisionCd.APPR),
+                    OrderStatus.Unapproved => nameof(JudicialDecisionCd.NAPP),
+                    OrderStatus.Pending => nameof(JudicialDecisionCd.AFDC),
+                    _ => null,
+                };
             });
     }
 }

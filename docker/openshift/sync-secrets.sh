@@ -22,6 +22,7 @@ secret_keys="\
   misc \
   mtls_cert \
   nutrient \
+  order \
   pcss \
   request \
   reserved_judgements \

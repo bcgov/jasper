@@ -322,6 +322,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<SubmitOrderJob>();
                 services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
                 services.AddTransient<IRecurringJob, RetryErroredOrderSubmitJob>();
+                services.AddTransient<IRecurringJob, OrderReminderJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }

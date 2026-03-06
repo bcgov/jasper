@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bogus;
@@ -69,7 +70,7 @@ public class EmailTemplateServiceTests
             It.Is<string>(subj => subj.Contains(caseFileNumber)),
             It.Is<string>(body => body.Contains(lastName) && body.Contains(caseFileNumber)),
             null,
-            null,
+            It.IsAny<IEnumerable<string>>(),
             null),
             Times.Once);
     }
@@ -94,7 +95,7 @@ public class EmailTemplateServiceTests
             It.IsAny<string>(),
             It.IsAny<string>(),
             null,
-            null,
+            It.IsAny<IEnumerable<string>>(),
             null),
             Times.Never);
 
@@ -128,7 +129,7 @@ public class EmailTemplateServiceTests
             It.IsAny<string>(),
             It.IsAny<string>(),
             null,
-            null,
+            It.IsAny<IEnumerable<string>>(),
             null),
             Times.Never);
     }
@@ -156,7 +157,7 @@ public class EmailTemplateServiceTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 null,
-                null,
+                It.IsAny<IEnumerable<string>>(),
                 null))
             .ThrowsAsync(new Exception("Email send failed"));
 
@@ -208,7 +209,7 @@ public class EmailTemplateServiceTests
             It.Is<string>(subj => subj.Contains(caseFileNumber) && subj.Contains(lastName)),
             It.Is<string>(body => body.Contains(firstName) && body.Contains(lastName) && body.Contains(caseFileNumber) && body.Contains(courtLocation)),
             null,
-            null,
+            It.IsAny<IEnumerable<string>>(),
             null),
             Times.Once);
 
@@ -249,6 +250,140 @@ public class EmailTemplateServiceTests
             recipient,
             staticSubject,
             staticBody,
+            null,
+            It.IsAny<IEnumerable<string>>(),
+            null),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEmailTemplateAsync_WithCcField_SendsEmailWithCc()
+    {
+        var templateName = _faker.Lorem.Word();
+        var recipient = _faker.Internet.Email();
+        var supportEmail = _faker.Internet.Email();
+        var caseFileNumber = $"{_faker.Random.Number(1000, 9999)}";
+        var data = new { CaseFileNumber = caseFileNumber, SupportAccount = supportEmail };
+
+        var emailTemplate = new EmailTemplate
+        {
+            TemplateName = templateName,
+            Subject = "Case {{case_file_number}}",
+            Body = "Your case {{case_file_number}} is ready.",
+            Cc = "{{support_account}}"
+        };
+
+        _mockEmailTemplateRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<EmailTemplate, bool>>>()))
+            .ReturnsAsync([emailTemplate]);
+
+        await _emailTemplateService.SendEmailTemplateAsync(templateName, recipient, data);
+
+        _mockEmailService.Verify(s => s.SendEmailAsync(
+            It.IsAny<string>(),
+            recipient,
+            It.Is<string>(subj => subj.Contains(caseFileNumber)),
+            It.IsAny<string>(),
+            null,
+            It.Is<IEnumerable<string>>(cc => cc != null && cc.Any(e => e == supportEmail)),
+            null),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEmailTemplateAsync_WithMultipleCcEmails_SendsEmailWithAllCcs()
+    {
+        var templateName = _faker.Lorem.Word();
+        var recipient = _faker.Internet.Email();
+        var supportEmail1 = _faker.Internet.Email();
+        var supportEmail2 = _faker.Internet.Email();
+        var caseFileNumber = $"{_faker.Random.Number(1000, 9999)}";
+        var data = new { CaseFileNumber = caseFileNumber, SupportAccounts = $"{supportEmail1},{supportEmail2}" };
+
+        var emailTemplate = new EmailTemplate
+        {
+            TemplateName = templateName,
+            Subject = "Case {{case_file_number}}",
+            Body = "Your case {{case_file_number}} is ready.",
+            Cc = "{{support_accounts}}"
+        };
+
+        _mockEmailTemplateRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<EmailTemplate, bool>>>()))
+            .ReturnsAsync([emailTemplate]);
+
+        await _emailTemplateService.SendEmailTemplateAsync(templateName, recipient, data);
+
+        _mockEmailService.Verify(s => s.SendEmailAsync(
+            It.IsAny<string>(),
+            recipient,
+            It.Is<string>(subj => subj.Contains(caseFileNumber)),
+            It.IsAny<string>(),
+            null,
+            It.Is<IEnumerable<string>>(cc => cc != null && cc.Any(e => e == supportEmail1) && cc.Any(e => e == supportEmail2)),
+            null),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEmailTemplateAsync_WithEmptyCcField_SendsEmailWithoutCc()
+    {
+        var templateName = _faker.Lorem.Word();
+        var recipient = _faker.Internet.Email();
+        var caseFileNumber = $"{_faker.Random.Number(1000, 9999)}";
+        var data = new { CaseFileNumber = caseFileNumber, SupportAccount = "" };
+
+        var emailTemplate = new EmailTemplate
+        {
+            TemplateName = templateName,
+            Subject = "Case {{case_file_number}}",
+            Body = "Your case {{case_file_number}} is ready.",
+            Cc = "{{support_account}}"
+        };
+
+        _mockEmailTemplateRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<EmailTemplate, bool>>>()))
+            .ReturnsAsync([emailTemplate]);
+
+        await _emailTemplateService.SendEmailTemplateAsync(templateName, recipient, data);
+
+        _mockEmailService.Verify(s => s.SendEmailAsync(
+            It.IsAny<string>(),
+            recipient,
+            It.Is<string>(subj => subj.Contains(caseFileNumber)),
+            It.IsAny<string>(),
+            null,
+            null,
+            null),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEmailTemplateAsync_WithNoCcField_SendsEmailWithoutCc()
+    {
+        var templateName = _faker.Lorem.Word();
+        var recipient = _faker.Internet.Email();
+        var caseFileNumber = $"{_faker.Random.Number(1000, 9999)}";
+        var data = new { CaseFileNumber = caseFileNumber };
+
+        var emailTemplate = new EmailTemplate
+        {
+            TemplateName = templateName,
+            Subject = "Case {{case_file_number}}",
+            Body = "Your case {{case_file_number}} is ready."
+        };
+
+        _mockEmailTemplateRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<EmailTemplate, bool>>>()))
+            .ReturnsAsync([emailTemplate]);
+
+        await _emailTemplateService.SendEmailTemplateAsync(templateName, recipient, data);
+
+        _mockEmailService.Verify(s => s.SendEmailAsync(
+            It.IsAny<string>(),
+            recipient,
+            It.Is<string>(subj => subj.Contains(caseFileNumber)),
+            It.IsAny<string>(),
             null,
             null,
             null),

@@ -6,15 +6,15 @@ on:
     branches:
       - master
     paths:
-      - "infrastructure/**"
+      - 'infrastructure/**'
 
   # Manual trigger via GH Actions UI
   workflow_dispatch:
     inputs:
       environment:
-        description: "Select target environment"
+        description: 'Select target environment'
         required: true
-        default: "lz-dev"
+        default: 'lz-dev'
         type: choice
         options:
           - lz-dev
@@ -62,7 +62,7 @@ jobs:
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars"
+          tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1

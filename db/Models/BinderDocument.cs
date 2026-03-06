@@ -12,6 +12,7 @@ public class BinderDocument
     public string Category { get; set; }
     public string FileName { get; set; }
     public string ImageId { get; set; }
+    public string FiledDt { get; set; }
     /// <summary>
     /// Zero-based integer to determine how BinderDocuments are sorted
     /// </summary>
@@ -27,7 +28,6 @@ public class BinderDocument
     // Civil-specific fields
     public int? FileSeqNo { get; set; }
     public string SwornByNm { get; set; }
-    public string FiledDt { get; set; }
     public string DateGranted { get; set; }
     public List<Issue> Issues { get; set; } = [];
     public List<FiledBy> FiledBy { get; set; } = [];

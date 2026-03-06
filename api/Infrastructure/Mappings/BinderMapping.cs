@@ -37,7 +37,8 @@ public class BinderMapping : IRegister
                 string.Equals(src.Category, DocumentCategory.ROP, StringComparison.OrdinalIgnoreCase)
                     ? DocumentType.ROP
                     : DocumentType.File)
-            .Map(dest => dest.Category, src => src.Category);
+            .Map(dest => dest.Category, src => src.Category)
+            .Map(dest => dest.FiledDt, src => src.IssueDate);
 
         config.NewConfig<CivilDocument, BinderDocumentDto>()
             .Map(dest => dest.DocumentId, src => src.CivilDocumentId)

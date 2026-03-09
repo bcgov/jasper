@@ -15,6 +15,10 @@ on:
           - dev
           - test
           - prod
+      release_tag:
+        description: 'Release tag to deploy (e.g. v1.2.3). Leave empty to use the current commit SHA.'
+        required: false
+        type: string
 
 env:
   WORKING_DIRECTORY: .
@@ -29,7 +33,7 @@ jobs:
       contents: read
       packages: write
     outputs:
-      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
+      image_tag: ${{ steps.version.outputs.IMAGE_TAG }}
 
     strategy:
       matrix:
@@ -55,10 +59,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA
-        id: short_sha
+      - name: Get Image Tag
+        id: version
         run: |
-          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          if [[ -n "${{ github.event.inputs.release_tag }}" ]]; then
+            VERSION="${{ github.event.inputs.release_tag }}"
+            echo "IMAGE_TAG=${VERSION#v}" >> $GITHUB_OUTPUT
+          else
+            echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Image Metadata
         id: meta
@@ -67,7 +76,7 @@ jobs:
           images: |
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
+            type=raw,value=${{ steps.version.outputs.IMAGE_TAG }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -85,7 +94,7 @@ jobs:
           load: true
           build-args: |
             dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
-            BUILD_NUMBER=${{ github.run_number }}
+            RELEASE_VERSION=${{ steps.version.outputs.IMAGE_TAG }}
 
   deploy2env:
     name: Deploy to ENV
@@ -115,4 +124,4 @@ jobs:
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
           image_name: ${{ env.IMAGE_NAME  }}
           tier_name: api
-          short_sha: ${{ needs.build.outputs.short_sha }}
+          image_tag: ${{ needs.build.outputs.image_tag }}

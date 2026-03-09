@@ -65,7 +65,7 @@ jobs:
           tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
         with:
           sarif_file: tfsec.sarif
 
@@ -79,7 +79,7 @@ jobs:
           role-session-name: ci-deployment
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
         with:
           terraform_version: 1.14.1
 

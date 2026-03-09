@@ -16,9 +16,7 @@
         <v-expansion-panel-title>
           <h5 class="m-0">
             Reserved judgments & decisions
-            {{
-              uniqueJudgements > 0 ? `(${uniqueJudgements})` : ''
-            }}
+            {{ uniqueJudgements > 0 ? `(${uniqueJudgements})` : '' }}
           </h5>
         </v-expansion-panel-title>
         <v-expansion-panel-text class="reserved-judgements-table">
@@ -44,11 +42,7 @@
         <v-expansion-panel-title>
           <h5 class="m-0">
             Scheduled continuations
-            {{
-              uniqueContinuations > 0
-                ? `(${uniqueContinuations})`
-                : ''
-            }}
+            {{ uniqueContinuations > 0 ? `(${uniqueContinuations})` : '' }}
           </h5>
         </v-expansion-panel-title>
         <v-expansion-panel-text class="scheduled-continuations-table">
@@ -140,17 +134,17 @@
   const scheduledContinuations = ref<Case[]>([]);
   const others = ref<Case[]>([]);
   const futureAssigned = ref<Case[]>([]);
-  const uniqueJudgements= computed(() => 
-    new Set(reservedJudgements.value.map((c) => c.fileNumber)).size
+  const uniqueJudgements = computed(
+    () => new Set(reservedJudgements.value.map((c) => c.fileNumber)).size
   );
-  const uniqueContinuations = computed(() => 
-    new Set(scheduledContinuations.value.map((c) => c.fileNumber)).size
+  const uniqueContinuations = computed(
+    () => new Set(scheduledContinuations.value.map((c) => c.fileNumber)).size
   );
-  const uniqueOthers = computed(() => 
-    new Set(others.value.map((c) => c.fileNumber)).size
+  const uniqueOthers = computed(
+    () => new Set(others.value.map((c) => c.fileNumber)).size
   );
-  const uniqueFutureAssigned = computed(() => 
-    new Set(futureAssigned.value.map((c) => c.fileNumber)).size
+  const uniqueFutureAssigned = computed(
+    () => new Set(futureAssigned.value.map((c) => c.fileNumber)).size
   );
   const props = defineProps({
     judgeId: { type: Number, default: null },

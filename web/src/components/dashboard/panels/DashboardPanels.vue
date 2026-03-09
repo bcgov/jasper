@@ -17,7 +17,7 @@
           <h5 class="m-0">
             Reserved judgments & decisions
             {{
-              reservedJudgementCount > 0 ? `(${reservedJudgementCount})` : ''
+              uniqueJudgements > 0 ? `(${uniqueJudgements})` : ''
             }}
           </h5>
         </v-expansion-panel-title>
@@ -45,8 +45,8 @@
           <h5 class="m-0">
             Scheduled continuations
             {{
-              scheduledContinuationsCount > 0
-                ? `(${scheduledContinuationsCount})`
+              uniqueContinuations > 0
+                ? `(${uniqueContinuations})`
                 : ''
             }}
           </h5>
@@ -74,7 +74,7 @@
         <v-expansion-panel-title>
           <h5 class="m-0">
             Other seized cases
-            {{ othersCount > 0 ? `(${othersCount})` : '' }}
+            {{ uniqueOthers > 0 ? `(${uniqueOthers})` : '' }}
           </h5>
         </v-expansion-panel-title>
         <v-expansion-panel-text class="others-table">
@@ -100,7 +100,7 @@
         <v-expansion-panel-title>
           <h5 class="m-0">
             Future assigned
-            {{ futureAssignedCount > 0 ? `(${futureAssignedCount})` : '' }}
+            {{ uniqueFutureAssigned > 0 ? `(${uniqueFutureAssigned})` : '' }}
           </h5>
         </v-expansion-panel-title>
         <v-expansion-panel-text class="future-assigned-table">
@@ -140,14 +140,18 @@
   const scheduledContinuations = ref<Case[]>([]);
   const others = ref<Case[]>([]);
   const futureAssigned = ref<Case[]>([]);
-  const reservedJudgementCount = computed(
-    () => reservedJudgements.value.length
+  const uniqueJudgements= computed(() => 
+    new Set(reservedJudgements.value.map((c) => c.fileNumber)).size
   );
-  const scheduledContinuationsCount = computed(
-    () => scheduledContinuations.value.length
+  const uniqueContinuations = computed(() => 
+    new Set(scheduledContinuations.value.map((c) => c.fileNumber)).size
   );
-  const othersCount = computed(() => others.value.length);
-  const futureAssignedCount = computed(() => futureAssigned.value.length);
+  const uniqueOthers = computed(() => 
+    new Set(others.value.map((c) => c.fileNumber)).size
+  );
+  const uniqueFutureAssigned = computed(() => 
+    new Set(futureAssigned.value.map((c) => c.fileNumber)).size
+  );
   const props = defineProps({
     judgeId: { type: Number, default: null },
   });

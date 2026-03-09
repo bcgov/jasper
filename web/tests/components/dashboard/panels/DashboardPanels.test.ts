@@ -18,12 +18,14 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
         courtClass: 'CC',
         physicalFileId: 'phys-1',
         courtFileNumber: 'CF-12345',
+        fileNumber: 'CF-12345',
       } as Case,
       {
         id: 'case2',
         courtClass: 'SC',
         physicalFileId: 'phys-2',
         courtFileNumber: 'CF-67890',
+        fileNumber: 'CF-67890',
       } as Case,
     ],
     scheduledContinuations: [
@@ -32,12 +34,14 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
         courtClass: 'CC',
         physicalFileId: 'phys-3',
         courtFileNumber: 'CF-11111',
+        fileNumber: 'CF-11111',
       } as Case,
       {
         id: 'case4',
         courtClass: 'SC',
         physicalFileId: 'phys-4',
         courtFileNumber: 'CF-22222',
+        fileNumber: 'CF-22222',
       } as Case,
     ],
     others: [
@@ -46,6 +50,7 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
         courtClass: 'CC',
         physicalFileId: 'phys-5',
         courtFileNumber: 'CF-33333',
+        fileNumber: 'CF-33333',
       } as Case,
     ],
     futureAssigned: [
@@ -54,6 +59,7 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
         courtClass: 'SC',
         physicalFileId: 'phys-6',
         courtFileNumber: 'CF-44444',
+        fileNumber: 'CF-44444',
       } as Case,
     ],
   },
@@ -116,6 +122,90 @@ describe('DashboardPanels.vue', () => {
     expect(wrapper.text()).toContain(
       `(${mockData.payload.futureAssigned.length})`
     );
+  });
+
+  it('renders unique file number counts correctly', async () => {
+    const duplicateData: ApiResponse<AssignedCaseResponse> = {
+      succeeded: true,
+      payload: {
+        reservedJudgments: [
+          {
+            id: 'case1',
+            courtClass: 'CC',
+            physicalFileId: 'phys-1',
+            courtFileNumber: 'CF-12345',
+            fileNumber: 'CF-12345',
+          } as Case,
+          {
+            id: 'case2',
+            courtClass: 'CC',
+            physicalFileId: 'phys-1',
+            courtFileNumber: 'CF-12345',
+            fileNumber: 'CF-12345', // duplicate
+          } as Case,
+        ],
+        scheduledContinuations: [
+          {
+            id: 'case4',
+            courtClass: 'CC',
+            physicalFileId: 'phys-3',
+            courtFileNumber: 'CF-11111',
+            fileNumber: 'CF-11111',
+          } as Case,
+          {
+            id: 'case5',
+            courtClass: 'CC',
+            physicalFileId: 'phys-3',
+            courtFileNumber: 'CF-11111',
+            fileNumber: 'CF-11111', // duplicate
+          } as Case,
+        ],
+        others: [
+          {
+            id: 'case7',
+            courtClass: 'CC',
+            physicalFileId: 'phys-5',
+            courtFileNumber: 'CF-33333',
+            fileNumber: 'CF-33333',
+          } as Case,
+          {
+            id: 'case8',
+            courtClass: 'CC',
+            physicalFileId: 'phys-5',
+            courtFileNumber: 'CF-33333',
+            fileNumber: 'CF-33333', // duplicate
+          } as Case,
+        ],
+        futureAssigned: [
+          {
+            id: 'case9',
+            courtClass: 'SC',
+            physicalFileId: 'phys-6',
+            courtFileNumber: 'CF-44444',
+            fileNumber: 'CF-44444',
+          } as Case,
+          {
+            id: 'case10',
+            courtClass: 'SC',
+            physicalFileId: 'phys-6',
+            courtFileNumber: 'CF-44444',
+            fileNumber: 'CF-44444', // duplicate
+          } as Case
+        ],
+      },
+      errors: [],
+    };
+
+    caseService.getAssignedCases = vi.fn().mockResolvedValue(duplicateData);
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    const vm = wrapper.vm as any;
+
+    expect(vm.uniqueJudgements).toBe(1);
+    expect(vm.uniqueContinuations).toBe(1);
+    expect(vm.uniqueOthers).toBe(1);
+    expect(vm.uniqueFutureAssigned).toBe(1);
   });
 
   it('logs error if service fails', async () => {

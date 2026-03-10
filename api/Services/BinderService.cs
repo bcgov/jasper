@@ -243,9 +243,9 @@ public class BinderService(
     /// </summary>
     /// <param name="dto">The binder dto</param>
     /// <returns>Updated binder dto</returns>
-    public async Task<OperationResult<BinderDto>> InternalUpdateAsync(BinderDto dto)
+    public Task<OperationResult<BinderDto>> InternalUpdateAsync(BinderDto dto)
     {
-        return await base.UpdateAsync(dto);
+        return base.UpdateAsync(dto);
     }
 
     #region Helpers

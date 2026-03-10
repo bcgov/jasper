@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using MongoDB.Driver;
 using Scv.Api.Documents;
@@ -28,14 +29,16 @@ using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Authentication;
+using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Infrastructure.Hangfire;
 using Scv.Api.Infrastructure.Handler;
+using Scv.Api.Infrastructure.Hangfire;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
+using Scv.Api.Repositories;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
@@ -56,9 +59,6 @@ using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
 using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
-using Microsoft.Extensions.Options;
-using Scv.Api.Infrastructure.Options;
-using Scv.Api.Repositories;
 
 namespace Scv.Api.Infrastructure
 {
@@ -323,6 +323,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
                 services.AddTransient<IRecurringJob, RetryErroredOrderSubmitJob>();
                 services.AddTransient<IRecurringJob, OrderReminderJob>();
+                services.AddTransient<IRecurringJob, PopulateJudicialBinderDocumentFieldsJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }

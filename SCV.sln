@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34723.18
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11430.68 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "api", "api\api.csproj", "{46FE5ADD-2BAF-47D0-BB0B-912F9ED4F743}"
 EndProject
@@ -13,6 +13,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pcss-client", "pcss-client\pcss-client.csproj", "{C1736008-CC5B-40AC-A0A4-48C85E49067F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dars-client", "dars-client\dars-client.csproj", "{764F912A-D0FA-4272-ADEF-1335B8BE8D9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cso-client", "cso-client\cso-client.csproj", "{3FE50416-F9ED-591F-1B5F-DBFD49311713}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,10 @@ Global
 		{764F912A-D0FA-4272-ADEF-1335B8BE8D9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{764F912A-D0FA-4272-ADEF-1335B8BE8D9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{764F912A-D0FA-4272-ADEF-1335B8BE8D9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FE50416-F9ED-591F-1B5F-DBFD49311713}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FE50416-F9ED-591F-1B5F-DBFD49311713}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FE50416-F9ED-591F-1B5F-DBFD49311713}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FE50416-F9ED-591F-1B5F-DBFD49311713}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

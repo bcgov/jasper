@@ -47,7 +47,7 @@ public class BinderFactory(
 
     public IBinderProcessor Create(Dictionary<string, string> labels)
     {
-        return this.Create(new BinderDto { Labels = labels });
+        return this.Create(new BinderDto { Labels = new Dictionary<string, string>(labels) });
     }
 
     public IBinderProcessor Create(BinderDto dto)

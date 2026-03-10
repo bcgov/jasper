@@ -361,6 +361,8 @@ namespace Scv.Api.Services.Files
             async Task<CivilFileDetailResponse> FileDetails() => await _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId);
             async Task<CivilFileContent> FileContent() => await _filesClient.FilesCivilFilecontentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, null, null, null, null, fileId);
 
+            // Cache case file data by (fileId, requestAgencyIdentifierId). Other fields (_applicationCode, _requestPartId)
+            // are effectively constant (env-based) and documentIds are only used to filter after retrieval, so they are not included in the cache key.
             var fileDetailTask = _cache.GetOrAddAsync($"GetDocumentsByIds-CivilFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
             var fileContentTask = _cache.GetOrAddAsync($"GetDocumentsByIds-CivilFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
 

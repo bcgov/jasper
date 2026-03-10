@@ -53,8 +53,8 @@ jobs:
       - name: Get Image Tag
         id: version
         run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            VERSION="${{ github.event.release.tag_name }}"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
             echo "IMAGE_TAG=${VERSION#v}" >> $GITHUB_OUTPUT
             echo "RELEASE_VERSION=${VERSION#v}" >> $GITHUB_OUTPUT
           else

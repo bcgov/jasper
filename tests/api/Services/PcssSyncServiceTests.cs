@@ -70,7 +70,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(judges);
 
             // Act
-            var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
+            await _pcssSyncService.UpdateUserFromPcss(userDto);
 
             // Assert
             _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", false), Times.Once);
@@ -99,7 +99,7 @@ namespace Scv.Api.Tests.Services
                 .ReturnsAsync(judges);
 
             // Act
-            var result = await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
+            await _pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true);
 
             // Assert
             _authorizationServiceMock.Verify(x => x.GetUserByGuid("guid", true), Times.Once);

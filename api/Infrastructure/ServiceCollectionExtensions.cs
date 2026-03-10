@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
 using Amazon;
@@ -24,6 +25,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using MongoDB.Driver;
+using PostgreSQL.ListenNotify.DependencyInjection;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
@@ -39,6 +41,7 @@ using Scv.Api.Jobs;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
 using Scv.Api.Repositories;
+using Scv.Api.SignalR;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contexts;
@@ -154,6 +157,46 @@ namespace Scv.Api.Infrastructure
 
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddSignalRPostgresBackplane(this IServiceCollection services, IConfiguration configuration)
+        {
+            var connectionString = configuration.GetValue<string>("DatabaseConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException("DatabaseConnectionString is required to use the SignalR Postgres backplane.");
+            }
+
+            var channel = configuration.GetValue<string>("SignalR:PostgresChannel") ?? "signalr";
+            var instanceId = $"{Environment.MachineName}-{Guid.NewGuid()}";
+            var maxPayloadBytes = configuration.GetValue<int?>("SignalR:PostgresMaxPayloadBytes") ?? 7000;
+            var outboxPollSeconds = configuration.GetValue<int?>("SignalR:PostgresOutboxPollSeconds") ?? 10;
+            var outboxBatchSize = configuration.GetValue<int?>("SignalR:PostgresOutboxBatchSize") ?? 100;
+            var outboxRetentionMinutes = configuration.GetValue<int?>("SignalR:PostgresOutboxRetentionMinutes") ?? 1440;
+            var outboxMinAgeSeconds = configuration.GetValue<int?>("SignalR:PostgresOutboxMinAgeSeconds") ?? 10;
+
+            services.AddPostgresNotifications(options =>
+            {
+                options.ConnectionString = connectionString;
+                options.ListenChannels = new List<string> { channel };
+                options.DefaultNotifyChannel = channel;
+                options.ApplicationName = "Jasper.SignalR";
+            });
+
+            services.AddSingleton(new PostgresSignalRBackplaneOptions(
+                channel,
+                instanceId,
+                maxPayloadBytes,
+                outboxPollSeconds,
+                outboxBatchSize,
+                outboxRetentionMinutes,
+                outboxMinAgeSeconds));
+            services.AddSingleton<UserConnectionTracker>();
+            services.AddScoped<OrderReceivedAckNotification>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddHostedService<PostgresSignalRNotificationBridge>();
 
             return services;
         }

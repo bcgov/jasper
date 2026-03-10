@@ -194,6 +194,27 @@ resource "aws_lb_listener_rule" "api_path_lr" {
   }
 }
 
+# SignalR Listener Rule
+resource "aws_lb_listener_rule" "signalr_lr" {
+  listener_arn = aws_lb_listener.https_listener.arn
+  priority     = 90
+
+  condition {
+    path_pattern {
+      values = ["/hubs/*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = var.tg_api_arn
+  }
+
+  tags = {
+    Name = "${var.app_name}-signalr-lr-${var.environment}"
+  }
+}
+
 # Hangfire Listener Rule
 resource "aws_lb_listener_rule" "hangfire_lr" {
   listener_arn = aws_lb_listener.https_listener.arn

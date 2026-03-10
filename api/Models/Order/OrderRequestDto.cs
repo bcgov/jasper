@@ -12,3 +12,9 @@ public class OrderRequestDto
     public List<PackageDocumentDto> PackageDocuments { get; set; } = [];
     public List<RelevantCeisDocumentDto> RelevantCeisDocuments { get; set; } = [];
 }
+
+public class OrderNotificationJobArgs
+{
+    public OrderRequestDto Order { get; init; }
+    public string OrderId { get; init; }
+}

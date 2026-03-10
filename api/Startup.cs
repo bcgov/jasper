@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
+using Scv.Db.Repositories;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -65,6 +66,7 @@ namespace Scv.Api
             services.Configure<JobsFailureEmailOptions>(Configuration.GetSection("JOBS:FailureEmail"));
             services.Configure<JobsRetrySubmitOrderOptions>(Configuration.GetSection("JOBS:RetrySubmitOrder"));
             services.Configure<JobsOrderReminderOptions>(Configuration.GetSection("JOBS:OrderReminder"));
+            services.Configure<JobsCleanupSignalRMessagesOptions>(Configuration.GetSection("JOBS:CleanupSignalRMessages"));
 
             services.AddLogging(options =>
             {
@@ -98,6 +100,9 @@ namespace Scv.Api
                 }
             );
 
+            services.AddScoped(typeof(IPostgresRepositoryBase<,>), typeof(PostgresRepositoryBase<,>));
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+
             services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationRedirectMiddlewareResultHandler>();
 
             services.AddMapster();
@@ -110,10 +115,15 @@ namespace Scv.Api
 
             services.AddSignalR(options =>
             {
-                options.MaximumReceiveMessageSize = 64 * 1024;
+                options.MaximumReceiveMessageSize =
+                    Configuration.GetValue<long>("SignalR:MaximumReceiveMessageSizeBytes");
+                options.KeepAliveInterval = TimeSpan.FromSeconds(
+                    Configuration.GetValue<int>("SignalR:KeepAliveIntervalSeconds"));
+                options.ClientTimeoutInterval = TimeSpan.FromSeconds(
+                    Configuration.GetValue<int>("SignalR:ClientTimeoutIntervalSeconds"));
             });
             services.AddSingleton<IUserIdProvider, UserIdProvider>();
-            services.AddScoped<INotificationPublisher, NotificationPublisher>();
+            services.AddSignalRPostgresBackplane(Configuration);
 
             #region Cors
 

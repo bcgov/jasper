@@ -28,6 +28,7 @@
           data-testid="order-badge"
           v-if="pendingOrdersCount > 0"
           :content="pendingOrdersCount"
+          :class="{ 'badge-pulse': badgePulseActive }"
           color="error"
           offset-x="-10"
           offset-y="-10"
@@ -64,13 +65,15 @@
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
   import { JudgeService, OrderService } from '@/services';
+  import { NotificationsService } from '@/signalr/notifications';
   import { useCommonStore } from '@/stores';
   import { useDarsStore } from '@/stores/DarsStore';
+  import { useNotificationsStore } from '@/stores/NotificationsStore';
   import { useOrdersStore } from '@/stores/OrdersStore';
   import { PersonSearchItem } from '@/types';
   import { OrderReviewStatus, RolesEnum } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
-  import { computed, inject, onMounted, ref, watch } from 'vue';
+  import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import JudgeSelector from './JudgeSelector.vue';
 
@@ -79,16 +82,20 @@
   const commonStore = useCommonStore();
   const darsStore = useDarsStore();
   const ordersStore = useOrdersStore();
+  const notificationsStore = useNotificationsStore();
 
   const route = useRoute();
   const selectedTab = ref('/dashboard');
   const orderService = inject<OrderService>('orderService');
+  const notificationsService = inject<NotificationsService>(
+    'notificationsService'
+  );
   const judgeService = inject<JudgeService>('judgeService');
   const judges = ref<PersonSearchItem[]>([]);
   // Only users with Admin role can see Orders tab for now.
   const requiredOrderRoles = [RolesEnum.Admin] as const;
 
-  if (!judgeService || !orderService) {
+  if (!judgeService || !orderService || !notificationsService) {
     throw new Error('Service is not available!');
   }
 
@@ -130,6 +137,7 @@
     (canViewOrders) => {
       if (canViewOrders) {
         ordersStore.initialize(orderService, judgeId);
+        notificationsStore.initialize(notificationsService, orderService);
       }
     },
     { immediate: true }
@@ -149,6 +157,33 @@
       ordersStore.orders.filter((o) => o.status === OrderReviewStatus.Pending)
         .length
   );
+
+  const badgePulseActive = ref(false);
+
+  const triggerBadgePulse = async () => {
+    if (pendingOrdersCount.value === 0) {
+      return;
+    }
+
+    badgePulseActive.value = false;
+    await nextTick();
+    badgePulseActive.value = true;
+    window.setTimeout(() => {
+      badgePulseActive.value = false;
+    }, 1200);
+  };
+
+  watch(ordersStore.lastFetched, () => {
+    void triggerBadgePulse();
+  });
+
+  watch(pendingOrdersCount, (newCount, oldCount) => {
+    if (newCount === oldCount || newCount === 0) {
+      return;
+    }
+
+    void triggerBadgePulse();
+  });
 </script>
 
 <style scoped>
@@ -166,5 +201,21 @@
   .underline-on-hover:hover :deep(.v-btn__content) {
     text-decoration: underline;
     text-underline-offset: 2px;
+  }
+
+  .badge-pulse :deep(.v-badge__badge) {
+    animation: badge-pop 0.35s ease-out;
+  }
+
+  @keyframes badge-pop {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 </style>

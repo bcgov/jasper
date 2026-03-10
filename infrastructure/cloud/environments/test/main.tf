@@ -122,6 +122,8 @@ module "tg_api" {
   health_check_path = "/api/test/headers"
   vpc_id            = data.aws_vpc.vpc.id
   protocol          = "HTTP"
+  stickiness_enabled         = true
+  stickiness_cookie_duration = 36000
 }
 
 # Setup ALB Listeners

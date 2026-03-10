@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Api.SignalR;
 
 namespace Scv.Api.Jobs;
 
@@ -16,40 +17,42 @@ public class SendOrderNotificationJob(
     IJudgeService judgeService,
     IEmailTemplateService emailTemplateService,
     IUserService userService,
+    OrderReceivedAckNotification orderReceivedAck,
     ILogger<SendOrderNotificationJob> logger)
 {
     private readonly IJudgeService _judgeService = judgeService;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
     private readonly IUserService _userService = userService;
+    private readonly OrderReceivedAckNotification _orderReceivedAck = orderReceivedAck;
     private readonly ILogger<SendOrderNotificationJob> _logger = logger;
 
-    public async Task Execute(OrderRequestDto order)
+    public async Task Execute(OrderDto order)
     {
         try
         {
             _logger.LogInformation("Processing order notification job for file {FileId}",
-                order.CourtFile.PhysicalFileId);
+                order.OrderRequest.CourtFile.PhysicalFileId);
 
             await NotifyJudgeOfNewOrderAsync(order);
 
             _logger.LogInformation("Order notification job completed for file {FileId}",
-                order.CourtFile.PhysicalFileId);
+                order.OrderRequest.CourtFile.PhysicalFileId);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send order notification for file {FileId}",
-                order.CourtFile.PhysicalFileId);
+                order.OrderRequest.CourtFile.PhysicalFileId);
             throw; // Hangfire will retry based on configured retry policy
         }
     }
 
-    private async Task NotifyJudgeOfNewOrderAsync(OrderRequestDto order)
+    private async Task NotifyJudgeOfNewOrderAsync(OrderDto order)
     {
-        var judgeId = order.Referral.SentToPartId;
+        var judgeId = order.OrderRequest.Referral.SentToPartId;
         if (!judgeId.HasValue)
         {
             _logger.LogWarning("Cannot send notification - no judge assigned to order for file {FileId}",
-                order.CourtFile.PhysicalFileId);
+                order.OrderRequest.CourtFile.PhysicalFileId);
             return;
         }
 
@@ -74,6 +77,8 @@ public class SendOrderNotificationJob(
             return;
         }
 
+        await _orderReceivedAck.SendAsync(order, databaseUser.Id, judgeId.Value);
+
         var judgeEmail = databaseUser.Email;
         if (string.IsNullOrWhiteSpace(judgeEmail))
         {
@@ -86,19 +91,19 @@ public class SendOrderNotificationJob(
         {
             JudgeName = GetJudgeName(judge),
             LastName = judge.Names?.FirstOrDefault()?.LastName ?? "",
-            CaseFileNumber = order.CourtFile?.CourtFileNo,
-            ReferralNotes = order.Referral?.ReferralNotesTxt,
-            ReferredBy = order.Referral?.ReferredByName,
-            LocationShortname = order.CourtFile?.CourtLocationDesc,
-            LocationName = order.CourtFile?.CourtLocationDesc,
-            Priority = order.Referral.PriorityType,
+            CaseFileNumber = order.OrderRequest.CourtFile?.CourtFileNo,
+            ReferralNotes = order.OrderRequest.Referral?.ReferralNotesTxt,
+            ReferredBy = order.OrderRequest.Referral?.ReferredByName,
+            LocationShortname = order.OrderRequest.CourtFile?.CourtLocationDesc,
+            LocationName = order.OrderRequest.CourtFile?.CourtLocationDesc,
+            Priority = order.OrderRequest.Referral.PriorityType,
             DateReceived = DateTime.UtcNow.ToString("MMMM dd, yyyy"),
         };
 
         await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);
 
         _logger.LogInformation("Notification sent to judge {JudgeId} for order on file {FileId}",
-            judgeId.Value, order.CourtFile.PhysicalFileId);
+            judgeId.Value, order.OrderRequest.CourtFile.PhysicalFileId);
     }
 
     private static string GetJudgeName(Models.Person judge)

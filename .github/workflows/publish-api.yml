@@ -56,8 +56,10 @@ jobs:
           if [[ "${{ github.event_name }}" == "release" ]]; then
             VERSION="${{ github.event.release.tag_name }}"
             echo "IMAGE_TAG=${VERSION#v}" >> $GITHUB_OUTPUT
+            echo "RELEASE_VERSION=${VERSION#v}" >> $GITHUB_OUTPUT
           else
             echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+            echo "RELEASE_VERSION=" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup Image Metadata
@@ -86,7 +88,7 @@ jobs:
           load: true
           build-args: |
             dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
-            RELEASE_VERSION=${{ steps.version.outputs.IMAGE_TAG }}
+            RELEASE_VERSION=${{ steps.version.outputs.RELEASE_VERSION }}
 
   deploy2dev:
     name: Deploy to DEV

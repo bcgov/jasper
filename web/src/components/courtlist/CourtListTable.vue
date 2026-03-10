@@ -92,10 +92,7 @@
         />
       </template>
       <template v-if="item.courtLevelCd === CourtLevelEnum.S">
-        <TooltipIcon
-          text="Supreme Court appearance"
-          :icon="mdiBank"
-        />
+        <TooltipIcon text="Supreme Court appearance" :icon="mdiBank" />
       </template>
     </template>
     <template v-slot:[`item.estimatedTime`]="{ item }">
@@ -192,7 +189,7 @@
     mdiHomeOutline,
     mdiNotebookOutline,
     mdiTrashCanOutline,
-    mdiBank
+    mdiBank,
   } from '@mdi/js';
   import { computed, ref } from 'vue';
 

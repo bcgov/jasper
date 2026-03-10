@@ -1,17 +1,17 @@
 <template>
   <div class="case-details-header">
     <h5 class="mb-0 d-flex align-center">
-        Case Details
-        <span
-          class="pl-3"
-          :class="
-            labelClasses[getCourtClassLabel(details.courtClassCd)] ||
-            'criminal-label'
-          "
-        >
-          {{ details.fileNumberTxt }}
-        </span>
-        <CopyToClipboard :text="details.fileNumberTxt" />
+      Case Details
+      <span
+        class="pl-3"
+        :class="
+          labelClasses[getCourtClassLabel(details.courtClassCd)] ||
+          'criminal-label'
+        "
+      >
+        {{ details.fileNumberTxt }}
+      </span>
+      <CopyToClipboard :text="details.fileNumberTxt" />
     </h5>
     <TooltipIcon
       v-if="details.courtLevelCd === CourtLevelEnum.S"
@@ -19,7 +19,7 @@
       :icon="mdiBank"
     />
   </div>
-  
+
   <v-card color="var(--bg-gray-500)" flat>
     <div class="mx-2 d-flex align-center pt-2">
       <DivisionBadge

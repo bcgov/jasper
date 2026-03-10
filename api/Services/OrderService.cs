@@ -17,6 +17,7 @@ using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Jobs;
+using Scv.Api.Models;
 using Scv.Api.Models.Order;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -187,7 +188,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                     return result;
                 }
 
-                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
+                orderDto = result.Payload;
+
+                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(orderDto));
             }
 
             this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);

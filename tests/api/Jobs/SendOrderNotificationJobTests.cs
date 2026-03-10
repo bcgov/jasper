@@ -8,6 +8,7 @@ using Scv.Api.Models;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Api.SignalR;
 using Xunit;
 
 namespace tests.api.Jobs;
@@ -18,6 +19,8 @@ public class SendOrderNotificationJobTests
     private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly Mock<IEmailTemplateService> _mockEmailTemplateService;
     private readonly Mock<IUserService> _mockUserService;
+    private readonly Mock<INotificationService> _mockNotificationService;
+    private readonly Mock<ILogger<OrderReceivedAckNotification>> _mockOrderReceivedAckLogger;
     private readonly Mock<ILogger<SendOrderNotificationJob>> _mockLogger;
     private readonly SendOrderNotificationJob _job;
 
@@ -27,12 +30,24 @@ public class SendOrderNotificationJobTests
         _mockJudgeService = new Mock<IJudgeService>();
         _mockEmailTemplateService = new Mock<IEmailTemplateService>();
         _mockUserService = new Mock<IUserService>();
+        _mockNotificationService = new Mock<INotificationService>();
+        _mockOrderReceivedAckLogger = new Mock<ILogger<OrderReceivedAckNotification>>();
         _mockLogger = new Mock<ILogger<SendOrderNotificationJob>>();
+
+        _mockNotificationService.Setup(s => s.NotifyUserWithAckAsync(
+            It.IsAny<string>(),
+            It.IsAny<NotificationDto<OrderReceivedNotificationPayload>>()))
+            .Returns(Task.CompletedTask);
+
+        var orderReceivedAck = new OrderReceivedAckNotification(
+            _mockNotificationService.Object,
+            _mockOrderReceivedAckLogger.Object);
 
         _job = new SendOrderNotificationJob(
             _mockJudgeService.Object,
             _mockEmailTemplateService.Object,
             _mockUserService.Object,
+            orderReceivedAck,
             _mockLogger.Object);
     }
 
@@ -41,7 +56,8 @@ public class SendOrderNotificationJobTests
     {
         var judgeId = _faker.Random.Int(1, 1000);
         var judgeEmail = _faker.Internet.Email();
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = CreateActiveJudge(judgeId);
         var databaseUser = new UserDto
@@ -71,7 +87,7 @@ public class SendOrderNotificationJobTests
             "Order Received",
             judgeEmail,
             It.Is<object>(data =>
-                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderDto.CourtFile.CourtFileNo)),
+                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderRequestDto.CourtFile.CourtFileNo)),
             Times.Once);
 
         _mockLogger.Verify(
@@ -87,7 +103,8 @@ public class SendOrderNotificationJobTests
     [Fact]
     public async Task Execute_LogsWarning_WhenJudgeIdIsNull()
     {
-        var orderDto = CreateValidOrderDto(null);
+        var orderRequestDto = CreateValidOrderDto(null);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         await _job.Execute(orderDto);
 
@@ -111,7 +128,8 @@ public class SendOrderNotificationJobTests
     public async Task Execute_LogsWarning_WhenJudgeNotFound()
     {
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync((Scv.Api.Models.Person)null);
@@ -138,7 +156,8 @@ public class SendOrderNotificationJobTests
     public async Task Execute_SkipsNotification_WhenJudgeIsInactive()
     {
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var inactiveJudge = CreateInactiveJudge(judgeId);
 
@@ -167,7 +186,8 @@ public class SendOrderNotificationJobTests
     public async Task Execute_LogsWarning_WhenDatabaseUserNotFound()
     {
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = CreateActiveJudge(judgeId);
 
@@ -198,7 +218,8 @@ public class SendOrderNotificationJobTests
     public async Task Execute_LogsWarning_WhenJudgeEmailIsEmpty()
     {
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = CreateActiveJudge(judgeId);
         var databaseUser = new UserDto
@@ -237,7 +258,8 @@ public class SendOrderNotificationJobTests
     public async Task Execute_LogsWarning_WhenJudgeEmailIsNull()
     {
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = CreateActiveJudge(judgeId);
         var databaseUser = new UserDto
@@ -284,7 +306,7 @@ public class SendOrderNotificationJobTests
         var referralNotes = _faker.Lorem.Sentence();
         var referredBy = _faker.Name.FullName();
 
-        var orderDto = new OrderRequestDto
+        var orderRequestDto = new OrderRequestDto
         {
             CourtFile = new CourtFileDto
             {
@@ -299,6 +321,8 @@ public class SendOrderNotificationJobTests
                 ReferredByName = referredBy
             }
         };
+
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = new Scv.Api.Models.Person
         {
@@ -351,7 +375,8 @@ public class SendOrderNotificationJobTests
     {
         var judgeId = _faker.Random.Int(1, 1000);
         var judgeEmail = _faker.Internet.Email();
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = new Scv.Api.Models.Person
         {
@@ -393,7 +418,8 @@ public class SendOrderNotificationJobTests
     public async Task Execute_LogsError_AndThrows_WhenExceptionOccurs()
     {
         var judgeId = _faker.Random.Int(1, 1000);
-        var orderDto = CreateValidOrderDto(judgeId);
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ThrowsAsync(new InvalidOperationException("Service error"));
@@ -415,8 +441,9 @@ public class SendOrderNotificationJobTests
     {
         var judgeId = _faker.Random.Int(1, 1000);
         var physicalFileId = _faker.Random.Int(1, 9999);
-        var orderDto = CreateValidOrderDto(judgeId);
-        orderDto.CourtFile.PhysicalFileId = physicalFileId;
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        orderRequestDto.CourtFile.PhysicalFileId = physicalFileId;
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         _mockJudgeService.Setup(s => s.GetJudge(judgeId))
             .ReturnsAsync((Scv.Api.Models.Person)null);
@@ -439,8 +466,9 @@ public class SendOrderNotificationJobTests
         var judgeId = _faker.Random.Int(1, 1000);
         var physicalFileId = _faker.Random.Int(1, 9999);
         var judgeEmail = _faker.Internet.Email();
-        var orderDto = CreateValidOrderDto(judgeId);
-        orderDto.CourtFile.PhysicalFileId = physicalFileId;
+        var orderRequestDto = CreateValidOrderDto(judgeId);
+        orderRequestDto.CourtFile.PhysicalFileId = physicalFileId;
+        var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = CreateActiveJudge(judgeId);
         var databaseUser = new UserDto
@@ -494,6 +522,15 @@ public class SendOrderNotificationJobTests
                 ReferralNotesTxt = _faker.Lorem.Sentence(),
                 ReferredByName = _faker.Name.FullName(),
             },
+        };
+    }
+
+    private OrderDto CreateOrderDto(OrderRequestDto orderRequestDto)
+    {
+        return new OrderDto
+        {
+            Id = _faker.Random.AlphaNumeric(24),
+            OrderRequest = orderRequestDto
         };
     }
 

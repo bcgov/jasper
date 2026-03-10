@@ -8,10 +8,31 @@ export const useOrdersStore = defineStore('orders', () => {
   const isLoading = ref(false);
   const lastFetched = ref<Date | null>(null);
   const isInitialized = ref(false);
+  const currentJudgeId = ref<number | null>(null);
 
   const setOrders = (newOrders: Order[]) => {
     orders.value = newOrders;
     lastFetched.value = new Date();
+  };
+
+  const fetchOrders = async (
+    orderService: OrderService,
+    judgeIdOverride?: number | null
+  ) => {
+    if (isLoading.value) {
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      const judgeId = judgeIdOverride ?? currentJudgeId.value;
+      const ordersData = await orderService.getOrders(judgeId ?? null);
+      setOrders(ordersData ?? []);
+    } catch {
+      console.error('Failed to fetch orders');
+    } finally {
+      isLoading.value = false;
+    }
   };
 
   const initialize = (
@@ -26,19 +47,8 @@ export const useOrdersStore = defineStore('orders', () => {
     watch(
       judgeIdSource,
       async (newJudgeId) => {
-        if (isLoading.value) {
-          return;
-        }
-
-        isLoading.value = true;
-        try {
-          const ordersData = await orderService.getOrders(newJudgeId ?? null);
-          setOrders(ordersData ?? []);
-        } catch {
-          console.error('Failed to fetch orders');
-        } finally {
-          isLoading.value = false;
-        }
+        currentJudgeId.value = newJudgeId ?? null;
+        await fetchOrders(orderService, currentJudgeId.value);
       },
       { immediate: true }
     );
@@ -51,12 +61,14 @@ export const useOrdersStore = defineStore('orders', () => {
     lastFetched.value = null;
     isLoading.value = false;
     isInitialized.value = false;
+    currentJudgeId.value = null;
   };
 
   return {
     orders,
     isLoading,
     lastFetched,
+    fetchOrders,
     setOrders,
     initialize,
     reset,

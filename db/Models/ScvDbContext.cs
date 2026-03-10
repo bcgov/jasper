@@ -26,10 +26,15 @@ namespace Scv.Db.Models
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<RequestFileAccess> RequestFileAccess { get; set; }
         public DbSet<Audit> Audit { get; set; }
+        public DbSet<SignalROutboxMessage> SignalROutboxMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyAllConfigurations();
+            modelBuilder.Entity<SignalROutboxMessage>(entity =>
+            {
+                entity.ToTable("signalr_outbox_message");
+            });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

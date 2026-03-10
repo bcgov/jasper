@@ -115,4 +115,64 @@ public class StringExtensionsTests
         Assert.Equal(input, last);
         Assert.Equal(string.Empty, first);
     }
+
+    [Fact]
+    public void GetUtf8Size_NullInput_ReturnsZero()
+    {
+        string input = null;
+
+        var size = input.GetUtf8Size();
+
+        Assert.Equal(0, size);
+    }
+
+    [Fact]
+    public void GetUtf8Size_AsciiInput_ReturnsCharacterCount()
+    {
+        var input = "abc";
+
+        var size = input.GetUtf8Size();
+
+        Assert.Equal(3, size);
+    }
+
+    [Fact]
+    public void GetUtf8Size_MultiByteInput_ReturnsUtf8ByteCount()
+    {
+        var input = "caf\u00e9";
+
+        var size = input.GetUtf8Size();
+
+        Assert.Equal(5, size);
+    }
+
+    [Fact]
+    public void CompressAndDecompressFromBase64_RoundTripsOriginal()
+    {
+        var input = "hello world";
+
+        var compressed = input.CompressToBase64();
+        var decompressed = compressed.DecompressFromBase64();
+
+        Assert.False(string.IsNullOrWhiteSpace(compressed));
+        Assert.Equal(input, decompressed);
+    }
+
+    [Fact]
+    public void CompressToBase64_WhitespaceInput_ReturnsEmpty()
+    {
+        var input = "   ";
+
+        var compressed = input.CompressToBase64();
+
+        Assert.Equal(string.Empty, compressed);
+    }
+
+    [Fact]
+    public void DecompressFromBase64_WhitespaceInput_ReturnsEmpty()
+    {
+        var decompressed = "   ".DecompressFromBase64();
+
+        Assert.Equal(string.Empty, decompressed);
+    }
 }

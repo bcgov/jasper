@@ -1,12 +1,12 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
+using Scv.Api.Helpers.Extensions;
 
 namespace Scv.Api.SignalR;
 
 public class UserIdProvider : IUserIdProvider
 {
-    public string? GetUserId(HubConnectionContext connection)
+    public string GetUserId(HubConnectionContext connection)
     {
-        return connection.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        return connection.User?.UserId();
     }
 }

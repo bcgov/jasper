@@ -52,6 +52,11 @@ export function registerRouter(app: App) {
   app.provide('orderService', orderService);
   app.provide('judgeService', judgeService);
   app.provide('notificationsService', notificationsService);
+
+  return {
+    orderService,
+    notificationsService,
+  };
 }
 
 export * from './AuthService';

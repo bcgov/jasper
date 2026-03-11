@@ -47,7 +47,7 @@
     "vuetify": "3.11.8"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.2.0",
+    "@faker-js/faker": "^10.3.0",
     "@mdi/js": "^7.4.47",
     "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-vue": "^6.0.4",

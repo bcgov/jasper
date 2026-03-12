@@ -15,10 +15,6 @@ on:
           - dev
           - test
           - prod
-      release_tag:
-        description: 'Release tag to deploy (e.g. v1.2.3). Leave empty to use the current commit SHA.'
-        required: false
-        type: string
 
 env:
   WORKING_DIRECTORY: ./web
@@ -65,8 +61,8 @@ jobs:
       - name: Get Image Tag
         id: version
         run: |
-          if [[ -n "${{ github.event.inputs.release_tag }}" ]]; then
-            VERSION="${{ github.event.inputs.release_tag }}"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
             echo "IMAGE_TAG=${VERSION#v}" >> $GITHUB_OUTPUT
           else
             echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT

@@ -22,12 +22,12 @@ COPY ["cso-client/cso-client.csproj", "cso-client/"]
 RUN dotnet restore api/api.csproj
 COPY . .
 ARG RELEASE_VERSION=0.0.0
-RUN dotnet build "api/api.csproj" -c Release /p:ReleaseVersion=${RELEASE_VERSION}
+RUN dotnet build "api/api.csproj" -c Release /p:ReleaseVersion="${RELEASE_VERSION}"
 # build
 FROM build AS publish
 ARG RELEASE_VERSION=0.0.0
 RUN dotnet publish "api/api.csproj" -c Release -o /app/publish \
-    --runtime linux-musl-x64 --no-self-contained /p:ReleaseVersion=${RELEASE_VERSION}
+    --runtime linux-musl-x64 --no-self-contained /p:ReleaseVersion="${RELEASE_VERSION}"
 
 FROM base AS final
 

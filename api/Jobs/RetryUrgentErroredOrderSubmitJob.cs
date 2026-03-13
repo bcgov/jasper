@@ -11,22 +11,20 @@ using Scv.Db.Repositories;
 namespace Scv.Api.Jobs;
 
 /// <summary>
-/// Recurring job to retry submission for errored orders that are approved or unapproved.
+/// Recurring job to retry submission for errored urgent-priority orders.
 /// </summary>
-public class RetryErroredOrderSubmitJob(
+public class RetryUrgentErroredOrderSubmitJob(
     IRepositoryBase<Order> orderRepo,
     IBackgroundJobClient backgroundJobClient,
-    IOptions<JobsRetrySubmitOrderOptions> options,
-    ILogger<RetryErroredOrderSubmitJob> logger) : IRecurringJob
+    IOptions<JobsRetryUrgentSubmitOrderOptions> options,
+    ILogger<RetryUrgentErroredOrderSubmitJob> logger) : IRecurringJob
 {
-    private const string UrgentPriorityType = "URG";
-
     private readonly IRepositoryBase<Order> _orderRepo = orderRepo;
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
-    private readonly JobsRetrySubmitOrderOptions _options = options.Value;
-    private readonly ILogger<RetryErroredOrderSubmitJob> _logger = logger;
+    private readonly JobsRetryUrgentSubmitOrderOptions _options = options.Value;
+    private readonly ILogger<RetryUrgentErroredOrderSubmitJob> _logger = logger;
 
-    public string JobName => nameof(RetryErroredOrderSubmitJob);
+    public string JobName => nameof(RetryUrgentErroredOrderSubmitJob);
     public string CronSchedule => _options.CronSchedule;
 
     public async Task Execute()
@@ -36,19 +34,20 @@ public class RetryErroredOrderSubmitJob(
             && o.SubmitStatus == SubmitStatus.Error);
 
         var orderIds = erroredOrders?
-            .Where(o => !HasUrgentPriority(o))
+            .Where(HasUrgentPriority)
             .Where(o => o.SubmitAttempts < _options.MaxRetries || o.SubmitAttempts == null)
             .Select(o => o.Id)
             .Where(id => !string.IsNullOrWhiteSpace(id))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList() ?? [];
+
         if (orderIds.Count == 0)
         {
-            _logger.LogInformation("No errored orders found for resubmission.");
+            _logger.LogInformation("No errored urgent orders found for resubmission.");
             return;
         }
 
-        _logger.LogInformation("Retrying submission for {Count} errored orders.", orderIds.Count);
+        _logger.LogInformation("Retrying submission for {Count} errored urgent orders.", orderIds.Count);
 
         foreach (var orderId in orderIds)
         {
@@ -56,9 +55,9 @@ public class RetryErroredOrderSubmitJob(
         }
     }
 
-    private static bool HasUrgentPriority(Order order)
+    private bool HasUrgentPriority(Order order)
     {
         var priorityType = order?.OrderRequest?.Referral?.PriorityType;
-        return string.Equals(priorityType, UrgentPriorityType, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(priorityType, _options.PriorityType, StringComparison.OrdinalIgnoreCase);
     }
 }

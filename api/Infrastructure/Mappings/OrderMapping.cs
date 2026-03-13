@@ -70,7 +70,7 @@ public class OrderMapping : IRegister
                 {
                     OrderStatus.Approved => nameof(JudicialDecisionCd.APPR),
                     OrderStatus.Unapproved => nameof(JudicialDecisionCd.NAPP),
-                    OrderStatus.Pending => nameof(JudicialDecisionCd.AFDC),
+                    OrderStatus.AwaitingDocumentation => nameof(JudicialDecisionCd.AFDC),
                     _ => null,
                 };
             });

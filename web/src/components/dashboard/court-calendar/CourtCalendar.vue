@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex align-start">
+  <div>
     <v-skeleton-loader
       v-if="isLocationFilterLoading"
       data-testid="cc-filters-loader"
@@ -7,12 +7,14 @@
       :loading="isLocationFilterLoading"
     />
     <CourtCalendarFilters
-      data-testid="cc-filters"
       v-if="locations.length > 0"
       v-model:selected-locations="selectedLocationIds"
+      v-model:selected-presiders="selectedPresiderIds"
       :isLocationFilterLoading="isLocationFilterLoading"
       :locations="locations"
+      :presiders="presiders"
     />
+
     <v-skeleton-loader
       data-testid="cc-loader"
       v-if="isCalendarLoading"
@@ -72,10 +74,12 @@
   const presiders = ref<Presider[]>([]);
   const activities = ref<Activity[]>([]);
   const selectedLocationIds = ref<string[]>([]);
+  const selectedPresiderIds = ref<string[]>([]);
 
   const startDay = ref(new Date(selectedDate.value));
   const endDay = ref(new Date(selectedDate.value));
   const locationIds = computed(() => selectedLocationIds.value.join(','));
+  const presiderIds = computed(() => selectedPresiderIds.value.join(','));
 
   const updateCalendar = async () => {
     if (!calendarView.value) {
@@ -108,8 +112,20 @@
     }
   };
 
+  const filteredCalendarData = computed(() =>
+    calendarData.value.map((day) => ({
+      ...day,
+      activities:
+        selectedPresiderIds.value.length === 0
+          ? []
+          : day.activities.filter((a) =>
+              selectedPresiderIds.value.includes(a.judgeId.toString())
+            ),
+    }))
+  );
+
   const calendarEvents = computed(() =>
-    calendarData.value.map((d) => ({
+    filteredCalendarData.value.map((d) => ({
       start: new Date(d.date),
       extendedProps: {
         ...d,

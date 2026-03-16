@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Hangfire;
 using Microsoft.Extensions.Logging;
@@ -29,35 +28,18 @@ public class RetryUrgentErroredOrderSubmitJob(
 
     public async Task Execute()
     {
-        var erroredOrders = await _orderRepo.FindAsync(o =>
-            (o.Status == OrderStatus.Approved || o.Status == OrderStatus.Unapproved || o.Status == OrderStatus.AwaitingDocumentation)
-            && o.SubmitStatus == SubmitStatus.Error);
-
-        var orderIds = erroredOrders?
-            .Where(HasUrgentPriority)
-            .Where(o => o.SubmitAttempts < _options.MaxRetries || o.SubmitAttempts == null)
-            .Select(o => o.Id)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList() ?? [];
-
-        if (orderIds.Count == 0)
-        {
-            _logger.LogInformation("No errored urgent orders found for resubmission.");
-            return;
-        }
-
-        _logger.LogInformation("Retrying submission for {Count} errored urgent orders.", orderIds.Count);
-
-        foreach (var orderId in orderIds)
-        {
-            _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(orderId));
-        }
+        await RetryErroredOrderSubmitJobHelper.ExecuteAsync(
+            _orderRepo,
+            _backgroundJobClient,
+            _options.MaxRetries,
+            HasUrgentPriority,
+            _logger,
+            "No errored urgent orders found for resubmission.",
+            "Retrying submission for {Count} errored urgent orders.");
     }
 
     private bool HasUrgentPriority(Order order)
     {
-        var priorityType = order?.OrderRequest?.Referral?.PriorityType;
-        return string.Equals(priorityType, _options.PriorityType, StringComparison.OrdinalIgnoreCase);
+        return RetryErroredOrderSubmitJobHelper.HasPriorityType(order, _options.PriorityType);
     }
 }

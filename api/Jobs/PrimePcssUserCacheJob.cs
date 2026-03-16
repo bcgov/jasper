@@ -7,6 +7,7 @@ using Scv.Api.Helpers;
 using MapsterMapper;
 using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
 using Hangfire;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Jobs
 {

@@ -1,9 +1,8 @@
-﻿using JCCommon.Clients.FileServices;
+using JCCommon.Clients.FileServices;
 using Scv.Models.Civil.Appearances;
-using Scv.Models.Civil.Detail;
 using System.Collections.Generic;
 
-namespace Scv.Api.Models.Civil.Detail
+namespace Scv.Models.Civil.Detail
 {
     /// <summary>
     /// This is used to refine information from <see cref="CivilFileDetailResponse"/>.

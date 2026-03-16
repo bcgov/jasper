@@ -6,9 +6,10 @@ using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Xunit;
+using Scv.Core.Infrastructure;
 
 namespace Scv.Api.Tests.Services
 {

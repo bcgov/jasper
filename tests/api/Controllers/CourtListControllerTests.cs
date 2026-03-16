@@ -33,6 +33,7 @@ using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
 
 namespace tests.api.Controllers;
 

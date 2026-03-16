@@ -1,5 +1,5 @@
 using Scv.Db.Models;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Models.Criminal.Detail;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

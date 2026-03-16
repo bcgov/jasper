@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using JCCommon.Clients.FileServices;
 using Mapster;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Models.Criminal.Detail;
 using Scv.Db.Models;
 using Scv.Models;
 using System;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Civil.Detail;
 
 namespace Scv.Api.Infrastructure.Mappings;
 

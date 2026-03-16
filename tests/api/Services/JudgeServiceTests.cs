@@ -8,7 +8,7 @@ using LazyCache.Providers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using PCSSCommon.Clients.PersonServices;
-using Scv.Api.Models.Location;
+using Scv.Models.Location;
 using Scv.Api.Services;
 using tests.api.Fixtures;
 using Xunit;

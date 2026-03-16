@@ -122,7 +122,7 @@ services:
       - SplunkToken=${SplunkToken}
       - SUPPORT_ACCOUNT=${SUPPORT_ACCOUNT}
       - TD__Url=${TD_URL}
-      - TDKeycloak__Secret=${TDKeycloakServiceSecret}
+      - TDKeycloak__ServiceAccountSecret=${TDKeycloakServiceSecret}
       - UserServicesClient__Password=${UserServicesClientPassword}
       - UserServicesClient__Url=${UserServicesClientUrl}
       - UserServicesClient__Username=${UserServicesClientUsername}
@@ -161,7 +161,7 @@ services:
       - Keycloak__Audience=${TDKeycloakAudience}
       - Keycloak__Authority=${TDKeycloakAuthority}
       - Keycloak__ClientId=${TDKeycloakClient}
-      - Keycloak__Secret=${TdKeycloakSecret}
+      - Keycloak__ServiceAccountSecret=${TdKeycloakSecret}
       - SplunkCollectorId=${SplunkCollectorId}
       - SplunkCollectorUrl=${SplunkCollectorUrl}
       - SplunkToken=${SplunkToken}

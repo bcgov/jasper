@@ -1,11 +1,50 @@
 namespace Scv.TdApi.Infrastructure.FileSystem
 {
+    using Scv.Core.Helpers.Exceptions;
+    using System.IO;
+
     /// <summary>
     /// Utility class for SMB path normalization and manipulation.
     /// Centralizes path handling logic to ensure consistency across the application.
     /// </summary>
     public static class SmbPathUtility
     {
+        /// <summary>
+        /// Validates that a path is relative and does not contain parent directory traversal.
+        /// </summary>
+        public static void ValidateRelativePath(string relativePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                return;
+            }
+
+            var normalized = relativePath.Replace("/", "\\");
+
+            if (normalized.StartsWith("\\\\", StringComparison.Ordinal) || normalized.StartsWith("\\", StringComparison.Ordinal))
+            {
+                throw new BadRequestException("path must be a relative path.");
+            }
+
+            var trimmed = normalized.TrimStart('\\');
+
+            if (trimmed.Length >= 2 && char.IsLetter(trimmed[0]) && trimmed[1] == ':')
+            {
+                throw new BadRequestException("path must be a relative path.");
+            }
+
+            if (Path.IsPathRooted(normalized))
+            {
+                throw new BadRequestException("path must be a relative path.");
+            }
+
+            var segments = trimmed.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Any(segment => segment == ".."))
+            {
+                throw new BadRequestException("path must not contain '..' segments.");
+            }
+        }
+
         /// <summary>
         /// Normalizes a path by converting slashes and removing share prefixes.
         /// Example input: "/Criminal Share/Fraser+Vancouver Coastal/222 main/2025/10 October/October 1 (Wed)/101/File.pdf"

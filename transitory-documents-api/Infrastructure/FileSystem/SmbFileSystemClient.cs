@@ -231,6 +231,8 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         {
             ThrowIfDisposed();
 
+            SmbPathUtility.ValidateRelativePath(filePath);
+
             return await _retryPolicy.ExecuteAsync(async ct =>
             {
                 using var connection = await CreateConnectionAsync(ct);
@@ -734,12 +736,16 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         {
             _logger.LogDebug("Opening SMB file: {Path}", smbPath);
 
+            var fileAttributes = createOptions.HasFlag(CreateOptions.FILE_DIRECTORY_FILE)
+                ? SMBLibrary.FileAttributes.Directory
+                : SMBLibrary.FileAttributes.Normal;
+
             var status = fileStore.CreateFile(
                 out var fileHandle,
                 out _,
                 smbPath,
                 desiredAccess,
-                SMBLibrary.FileAttributes.Normal,
+                    fileAttributes,
                 ShareAccess.Read,
                 CreateDisposition.FILE_OPEN,
                 createOptions,

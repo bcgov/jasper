@@ -45,7 +45,7 @@
         :key="pairing.card.courtListLocationID"
       >
         <div class="w-100">
-          <court-list-card :cardInfo="pairing.card" />
+          <court-list-card :cardInfo="pairing.card" :date="formatDateForApi(appliedDate)" />
           <court-list-table :search="search" :data="pairing.tableData" />
         </div>
       </template>

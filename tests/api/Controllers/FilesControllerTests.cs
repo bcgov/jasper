@@ -20,7 +20,7 @@ using Scv.Api.Documents;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Models.archive;
+using Scv.Models.Archive;
 using Scv.Models.Search;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;

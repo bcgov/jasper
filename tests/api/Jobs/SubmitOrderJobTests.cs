@@ -6,6 +6,7 @@ using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Api.Services;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Xunit;
 

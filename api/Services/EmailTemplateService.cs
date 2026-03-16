@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scriban;
 using Scv.Api.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 

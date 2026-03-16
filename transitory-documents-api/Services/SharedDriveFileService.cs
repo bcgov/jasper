@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
 using Scv.Models.TransitoryDocuments;
 using Scv.TdApi.Infrastructure.FileSystem;
@@ -16,17 +17,20 @@ namespace Scv.TdApi.Services
         private readonly FileExtensionContentTypeProvider _contentTypeProvider = new();
         private readonly SharedDriveOptions _options;
         private readonly CorrectionMappingOptions _correctionMappingOptions;
+        private readonly TdApiOptions _tdApiOptions;
 
         public SharedDriveFileService(
             ISmbFileSystemClient fileSystemClient,
             ILogger<SharedDriveFileService> logger,
             IOptions<SharedDriveOptions> options,
-            IOptions<CorrectionMappingOptions> correctionMappingOptions)
+            IOptions<CorrectionMappingOptions> correctionMappingOptions,
+            IOptions<TdApiOptions> tdApiOptions)
         {
             _fileSystemClient = fileSystemClient ?? throw new ArgumentNullException(nameof(fileSystemClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _correctionMappingOptions = correctionMappingOptions?.Value ?? throw new ArgumentNullException(nameof(correctionMappingOptions));
+            _tdApiOptions = tdApiOptions?.Value ?? throw new ArgumentNullException(nameof(tdApiOptions));
         }
 
         public async Task<IReadOnlyList<FileMetadataDto>> FindFilesAsync(
@@ -93,6 +97,8 @@ namespace Scv.TdApi.Services
                     throw new ArgumentException("Relative path is required", nameof(relativePath));
                 }
 
+                SmbPathUtility.ValidateRelativePath(relativePath);
+
                 _logger.LogInformation("Opening file: {Path}", relativePath);
 
                 var stream = await _fileSystemClient.OpenFileAsync(relativePath);
@@ -104,6 +110,13 @@ namespace Scv.TdApi.Services
                 }
 
                 var response = new FileStreamResponse(stream, fileName, contentType);
+
+                if (_tdApiOptions.MaxFileSize > 0 && response.SizeBytes > _tdApiOptions.MaxFileSize)
+                {
+                    await stream.DisposeAsync();
+                    var maxSizeMb = _tdApiOptions.MaxFileSize / 1024.0 / 1024.0;
+                    throw new BadRequestException($"File size exceeds maximum allowed size of {maxSizeMb:F2} MB.");
+                }
 
                 _logger.LogInformation("Successfully opened file: {FileName}, size: {Size} bytes",
                     fileName, response.SizeBytes);

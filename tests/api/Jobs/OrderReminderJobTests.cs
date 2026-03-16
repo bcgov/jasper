@@ -13,7 +13,8 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
+using Scv.Models.Order;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -328,7 +329,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync([order]);
 
-        await Assert.ThrowsAsync<Scv.Api.Helpers.Exceptions.ConfigurationException>(async () =>
+        await Assert.ThrowsAsync<Scv.Core.Helpers.Exceptions.ConfigurationException>(async () =>
         {
             await _job.Execute();
         });

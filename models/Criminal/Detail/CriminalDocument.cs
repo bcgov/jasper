@@ -1,7 +1,7 @@
-﻿using JCCommon.Clients.FileServices;
-using Scv.Db.Models;
+using JCCommon.Clients.FileServices;
+using Scv.Models.Helpers;
 
-namespace Scv.Api.Models.Criminal.Detail
+namespace Scv.Models.Criminal.Detail
 {
     /// <summary>
     /// Wrapper for CfcDocument, adding in additional fields
@@ -15,7 +15,7 @@ namespace Scv.Api.Models.Criminal.Detail
         public string Category
         {
             get => _category;
-            set => _category = DocumentCategory.Format(value);
+            set => _category = DocumentCategoryHelper.Format(value);
         }
 
         public string DocumentTypeDescription { get; set; }

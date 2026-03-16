@@ -4,11 +4,11 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
+using Scv.Models.Order;
 
 namespace Scv.Api.Controllers;
 

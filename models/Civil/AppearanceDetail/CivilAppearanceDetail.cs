@@ -1,9 +1,8 @@
-﻿using JCCommon.Clients.FileServices;
-using Scv.Models.Civil.AppearanceDetail;
+using JCCommon.Clients.FileServices;
 using Scv.Models.Civil.CourtList;
 using System.Collections.Generic;
 
-namespace Scv.Api.Models.Civil.AppearanceDetail
+namespace Scv.Models.Civil.AppearanceDetail
 {
     public class CivilAppearanceDetail
     {
@@ -32,7 +31,7 @@ namespace Scv.Api.Models.Civil.AppearanceDetail
         /// <summary>
         /// Extended object.
         /// </summary>
-        public ICollection<Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod> AppearanceMethod { get; set; }
+        public ICollection<CivilAppearanceMethod> AppearanceMethod { get; set; }
         public CivilFileDetailResponseCourtLevelCd CourtLevelCd { get; set; }
 
         /// <summary>

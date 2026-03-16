@@ -1,4 +1,4 @@
-﻿using Mapster;
+using Mapster;
 using Newtonsoft.Json;
 
 namespace Scv.Models.Civil.Appearances

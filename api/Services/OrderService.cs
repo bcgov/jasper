@@ -12,15 +12,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
 using Scv.Api.Jobs;
 using Scv.Api.Models.Order;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Api.Repositories;
+using Scv.Core.Infrastructure;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Models.Order;
 
 namespace Scv.Api.Services;
 

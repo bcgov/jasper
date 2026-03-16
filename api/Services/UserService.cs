@@ -15,9 +15,6 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
-
-    Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
-    Task<UserDto> GetByJudgeIdAsync(int judgeId);
     Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user);
     Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
     Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
@@ -107,6 +104,17 @@ public class UserService(
 
         return await PopulateUserPermissionsAndRolesAsync(user);
     }
+    public async Task<UserDto> GetByJudgeIdAsync(int judgeId)
+    {
+        var result = await this.Repo.FindAsync(u => u.JudgeId == judgeId);
+        if (result == null || !result.Any())
+        {
+            this.Logger.LogInformation("User with judge id: {JudgeId} is not found", judgeId);
+            return null;
+        }
+
+        return Mapper.Map<UserDto>(result.Single());
+    }
 
     private async Task<UserDto> PopulateUserPermissionsAndRolesAsync(UserDto user)
     {
@@ -139,18 +147,6 @@ public class UserService(
         user.Roles = roles;
 
         return user;
-    }
-
-    public async Task<UserDto> GetByJudgeIdAsync(int judgeId)
-    {
-        var result = await this.Repo.FindAsync(u => u.JudgeId == judgeId);
-        if (result == null || !result.Any())
-        {
-            this.Logger.LogInformation("User with judge id: {JudgeId} is not found", judgeId);
-            return null;
-        }
-
-        return Mapper.Map<UserDto>(result.Single());
     }
 
     public async Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user)

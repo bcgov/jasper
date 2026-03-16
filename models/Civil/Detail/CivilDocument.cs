@@ -1,9 +1,8 @@
-﻿using JCCommon.Clients.FileServices;
-using Scv.Db.Models;
-using Scv.Models.Civil.Detail;
+using JCCommon.Clients.FileServices;
+using Scv.Models.Helpers;
 using System.Collections.Generic;
 
-namespace Scv.Api.Models.Civil.Detail
+namespace Scv.Models.Civil.Detail
 {
 
     /// <summary>
@@ -16,7 +15,7 @@ namespace Scv.Api.Models.Civil.Detail
         public string Category
         {
             get => _category;
-            set => _category = DocumentCategory.Format(value);
+            set => _category = DocumentCategoryHelper.Format(value);
         }
         public string DocumentTypeDescription { get; set; }
         public string NextAppearanceDt { get; set; }

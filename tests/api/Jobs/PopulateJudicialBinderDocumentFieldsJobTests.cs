@@ -7,18 +7,15 @@ using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph.Models;
-using Microsoft.Graph.Models.Security;
 using Moq;
-using Scv.Api.Infrastructure;
 using Scv.Api.Jobs;
-using Scv.Api.Models;
-using Scv.Api.Models.Binder;
-using Scv.Api.Models.Civil.Detail;
+using Scv.Models.Binder;
+using Scv.Models.Civil.Detail;
 using Scv.Api.Services;
-using Scv.Api.Services.Files;
+using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
+using Scv.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -316,18 +313,18 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
 
         this.SetupFileServiceMocks();
         var job = CreateJob();
-        var exception = await Assert.ThrowsAsync<Exception>(() => job.Execute());
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => job.Execute());
 
-        Assert.Equal("Fatal error", exception.Message);
+        Assert.Contains("Fatal error in PopulateJudicialBinderDocumentFieldsJob", exception.Message);
 
         _logger.Verify(
             l => l.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, _) => o.ToString()!.Contains("Fatal error in PopulateJudicialBinderDocumentFieldsJob")),
+                It.IsAny<It.IsAnyType>(),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Never);
     }
 
     [Fact]

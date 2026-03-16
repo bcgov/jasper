@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Scv.TdApi</RootNamespace>
     <UserSecretsId>a8d842c6-b0d6-40e1-b31f-7dabdd112945</UserSecretsId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\$(Configuration)\net9.0\transitory-documents-api.xml</DocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\net10.0\transitory-documents-api.xml</DocumentationFile>
     <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>bin\$(Configuration)\net9.0\transitory-documents-api.xml</DocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\net10.0\transitory-documents-api.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

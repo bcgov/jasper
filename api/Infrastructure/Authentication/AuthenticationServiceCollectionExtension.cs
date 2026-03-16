@@ -31,6 +31,7 @@ using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Polly;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

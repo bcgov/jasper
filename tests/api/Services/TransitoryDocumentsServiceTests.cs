@@ -4,15 +4,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
-using LazyCache;
-using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
+using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Mappings;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Exceptions;
 using TDCommon.Clients.DocumentsServices;
@@ -24,17 +24,14 @@ namespace tests.api.Services;
 public class TransitoryDocumentsServiceTests : ServiceTestBase
 {
     private readonly Mock<ILogger<TransitoryDocumentsService>> _mockLogger;
-    private readonly Mock<ILogger<LocationService>> _mockLocationLogger;
     private readonly Mock<IConfiguration> _mockConfig;
     private readonly Faker _faker;
     private readonly IMapper _mapper;
-    private readonly IAppCache _cache;
 
     public TransitoryDocumentsServiceTests()
     {
         _faker = new Faker();
         _mockLogger = new Mock<ILogger<TransitoryDocumentsService>>();
-        _mockLocationLogger = new Mock<ILogger<LocationService>>();
         _mockConfig = new Mock<IConfiguration>();
 
         var mockCachingSection = new Mock<IConfigurationSection>();
@@ -46,9 +43,6 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         config.Apply(new TransitoryDocumentsMapping());
         config.Apply(new LocationMapping());
         _mapper = new Mapper(config);
-
-        _cache = new CachingService(new Lazy<ICacheProvider>(() =>
-            new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
     }
 
     private (TransitoryDocumentsService service,
@@ -62,10 +56,21 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         var mockTdClient = new Mock<ITransitoryDocumentsClientService>();
         var mockKeycloakTokenService = new Mock<IKeycloakTokenService>();
         var mockLocationService = new Mock<ILocationService>();
+        var mockKeycloakOptions = new Mock<IOptionsMonitor<KeycloakOptions>>();
+
+        mockKeycloakOptions
+            .Setup(o => o.CurrentValue)
+            .Returns(new KeycloakOptions
+            {
+                Authority = "https://keycloak",
+                Audience = "jasper",
+                ClientId = "client-id",
+                Secret = "secret"
+            });
 
         var bearerToken = _faker.Random.AlphaNumeric(50);
         mockKeycloakTokenService
-            .Setup(k => k.GetAccessTokenAsync(It.IsAny<CancellationToken>()))
+            .Setup(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(bearerToken);
 
         // SetBearerToken can now be mocked since it's part of the interface
@@ -99,6 +104,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
             mockTdClient.Object,
             mockLocationService.Object,
             mockKeycloakTokenService.Object,
+            mockKeycloakOptions.Object,
             _mapper);
 
         return (service, mockTdClient, mockLocationService, mockKeycloakTokenService);
@@ -429,7 +435,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
             .ReturnsAsync(region);
 
         mockKeycloakService
-            .Setup(k => k.GetAccessTokenAsync(It.IsAny<CancellationToken>()))
+            .Setup(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedToken);
 
         mockTdClient
@@ -442,7 +448,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         await service.ListSharedDocuments(locationId, roomCode, date);
 
         // Assert
-        mockKeycloakService.Verify(k => k.GetAccessTokenAsync(It.IsAny<CancellationToken>()), Times.Once);
+        mockKeycloakService.Verify(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         mockTdClient.Verify(c => c.SetBearerToken(expectedToken), Times.Once);
     }
 
@@ -775,7 +781,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         var (service, mockTdClient, _, mockKeycloakService) = SetupService();
 
         mockKeycloakService
-            .Setup(k => k.GetAccessTokenAsync(It.IsAny<CancellationToken>()))
+            .Setup(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedToken);
 
         mockTdClient
@@ -786,7 +792,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         await service.DownloadFile(path);
 
         // Assert
-        mockKeycloakService.Verify(k => k.GetAccessTokenAsync(It.IsAny<CancellationToken>()), Times.Once);
+        mockKeycloakService.Verify(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         mockTdClient.Verify(c => c.SetBearerToken(expectedToken), Times.Once);
     }
 

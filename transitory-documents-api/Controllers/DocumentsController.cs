@@ -46,6 +46,11 @@ namespace Scv.TdApi.Controllers
                 return BadRequest("Request body is required.");
             }
 
+            if (request.Date == default)
+            {
+                return BadRequest("Date is required.");
+            }
+
             request.RegionCode = StringSanitizer.Sanitize(request.RegionCode) ?? string.Empty;
             request.RegionName = StringSanitizer.Sanitize(request.RegionName) ?? string.Empty;
             request.AgencyIdentifierCd = StringSanitizer.Sanitize(request.AgencyIdentifierCd) ?? string.Empty;

@@ -7,6 +7,7 @@ using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Models;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models;
+using Scv.Core.Services;
 
 namespace Scv.Api.Services;
 

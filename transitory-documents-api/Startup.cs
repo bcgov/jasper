@@ -22,6 +22,7 @@ using Scv.TdApi.Infrastructure.FileSystem;
 using Scv.TdApi.Infrastructure.Middleware;
 using Scv.TdApi.Infrastructure.Options;
 using Scv.TdApi.Services;
+using Scv.Models;
 using System.Reflection;
 using System.Security.Claims;
 
@@ -86,6 +87,11 @@ namespace Scv.TdApi
                 .ValidateDataAnnotations()
                 .Validate(o => !string.IsNullOrWhiteSpace(o.BasePath), "SharedDrive:BasePath is required")
                 .Validate(o => o.DateFolderFormats is { Count: > 0 }, "SharedDrive:DateFolderFormats must have at least one format")
+                .ValidateOnStart();
+
+            services.AddOptions<TdApiOptions>()
+                .Bind(Configuration.GetSection("TDApi"))
+                .Validate(o => o.MaxFileSize > 0, "TDApi:MaxFileSize must be greater than 0")
                 .ValidateOnStart();
 
             services.AddOptions<CorrectionMappingOptions>()

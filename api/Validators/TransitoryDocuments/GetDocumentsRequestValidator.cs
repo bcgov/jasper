@@ -14,6 +14,6 @@ public class GetDocumentsRequestValidator : AbstractValidator<GetDocumentsReques
             .NotEmpty().WithMessage("roomCd is required and must be non-empty.");
 
         RuleFor(x => x.Date)
-            .NotNull().WithMessage("Date is required.");
+            .Must(date => date != default).WithMessage("Date is required.");
     }
 }

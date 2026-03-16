@@ -19,7 +19,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
-using Scv.Api.Models.Civil.Detail;
 
 namespace Scv.Api.Services.Files
 {

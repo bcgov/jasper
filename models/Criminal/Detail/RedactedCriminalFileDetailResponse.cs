@@ -1,10 +1,9 @@
-﻿using JCCommon.Clients.FileServices;
+using JCCommon.Clients.FileServices;
 using Scv.Models.Criminal.Appearances;
-using Scv.Models.Criminal.Detail;
 using System.Collections.Generic;
 
 
-namespace Scv.Api.Models.Criminal.Detail
+namespace Scv.Models.Criminal.Detail
 {
     /// <summary>
     /// This is used to narrow down the amount of information from <see cref="CriminalFileDetailResponse"/> CriminalFileDetailResponse. 
@@ -52,7 +51,7 @@ namespace Scv.Api.Models.Criminal.Detail
         /// <summary>
         /// We need this for our witness page.
         /// </summary>
-        public ICollection<Scv.Models.Criminal.Detail.CriminalWitness> Witness { get; set; }
+        public ICollection<CriminalWitness> Witness { get; set; }
 
         /// <summary>
         /// Extended.

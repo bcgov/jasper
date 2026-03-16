@@ -7,11 +7,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PCSSCommon.Models;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
 
@@ -192,7 +193,7 @@ public class OrderReminderJob(
             raj.UserId, order.Id, order.ReassignmentNotificationsSent);
     }
 
-    private async Task<(Models.Person judge, Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)
+    private async Task<(Models.Person judge, Scv.Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)
     {
         var judgeId = order.OrderRequest?.Referral?.SentToPartId;
         if (!judgeId.HasValue)

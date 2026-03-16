@@ -60,7 +60,6 @@ using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
 using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
 using TdDocumentsServices = TDCommon.Clients.DocumentsServices;
-using Scv.Api.Infrastructure.Options;
 
 namespace Scv.Api.Infrastructure
 {
@@ -200,9 +199,10 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();
-            services.AddSingleton<IKeycloakTokenService, KeycloakTokenService>();
+            services.AddSingleton<Authentication.IKeycloakTokenService, KeycloakTokenService>();
             services.AddTransient<CsoBearerTokenHandler>();
-            services.AddHttpClient(KeycloakTokenService.HttpClientName);
+            services.AddHttpClient(KeycloakTokenService.HttpClientName)
+                .AddHttpMessageHandler<TimingHandler>();
             services.AddOptions<KeycloakClientOptions>()
                 .Bind(configuration.GetSection("CsoClientKeycloak"))
                 .ValidateDataAnnotations();
@@ -273,9 +273,10 @@ namespace Scv.Api.Infrastructure
             // Register the wrapper for TransitoryDocumentsClient
             services.AddScoped<ITransitoryDocumentsClientService, TransitoryDocumentsClientService>();
 
-            // Keycloak - Configure options for TdKeycloakTokenService
-            services.Configure<KeycloakOptions>(configuration.GetSection("TDKeycloak"));
-            services.AddHttpClient("keycloak").AddHttpMessageHandler<TimingHandler>();
+            // Keycloak - configure TD token request options
+            services.AddOptions<KeycloakClientOptions>()
+                .Bind(configuration.GetSection("TDKeycloak"))
+                .ValidateDataAnnotations();
 
             // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
             services.AddTransient<DarsCookieHandler>();
@@ -314,7 +315,6 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
-            services.AddSingleton<IKeycloakTokenService, TdKeycloakTokenService>();
 
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<ITimebankService, TimebankService>();
@@ -338,7 +338,6 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IGroupService, GroupService>();
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IOrderService, OrderService>();
-                services.AddScoped<IKeycloakTokenService, TdKeycloakTokenService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();
                 services.AddTransient<IRecurringJob, SyncAssignedCasesJob>();
                 services.AddTransient<SendOrderNotificationJob>();

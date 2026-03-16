@@ -1,9 +1,9 @@
-﻿using JCCommon.Clients.FileServices;
-using Scv.Api.Helpers;
+using JCCommon.Clients.FileServices;
+using Scv.Models.Helpers;
 using Scv.Models.Criminal.Detail;
 using System.Collections.Generic;
 
-namespace Scv.Api.Models.Criminal.Detail;
+namespace Scv.Models.Criminal.Detail;
 /// <summary>
 /// Extends JCCommon.Clients.FileServices.CriminalParticipant
 /// </summary>

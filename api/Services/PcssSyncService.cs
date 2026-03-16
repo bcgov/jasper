@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PCSSCommon.Clients.AuthorizationServices;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Services
 {

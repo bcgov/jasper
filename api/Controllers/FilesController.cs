@@ -9,13 +9,14 @@ using Scv.Api.Constants;
 using Scv.Api.Documents;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Services.Files;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Core.Helpers.Extensions;
-using Scv.Models.archive;
-using Scv.Api.Models.Civil.Detail;
+using Scv.Models.Archive;
+using Scv.Models.Civil.Detail;
 using Scv.Api.Models.Criminal.AppearanceDetail;
+using Scv.Models.Criminal.AppearanceDetail;
+using Scv.Models.Criminal.Detail;
 using Scv.Models.Document;
 using Scv.Models.Search;
 using System;
@@ -25,7 +26,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
+using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
+using CivilAppearanceDetailModel = Scv.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using Scv.Models.Civil.AppearanceDetail;
 
 namespace Scv.Api.Controllers
@@ -152,7 +154,7 @@ namespace Scv.Api.Controllers
         /// <returns>CivilAppearanceDetail</returns>
         [HttpGet]
         [Route("civil/{fileId}/appearance/{appearanceId}/methods")]
-        public async Task<ActionResult<CivilAppearanceDetail>> GetCivilAppearanceMethods(string fileId, string appearanceId)
+        public async Task<ActionResult<CivilAppearanceDetailModel>> GetCivilAppearanceMethods(string fileId, string appearanceId)
         {
             if (User.IsSupremeUser())
                 return Forbid();

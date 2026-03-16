@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers;
 using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
 

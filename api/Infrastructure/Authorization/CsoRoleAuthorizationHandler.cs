@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Options;
+using Scv.Core.Helpers.Extensions;
 using System;
 using System.Linq;
 using System.Security.Claims;

@@ -1,6 +1,9 @@
 using DnsClient.Internal;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Scv.Api.Infrastructure.Authentication;
+using Scv.Api.Infrastructure.Options;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
 using System;
@@ -21,6 +24,7 @@ namespace Scv.Api.Services
         private readonly ITransitoryDocumentsClientService _tdClient;
         private readonly ILocationService _locationService;
         private readonly IKeycloakTokenService _keycloakTokenService;
+        private readonly IOptions<KeycloakClientOptions> _tdKeycloakOptions;
         private readonly IMapper _mapper;
         private readonly Lazy<JsonSerializerOptions> _jsonSerializerOptions;
         private readonly ILogger<TransitoryDocumentsService> _logger;
@@ -33,6 +37,7 @@ namespace Scv.Api.Services
             ITransitoryDocumentsClientService transitoryDocumentsClientWrapper,
             ILocationService locationService,
             IKeycloakTokenService keycloakTokenService,
+            IOptions<KeycloakClientOptions> tdKeycloakOptions,
             IMapper mapper)
         {
             _jsonSerializerOptions = new Lazy<JsonSerializerOptions>(CreateJsonSerializerOptions);
@@ -40,6 +45,7 @@ namespace Scv.Api.Services
             _tdClient = transitoryDocumentsClientWrapper;
             _locationService = locationService;
             _keycloakTokenService = keycloakTokenService;
+            _tdKeycloakOptions = tdKeycloakOptions;
             _mapper = mapper;
         }
 
@@ -67,7 +73,7 @@ namespace Scv.Api.Services
         {
             _logger.LogInformation("Searching for documents in location: {Location}, room: {Room}, date: {Date}", locationId, roomCode, date);
 
-            var bearer = await _keycloakTokenService.GetAccessTokenAsync();
+            var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value);
             _tdClient.SetBearerToken(bearer);
 
             try
@@ -120,7 +126,7 @@ namespace Scv.Api.Services
         {
             _logger.LogInformation("Downloading file from path: {Path}", path);
 
-            var bearer = await _keycloakTokenService.GetAccessTokenAsync();
+            var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value);
             _tdClient.SetBearerToken(bearer);
 
             try
@@ -191,5 +197,7 @@ namespace Scv.Api.Services
 
             return "application/octet-stream";
         }
+
+
     }
 }

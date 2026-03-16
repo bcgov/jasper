@@ -1,5 +1,7 @@
 ﻿using Scv.Core.Helpers.Exceptions;
 using Scv.Api.Models;
+using System.Linq;
+using System;
 
 namespace Scv.Api.Helpers
 {

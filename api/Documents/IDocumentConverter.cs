@@ -1,5 +1,5 @@
 ﻿using JCCommon.Clients.FileServices;
-using Scv.Api.Models.Criminal.Detail;
+using Scv.Models.Criminal.Detail;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

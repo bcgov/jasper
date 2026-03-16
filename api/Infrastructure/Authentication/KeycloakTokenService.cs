@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Concurrent;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using IdentityModel.Client;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Exceptions;
+using Scv.Core.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Options;
 
 namespace Scv.Api.Infrastructure.Authentication
@@ -42,11 +44,12 @@ namespace Scv.Api.Infrastructure.Authentication
                 throw new ArgumentNullException(nameof(options));
             }
 
+            ValidateOptions(options);
             ValidateSecret(options);
 
             var cacheKey = BuildCacheKey(options);
             if (_cache.TryGetValue(cacheKey, out ServiceAccountToken cachedToken) &&
-                cachedToken.IsValid(options.RefreshSkewSeconds))
+                cachedToken.IsValid(options.RefreshSkewSeconds, options.ClockSkewSeconds))
             {
                 return cachedToken.AccessToken;
             }
@@ -56,13 +59,13 @@ namespace Scv.Api.Infrastructure.Authentication
             try
             {
                 if (_cache.TryGetValue(cacheKey, out cachedToken) &&
-                    cachedToken.IsValid(options.RefreshSkewSeconds))
+                    cachedToken.IsValid(options.RefreshSkewSeconds, options.ClockSkewSeconds))
                 {
                     return cachedToken.AccessToken;
                 }
 
                 var token = await RequestServiceAccountTokenAsync(options, cancellationToken);
-                var cacheDuration = GetCacheDuration(token.ExpiresAt, options.RefreshSkewSeconds);
+                var cacheDuration = GetCacheDuration(token.ExpiresAt, options.RefreshSkewSeconds, options.ClockSkewSeconds);
 
                 if (cacheDuration.TotalSeconds > options.RefreshSkewSeconds)
                 {
@@ -90,20 +93,28 @@ namespace Scv.Api.Infrastructure.Authentication
             var tokenEndpoint = options.Authority.TrimEnd('/') + "/protocol/openid-connect/token";
 
             _logger.LogInformation(
-                "Requesting Keycloak service account token for authority {Authority}, clientId {ClientId}.",
+                "Requesting Keycloak service account token for authority {Authority}, clientId {ClientId}, audience {Audience}, scope {Scope}.",
                 options.Authority,
-                options.ClientId);
+                options.ClientId,
+                string.IsNullOrWhiteSpace(options.Audience) ? "(null)" : options.Audience,
+                string.IsNullOrWhiteSpace(options.Scope) ? "(null)" : options.Scope);
 
             var request = new ClientCredentialsTokenRequest
             {
                 Address = tokenEndpoint,
                 ClientId = options.ClientId,
-                ClientSecret = options.ServiceAccountSecret
+                ClientSecret = options.ServiceAccountSecret,
+                Scope = string.IsNullOrWhiteSpace(options.Scope) ? null : options.Scope
             };
 
             if (!string.IsNullOrWhiteSpace(options.Audience))
             {
+                _logger.LogDebug("Adding audience parameter to token request: {Audience}", options.Audience);
                 request.Parameters.Add("audience", options.Audience);
+            }
+            else
+            {
+                _logger.LogWarning("No audience configured in KeycloakClientOptions. Token may not include audience claim.");
             }
 
             var response = await client.RequestClientCredentialsTokenAsync(request, cancellationToken);
@@ -117,42 +128,71 @@ namespace Scv.Api.Infrastructure.Authentication
 
             if (response.ExpiresIn <= 0)
             {
-                _logger.LogWarning(
-                    "Keycloak token response did not include a valid expiry. Using default expiry of 300 seconds.");
+                _logger.LogWarning("Keycloak token response did not include a valid expires_in value. Falling back to JWT exp claim or default expiry.");
             }
 
-            var expiresInSeconds = response.ExpiresIn > 0 ? response.ExpiresIn : 300;
-            var expiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds);
+            var expiresAt = ComputeExpiry(response);
 
             return new ServiceAccountToken(response.AccessToken, expiresAt);
         }
 
         private static string BuildCacheKey(KeycloakClientOptions options)
         {
-            return $"keycloak-token::{options.Authority}::{options.ClientId}::{options.Audience}";
+            return $"keycloak-token::{options.Authority}::{options.ClientId}::{options.Audience}::{options.Scope}";
         }
 
-        private static TimeSpan GetCacheDuration(DateTimeOffset expiresAt, int refreshSkewSeconds)
+        private static TimeSpan GetCacheDuration(DateTimeOffset expiresAt, int refreshSkewSeconds, int clockSkewSeconds)
         {
-            var skew = TimeSpan.FromSeconds(Math.Max(0, refreshSkewSeconds));
+            var skew = TimeSpan.FromSeconds(Math.Max(0, refreshSkewSeconds) + Math.Max(0, clockSkewSeconds));
             var duration = expiresAt - DateTimeOffset.UtcNow - skew;
 
             return duration > TimeSpan.Zero ? duration : TimeSpan.FromSeconds(1);
+        }
+
+        private static DateTimeOffset ComputeExpiry(TokenResponse response)
+        {
+            if (response.ExpiresIn > 0)
+            {
+                return DateTimeOffset.UtcNow.AddSeconds(response.ExpiresIn);
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(response.AccessToken);
+            var expClaim = jwt.Claims.FirstOrDefault(c => c.Type == "exp");
+            if (expClaim != null && long.TryParse(expClaim.Value, out var expUnix))
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(expUnix);
+            }
+
+            return DateTimeOffset.UtcNow.AddSeconds(300);
+        }
+
+        private static void ValidateOptions(KeycloakClientOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(options.Authority))
+            {
+                throw new ConfigurationException("Configuration 'Authority' is invalid or missing.");
+            }
+
+            if (string.IsNullOrWhiteSpace(options.ClientId))
+            {
+                throw new ConfigurationException("Configuration 'ClientId' is invalid or missing.");
+            }
         }
 
         private static void ValidateSecret(KeycloakClientOptions options)
         {
             if (string.IsNullOrWhiteSpace(options.ServiceAccountSecret))
             {
-                throw new ConfigurationException("Configuration 'CsoClientKeycloak:ServiceAccountSecret' is invalid or missing.");
+                throw new ConfigurationException("Configuration 'ServiceAccountSecret' is invalid or missing.");
             }
         }
 
         private sealed record ServiceAccountToken(string AccessToken, DateTimeOffset ExpiresAt)
         {
-            public bool IsValid(int refreshSkewSeconds)
+            public bool IsValid(int refreshSkewSeconds, int clockSkewSeconds)
             {
-                var skew = TimeSpan.FromSeconds(Math.Max(0, refreshSkewSeconds));
+                var skew = TimeSpan.FromSeconds(Math.Max(0, refreshSkewSeconds) + Math.Max(0, clockSkewSeconds));
                 return ExpiresAt - skew > DateTimeOffset.UtcNow;
             }
         }

@@ -5,9 +5,10 @@ using Mapster;
 using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models;
-using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Criminal.Detail;
 using Scv.Db.Models;
+using Scv.Models;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Criminal.Detail;
 using Xunit;
 
 namespace tests.api.Infrastructure.Mappings;

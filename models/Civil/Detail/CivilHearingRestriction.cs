@@ -1,4 +1,4 @@
-﻿namespace Scv.Models.Civil.Detail
+namespace Scv.Models.Civil.Detail
 {
     /// <summary>
     /// Extended.

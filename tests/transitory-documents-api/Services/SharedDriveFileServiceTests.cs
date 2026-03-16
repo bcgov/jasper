@@ -9,6 +9,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
 using Scv.Models.TransitoryDocuments;
 using Scv.TdApi.Infrastructure.FileSystem;
@@ -25,8 +26,10 @@ public class SharedDriveFileServiceTests
     private readonly Mock<ILogger<SharedDriveFileService>> _mockLogger;
     private readonly Mock<IOptions<SharedDriveOptions>> _mockSharedDriveOptions;
     private readonly Mock<IOptions<CorrectionMappingOptions>> _mockCorrectionMappingOptions;
+    private readonly Mock<IOptions<TdApiOptions>> _mockTdApiOptions;
     private readonly SharedDriveOptions _defaultSharedDriveOptions;
     private readonly CorrectionMappingOptions _defaultCorrectionMappingOptions;
+    private readonly TdApiOptions _defaultTdApiOptions;
 
     public SharedDriveFileServiceTests()
     {
@@ -35,6 +38,7 @@ public class SharedDriveFileServiceTests
         _mockLogger = new Mock<ILogger<SharedDriveFileService>>();
         _mockSharedDriveOptions = new Mock<IOptions<SharedDriveOptions>>();
         _mockCorrectionMappingOptions = new Mock<IOptions<CorrectionMappingOptions>>();
+        _mockTdApiOptions = new Mock<IOptions<TdApiOptions>>();
 
         _defaultSharedDriveOptions = new SharedDriveOptions
         {
@@ -47,8 +51,14 @@ public class SharedDriveFileServiceTests
             LocationMappings = new List<CorrectionMapping>()
         };
 
+        _defaultTdApiOptions = new TdApiOptions
+        {
+            MaxFileSize = 100 * 1024 * 1024
+        };
+
         _mockSharedDriveOptions.Setup(o => o.Value).Returns(_defaultSharedDriveOptions);
         _mockCorrectionMappingOptions.Setup(o => o.Value).Returns(_defaultCorrectionMappingOptions);
+        _mockTdApiOptions.Setup(o => o.Value).Returns(_defaultTdApiOptions);
     }
 
     private SharedDriveFileService CreateService()
@@ -57,7 +67,8 @@ public class SharedDriveFileServiceTests
             _mockFileSystemClient.Object,
             _mockLogger.Object,
             _mockSharedDriveOptions.Object,
-            _mockCorrectionMappingOptions.Object);
+            _mockCorrectionMappingOptions.Object,
+            _mockTdApiOptions.Object);
     }
 
     #region Constructor Tests
@@ -71,7 +82,8 @@ public class SharedDriveFileServiceTests
                 null,
                 _mockLogger.Object,
                 _mockSharedDriveOptions.Object,
-                _mockCorrectionMappingOptions.Object));
+                _mockCorrectionMappingOptions.Object,
+                _mockTdApiOptions.Object));
 
         exception.ParamName.Should().Be("fileSystemClient");
     }
@@ -85,7 +97,8 @@ public class SharedDriveFileServiceTests
                 _mockFileSystemClient.Object,
                 null,
                 _mockSharedDriveOptions.Object,
-                _mockCorrectionMappingOptions.Object));
+                _mockCorrectionMappingOptions.Object,
+                _mockTdApiOptions.Object));
 
         exception.ParamName.Should().Be("logger");
     }
@@ -99,7 +112,8 @@ public class SharedDriveFileServiceTests
                 _mockFileSystemClient.Object,
                 _mockLogger.Object,
                 null,
-                _mockCorrectionMappingOptions.Object));
+                _mockCorrectionMappingOptions.Object,
+                _mockTdApiOptions.Object));
 
         exception.ParamName.Should().Be("options");
     }
@@ -113,9 +127,25 @@ public class SharedDriveFileServiceTests
                 _mockFileSystemClient.Object,
                 _mockLogger.Object,
                 _mockSharedDriveOptions.Object,
-                null));
+                null,
+                _mockTdApiOptions.Object));
 
         exception.ParamName.Should().Be("correctionMappingOptions");
+    }
+
+    [Fact]
+    public void Constructor_ThrowsArgumentNullException_WhenTdApiOptionsIsNull()
+    {
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentNullException>(() =>
+            new SharedDriveFileService(
+                _mockFileSystemClient.Object,
+                _mockLogger.Object,
+                _mockSharedDriveOptions.Object,
+                _mockCorrectionMappingOptions.Object,
+                null));
+
+        exception.ParamName.Should().Be("tdApiOptions");
     }
 
     [Fact]
@@ -489,7 +519,7 @@ public class SharedDriveFileServiceTests
         var smbFile = new SmbFileInfo
         {
             FileName = "test-document.pdf",
-            FullPath = "/path/to/test-document.pdf",
+            FullPath = "path/to/test-document.pdf",
             Extension = ".pdf",
             SizeBytes = 12345,
             CreatedUtc = createdDate,
@@ -507,7 +537,7 @@ public class SharedDriveFileServiceTests
         result.Should().HaveCount(1);
         var dto = result[0];
         dto.FileName.Should().Be("test-document.pdf");
-        dto.RelativePath.Should().Be("/path/to/test-document.pdf");
+        dto.RelativePath.Should().Be("path/to/test-document.pdf");
         dto.Extension.Should().Be(".pdf");
         dto.SizeBytes.Should().Be(12345);
         dto.CreatedUtc.Should().Be(createdDate);
@@ -524,7 +554,7 @@ public class SharedDriveFileServiceTests
         var smbFile = new SmbFileInfo
         {
             FileName = "document.pdf",
-            FullPath = "/path/document.pdf",
+            FullPath = "path/document.pdf",
             Extension = ".pdf",
             SizeBytes = 1024,
             CreatedUtc = DateTime.UtcNow,
@@ -648,12 +678,38 @@ public class SharedDriveFileServiceTests
         exception.ParamName.Should().Be("relativePath");
     }
 
+    [Theory]
+    [InlineData("C:/temp/file.pdf")]
+    [InlineData("\\\\server\\share\\file.pdf")]
+    [InlineData("/rooted/path/file.pdf")]
+    public async Task OpenFileAsync_ThrowsBadRequestException_WhenPathIsAbsolute(string path)
+    {
+        // Arrange
+        var service = CreateService();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BadRequestException>(() => service.OpenFileAsync(path));
+    }
+
+    [Theory]
+    [InlineData("../file.pdf")]
+    [InlineData("folder/../file.pdf")]
+    [InlineData("folder\\..\\file.pdf")]
+    public async Task OpenFileAsync_ThrowsBadRequestException_WhenPathContainsParentTraversal(string path)
+    {
+        // Arrange
+        var service = CreateService();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BadRequestException>(() => service.OpenFileAsync(path));
+    }
+
     [Fact]
     public async Task OpenFileAsync_ReturnsFileStreamResponse_WhenFileExists()
     {
         // Arrange
         var service = CreateService();
-        var RelativePath = _faker.System.FilePath();
+        var RelativePath = "path/to/test-document.pdf";
         var fileContent = _faker.Random.Bytes(_faker.Random.Int(100, 1000));
         var memoryStream = new MemoryStream(fileContent);
 
@@ -672,11 +728,29 @@ public class SharedDriveFileServiceTests
     }
 
     [Fact]
+    public async Task OpenFileAsync_ThrowsBadRequestException_WhenFileExceedsMaxSize()
+    {
+        // Arrange
+        _defaultTdApiOptions.MaxFileSize = 10;
+        var service = CreateService();
+        var relativePath = "path/to/large-file.pdf";
+        var fileContent = _faker.Random.Bytes(20);
+        var memoryStream = new MemoryStream(fileContent);
+
+        _mockFileSystemClient
+            .Setup(c => c.OpenFileAsync(relativePath, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(memoryStream);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BadRequestException>(() => service.OpenFileAsync(relativePath));
+    }
+
+    [Fact]
     public async Task OpenFileAsync_ThrowsIOException_WhenFileNotFound()
     {
         // Arrange
         var service = CreateService();
-        var RelativePath = _faker.System.FilePath();
+        var RelativePath = "path/to/test-document.pdf";
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -695,7 +769,7 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var RelativePath = "/path/to/document.unknownextension";
+        var RelativePath = "path/to/document.unknownextension";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
@@ -711,14 +785,14 @@ public class SharedDriveFileServiceTests
     }
 
     [Theory]
-    [InlineData("/path/to/file.pdf", "application/pdf")]
-    [InlineData("/path/to/file.txt", "text/plain")]
-    [InlineData("/path/to/file.jpg", "image/jpeg")]
-    [InlineData("/path/to/file.jpeg", "image/jpeg")]
-    [InlineData("/path/to/file.png", "image/png")]
-    [InlineData("/path/to/file.gif", "image/gif")]
-    [InlineData("/path/to/file.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
-    [InlineData("/path/to/file.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    [InlineData("path/to/file.pdf", "application/pdf")]
+    [InlineData("path/to/file.txt", "text/plain")]
+    [InlineData("path/to/file.jpg", "image/jpeg")]
+    [InlineData("path/to/file.jpeg", "image/jpeg")]
+    [InlineData("path/to/file.png", "image/png")]
+    [InlineData("path/to/file.gif", "image/gif")]
+    [InlineData("path/to/file.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
+    [InlineData("path/to/file.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     public async Task OpenFileAsync_SetsCorrectContentType_ForKnownExtensions(string filePath, string expectedContentType)
     {
         // Arrange
@@ -741,7 +815,7 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var RelativePath = "/very/long/path/to/my/document.pdf";
+        var RelativePath = "very/long/path/to/my/document.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
@@ -760,7 +834,7 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var RelativePath = "/path/to/my document with spaces.pdf";
+        var RelativePath = "path/to/my document with spaces.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
@@ -779,7 +853,7 @@ public class SharedDriveFileServiceTests
     {
         // Arrange
         var service = CreateService();
-        var RelativePath = _faker.System.FilePath();
+        var RelativePath = "path/to/test-document.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
 
         _mockFileSystemClient
@@ -818,7 +892,7 @@ public class SharedDriveFileServiceTests
         return new SmbFileInfo
         {
             FileName = fileName,
-            FullPath = $"/path/to/{fileName}",
+            FullPath = $"path/to/{fileName}",
             Extension = extension,
             SizeBytes = _faker.Random.Long(1000, 1000000),
             CreatedUtc = _faker.Date.Recent(),

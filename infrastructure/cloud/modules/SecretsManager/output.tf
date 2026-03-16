@@ -110,8 +110,10 @@ output "api_secrets" {
     ["SUPPORT_ACCOUNT", "${aws_secretsmanager_secret.misc_secret.arn}:supportAccount::"],
     ["TD__Url", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:url::"],
     ["TDKeycloak__Audience", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:audience::"],
+    ["TDKeycloak__Authority", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:authority::"],
     ["TDKeycloak__ClientId", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:client::"],
-    ["TDKeycloak__Secret", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:secret::"],
+    ["TDKeycloak__ServiceAccountSecret", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:serviceAccountSecret::"],
+    ["TDKeycloak__Scope", "${aws_secretsmanager_secret.keycloak_td_secret.arn}:scope::"],
     ["UserServicesClient__Username", "${aws_secretsmanager_secret.user_services_client_secret.arn}:username::"],
     ["UserServicesClient__Password", "${aws_secretsmanager_secret.user_services_client_secret.arn}:password::"],
     ["UserServicesClient__Url", "${aws_secretsmanager_secret.user_services_client_secret.arn}:baseUrl::"]

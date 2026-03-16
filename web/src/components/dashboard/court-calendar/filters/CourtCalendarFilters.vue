@@ -22,13 +22,11 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { Presider } from '@/types';
+  import { ItemGroup, Presider } from '@/types';
   import { LocationInfo } from '@/types/courtlist';
   import { computed, watch } from 'vue';
   import FilterDropdown from './FilterDropdown.vue';
-  import FilterDropdownGrouped, {
-    GroupedItems,
-  } from './FilterDropdownGrouped.vue';
+  import FilterDropdownGrouped from './FilterDropdownGrouped.vue';
 
   const props = defineProps<{
     isLocationFilterLoading: boolean;
@@ -51,8 +49,8 @@
     }))
   );
 
-  const presiderItems = computed<GroupedItems[]>(() => {
-    const grouped = new Map<string, GroupedItems>();
+  const presiderItems = computed<ItemGroup[]>(() => {
+    const grouped = new Map<string, ItemGroup>();
     for (const presider of props.presiders) {
       const key =
         props.locations.find(

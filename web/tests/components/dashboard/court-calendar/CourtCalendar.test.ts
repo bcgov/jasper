@@ -1,5 +1,6 @@
 import CourtCalendar from '@/components/dashboard/court-calendar/CourtCalendar.vue';
 import { DashboardService, LocationService } from '@/services';
+import { CalendarDay, CalendarDayActivity } from '@/types';
 import { CalendarViewEnum } from '@/types/common';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
@@ -294,6 +295,238 @@ describe('CourtCalendar.vue', () => {
       );
       // Filters should be visible
       expect(wrapper.find('[data-testid="cc-filters"]').exists()).toBe(true);
+    });
+  });
+
+  describe('filteredCalendarData', () => {
+    const createMockActivity = (
+      overrides?: Partial<CalendarDayActivity>
+    ): CalendarDayActivity => ({
+      judgeId: faker.number.int({ min: 1, max: 1000 }),
+      judgeName: faker.person.fullName(),
+      judgeInitials: faker.string.alphanumeric(3),
+      locationName: faker.location.city(),
+      locationShortName: faker.location.city(),
+      activityCode: faker.string.alpha(3),
+      activityDisplayCode: faker.string.alpha(3),
+      activityDescription: faker.lorem.word(),
+      activityClassDescription: faker.lorem.word(),
+      isRemote: false,
+      roomCode: faker.location.buildingNumber(),
+      period: 'AM',
+      filesCount: 0,
+      continuationsCount: 0,
+      showDars: false,
+      restrictions: [],
+      isJudgeBorrowed: false,
+      isJudgeAway: false,
+      ...overrides,
+    });
+
+    const createMockCalendarDay = (
+      activities: CalendarDayActivity[],
+      overrides?: Partial<CalendarDay>
+    ): CalendarDay => ({
+      date: new Date().toISOString(),
+      isWeekend: false,
+      showCourtList: false,
+      activities,
+      ...overrides,
+    });
+
+    const getCalendarEvents = (wrapper: any) => {
+      const calendarApi = (wrapper.vm.$refs as any).calendarRef?.getApi();
+      return calendarApi?.getEvents() ?? [];
+    };
+
+    it('returns empty activities for all days when no presiders are selected (initial state)', async () => {
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({ judgeId: 101 }),
+              createMockActivity({ judgeId: 202 }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendar).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const events = getCalendarEvents(wrapper);
+
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        expect(event.extendedProps.activities).toEqual([]);
+      });
+    });
+
+    it('filters activities to only the selected presider', async () => {
+      const judgeId1 = 101;
+      const judgeId2 = 202;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({ judgeId: judgeId1 }),
+              createMockActivity({ judgeId: judgeId2 }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedPresiders', [
+          judgeId1.toString(),
+        ]);
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        const activities: CalendarDayActivity[] = event.extendedProps.activities;
+        expect(activities.every((a) => a.judgeId === judgeId1)).toBe(true);
+        expect(activities.some((a) => a.judgeId === judgeId2)).toBe(false);
+      });
+    });
+
+    it('includes activities from multiple selected presiders and excludes others', async () => {
+      const judgeId1 = 101;
+      const judgeId2 = 202;
+      const judgeId3 = 303;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({ judgeId: judgeId1 }),
+              createMockActivity({ judgeId: judgeId2 }),
+              createMockActivity({ judgeId: judgeId3 }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedPresiders', [
+          judgeId1.toString(),
+          judgeId2.toString(),
+        ]);
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        const activityJudgeIds = event.extendedProps.activities.map(
+          (a: CalendarDayActivity) => a.judgeId
+        );
+        expect(activityJudgeIds).toContain(judgeId1);
+        expect(activityJudgeIds).toContain(judgeId2);
+        expect(activityJudgeIds).not.toContain(judgeId3);
+      });
+    });
+
+    it('does not trigger a new API call when presider filter changes (client-side filtering)', async () => {
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      dashboardService.getCourtCalendar.mockClear();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedPresiders', ['1']);
+        await nextTick();
+      }
+
+      expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
+    });
+
+    it('resets to empty activities when presider selection is cleared', async () => {
+      const judgeId1 = 101;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [createMockCalendarDay([createMockActivity({ judgeId: judgeId1 })])],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        // Select a presider first
+        await filtersComponent.vm.$emit('update:selectedPresiders', [
+          judgeId1.toString(),
+        ]);
+        await nextTick();
+
+        // Then clear the selection
+        await filtersComponent.vm.$emit('update:selectedPresiders', []);
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        expect(event.extendedProps.activities).toEqual([]);
+      });
     });
   });
 });

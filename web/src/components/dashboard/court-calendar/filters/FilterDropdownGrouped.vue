@@ -33,18 +33,13 @@
 </template>
 
 <script setup lang="ts">
-  import { TextValue } from '@/types/TextValue';
+  import { ItemGroup } from '@/types';
   import FilterDropdownBase from './FilterDropdownBase.vue';
-
-  export interface GroupedItems {
-    label: string;
-    items: TextValue[];
-  }
 
   const props = withDefaults(
     defineProps<{
       title: string;
-      groups: GroupedItems[];
+      groups: ItemGroup[];
       modelValue: string[];
       showSearch?: boolean;
     }>(),
@@ -59,7 +54,7 @@
 
   const onMounted = () => {};
 
-  const filteredGroups = (searchQuery: string): GroupedItems[] => {
+  const filteredGroups = (searchQuery: string): ItemGroup[] => {
     if (!searchQuery) return props.groups;
     const query = searchQuery.toLowerCase();
     return props.groups
@@ -72,17 +67,17 @@
       .filter((group) => group.items.length > 0);
   };
 
-  const isGroupSelected = (group: GroupedItems): boolean =>
+  const isGroupSelected = (group: ItemGroup): boolean =>
     group.items.every((item) => props.modelValue.includes(item.value));
 
-  const isGroupIndeterminate = (group: GroupedItems): boolean => {
+  const isGroupIndeterminate = (group: ItemGroup): boolean => {
     const selectedCount = group.items.filter((item) =>
       props.modelValue.includes(item.value)
     ).length;
     return selectedCount > 0 && selectedCount < group.items.length;
   };
 
-  const toggleGroup = (group: GroupedItems) => {
+  const toggleGroup = (group: ItemGroup) => {
     const allSelected = isGroupSelected(group);
     const groupValues = group.items.map((i) => i.value);
 

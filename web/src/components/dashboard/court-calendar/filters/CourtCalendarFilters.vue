@@ -22,7 +22,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ItemGroup, Presider } from '@/types';
+  import { Presider } from '@/types';
   import { LocationInfo } from '@/types/courtlist';
   import { computed } from 'vue';
   import FilterDropdown from './FilterDropdown.vue';
@@ -49,13 +49,13 @@
     }))
   );
 
-  const presiderItems = computed<ItemGroup[]>(() => {
-    const grouped = new Map<string, ItemGroup>();
+  const presiderItems = computed<GroupedItems[]>(() => {
+    const grouped = new Map<string, GroupedItems>();
     for (const presider of props.presiders) {
       const key =
         props.locations.find(
           (loc) => loc.locationId === presider.homeLocationId.toString()
-        )?.shortName || 'Unknown';
+        )?.shortName || '';
       if (!grouped.has(key)) {
         grouped.set(key, { label: key, items: [] });
       }
@@ -68,6 +68,12 @@
       group.items.sort((a, b) => a.text.localeCompare(b.text));
     }
     return [...grouped.values()].sort((a, b) => a.label.localeCompare(b.label));
+  });
+
+  watch(presiderItems, (newGroups) => {
+    selectedPresiders.value = newGroups.flatMap((g) =>
+      g.items.map((p) => p.value)
+    );
   });
 
   const clearAllFilters = () => {

@@ -1,4 +1,4 @@
-import { AdditionalProperties } from '@/types/common';
+import { AdditionalProperties, CourtLevelEnum } from '@/types/common';
 import {
   banType,
   criminalAppearancesType,
@@ -92,6 +92,36 @@ const details: criminalFileDetailsType = {
 };
 
 describe('CriminalSummary.vue', () => {
+  it('renders Supreme Court icon when court level is Supreme', () => {
+    details.courtLevelCd = CourtLevelEnum.S;
+
+    const wrapper = mount(CriminalSummary, {
+      props: { details },
+      global: {
+        stubs: {
+          TooltipIcon: true,
+        },
+      },
+    });
+
+    expect(wrapper.find('tooltip-icon-stub').exists()).toBe(true);
+  });
+
+  it('does not render Supreme Court icon when court level is Provincial', () => {
+    details.courtLevelCd = CourtLevelEnum.P;
+
+    const wrapper = mount(CriminalSummary, {
+      props: { details },
+      global: {
+        stubs: {
+          TooltipIcon: true,
+        },
+      },
+    });
+
+    expect(wrapper.find('tooltip-icon-stub').exists()).toBe(false);
+  });
+
   it('renders case details correctly', () => {
     const wrapper = mount(CriminalSummary, {
       props: { details },

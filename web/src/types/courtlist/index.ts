@@ -293,6 +293,7 @@ export interface CourtListAppearance {
   appearanceAdjudicatorRestriction?: AppearanceAdjudicatorRestriction[];
   stoodDownJCMYn: string;
   courtClassCd: string;
+  courtLevelCd: string;
   appearanceSequenceNumber: string;
   fixedListDoneYn: string;
   aslCourtFileNumber: string;

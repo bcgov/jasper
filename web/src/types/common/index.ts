@@ -108,6 +108,12 @@ export enum DivisionEnum {
   R = 'R',
   I = 'I',
 }
+
+export enum CourtLevelEnum {
+  P = 'P', // Provincial court
+  S = 'S', // Supreme court
+}
+
 // Can't seem to import this type from Vuetify yet, so defining it here until they're made available
 export enum Anchor {
   Start = 'start',

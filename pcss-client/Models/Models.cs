@@ -3465,6 +3465,8 @@ public partial class ActivityClassUsage
 
             [Newtonsoft.Json.JsonProperty("courtClassCd", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
             public string CourtClassCd { get; set; }
+            [Newtonsoft.Json.JsonProperty("courtLevelCd", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string CourtLevelCd { get; set; }
 
             [Newtonsoft.Json.JsonProperty("appearanceSequenceNumber", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
             public string AppearanceSequenceNumber { get; set; }

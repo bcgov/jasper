@@ -1,17 +1,25 @@
 <template>
-  <h5 class="my-1">
-    Case Details
-    <span
-      class="pl-3"
-      :class="
-        labelClasses[getCourtClassLabel(details.courtClassCd)] ||
-        'criminal-label'
-      "
-    >
-      {{ details.fileNumberTxt }}
-    </span>
-    <CopyToClipboard :text="details.fileNumberTxt" />
-  </h5>
+  <div class="case-details-header">
+    <h5 class="mb-0 d-flex align-center">
+      Case Details
+      <span
+        class="pl-3"
+        :class="
+          labelClasses[getCourtClassLabel(details.courtClassCd)] ||
+          'criminal-label'
+        "
+      >
+        {{ details.fileNumberTxt }}
+      </span>
+      <CopyToClipboard :text="details.fileNumberTxt" />
+    </h5>
+    <TooltipIcon
+      v-if="details.courtLevelCd === CourtLevelEnum.S"
+      text="Supreme Court case"
+      :icon="mdiBank"
+    />
+  </div>
+
   <v-card color="var(--bg-gray-500)" flat>
     <div class="mx-2 d-flex align-center pt-2">
       <DivisionBadge
@@ -47,9 +55,11 @@
 <script setup lang="ts">
   import CopyToClipboard from '@/components/shared/CopyToClipboard.vue';
   import { labelClasses } from '@/constants/labelClasses';
+  import { CourtLevelEnum } from '@/types/common';
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
   import { getCourtClassLabel } from '@/utils/utils';
   import { computed, ref } from 'vue';
+  import { mdiBank } from '@mdi/js';
   import DivisionBadge from '../common/DivisionBadge.vue';
 
   const props = defineProps<{ details: criminalFileDetailsType }>();
@@ -79,6 +89,13 @@
     : '';
 </script>
 <style scoped>
+  .case-details-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
   .v-card {
     border-radius: 0.5rem !important;
   }

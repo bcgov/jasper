@@ -3,7 +3,7 @@
     :title="title"
     :selected-count="modelValue.length"
     :show-search="showSearch"
-    v-slot="{ menu, searchQuery }"
+    v-slot="{ searchQuery }"
     @vue:mounted="onMounted"
   >
     <v-list max-height="400">
@@ -65,27 +65,6 @@
         ),
       }))
       .filter((group) => group.items.length > 0);
-  };
-
-  const isGroupSelected = (group: ItemGroup): boolean =>
-    group.items.every((item) => props.modelValue.includes(item.value));
-
-  const isGroupIndeterminate = (group: ItemGroup): boolean => {
-    const selectedCount = group.items.filter((item) =>
-      props.modelValue.includes(item.value)
-    ).length;
-    return selectedCount > 0 && selectedCount < group.items.length;
-  };
-
-  const toggleGroup = (group: ItemGroup) => {
-    const allSelected = isGroupSelected(group);
-    const groupValues = group.items.map((i) => i.value);
-
-    const newSelection = allSelected
-      ? props.modelValue.filter((v) => !groupValues.includes(v))
-      : [...new Set([...props.modelValue, ...groupValues])];
-
-    emit('update:modelValue', newSelection);
   };
 
   const toggleItem = (itemValue: string) => {

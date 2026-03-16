@@ -80,7 +80,6 @@
   const startDay = ref(new Date(selectedDate.value));
   const endDay = ref(new Date(selectedDate.value));
   const locationIds = computed(() => selectedLocationIds.value.join(','));
-  const presiderIds = computed(() => selectedPresiderIds.value.join(','));
 
   const updateCalendar = async () => {
     if (!calendarView.value) {

@@ -22,20 +22,20 @@ export class ApiService {
 
   public async initialize(): Promise<void> {
     const credentialsSecret = await this.smService.getSecret(
-      this.credentialsSecret
+      this.credentialsSecret,
     );
     const mtlsSecret = await this.smService.getSecret(
-      process.env.MTLS_SECRET_NAME!
+      process.env.MTLS_SECRET_NAME!,
     );
 
     await this.httpService.init(credentialsSecret, mtlsSecret);
   }
 
   private async saveBinaryToEFS(
-    response: AxiosResponse<unknown>
+    response: AxiosResponse<unknown>,
   ): Promise<string> {
     const binaryData = Buffer.from(
-      new Uint8Array(response.data as ArrayBuffer)
+      new Uint8Array(response.data as ArrayBuffer),
     );
 
     const filePath = await this.efsService.saveFile(binaryData);
@@ -48,7 +48,7 @@ export class ApiService {
     method: string,
     url: string,
     body: Record<string, unknown>,
-    config: AxiosRequestConfig
+    config: AxiosRequestConfig,
   ): Promise<AxiosResponse<unknown>> {
     switch (method) {
       case "GET":
@@ -64,7 +64,7 @@ export class ApiService {
 
   private buildAxiosConfig(
     headers: Record<string, string>,
-    isBinary: boolean
+    isBinary: boolean,
   ): AxiosRequestConfig {
     return {
       headers: {
@@ -78,26 +78,27 @@ export class ApiService {
   }
 
   private sanitizeResponseHeaders(
-    headers: Record<string, unknown>
+    headers: Record<string, unknown>,
   ): ResponseHeaders {
     return Object.fromEntries(
       Object.entries(headers)
         .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, String(value)])
+        .map(([key, value]) => [key, String(value)]),
     ) as ResponseHeaders;
   }
 
   private async handleBinaryResponse(
     response: AxiosResponse<unknown>,
-    responseHeaders: ResponseHeaders
+    responseHeaders: ResponseHeaders,
   ): Promise<APIGatewayProxyResult> {
     const binaryBuffer = Buffer.from(
-      new Uint8Array(response.data as ArrayBuffer)
+      new Uint8Array(response.data as ArrayBuffer),
     );
     const fileSizeInBytes = binaryBuffer.length;
 
-    // Lambda 6MB limit. 4.5MB threshold accounts for base64 encoding overhead (~33%)
-    const MAX_SAFE_SIZE_BYTES = 4.5 * 1024 * 1024;
+    // Lambda has a 6MB response limit. Base64 encoding adds ~33% overhead, so we cap at 4MB
+    // (~5.32MB encoded) to leave enough room for headers and avoid hitting the limit.
+    const MAX_SAFE_SIZE_BYTES = 4 * 1024 * 1024;
 
     if (fileSizeInBytes > MAX_SAFE_SIZE_BYTES) {
       // File is too large for Lambda response, save to EFS
@@ -128,7 +129,7 @@ export class ApiService {
 
   private buildJsonResponse(
     response: AxiosResponse<unknown>,
-    responseHeaders: ResponseHeaders
+    responseHeaders: ResponseHeaders,
   ): APIGatewayProxyResult {
     return {
       statusCode: response.status,
@@ -139,7 +140,7 @@ export class ApiService {
   }
 
   public async handleRequest(
-    event: APIGatewayEvent
+    event: APIGatewayEvent,
   ): Promise<APIGatewayProxyResult> {
     try {
       const method = event.httpMethod.toUpperCase();
@@ -155,7 +156,7 @@ export class ApiService {
       // Parse request
       const body = event.body ? JSON.parse(event.body) : {};
       const queryString = sanitizeQueryStringParams(
-        event.queryStringParameters || {}
+        event.queryStringParameters || {},
       );
       const headers = sanitizeHeaders(event.headers);
       const url = `${event.path}?${queryString}`;
@@ -172,7 +173,7 @@ export class ApiService {
         method,
         url,
         body,
-        axiosConfig
+        axiosConfig,
       );
 
       console.log(`Response status: ${response.status}`);
@@ -197,7 +198,7 @@ export class ApiService {
         const resp = (error as { response?: AxiosResponse<unknown> })
           .response as AxiosResponse<unknown>;
         const responseHeaders = this.sanitizeResponseHeaders(
-          resp.headers || {}
+          resp.headers || {},
         );
 
         let body: string;

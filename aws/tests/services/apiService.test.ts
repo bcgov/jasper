@@ -148,7 +148,7 @@ describe("ApiService", () => {
     });
   });
 
-  it("should handle a GET binary request with small file (< 4.5MB)", async () => {
+  it("should handle a GET binary request with small file (< 4MB)", async () => {
     const smallBinaryData = new ArrayBuffer(1024 * 1024); // 1MB
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: smallBinaryData,
@@ -179,7 +179,7 @@ describe("ApiService", () => {
     expect(response.headers).toEqual({ "content-type": "application/pdf" });
   });
 
-  it("should save large binary file to EFS (> 4.5MB)", async () => {
+  it("should save large binary file to EFS (> 4MB)", async () => {
     const largeBinaryData = new ArrayBuffer(5 * 1024 * 1024); // 5MB
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: largeBinaryData,
@@ -210,8 +210,8 @@ describe("ApiService", () => {
     });
   });
 
-  it("should handle exactly 4.5MB file as threshold", async () => {
-    const thresholdData = new ArrayBuffer(4.5 * 1024 * 1024); // Exactly 4.5MB
+  it("should handle exactly 4MB file as threshold", async () => {
+    const thresholdData = new ArrayBuffer(4 * 1024 * 1024); // Exactly 4MB
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: thresholdData,
       headers: {},
@@ -226,13 +226,13 @@ describe("ApiService", () => {
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
 
-    // At exactly 4.5MB, should still return base64 (not > threshold)
+    // At exactly 4MB, should still return base64 (not > threshold)
     expect(mockEfsService.saveFile).not.toHaveBeenCalled();
     expect(response.isBase64Encoded).toBe(true);
   });
 
-  it("should save file to EFS when size is just over 4.5MB", async () => {
-    const justOverThreshold = new ArrayBuffer(4.5 * 1024 * 1024 + 1); // 4.5MB + 1 byte
+  it("should save file to EFS when size is just over 4MB", async () => {
+    const justOverThreshold = new ArrayBuffer(4 * 1024 * 1024 + 1); // 4MB + 1 byte
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: justOverThreshold,
       headers: {},

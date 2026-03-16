@@ -274,7 +274,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 return OperationResult.Failure("Failed to map Order to OrderAction.");
             }
 
-            var success = true;
+            var success = await _csoClient.SendOrderAsync(actionDto, default);
             if (!success)
             {
                 this.Logger.LogWarning("Order {OrderId} submission to CSO failed.", id);

@@ -22,7 +22,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { Presider } from '@/types';
+  import { ItemGroup, Presider } from '@/types';
   import { LocationInfo } from '@/types/courtlist';
   import { computed } from 'vue';
   import FilterDropdown from './FilterDropdown.vue';
@@ -49,8 +49,8 @@
     }))
   );
 
-  const presiderItems = computed<GroupedItems[]>(() => {
-    const grouped = new Map<string, GroupedItems>();
+  const presiderItems = computed<ItemGroup[]>(() => {
+    const grouped = new Map<string, ItemGroup>();
     for (const presider of props.presiders) {
       const key =
         props.locations.find(

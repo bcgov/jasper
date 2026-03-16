@@ -7,6 +7,7 @@
       :loading="isLocationFilterLoading"
     />
     <CourtCalendarFilters
+      data-testid="cc-filters"
       v-if="locations.length > 0"
       v-model:selected-locations="selectedLocationIds"
       v-model:selected-presiders="selectedPresiderIds"

@@ -339,13 +339,15 @@ describe('CourtCalendar.vue', () => {
       return calendarApi?.getEvents() ?? [];
     };
 
-    it('returns all activities for all days when no presiders are selected (initial state)', async () => {
-      const activity1 = createMockActivity({ judgeId: 101 });
-      const activity2 = createMockActivity({ judgeId: 202 });
-
+    it('returns empty activities for all days when no presiders are selected (initial state)', async () => {
       dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
         payload: {
-          days: [createMockCalendarDay([activity1, activity2])],
+          days: [
+            createMockCalendarDay([
+              createMockActivity({ judgeId: 101 }),
+              createMockActivity({ judgeId: 202 }),
+            ]),
+          ],
           presiders: [],
           activities: [],
         },
@@ -363,13 +365,7 @@ describe('CourtCalendar.vue', () => {
 
       expect(events.length).toBeGreaterThan(0);
       events.forEach((event: any) => {
-        expect(event.extendedProps.activities).toHaveLength(2);
-        expect(
-          event.extendedProps.activities.map((a: any) => a.judgeId)
-        ).toContain(101);
-        expect(
-          event.extendedProps.activities.map((a: any) => a.judgeId)
-        ).toContain(202);
+        expect(event.extendedProps.activities).toEqual([]);
       });
     });
 
@@ -492,13 +488,14 @@ describe('CourtCalendar.vue', () => {
       expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
     });
 
-    it('returns all activities when presider selection is cleared', async () => {
+    it('resets to empty activities when presider selection is cleared', async () => {
       const judgeId1 = 101;
-      const activity = createMockActivity({ judgeId: judgeId1 });
 
       dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
         payload: {
-          days: [createMockCalendarDay([activity])],
+          days: [
+            createMockCalendarDay([createMockActivity({ judgeId: judgeId1 })]),
+          ],
           presiders: [],
           activities: [],
         },
@@ -531,8 +528,7 @@ describe('CourtCalendar.vue', () => {
 
       expect(events.length).toBeGreaterThan(0);
       events.forEach((event: any) => {
-        expect(event.extendedProps.activities).toHaveLength(1);
-        expect(event.extendedProps.activities[0].judgeId).toBe(judgeId1);
+        expect(event.extendedProps.activities).toEqual([]);
       });
     });
   });

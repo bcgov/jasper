@@ -45,7 +45,10 @@
         :key="pairing.card.courtListLocationID"
       >
         <div class="w-100">
-          <court-list-card :cardInfo="pairing.card" :date="formatDateForApi(appliedDate)" />
+          <court-list-card
+            :cardInfo="pairing.card"
+            :date="formatDateInstanceToYYYYMMDD(appliedDate)"
+          />
           <court-list-table :search="search" :data="pairing.tableData" />
         </div>
       </template>
@@ -77,6 +80,7 @@
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
+    formatDateInstanceToYYYYMMDD,
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
@@ -244,14 +248,6 @@
       );
       selectedDate.value = appliedDate.value;
     }
-  };
-
-  const formatDateForApi = (date: Date | null): string => {
-    if (!date) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   };
 
   provide('menuClicked', () => {

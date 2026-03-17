@@ -14,7 +14,6 @@ using Scv.Core.Helpers.Exceptions;
 using Scv.Core.Helpers.Extensions;
 using Scv.Models.Archive;
 using Scv.Models.Civil.Detail;
-using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Models.Criminal.AppearanceDetail;
 using Scv.Models.Criminal.Detail;
 using Scv.Models.Document;
@@ -29,6 +28,7 @@ using System.Threading.Tasks;
 using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 using CivilAppearanceDetailModel = Scv.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
 using Scv.Models.Civil.AppearanceDetail;
+using Scv.Api.Models.Criminal.AppearanceDetail;
 
 namespace Scv.Api.Controllers
 {

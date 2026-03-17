@@ -81,6 +81,64 @@ namespace Scv.TdApi.Infrastructure.FileSystem
             }, cancellationToken);
         }
 
+        public async Task<SmbFileInfo> GetFileInfoAsync(string filePath, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            SmbPathUtility.ValidateRelativePath(filePath);
+
+            return await _retryPolicy.ExecuteAsync(async ct =>
+            {
+                using var connection = await CreateConnectionAsync(ct);
+                var smbPath = SmbPathUtility.GetSmbPath(_options.BasePath, filePath);
+
+                var directoryPath = SmbPathUtility.GetDirectoryPath(smbPath);
+                var fileName = SmbPathUtility.GetFileName(smbPath);
+
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    throw new IOException($"Invalid file path: '{smbPath}'");
+                }
+
+                var directoryHandle = OpenSmbPath(
+                    connection.FileStore,
+                    directoryPath,
+                    AccessMask.GENERIC_READ,
+                    CreateOptions.FILE_DIRECTORY_FILE);
+
+                try
+                {
+                    var status = connection.FileStore.QueryDirectory(
+                        out var fileList,
+                        directoryHandle,
+                        fileName,
+                        FileInformationClass.FileDirectoryInformation);
+
+                    if (status != NTStatus.STATUS_SUCCESS && status != NTStatus.STATUS_NO_MORE_FILES)
+                    {
+                        throw new IOException($"Failed to query directory '{directoryPath}': {status}");
+                    }
+
+                    var fileInfo = fileList?
+                        .OfType<FileDirectoryInformation>()
+                        .FirstOrDefault(f =>
+                            string.Equals(f.FileName, fileName, StringComparison.OrdinalIgnoreCase) &&
+                            (f.FileAttributes & SMBLibrary.FileAttributes.Directory) == 0);
+
+                    if (fileInfo == null)
+                    {
+                        throw new FileNotFoundException($"File not found: {smbPath}");
+                    }
+
+                    return CreateSmbFileInfo(fileInfo, directoryPath, smbPath);
+                }
+                finally
+                {
+                    connection.FileStore.CloseFile(directoryHandle);
+                }
+            }, cancellationToken);
+        }
+
         /// <summary>
         /// Lists files matching a wildcard path pattern.
         /// Supports prefix matching for date folders (e.g., "10 OCTOBER/OCTOBER 31*" matches "10 OCTOBER/OCTOBER 31(Fri)").

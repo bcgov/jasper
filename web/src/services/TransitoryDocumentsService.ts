@@ -1,4 +1,7 @@
-import { FileMetadataDto } from '@/types/transitory-documents';
+import {
+  FileMetadataDto,
+  TransitoryMergeContext,
+} from '@/types/transitory-documents';
 import { HttpService } from './HttpService';
 
 export class TransitoryDocumentsService {
@@ -44,42 +47,17 @@ export class TransitoryDocumentsService {
     globalThis.URL.revokeObjectURL(url);
   }
 
-  async fetchFileForViewer(fileMetadata: FileMetadataDto): Promise<string> {
-    const blob = await this.httpService.get<Blob>(
-      'api/TransitoryDocuments/download',
-      {
-        fileName: fileMetadata.fileName,
-        extension: fileMetadata.extension,
-        sizeBytes: fileMetadata.sizeBytes,
-        createdUtc: fileMetadata.createdUtc,
-        relativePath: fileMetadata.relativePath,
-        matchedRoomFolder: fileMetadata.matchedRoomFolder,
-      },
-      { responseType: 'blob' }
-    );
-
-    // Convert blob to base64
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-        const base64 = base64String.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  async mergePdfs(files: FileMetadataDto[]): Promise<{
+  async mergePdfs(
+    files: FileMetadataDto[],
+    context?: TransitoryMergeContext
+  ): Promise<{
     base64Pdf: string;
     pageRanges: Array<{ start: number; end?: number }>;
   }> {
     const response = await this.httpService.post<{
       base64Pdf: string;
       pageRanges: Array<{ start: number; end?: number }>;
-    }>('api/TransitoryDocuments/merge', { files }, {}, 'json');
+    }>('api/TransitoryDocuments/merge', { files, ...context }, {}, 'json');
 
     return response;
   }

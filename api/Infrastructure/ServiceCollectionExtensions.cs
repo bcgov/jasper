@@ -203,7 +203,7 @@ namespace Scv.Api.Infrastructure
             services.AddTransient<CsoBearerTokenHandler>();
             services.AddHttpClient(KeycloakTokenService.HttpClientName)
                 .AddHttpMessageHandler<TimingHandler>();
-            services.AddOptions<KeycloakClientOptions>()
+            services.AddOptions<CsoKeycloakClientOptions>()
                 .Bind(configuration.GetSection("CsoClientKeycloak"))
                 .ValidateDataAnnotations();
 
@@ -274,7 +274,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ITransitoryDocumentsClientService, TransitoryDocumentsClientService>();
 
             // Keycloak - configure TD token request options
-            services.AddOptions<KeycloakClientOptions>()
+            services.AddOptions<TdKeycloakClientOptions>()
                 .Bind(configuration.GetSection("TDKeycloak"))
                 .ValidateDataAnnotations();
 
@@ -403,7 +403,8 @@ namespace Scv.Api.Infrastructure
             // Defaults to BC Gov API if any config setting is missing
             if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
             {
-                if (prefix != "TD") {
+                if (prefix != "TD")
+                {
                     client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
                     configuration.GetNonEmptyValue($"{prefix}:Username"),
                     configuration.GetNonEmptyValue($"{prefix}:Password"));

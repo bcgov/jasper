@@ -5,7 +5,7 @@ using System;
 
 namespace Scv.Api.Helpers
 {
-    public class ValidUserHelper
+    public static class ValidUserHelper
     {
         private static readonly string INACTIVE = "Inactive";
         public static void CheckIfValidUser(string responseMessage)

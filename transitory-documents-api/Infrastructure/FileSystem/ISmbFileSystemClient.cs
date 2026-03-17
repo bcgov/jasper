@@ -27,6 +27,14 @@ namespace Scv.TdApi.Infrastructure.FileSystem
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Memory stream containing the file contents</returns>
         Task<Stream> OpenFileAsync(string filePath, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets metadata for a single file path.
+        /// </summary>
+        /// <param name="filePath">Relative path to the file from the base path</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>File metadata for the requested file</returns>
+        Task<SmbFileInfo> GetFileInfoAsync(string filePath, CancellationToken cancellationToken = default);
     }
 
     /// <summary>

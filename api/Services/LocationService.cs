@@ -184,7 +184,6 @@ namespace Scv.Api.Services
                     .CourtRooms
                     .OrderBy(cr => cr.Room)
                 ];
-                var pcssLocation = pcssLocations.FirstOrDefault(pcssLocation => pcssLocation.LocationId.ToString() == location.LocationId);
             }
 
             return locations;

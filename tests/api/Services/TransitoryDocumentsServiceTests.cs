@@ -38,6 +38,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         mockCachingSection.Setup(s => s.Value).Returns("60");
         _mockConfig.Setup(c => c.GetSection("Caching:LocationExpiryMinutes")).Returns(mockCachingSection.Object);
         _mockConfig.Setup(c => c.GetSection("Caching:FileExpiryMinutes")).Returns(mockCachingSection.Object);
+        _mockConfig.Setup(c => c.GetSection("Caching:TdSearchExpiryMinutes")).Returns(mockCachingSection.Object);
 
         var config = new TypeAdapterConfig();
         config.Apply(new TransitoryDocumentsMapping());
@@ -56,17 +57,13 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         var mockTdClient = new Mock<ITransitoryDocumentsClientService>();
         var mockKeycloakTokenService = new Mock<IKeycloakTokenService>();
         var mockLocationService = new Mock<ILocationService>();
-        var mockKeycloakOptions = new Mock<IOptionsMonitor<KeycloakOptions>>();
-
-        mockKeycloakOptions
-            .Setup(o => o.CurrentValue)
-            .Returns(new KeycloakOptions
-            {
-                Authority = "https://keycloak",
-                Audience = "jasper",
-                ClientId = "client-id",
-                Secret = "secret"
-            });
+        var keycloakOptions = Options.Create(new TdKeycloakClientOptions
+        {
+            Authority = "https://keycloak",
+            Audience = "jasper",
+            ClientId = "client-id",
+            ServiceAccountSecret = "secret"
+        });
 
         var bearerToken = _faker.Random.AlphaNumeric(50);
         mockKeycloakTokenService
@@ -104,7 +101,8 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
             mockTdClient.Object,
             mockLocationService.Object,
             mockKeycloakTokenService.Object,
-            mockKeycloakOptions.Object,
+            keycloakOptions,
+            _mockConfig.Object,
             _mapper);
 
         return (service, mockTdClient, mockLocationService, mockKeycloakTokenService);
@@ -508,6 +506,60 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         Assert.Equal(2, resultList.Count);
         Assert.Equal("test1.pdf", resultList[0].FileName);
         Assert.Equal("test2.docx", resultList[1].FileName);
+    }
+
+    [Fact]
+    public async Task ListSharedDocuments_ShouldUseCachedResult_ForSameSearchParameters()
+    {
+        // Arrange
+        var locationId = _faker.Random.AlphaNumeric(5);
+        var roomCode = _faker.Random.AlphaNumeric(3);
+        var date = _faker.Date.Recent().ToString("yyyy-MM-dd");
+
+        var location = Scv.Models.Location.Location.Create(
+            _faker.Address.City(),
+            locationId,
+            locationId,
+            true,
+            new List<Scv.Models.Location.CourtRoom>());
+        location.ShortName = _faker.Random.AlphaNumeric(5);
+        location.AgencyIdentifierCd = _faker.Random.AlphaNumeric(3);
+
+        var region = new JCRegion
+        {
+            RegionId = _faker.Random.Int(1, 10),
+            RegionName = _faker.Address.State(),
+            RegionLocations = new List<string>()
+        };
+
+        var tdResults = new List<TDCommon.Clients.DocumentsServices.FileMetadataDto>
+        {
+            new TDCommon.Clients.DocumentsServices.FileMetadataDto
+            {
+                FileName = "test.pdf",
+                Extension = ".pdf",
+                SizeBytes = 1024,
+                CreatedUtc = DateTimeOffset.UtcNow,
+                RelativePath = "path/to/test.pdf",
+                MatchedRoomFolder = roomCode
+            }
+        };
+
+        var (service, mockTdClient, mockLocationService, mockKeycloakService) = SetupService(tdResults, location, region);
+
+        // Act
+        var firstResult = await service.ListSharedDocuments(locationId, roomCode, date);
+        var secondResult = await service.ListSharedDocuments(locationId, roomCode, date);
+
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
+        Assert.Single(secondResult);
+
+        mockKeycloakService.Verify(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        mockLocationService.Verify(l => l.GetLocations(It.IsAny<bool>()), Times.Once);
+        mockLocationService.Verify(l => l.GetRegion(It.IsAny<string>()), Times.Once);
+        mockTdClient.Verify(c => c.SearchAsync(It.IsAny<TransitoryDocumentSearchRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion

@@ -16,8 +16,6 @@ namespace Scv.TdApi
                 .ConfigureAppConfiguration((ctx, cfg) =>
                 {
                     var env = ctx.HostingEnvironment;
-                    // OPTIONAL: make the config chain explicit + log
-                    cfg.Sources.Clear();
                     cfg.AddJsonFile("appsettings.tdapi.json", optional: false, reloadOnChange: true)
                        .AddJsonFile($"appsettings.tdapi.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
                        .AddEnvironmentVariables();

@@ -6,3 +6,14 @@ export interface FileMetadataDto {
   relativePath: string;
   matchedRoomFolder: string | null;
 }
+
+export interface TransitoryMergeContext {
+  locationId: string;
+  roomCd: string;
+  date: string;
+}
+
+export interface TransitoryViewerPayload {
+  files: FileMetadataDto[];
+  context: TransitoryMergeContext;
+}

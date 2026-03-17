@@ -9,13 +9,13 @@ namespace Scv.TdApi.Infrastructure.Authorization
         /// <summary>
         /// Allows query/search operations (GET /api/documents/search)
         /// </summary>
-        public const string Query = "td:query";
+        public const string Query = "query";
 
         /// <summary>
         /// Allows read/download operations (GET /api/documents/content)
         /// Inherently includes Query permissions.
         /// </summary>
-        public const string Read = "td:read";
+        public const string Read = "read";
     }
 
     /// <summary>

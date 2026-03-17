@@ -53,6 +53,20 @@ export const formatDateInstanceToMMMYYYY = (date: Date): string => {
 };
 
 /**
+ * Formats a Date instance into API-friendly YYYY-MM-DD format.
+ * @param date - The Date object or null
+ * @returns A formatted date string in YYYY-MM-DD format.
+ */
+export const formatDateInstanceToYYYYMMDD = (date: Date | null): string => {
+  if (!date || isNaN(date.getTime())) return '';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Formats hours and minutes into a human-readable string.
  *
  * @param hours - The number of hours as a string. Should be a valid integer in string format.

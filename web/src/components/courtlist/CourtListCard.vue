@@ -72,10 +72,11 @@
 </template>
 
 <script setup lang="ts">
+  import { PERMISSIONS } from '@/constants/permissions';
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
   import { mdiOpenInNew } from '@mdi/js';
-  import { computed, onMounted, PropType, ref } from 'vue';
+  import { computed, PropType, ref } from 'vue';
   import TransitoryDocumentsDialog from './TransitoryDocumentsDialog.vue';
 
   const props = defineProps({
@@ -91,16 +92,12 @@
 
   const commonStore = useCommonStore();
   const dialogOpen = ref(false);
-  const LIST_TRANSITORY_DOCUMENTS = 'LIST_TRANSITORY_DOCUMENTS';
-
-  onMounted(() => {
-    console.log('Permissions available after mount:', commonStore.userInfo?.permissions);
-  });
 
   const canViewSharedFolder = computed(
     () =>
-      commonStore.userInfo?.permissions?.includes(LIST_TRANSITORY_DOCUMENTS) ??
-      false
+      commonStore.userInfo?.permissions?.includes(
+        PERMISSIONS.LIST_TRANSITORY_DOCUMENTS
+      ) ?? false
   );
 
   const infoAddress = computed<string>(() => {

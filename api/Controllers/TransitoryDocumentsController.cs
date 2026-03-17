@@ -14,7 +14,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
-using FileMetadata = Scv.TdApi.Models.FileMetadataDto;
 
 #pragma warning disable S6960 // Despite the warning, the merge endpoint is related to this controller and should not be split out.
 
@@ -24,7 +23,7 @@ namespace Scv.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class TransitoryDocumentsController(
-        ITransitoryDocumentsService transitiveDocumentsService,
+        ITransitoryDocumentsService transitoryDocumentsService,
         IDocumentMerger documentMerger,
         IValidator<GetDocumentsRequest> getDocumentsValidator,
         IValidator<DownloadFileRequest> downloadFileValidator,
@@ -77,10 +76,11 @@ namespace Scv.Api.Controllers
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
             }
 
-            var result = await transitiveDocumentsService.ListSharedDocuments(
+            var result = await transitoryDocumentsService.ListSharedDocuments(
                 request.LocationId,
                 request.RoomCd,
-                request.Date.ToString("yyyy-MM-dd"));
+                request.Date.ToString("yyyy-MM-dd"),
+                cancellationToken);
 
             logger.LogInformation(
                 "Found {Count} transitory document(s) - LocationId: {LocationId}, RoomCd: {RoomCd}, Date: {Date}",
@@ -101,7 +101,7 @@ namespace Scv.Api.Controllers
         [HttpGet("download")]
         [RequiresPermission(permissions: Permission.DOWNLOAD_TRANSITORY_DOCUMENTS)]
         public async Task<IActionResult> DocumentDownload(
-            [FromQuery] FileMetadata fileMetadata,
+            [FromQuery] TransitoryDocumentFileMetadata fileMetadata,
             CancellationToken cancellationToken = default)
         {
             if (fileMetadata != null)
@@ -138,7 +138,7 @@ namespace Scv.Api.Controllers
                 return BadRequest(errorResponse);
             }
 
-            var fileResponse = await transitiveDocumentsService.DownloadFile(request.FileMetadata.RelativePath);
+            var fileResponse = await transitoryDocumentsService.DownloadFile(request.FileMetadata.RelativePath, cancellationToken);
 
             logger.LogInformation(
                 "Transitory document downloaded successfully - Path: {Path}, FileName: {FileName}",
@@ -163,6 +163,9 @@ namespace Scv.Api.Controllers
             // Sanitize file metadata strings in the request
             if (request?.Files != null)
             {
+                request.LocationId = StringSanitizer.Sanitize(request.LocationId);
+                request.RoomCd = StringSanitizer.Sanitize(request.RoomCd);
+
                 foreach (var file in request.Files)
                 {
                     file.FileName = StringSanitizer.Sanitize(file.FileName);
@@ -186,6 +189,44 @@ namespace Scv.Api.Controllers
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
             }
 
+            var searchResults = (await transitoryDocumentsService.ListSharedDocuments(
+                request?.LocationId,
+                request?.RoomCd,
+                request?.Date.ToString("yyyy-MM-dd"),
+                cancellationToken))?.ToList() ?? [];
+
+            var searchResultLookup = searchResults.ToDictionary(
+                f => CreateTransitoryFileIdentity(f.RelativePath, f.FileName),
+                StringComparer.OrdinalIgnoreCase);
+
+            var missingFiles = request?.Files
+                .Where(f => !searchResultLookup.ContainsKey(CreateTransitoryFileIdentity(f.RelativePath, f.FileName)))
+                .ToList();
+
+            if (missingFiles?.Count > 0)
+            {
+                return BadRequest(new[]
+                {
+                    "One or more requested files were not found in transitory document search results for the provided location, room, and date."
+                });
+            }
+
+            var sizeMismatches = request?.Files
+                .Where(f =>
+                {
+                    var key = CreateTransitoryFileIdentity(f.RelativePath, f.FileName);
+                    return searchResultLookup.TryGetValue(key, out var matched) && matched.SizeBytes != f.SizeBytes;
+                })
+                .ToList();
+
+            if (sizeMismatches?.Count > 0)
+            {
+                return BadRequest(new[]
+                {
+                    "One or more requested files have a size mismatch compared to transitory document search results."
+                });
+            }
+
             var documentRequests = request?.Files.Select(f => f.RelativePath).Select(path => new PdfDocumentRequest
             {
                 Type = DocumentType.TransitoryDocument,
@@ -202,6 +243,11 @@ namespace Scv.Api.Controllers
                 request?.Files?.Length ?? 0);
 
             return Ok(result);
+        }
+
+        private static string CreateTransitoryFileIdentity(string relativePath, string fileName)
+        {
+            return $"{relativePath}::{fileName}";
         }
     }
 }

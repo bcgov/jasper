@@ -12,12 +12,12 @@ namespace Scv.Api.Infrastructure.Authentication
     public sealed class CsoBearerTokenHandler : DelegatingHandler
     {
         private readonly IKeycloakTokenService _tokenService;
-        private readonly KeycloakClientOptions _options;
+        private readonly CsoKeycloakClientOptions _options;
         private readonly ILogger<CsoBearerTokenHandler> _logger;
 
         public CsoBearerTokenHandler(
             IKeycloakTokenService tokenService,
-            IOptions<KeycloakClientOptions> options,
+            IOptions<CsoKeycloakClientOptions> options,
             ILogger<CsoBearerTokenHandler> logger)
         {
             _tokenService = tokenService;

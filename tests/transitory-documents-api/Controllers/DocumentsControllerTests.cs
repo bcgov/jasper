@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
 using Microsoft.AspNetCore.Http;
@@ -47,8 +48,10 @@ namespace tests.tdApi.Tests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("Request body is required.", badRequestResult.Value);
-            _mockService.Verify(s => s.FindFilesAsync(It.IsAny<TransitoryDocumentSearchRequest>()), Times.Never);
+            var details = Assert.IsType<ValidationProblemDetails>(badRequestResult.Value);
+            Assert.True(details.Errors.ContainsKey("request"));
+            Assert.Contains("Request body is required.", details.Errors["request"]);
+            _mockService.Verify(s => s.FindFilesAsync(It.IsAny<TransitoryDocumentSearchRequest>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -62,7 +65,7 @@ namespace tests.tdApi.Tests.Controllers
                 CreateFileMetadata()
             };
 
-            _mockService.Setup(s => s.FindFilesAsync(request))
+            _mockService.Setup(s => s.FindFilesAsync(request, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(expectedFiles);
 
             // Act
@@ -74,7 +77,7 @@ namespace tests.tdApi.Tests.Controllers
             Assert.Equal(expectedFiles.Count, actualFiles.Count);
             Assert.Equal(expectedFiles, actualFiles);
 
-            _mockService.Verify(s => s.FindFilesAsync(request), Times.Once);
+            _mockService.Verify(s => s.FindFilesAsync(request, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -84,7 +87,7 @@ namespace tests.tdApi.Tests.Controllers
             var request = CreateValidSearchRequest();
             var expectedFiles = new List<FileMetadataDto>();
 
-            _mockService.Setup(s => s.FindFilesAsync(request))
+            _mockService.Setup(s => s.FindFilesAsync(request, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(expectedFiles);
 
             // Act
@@ -95,7 +98,7 @@ namespace tests.tdApi.Tests.Controllers
             var actualFiles = Assert.IsAssignableFrom<IReadOnlyList<FileMetadataDto>>(okResult.Value);
             Assert.Empty(actualFiles);
 
-            _mockService.Verify(s => s.FindFilesAsync(request), Times.Once);
+            _mockService.Verify(s => s.FindFilesAsync(request, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -112,7 +115,7 @@ namespace tests.tdApi.Tests.Controllers
                 Date = DateOnly.FromDateTime(_faker.Date.Recent())
             };
 
-            _mockService.Setup(s => s.FindFilesAsync(request))
+            _mockService.Setup(s => s.FindFilesAsync(request, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(new List<FileMetadataDto>());
 
             // Act
@@ -120,7 +123,7 @@ namespace tests.tdApi.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            _mockService.Verify(s => s.FindFilesAsync(request), Times.Once);
+            _mockService.Verify(s => s.FindFilesAsync(request, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         #endregion
@@ -138,8 +141,10 @@ namespace tests.tdApi.Tests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("path is required and must be an relative path.", badRequestResult.Value);
-            _mockService.Verify(s => s.OpenFileAsync(It.IsAny<string>()), Times.Never);
+            var details = Assert.IsType<ValidationProblemDetails>(badRequestResult.Value);
+            Assert.True(details.Errors.ContainsKey("path"));
+            Assert.Contains("path is required and must be an relative path.", details.Errors["path"]);
+            _mockService.Verify(s => s.OpenFileAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -154,7 +159,7 @@ namespace tests.tdApi.Tests.Controllers
 
             var fileResponse = new FileStreamResponse(stream, fileName, contentType);
 
-            _mockService.Setup(s => s.OpenFileAsync(path))
+            _mockService.Setup(s => s.OpenFileAsync(path, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(fileResponse);
 
             // Act
@@ -167,7 +172,7 @@ namespace tests.tdApi.Tests.Controllers
             Assert.True(fileResult.EnableRangeProcessing);
             Assert.Equal(stream, fileResult.FileStream);
 
-            _mockService.Verify(s => s.OpenFileAsync(path), Times.Once);
+            _mockService.Verify(s => s.OpenFileAsync(path, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -178,7 +183,7 @@ namespace tests.tdApi.Tests.Controllers
             var stream = new MemoryStream(_faker.Random.Bytes(256));
             var fileResponse = new FileStreamResponse(stream, "document.pdf", "application/pdf");
 
-            _mockService.Setup(s => s.OpenFileAsync(path))
+            _mockService.Setup(s => s.OpenFileAsync(path, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(fileResponse);
 
             // Act
@@ -194,14 +199,14 @@ namespace tests.tdApi.Tests.Controllers
         {
             // Arrange
             var path = _faker.System.FilePath();
-            _mockService.Setup(s => s.OpenFileAsync(path))
+            _mockService.Setup(s => s.OpenFileAsync(path, It.IsAny<CancellationToken>()))
                        .ThrowsAsync(new FileNotFoundException("File not found"));
 
             // Act & Assert
             await Assert.ThrowsAsync<FileNotFoundException>(
                 async () => await _controller.GetContent(path));
 
-            _mockService.Verify(s => s.OpenFileAsync(path), Times.Once);
+            _mockService.Verify(s => s.OpenFileAsync(path, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -212,7 +217,7 @@ namespace tests.tdApi.Tests.Controllers
             var stream = new MemoryStream(_faker.Random.Bytes(1024));
             var fileResponse = new FileStreamResponse(stream, _faker.System.FileName(), "application/pdf");
 
-            _mockService.Setup(s => s.OpenFileAsync(path))
+            _mockService.Setup(s => s.OpenFileAsync(path, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(fileResponse);
 
             // Act

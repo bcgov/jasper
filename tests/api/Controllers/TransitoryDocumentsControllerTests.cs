@@ -18,7 +18,8 @@ using Scv.Models;
 using Scv.Models.Document;
 using Scv.Models.TransitoryDocuments;
 using Xunit;
-using FileMetadata = Scv.TdApi.Models.FileMetadataDto;
+using FileMetadata = Scv.Models.TransitoryDocuments.TransitoryDocumentFileMetadata;
+using SearchFileMetadata = Scv.TdApi.Models.FileMetadataDto;
 
 namespace tests.api.Controllers;
 
@@ -123,7 +124,7 @@ public class TransitoryDocumentsControllerTests
         var locationId = _faker.Random.AlphaNumeric(10);
         var roomCd = _faker.Random.AlphaNumeric(5);
         var date = DateOnly.FromDateTime(_faker.Date.Recent());
-        var expectedDocuments = new List<FileMetadata>
+        var expectedDocuments = new List<SearchFileMetadata>
         {
             CreateFileMetadata(),
             CreateFileMetadata()
@@ -142,7 +143,7 @@ public class TransitoryDocumentsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<FileMetadata>>(okResult.Value);
+        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<SearchFileMetadata>>(okResult.Value);
         Assert.Equal(expectedDocuments.Count, actualDocuments.Count());
 
         _mockTransitoryDocumentsService.Verify(
@@ -164,14 +165,14 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, It.IsAny<string>()))
-            .ReturnsAsync(new List<FileMetadata>());
+            .ReturnsAsync(new List<SearchFileMetadata>());
 
         // Act
         var result = await _controller.DocumentGet(locationId, roomCd, date);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<FileMetadata>>(okResult.Value);
+        var actualDocuments = Assert.IsAssignableFrom<IEnumerable<SearchFileMetadata>>(okResult.Value);
         Assert.Empty(actualDocuments);
     }
 
@@ -189,7 +190,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, "2025-10-31"))
-            .ReturnsAsync(new List<FileMetadata>());
+            .ReturnsAsync(new List<SearchFileMetadata>());
 
         // Act
         await _controller.DocumentGet(locationId, roomCd, date);
@@ -467,6 +468,9 @@ public class TransitoryDocumentsControllerTests
         // Arrange
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = null
         };
 
@@ -494,6 +498,9 @@ public class TransitoryDocumentsControllerTests
         // Arrange
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = Array.Empty<FileMetadata>()
         };
 
@@ -524,6 +531,9 @@ public class TransitoryDocumentsControllerTests
         // Arrange
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
@@ -555,6 +565,9 @@ public class TransitoryDocumentsControllerTests
         // Arrange
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
@@ -588,6 +601,9 @@ public class TransitoryDocumentsControllerTests
         var halfMax = maxFileSize / 2 + 1;
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = halfMax, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
@@ -625,6 +641,9 @@ public class TransitoryDocumentsControllerTests
         var mergedContent = _faker.Random.AlphaNumeric(1000);
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
@@ -640,6 +659,10 @@ public class TransitoryDocumentsControllerTests
         _mockMergePdfsValidator
             .Setup(v => v.ValidateAsync(It.IsAny<MergePdfsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+        _mockTransitoryDocumentsService
+            .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -663,6 +686,9 @@ public class TransitoryDocumentsControllerTests
         var bearerToken = _faker.Random.AlphaNumeric(50);
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
@@ -674,6 +700,10 @@ public class TransitoryDocumentsControllerTests
         _mockMergePdfsValidator
             .Setup(v => v.ValidateAsync(It.IsAny<MergePdfsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+        _mockTransitoryDocumentsService
+            .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -697,6 +727,9 @@ public class TransitoryDocumentsControllerTests
         var bearerToken = _faker.Random.AlphaNumeric(50);
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
@@ -710,6 +743,10 @@ public class TransitoryDocumentsControllerTests
         _mockMergePdfsValidator
             .Setup(v => v.ValidateAsync(It.IsAny<MergePdfsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+        _mockTransitoryDocumentsService
+            .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -735,6 +772,9 @@ public class TransitoryDocumentsControllerTests
         var bearerToken = _faker.Random.AlphaNumeric(50);
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() }
@@ -744,6 +784,10 @@ public class TransitoryDocumentsControllerTests
         _mockMergePdfsValidator
             .Setup(v => v.ValidateAsync(It.IsAny<MergePdfsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+        _mockTransitoryDocumentsService
+            .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -764,6 +808,9 @@ public class TransitoryDocumentsControllerTests
         var bearerToken = _faker.Random.AlphaNumeric(50);
         var request = new MergePdfsRequest
         {
+            LocationId = _faker.Random.AlphaNumeric(10),
+            RoomCd = _faker.Random.AlphaNumeric(5),
+            Date = DateOnly.FromDateTime(_faker.Date.Recent()),
             Files = new[]
             {
                 new FileMetadata { RelativePath = _faker.System.FilePath(), SizeBytes = 1024, Extension = _faker.System.FileExt(), FileName = _faker.System.FileName() },
@@ -776,6 +823,10 @@ public class TransitoryDocumentsControllerTests
         _mockMergePdfsValidator
             .Setup(v => v.ValidateAsync(It.IsAny<MergePdfsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+        _mockTransitoryDocumentsService
+            .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -793,10 +844,10 @@ public class TransitoryDocumentsControllerTests
 
     #region Helper Methods
 
-    private FileMetadata CreateFileMetadata()
+    private SearchFileMetadata CreateFileMetadata()
     {
         var fileName = _faker.System.FileName();
-        return new FileMetadata
+        return new SearchFileMetadata
         {
             FileName = fileName,
             Extension = Path.GetExtension(fileName),
@@ -804,6 +855,19 @@ public class TransitoryDocumentsControllerTests
             CreatedUtc = _faker.Date.Recent(),
             RelativePath = _faker.System.FilePath(),
             MatchedRoomFolder = _faker.Random.Bool() ? _faker.Random.AlphaNumeric(5) : null
+        };
+    }
+
+    private static SearchFileMetadata ToSearchFileMetadata(FileMetadata metadata)
+    {
+        return new SearchFileMetadata
+        {
+            FileName = metadata.FileName,
+            Extension = metadata.Extension,
+            SizeBytes = metadata.SizeBytes,
+            CreatedUtc = metadata.CreatedUtc,
+            RelativePath = metadata.RelativePath,
+            MatchedRoomFolder = metadata.MatchedRoomFolder
         };
     }
 

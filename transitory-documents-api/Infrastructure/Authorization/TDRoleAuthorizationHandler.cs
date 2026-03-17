@@ -63,9 +63,7 @@ namespace Scv.TdApi.Infrastructure.Authorization
 
             if (hasRequiredRole)
             {
-                var username = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                    ?? context.User.FindFirst("preferred_username")?.Value
-                    ?? "unknown";
+                var username = GetUsername(context.User);
 
                 _logger.LogInformation(
                     "Authorization succeeded for user: {Username}, required role: {RequiredRole}",
@@ -76,9 +74,7 @@ namespace Scv.TdApi.Infrastructure.Authorization
             }
             else
             {
-                var username = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                    ?? context.User.FindFirst("preferred_username")?.Value
-                    ?? "unknown";
+                var username = GetUsername(context.User);
 
                 _logger.LogWarning(
                     "Authorization failed for user: {Username}, required role: {RequiredRole}, user roles: {UserRoles}",
@@ -90,6 +86,13 @@ namespace Scv.TdApi.Infrastructure.Authorization
             }
 
             return Task.CompletedTask;
+        }
+
+        private static string GetUsername(ClaimsPrincipal user)
+        {
+            return user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst("preferred_username")?.Value
+                ?? "unknown";
         }
 
         private bool HasQueryRole(string[] clientRoles)
@@ -109,15 +112,12 @@ namespace Scv.TdApi.Infrastructure.Authorization
             {
                 var resourceAccess = System.Text.Json.JsonDocument.Parse(resourceAccessJson);
 
-                if (resourceAccess.RootElement.TryGetProperty(clientId, out var clientElement))
+                if (resourceAccess.RootElement.TryGetProperty(clientId, out var clientElement) && clientElement.TryGetProperty("roles", out var rolesElement))
                 {
-                    if (clientElement.TryGetProperty("roles", out var rolesElement))
-                    {
-                        return rolesElement.EnumerateArray()
-                            .Select(r => r.GetString())
-                            .Where(r => !string.IsNullOrWhiteSpace(r))
-                            .ToArray()!;
-                    }
+                    return rolesElement.EnumerateArray()
+                        .Select(r => r.GetString())
+                        .Where(r => !string.IsNullOrWhiteSpace(r))
+                        .ToArray()!;
                 }
 
                 return null;

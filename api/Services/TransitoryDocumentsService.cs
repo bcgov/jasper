@@ -1,6 +1,8 @@
 using DnsClient.Internal;
 using MapsterMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Options;
@@ -13,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using TDCommon.Clients.DocumentsServices;
 using FileMetadataDto = Scv.TdApi.Models.FileMetadataDto;
@@ -21,11 +24,13 @@ namespace Scv.Api.Services
 {
     public partial class TransitoryDocumentsService : ITransitoryDocumentsService
     {
+        private static readonly MemoryCache SearchResultsCache = new(new MemoryCacheOptions());
         private readonly ITransitoryDocumentsClientService _tdClient;
         private readonly ILocationService _locationService;
         private readonly IKeycloakTokenService _keycloakTokenService;
-        private readonly IOptions<KeycloakClientOptions> _tdKeycloakOptions;
+        private readonly IOptions<TdKeycloakClientOptions> _tdKeycloakOptions;
         private readonly IMapper _mapper;
+        private readonly int _tdSearchExpiryMinutes;
         private readonly Lazy<JsonSerializerOptions> _jsonSerializerOptions;
         private readonly ILogger<TransitoryDocumentsService> _logger;
 
@@ -37,7 +42,8 @@ namespace Scv.Api.Services
             ITransitoryDocumentsClientService transitoryDocumentsClientWrapper,
             ILocationService locationService,
             IKeycloakTokenService keycloakTokenService,
-            IOptions<KeycloakClientOptions> tdKeycloakOptions,
+            IOptions<TdKeycloakClientOptions> tdKeycloakOptions,
+            IConfiguration configuration,
             IMapper mapper)
         {
             _jsonSerializerOptions = new Lazy<JsonSerializerOptions>(CreateJsonSerializerOptions);
@@ -46,6 +52,7 @@ namespace Scv.Api.Services
             _locationService = locationService;
             _keycloakTokenService = keycloakTokenService;
             _tdKeycloakOptions = tdKeycloakOptions;
+            _tdSearchExpiryMinutes = configuration.GetValue<int?>("Caching:TdSearchExpiryMinutes") ?? 480;
             _mapper = mapper;
         }
 
@@ -67,48 +74,72 @@ namespace Scv.Api.Services
         /// <param name="locationId">The location to retrieve files.</param>
         /// <param name="roomCode">The room within the location.</param>
         /// <param name="date">The date to retrieve files.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>The collection of file metadata from the API.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
-        public async Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(string locationId, string roomCode, string date)
+        public async Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(
+            string locationId,
+            string roomCode,
+            string date,
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Searching for documents in location: {Location}, room: {Room}, date: {Date}", locationId, roomCode, date);
 
-            var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value);
-            _tdClient.SetBearerToken(bearer);
+            var cacheKey = $"TdSearch::{locationId?.Trim()}::{roomCode?.Trim()}::{date?.Trim()}";
 
             try
             {
-                var locations = await this._locationService.GetLocations();
-                var matchingLocation = locations.FirstOrDefault(location => location.LocationId == locationId);
+                return await SearchResultsCache.GetOrCreateAsync(
+                    cacheKey,
+                    async entry =>
+                    {
+                        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_tdSearchExpiryMinutes);
 
-                var locationShortName = matchingLocation?.ShortName;
-                if (string.IsNullOrWhiteSpace(locationShortName))
-                {
-                    _logger.LogError("Location not found for locationId: {LocationId}", locationId);
-                    throw new BadRequestException("location not found.");
-                }
-                _logger.LogDebug("Location {LocationShortName} found for locationId: {LocationId}", locationShortName, locationId);
+                        var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value, cancellationToken);
+                        _tdClient.SetBearerToken(bearer);
 
-                var region = await _locationService.GetRegion(matchingLocation.AgencyIdentifierCd);
-                if (string.IsNullOrWhiteSpace(region?.RegionName))
-                {
-                    _logger.LogError("Region not found for locationId: {LocationId}", locationId);
-                    throw new BadRequestException("Region not found.");
-                }
-                _logger.LogDebug("Region {Region} found for locationId: {LocationId}", region.RegionName, locationId);
+                        var locations = await this._locationService.GetLocations();
+                        var matchingLocation = locations.FirstOrDefault(location => location.LocationId == locationId);
 
-                if (!DateTimeOffset.TryParse(date, CultureInfo.InvariantCulture, out DateTimeOffset parsedDate))
-                {
-                    _logger.LogError("Invalid date format: {Date}", date);
-                    throw new BadRequestException("Invalid date format.");
-                }
+                        var locationShortName = matchingLocation?.ShortName;
+                        if (string.IsNullOrWhiteSpace(locationShortName))
+                        {
+                            _logger.LogError("Location not found for locationId: {LocationId}", locationId);
+                            throw new BadRequestException("location not found.");
+                        }
+                        _logger.LogDebug("Location {LocationShortName} found for locationId: {LocationId}", locationShortName, locationId);
 
-                _logger.LogDebug("Searching documents for Date: {Date}, Room: {Room}, AgencyIdentifierCd: {AgencyIdentifierCd}, LocationShortName: {LocationShortName}, RegionCode: {RegionCode}, RegionName: {RegionName}",
-                    parsedDate, roomCode, matchingLocation.AgencyIdentifierCd, locationShortName, region.RegionId, region.RegionName);
-                var clientResult = await _tdClient.SearchAsync(new TransitoryDocumentSearchRequest() { Date = parsedDate, RoomCd = roomCode, AgencyIdentifierCd = matchingLocation.AgencyIdentifierCd, LocationShortName = locationShortName, RegionCode = region.RegionId.ToString(), RegionName = region.RegionName });
+                        var region = await _locationService.GetRegion(matchingLocation.AgencyIdentifierCd);
+                        if (string.IsNullOrWhiteSpace(region?.RegionName))
+                        {
+                            _logger.LogError("Region not found for locationId: {LocationId}", locationId);
+                            throw new BadRequestException("Region not found.");
+                        }
+                        _logger.LogDebug("Region {Region} found for locationId: {LocationId}", region.RegionName, locationId);
 
-                // Use Mapster to map generated client DTOs to shared model DTOs
-                return _mapper.Map<IEnumerable<FileMetadataDto>>(clientResult);
+                        if (!DateTimeOffset.TryParse(date, CultureInfo.InvariantCulture, out DateTimeOffset parsedDate))
+                        {
+                            _logger.LogError("Invalid date format: {Date}", date);
+                            throw new BadRequestException("Invalid date format.");
+                        }
+
+                        _logger.LogDebug("Searching documents for Date: {Date}, Room: {Room}, AgencyIdentifierCd: {AgencyIdentifierCd}, LocationShortName: {LocationShortName}, RegionCode: {RegionCode}, RegionName: {RegionName}",
+                            parsedDate, roomCode, matchingLocation.AgencyIdentifierCd, locationShortName, region.RegionId, region.RegionName);
+                        var clientResult = await _tdClient.SearchAsync(
+                            new TransitoryDocumentSearchRequest()
+                            {
+                                Date = parsedDate,
+                                RoomCd = roomCode,
+                                AgencyIdentifierCd = matchingLocation.AgencyIdentifierCd,
+                                LocationShortName = locationShortName,
+                                RegionCode = region.RegionId.ToString(),
+                                RegionName = region.RegionName
+                            },
+                            cancellationToken);
+
+                        // Use Mapster to map generated client DTOs to shared model DTOs.
+                        return _mapper.Map<IEnumerable<FileMetadataDto>>(clientResult).ToList();
+                    });
             }
             catch (ApiException<string> apiEx)
             {
@@ -121,17 +152,20 @@ namespace Scv.Api.Services
         /// Downloads a file from the Transitory Documents API using the generated client.
         /// </summary>
         /// <param name="path">The relative UNC path to the file (will be normalized to relative path).</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>A file stream response containing the stream, file name, and content type.</returns>
-        public async Task<FileStreamResponse> DownloadFile(string path)
+        public async Task<FileStreamResponse> DownloadFile(
+            string path,
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Downloading file from path: {Path}", path);
 
-            var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value);
+            var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value, cancellationToken);
             _tdClient.SetBearerToken(bearer);
 
             try
             {
-                var fileResponse = await _tdClient.ContentAsync(path);
+                var fileResponse = await _tdClient.ContentAsync(path, cancellationToken);
 
                 var fileName = GetFileNameFromHeaders(fileResponse.Headers, path);
 

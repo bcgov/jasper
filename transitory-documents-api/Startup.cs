@@ -2,6 +2,7 @@ using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
@@ -17,6 +18,7 @@ using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure.Authorization;
 using Scv.Core.Infrastructure.Handler;
+using Scv.TdApi.Infrastructure;
 using Scv.TdApi.Infrastructure.Authorization;
 using Scv.TdApi.Infrastructure.FileSystem;
 using Scv.TdApi.Infrastructure.Middleware;
@@ -106,11 +108,31 @@ namespace Scv.TdApi
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User ?? new ClaimsPrincipal());
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            services.AddSharedDriveServices();
 
-            services.AddSingleton<ISmbClientFactory, SmbClientFactory>();
-            services.AddScoped<ISmbFileSystemClient, SmbFileSystemClient>();
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor |
+                    ForwardedHeaders.XForwardedProto |
+                    ForwardedHeaders.XForwardedHost;
 
-            services.AddScoped<ISharedDriveFileService, SharedDriveFileService>();
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+
+                options.KnownProxies.Add(System.Net.IPAddress.Loopback);
+                options.KnownProxies.Add(System.Net.IPAddress.IPv6Loopback);
+
+                var knownProxies = Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [];
+                foreach (var proxy in knownProxies)
+                {
+                    if (System.Net.IPAddress.TryParse(proxy, out var ipAddress))
+                    {
+                        options.KnownProxies.Add(ipAddress);
+                    }
+                }
+
+            });
 
             #endregion Setup Services
 
@@ -342,7 +364,6 @@ namespace Scv.TdApi
             app.Use((context, next) =>
             {
                 context.Request.EnableBuffering();
-                context.Request.Scheme = "https";
                 if (context.Request.Headers.ContainsKey("X-Forwarded-Host") && !env.IsDevelopment())
                 {
                     var baseUrl = context.Request.Headers["X-Base-Href"].ToString();

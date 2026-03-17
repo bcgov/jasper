@@ -104,7 +104,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
                 async () => await client.ListFilesAsync(_faker.System.DirectoryPath()));
 
             exception.Message.Should().Contain("SMB login failed with status");
-            
+
             _mockSmbClient.Verify(c => c.Disconnect(), Times.Once);
         }
 
@@ -137,7 +137,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
                 async () => await client.ListFilesAsync(_faker.System.DirectoryPath()));
 
             exception.Message.Should().Contain("Failed to connect to share");
-            
+
             _mockSmbClient.Verify(c => c.Logoff(), Times.Once);
             _mockSmbClient.Verify(c => c.Disconnect(), Times.Once);
         }
@@ -147,9 +147,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             var mockFileName = _faker.System.FileName();
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase")
                 .WithFile(mockFileName);
             SetupMockDirectoryStructure(mockDir);
@@ -162,7 +162,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeEmpty();
             result.Should().OnlyContain(f => f.FileName == mockFileName);
-            
+
             // Verify that CreateFile was called with the base path
             _mockFileStore.Verify(
                 f => f.CreateFile(
@@ -185,9 +185,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             _defaultOptions.BasePath = null;
             var mockRelativePath = "relative\\path";
             var mockFileName = _faker.System.FileName();
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory(mockRelativePath)
                 .WithFile(mockFileName);
             SetupMockDirectoryStructure(mockDir);
@@ -200,7 +200,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeEmpty();
             result.Should().OnlyContain(f => f.FileName == mockFileName);
-            
+
             // Verify that CreateFile was called with the relative path (no base path prefix)
             _mockFileStore.Verify(
                 f => f.CreateFile(
@@ -223,9 +223,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             var mockRelativePath = "folder1/folder2";
             var mockFileName = _faker.System.FileName();
             var expectedCombinedPath = "TestBase\\folder1\\folder2";
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory(expectedCombinedPath)
                 .WithFile(mockFileName);
             SetupMockDirectoryStructure(mockDir);
@@ -238,7 +238,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeEmpty();
             result.Should().OnlyContain(f => f.FileName == mockFileName);
-            
+
             // Verify that CreateFile was called with the combined path
             _mockFileStore.Verify(
                 f => f.CreateFile(
@@ -261,9 +261,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             var mockRelativePathWithSlashes = "folder1/folder2/folder3";
             var mockFileName = _faker.System.FileName();
             var expectedPathWithBackslashes = "TestBase\\folder1\\folder2\\folder3";
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory(expectedPathWithBackslashes)
                 .WithFile(mockFileName);
             SetupMockDirectoryStructure(mockDir);
@@ -276,7 +276,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeEmpty();
             result.Should().OnlyContain(f => f.FileName == mockFileName);
-            
+
             // Verify that CreateFile was called with backslashes
             _mockFileStore.Verify(
                 f => f.CreateFile(
@@ -297,7 +297,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase\\2024-01-01")
                 .WithSubDirectory(new MockDirectory("Room 001"))
                 .WithSubDirectory(new MockDirectory("Room 002"));
@@ -310,7 +310,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
 
             // Assert
             result.Should().NotBeNull();
-            
+
             _mockFileStore.Verify(
                 f => f.QueryDirectory(
                     out It.Ref<List<QueryDirectoryFileInformation>>.IsAny,
@@ -335,7 +335,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase\\2024-01-01")
                 .WithSubDirectory(
                     new MockDirectory(roomFolderName)
@@ -364,9 +364,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             var mockFileName = _faker.System.FileName();
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase\\2024-01-01")
                 .WithSubDirectory(
                     new MockDirectory("Room 001")
@@ -388,9 +388,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             var mockDateLevelFileName = _faker.System.FileName();
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase\\2024-01-01")
                 .WithFile(mockDateLevelFileName)
                 .WithSubDirectory(new MockDirectory("Room 001"));
@@ -411,9 +411,9 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Arrange
             var mockFileName = _faker.System.FileName();
             var mockNestedFileName = _faker.System.FileName();
-            
+
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase\\2024-01-01")
                 .WithSubDirectory(
                     new MockDirectory("Room 001")
@@ -440,7 +440,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockDir = new MockDirectory("TestBase\\2024-01-01")
                 .WithSubDirectory(
                     new MockDirectory("Room 001")
@@ -666,7 +666,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockPath = "TestBase\\test.pdf";
             var fileHandle = new object();
 
@@ -702,7 +702,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeNull();
             result.Length.Should().Be(0);
-            
+
             _mockFileStore.Verify(f => f.CloseFile(fileHandle), Times.Once);
         }
 
@@ -711,7 +711,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockPath = "TestBase\\test.pdf";
             var fileHandle = new object();
 
@@ -747,7 +747,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeNull();
             result.Length.Should().Be(0);
-            
+
             _mockFileStore.Verify(f => f.CloseFile(fileHandle), Times.Once);
         }
 
@@ -756,7 +756,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockPath = "TestBase\\test.pdf";
             var fileHandle = new object();
             var chunk1 = new byte[] { 1, 2, 3, 4, 5 };
@@ -809,12 +809,71 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
             // Assert
             result.Should().NotBeNull();
             result.Length.Should().Be(10);
-            
+
             var buffer = new byte[10];
             await result.ReadExactlyAsync(buffer, 0, 10);
             buffer.Should().BeEquivalentTo(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
-            
+
             _mockFileStore.Verify(f => f.CloseFile(fileHandle), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetFileInfoAsync_Uses_Smb_Path_Splitting_For_Backslash_Paths()
+        {
+            // Arrange
+            SetupSuccessfulConnection();
+
+            var relativePath = "Interior\\Cranbrook\\Cranbrook\\11 November\\November 28 (Fri)\\001\\Crowder.pdf";
+            var smbPath = $"TestBase\\{relativePath}";
+            var expectedDirectoryPath = "TestBase\\Interior\\Cranbrook\\Cranbrook\\11 November\\November 28 (Fri)\\001";
+            var expectedFileName = "Crowder.pdf";
+            var directoryHandle = new object();
+            var directoryEntries = new List<QueryDirectoryFileInformation>
+            {
+                CreateFileInfo(expectedFileName)
+            };
+
+            _mockFileStore
+                .Setup(f => f.CreateFile(
+                    out directoryHandle,
+                    out It.Ref<FileStatus>.IsAny,
+                    expectedDirectoryPath,
+                    It.IsAny<AccessMask>(),
+                    It.IsAny<SMBLibrary.FileAttributes>(),
+                    It.IsAny<ShareAccess>(),
+                    It.IsAny<CreateDisposition>(),
+                    It.IsAny<CreateOptions>(),
+                    It.IsAny<SecurityContext>()))
+                .Returns(NTStatus.STATUS_SUCCESS);
+
+            _mockFileStore
+                .Setup(f => f.QueryDirectory(
+                    out directoryEntries,
+                    directoryHandle,
+                    expectedFileName,
+                    It.IsAny<FileInformationClass>()))
+                .Returns(NTStatus.STATUS_SUCCESS);
+
+            _mockFileStore
+                .Setup(f => f.CloseFile(directoryHandle));
+
+            var client = CreateClient();
+
+            // Act
+            var result = await client.GetFileInfoAsync(relativePath);
+
+            // Assert
+            result.FileName.Should().Be(expectedFileName);
+            result.FullPath.Should().Be(smbPath);
+
+            _mockFileStore.Verify(
+                f => f.QueryDirectory(
+                    out It.Ref<List<QueryDirectoryFileInformation>>.IsAny,
+                    directoryHandle,
+                    expectedFileName,
+                    FileInformationClass.FileDirectoryInformation),
+                Times.Once);
+            _mockFileStore.Verify(f => f.CloseFile(directoryHandle), Times.Once);
         }
 
         [Fact]
@@ -822,7 +881,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
         {
             // Arrange
             SetupSuccessfulConnection();
-            
+
             var mockPath = "TestBase\\test.pdf";
             var fileHandle = new object();
 
@@ -858,7 +917,7 @@ namespace tests.tdApi.Tests.Infrastructure.FileSystem
 
             exception.Message.Should().Contain("Failed to read file");
             exception.Message.Should().Contain("test.pdf");
-            
+
             _mockFileStore.Verify(f => f.CloseFile(fileHandle), Times.Once);
         }
 

@@ -10,6 +10,58 @@ namespace Scv.TdApi.Infrastructure.FileSystem
     public static class SmbPathUtility
     {
         /// <summary>
+        /// Returns the directory portion of an SMB path using SMB separators.
+        /// This is OS-agnostic and does not rely on the host path separator.
+        /// </summary>
+        public static string GetDirectoryPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return string.Empty;
+            }
+
+            var normalized = path.Replace('/', '\\').TrimEnd('\\');
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return string.Empty;
+            }
+
+            var lastSeparatorIndex = normalized.LastIndexOf('\\');
+            if (lastSeparatorIndex < 0)
+            {
+                return string.Empty;
+            }
+
+            return normalized[..lastSeparatorIndex];
+        }
+
+        /// <summary>
+        /// Returns the file name portion of an SMB path using SMB separators.
+        /// This is OS-agnostic and does not rely on the host path separator.
+        /// </summary>
+        public static string GetFileName(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return string.Empty;
+            }
+
+            var normalized = path.Replace('/', '\\').TrimEnd('\\');
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return string.Empty;
+            }
+
+            var lastSeparatorIndex = normalized.LastIndexOf('\\');
+            if (lastSeparatorIndex < 0)
+            {
+                return normalized;
+            }
+
+            return normalized[(lastSeparatorIndex + 1)..];
+        }
+
+        /// <summary>
         /// Validates that a path is relative and does not contain parent directory traversal.
         /// </summary>
         public static void ValidateRelativePath(string relativePath)

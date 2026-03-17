@@ -36,19 +36,25 @@ namespace Scv.TdApi.Controllers
         [HttpPost("search")]
         [Authorize(Policy = TdPolicies.RequireQueryRole)]
         [ProducesResponseType(typeof(IReadOnlyList<FileMetadataDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> Search([FromBody] TransitoryDocumentSearchRequest request)
+        public async Task<IActionResult> Search([FromBody] TransitoryDocumentSearchRequest request, CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
-                return BadRequest("Request body is required.");
+                return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    ["request"] = ["Request body is required."]
+                }));
             }
 
             if (request.Date == default)
             {
-                return BadRequest("Date is required.");
+                return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    ["date"] = ["Date is required."]
+                }));
             }
 
             request.RegionCode = StringSanitizer.Sanitize(request.RegionCode) ?? string.Empty;
@@ -62,7 +68,8 @@ namespace Scv.TdApi.Controllers
                 request.RegionCode, request.RegionName, request.AgencyIdentifierCd, request.LocationShortName, request.RoomCd, request.Date);
 
             var foundFiles = await _sharedDriveFileService.FindFilesAsync(
-                request);
+                request,
+                cancellationToken);
 
             _logger.LogInformation(
                 "File search completed found {FileCount} files",
@@ -78,22 +85,27 @@ namespace Scv.TdApi.Controllers
         [Authorize(Policy = TdPolicies.RequireReadRole)]
         [Produces("application/octet-stream", "application/pdf", "image/jpeg", "image/png")]
         [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetContent([FromQuery] string path)
+        public async Task<IActionResult> GetContent([FromQuery] string path, CancellationToken cancellationToken = default)
         {
             var sanitizedPath = StringSanitizer.Sanitize(path);
 
             if (string.IsNullOrWhiteSpace(sanitizedPath))
-                return BadRequest("path is required and must be an relative path.");
+            {
+                return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    ["path"] = ["path is required and must be an relative path."]
+                }));
+            }
 
             _logger.LogInformation(
                 "File content requested path: {Path}",
                 sanitizedPath);
 
-            var fileResponse = await _sharedDriveFileService.OpenFileAsync(sanitizedPath);
+            var fileResponse = await _sharedDriveFileService.OpenFileAsync(sanitizedPath, cancellationToken);
 
             _logger.LogInformation(
                 "File content retrieved file: {FileName}, size: {Size} bytes",

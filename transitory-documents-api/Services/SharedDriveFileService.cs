@@ -12,6 +12,7 @@ namespace Scv.TdApi.Services
 {
     public sealed class SharedDriveFileService : ISharedDriveFileService
     {
+        private static readonly SemaphoreSlim OpenFileConcurrencySemaphore = new(4, 4);
         private readonly ISmbFileSystemClient _fileSystemClient;
         private readonly ILogger<SharedDriveFileService> _logger;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider = new();
@@ -34,9 +35,11 @@ namespace Scv.TdApi.Services
         }
 
         public async Task<IReadOnlyList<FileMetadataDto>> FindFilesAsync(
-            TransitoryDocumentSearchRequest request)
+            TransitoryDocumentSearchRequest request,
+            System.Threading.CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(request);
+            cancellationToken.ThrowIfCancellationRequested();
 
             _logger.LogInformation(
                 "Finding files for regionCode: {RegionCode}, agencyIdentifierCd: {AgencyIdentifierCd}, room: {Room}, date: {Date}",
@@ -48,6 +51,7 @@ namespace Scv.TdApi.Services
                 ?.Replacement ?? request.RegionName;
 
             CorrectionMapping? locationMapping;
+            var effectiveRoomCd = request.RoomCd;
 
             if (_correctionMappingOptions.VirtualBailMappings.Any(vb => string.Equals(vb.Target, request.RoomCd, StringComparison.OrdinalIgnoreCase)))
             {
@@ -62,12 +66,12 @@ namespace Scv.TdApi.Services
             string locationFolderName = locationMapping?.Replacement ?? request.LocationShortName;
             if (locationMapping?.IgnoreRoom == true)
             {
-                request.RoomCd = null;
+                effectiveRoomCd = null;
             }
 
             _logger.LogDebug(
                 "Mapped regionCode '{RegionCode}' to folder '{RegionFolder}', agencyIdentifierCd '{AgencyIdentifierCd}' to folder '{LocationFolder}', roomCd to '{RoomCd}'",
-                request.RegionCode, regionFolderName, request.AgencyIdentifierCd, locationFolderName, request.RoomCd);
+                request.RegionCode, regionFolderName, request.AgencyIdentifierCd, locationFolderName, effectiveRoomCd);
 
 
             var locationPath = SmbPathUtility.CombinePathWithForwardSlashes(regionFolderName, locationFolderName);
@@ -77,8 +81,9 @@ namespace Scv.TdApi.Services
             // Process all date paths in parallel and await completion
             var tasks = candidateDatePaths.Select(async datePath =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 _logger.LogInformation("Searching date path: {Path}", datePath);
-                await ProcessDateFolder(datePath, request.RoomCd, allFiles);
+                await ProcessDateFolder(datePath, effectiveRoomCd, allFiles, cancellationToken);
             });
 
             await Task.WhenAll(tasks);
@@ -88,10 +93,15 @@ namespace Scv.TdApi.Services
             return results;
         }
 
-        public async Task<FileStreamResponse> OpenFileAsync(string relativePath)
+        public async Task<FileStreamResponse> OpenFileAsync(string relativePath, System.Threading.CancellationToken cancellationToken = default)
         {
+            var semaphoreAcquired = false;
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                await OpenFileConcurrencySemaphore.WaitAsync(cancellationToken);
+                semaphoreAcquired = true;
+
                 if (string.IsNullOrWhiteSpace(relativePath))
                 {
                     throw new ArgumentException("Relative path is required", nameof(relativePath));
@@ -101,7 +111,14 @@ namespace Scv.TdApi.Services
 
                 _logger.LogInformation("Opening file: {Path}", relativePath);
 
-                var stream = await _fileSystemClient.OpenFileAsync(relativePath);
+                var fileInfo = await _fileSystemClient.GetFileInfoAsync(relativePath, cancellationToken);
+                if (_tdApiOptions.MaxFileSize > 0 && fileInfo.SizeBytes > _tdApiOptions.MaxFileSize)
+                {
+                    var maxSizeMb = _tdApiOptions.MaxFileSize / 1024.0 / 1024.0;
+                    throw new BadRequestException($"File size exceeds maximum allowed size of {maxSizeMb:F2} MB.");
+                }
+
+                var stream = await _fileSystemClient.OpenFileAsync(relativePath, cancellationToken);
                 var fileName = Path.GetFileName(relativePath);
 
                 if (!_contentTypeProvider.TryGetContentType(fileName, out var contentType))
@@ -110,13 +127,6 @@ namespace Scv.TdApi.Services
                 }
 
                 var response = new FileStreamResponse(stream, fileName, contentType);
-
-                if (_tdApiOptions.MaxFileSize > 0 && response.SizeBytes > _tdApiOptions.MaxFileSize)
-                {
-                    await stream.DisposeAsync();
-                    var maxSizeMb = _tdApiOptions.MaxFileSize / 1024.0 / 1024.0;
-                    throw new BadRequestException($"File size exceeds maximum allowed size of {maxSizeMb:F2} MB.");
-                }
 
                 _logger.LogInformation("Successfully opened file: {FileName}, size: {Size} bytes",
                     fileName, response.SizeBytes);
@@ -127,6 +137,13 @@ namespace Scv.TdApi.Services
             {
                 _logger.LogWarning(ex, "IOException opening file: {Path}", relativePath);
                 throw new IOException($"Error opening file at path '{relativePath}'. See inner exception for details.", ex);
+            }
+            finally
+            {
+                if (semaphoreAcquired)
+                {
+                    OpenFileConcurrencySemaphore.Release();
+                }
             }
 
         }
@@ -150,13 +167,14 @@ namespace Scv.TdApi.Services
             return fullPath;
         }
 
-        private async Task ProcessDateFolder(string datePath, string? roomCd, ConcurrentDictionary<string, FileMetadataDto> allFiles)
+        private async Task ProcessDateFolder(string datePath, string? roomCd, ConcurrentDictionary<string, FileMetadataDto> allFiles, System.Threading.CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             _logger.LogInformation("Processing date folder: {Path}", datePath);
 
             try
             {
-                var files = await _fileSystemClient.ListFilesAsync(datePath, roomFilter: roomCd);
+                var files = await _fileSystemClient.ListFilesAsync(datePath, roomFilter: roomCd, cancellationToken: cancellationToken);
 
                 if (files.Count == 0)
                 {
@@ -168,12 +186,11 @@ namespace Scv.TdApi.Services
 
                 foreach (var file in files)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     _logger.LogDebug("Processing file: {FileName} at {FullPath} relative directory {RelativeDirectory}", file.FileName, file.FullPath, file.RelativeDirectory);
                     var dto = CreateFileMetadataDto(file);
-                    if (!allFiles.ContainsKey(dto.RelativePath))
-                    {
-                        allFiles.TryAdd(dto.RelativePath, dto);
-                    }
+                    var fileIdentity = CreateFileIdentityKey(dto.RelativePath, dto.FileName);
+                    allFiles.TryAdd(fileIdentity, dto);
                 }
             }
             catch (FileNotFoundException ex)
@@ -224,8 +241,12 @@ namespace Scv.TdApi.Services
                 .ThenBy(f => f.MatchedRoomFolder ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(f => f.FileName, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase)
-                .DistinctBy(f => $"{f.RelativePath} {f.FileName}", StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private static string CreateFileIdentityKey(string relativePath, string fileName)
+        {
+            return $"{relativePath}::{fileName}";
         }
     }
 }

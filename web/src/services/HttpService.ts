@@ -138,7 +138,11 @@ export class HttpService implements IHttpService {
       ) {
         try {
           const text = await data.text();
-          return JSON.parse(text);
+          const parsedError = JSON.parse(text);
+          if (isValidatorErrorResponse(parsedError)) {
+            return parsedError;
+          }
+          return null;
         } catch {
           return null;
         }

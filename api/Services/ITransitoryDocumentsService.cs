@@ -1,5 +1,6 @@
 using Scv.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using TDCommon.Clients.DocumentsServices;
 using FileMetadataDto = Scv.TdApi.Models.FileMetadataDto;
@@ -17,15 +18,21 @@ namespace Scv.Api.Services
         /// <param name="locationId">The location to retrieve files.</param>
         /// <param name="roomCode">The room within the location.</param>
         /// <param name="date">The date to retrieve files.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>The collection of file metadata from the API.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
-        Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(string locationId, string roomCode, string date);
+        Task<IEnumerable<FileMetadataDto>> ListSharedDocuments(
+            string locationId,
+            string roomCode,
+            string date,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Downloads a file from the Transitory Documents API using the generated client.
         /// </summary>
         /// <param name="path">The relative UNC path to the file (will be normalized to relative path).</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>A file stream response containing the stream, file name, and content type.</returns>
-        Task<FileStreamResponse> DownloadFile(string path);
+        Task<FileStreamResponse> DownloadFile(string path, CancellationToken cancellationToken = default);
     }
 }

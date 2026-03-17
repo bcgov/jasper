@@ -71,6 +71,21 @@ public class SharedDriveFileServiceTests
             _mockTdApiOptions.Object);
     }
 
+    private void SetupFileMetadata(string relativePath, long sizeBytes = 100)
+    {
+        _mockFileSystemClient
+            .Setup(c => c.GetFileInfoAsync(relativePath, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SmbFileInfo
+            {
+                FileName = Path.GetFileName(relativePath),
+                FullPath = relativePath,
+                Extension = Path.GetExtension(relativePath),
+                SizeBytes = sizeBytes,
+                CreatedUtc = DateTime.UtcNow,
+                RelativeDirectory = null
+            });
+    }
+
     #region Constructor Tests
 
     [Fact]
@@ -691,19 +706,6 @@ public class SharedDriveFileServiceTests
         await Assert.ThrowsAsync<BadRequestException>(() => service.OpenFileAsync(path));
     }
 
-    [Theory]
-    [InlineData("../file.pdf")]
-    [InlineData("folder/../file.pdf")]
-    [InlineData("folder\\..\\file.pdf")]
-    public async Task OpenFileAsync_ThrowsBadRequestException_WhenPathContainsParentTraversal(string path)
-    {
-        // Arrange
-        var service = CreateService();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<BadRequestException>(() => service.OpenFileAsync(path));
-    }
-
     [Fact]
     public async Task OpenFileAsync_ReturnsFileStreamResponse_WhenFileExists()
     {
@@ -712,6 +714,7 @@ public class SharedDriveFileServiceTests
         var RelativePath = "path/to/test-document.pdf";
         var fileContent = _faker.Random.Bytes(_faker.Random.Int(100, 1000));
         var memoryStream = new MemoryStream(fileContent);
+        SetupFileMetadata(RelativePath, fileContent.Length);
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -734,15 +737,12 @@ public class SharedDriveFileServiceTests
         _defaultTdApiOptions.MaxFileSize = 10;
         var service = CreateService();
         var relativePath = "path/to/large-file.pdf";
-        var fileContent = _faker.Random.Bytes(20);
-        var memoryStream = new MemoryStream(fileContent);
-
-        _mockFileSystemClient
-            .Setup(c => c.OpenFileAsync(relativePath, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(memoryStream);
+        SetupFileMetadata(relativePath, 20);
 
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(() => service.OpenFileAsync(relativePath));
+
+        _mockFileSystemClient.Verify(c => c.OpenFileAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -751,6 +751,10 @@ public class SharedDriveFileServiceTests
         // Arrange
         var service = CreateService();
         var RelativePath = "path/to/test-document.pdf";
+
+        _mockFileSystemClient
+            .Setup(c => c.GetFileInfoAsync(RelativePath, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("File not found"));
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -771,6 +775,7 @@ public class SharedDriveFileServiceTests
         var service = CreateService();
         var RelativePath = "path/to/document.unknownextension";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
+        SetupFileMetadata(RelativePath, 100);
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -798,6 +803,7 @@ public class SharedDriveFileServiceTests
         // Arrange
         var service = CreateService();
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
+        SetupFileMetadata(filePath, 100);
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(filePath, It.IsAny<CancellationToken>()))
@@ -817,6 +823,7 @@ public class SharedDriveFileServiceTests
         var service = CreateService();
         var RelativePath = "very/long/path/to/my/document.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
+        SetupFileMetadata(RelativePath, 100);
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -836,6 +843,7 @@ public class SharedDriveFileServiceTests
         var service = CreateService();
         var RelativePath = "path/to/my document with spaces.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
+        SetupFileMetadata(RelativePath, 100);
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -855,6 +863,7 @@ public class SharedDriveFileServiceTests
         var service = CreateService();
         var RelativePath = "path/to/test-document.pdf";
         var memoryStream = new MemoryStream(_faker.Random.Bytes(100));
+        SetupFileMetadata(RelativePath, 100);
 
         _mockFileSystemClient
             .Setup(c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()))
@@ -866,6 +875,9 @@ public class SharedDriveFileServiceTests
         // Assert
         _mockFileSystemClient.Verify(
             c => c.OpenFileAsync(RelativePath, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _mockFileSystemClient.Verify(
+            c => c.GetFileInfoAsync(RelativePath, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

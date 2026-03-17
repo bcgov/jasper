@@ -10,8 +10,9 @@ namespace Scv.TdApi.Services
         /// </summary>
         /// <returns>List of file metadata</returns>
         Task<IReadOnlyList<FileMetadataDto>> FindFilesAsync(
-            TransitoryDocumentSearchRequest request);
+            TransitoryDocumentSearchRequest request,
+            System.Threading.CancellationToken cancellationToken = default);
 
-        Task<Scv.Models.FileStreamResponse> OpenFileAsync(string relativePath);
+        Task<Scv.Models.FileStreamResponse> OpenFileAsync(string relativePath, System.Threading.CancellationToken cancellationToken = default);
     }
 }

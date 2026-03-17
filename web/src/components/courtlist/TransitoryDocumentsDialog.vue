@@ -1,11 +1,11 @@
 <template>
-  <v-dialog v-model="isOpen" fullscreen>
+  <v-dialog v-model="dialogOpen" fullscreen>
     <v-card>
       <v-toolbar color="primary">
-        <v-toolbar-title
-          >Transitory Documents - {{ props.date }} {{ props.location }} Room
-          {{ props.roomCd }} {{
-        }}</v-toolbar-title>
+        <v-toolbar-title>
+          Transitory Documents - {{ props.date }} {{ props.location }} Room
+          {{ props.roomCd }}
+        </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn :icon="mdiClose" @click="close" title="close"></v-btn>
       </v-toolbar>
@@ -108,12 +108,14 @@
 
 <script setup lang="ts">
   import ActionBar from '@/components/shared/table/ActionBar.vue';
+  import { PERMISSIONS } from '@/constants/permissions';
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
   import { FileMetadataDto } from '@/types/transitory-documents';
   import { useCommonStore } from '@/stores';
   import { mdiClose, mdiDownload, mdiFileDocumentOutline } from '@mdi/js';
   import { computed, inject, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
+  import { openTransitoryDocumentsInNutrient } from './transitoryViewerLauncher';
 
   const props = defineProps<{
     modelValue: boolean;
@@ -133,25 +135,37 @@
   );
   const router = useRouter();
 
-  const isOpen = ref(props.modelValue);
+  const dialogOpen = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => {
+      emit('update:modelValue', value);
+    },
+  });
   const loading = ref(false);
   const documents = ref<FileMetadataDto[]>([]);
   const selectedDocuments = ref<FileMetadataDto[]>([]);
   const downloadingFiles = ref<Record<string, boolean>>({});
+  const latestFetchRequestId = ref(0);
+  const error = ref<unknown>(null);
+  const downloadError = ref(false);
+  const downloadErrorMessage = ref('');
 
-  const DOWNLOAD_TRANSITORY_DOCUMENTS = 'DOWNLOAD_TRANSITORY_DOCUMENTS';
-  const VIEW_TRANSITORY_DOCUMENTS = 'VIEW_TRANSITORY_DOCUMENTS';
+  const setDownloadError = (message: string) => {
+    downloadError.value = true;
+    downloadErrorMessage.value = message;
+  };
 
   const canViewDocuments = computed(
     () =>
-      commonStore.userInfo?.permissions?.includes(VIEW_TRANSITORY_DOCUMENTS) ??
-      false
+      commonStore.userInfo?.permissions?.includes(
+        PERMISSIONS.VIEW_TRANSITORY_DOCUMENTS
+      ) ?? false
   );
 
   const canDownloadDocuments = computed(
     () =>
       commonStore.userInfo?.permissions?.includes(
-        DOWNLOAD_TRANSITORY_DOCUMENTS
+        PERMISSIONS.DOWNLOAD_TRANSITORY_DOCUMENTS
       ) ?? false
   );
 
@@ -185,8 +199,10 @@
   const fetchDocuments = async () => {
     if (!props.locationId || !props.roomCd || !props.date) return;
 
+    const requestId = ++latestFetchRequestId.value;
     loading.value = true;
     documents.value = [];
+    error.value = null;
 
     try {
       const result = await transitoryDocumentsService?.searchDocuments(
@@ -194,14 +210,29 @@
         props.roomCd,
         props.date
       );
+
+      // Ignore stale responses when a newer request has already started.
+      if (requestId !== latestFetchRequestId.value || !dialogOpen.value) {
+        return;
+      }
+
       documents.value = result || [];
+    } catch (e) {
+      error.value = e;
+      console.error('Error fetching transitory documents:', e);
     } finally {
-      loading.value = false;
+      // Only the latest request controls loading state.
+      if (requestId === latestFetchRequestId.value) {
+        loading.value = false;
+      }
     }
   };
 
   const close = () => {
-    emit('update:modelValue', false);
+    // Invalidate in-flight fetches so late responses don't overwrite state.
+    latestFetchRequestId.value++;
+    loading.value = false;
+    dialogOpen.value = false;
     selectedDocuments.value = [];
   };
 
@@ -216,16 +247,13 @@
 
   const openInNutrient = async (item: FileMetadataDto) => {
     try {
-      // Store single file in session storage
-      sessionStorage.setItem('transitoryDocuments', JSON.stringify([item]));
-
-      // Open in new tab
-      const route = router.resolve({
-        name: 'NutrientContainer',
-        query: { type: 'transitory-bundle' },
+      openTransitoryDocumentsInNutrient(router, [item], {
+        locationId: props.locationId,
+        roomCd: props.roomCd,
+        date: props.date,
       });
-      window.open(route.href, '_blank');
     } catch (e) {
+      setDownloadError('Failed to open document in viewer. Please try again.');
       console.error('Error opening document in viewer:', e);
     }
   };
@@ -236,6 +264,9 @@
     downloadingFiles.value[item.relativePath] = true;
     try {
       await transitoryDocumentsService?.downloadFile(item);
+    } catch (e) {
+      setDownloadError('Failed to download file. Please try again.');
+      console.error('Error downloading file:', e);
     } finally {
       downloadingFiles.value[item.relativePath] = false;
     }
@@ -247,33 +278,50 @@
     }
 
     const pdfDocuments = selectedDocuments.value.filter((doc) => isPdf(doc));
+    if (pdfDocuments.length === 0) {
+      setDownloadError(
+        'Please select PDF files to view in the document viewer.'
+      );
+      return;
+    }
 
-    sessionStorage.setItem('transitoryDocuments', JSON.stringify(pdfDocuments));
-
-    // Open in new tab
-    const route = router.resolve({
-      name: 'NutrientContainer',
-      query: { type: 'transitory-bundle' },
-    });
-    window.open(route.href, '_blank');
+    try {
+      openTransitoryDocumentsInNutrient(router, pdfDocuments, {
+        locationId: props.locationId,
+        roomCd: props.roomCd,
+        date: props.date,
+      });
+      downloadError.value = false;
+      downloadErrorMessage.value = '';
+    } catch (e) {
+      setDownloadError('Failed to open documents. Please try again.');
+      console.error('Error opening documents in viewer:', e);
+    }
   };
 
   watch(
     () => props.modelValue,
     (newValue) => {
-      isOpen.value = newValue;
       if (newValue) {
         fetchDocuments();
+      } else {
+        // External close: clean local state without re-emitting model updates.
+        latestFetchRequestId.value++;
+        loading.value = false;
+        selectedDocuments.value = [];
       }
     },
     { immediate: true }
   );
 
-  watch(isOpen, (newValue) => {
-    if (!newValue) {
-      close();
+  watch(
+    () => [props.locationId, props.roomCd, props.date],
+    () => {
+      if (dialogOpen.value) {
+        fetchDocuments();
+      }
     }
-  });
+  );
 </script>
 
 <style scoped>

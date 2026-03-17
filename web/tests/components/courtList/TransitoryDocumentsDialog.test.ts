@@ -1,5 +1,4 @@
 import TransitoryDocumentsDialog from '@/components/courtlist/TransitoryDocumentsDialog.vue';
-import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
 import { useCommonStore } from '@/stores';
 import { FileMetadataDto } from '@/types/transitory-documents';
 import { mount, flushPromises } from '@vue/test-utils';
@@ -52,6 +51,28 @@ const createPiniaWithUser = (
 const mockRouterResolve = vi.fn();
 const mockRouter = {
   resolve: mockRouterResolve,
+};
+
+type TransitoryDocumentsDialogVm = {
+  loading: boolean;
+  error: unknown;
+  documents: FileMetadataDto[];
+  selectedDocuments: FileMetadataDto[];
+  downloadError: boolean;
+  downloadErrorMessage: string;
+  headers: Array<{
+    title: string;
+    key: string;
+    sortable: boolean;
+    align?: 'center';
+  }>;
+  formatFileSize: (bytes: number) => string;
+  formatDate: (dateString: string) => string;
+  isPdf: (item: FileMetadataDto) => boolean;
+  isSupportedByNutrient: (item: FileMetadataDto) => boolean;
+  openInNutrient: (item: FileMetadataDto) => Promise<void>;
+  downloadFile: (item: FileMetadataDto) => Promise<void>;
+  handleViewDocuments: () => Promise<void>;
 };
 
 vi.mock('vue-router', () => ({
@@ -157,6 +178,14 @@ describe('TransitoryDocumentsDialog', () => {
     await nextTick();
   };
 
+  const getVm = (
+    wrapper: ReturnType<typeof createWrapper>
+  ): TransitoryDocumentsDialogVm =>
+    wrapper.vm as unknown as TransitoryDocumentsDialogVm;
+
+  const getSessionStorageSetItemMock = () =>
+    vi.mocked(window.sessionStorage.setItem);
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -192,9 +221,8 @@ describe('TransitoryDocumentsDialog', () => {
     });
 
     it('shows loading state when fetching documents', async () => {
-      let resolvePromise: () => void;
-      const promise = new Promise<any[]>((resolve) => {
-        resolvePromise = () => resolve([]);
+      const promise = new Promise<FileMetadataDto[]>(() => {
+        // Intentionally unresolved so loading remains true while assertion runs.
       });
 
       // Set up the mock BEFORE creating the wrapper
@@ -224,7 +252,7 @@ describe('TransitoryDocumentsDialog', () => {
       wrapper.setProps({ modelValue: true });
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.loading).toBe(true);
 
       await flushPromises();
@@ -257,7 +285,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       await wrapper.setProps({ modelValue: true });
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.error).toBeTruthy();
       expect(console.error).toHaveBeenCalledWith(
         'Error fetching transitory documents:',
@@ -280,7 +308,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       await wrapper.setProps({ modelValue: true });
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.documents.length).toBe(1);
     });
   });
@@ -333,7 +361,7 @@ describe('TransitoryDocumentsDialog', () => {
       const mockDoc = createMockDocument({ sizeBytes: bytes });
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.formatFileSize(bytes)).toBe(expected);
     });
   });
@@ -341,7 +369,7 @@ describe('TransitoryDocumentsDialog', () => {
   describe('Date formatting', () => {
     it('formats date string correctly', async () => {
       const wrapper = createWrapper();
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       const dateString = '2025-11-01T10:30:00Z';
       const formatted = vm.formatDate(dateString);
 
@@ -364,7 +392,7 @@ describe('TransitoryDocumentsDialog', () => {
       async ({ extension, isPdf, isSupported }) => {
         const mockDoc = createMockDocument({ extension });
         const wrapper = createWrapper({}, [mockDoc]);
-        const vm = wrapper.vm as any;
+        const vm = getVm(wrapper);
 
         expect(vm.isPdf(mockDoc)).toBe(isPdf);
         expect(vm.isSupportedByNutrient(mockDoc)).toBe(isSupported);
@@ -380,7 +408,7 @@ describe('TransitoryDocumentsDialog', () => {
       });
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.isSupportedByNutrient(mockDoc)).toBe(true);
     });
 
@@ -391,7 +419,7 @@ describe('TransitoryDocumentsDialog', () => {
       });
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.isSupportedByNutrient(mockDoc)).toBe(true);
     });
 
@@ -402,7 +430,7 @@ describe('TransitoryDocumentsDialog', () => {
       });
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.isSupportedByNutrient(mockDoc)).toBe(false);
     });
   });
@@ -415,16 +443,27 @@ describe('TransitoryDocumentsDialog', () => {
       });
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       await vm.openInNutrient(mockDoc);
 
-      expect(window.sessionStorage.setItem).toHaveBeenCalledWith(
-        'transitoryDocuments',
-        JSON.stringify([mockDoc])
+      expect(window.sessionStorage.setItem).toHaveBeenCalledTimes(1);
+      const setItemCall = getSessionStorageSetItemMock().mock.calls[0];
+      expect(setItemCall[0]).toMatch(/^transitoryDocuments:/);
+      expect(setItemCall[1]).toBe(
+        JSON.stringify({
+          files: [mockDoc],
+          context: {
+            locationId: '1',
+            roomCd: '101',
+            date: '2025-11-01',
+          },
+        })
       );
+
+      const tdKey = String(setItemCall[0]).split(':')[1];
       expect(mockRouterResolve).toHaveBeenCalledWith({
         name: 'NutrientContainer',
-        query: { type: 'transitory-bundle' },
+        query: { type: 'transitory-bundle', tdKey },
       });
       expect(window.open).toHaveBeenCalledWith('/nutrient-viewer', '_blank');
     });
@@ -433,7 +472,7 @@ describe('TransitoryDocumentsDialog', () => {
       const mockDoc = createMockDocument();
 
       // Set up the mock to throw BEFORE creating wrapper
-      (window.sessionStorage.setItem as any).mockImplementation(() => {
+      getSessionStorageSetItemMock().mockImplementation(() => {
         throw new Error('Storage error');
       });
 
@@ -441,7 +480,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       await wrapper.setProps({ modelValue: true });
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       await vm.openInNutrient(mockDoc);
 
       expect(vm.downloadError).toBe(true);
@@ -462,7 +501,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       await vm.downloadFile(mockDoc);
 
       expect(mockTransitoryDocumentsService.downloadFile).toHaveBeenCalledWith(
@@ -480,7 +519,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       await wrapper.setProps({ modelValue: true });
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       await vm.downloadFile(mockDoc);
 
       expect(vm.downloadError).toBe(true);
@@ -498,7 +537,7 @@ describe('TransitoryDocumentsDialog', () => {
     it('shows the download button when permission is granted', async () => {
       const wrapper = createWrapper({}, [createMockDocument()]);
       await flushAll();
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.documents.length).toBe(1);
 
       expect(wrapper.find('[data-testid="download-file-btn"]').exists()).toBe(
@@ -519,7 +558,7 @@ describe('TransitoryDocumentsDialog', () => {
       const mockDoc = createMockDocument();
       const wrapper = createWrapper({}, [mockDoc], []);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       await vm.downloadFile(mockDoc);
 
       expect(
@@ -597,7 +636,7 @@ describe('TransitoryDocumentsDialog', () => {
       const mockDoc = createMockDocument({ extension: '.txt' });
       const wrapper = createWrapper({}, [mockDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
 
       // Verify that the document is not selectable (isPdf returns false)
       expect(vm.isPdf(mockDoc)).toBe(false);
@@ -627,7 +666,7 @@ describe('TransitoryDocumentsDialog', () => {
       await wrapper.setProps({ modelValue: true });
       await flushPromises();
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
 
       // Simulate selecting checkbox for PDF document (only PDFs can be selected)
       // In the actual UI, only the PDF checkbox would be enabled
@@ -637,7 +676,7 @@ describe('TransitoryDocumentsDialog', () => {
       expect(vm.selectedDocuments.length).toBeGreaterThan(0);
 
       // Reset mock to clear any previous calls
-      (window.sessionStorage.setItem as any).mockClear();
+      getSessionStorageSetItemMock().mockClear();
 
       // Find and click the "View documents" button
       const viewButton = wrapper.find('[data-testid="view-documents"]');
@@ -647,9 +686,18 @@ describe('TransitoryDocumentsDialog', () => {
       }
 
       // Should succeed with only the PDF
-      expect(window.sessionStorage.setItem).toHaveBeenCalledWith(
-        'transitoryDocuments',
-        JSON.stringify([pdfDoc])
+      expect(window.sessionStorage.setItem).toHaveBeenCalled();
+      const setItemCall = getSessionStorageSetItemMock().mock.calls[0];
+      expect(setItemCall[0]).toMatch(/^transitoryDocuments:/);
+      expect(setItemCall[1]).toBe(
+        JSON.stringify({
+          files: [pdfDoc],
+          context: {
+            locationId: '1',
+            roomCd: '101',
+            date: '2025-11-01',
+          },
+        })
       );
       expect(window.open).toHaveBeenCalledWith('/nutrient-viewer', '_blank');
     });
@@ -668,7 +716,7 @@ describe('TransitoryDocumentsDialog', () => {
       await wrapper.setProps({ modelValue: true });
       await flushPromises();
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
 
       // Simulate selecting checkboxes for both PDF documents
       vm.selectedDocuments = [pdfDoc1, pdfDoc2];
@@ -679,7 +727,7 @@ describe('TransitoryDocumentsDialog', () => {
       expect(vm.isPdf(pdfDoc2)).toBe(true);
 
       // Reset mock to clear any previous calls
-      (window.sessionStorage.setItem as any).mockClear();
+      getSessionStorageSetItemMock().mockClear();
 
       // Find and click the "View documents" button
       const viewButton = wrapper.find('[data-testid="view-documents"]');
@@ -689,9 +737,18 @@ describe('TransitoryDocumentsDialog', () => {
       }
 
       expect(vm.downloadError).toBe(false);
-      expect(window.sessionStorage.setItem).toHaveBeenCalledWith(
-        'transitoryDocuments',
-        JSON.stringify([pdfDoc1, pdfDoc2])
+      expect(window.sessionStorage.setItem).toHaveBeenCalled();
+      const setItemCall = getSessionStorageSetItemMock().mock.calls[0];
+      expect(setItemCall[0]).toMatch(/^transitoryDocuments:/);
+      expect(setItemCall[1]).toBe(
+        JSON.stringify({
+          files: [pdfDoc1, pdfDoc2],
+          context: {
+            locationId: '1',
+            roomCd: '101',
+            date: '2025-11-01',
+          },
+        })
       );
       expect(window.open).toHaveBeenCalledWith('/nutrient-viewer', '_blank');
     });
@@ -703,11 +760,11 @@ describe('TransitoryDocumentsDialog', () => {
       await wrapper.setProps({ modelValue: true });
       await flushPromises();
 
-      (window.sessionStorage.setItem as any).mockImplementation(() => {
+      getSessionStorageSetItemMock().mockImplementation(() => {
         throw new Error('Storage error');
       });
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
 
       // Simulate selecting the PDF checkbox
       vm.selectedDocuments = [pdfDoc];
@@ -750,7 +807,7 @@ describe('TransitoryDocumentsDialog', () => {
       const wrapper = createWrapper({}, [mockDoc]);
       await flushPromises();
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       vm.selectedDocuments = [mockDoc];
 
       const closeButton = wrapper.find('[title="close"]');
@@ -764,17 +821,18 @@ describe('TransitoryDocumentsDialog', () => {
       expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([false]);
     });
 
-    it('closes dialog and clears selection when isOpen becomes false', async () => {
+    it('clears selection when modelValue becomes false externally', async () => {
       const mockDoc = createMockDocument();
       const wrapper = createWrapper({}, [mockDoc]);
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       vm.selectedDocuments = [mockDoc];
-      vm.isOpen = false;
+
+      await wrapper.setProps({ modelValue: false });
       await nextTick();
 
-      expect(wrapper.emitted('update:modelValue')).toBeTruthy();
+      expect(wrapper.emitted('update:modelValue')).toBeFalsy();
       expect(vm.selectedDocuments).toEqual([]);
     });
   });
@@ -783,7 +841,7 @@ describe('TransitoryDocumentsDialog', () => {
     it('closes snackbar when close button is clicked', async () => {
       const wrapper = createWrapper();
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       vm.downloadError = true;
       vm.downloadErrorMessage = 'Test error';
 
@@ -800,7 +858,7 @@ describe('TransitoryDocumentsDialog', () => {
       const txtDoc = createMockDocument({ extension: '.txt' });
       const wrapper = createWrapper({}, [pdfDoc, txtDoc]);
 
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
       expect(vm.isPdf(pdfDoc)).toBe(true);
       expect(vm.isPdf(txtDoc)).toBe(false);
     });
@@ -809,7 +867,7 @@ describe('TransitoryDocumentsDialog', () => {
   describe('Table headers', () => {
     it('has correct column headers', async () => {
       const wrapper = createWrapper({}, [createMockDocument()]);
-      const vm = wrapper.vm as any;
+      const vm = getVm(wrapper);
 
       expect(vm.headers).toEqual([
         { title: 'Room', key: 'matchedRoomFolder', sortable: true },

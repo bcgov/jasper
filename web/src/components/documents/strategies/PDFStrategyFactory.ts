@@ -1,7 +1,8 @@
 import { PDFViewerStrategy } from '@/components/documents/FileViewer.vue';
-import { OrderPDFStrategy } from './OrderPDFStrategy';
+import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
 import { BundlePDFStrategy } from './BundlePDFStrategy';
 import { FilePDFStrategy } from './FilePDFStrategy';
+import { OrderPDFStrategy } from './OrderPDFStrategy';
 import { TransitoryBundleStrategy } from './TransitoryBundleStrategy';
 
 export enum PDFViewerType {
@@ -12,7 +13,11 @@ export enum PDFViewerType {
 }
 
 export class PDFStrategyFactory {
-  static createStrategy(type: PDFViewerType): PDFViewerStrategy {
+  static createStrategy(
+    type: PDFViewerType,
+    transitoryDocumentsService?: TransitoryDocumentsService,
+    transitoryStorageKey?: string
+  ): PDFViewerStrategy {
     switch (type) {
       case PDFViewerType.FILE:
         return new FilePDFStrategy();
@@ -20,14 +25,32 @@ export class PDFStrategyFactory {
         return new BundlePDFStrategy();
       case PDFViewerType.ORDER:
         return new OrderPDFStrategy();
-      case PDFViewerType.TRANSITORY_BUNDLE:
-        return new TransitoryBundleStrategy();
+      case PDFViewerType.TRANSITORY_BUNDLE: {
+        if (!transitoryDocumentsService) {
+          throw new Error('TransitoryDocumentsService is not available!');
+        }
+        if (!transitoryStorageKey) {
+          throw new Error('Transitory bundle key is missing.');
+        }
+        return new TransitoryBundleStrategy(
+          transitoryDocumentsService,
+          transitoryStorageKey
+        );
+      }
       default:
         throw new Error(`Unknown PDF viewer type: ${type}`);
     }
   }
 }
 
-export function usePDFStrategy(type: PDFViewerType) {
-  return PDFStrategyFactory.createStrategy(type);
+export function usePDFStrategy(
+  type: PDFViewerType,
+  transitoryDocumentsService?: TransitoryDocumentsService,
+  transitoryStorageKey?: string
+) {
+  return PDFStrategyFactory.createStrategy(
+    type,
+    transitoryDocumentsService,
+    transitoryStorageKey
+  );
 }

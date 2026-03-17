@@ -172,6 +172,7 @@ export enum OrderReviewStatus {
   Unapproved = 'Unapproved',
   Pending = 'Pending',
   Approved = 'Approved',
+  AwaitingDocumentation = 'AwaitingDocumentation',
 }
 
 export enum RolesEnum {

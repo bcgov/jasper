@@ -133,19 +133,19 @@ public class OrderReminderJob(
             }
 
             // Only reassign if the RAJ is not already assigned
-            if (order.OrderRequest.Referral.SentToPartId != raj.UserId)
+            if (order.OrderRequest.Referral.SentToPartId != raj.PersonId)
             {
-                order.OrderRequest.Referral.SentToPartId = raj.UserId;
+                order.OrderRequest.Referral.SentToPartId = raj.PersonId;
                 order.OrderRequest.Referral.SentToName = GetRajName(raj);
                 await _orderRepo.UpdateAsync(order);
 
                 Logger.LogInformation("Order {OrderId} reassigned from judge {JudgeId} to RAJ {RajId}",
-                    order.Id, judge.UserId, raj.UserId);
+                    order.Id, judge.UserId, raj.PersonId);
             }
             else
             {
                 Logger.LogInformation("Order {OrderId} already assigned to RAJ {RajId}, skipping reassignment",
-                    order.Id, raj.UserId);
+                    order.Id, raj.PersonId);
             }
 
             // Always send notification regardless of whether reassignment occurred
@@ -180,6 +180,8 @@ public class OrderReminderJob(
         var supportAccount = Configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
         var emailData = CreateEmailData(order, GetRajName(raj), supportAccount);
 
+        Logger.LogInformation("Order reassignment email prepared for order {OrderId}", order.Id);
+        
         await _emailTemplateService.SendEmailTemplateAsync(
             "Order Reassignment",
             rajUser.Email,

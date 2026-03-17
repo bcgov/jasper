@@ -59,6 +59,7 @@ namespace Scv.Api
             services.Configure<JobsSubmitOrderOptions>(Configuration.GetSection("JOBS:SubmitOrder"));
             services.Configure<JobsFailureEmailOptions>(Configuration.GetSection("JOBS:FailureEmail"));
             services.Configure<JobsRetrySubmitOrderOptions>(Configuration.GetSection("JOBS:RetrySubmitOrder"));
+            services.Configure<JobsRetryUrgentSubmitOrderOptions>(Configuration.GetSection("JOBS:RetryUrgentSubmitOrder"));
             services.Configure<JobsOrderReminderOptions>(Configuration.GetSection("JOBS:OrderReminder"));
 
             services.AddLogging(options =>

@@ -67,7 +67,7 @@
             variant="outlined"
             :prepend-icon="mdiAccountClock"
             :disabled="!canReject"
-            @click="reviewOrder(OrderReviewStatus.Pending)"
+            @click="reviewOrder(OrderReviewStatus.AwaitingDocumentation)"
           >
             Awaiting documentation
           </v-btn>

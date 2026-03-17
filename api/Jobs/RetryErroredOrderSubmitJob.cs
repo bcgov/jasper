@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Hangfire;
 using Microsoft.Extensions.Logging;
@@ -19,6 +18,8 @@ public class RetryErroredOrderSubmitJob(
     IOptions<JobsRetrySubmitOrderOptions> options,
     ILogger<RetryErroredOrderSubmitJob> logger) : IRecurringJob
 {
+    private const string UrgentPriorityType = "URG";
+
     private readonly IRepositoryBase<Order> _orderRepo = orderRepo;
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
     private readonly JobsRetrySubmitOrderOptions _options = options.Value;
@@ -29,26 +30,18 @@ public class RetryErroredOrderSubmitJob(
 
     public async Task Execute()
     {
-        var erroredOrders = await _orderRepo.FindAsync(o =>
-            (o.Status == OrderStatus.Approved || o.Status == OrderStatus.Unapproved)
-            && o.SubmitStatus == SubmitStatus.Error);
+        await RetryErroredOrderSubmitJobHelper.ExecuteAsync(
+            _orderRepo,
+            _backgroundJobClient,
+            _options.MaxRetries,
+            o => !HasUrgentPriority(o),
+            _logger,
+            "No errored orders found for resubmission.",
+            "Retrying submission for {Count} errored orders.");
+    }
 
-        var orderIds = erroredOrders?.Where(o => o.SubmitAttempts < _options.MaxRetries || o.SubmitAttempts == null)
-            .Select(o => o.Id)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList() ?? [];
-        if (orderIds.Count == 0)
-        {
-            _logger.LogInformation("No errored orders found for resubmission.");
-            return;
-        }
-
-        _logger.LogInformation("Retrying submission for {Count} errored orders.", orderIds.Count);
-
-        foreach (var orderId in orderIds)
-        {
-            _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(orderId));
-        }
+    private static bool HasUrgentPriority(Order order)
+    {
+        return RetryErroredOrderSubmitJobHelper.HasPriorityType(order, UrgentPriorityType);
     }
 }

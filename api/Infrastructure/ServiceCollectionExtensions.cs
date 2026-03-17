@@ -323,6 +323,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<SubmitOrderJob>();
                 services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
                 services.AddTransient<IRecurringJob, RetryErroredOrderSubmitJob>();
+                services.AddTransient<IRecurringJob, RetryUrgentErroredOrderSubmitJob>();
                 services.AddTransient<IRecurringJob, OrderReminderJob>();
                 services.AddTransient<IRecurringJob, PopulateJudicialBinderDocumentFieldsJob>();
 

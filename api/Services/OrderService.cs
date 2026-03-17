@@ -228,7 +228,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if ((orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved) && !string.IsNullOrEmpty(orderDto.Comments))
+        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved || orderDto.Status == OrderStatus.AwaitingDocumentation)
         {
             _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
         }
@@ -274,7 +274,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 return OperationResult.Failure("Failed to map Order to OrderAction.");
             }
 
-            var success = await _csoClient.SendOrderAsync(actionDto);
+            var success = await _csoClient.SendOrderAsync(actionDto, default);
             if (!success)
             {
                 this.Logger.LogWarning("Order {OrderId} submission to CSO failed.", id);

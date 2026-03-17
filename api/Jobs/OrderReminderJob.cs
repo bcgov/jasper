@@ -180,7 +180,7 @@ public class OrderReminderJob(
         var supportAccount = Configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
         var emailData = CreateEmailData(order, GetRajName(raj), supportAccount);
 
-        Logger.LogInformation("Order reassignment email data for order {OrderId}: {@EmailData}", order.Id, emailData);
+        Logger.LogInformation("Order reassignment email prepared for order {OrderId}", order.Id);
         
         await _emailTemplateService.SendEmailTemplateAsync(
             "Order Reassignment",

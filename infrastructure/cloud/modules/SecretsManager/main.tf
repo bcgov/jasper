@@ -226,6 +226,7 @@ resource "aws_secretsmanager_secret" "misc_secret" {
 resource "aws_secretsmanager_secret_version" "misc_secret_value" {
   secret_id = aws_secretsmanager_secret.misc_secret.id
   secret_string = jsonencode({
+    publicCorsDomain               = "",
     dataProtectionKeyEncryptionKey  = "",
     webBaseHref                     = "",
     useSelfSignedSsl                = "",
@@ -410,6 +411,7 @@ resource "aws_secretsmanager_secret_version" "jobs_secret_value" {
     retryCount                      = "",
     orderSubmitJobRetryCount        = "",
     orderSubmitRetryJobCronSchedule = "",
+    cleanupSignalRMessagesCronSchedule = "",
     orderSubmitRetryJobMaxRetries   = "",
     jobFailureEmailRecipients0      = "",
     jobFailureEmailSubject          = ""

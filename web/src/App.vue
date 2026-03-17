@@ -35,4 +35,16 @@
   .v-toolbar-title {
     flex: none;
   }
+
+  @keyframes badge-pop {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
 </style>

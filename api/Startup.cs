@@ -11,12 +11,14 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
+using Scv.Db.Repositories;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -30,8 +32,12 @@ using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Repositories;
 using Scv.Api.Infrastructure.Options;
+using Scv.Api.Hubs;
+using Scv.Api.Services;
+using Scv.Api.SignalR;
 using Scv.Api.Services.EF;
 using Scv.Db.Models;
+using System.Linq;
 
 namespace Scv.Api
 {
@@ -60,6 +66,7 @@ namespace Scv.Api
             services.Configure<JobsFailureEmailOptions>(Configuration.GetSection("JOBS:FailureEmail"));
             services.Configure<JobsRetrySubmitOrderOptions>(Configuration.GetSection("JOBS:RetrySubmitOrder"));
             services.Configure<JobsOrderReminderOptions>(Configuration.GetSection("JOBS:OrderReminder"));
+            services.Configure<JobsCleanupSignalRMessagesOptions>(Configuration.GetSection("JOBS:CleanupSignalRMessages"));
 
             services.AddLogging(options =>
             {
@@ -93,6 +100,9 @@ namespace Scv.Api
                 }
             );
 
+            services.AddScoped(typeof(IPostgresRepositoryBase<,>), typeof(PostgresRepositoryBase<,>));
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+
             services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationRedirectMiddlewareResultHandler>();
 
             services.AddMapster();
@@ -103,15 +113,33 @@ namespace Scv.Api
             services.AddHangfire(Configuration);
             services.AddGraphService(Configuration);
 
+            services.AddSignalR(options =>
+            {
+                options.MaximumReceiveMessageSize =
+                    Configuration.GetValue<long>("SignalR:MaximumReceiveMessageSizeBytes");
+                options.KeepAliveInterval = TimeSpan.FromSeconds(
+                    Configuration.GetValue<int>("SignalR:KeepAliveIntervalSeconds"));
+                options.ClientTimeoutInterval = TimeSpan.FromSeconds(
+                    Configuration.GetValue<int>("SignalR:ClientTimeoutIntervalSeconds"));
+            });
+            services.AddSingleton<IUserIdProvider, UserIdProvider>();
+            services.AddSignalRPostgresBackplane(Configuration);
+
             #region Cors
 
-            string corsDomain = Configuration.GetValue<string>("CORS_DOMAIN");
+            var origins = ParseOrigins(
+                Configuration.GetValue<string>("CORS_DOMAIN"),
+                Configuration.GetValue<string>("PublicCorsDomain")
+            );
 
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins(corsDomain);
+                    builder.WithOrigins(origins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 
@@ -259,7 +287,18 @@ namespace Scv.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<NotificationsHub>("/api/notifications");
             });
+        }
+        private static string[] ParseOrigins(params string?[] rawValues)
+        {
+            return rawValues
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .SelectMany(v => v!.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .Select(o => o.Trim('"', '\''))
+                .Where(o => !string.IsNullOrWhiteSpace(o))
+                .Distinct()
+                .ToArray();
         }
     }
 }

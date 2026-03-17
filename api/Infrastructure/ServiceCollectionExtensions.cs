@@ -286,6 +286,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
+            services.AddScoped<ILocationService>(serviceProvider => serviceProvider.GetRequiredService<LocationService>());
             services.AddScoped<IPcssAuthorizationService, PcssAuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();

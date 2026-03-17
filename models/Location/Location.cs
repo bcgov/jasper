@@ -49,7 +49,7 @@
                 pcssLocation?.Name,
                 jcLocation?.LocationId,
                 pcssLocation?.LocationId,
-                jcLocation?.Code,
+                agencyIdentifierCd: jcLocation?.Code,
                 pcssLocation?.Active ?? jcLocation?.Active,
                 pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms,
                     pcssLocation?.RegionCd ?? jcLocation?.RegionCd);

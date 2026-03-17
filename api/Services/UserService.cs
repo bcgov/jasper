@@ -2,22 +2,20 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
-using Scv.Api.Models.Location;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
-using System.Security.Claims;
+using Scv.Models.Location;
 
 namespace Scv.Api.Services;
-    Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user);
-    Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
-    Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
+
 public class UserService(
     IAppCache cache,
     IMapper mapper,

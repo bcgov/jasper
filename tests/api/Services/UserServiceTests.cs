@@ -14,13 +14,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Location;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
+using Scv.Models.Location;
 using Xunit;
 
 namespace tests.api.Services;

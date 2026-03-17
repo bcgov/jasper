@@ -1,7 +1,6 @@
 ﻿using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using PCSSCommon.Clients.PersonServices;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
@@ -11,7 +10,6 @@ using Scv.Db.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;

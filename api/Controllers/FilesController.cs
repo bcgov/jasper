@@ -1,4 +1,11 @@
-﻿using JCCommon.Clients.FileServices;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using JCCommon.Clients.FileServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,26 +16,18 @@ using Scv.Api.Constants;
 using Scv.Api.Documents;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Api.Services.Files;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Core.Helpers.Extensions;
 using Scv.Models.Archive;
+using Scv.Models.Civil.AppearanceDetail;
 using Scv.Models.Civil.Detail;
-using Scv.Models.Criminal.AppearanceDetail;
 using Scv.Models.Criminal.Detail;
 using Scv.Models.Document;
 using Scv.Models.Search;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 using CivilAppearanceDetailModel = Scv.Models.Civil.AppearanceDetail.CivilAppearanceDetail;
-using Scv.Models.Civil.AppearanceDetail;
-using Scv.Api.Models.Criminal.AppearanceDetail;
+using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 
 namespace Scv.Api.Controllers
 {

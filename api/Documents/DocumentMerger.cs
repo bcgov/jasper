@@ -1,11 +1,11 @@
-using GdPicture14;
-using Scv.Models.Document;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using GdPicture14;
 using Microsoft.Extensions.Logging;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents;
 
@@ -35,19 +35,19 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 var stream = streamsToMerge[i];
                 if (stream == null)
                 {
-                    logger.LogError("Stream {Index} is null for document type {Type}", 
+                    logger.LogError("Stream {Index} is null for document type {Type}",
                         i, documentRequests[i].Type);
                     throw new InvalidOperationException($"Document stream {i} is null");
                 }
 
                 if (stream.Length == 0)
                 {
-                    logger.LogError("Stream {Index} is empty for document type {Type}", 
+                    logger.LogError("Stream {Index} is empty for document type {Type}",
                         i, documentRequests[i].Type);
                     throw new InvalidOperationException($"Document stream {i} is empty");
                 }
 
-                logger.LogInformation("Stream {Index} validated - Type: {Type}, Size: {Size} bytes", 
+                logger.LogInformation("Stream {Index} validated - Type: {Type}, Size: {Size} bytes",
                     i, documentRequests[i].Type, stream.Length);
             }
 
@@ -56,7 +56,7 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
             var mergeResult = gdpictureConverter.CombineToPDF(streamsToMerge, outputStream, PdfConformance.PDF);
             if (mergeResult != GdPictureStatus.OK)
             {
-                logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}", 
+                logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}",
                     mergeResult, streamsToMerge.Length);
                 throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
             }

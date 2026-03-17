@@ -1,7 +1,7 @@
-﻿using Scv.Core.Helpers.Exceptions;
-using Scv.Api.Models;
+﻿using System;
 using System.Linq;
-using System;
+using Scv.Api.Models;
+using Scv.Core.Helpers.Exceptions;
 
 namespace Scv.Api.Helpers
 {
@@ -17,12 +17,12 @@ namespace Scv.Api.Helpers
             if (responseMessage.Contains("Agency supplied does not match Appliation Code"))
                 throw new NotAuthorizedException("Agency supplied does not match Application Code");
         }
-        
+
         public static bool IsPersonActive(Person person)
         {
             var latestStatus = person.Statuses?.FirstOrDefault();
-            return latestStatus == null || 
-                   latestStatus.StatusDescription != INACTIVE || 
+            return latestStatus == null ||
+                   latestStatus.StatusDescription != INACTIVE ||
                    latestStatus.EffDate > DateTime.Now;
         }
     }

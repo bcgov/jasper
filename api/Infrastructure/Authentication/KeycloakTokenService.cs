@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using IdentityModel.Client;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Scv.Core.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Options;
+using Scv.Core.Helpers.Exceptions;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Options;
 using Scv.Core.Helpers;

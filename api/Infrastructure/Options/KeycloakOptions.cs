@@ -35,13 +35,13 @@ namespace Scv.Api.Infrastructure.Options
         /// Validate the token issuer (default: true)
         /// </summary>
         public bool ValidateIssuer { get; set; } = true;
-        
+
         public string Secret { get; set; }
-        
+
         public string Scope { get; set; }
-        
+
         public int RefreshSkewSeconds { get; set; } = 60; // refresh if within this window
-        
+
         public int ClockSkewSeconds { get; set; } = 10;   // tolerate small clock drift
 
         /// <summary>

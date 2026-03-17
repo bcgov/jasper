@@ -1,6 +1,6 @@
-using Scv.Models.Location;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Scv.Models.Location;
 using JCRegion = JCCommon.Clients.LocationServices.Region;
 
 namespace Scv.Api.Services;

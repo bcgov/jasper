@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Models.Order;
 using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Core.Infrastructure;

@@ -21,6 +21,7 @@ using tests.api.Services;
 using Xunit;
 
 namespace tests.api.Jobs;
+
 public class SyncDocumentCategoriesJobTests : ServiceTestBase
 {
     private const string CONFIG_KEY = "JOBS:SYNC_DOCUMENT_CATEGORIES_SCHEDULE";

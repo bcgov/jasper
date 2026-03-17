@@ -1,9 +1,9 @@
-﻿using Mapster;
+﻿using System;
+using System.Collections.Generic;
+using Mapster;
 using PCSSCommon.Models;
 using Scv.Db.Models;
 using Scv.Models;
-using System;
-using System.Collections.Generic;
 
 namespace Scv.Api.Infrastructure.Mappings;
 

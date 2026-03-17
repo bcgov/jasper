@@ -1,4 +1,9 @@
-﻿using LazyCache;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using LazyCache;
 using MapsterMapper;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
@@ -15,11 +20,6 @@ using Scv.Db.Repositories;
 using Scv.Models;
 using Scv.Models.Binder;
 using Scv.Models.Document;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
 

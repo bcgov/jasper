@@ -1,6 +1,6 @@
-﻿#pragma warning disable 8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-
+﻿
 namespace PCSSCommon.Models;
+
 public class PersonSearchItem
 {
     public int PersonId { get; set; }
@@ -37,5 +37,3 @@ public class PersonSearchItem
     public string ScheduleGeneratedDate { get; set; }
     public string SchedulePublishedDate { get; set; }
 }
-
-#pragma warning restore 8618

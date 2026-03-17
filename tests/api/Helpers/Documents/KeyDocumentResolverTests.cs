@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Scv.Api.Helpers;
-using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Scv.Models.Criminal.Detail;
 using Xunit;

@@ -1,4 +1,9 @@
-﻿using LazyCache;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
+using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers.Extensions;
@@ -7,12 +12,7 @@ using Scv.Api.Models.Location;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Services;
     Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user);

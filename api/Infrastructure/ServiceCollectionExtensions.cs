@@ -58,8 +58,8 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
-using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
 using TdDocumentsServices = TDCommon.Clients.DocumentsServices;
+using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
 
 namespace Scv.Api.Infrastructure
 {

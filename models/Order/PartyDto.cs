@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Scv.Models.Order
+﻿namespace Scv.Models.Order
 {
 
     public class PartyDto

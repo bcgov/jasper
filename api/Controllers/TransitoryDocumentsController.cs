@@ -1,3 +1,8 @@
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -9,13 +14,6 @@ using Scv.Db.Models;
 using Scv.Models;
 using Scv.Models.Document;
 using Scv.Models.TransitoryDocuments;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentValidation;
-
-#pragma warning disable S6960 // Despite the warning, the merge endpoint is related to this controller and should not be split out.
 
 namespace Scv.Api.Controllers
 {
@@ -251,5 +249,3 @@ namespace Scv.Api.Controllers
         }
     }
 }
-
-#pragma warning restore S6960

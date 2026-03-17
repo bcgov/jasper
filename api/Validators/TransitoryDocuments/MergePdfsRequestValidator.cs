@@ -1,8 +1,8 @@
+using System.Linq;
 using FluentValidation;
 using Microsoft.Extensions.Options;
 using Scv.Models;
 using Scv.Models.TransitoryDocuments;
-using System.Linq;
 
 namespace Scv.Api.Validators.TransitoryDocuments;
 

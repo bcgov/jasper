@@ -1,11 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Contexts;
 using Scv.Db.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Scv.Db.Seeders;
 
@@ -409,7 +408,7 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
             Permission.VIEW_TRANSITORY_DOCUMENTS,
             Permission.LIST_TRANSITORY_DOCUMENTS,
-            
+
         ];
     }
     #endregion Judiciary Group Permissions

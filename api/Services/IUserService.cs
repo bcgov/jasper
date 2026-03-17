@@ -1,5 +1,5 @@
-﻿using Scv.Models.AccessControlManagement;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Services
 {

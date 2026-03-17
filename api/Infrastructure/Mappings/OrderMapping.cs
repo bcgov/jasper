@@ -2,8 +2,8 @@
 using System.Globalization;
 using Mapster;
 using Scv.Api.Models.Order;
-using Scv.Models.Order;
 using Scv.Db.Models;
+using Scv.Models.Order;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 
 namespace Scv.Api.Infrastructure.Mappings;

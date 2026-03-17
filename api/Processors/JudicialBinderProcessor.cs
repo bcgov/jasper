@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Documents;
-using Scv.Api.Helpers;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Core.Helpers.ContractResolver;
@@ -14,10 +16,6 @@ using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Scv.Api.Processors;
 

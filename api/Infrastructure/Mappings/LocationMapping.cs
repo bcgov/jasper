@@ -1,6 +1,6 @@
-﻿using Mapster;
+﻿using System.Collections.Generic;
+using Mapster;
 using Scv.Models.Location;
-using System.Collections.Generic;
 using JC = JCCommon.Clients.LocationServices;
 using PCSS = PCSSCommon.Models;
 

@@ -14,12 +14,12 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Jobs;
 using Scv.Api.Models.Order;
+using Scv.Api.Repositories;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
-using Scv.Api.Repositories;
-using Scv.Core.Infrastructure;
-using Scv.Core.Helpers.Extensions;
-using Scv.Core.Helpers.ContractResolver;
 using Scv.Models.Order;
 
 namespace Scv.Api.Services;

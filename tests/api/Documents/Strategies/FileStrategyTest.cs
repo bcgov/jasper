@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Helpers;
+using Scv.Core.Helpers;
+using Scv.Models;
 using Scv.Models.Document;
 using tests.api.Services;
 using Xunit;
-using Scv.Models;
-using Scv.Core.Helpers;
 
 namespace tests.api.Documents.Strategies;
 

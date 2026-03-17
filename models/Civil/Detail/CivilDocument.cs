@@ -1,6 +1,5 @@
 using JCCommon.Clients.FileServices;
 using Scv.Models.Helpers;
-using System.Collections.Generic;
 
 namespace Scv.Models.Civil.Detail
 {

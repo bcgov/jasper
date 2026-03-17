@@ -1,7 +1,7 @@
 namespace Scv.TdApi.Infrastructure.FileSystem
 {
-    using Scv.Core.Helpers.Exceptions;
     using System.IO;
+    using Scv.Core.Helpers.Exceptions;
 
     /// <summary>
     /// Utility class for SMB path normalization and manipulation.

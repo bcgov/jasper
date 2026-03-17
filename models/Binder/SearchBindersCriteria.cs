@@ -1,4 +1,5 @@
-﻿namespace Scv.Models.Binder {
+﻿namespace Scv.Models.Binder
+{
 
     /// <summary>
     /// Criteria for searching binders with complex queries.

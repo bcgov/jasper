@@ -1,4 +1,8 @@
-﻿using JCCommon.Clients.LocationServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using JCCommon.Clients.LocationServices;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -6,10 +10,6 @@ using Newtonsoft.Json.Serialization;
 using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Models.Location;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 

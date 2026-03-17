@@ -3,10 +3,10 @@
 namespace Scv.TdApi.Infrastructure.FileSystem
 {
 
-/// <summary>
-/// Represents an isolated SMB connection that can be safely disposed
-/// without affecting other operations.
-/// </summary>
+    /// <summary>
+    /// Represents an isolated SMB connection that can be safely disposed
+    /// without affecting other operations.
+    /// </summary>
     public sealed class SmbConnection : IDisposable
     {
         private readonly ISmbClient _client;

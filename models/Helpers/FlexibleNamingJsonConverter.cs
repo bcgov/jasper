@@ -1,6 +1,4 @@
 ﻿// Turn on nullable to prevent compiler warnings
-#nullable enable
-
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

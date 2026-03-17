@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Scv.Api.Infrastructure;
 using Scv.Core.Infrastructure;
 using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
 

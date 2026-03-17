@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Hangfire;
@@ -22,7 +26,6 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Middleware;
-using Scv.Api.Repositories;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services.EF;
 using Scv.Core.Helpers;
@@ -30,10 +33,6 @@ using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 
 namespace Scv.Api
 {

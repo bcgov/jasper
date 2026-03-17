@@ -18,12 +18,12 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.Order;
+using Scv.Api.Repositories;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
-using Scv.Api.Repositories;
-using Xunit;
 using Scv.Models.Order;
+using Xunit;
 
 namespace tests.api.Services;
 

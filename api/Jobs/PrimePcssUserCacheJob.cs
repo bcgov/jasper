@@ -1,13 +1,12 @@
 using System;
 using System.Threading.Tasks;
+using Hangfire;
 using LazyCache;
+using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers;
-using MapsterMapper;
-using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
-using Hangfire;
 using Scv.Core.Helpers.Extensions;
+using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
 
 namespace Scv.Api.Jobs
 {

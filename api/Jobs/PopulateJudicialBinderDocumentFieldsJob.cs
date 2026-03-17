@@ -7,11 +7,11 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Models.Binder;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contants;
 using Scv.Models;
+using Scv.Models.Binder;
 
 namespace Scv.Api.Jobs;
 

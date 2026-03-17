@@ -2,7 +2,6 @@
 {
     public class Location
     {
-#pragma warning disable S1075
         private const string BASE_URL = "https://provincialcourt.bc.ca/court-locations/";
 #pragma warning restore
         private static readonly string[] invalidWords = ["Law", "Courts", "Court", "Provincial"];

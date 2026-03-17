@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Bogus;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -9,17 +13,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Jobs;
-using Scv.Models.Binder;
-using Scv.Models.Civil.Detail;
 using Scv.Api.Services;
 using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Scv.Models.Binder;
+using Scv.Models.Civil.Detail;
 using tests.api.Fixtures;
 using Xunit;
 

@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Bogus;
 using FluentValidation.TestHelper;
-using Scv.Models.Order;
 using Scv.Api.Validators.Order;
+using Scv.Models.Order;
 using Xunit;
 
 namespace tests.api.Validators.Order;

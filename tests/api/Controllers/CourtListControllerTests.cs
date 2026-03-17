@@ -23,17 +23,15 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Models.CourtList;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Models.CourtList;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
-using Scv.Core.Helpers;
-using Scv.Core.Infrastructure;
 
 namespace tests.api.Controllers;
 

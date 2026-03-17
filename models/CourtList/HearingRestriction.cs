@@ -1,5 +1,5 @@
-﻿using JCCommon.Clients.FileServices;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using JCCommon.Clients.FileServices;
 
 namespace Scv.Models.CourtList
 {

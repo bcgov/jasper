@@ -1,6 +1,5 @@
 using JCCommon.Clients.FileServices;
 using Scv.Models.Criminal.Appearances;
-using System.Collections.Generic;
 
 
 namespace Scv.Models.Criminal.Detail

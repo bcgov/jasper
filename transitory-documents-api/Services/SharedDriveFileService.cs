@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.StaticFiles;
+﻿using System.Collections.Concurrent;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 using Scv.Core.Helpers.Exceptions;
 using Scv.Models;
@@ -6,7 +7,6 @@ using Scv.Models.TransitoryDocuments;
 using Scv.TdApi.Infrastructure.FileSystem;
 using Scv.TdApi.Infrastructure.Options;
 using Scv.TdApi.Models;
-using System.Collections.Concurrent;
 
 namespace Scv.TdApi.Services
 {

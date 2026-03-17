@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Security.Claims;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,15 +20,12 @@ using Scv.Core.Helpers.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure.Authorization;
 using Scv.Core.Infrastructure.Handler;
+using Scv.Models;
 using Scv.TdApi.Infrastructure;
 using Scv.TdApi.Infrastructure.Authorization;
 using Scv.TdApi.Infrastructure.FileSystem;
 using Scv.TdApi.Infrastructure.Middleware;
 using Scv.TdApi.Infrastructure.Options;
-using Scv.TdApi.Services;
-using Scv.Models;
-using System.Reflection;
-using System.Security.Claims;
 
 namespace Scv.TdApi
 {

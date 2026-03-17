@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Moq;
 using PCSSCommon.Clients.ReportServices;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Models.Document;
+using Scv.Models.Document;
 using tests.api.Services;
 using Xunit;
 
@@ -27,7 +27,7 @@ public class ReportStrategyTests : ServiceTestBase
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>()))
-            .ReturnsAsync(((Stream)new MemoryStream(Encoding.UTF8.GetBytes("Test PDF")), ""));
+            .ReturnsAsync((new MemoryStream(Encoding.UTF8.GetBytes("Test PDF")), ""));
 
         var strategy = new ReportStrategy(mockServiceClient.Object);
         var result = await strategy.Invoke(new PdfDocumentRequestDetails

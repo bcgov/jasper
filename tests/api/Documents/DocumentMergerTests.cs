@@ -2,12 +2,12 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Documents;
-using Scv.Api.Models.Document;
-using Xunit;
+using Scv.Models.Document;
 using tests.api.Services;
-using Microsoft.Extensions.Logging;
+using Xunit;
 
 namespace tests.api.Documents;
 

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Scv.Api.Helpers;
 using Scv.Api.Models;
 using Xunit;

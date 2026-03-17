@@ -1,19 +1,17 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.AccessControlManagement;
-using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure.Authorization;
 using Scv.Db.Models;
 using Xunit;
 
 namespace tests.api.Infrastructure.Authorization;
+
 public class PermissionHandlerTests
 {
     private readonly Mock<ILogger<PermissionHandler>> _mockLogger;

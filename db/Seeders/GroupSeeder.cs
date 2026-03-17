@@ -20,7 +20,7 @@ namespace Scv.Db.Seeders
                 Role.ADMIN,
                 Role.TRAINER,
                 Role.PO_MANAGER,
-                Role.OCJ_SERVICE_DESK
+                Role.OCJ_SERVICE_DESK,
             };
             var judiciaryRoles = new List<string>
             {
@@ -28,12 +28,17 @@ namespace Scv.Db.Seeders
                 Role.ACJ_CHIEF_JUDGE,
                 Role.RAJ
             };
+            var developerRoles = new List<string>
+            {
+                Role.DEVELOPER,
+            };
             var groups = Group.ALL_GROUPS;
 
             var groupRoles = new Dictionary<string, IEnumerable<string>>
             {
                 [Group.TRAINING_AND_ADMIN] = trainingAdminRoles,
                 [Group.JUDICIARY] = judiciaryRoles,
+                [Group.TESTING] = developerRoles
             };
 
             foreach (var group in groups)

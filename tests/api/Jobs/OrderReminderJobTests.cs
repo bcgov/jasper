@@ -13,10 +13,11 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
+using Scv.Models.Order;
 using tests.api.Services;
 using Xunit;
 
@@ -140,7 +141,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_NoUnresolvedOrders_LogsAndReturns()
     {
         SetupConfiguration("5", "10");
-        
+
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync([]);
@@ -158,35 +159,35 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         var reminderSection = new Mock<IConfigurationSection>();
         reminderSection.Setup(s => s.Value).Returns(reminderDays);
-        
+
         var reassignmentSection = new Mock<IConfigurationSection>();
         reassignmentSection.Setup(s => s.Value).Returns(reassignmentDays);
-        
+
         var maxRemindersSection = new Mock<IConfigurationSection>();
         maxRemindersSection.Setup(s => s.Value).Returns(maxReminders);
-        
+
         var maxReassignmentsSection = new Mock<IConfigurationSection>();
         maxReassignmentsSection.Setup(s => s.Value).Returns(maxReassignments);
-        
+
         var supportAccountSection = new Mock<IConfigurationSection>();
         supportAccountSection.Setup(s => s.Value).Returns(supportAccount);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REMINDER_THRESHOLD_DAYS"))
             .Returns(reminderSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REASSIGNMENT_THRESHOLD_DAYS"))
             .Returns(reassignmentSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_MAX_REMINDER_NOTIFICATIONS"))
             .Returns(maxRemindersSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"))
             .Returns(maxReassignmentsSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("SUPPORT_ACCOUNT"))
             .Returns(supportAccountSection.Object);
@@ -196,7 +197,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_WithReminderOrders_SendsReminders()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6); // Past reminder threshold (5 days)
         var order = CreateTestOrder(judgeId, reminderDate);
@@ -232,7 +233,7 @@ public class OrderReminderJobTests : ServiceTestBase
             e => e.SendEmailTemplateAsync(
                 "Order Reminder",
                 user.Email,
-                It.Is<object>(obj => 
+                It.Is<object>(obj =>
                     obj.GetType().GetProperty("JudgeName") != null &&
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("DateReceived") != null &&
@@ -253,7 +254,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_WithReassignmentOrders_ReassignsToRAJ()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11); // Past reassignment threshold (10 days)
@@ -294,7 +295,7 @@ public class OrderReminderJobTests : ServiceTestBase
         await _job.Execute();
 
         _mockOrderRepo.Verify(
-            r => r.UpdateAsync(It.Is<Order>(o => 
+            r => r.UpdateAsync(It.Is<Order>(o =>
                 o.OrderRequest.Referral.SentToPartId == rajId &&
                 o.OrderRequest.Referral.SentToName == $"{raj.FirstName} {raj.LastName}".Trim())),
             Times.AtLeastOnce
@@ -328,7 +329,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync([order]);
 
-        await Assert.ThrowsAsync<Scv.Api.Helpers.Exceptions.ConfigurationException>(async () =>
+        await Assert.ThrowsAsync<Scv.Core.Helpers.Exceptions.ConfigurationException>(async () =>
         {
             await _job.Execute();
         });
@@ -342,7 +343,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenNoJudgeAssigned()
     {
         SetupConfiguration("5", "10");
-        
+
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var order = CreateTestOrder(101, reminderDate);
         order.OrderRequest.Referral.SentToPartId = null; // No judge assigned
@@ -364,7 +365,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenJudgeNotFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var order = CreateTestOrder(judgeId, reminderDate);
@@ -390,7 +391,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenUserNotFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var order = CreateTestOrder(judgeId, reminderDate);
@@ -420,7 +421,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenUserHasNoEmail()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var order = CreateTestOrder(judgeId, reminderDate);
@@ -451,13 +452,13 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_IncludesCorrectEmailData()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var expectedPriority = "Urgent";
         var expectedCaseNumber = "TEST-123";
         var expectedLocation = 123;
-        
+
         var order = CreateTestOrder(judgeId, reminderDate, expectedPriority);
         order.OrderRequest.CourtFile.CourtFileNo = expectedCaseNumber;
         order.OrderRequest.CourtFile.CourtLocationDesc = expectedLocation;
@@ -491,7 +492,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         Assert.NotNull(capturedEmailData);
         var dataType = capturedEmailData.GetType();
-        
+
         var judgeNameProp = dataType.GetProperty("JudgeName");
         var caseFileNumberProp = dataType.GetProperty("CaseFileNumber");
         var dateReceivedProp = dataType.GetProperty("DateReceived");
@@ -515,7 +516,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsWhenNoRAJFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var order = CreateTestOrder(judgeId, reassignmentDate);
@@ -548,7 +549,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_UpdatesOrderWithRAJDetails()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
@@ -590,7 +591,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var expectedRajName = $"{raj.FirstName} {raj.LastName}".Trim();
         _mockOrderRepo.Verify(
-            r => r.UpdateAsync(It.Is<Order>(o => 
+            r => r.UpdateAsync(It.Is<Order>(o =>
                 o.OrderRequest.Referral.SentToPartId == rajId &&
                 o.OrderRequest.Referral.SentToName == expectedRajName)),
             Times.AtLeastOnce
@@ -601,7 +602,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SendsEmailToRAJ()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
@@ -645,7 +646,7 @@ public class OrderReminderJobTests : ServiceTestBase
             e => e.SendEmailTemplateAsync(
                 "Order Reassignment",
                 rajUser.Email,
-                It.Is<object>(obj => 
+                It.Is<object>(obj =>
                     obj.GetType().GetProperty("JudgeName") != null &&
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("LocationName") != null &&
@@ -661,7 +662,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsEmailWhenRAJUserNotFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
@@ -704,7 +705,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsEmailWhenRAJUserHasNoEmail()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
@@ -748,7 +749,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenMaxRemindersReached()
     {
         SetupConfiguration("5", "10", "2", "1");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var order = CreateTestOrder(judgeId, reminderDate);
@@ -771,7 +772,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsWhenMaxReassignmentsReached()
     {
         SetupConfiguration("5", "10", "1", "2");
-        
+
         var judgeId = 101;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var order = CreateTestOrder(judgeId, reassignmentDate);
@@ -798,7 +799,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetRAJForJudge_CallsJudgeServiceWithCorrectParameters()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var order = CreateTestOrder(judgeId, reassignmentDate);
@@ -833,7 +834,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetRAJForJudge_ReturnsFirstRAJ_WhenMultipleFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var raj1Id = 201;
         var raj2Id = 202;
@@ -889,7 +890,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetJudgeName_HandlesJudgeWithoutNames()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var order = CreateTestOrder(judgeId, reminderDate);
@@ -933,7 +934,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetRajName_FormatsNameCorrectly()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
@@ -989,7 +990,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_ContinuesOnException()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId1 = 101;
         var judgeId2 = 102;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
@@ -1038,7 +1039,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_ContinuesOnException()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId1 = 101;
         var judgeId2 = 102;
         var rajId = 201;

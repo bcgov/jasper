@@ -12,7 +12,7 @@ public class QuickLinksControllerTests
 {
     private readonly QuickLinksController _controller;
     private readonly Mock<IQuickLinkService> _mockService;
-    
+
     public QuickLinksControllerTests()
     {
         _mockService = new Mock<IQuickLinkService>();

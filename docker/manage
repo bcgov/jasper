@@ -38,6 +38,7 @@ usage() {
             - web
             - web-dev
             - api
+            - transitory-documents-api
 
   start - Creates the application containers from the built images
           and starts the services based on the docker-compose.yaml file.
@@ -60,15 +61,18 @@ exit 1
 # -----------------------------------------------------------------------------------------------------------------
 # Default Settings:
 # -----------------------------------------------------------------------------------------------------------------
-RUNTIME_CONTAINERS="db-pg db-mongo api web"
-DEBUG_CONTAINERS="db-pg db-mongo api web-dev"
+RUNTIME_CONTAINERS="db-pg db-mongo api web transitory-documents-api"
+DEBUG_CONTAINERS="db-pg db-mongo api web-dev transitory-documents-api"
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
 # -----------------------------------------------------------------------------------------------------------------
+
 build-all() {
   build-web
   build-web-dev
   build-api
+  build-transitory-documents-api
+  build-transitory-documents-api-dev
 }
 
 build-api() {
@@ -81,6 +85,34 @@ build-api() {
   docker build \
     -t "${COMPOSE_PROJECT_NAME}-api" \
     -f './api/Dockerfile.dev' '..'
+
+  echo -e "===================================================================================================="
+}
+
+build-transitory-documents-api() {
+  #
+  # transitory-documents-api
+  #
+  echo -e "\n\n===================================================================================================="
+  echo -e "Building ${COMPOSE_PROJECT_NAME}-transitory-documents-api image using docker ..."
+  echo -e "----------------------------------------------------------------------------------------------------"
+  docker build \
+    -t "${COMPOSE_PROJECT_NAME}-transitory-documents-api" \
+    -f './transitory-documents-api/Dockerfile.release' '..'
+
+  echo -e "===================================================================================================="
+}
+
+build-transitory-documents-api-dev() {
+  #
+  # transitory-documents-api (dev)
+  #
+  echo -e "\n\n===================================================================================================="
+  echo -e "Building ${COMPOSE_PROJECT_NAME}-transitory-documents-api image using docker ..."
+  echo -e "----------------------------------------------------------------------------------------------------"
+  docker build \
+    -t "${COMPOSE_PROJECT_NAME}-transitory-documents-api" \
+    -f './transitory-documents-api/Dockerfile.dev' '..'
 
   echo -e "===================================================================================================="
 }
@@ -209,7 +241,7 @@ deleteVolumes() {
 
 pushd ${SCRIPT_HOME} >/dev/null
 COMMAND=$(toLower ${1})
-shift
+shift || true
 
 case "$COMMAND" in
   start)

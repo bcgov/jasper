@@ -7,28 +7,14 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Models.Location;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Location;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace Scv.Api.Services
 {
-    public interface ILocationService
-    {
-        Task<ICollection<Location>> GetLocations(bool includeChildRecords = false);
-        Task<string> GetLocationShortName(string locationId);
-        Task<string> GetLocationName(string code);
-        Task<string> GetLocationCodeFromId(string code);
-        Task<string> GetLocationId(string code);
-        Task<string> GetLocationAgencyIdentifier(string code);
-        Task<string> GetRegionName(string code);
-        Task<Region> GetRegion(string code);
-        Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd);
-        Task<string> GetAgencyIdentifierCdByLocationId(string locationId);
-    }
-
     /// <summary>
     /// This should handle caching and LocationServicesClient.
     /// </summary>
@@ -79,7 +65,7 @@ namespace Scv.Api.Services
 
             await Task.WhenAll(getJCLocationsTask, getPCSSLocationsTask);
 
-            return Models.Location.Locations.Create(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
+            return Scv.Models.Location.Locations.Create(getJCLocationsTask.Result, getPCSSLocationsTask.Result);
         });
 
         #endregion Collection Methods

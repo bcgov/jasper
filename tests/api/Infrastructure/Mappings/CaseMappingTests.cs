@@ -4,7 +4,7 @@ using Bogus;
 using Mapster;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models;
+using Scv.Models;
 using Xunit;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 

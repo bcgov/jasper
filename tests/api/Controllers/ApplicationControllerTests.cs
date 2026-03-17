@@ -3,7 +3,7 @@ using Bogus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers.Exceptions;
+using Scv.Core.Helpers.Exceptions;
 using Xunit;
 
 namespace tests.api.Controllers;
@@ -31,7 +31,7 @@ public class ApplicationControllerTests
     public void GetApplicationInfo_ThrowsConfigurationException_WhenNutrientFeLicenseKeyIsNull()
     {
         var expectedEnvironment = _faker.PickRandom("Development", "Staging");
-        
+
         var configValues = new Dictionary<string, string>
         {
             // NUTRIENT_FE_LICENSE_KEY is intentionally missing
@@ -48,7 +48,7 @@ public class ApplicationControllerTests
     public void GetApplicationInfo_ThrowsConfigurationException_WhenNutrientFeLicenseKeyIsEmpty()
     {
         var expectedEnvironment = _faker.PickRandom("Development", "Staging");
-        
+
         var configValues = new Dictionary<string, string>
         {
             ["NUTRIENT_FE_LICENSE_KEY"] = string.Empty,
@@ -65,7 +65,7 @@ public class ApplicationControllerTests
     public void GetApplicationInfo_ThrowsConfigurationException_WhenEnvironmentIsNull()
     {
         var expectedLicenseKey = _faker.Random.AlphaNumeric(32);
-        
+
         var configValues = new Dictionary<string, string>
         {
             ["NUTRIENT_FE_LICENSE_KEY"] = expectedLicenseKey
@@ -82,7 +82,7 @@ public class ApplicationControllerTests
     public void GetApplicationInfo_ThrowsConfigurationException_WhenEnvironmentIsEmpty()
     {
         var expectedLicenseKey = _faker.Random.AlphaNumeric(32);
-        
+
         var configValues = new Dictionary<string, string>
         {
             ["NUTRIENT_FE_LICENSE_KEY"] = expectedLicenseKey,

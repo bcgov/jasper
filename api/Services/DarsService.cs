@@ -1,15 +1,16 @@
-﻿using DARSCommon.Clients.LogNotesServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Scv.Api.Helpers;
 using Scv.Api.Models.Dars;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Dars;
 
 namespace Scv.Api.Services
 {

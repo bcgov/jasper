@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using Mapster;
 using PCSSCommon.Models;
-using Scv.Api.Models;
 using Scv.Db.Models;
+using Scv.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;
 

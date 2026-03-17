@@ -1,8 +1,8 @@
 ﻿using Bogus;
 using FluentValidation;
 using MongoDB.Bson;
-using Scv.Api.Models;
 using Scv.Api.Validators;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Validators;

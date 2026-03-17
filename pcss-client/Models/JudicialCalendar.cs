@@ -8,7 +8,6 @@ using PCSSCommon.Common;
 namespace PCSSCommon.Models;
 
 #pragma warning disable 8600 // Converting null literal or possible null value to non-nullable type.
-#pragma warning disable 8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 public class ReadJudicialCalendarsResponse
 {
@@ -132,4 +131,3 @@ public class HaveJudgeResponse
 }
 
 #pragma warning restore 8600
-#pragma warning restore 8618

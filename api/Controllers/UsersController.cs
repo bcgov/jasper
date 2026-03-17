@@ -1,17 +1,13 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Controllers;
 

@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Scv.Api.Models.CourtList;
+using Scv.Models.CourtList;
 
 namespace Scv.Api.Validators.CourtList;
 

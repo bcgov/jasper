@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Core.Infrastructure;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace Scv.Api.Tests.Services

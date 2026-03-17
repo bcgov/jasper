@@ -71,9 +71,9 @@ export class ApiService {
         ...headers,
         "Content-Type": isBinary
           ? "application/octet-stream"
-          : "application/json",
+          : "application/json"
       },
-      responseType: isBinary ? "arraybuffer" : "json",
+      responseType: isBinary ? "arraybuffer" : "json"
     };
   }
 
@@ -96,8 +96,9 @@ export class ApiService {
     );
     const fileSizeInBytes = binaryBuffer.length;
 
-    // Lambda 6MB limit. 4.5MB threshold accounts for base64 encoding overhead (~33%)
-    const MAX_SAFE_SIZE_BYTES = 4.5 * 1024 * 1024;
+    // Lambda has a 6MB response limit. Base64 encoding adds ~33% overhead, so we cap at 4MB
+    // (~5.32MB encoded) to leave enough room for headers and avoid hitting the limit.
+    const MAX_SAFE_SIZE_BYTES = 4 * 1024 * 1024;
 
     if (fileSizeInBytes > MAX_SAFE_SIZE_BYTES) {
       // File is too large for Lambda response, save to EFS
@@ -111,9 +112,9 @@ export class ApiService {
         body: JSON.stringify({
           message: "File saved to EFS due to size limit",
           filePath,
-          fileSize: fileSizeInBytes,
+          fileSize: fileSizeInBytes
         }),
-        isBase64Encoded: false,
+        isBase64Encoded: false
       };
     }
 
@@ -122,7 +123,7 @@ export class ApiService {
       statusCode: response.status,
       headers: responseHeaders,
       body: binaryBuffer.toString("base64"),
-      isBase64Encoded: true,
+      isBase64Encoded: true
     };
   }
 
@@ -134,7 +135,7 @@ export class ApiService {
       statusCode: response.status,
       headers: responseHeaders,
       body: JSON.stringify(response.data),
-      isBase64Encoded: false,
+      isBase64Encoded: false
     };
   }
 
@@ -148,7 +149,7 @@ export class ApiService {
       if (!["GET", "POST", "PUT"].includes(method)) {
         return {
           statusCode: 405,
-          body: JSON.stringify({ message: `Method ${method} not allowed` }),
+          body: JSON.stringify({ message: `Method ${method} not allowed` })
         };
       }
 
@@ -189,7 +190,7 @@ export class ApiService {
       console.error("Error handling request:", {
         method: event?.httpMethod,
         path: event?.path,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : String(error)
       });
 
       // Attempt to pass the original error back from the proxy - so the client can determine how to handle the error.
@@ -217,13 +218,13 @@ export class ApiService {
           statusCode: resp.status || 500,
           headers: responseHeaders,
           body,
-          isBase64Encoded: false,
+          isBase64Encoded: false
         };
       }
 
       return {
         statusCode: 500,
-        body: JSON.stringify({ message: "Internal Server Error" }),
+        body: JSON.stringify({ message: "Internal Server Error" })
       };
     }
   }

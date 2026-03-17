@@ -37,7 +37,7 @@ public class UserService(
     IRepositoryBase<Group> groupRepo,
     IRepositoryBase<Role> roleRepo,
     IPermissionRepository permissionRepo,
-    LocationService locationService
+    ILocationService locationService
 ) : CrudServiceBase<IRepositoryBase<User>, User, UserDto>(
         cache,
         mapper,
@@ -47,7 +47,7 @@ public class UserService(
     private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
     private readonly IRepositoryBase<Role> _roleRepo = roleRepo;
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
-    private readonly LocationService _locationService = locationService;
+    private readonly ILocationService _locationService = locationService;
 
     public override string CacheName => "GetUsersAsync";
 
@@ -168,13 +168,14 @@ public class UserService(
             return [];
         }
 
-        var homeLocations = await GetUserHomeLocations(homeLocationIdValue);
-        return await GetLocationsForPermissions(
+        var locations = (await _locationService.GetLocations()).ToList();
+        var homeLocations = GetUserHomeLocations(homeLocationIdValue, locations);
+        return GetLocationsForPermissions(
             user,
             Permission.COURT_CALENDAR_ACTIVITY_REGION,
             Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
-            homeLocationIdValue,
-            homeLocations);
+            homeLocations,
+            locations);
     }
 
     public async Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user)
@@ -184,13 +185,14 @@ public class UserService(
             return [];
         }
 
-        var homeLocations = await GetUserHomeLocations(homeLocationIdValue);
-        return await GetLocationsForPermissions(
+        var locations = (await _locationService.GetLocations()).ToList();
+        var homeLocations = GetUserHomeLocations(homeLocationIdValue, locations);
+        return GetLocationsForPermissions(
             user,
             Permission.JUDICIAL_LISTING_ACTIVITY_REGION,
             Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
-            homeLocationIdValue,
-            homeLocations);
+            homeLocations,
+            locations);
     }
 
     public async Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user)
@@ -200,50 +202,50 @@ public class UserService(
             return [];
         }
 
-        var homeLocations = await GetUserHomeLocations(homeLocationIdValue);
-        return await GetLocationsForPermissions(
+        var locations = (await _locationService.GetLocations()).ToList();
+        var homeLocations = GetUserHomeLocations(homeLocationIdValue, locations);
+        return GetLocationsForPermissions(
             user,
             Permission.ROTA_ADMIN_REGION,
             Permission.ROTA_ADMIN_PROVINCE,
-            homeLocationIdValue,
-            homeLocations);
+            homeLocations,
+            locations);
     }
 
-    private async Task<List<Location>> GetLocationsForPermissions(
+    private static List<Location> GetLocationsForPermissions(
         ClaimsPrincipal user,
         string regionPermission,
         string provincePermission,
-        string homeLocationIdValue,
-        List<Location> homeLocations)
+        List<Location> homeLocations,
+        List<Location> locations)
     {
         var permissions = user.Permissions();
 
         if (permissions.Contains(regionPermission))
         {
-            return await GetUserRegionLocations(homeLocationIdValue);
+            return GetUserRegionLocations(homeLocations, locations);
         }
 
         if (permissions.Contains(provincePermission))
         {
-            return (await _locationService.GetLocations()).ToList();
+            return locations;
         }
 
         return homeLocations;
     }
 
-    private async Task<List<Location>> GetUserRegionLocations(string homeLocationIdValue)
+    private static List<Location> GetUserRegionLocations(List<Location> homeLocations, List<Location> locations)
     {
-        var locations = await _locationService.GetLocations();
-        var homeLocation = locations.FirstOrDefault(loc => loc.LocationId == homeLocationIdValue);
+        var homeLocation = homeLocations.FirstOrDefault();
         if (homeLocation == null)
         {
-            return locations.ToList();
+            return homeLocations;
         }
 
         var regionCd = homeLocation.RegionCd;
         if (string.IsNullOrWhiteSpace(regionCd))
         {
-            return locations.ToList();
+            return homeLocations;
         }
 
         return locations
@@ -252,9 +254,8 @@ public class UserService(
             .ToList();
     }
 
-    private async Task<List<Location>> GetUserHomeLocations(string homeLocationIdValue)
+    private static List<Location> GetUserHomeLocations(string homeLocationIdValue, List<Location> locations)
     {
-        var locations = await _locationService.GetLocations();
         return locations
             .Where(loc => loc.LocationId == homeLocationIdValue)
             .ToList();

@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Bogus;
-using JCCommon.Clients.LocationServices;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
@@ -15,7 +14,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
-using PCSSCommon.Clients.PersonServices;
 using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.AccessControlManagement;
@@ -24,8 +22,6 @@ using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Xunit;
-using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
-using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace tests.api.Services;
 
@@ -36,7 +32,7 @@ public class UserServiceTests : ServiceTestBase
     private readonly Mock<IRepositoryBase<Group>> _mockGroupRepo;
     private readonly Mock<IRepositoryBase<Role>> _mockRoleRepo;
     private readonly Mock<IPermissionRepository> _mockPermissionRepo;
-    private readonly Mock<LocationService> _mockLocationService;
+    private readonly Mock<ILocationService> _mockLocationService;
     private readonly UserService _userService;
     private readonly Mock<IConfiguration> _mockConfig;
 
@@ -67,35 +63,7 @@ public class UserServiceTests : ServiceTestBase
         _mockRoleRepo = new Mock<IRepositoryBase<Role>>();
         _mockPermissionRepo = new Mock<IPermissionRepository>();
 
-        var mockPersonServiceClient = new Mock<PersonServicesClient>(MockBehavior.Strict, this.HttpClient);
-
-        var mockJCLocationClient = new Mock<LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
-        var mockPCSSLocationClient = new Mock<PCSSLocationServices.LocationServicesClient>(MockBehavior.Strict, this.HttpClient);
-        var mockPCSSLookupClient = new Mock<PCSSLookupServices.LookupServicesClient>(MockBehavior.Strict, this.HttpClient);
-
-        mockJCLocationClient
-            .Setup(c => c.LocationsGetAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
-            .ReturnsAsync(() => []);
-        mockJCLocationClient
-            .Setup(c => c.LocationsRoomsGetAsync())
-            .ReturnsAsync([]);
-
-        mockPCSSLocationClient
-            .Setup(c => c.GetLocationsAsync())
-            .ReturnsAsync(() => []);
-
-        mockPCSSLookupClient
-            .Setup(c => c.GetCourtRoomsAsync())
-            .ReturnsAsync(() => []);
-
-        _mockLocationService = new Mock<LocationService>(
-            MockBehavior.Strict,
-            _mockConfig.Object,
-            mockJCLocationClient.Object,
-            mockPCSSLocationClient.Object,
-            mockPCSSLookupClient.Object,
-            cachingService,
-            mapper);
+        _mockLocationService = new Mock<ILocationService>(MockBehavior.Strict);
 
         _userService = new UserService(
             cachingService,
@@ -595,8 +563,8 @@ public class UserServiceTests : ServiceTestBase
 
         var result = await _userService.GetCourtCalendarLocations(user);
 
-        AssertLocationIds(result, "1", "2", "3", "4");
-        _mockLocationService.Verify(l => l.GetLocations(false), Times.Exactly(2));
+        Assert.Empty(result);
+        _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
 
     [Fact]
@@ -610,7 +578,7 @@ public class UserServiceTests : ServiceTestBase
         var result = await _userService.GetCourtCalendarLocations(user);
 
         AssertLocationIds(result, "1", "2", "3", "4");
-        _mockLocationService.Verify(l => l.GetLocations(false), Times.Exactly(2));
+        _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
 
     [Fact]
@@ -639,7 +607,7 @@ public class UserServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task GetJudicialListingLocations_ShouldReturnAllLocations_WhenRegionPermissionAndRegionMissing()
+    public async Task GetJudicialListingLocations_ShouldReturnHomeLocation_WhenRegionPermissionAndRegionMissing()
     {
         var locations = BuildLocations();
         locations.First(l => l.LocationId == "1").RegionCd = " ";
@@ -649,8 +617,8 @@ public class UserServiceTests : ServiceTestBase
 
         var result = await _userService.GetJudicialListingLocations(user);
 
-        AssertLocationIds(result, "1", "2", "3", "4");
-        _mockLocationService.Verify(l => l.GetLocations(false), Times.Exactly(2));
+        AssertLocationIds(result, "1");
+        _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
 
     [Fact]
@@ -664,7 +632,7 @@ public class UserServiceTests : ServiceTestBase
         var result = await _userService.GetJudicialListingLocations(user);
 
         AssertLocationIds(result, "1", "2", "3", "4");
-        _mockLocationService.Verify(l => l.GetLocations(false), Times.Exactly(2));
+        _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
 
     [Fact]
@@ -703,7 +671,7 @@ public class UserServiceTests : ServiceTestBase
         var result = await _userService.GetRotaAdminLocations(user);
 
         AssertLocationIds(result, "1", "2");
-        _mockLocationService.Verify(l => l.GetLocations(false), Times.Exactly(2));
+        _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
 
     [Fact]
@@ -717,7 +685,7 @@ public class UserServiceTests : ServiceTestBase
         var result = await _userService.GetRotaAdminLocations(user);
 
         AssertLocationIds(result, "1", "2", "3", "4");
-        _mockLocationService.Verify(l => l.GetLocations(false), Times.Exactly(2));
+        _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
 
     [Fact]

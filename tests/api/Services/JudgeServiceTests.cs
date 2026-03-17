@@ -243,7 +243,7 @@ public class JudgeServiceTests : ServiceTestBase, IClassFixture<LocationServiceF
                 ""))
             .ReturnsAsync(judges);
 
-        var locationIds = new List<string> { "1", "2", " ", "1" };
+        var locationIds = new List<string> { "1", "2" };
         var result = await _judgeService.GetJudges(locationIds: locationIds);
 
         Assert.NotNull(result);

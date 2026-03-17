@@ -55,7 +55,7 @@ public class Location
             jcLocation?.Code,
             pcssLocation?.Active ?? jcLocation?.Active,
             pcssLocation?.CourtRooms ?? jcLocation?.CourtRooms,
-            pcssLocation?.RegionCd);
+                pcssLocation?.RegionCd ?? jcLocation?.RegionCd);
     }
 
     private static Uri ParseCourtLocationUrl(string locationName)

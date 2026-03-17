@@ -19,7 +19,7 @@ public class JudgesController(IJudgeService judgeService) : ControllerBase
     /// <summary>
     /// Retrieves the list of active judge. This list only includes the following judge positions: CJ, ACJ, RAJ, PJ and SJ.
     /// </summary>
-    /// <param name="locationIds">Optional list of location ids to filter judges.</param>
+    /// <param name="locationIds">Optional list of location IDs to filter judges. Send as repeated query parameters (e.g., ?locationIds=1&amp;locationIds=2).</param>
     /// <returns>List of active judges.</returns>
     [HttpGet]
     public async Task<IActionResult> GetJudges([FromQuery] List<string> locationIds = null)

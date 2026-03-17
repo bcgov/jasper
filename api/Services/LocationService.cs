@@ -15,10 +15,24 @@ using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
 namespace Scv.Api.Services
 {
+    public interface ILocationService
+    {
+        Task<ICollection<Location>> GetLocations(bool includeChildRecords = false);
+        Task<string> GetLocationShortName(string locationId);
+        Task<string> GetLocationName(string code);
+        Task<string> GetLocationCodeFromId(string code);
+        Task<string> GetLocationId(string code);
+        Task<string> GetLocationAgencyIdentifier(string code);
+        Task<string> GetRegionName(string code);
+        Task<Region> GetRegion(string code);
+        Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd);
+        Task<string> GetAgencyIdentifierCdByLocationId(string locationId);
+    }
+
     /// <summary>
     /// This should handle caching and LocationServicesClient.
     /// </summary>
-    public class LocationService
+    public class LocationService : ILocationService
     {
         #region Variables
 
@@ -96,6 +110,8 @@ namespace Scv.Api.Services
         public async Task<string> GetLocationAgencyIdentifier(string code) => FindShortDescriptionFromCode(await GetLocations(), code);
 
         public virtual async Task<string> GetRegionName(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionNameByLocation-{code}", async () => (await _locationClient.LocationsRegionAsync(code))?.RegionName);
+
+        public virtual async Task<Region> GetRegion(string code) => string.IsNullOrEmpty(code) ? null : await GetDataFromCache($"RegionByLocation-{code}", async () => await _locationClient.LocationsRegionAsync(code));
 
         public async Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd)
         {

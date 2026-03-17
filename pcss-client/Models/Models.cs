@@ -165,11 +165,11 @@ public partial class Region
     [Newtonsoft.Json.JsonProperty("regionCd", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public string RegionCd { get; set; }
 
-    [Newtonsoft.Json.JsonProperty("workAreaSeqNo", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    [Newtonsoft.Json.JsonProperty("regionDscTxt", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public string RegionDscTxt { get; set; }
 
     [Newtonsoft.Json.JsonProperty("workAreas", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-    System.Collections.Generic.ICollection<WorkArea> WorkAreas { get; set; }
+    public System.Collections.Generic.ICollection<WorkArea> WorkAreas { get; set; }
 
     [Newtonsoft.Json.JsonProperty("activeYn", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public string ActiveYn { get; set; }

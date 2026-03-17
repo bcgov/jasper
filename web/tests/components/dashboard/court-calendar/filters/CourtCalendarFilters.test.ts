@@ -1,3 +1,4 @@
+import ActivityClassFilter from '@/components/dashboard/court-calendar/filters/ActivityClassFilter.vue';
 import CourtCalendarFilters from '@/components/dashboard/court-calendar/filters/CourtCalendarFilters.vue';
 import FilterDropdown from '@/components/dashboard/court-calendar/filters/FilterDropdown.vue';
 import FilterDropdownGrouped from '@/components/dashboard/court-calendar/filters/FilterDropdownGrouped.vue';
@@ -56,9 +57,34 @@ describe('CourtCalendarFilters.vue', () => {
         selectedLocations: [],
         selectedPresiders: [],
         selectedPresiders: [],
+        selectedActivityClass: 'all',
         ...props,
       },
     });
+
+  describe('ActivityClassFilter', () => {
+    it('renders ActivityClassFilter', () => {
+      const wrapper = mountComponent();
+      expect(wrapper.findComponent(ActivityClassFilter).exists()).toBe(true);
+    });
+
+    it('passes selectedActivityClass to ActivityClassFilter as modelValue', () => {
+      const wrapper = mountComponent({ selectedActivityClass: 'SIT' });
+      expect(
+        wrapper.findComponent(ActivityClassFilter).props()['modelValue']
+      ).toBe('SIT');
+    });
+
+    it('emits update:selectedActivityClass when ActivityClassFilter emits update:modelValue', async () => {
+      const wrapper = mountComponent({ selectedActivityClass: 'all' });
+      await wrapper
+        .findComponent(ActivityClassFilter)
+        .vm.$emit('update:modelValue', 'NS');
+      expect(wrapper.emitted('update:selectedActivityClass')?.[0]).toEqual([
+        'NS',
+      ]);
+    });
+  });
 
   describe('Locations FilterDropdown', () => {
     it('renders FilterDropdown', () => {
@@ -68,7 +94,9 @@ describe('CourtCalendarFilters.vue', () => {
 
     it('passes "Locations" as title to FilterDropdown', () => {
       const wrapper = mountComponent();
-      expect(wrapper.findComponent(FilterDropdown).props('title')).toBe('Locations');
+      expect(wrapper.findComponent(FilterDropdown).props('title')).toBe(
+        'Locations'
+      );
     });
 
     it('maps locations to { value: locationId, text: shortName } items', () => {
@@ -103,14 +131,22 @@ describe('CourtCalendarFilters.vue', () => {
 
     it('renders FilterDropdownGrouped when at least one location is selected', () => {
       const loc = createLocation({ locationId: 'LOC1' });
-      const wrapper = mountComponent({ locations: [loc], selectedLocations: ['LOC1'] });
+      const wrapper = mountComponent({
+        locations: [loc],
+        selectedLocations: ['LOC1'],
+      });
       expect(wrapper.findComponent(FilterDropdownGrouped).exists()).toBe(true);
     });
 
     it('passes "Presiders" as title to FilterDropdownGrouped', () => {
       const loc = createLocation({ locationId: 'LOC1' });
-      const wrapper = mountComponent({ locations: [loc], selectedLocations: ['LOC1'] });
-      expect(wrapper.findComponent(FilterDropdownGrouped).props('title')).toBe('Presiders');
+      const wrapper = mountComponent({
+        locations: [loc],
+        selectedLocations: ['LOC1'],
+      });
+      expect(wrapper.findComponent(FilterDropdownGrouped).props('title')).toBe(
+        'Presiders'
+      );
     });
   });
 
@@ -118,8 +154,18 @@ describe('CourtCalendarFilters.vue', () => {
     it('groups presiders by their home location shortName', () => {
       const loc1 = createLocation({ locationId: '1', shortName: 'VIC' });
       const loc2 = createLocation({ locationId: '2', shortName: 'VAN' });
-      const presider1 = createPresider({ id: 10, homeLocationId: 1, initials: 'AS', name: 'Alice Smith' });
-      const presider2 = createPresider({ id: 20, homeLocationId: 2, initials: 'BJ', name: 'Bob Jones' });
+      const presider1 = createPresider({
+        id: 10,
+        homeLocationId: 1,
+        initials: 'AS',
+        name: 'Alice Smith',
+      });
+      const presider2 = createPresider({
+        id: 20,
+        homeLocationId: 2,
+        initials: 'BJ',
+        name: 'Bob Jones',
+      });
 
       const wrapper = mountComponent({
         locations: [loc1, loc2],
@@ -127,7 +173,9 @@ describe('CourtCalendarFilters.vue', () => {
         selectedLocations: ['1'],
       });
 
-      const groups: any[] = wrapper.findComponent(FilterDropdownGrouped).props('groups');
+      const groups: any[] = wrapper
+        .findComponent(FilterDropdownGrouped)
+        .props('groups');
       expect(groups).toContainEqual(
         expect.objectContaining({
           label: 'VIC',
@@ -165,8 +213,18 @@ describe('CourtCalendarFilters.vue', () => {
 
     it('sorts items within each group alphabetically by text', () => {
       const loc = createLocation({ locationId: '1', shortName: 'VIC' });
-      const presiderZ = createPresider({ id: 1, homeLocationId: 1, initials: 'ZZ', name: 'Zara' });
-      const presiderA = createPresider({ id: 2, homeLocationId: 1, initials: 'AA', name: 'Aaron' });
+      const presiderZ = createPresider({
+        id: 1,
+        homeLocationId: 1,
+        initials: 'ZZ',
+        name: 'Zara',
+      });
+      const presiderA = createPresider({
+        id: 2,
+        homeLocationId: 1,
+        initials: 'AA',
+        name: 'Aaron',
+      });
 
       const wrapper = mountComponent({
         locations: [loc],
@@ -174,7 +232,9 @@ describe('CourtCalendarFilters.vue', () => {
         selectedLocations: ['1'],
       });
 
-      const groups: any[] = wrapper.findComponent(FilterDropdownGrouped).props('groups');
+      const groups: any[] = wrapper
+        .findComponent(FilterDropdownGrouped)
+        .props('groups');
       const vicGroup = groups.find((g) => g.label === 'VIC');
       expect(vicGroup.items[0].text).toContain('AA - Aaron');
       expect(vicGroup.items[1].text).toContain('ZZ - Zara');
@@ -182,7 +242,12 @@ describe('CourtCalendarFilters.vue', () => {
 
     it('places presiders with no matching location into an empty-label group', () => {
       const loc = createLocation({ locationId: '1', shortName: 'VIC' });
-      const unmatched = createPresider({ id: 99, homeLocationId: 9999, initials: 'XX', name: 'Unknown' });
+      const unmatched = createPresider({
+        id: 99,
+        homeLocationId: 9999,
+        initials: 'XX',
+        name: 'Unknown',
+      });
 
       const wrapper = mountComponent({
         locations: [loc],
@@ -190,10 +255,15 @@ describe('CourtCalendarFilters.vue', () => {
         selectedLocations: ['1'],
       });
 
-      const groups: any[] = wrapper.findComponent(FilterDropdownGrouped).props('groups');
+      const groups: any[] = wrapper
+        .findComponent(FilterDropdownGrouped)
+        .props('groups');
       const emptyGroup = groups.find((g) => g.label === '');
       expect(emptyGroup).toBeDefined();
-      expect(emptyGroup.items).toContainEqual({ value: '99', text: 'XX - Unknown' });
+      expect(emptyGroup.items).toContainEqual({
+        value: '99',
+        text: 'XX - Unknown',
+      });
     });
   });
 
@@ -202,18 +272,32 @@ describe('CourtCalendarFilters.vue', () => {
       const wrapper = mountComponent({ selectedLocations: [] });
       expect(wrapper.find('.clearAll').exists()).toBe(false);
   describe('Clear All button', () => {
-    it('does not render the Clear All button when no locations are selected', () => {
-      const wrapper = mountComponent({ selectedLocations: [] });
+    it('does not render the Clear All button when no locations are selected and activity class is "all"', () => {
+      const wrapper = mountComponent({
+        selectedLocations: [],
+        selectedActivityClass: 'all',
+      });
       expect(wrapper.find('.clearAll').exists()).toBe(false);
     });
 
     it('renders the Clear All button when locations are selected', () => {
       const loc = createLocation({ locationId: 'LOC1' });
-      const wrapper = mountComponent({ locations: [loc], selectedLocations: ['LOC1'] });
+      const wrapper = mountComponent({
+        locations: [loc],
+        selectedLocations: ['LOC1'],
+      });
       expect(wrapper.find('.clearAll').exists()).toBe(true);
     });
 
-    it('emits empty arrays for both models when Clear All is clicked', async () => {
+    it('renders the Clear All button when selectedActivityClass is not "all"', () => {
+      const wrapper = mountComponent({
+        selectedLocations: [],
+        selectedActivityClass: 'SIT',
+      });
+      expect(wrapper.find('.clearAll').exists()).toBe(true);
+    });
+
+    it('emits empty arrays for both location/presider models and resets activity class when Clear All is clicked', async () => {
       const loc = createLocation({ locationId: 'LOC1' });
       const presider = createPresider({ id: 1, homeLocationId: 1 });
       const wrapper = mountComponent({
@@ -222,6 +306,7 @@ describe('CourtCalendarFilters.vue', () => {
         selectedLocations: ['LOC1'],
         selectedPresiders: ['1'],
         selectedPresiders: ['1'],
+        selectedActivityClass: 'SIT',
       });
 
       await wrapper.find('.clearAll').trigger('click');
@@ -231,6 +316,9 @@ describe('CourtCalendarFilters.vue', () => {
       expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedLocations')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
+      expect(wrapper.emitted('update:selectedActivityClass')?.at(-1)).toEqual([
+        'all',
+      ]);
     });
   });
 

@@ -2,10 +2,11 @@
   <v-menu v-model="menu" offset-y :close-on-content-click="false">
     <!-- activator -->
     <template #activator="{ props: menuProps }">
-      <v-btn class="ml-2" v-bind="menuProps" variant="outlined" rounded="0">
+      <v-btn class="ml-2" v-bind="menuProps" variant="outlined" rounded="pill">
         {{ title }}
 
         <v-badge v-if="selectedCount > 0" :content="selectedCount" inline />
+        <v-icon :icon="mdiChevronDown" />
       </v-btn>
     </template>
 
@@ -29,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-  import { mdiMagnify } from '@mdi/js';
+  import { mdiChevronDown, mdiMagnify } from '@mdi/js';
   import { ref, watch } from 'vue';
 
   defineProps<{
@@ -114,5 +115,10 @@
 
   :deep(.v-divider) {
     opacity: 50% !important;
+  }
+
+  :deep(.v-badge__badge) {
+    background-color: var(--bg-blue-800);
+    color: var(--text-white-500);
   }
 </style>

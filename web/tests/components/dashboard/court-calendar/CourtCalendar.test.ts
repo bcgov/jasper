@@ -79,7 +79,7 @@ describe('CourtCalendar.vue', () => {
     expect(wrapper.find('[data-testid="cc-loader"]').exists()).toBeTruthy();
     expect(wrapper.find('.fc').exists()).toBeFalsy();
 
-    wrapper.vm.isCalendarLoading = false;
+    await wrapper.setProps({ isCalendarLoading: false });
     await nextTick();
 
     expect(wrapper.find('[data-testid="cc-loader"]').exists()).toBeFalsy();
@@ -188,6 +188,23 @@ describe('CourtCalendar.vue', () => {
 
       if (filtersComponent.exists()) {
         expect(filtersComponent.props('locations')).toEqual(mockLocations);
+      }
+    });
+
+    it('passes selectedActivityClass as "all" by default to filters component', async () => {
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        expect(filtersComponent.props('selectedActivityClass')).toBe('all');
       }
     });
 
@@ -310,6 +327,7 @@ describe('CourtCalendar.vue', () => {
       activityCode: faker.string.alpha(3),
       activityDisplayCode: faker.string.alpha(3),
       activityDescription: faker.lorem.word(),
+      activityClassCode: faker.helpers.arrayElement(['SIT', 'NS']),
       activityClassDescription: faker.lorem.word(),
       isRemote: false,
       roomCode: faker.location.buildingNumber(),
@@ -482,6 +500,123 @@ describe('CourtCalendar.vue', () => {
       });
       if (filtersComponent.exists()) {
         await filtersComponent.vm.$emit('update:selectedPresiders', ['1']);
+        await nextTick();
+      }
+
+      expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
+    });
+
+    it('filters activities by activityClassCode when selectedActivityClass is not "all"', async () => {
+      const judgeId = 101;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({ judgeId, activityClassCode: 'SIT' }),
+              createMockActivity({ judgeId, activityClassCode: 'NS' }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedPresiders', [
+          judgeId.toString(),
+        ]);
+        await filtersComponent.vm.$emit('update:selectedActivityClass', 'SIT');
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        const activities: CalendarDayActivity[] =
+          event.extendedProps.activities;
+        expect(activities.every((a) => a.activityClassCode === 'SIT')).toBe(
+          true
+        );
+        expect(activities.some((a) => a.activityClassCode === 'NS')).toBe(
+          false
+        );
+      });
+    });
+
+    it('includes all activity classes when selectedActivityClass is "all"', async () => {
+      const judgeId = 101;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({ judgeId, activityClassCode: 'SIT' }),
+              createMockActivity({ judgeId, activityClassCode: 'NS' }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedPresiders', [
+          judgeId.toString(),
+        ]);
+        // selectedActivityClass defaults to 'all'
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        const activityClasses: string[] = event.extendedProps.activities.map(
+          (a: CalendarDayActivity) => a.activityClassCode
+        );
+        expect(activityClasses).toContain('SIT');
+        expect(activityClasses).toContain('NS');
+      });
+    });
+
+    it('does not trigger a new API call when activity class filter changes (client-side filtering)', async () => {
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      dashboardService.getCourtCalendar.mockClear();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedActivityClass', 'SIT');
         await nextTick();
       }
 

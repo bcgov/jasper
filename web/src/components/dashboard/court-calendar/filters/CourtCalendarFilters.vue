@@ -81,7 +81,7 @@
     selectedPresiders.value = [];
   };
 </script>
-<style lang="css" scoped>
+<style scoped>
   .cc-filters {
     display: flex;
     align-items: center;

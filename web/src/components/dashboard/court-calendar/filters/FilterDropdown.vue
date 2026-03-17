@@ -69,14 +69,13 @@
 
 <script setup lang="ts">
   import { TextValue } from '@/types/TextValue';
-  import { computed, ref } from 'vue';
+  import { ref } from 'vue';
   import FilterDropdownBase from './FilterDropdownBase.vue';
 
   const props = withDefaults(
     defineProps<{
       title: string;
       items: TextValue[];
-      modelValue: string[];
       showSearch?: boolean;
       showSelected?: boolean;
       showSelectAll?: boolean;
@@ -88,12 +87,7 @@
     }
   );
 
-  const emit = defineEmits(['update:modelValue']);
-
-  const selectedItems = computed({
-    get: () => props.modelValue,
-    set: (value) => emit('update:modelValue', value),
-  });
+  const selectedItems = defineModel<string[]>({ default: [] });
 
   const selectedItemObjects = ref<TextValue[]>([]);
 

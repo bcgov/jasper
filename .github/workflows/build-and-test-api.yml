@@ -7,6 +7,11 @@ on:
     paths:
       - 'api/**'
       - 'db/**'
+      - 'cso-client/**'
+      - 'dars-client/**'
+      - 'jc-interface-client/**'
+      - 'pcss-client/**'
+      - 'tests/**'
 
   workflow_dispatch:
 

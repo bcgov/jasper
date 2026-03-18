@@ -96,7 +96,7 @@ services:
       - MONGODB_PORT=${MONGODB_PORT}
       - MONGODB_SERVER=${MONGODB_SERVER}
       - MONGODB_USER=${MONGODB_USER}
-      - NUGET_PACKAGES=/root/.nuget/packages- NUGET_PACKAGES=/root/.nuget/packages
+      - NUGET_PACKAGES=/root/.nuget/packages
       - NUTRIENT_BE_LICENSE_KEY=${NUTRIENT_BE_LICENSE_KEY}
       - NUTRIENT_FE_LICENSE_KEY=${NUTRIENT_FE_LICENSE_KEY}
       - ORDER_MAX_REASSIGNMENT_NOTIFICATIONS=${ORDER_MAX_REASSIGNMENT_NOTIFICATIONS}
@@ -154,6 +154,7 @@ services:
   api-2:
     image: '${COMPOSE_PROJECT_NAME}-api'
     environment:
+      - NUGET_PACKAGES=/root/.nuget/packages
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
       - Auth__AllowSiteMinderUserType=${ALLOW_SITE_MINDER_USER_TYPE}
       - Auth__UserId=${USER_ID}
@@ -186,6 +187,13 @@ services:
       - CsoKeycloak__ClientId=${CsoKeycloakClient}
       - CsoKeycloak__Secret=${CsoKeycloakSecret}
       - CsoKeycloak__WriteRole=${CsoKeycloakWriteRole}
+      - CsoClientKeycloak__Authority=${CsoClientKeycloakAuthority:-https://common-sso.justice.gov.bc.ca/auth/realms/Judiciary}
+      - CsoClientKeycloak__Audience=${CsoClientKeycloakAudience:-CSO}
+      - CsoClientKeycloak__ClientId=${CsoClientKeycloakClientId:-JASPER-CSO-Mock}
+      - CsoClientKeycloak__ServiceAccountSecret=${CsoClientKeycloakSecret:-}
+      - CsoClientKeycloak__RefreshSkewSeconds=${CsoClientKeycloakRefreshSkewSeconds:-60}
+      - CSO__BaseUrl=${BaseUrl:-http://localhost:5000/api}
+      - CSO__ActionUri=${ActionUri:-/MockOrders/action}
       - LocationServicesClient__Password=${LocationServicesClientPassword}
       - LocationServicesClient__Url=${LocationServicesClientUrl}
       - LocationServicesClient__Username=${LocationServicesClientUsername}
@@ -233,8 +241,10 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-..}/jc-interface-client/:/opt/app-root/src/jc-interface-client
       - ${LOCAL_WORKSPACE_FOLDER-..}/pcss-client/:/opt/app-root/src/pcss-client
       - ${LOCAL_WORKSPACE_FOLDER-..}/dars-client/:/opt/app-root/src/dars-client
-      - api-dev-bin:/opt/app-root/src/api/bin
-      - api-dev-obj:/opt/app-root/src/api/obj
+      - ${LOCAL_WORKSPACE_FOLDER-..}/cso-client/:/opt/app-root/src/cso-client
+      - api2-dev-bin:/opt/app-root/src/api/bin
+      - api2-dev-obj:/opt/app-root/src/api/obj
+      - nuget-packages:/root/.nuget/packages
       - ${LOCAL_WORKSPACE_FOLDER-.}/seed:/opt/app-root/data
     depends_on:
       - db-pg
@@ -270,4 +280,6 @@ services:
 volumes:
   api-dev-bin:
   api-dev-obj:
+  api2-dev-bin:
+  api2-dev-obj:
   nuget-packages:

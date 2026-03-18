@@ -121,8 +121,7 @@
   const documentsWithRowKey = computed<RowCivilDocument[]>(() =>
     props.documents.map((doc, index) => ({
       ...doc,
-      __rowKey:
-        `${doc.civilDocumentId}|${doc.fileSeqNo}|${index}`,
+      __rowKey: `${doc.civilDocumentId}|${doc.fileSeqNo}|${index}`,
     }))
   );
 

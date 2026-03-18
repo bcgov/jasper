@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Environment to deploy to"
+        description: 'Environment to deploy to'
         required: true
-        default: "lz-dev"
+        default: 'lz-dev'
         type: choice
         options:
           - lz-dev
@@ -55,7 +55,7 @@ jobs:
     needs: get-lambdas
     environment: lz-dev
     outputs:
-      short_sha: ${{ steps.short_sha.outputs.SHORT_SHA }}
+      image_tag: ${{ steps.version.outputs.IMAGE_TAG }}
     permissions:
       id-token: write
       packages: write
@@ -84,10 +84,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA
-        id: short_sha
+      - name: Get Image Tag
+        id: version
         run: |
-          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+            echo "IMAGE_TAG=${VERSION#v}" >> $GITHUB_OUTPUT
+          else
+            echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
 
       - name: Parse Resource and Lambda Name
         id: parse
@@ -105,7 +110,7 @@ jobs:
           images: |
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.RESOURCE }}.${{ env.LAMBDA }}
           tags: |
-            type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
+            type=raw,value=${{ steps.version.outputs.IMAGE_TAG }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -157,4 +162,4 @@ jobs:
           ghcr_token: ${{ secrets.GITHUB_TOKEN }}
           github_image_repo: ${{ env.GITHUB_IMAGE_REPO }}
           lambda: ${{ matrix.lambda }}
-          short_sha: ${{ needs.deploy2gchr.outputs.short_sha }}
+          image_tag: ${{ needs.deploy2gchr.outputs.image_tag }}

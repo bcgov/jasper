@@ -122,8 +122,7 @@
     props.documents.map((doc, index) => ({
       ...doc,
       __rowKey:
-        `${doc.civilDocumentId}|${doc.fileSeqNo}|${doc.lastAppearanceId}|` +
-        `${doc.lastAppearanceDt}|${index}`,
+        `${doc.civilDocumentId}|${doc.fileSeqNo}|${index}`,
     }))
   );
 

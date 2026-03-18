@@ -117,7 +117,7 @@
       ...day,
       activities:
         selectedPresiderIds.value.length === 0
-          ? []
+          ? day.activities
           : day.activities.filter((a) =>
               selectedPresiderIds.value.includes(a.judgeId.toString())
             ),
@@ -160,7 +160,14 @@
 
   watch(() => props.judgeId, updateCalendar);
 
-  watch(selectedLocationIds, updateCalendar, { deep: true });
+  watch(
+    selectedLocationIds,
+    async () => {
+      selectedPresiderIds.value = [];
+      await updateCalendar();
+    },
+    { deep: true }
+  );
 
   watchEffect(() => {
     const calendarApi = calendarRef.value?.getApi();

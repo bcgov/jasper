@@ -41,7 +41,11 @@
       >
         <template #prepend>
           <v-checkbox-btn
-            :model-value="selectedItems.length === items.length"
+            :model-value="
+              filteredItems(searchQuery).every((item) =>
+                selectedItems.includes(item.value)
+              )
+            "
             hide-details
             @click.stop
             @update:model-value="selectAll(searchQuery)"
@@ -120,14 +124,17 @@
   };
 
   const selectAll = (searchQuery: string) => {
-    const allSelected = selectedItems.value.length === props.items.length;
+    const visible = filteredItems(searchQuery);
+    const allSelected = visible.every((item) =>
+      selectedItems.value.includes(item.value)
+    );
     if (allSelected) {
       selectedItems.value = [];
       selectedItemObjects.value = [];
     } else {
       const newSelection = [
         ...selectedItems.value,
-        ...filteredItems(searchQuery).map((item) => item.value),
+        ...visible.map((item) => item.value),
       ];
       selectedItems.value = [...new Set(newSelection)];
       selectedItemObjects.value = props.items.filter((item) =>

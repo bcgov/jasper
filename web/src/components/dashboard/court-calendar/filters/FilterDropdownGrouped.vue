@@ -4,7 +4,6 @@
     :selected-count="modelValue.length"
     :show-search="showSearch"
     v-slot="{ searchQuery }"
-    @vue:mounted="onMounted"
   >
     <v-list max-height="400">
       <template v-for="group in filteredGroups(searchQuery)" :key="group.label">
@@ -51,8 +50,6 @@
   const emit = defineEmits<{
     'update:modelValue': [value: string[]];
   }>();
-
-  const onMounted = () => {};
 
   const filteredGroups = (searchQuery: string): ItemGroup[] => {
     if (!searchQuery) return props.groups;

@@ -24,7 +24,7 @@
 <script setup lang="ts">
   import { ItemGroup, Presider } from '@/types';
   import { LocationInfo } from '@/types/courtlist';
-  import { computed, watch } from 'vue';
+  import { computed } from 'vue';
   import FilterDropdown from './FilterDropdown.vue';
   import FilterDropdownGrouped from './FilterDropdownGrouped.vue';
 
@@ -55,7 +55,7 @@
       const key =
         props.locations.find(
           (loc) => loc.locationId === presider.homeLocationId.toString()
-        )?.shortName || '';
+        )?.shortName || 'Unknown';
       if (!grouped.has(key)) {
         grouped.set(key, { label: key, items: [] });
       }
@@ -68,12 +68,6 @@
       group.items.sort((a, b) => a.text.localeCompare(b.text));
     }
     return [...grouped.values()].sort((a, b) => a.label.localeCompare(b.label));
-  });
-
-  watch(presiderItems, (newGroups) => {
-    selectedPresiders.value = newGroups.flatMap((g) =>
-      g.items.map((p) => p.value)
-    );
   });
 
   const clearAllFilters = () => {

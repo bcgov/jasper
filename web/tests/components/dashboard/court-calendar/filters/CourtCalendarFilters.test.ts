@@ -208,13 +208,13 @@ describe('CourtCalendarFilters.vue', () => {
       expect(vicGroup.items[1].text).toContain('ZZ - Zara');
     });
 
-    it('places presiders with no matching location into an empty-label group', () => {
+    it('places presiders with no matching location into an "Unknown" group', () => {
       const loc = createLocation({ locationId: '1', shortName: 'VIC' });
       const unmatched = createPresider({
         id: 99,
         homeLocationId: 9999,
         initials: 'XX',
-        name: 'Unknown',
+        name: 'Unmatched',
       });
 
       const wrapper = mountComponent({
@@ -226,11 +226,11 @@ describe('CourtCalendarFilters.vue', () => {
       const groups: any[] = wrapper
         .findComponent(FilterDropdownGrouped)
         .props('groups');
-      const emptyGroup = groups.find((g) => g.label === '');
-      expect(emptyGroup).toBeDefined();
-      expect(emptyGroup.items).toContainEqual({
+      const unknownGroup = groups.find((g) => g.label === 'Unknown');
+      expect(unknownGroup).toBeDefined();
+      expect(unknownGroup.items).toContainEqual({
         value: '99',
-        text: 'XX - Unknown',
+        text: 'XX - Unmatched',
       });
     });
   });
@@ -282,8 +282,8 @@ describe('CourtCalendarFilters.vue', () => {
     });
   });
 
-  describe('Auto-select presiders when presiderItems changes', () => {
-    it('emits all presider ids as selectedPresiders when presiders prop is updated', async () => {
+  describe('Presider selection is not auto-updated when presiderItems changes', () => {
+    it('does not auto-emit selectedPresiders when presiders prop is updated', async () => {
       const loc = createLocation({ locationId: '1', shortName: 'VIC' });
       const wrapper = mountComponent({
         locations: [loc],
@@ -301,10 +301,7 @@ describe('CourtCalendarFilters.vue', () => {
       await nextTick();
 
       const emitted = wrapper.emitted('update:selectedPresiders');
-      expect(emitted).toBeDefined();
-      const lastEmit = emitted!.at(-1)![0] as string[];
-      expect(lastEmit).toContain('10');
-      expect(lastEmit).toContain('20');
+      expect(emitted).toBeUndefined();
     });
   });
 });

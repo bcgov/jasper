@@ -506,7 +506,7 @@ describe('CourtCalendar.vue', () => {
       expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
     });
 
-    it('does not filter activities by activityClassCode when selectedActivityClass is not "all" (client-side display only)', async () => {
+    it('filters activities by activityClassCode when selectedActivityClass is not "all"', async () => {
       const judgeId = 101;
 
       dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
@@ -548,7 +548,7 @@ describe('CourtCalendar.vue', () => {
           (a: CalendarDayActivity) => a.activityClassCode
         );
         expect(activityClasses).toContain('SIT');
-        expect(activityClasses).toContain('NS');
+        expect(activityClasses).not.toContain('NS');
       });
     });
 

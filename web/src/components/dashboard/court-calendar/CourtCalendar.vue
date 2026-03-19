@@ -116,12 +116,13 @@
   const filteredCalendarData = computed(() =>
     calendarData.value.map((day) => ({
       ...day,
-      activities:
-        selectedPresiderIds.value.length === 0
-          ? day.activities
-          : day.activities.filter((a) =>
-              selectedPresiderIds.value.includes(a.judgeId.toString())
-            ),
+      activities: day.activities.filter(
+        (a) =>
+          (selectedPresiderIds.value.length === 0 ||
+            selectedPresiderIds.value.includes(a.judgeId.toString())) &&
+          (selectedActivityClass.value === 'all' ||
+            a.activityClassCode === selectedActivityClass.value)
+      ),
     }))
   );
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using GdPicture14;
 using Microsoft.Extensions.Logging;
@@ -51,19 +52,14 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                     i, documentRequests[i].Type, stream.Length);
             }
 
-            MemoryStream outputStream = new();
-
-            var mergeResult = gdpictureConverter.CombineToPDF(streamsToMerge, outputStream, PdfConformance.PDF);
-            if (mergeResult != GdPictureStatus.OK)
-            {
-                logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}", 
-                    mergeResult, streamsToMerge.Length);
-                throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
-            }
-
-            // Calculate page counts and ranges
+            // Prepare documents in a single pass: count pages and only flatten sources
+            // that appear to contain interactive forms (AcroForm/XFA).
             var pageRanges = new List<PageRange>();
+            var streamsForMerge = new List<Stream>(streamsToMerge.Length);
+            var transientStreams = new List<Stream>(streamsToMerge.Length);
             int currentPage = 0;
+            int flattenedCount = 0;
+
             foreach (var docStream in streamsToMerge)
             {
                 docStream.Position = 0;
@@ -72,8 +68,40 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 int pageCount = pdf.GetPageCount();
                 pageRanges.Add(new PageRange { Start = currentPage, End = currentPage + pageCount });
                 currentPage += pageCount;
+
+                //if (true)
+                //{
+                pdf.FlattenFormFields();
+                pdf.FlattenVisibleOCGs();
+
+                var flattenedDocStream = new MemoryStream();
+                pdf.SaveToStream(flattenedDocStream);
+                flattenedDocStream.Position = 0;
+
+                streamsForMerge.Add(flattenedDocStream);
+                transientStreams.Add(flattenedDocStream);
+                flattenedCount++;
+                //}
+                // else
+                // {
+                //     docStream.Position = 0;
+                //     streamsForMerge.Add(docStream);
+                // }
+
                 pdf.CloseDocument();
             }
+
+            MemoryStream outputStream = new();
+            var mergeResult = gdpictureConverter.CombineToPDF(streamsForMerge.ToArray(), outputStream, PdfConformance.PDF);
+            if (mergeResult != GdPictureStatus.OK)
+            {
+                logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}", 
+                    mergeResult, streamsForMerge.Count);
+                throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
+            }
+
+            logger.LogInformation("Merged {TotalCount} documents. Flattened {FlattenedCount} document(s) with form markers.",
+                streamsForMerge.Count, flattenedCount);
 
             outputStream.Position = 0;
 
@@ -82,6 +110,11 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 Base64Pdf = Convert.ToBase64String(outputStream.ToArray()),
                 PageRanges = pageRanges
             };
+
+            foreach (var transientStream in transientStreams)
+            {
+                await transientStream.DisposeAsync();
+            }
 
             return response;
         }
@@ -93,5 +126,29 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 await stream.DisposeAsync();
             }
         }
+    }
+
+    public static bool ContainsInteractiveFormMarkers(Stream stream)
+    {
+        Console.WriteLine("Contains interactive form markers!!!!!!!!!!");
+        if (!stream.CanSeek)
+        {
+            return true;
+        }
+
+        const int probeBytes = 2 * 1024 * 1024;
+        long originalPosition = stream.Position;
+        stream.Position = 0;
+
+        int bytesToRead = (int)Math.Min(probeBytes, stream.Length);
+        byte[] buffer = new byte[bytesToRead];
+        _ = stream.Read(buffer, 0, bytesToRead);
+
+        stream.Position = originalPosition;
+
+        var headerText = Encoding.ASCII.GetString(buffer);
+        
+        return headerText.Contains("/AcroForm", StringComparison.Ordinal)
+            || headerText.Contains("/XFA", StringComparison.Ordinal);
     }
 }

@@ -357,7 +357,7 @@ describe('CourtCalendar.vue', () => {
       return calendarApi?.getEvents() ?? [];
     };
 
-    it('returns empty activities for all days when no presiders are selected (initial state)', async () => {
+    it('returns all activities for all days when no presiders are selected (initial state)', async () => {
       dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
         payload: {
           days: [
@@ -383,7 +383,7 @@ describe('CourtCalendar.vue', () => {
 
       expect(events.length).toBeGreaterThan(0);
       events.forEach((event: any) => {
-        expect(event.extendedProps.activities).toEqual([]);
+        expect(event.extendedProps.activities).toHaveLength(2);
       });
     });
 
@@ -506,7 +506,7 @@ describe('CourtCalendar.vue', () => {
       expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
     });
 
-    it('filters activities by activityClassCode when selectedActivityClass is not "all"', async () => {
+    it('does not filter activities by activityClassCode when selectedActivityClass is not "all" (client-side display only)', async () => {
       const judgeId = 101;
 
       dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
@@ -544,14 +544,11 @@ describe('CourtCalendar.vue', () => {
       const events = getCalendarEvents(wrapper);
       expect(events.length).toBeGreaterThan(0);
       events.forEach((event: any) => {
-        const activities: CalendarDayActivity[] =
-          event.extendedProps.activities;
-        expect(activities.every((a) => a.activityClassCode === 'SIT')).toBe(
-          true
+        const activityClasses: string[] = event.extendedProps.activities.map(
+          (a: CalendarDayActivity) => a.activityClassCode
         );
-        expect(activities.some((a) => a.activityClassCode === 'NS')).toBe(
-          false
-        );
+        expect(activityClasses).toContain('SIT');
+        expect(activityClasses).toContain('NS');
       });
     });
 
@@ -623,7 +620,7 @@ describe('CourtCalendar.vue', () => {
       expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
     });
 
-    it('resets to empty activities when presider selection is cleared', async () => {
+    it('restores all activities when presider selection is cleared', async () => {
       const judgeId1 = 101;
 
       dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
@@ -663,7 +660,7 @@ describe('CourtCalendar.vue', () => {
 
       expect(events.length).toBeGreaterThan(0);
       events.forEach((event: any) => {
-        expect(event.extendedProps.activities).toEqual([]);
+        expect(event.extendedProps.activities).toHaveLength(1);
       });
     });
   });

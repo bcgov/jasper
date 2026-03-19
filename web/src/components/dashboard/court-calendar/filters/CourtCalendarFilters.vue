@@ -25,7 +25,7 @@
 <script setup lang="ts">
   import { ItemGroup, Presider } from '@/types';
   import { LocationInfo } from '@/types/courtlist';
-  import { computed } from 'vue';
+  import { computed, watch } from 'vue';
   import FilterDropdown from './FilterDropdown.vue';
   import FilterDropdownGrouped from './FilterDropdownGrouped.vue';
   import ActivityClassFilter from './ActivityClassFilter.vue';

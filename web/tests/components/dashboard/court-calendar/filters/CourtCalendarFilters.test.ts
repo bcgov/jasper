@@ -3,23 +3,16 @@ import CourtCalendarFilters from '@/components/dashboard/court-calendar/filters/
 import FilterDropdown from '@/components/dashboard/court-calendar/filters/FilterDropdown.vue';
 import FilterDropdownGrouped from '@/components/dashboard/court-calendar/filters/FilterDropdownGrouped.vue';
 import { Presider } from '@/types';
-import FilterDropdown from '@/components/dashboard/court-calendar/filters/FilterDropdown.vue';
-import FilterDropdownGrouped from '@/components/dashboard/court-calendar/filters/FilterDropdownGrouped.vue';
-import { Presider } from '@/types';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
-import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 
 describe('CourtCalendarFilters.vue', () => {
   const createLocation = (overrides?: Partial<LocationInfo>): LocationInfo => ({
-  const createLocation = (overrides?: Partial<LocationInfo>): LocationInfo => ({
     locationId: faker.string.uuid(),
     shortName: faker.location.city(),
-    name: faker.location.city() + ' Law Courts',
     name: faker.location.city() + ' Law Courts',
     code: faker.string.alpha({ length: 3, casing: 'upper' }),
     agencyIdentifierCd: faker.string.alpha({ length: 3, casing: 'upper' }),
@@ -35,27 +28,14 @@ describe('CourtCalendarFilters.vue', () => {
     homeLocationName: faker.location.city(),
     ...overrides,
   });
-  const createPresider = (overrides?: Partial<Presider>): Presider => ({
-    id: faker.number.int({ min: 1, max: 9999 }),
-    name: faker.person.fullName(),
-    initials: faker.string.alpha({ length: 2, casing: 'upper' }),
-    homeLocationId: faker.number.int({ min: 1, max: 9999 }),
-    homeLocationName: faker.location.city(),
-    ...overrides,
-  });
 
-  const mountComponent = (props = {}) =>
-    mount(CourtCalendarFilters, {
   const mountComponent = (props = {}) =>
     mount(CourtCalendarFilters, {
       props: {
         isLocationFilterLoading: false,
         locations: [],
         presiders: [],
-        locations: [],
-        presiders: [],
         selectedLocations: [],
-        selectedPresiders: [],
         selectedPresiders: [],
         selectedActivityClass: 'all',
         ...props,
@@ -103,15 +83,7 @@ describe('CourtCalendarFilters.vue', () => {
       const loc1 = createLocation({ locationId: 'LOC1', shortName: 'VIC' });
       const loc2 = createLocation({ locationId: 'LOC2', shortName: 'VAN' });
       const wrapper = mountComponent({ locations: [loc1, loc2] });
-    it('maps locations to { value: locationId, text: shortName } items', () => {
-      const loc1 = createLocation({ locationId: 'LOC1', shortName: 'VIC' });
-      const loc2 = createLocation({ locationId: 'LOC2', shortName: 'VAN' });
-      const wrapper = mountComponent({ locations: [loc1, loc2] });
 
-      expect(wrapper.findComponent(FilterDropdown).props('items')).toEqual([
-        { value: 'LOC1', text: 'VIC' },
-        { value: 'LOC2', text: 'VAN' },
-      ]);
       expect(wrapper.findComponent(FilterDropdown).props('items')).toEqual([
         { value: 'LOC1', text: 'VIC' },
         { value: 'LOC2', text: 'VAN' },
@@ -119,10 +91,6 @@ describe('CourtCalendarFilters.vue', () => {
     });
   });
 
-  describe('Presiders FilterDropdownGrouped visibility', () => {
-    it('does not render FilterDropdownGrouped when no locations are selected', () => {
-      const wrapper = mountComponent({ selectedLocations: [] });
-      expect(wrapper.findComponent(FilterDropdownGrouped).exists()).toBe(false);
   describe('Presiders FilterDropdownGrouped visibility', () => {
     it('does not render FilterDropdownGrouped when no locations are selected', () => {
       const wrapper = mountComponent({ selectedLocations: [] });
@@ -268,10 +236,6 @@ describe('CourtCalendarFilters.vue', () => {
   });
 
   describe('Clear All button', () => {
-    it('does not render the Clear All button when no locations are selected', () => {
-      const wrapper = mountComponent({ selectedLocations: [] });
-      expect(wrapper.find('.clearAll').exists()).toBe(false);
-  describe('Clear All button', () => {
     it('does not render the Clear All button when no locations are selected and activity class is "all"', () => {
       const wrapper = mountComponent({
         selectedLocations: [],
@@ -305,15 +269,11 @@ describe('CourtCalendarFilters.vue', () => {
         presiders: [presider],
         selectedLocations: ['LOC1'],
         selectedPresiders: ['1'],
-        selectedPresiders: ['1'],
         selectedActivityClass: 'SIT',
       });
 
       await wrapper.find('.clearAll').trigger('click');
-      await wrapper.find('.clearAll').trigger('click');
 
-      expect(wrapper.emitted('update:selectedLocations')?.at(-1)).toEqual([[]]);
-      expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedLocations')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedActivityClass')?.at(-1)).toEqual([

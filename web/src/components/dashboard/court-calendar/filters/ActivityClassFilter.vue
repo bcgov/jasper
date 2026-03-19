@@ -1,7 +1,6 @@
 <template>
   <v-btn-toggle
-    :model-value="modelValue"
-    @update:modelValue="emit('update:modelValue', $event)"
+    v-model="modelValue"
     mandatory
     density="compact"
     rounded="pill"
@@ -13,18 +12,7 @@
   </v-btn-toggle>
 </template>
 <script setup lang="ts">
-  const props = withDefaults(
-    defineProps<{
-      modelValue: string;
-    }>(),
-    {
-      modelValue: 'all',
-    }
-  );
-
-  const emit = defineEmits<{
-    'update:modelValue': [value: string];
-  }>();
+  const modelValue = defineModel<string>({ default: 'all' });
 </script>
 <style scoped>
   :deep(.v-btn.v-btn--active) {

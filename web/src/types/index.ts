@@ -17,3 +17,4 @@ export * from './PersonSearchItem';
 export * from './Presider';
 export * from './QuickLink';
 export * from './Tag';
+export * from './TextValue';

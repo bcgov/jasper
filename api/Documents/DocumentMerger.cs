@@ -52,13 +52,9 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                     i, documentRequests[i].Type, stream.Length);
             }
 
-            // Prepare documents in a single pass: count pages and only flatten sources
-            // that appear to contain interactive forms (AcroForm/XFA).
             var pageRanges = new List<PageRange>();
             var streamsForMerge = new List<Stream>(streamsToMerge.Length);
-            var transientStreams = new List<Stream>(streamsToMerge.Length);
             int currentPage = 0;
-            int flattenedCount = 0;
 
             foreach (var docStream in streamsToMerge)
             {
@@ -69,8 +65,6 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 pageRanges.Add(new PageRange { Start = currentPage, End = currentPage + pageCount });
                 currentPage += pageCount;
 
-                //if (true)
-                //{
                 pdf.FlattenFormFields();
                 pdf.FlattenVisibleOCGs();
 
@@ -79,14 +73,6 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 flattenedDocStream.Position = 0;
 
                 streamsForMerge.Add(flattenedDocStream);
-                transientStreams.Add(flattenedDocStream);
-                flattenedCount++;
-                //}
-                // else
-                // {
-                //     docStream.Position = 0;
-                //     streamsForMerge.Add(docStream);
-                // }
 
                 pdf.CloseDocument();
             }
@@ -100,8 +86,7 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
             }
 
-            logger.LogInformation("Merged {TotalCount} documents. Flattened {FlattenedCount} document(s) with form markers.",
-                streamsForMerge.Count, flattenedCount);
+            logger.LogInformation("Merged {TotalCount} documents.", streamsForMerge.Count);
 
             outputStream.Position = 0;
 
@@ -111,20 +96,16 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 PageRanges = pageRanges
             };
 
-            foreach (var transientStream in transientStreams)
-            {
-                await transientStream.DisposeAsync();
-            }
-
             return response;
         }
         finally
         {
             // Ensure all streams are disposed
-            foreach (var stream in streamsToMerge.Where(x => x is not null))
-            {
-                await stream.DisposeAsync();
-            }
+            var disposeTasks = streamsToMerge
+                .Where(x => x is not null)
+                .Select(stream => stream.DisposeAsync().AsTask());
+
+            await Task.WhenAll(disposeTasks);
         }
     }
 

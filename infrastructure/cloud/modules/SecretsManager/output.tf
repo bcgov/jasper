@@ -161,5 +161,6 @@ output "lambda_secrets" {
     file_services_client = aws_secretsmanager_secret.file_services_client_secret.name
     pcss                 = aws_secretsmanager_secret.pcss_secret.name
     dars                 = aws_secretsmanager_secret.dars_secret.name
+    td                   = aws_secretsmanager_secret.keycloak_td_secret.name
   }
 }

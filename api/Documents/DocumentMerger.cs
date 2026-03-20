@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using GdPicture14;
 using Microsoft.Extensions.Logging;
@@ -51,19 +52,10 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                     i, documentRequests[i].Type, stream.Length);
             }
 
-            MemoryStream outputStream = new();
-
-            var mergeResult = gdpictureConverter.CombineToPDF(streamsToMerge, outputStream, PdfConformance.PDF);
-            if (mergeResult != GdPictureStatus.OK)
-            {
-                logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}", 
-                    mergeResult, streamsToMerge.Length);
-                throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
-            }
-
-            // Calculate page counts and ranges
             var pageRanges = new List<PageRange>();
+            var streamsForMerge = new List<Stream>(streamsToMerge.Length);
             int currentPage = 0;
+
             foreach (var docStream in streamsToMerge)
             {
                 docStream.Position = 0;
@@ -72,8 +64,29 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
                 int pageCount = pdf.GetPageCount();
                 pageRanges.Add(new PageRange { Start = currentPage, End = currentPage + pageCount });
                 currentPage += pageCount;
+
+                pdf.FlattenFormFields();
+                pdf.FlattenVisibleOCGs();
+
+                var flattenedDocStream = new MemoryStream();
+                pdf.SaveToStream(flattenedDocStream);
+                flattenedDocStream.Position = 0;
+
+                streamsForMerge.Add(flattenedDocStream);
+
                 pdf.CloseDocument();
             }
+
+            MemoryStream outputStream = new();
+            var mergeResult = gdpictureConverter.CombineToPDF(streamsForMerge.ToArray(), outputStream, PdfConformance.PDF);
+            if (mergeResult != GdPictureStatus.OK)
+            {
+                logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}", 
+                    mergeResult, streamsForMerge.Count);
+                throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
+            }
+
+            logger.LogInformation("Merged {TotalCount} documents.", streamsForMerge.Count);
 
             outputStream.Position = 0;
 
@@ -88,10 +101,11 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
         finally
         {
             // Ensure all streams are disposed
-            foreach (var stream in streamsToMerge.Where(x => x is not null))
-            {
-                await stream.DisposeAsync();
-            }
+            var disposeTasks = streamsToMerge
+                .Where(x => x is not null)
+                .Select(stream => stream.DisposeAsync().AsTask());
+
+            await Task.WhenAll(disposeTasks);
         }
     }
 }

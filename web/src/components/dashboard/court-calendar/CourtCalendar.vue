@@ -11,6 +11,7 @@
       v-if="locations.length > 0"
       v-model:selected-locations="selectedLocationIds"
       v-model:selected-presiders="selectedPresiderIds"
+      v-model:selected-activity-class="selectedActivityClass"
       :isLocationFilterLoading="isLocationFilterLoading"
       :locations="locations"
       :presiders="presiders"
@@ -76,7 +77,7 @@
   const activities = ref<Activity[]>([]);
   const selectedLocationIds = ref<string[]>([]);
   const selectedPresiderIds = ref<string[]>([]);
-
+  const selectedActivityClass = ref<string>('all');
   const startDay = ref(new Date(selectedDate.value));
   const endDay = ref(new Date(selectedDate.value));
   const locationIds = computed(() => selectedLocationIds.value.join(','));
@@ -115,12 +116,13 @@
   const filteredCalendarData = computed(() =>
     calendarData.value.map((day) => ({
       ...day,
-      activities:
-        selectedPresiderIds.value.length === 0
-          ? day.activities
-          : day.activities.filter((a) =>
-              selectedPresiderIds.value.includes(a.judgeId.toString())
-            ),
+      activities: day.activities.filter(
+        (a) =>
+          (selectedPresiderIds.value.length === 0 ||
+            selectedPresiderIds.value.includes(a.judgeId.toString())) &&
+          (selectedActivityClass.value === 'all' ||
+            a.activityClassCode === selectedActivityClass.value)
+      ),
     }))
   );
 

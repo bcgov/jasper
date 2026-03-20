@@ -1,3 +1,4 @@
+import ActivityClassFilter from '@/components/dashboard/court-calendar/filters/ActivityClassFilter.vue';
 import CourtCalendarFilters from '@/components/dashboard/court-calendar/filters/CourtCalendarFilters.vue';
 import FilterDropdown from '@/components/dashboard/court-calendar/filters/FilterDropdown.vue';
 import FilterDropdownGrouped from '@/components/dashboard/court-calendar/filters/FilterDropdownGrouped.vue';
@@ -36,9 +37,34 @@ describe('CourtCalendarFilters.vue', () => {
         presiders: [],
         selectedLocations: [],
         selectedPresiders: [],
+        selectedActivityClass: 'all',
         ...props,
       },
     });
+
+  describe('ActivityClassFilter', () => {
+    it('renders ActivityClassFilter', () => {
+      const wrapper = mountComponent();
+      expect(wrapper.findComponent(ActivityClassFilter).exists()).toBe(true);
+    });
+
+    it('passes selectedActivityClass to ActivityClassFilter as modelValue', () => {
+      const wrapper = mountComponent({ selectedActivityClass: 'SIT' });
+      expect(
+        wrapper.findComponent(ActivityClassFilter).props()['modelValue']
+      ).toBe('SIT');
+    });
+
+    it('emits update:selectedActivityClass when ActivityClassFilter emits update:modelValue', async () => {
+      const wrapper = mountComponent({ selectedActivityClass: 'all' });
+      await wrapper
+        .findComponent(ActivityClassFilter)
+        .vm.$emit('update:modelValue', 'NS');
+      expect(wrapper.emitted('update:selectedActivityClass')?.[0]).toEqual([
+        'NS',
+      ]);
+    });
+  });
 
   describe('Locations FilterDropdown', () => {
     it('renders FilterDropdown', () => {
@@ -210,8 +236,11 @@ describe('CourtCalendarFilters.vue', () => {
   });
 
   describe('Clear All button', () => {
-    it('does not render the Clear All button when no locations are selected', () => {
-      const wrapper = mountComponent({ selectedLocations: [] });
+    it('does not render the Clear All button when no locations are selected and activity class is "all"', () => {
+      const wrapper = mountComponent({
+        selectedLocations: [],
+        selectedActivityClass: 'all',
+      });
       expect(wrapper.find('.clearAll').exists()).toBe(false);
     });
 
@@ -224,7 +253,15 @@ describe('CourtCalendarFilters.vue', () => {
       expect(wrapper.find('.clearAll').exists()).toBe(true);
     });
 
-    it('emits empty arrays for both models when Clear All is clicked', async () => {
+    it('renders the Clear All button when selectedActivityClass is not "all"', () => {
+      const wrapper = mountComponent({
+        selectedLocations: [],
+        selectedActivityClass: 'SIT',
+      });
+      expect(wrapper.find('.clearAll').exists()).toBe(true);
+    });
+
+    it('emits empty arrays for both location/presider models and resets activity class when Clear All is clicked', async () => {
       const loc = createLocation({ locationId: 'LOC1' });
       const presider = createPresider({ id: 1, homeLocationId: 1 });
       const wrapper = mountComponent({
@@ -232,16 +269,20 @@ describe('CourtCalendarFilters.vue', () => {
         presiders: [presider],
         selectedLocations: ['LOC1'],
         selectedPresiders: ['1'],
+        selectedActivityClass: 'SIT',
       });
 
       await wrapper.find('.clearAll').trigger('click');
 
       expect(wrapper.emitted('update:selectedLocations')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
+      expect(wrapper.emitted('update:selectedActivityClass')?.at(-1)).toEqual([
+        'all',
+      ]);
     });
   });
 
-  describe('Auto-select presiders when presiderItems changes', () => {
+  describe('Presider selection is not auto-updated when presiderItems changes', () => {
     it('does not auto-emit selectedPresiders when presiders prop is updated', async () => {
       const loc = createLocation({ locationId: '1', shortName: 'VIC' });
       const wrapper = mountComponent({

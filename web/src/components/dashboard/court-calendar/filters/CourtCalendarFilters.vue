@@ -11,9 +11,10 @@
       :groups="presiderItems"
       v-model="selectedPresiders"
     />
+    <ActivityClassFilter v-model="selectedActivityClass" />
     <v-btn
       class="clearAll"
-      v-if="selectedLocations?.length > 0"
+      v-if="selectedLocations?.length > 0 || selectedActivityClass !== 'all'"
       hide-details
       @click="clearAllFilters"
     >
@@ -25,6 +26,7 @@
   import { ItemGroup, Presider } from '@/types';
   import { LocationInfo } from '@/types/courtlist';
   import { computed } from 'vue';
+  import ActivityClassFilter from './ActivityClassFilter.vue';
   import FilterDropdown from './FilterDropdown.vue';
   import FilterDropdownGrouped from './FilterDropdownGrouped.vue';
 
@@ -40,6 +42,10 @@
 
   const selectedPresiders = defineModel<string[]>('selectedPresiders', {
     default: [],
+  });
+
+  const selectedActivityClass = defineModel<string>('selectedActivityClass', {
+    default: 'all',
   });
 
   const locationItems = computed(() =>
@@ -73,6 +79,7 @@
   const clearAllFilters = () => {
     selectedLocations.value = [];
     selectedPresiders.value = [];
+    selectedActivityClass.value = 'all';
   };
 </script>
 <style scoped>

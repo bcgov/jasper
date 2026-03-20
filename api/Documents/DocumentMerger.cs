@@ -108,28 +108,4 @@ public class DocumentMerger(IDocumentRetriever documentRetriever, ILogger<Docume
             await Task.WhenAll(disposeTasks);
         }
     }
-
-    public static bool ContainsInteractiveFormMarkers(Stream stream)
-    {
-        Console.WriteLine("Contains interactive form markers!!!!!!!!!!");
-        if (!stream.CanSeek)
-        {
-            return true;
-        }
-
-        const int probeBytes = 2 * 1024 * 1024;
-        long originalPosition = stream.Position;
-        stream.Position = 0;
-
-        int bytesToRead = (int)Math.Min(probeBytes, stream.Length);
-        byte[] buffer = new byte[bytesToRead];
-        _ = stream.Read(buffer, 0, bytesToRead);
-
-        stream.Position = originalPosition;
-
-        var headerText = Encoding.ASCII.GetString(buffer);
-        
-        return headerText.Contains("/AcroForm", StringComparison.Ordinal)
-            || headerText.Contains("/XFA", StringComparison.Ordinal);
-    }
 }

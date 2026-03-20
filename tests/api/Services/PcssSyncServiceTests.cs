@@ -7,6 +7,8 @@ using PCSSCommon.Clients.AuthorizationServices;
 using PCSSCommon.Models;
 using Scv.Api.Services;
 using Scv.Core.Infrastructure;
+using Scv.Db.Models;
+using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
 using Xunit;
 
@@ -17,6 +19,7 @@ namespace Scv.Api.Tests.Services
         private readonly Mock<IPcssAuthorizationService> _authorizationServiceMock;
         private readonly Mock<IGroupService> _groupServiceMock;
         private readonly Mock<IJudgeService> _judgeServiceMock;
+        private readonly Mock<IRepositoryBase<Group>> _groupRepoMock;
         private readonly Mock<ILogger<PcssSyncService>> _loggerMock;
         private readonly PcssSyncService _pcssSyncService;
 
@@ -26,12 +29,18 @@ namespace Scv.Api.Tests.Services
 
             _groupServiceMock = new Mock<IGroupService>();
             _judgeServiceMock = new Mock<IJudgeService>();
+            _groupRepoMock = new Mock<IRepositoryBase<Group>>();
             _loggerMock = new Mock<ILogger<PcssSyncService>>();
+
+            _groupRepoMock
+                .Setup(x => x.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Group, bool>>>()))
+                .ReturnsAsync(new List<Group>());
 
             _pcssSyncService = new PcssSyncService(
                 _authorizationServiceMock.Object,
                 _groupServiceMock.Object,
                 _judgeServiceMock.Object,
+                _groupRepoMock.Object,
                 _loggerMock.Object);
         }
 

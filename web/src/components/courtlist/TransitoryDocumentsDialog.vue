@@ -41,7 +41,7 @@
               data-testid="documents-table"
               :items-per-page="-1"
             >
-              <template v-slot:item.fileName="{ item }">
+              <template v-slot:[`item.fileName`]="{ item }">
                 <a
                   v-if="canViewDocuments && isSupportedByNutrient(item)"
                   href="#"
@@ -52,7 +52,7 @@
                 </a>
                 <span v-else>{{ item.fileName }}</span>
               </template>
-              <template v-slot:item.actions="{ item }">
+              <template v-slot:[`item.actions`]="{ item }">
                 <template v-if="canDownloadDocuments">
                   <v-progress-circular
                     v-if="
@@ -74,10 +74,10 @@
                   ></v-btn>
                 </template>
               </template>
-              <template v-slot:item.sizeBytes="{ item }">
+              <template v-slot:[`item.sizeBytes`]="{ item }">
                 {{ formatFileSize(item.sizeBytes) }}
               </template>
-              <template v-slot:item.createdUtc="{ item }">
+              <template v-slot:[`item.createdUtc`]="{ item }">
                 {{ formatDate(item.createdUtc) }}
               </template>
             </v-data-table>
@@ -110,8 +110,8 @@
   import ActionBar from '@/components/shared/table/ActionBar.vue';
   import { PERMISSIONS } from '@/constants/permissions';
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
-  import { FileMetadataDto } from '@/types/transitory-documents';
   import { useCommonStore } from '@/stores';
+  import { FileMetadataDto } from '@/types/transitory-documents';
   import { mdiClose, mdiDownload, mdiFileDocumentOutline } from '@mdi/js';
   import { computed, inject, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';

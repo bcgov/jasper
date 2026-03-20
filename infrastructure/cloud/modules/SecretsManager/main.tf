@@ -443,14 +443,14 @@ resource "aws_secretsmanager_secret" "keycloak_td_secret" {
 resource "aws_secretsmanager_secret_version" "keycloak_td_secret_value" {
   secret_id = aws_secretsmanager_secret.keycloak_td_secret.id
   secret_string = jsonencode({
-    audience             = "",
-    authority            = "",
-    client               = "",
-    serviceAccountSecret = "",
-    scope                = "",
-    refreshSkewSeconds   = 60,
-    clockSkewSeconds     = 0,
-    url                  = ""
+    audience           = "",
+    authority          = "",
+    client             = "",
+    secret             = "",
+    scope              = "",
+    refreshSkewSeconds = 60,
+    clockSkewSeconds   = 0,
+    url                = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

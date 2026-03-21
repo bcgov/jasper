@@ -57,7 +57,13 @@ namespace Scv.Api
                 .Bind(Configuration.GetSection("CSO"))
                 .ValidateDataAnnotations();
 
-            services.Configure<JobsSubmitOrderOptions>(Configuration.GetSection("JOBS:SubmitOrder"));
+            services.Configure<JobsSubmitOrderOptions>(options =>
+            {
+                var retryCountRaw = Configuration["JOBS:SubmitOrder:RetryCount"];
+                options.RetryCount = int.TryParse(retryCountRaw, out var retryCount)
+                    ? retryCount
+                    : new JobsSubmitOrderOptions().RetryCount;
+            });
             services.Configure<JobsFailureEmailOptions>(Configuration.GetSection("JOBS:FailureEmail"));
             services.Configure<JobsRetrySubmitOrderOptions>(Configuration.GetSection("JOBS:RetrySubmitOrder"));
             services.Configure<JobsOrderReminderOptions>(Configuration.GetSection("JOBS:OrderReminder"));

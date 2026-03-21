@@ -359,10 +359,10 @@ namespace Scv.Api.Infrastructure
                 return services;
             }
 
-            var submitOrderRetryCount = configuration
-                .GetSection("JOBS:SubmitOrder")
-                .Get<JobsSubmitOrderOptions>()?.RetryCount
-                ?? new JobsSubmitOrderOptions().RetryCount;
+            var submitOrderRetryCountRaw = configuration["JOBS:SubmitOrder:RetryCount"];
+            var submitOrderRetryCount = int.TryParse(submitOrderRetryCountRaw, out var submitOrderRetryCountParsed)
+                ? submitOrderRetryCountParsed
+                : new JobsSubmitOrderOptions().RetryCount;
 
             if (!JobFilterProviders.Providers.OfType<SubmitOrderJobRetryFilterProvider>().Any())
             {

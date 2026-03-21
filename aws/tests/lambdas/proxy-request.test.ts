@@ -18,11 +18,14 @@ describe("Lambda Handler", () => {
 
   const darsSecret = "dars-secret";
   const pcssSecret = "pcss-secret";
+  const tdSecret = "td-secret";
   const fileServicesClientSecret = "files-services-client-secret";
 
   beforeEach(() => {
+    vi.clearAllMocks();
     process.env.DARS_SECRET_NAME = darsSecret;
     process.env.PCSS_SECRET_NAME = pcssSecret;
+    process.env.TD_SECRET_NAME = tdSecret;
     process.env.FILE_SERVICES_CLIENT_SECRET_NAME = fileServicesClientSecret;
 
     mockEvent = {
@@ -45,6 +48,15 @@ describe("Lambda Handler", () => {
     const response = await handler(mockEvent as APIGatewayEvent);
 
     expect(ApiService).toHaveBeenCalledWith(pcssSecret);
+    expect(response.statusCode).toBe(200);
+  });
+
+  it("should use TD secret when x-target-app is TD", async () => {
+    mockEvent.headers!["x-target-app"] = "TD";
+
+    const response = await handler(mockEvent as APIGatewayEvent);
+
+    expect(ApiService).toHaveBeenCalledWith(tdSecret);
     expect(response.statusCode).toBe(200);
   });
 

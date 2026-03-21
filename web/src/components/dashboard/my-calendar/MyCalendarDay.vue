@@ -80,7 +80,10 @@
   const cleanActivityClassDescription = (
     activityClassDescription: string
   ): string => {
-    return activityClassDescription.trim().replace(/\s+/g, '-').toLowerCase();
+    return activityClassDescription
+      .trim()
+      .replaceAll(/\s+/g, '-')
+      .toLowerCase();
   };
 
   const groupedActivities = computed(() => {

@@ -184,3 +184,8 @@ export enum RolesEnum {
   AcjChiefJudge = 'ACJ/Chief Judge',
   Raj = 'RAJ',
 }
+
+export enum ActivityClassEnum {
+  Sitting = 'SIT',
+  NonSitting = 'NS',
+}

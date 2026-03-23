@@ -116,6 +116,50 @@ describe('AppearancesView.vue', () => {
     expect(appearances.length).toBe(1);
   });
 
+  it('passes unfiltered props.appearances to NameFilter people prop', async () => {
+    const wrapper = mount(AppearancesView, {
+      props,
+      global: {
+        plugins: [pinia],
+        stubs: {
+          NameFilter: {
+            name: 'NameFilter',
+            props: ['modelValue', 'people'],
+            template: '<div data-testid="name-filter-stub" />',
+          },
+        },
+      },
+    });
+
+    const nameFilter = wrapper.findComponent({ name: 'NameFilter' });
+    expect(nameFilter.props('people')).toEqual(props.appearances);
+    expect(nameFilter.props('people')).toHaveLength(2);
+  });
+
+  it('always renders table with no-data-text when appearances is empty', () => {
+    const wrapper = mount(AppearancesView, {
+      props: {
+        ...props,
+        appearances: [],
+      },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          'v-data-table-virtual': {
+            name: 'v-data-table-virtual',
+            template: '<div data-testid="appearances-table" />',
+            props: ['headers', 'items', 'sortBy', 'noDataText'],
+          },
+        },
+      },
+    });
+
+    const table = wrapper.findComponent({ name: 'v-data-table-virtual' });
+    expect(table.exists()).toBe(true);
+    expect(table.props('items')).toEqual([]);
+    expect(table.props('noDataText')).toBe('No appearances');
+  });
+
   it('renders correct table headers for criminal appearances', () => {
     const wrapper: any = mount(AppearancesView, {
       props,

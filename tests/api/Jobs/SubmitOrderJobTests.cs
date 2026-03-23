@@ -2,11 +2,9 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scv.Api.Infrastructure;
-using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Api.Services;
-using Scv.Db.Models;
+using Scv.Core.Infrastructure;
 using Xunit;
 
 namespace tests.api.Jobs;

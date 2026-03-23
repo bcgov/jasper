@@ -25,7 +25,7 @@ public static class DateTimeExtensions
     private static HttpContext GetCurrentHttpContext()
     {
         if (_serviceProvider == null) return null;
-        
+
         var httpContextAccessor = _serviceProvider.GetService<IHttpContextAccessor>();
         return httpContextAccessor?.HttpContext;
     }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using Moq;
-using Scv.Api.Models.CourtList;
+using Scv.Models.CourtList;
 using static PCSSCommon.Models.ActivityClassUsage;
 
 namespace tests.api.Fixtures;

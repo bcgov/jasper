@@ -10,10 +10,10 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace tests.api.Controllers

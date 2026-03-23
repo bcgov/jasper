@@ -3,8 +3,8 @@ using System.Globalization;
 using Bogus;
 using Mapster;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Order;
 using Scv.Db.Models;
+using Scv.Models.Order;
 using Xunit;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 

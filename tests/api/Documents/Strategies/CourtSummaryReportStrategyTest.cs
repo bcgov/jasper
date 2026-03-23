@@ -9,8 +9,9 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Helpers;
-using Scv.Api.Models.Document;
+using Scv.Core.Helpers;
+using Scv.Models;
+using Scv.Models.Document;
 using tests.api.Services;
 using Xunit;
 
@@ -95,6 +96,6 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
 
         var type = strategy.Type;
 
-        Assert.Equal(Scv.Api.Documents.DocumentType.CourtSummary, type);
+        Assert.Equal(DocumentType.CourtSummary, type);
     }
 }

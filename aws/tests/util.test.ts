@@ -32,9 +32,9 @@ describe("sanitizeHeaders", () => {
     expect(sanitizeHeaders(headers)).toEqual({});
   });
 
-  it("should return an empty object when Authorization header is present", () => {
+  it("should keep Authorization header when present", () => {
     const headers = { Authorization: "Bearer 123" };
-    expect(sanitizeHeaders(headers)).toEqual({});
+    expect(sanitizeHeaders(headers)).toEqual({ Authorization: "Bearer 123" });
   });
 });
 

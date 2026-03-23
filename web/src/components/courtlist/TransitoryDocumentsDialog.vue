@@ -1,0 +1,332 @@
+<template>
+  <v-dialog v-model="dialogOpen" fullscreen>
+    <v-card>
+      <v-toolbar color="primary">
+        <v-toolbar-title>
+          Transitory Documents - {{ props.date }} {{ props.location }} Room
+          {{ props.roomCd }}
+        </v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn :icon="mdiClose" @click="close" title="close"></v-btn>
+      </v-toolbar>
+
+      <v-card-text>
+        <v-container>
+          <v-row
+            v-if="documents.length === 0 && !loading"
+            justify="center"
+            class="my-5"
+          >
+            <v-col cols="12" md="6">
+              <v-alert type="info" border="start">
+                No documents found for this location and date.
+              </v-alert>
+            </v-col>
+          </v-row>
+
+          <v-skeleton-loader class="my-1" type="table" :loading="loading">
+            <v-data-table
+              v-if="documents.length > 0"
+              v-model="selectedDocuments"
+              :headers="headers"
+              :items="documents"
+              :sort-by="[{ key: 'matchedRoomFolder', order: 'desc' }]"
+              class="elevation-1"
+              fixed-header
+              height="calc(100vh - 200px)"
+              :show-select="canViewDocuments"
+              return-object
+              :item-value="(item) => item.relativePath"
+              :item-selectable="(item) => canViewDocuments && isPdf(item)"
+              data-testid="documents-table"
+              :items-per-page="-1"
+            >
+              <template v-slot:[`item.fileName`]="{ item }">
+                <a
+                  v-if="canViewDocuments && isSupportedByNutrient(item)"
+                  href="#"
+                  @click.prevent="openInNutrient(item)"
+                  class="text-primary"
+                >
+                  {{ item.fileName }}
+                </a>
+                <span v-else>{{ item.fileName }}</span>
+              </template>
+              <template v-slot:[`item.actions`]="{ item }">
+                <template v-if="canDownloadDocuments">
+                  <v-progress-circular
+                    v-if="
+                      item.relativePath && downloadingFiles[item.relativePath]
+                    "
+                    indeterminate
+                    color="primary"
+                    size="20"
+                    width="2"
+                  ></v-progress-circular>
+                  <v-btn
+                    v-else
+                    :icon="mdiDownload"
+                    variant="text"
+                    size="small"
+                    data-testid="download-file-btn"
+                    @click="downloadFile(item)"
+                    title="Download file"
+                  ></v-btn>
+                </template>
+              </template>
+              <template v-slot:[`item.sizeBytes`]="{ item }">
+                {{ formatFileSize(item.sizeBytes) }}
+              </template>
+              <template v-slot:[`item.createdUtc`]="{ item }">
+                {{ formatDate(item.createdUtc) }}
+              </template>
+            </v-data-table>
+          </v-skeleton-loader>
+        </v-container>
+      </v-card-text>
+    </v-card>
+
+    <ActionBar
+      v-if="canViewDocuments"
+      :selected="selectedDocuments"
+      selectionPrependText="Documents"
+      @clicked="handleViewDocuments"
+    >
+      <v-btn
+        size="large"
+        class="mx-2"
+        :prepend-icon="mdiFileDocumentOutline"
+        style="letter-spacing: 0.001rem"
+        @click="handleViewDocuments"
+        data-testid="view-documents"
+      >
+        View documents
+      </v-btn>
+    </ActionBar>
+  </v-dialog>
+</template>
+
+<script setup lang="ts">
+  import ActionBar from '@/components/shared/table/ActionBar.vue';
+  import { PERMISSIONS } from '@/constants/permissions';
+  import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
+  import { useCommonStore } from '@/stores';
+  import { FileMetadataDto } from '@/types/transitory-documents';
+  import { mdiClose, mdiDownload, mdiFileDocumentOutline } from '@mdi/js';
+  import { computed, inject, ref, watch } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { openTransitoryDocumentsInNutrient } from './transitoryViewerLauncher';
+
+  const props = defineProps<{
+    modelValue: boolean;
+    locationId: string;
+    roomCd: string;
+    date: string;
+    location: string;
+  }>();
+
+  const emit = defineEmits<{
+    'update:modelValue': [value: boolean];
+  }>();
+
+  const commonStore = useCommonStore();
+  const transitoryDocumentsService = inject<TransitoryDocumentsService>(
+    'transitoryDocumentsService'
+  );
+  const router = useRouter();
+
+  const dialogOpen = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => {
+      emit('update:modelValue', value);
+    },
+  });
+  const loading = ref(false);
+  const documents = ref<FileMetadataDto[]>([]);
+  const selectedDocuments = ref<FileMetadataDto[]>([]);
+  const downloadingFiles = ref<Record<string, boolean>>({});
+  const latestFetchRequestId = ref(0);
+  const error = ref<unknown>(null);
+  const downloadError = ref(false);
+  const downloadErrorMessage = ref('');
+
+  const setDownloadError = (message: string) => {
+    downloadError.value = true;
+    downloadErrorMessage.value = message;
+  };
+
+  const canViewDocuments = computed(
+    () =>
+      commonStore.userInfo?.permissions?.includes(
+        PERMISSIONS.VIEW_TRANSITORY_DOCUMENTS
+      ) ?? false
+  );
+
+  const canDownloadDocuments = computed(
+    () =>
+      commonStore.userInfo?.permissions?.includes(
+        PERMISSIONS.DOWNLOAD_TRANSITORY_DOCUMENTS
+      ) ?? false
+  );
+
+  const headers = [
+    { title: 'Room', key: 'matchedRoomFolder', sortable: true },
+    { title: 'File Name', key: 'fileName', sortable: true },
+    { title: 'Extension', key: 'extension', sortable: true },
+    { title: 'Created', key: 'createdUtc', sortable: true },
+    { title: 'Size', key: 'sizeBytes', sortable: true },
+    {
+      title: 'Actions',
+      key: 'actions',
+      sortable: false,
+      align: 'center' as const,
+    },
+  ];
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const fetchDocuments = async () => {
+    if (!props.locationId || !props.roomCd || !props.date) return;
+
+    const requestId = ++latestFetchRequestId.value;
+    loading.value = true;
+    documents.value = [];
+    error.value = null;
+
+    try {
+      const result = await transitoryDocumentsService?.searchDocuments(
+        props.locationId,
+        props.roomCd,
+        props.date
+      );
+
+      // Ignore stale responses when a newer request has already started.
+      if (requestId !== latestFetchRequestId.value || !dialogOpen.value) {
+        return;
+      }
+
+      documents.value = result || [];
+    } catch (e) {
+      error.value = e;
+      console.error('Error fetching transitory documents:', e);
+    } finally {
+      // Only the latest request controls loading state.
+      if (requestId === latestFetchRequestId.value) {
+        loading.value = false;
+      }
+    }
+  };
+
+  const close = () => {
+    // Invalidate in-flight fetches so late responses don't overwrite state.
+    latestFetchRequestId.value++;
+    loading.value = false;
+    dialogOpen.value = false;
+    selectedDocuments.value = [];
+  };
+
+  const isPdf = (item: FileMetadataDto): boolean => {
+    return item.extension?.toLowerCase() === '.pdf';
+  };
+
+  const isSupportedByNutrient = (item: FileMetadataDto): boolean => {
+    const ext = item.extension?.toLowerCase();
+    return ext === '.pdf' || ext === '.doc' || ext === '.docx';
+  };
+
+  const openInNutrient = async (item: FileMetadataDto) => {
+    try {
+      openTransitoryDocumentsInNutrient(router, [item], {
+        locationId: props.locationId,
+        roomCd: props.roomCd,
+        date: props.date,
+      });
+    } catch (e) {
+      setDownloadError('Failed to open document in viewer. Please try again.');
+      console.error('Error opening document in viewer:', e);
+    }
+  };
+
+  const downloadFile = async (item: FileMetadataDto) => {
+    if (!item.relativePath || !canDownloadDocuments.value) return;
+
+    downloadingFiles.value[item.relativePath] = true;
+    try {
+      await transitoryDocumentsService?.downloadFile(item);
+    } catch (e) {
+      setDownloadError('Failed to download file. Please try again.');
+      console.error('Error downloading file:', e);
+    } finally {
+      downloadingFiles.value[item.relativePath] = false;
+    }
+  };
+
+  const handleViewDocuments = async () => {
+    if (!canViewDocuments.value || selectedDocuments.value.length === 0) {
+      return;
+    }
+
+    const pdfDocuments = selectedDocuments.value.filter((doc) => isPdf(doc));
+    if (pdfDocuments.length === 0) {
+      setDownloadError(
+        'Please select PDF files to view in the document viewer.'
+      );
+      return;
+    }
+
+    try {
+      openTransitoryDocumentsInNutrient(router, pdfDocuments, {
+        locationId: props.locationId,
+        roomCd: props.roomCd,
+        date: props.date,
+      });
+      downloadError.value = false;
+      downloadErrorMessage.value = '';
+    } catch (e) {
+      setDownloadError('Failed to open documents. Please try again.');
+      console.error('Error opening documents in viewer:', e);
+    }
+  };
+
+  watch(
+    () => props.modelValue,
+    (newValue) => {
+      if (newValue) {
+        fetchDocuments();
+      } else {
+        // External close: clean local state without re-emitting model updates.
+        latestFetchRequestId.value++;
+        loading.value = false;
+        selectedDocuments.value = [];
+      }
+    },
+    { immediate: true }
+  );
+
+  watch(
+    () => [props.locationId, props.roomCd, props.date],
+    () => {
+      if (dialogOpen.value) {
+        fetchDocuments();
+      }
+    }
+  );
+</script>
+
+<style scoped>
+  :deep(.action-bar) {
+    max-width: fit-content !important;
+    width: auto !important;
+  }
+</style>

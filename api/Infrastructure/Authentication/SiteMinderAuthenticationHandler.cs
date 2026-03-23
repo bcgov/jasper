@@ -7,10 +7,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.JCUserService;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.JCUserService;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

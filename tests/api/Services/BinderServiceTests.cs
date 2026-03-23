@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using LazyCache.Providers;
@@ -12,16 +11,16 @@ using MongoDB.Driver;
 using Moq;
 using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models;
-using Scv.Api.Models.Binder;
 using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Binder;
 using Xunit;
 
 namespace tests.api.Services;
+
 public class BinderServiceTests
 {
     private readonly Bogus.Faker _faker;

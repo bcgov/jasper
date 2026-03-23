@@ -10,8 +10,9 @@ using NJsonSchema;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.Calendar;
+using Scv.Core.Infrastructure;
+using Scv.Core.Services;
+using Scv.Models.Calendar;
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Services;

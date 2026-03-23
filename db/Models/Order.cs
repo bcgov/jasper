@@ -31,7 +31,6 @@ public class OrderRequest
     public List<RelevantCeisDocument> RelevantCeisDocuments { get; set; } = [];
 }
 
-    AwaitingDocumentation
 public class CourtFile
 {
     public string CourtFileNo { get; set; }

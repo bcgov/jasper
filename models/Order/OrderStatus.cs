@@ -5,5 +5,6 @@
         Unapproved,
         Pending,
         Approved,
+        AwaitingDocumentation
     }
 }

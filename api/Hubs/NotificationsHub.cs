@@ -114,7 +114,7 @@ public class NotificationsHub : Hub
     /// Uses server-side auth to validate that this user is authorized to ack this message.
     /// </remarks>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public static async Task AckNotification(Guid ackGuid)
+    public async Task AckNotification(Guid ackGuid)
     {
         var logger = Context.GetHttpContext()
             ?.RequestServices.GetService<ILogger<NotificationsHub>>();

@@ -5,7 +5,7 @@ namespace Scv.Api.SignalR;
 
 public class UserIdProvider : IUserIdProvider
 {
-    public string GetUserId(HubConnectionContext connection)
+    public static string GetUserId(HubConnectionContext connection)
     {
         return connection.User?.UserId();
     }

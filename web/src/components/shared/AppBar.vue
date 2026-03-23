@@ -181,7 +181,7 @@
     badgePulseActive.value = false;
     await nextTick();
     badgePulseActive.value = true;
-    window.setTimeout(() => {
+    globalThis.setTimeout(() => {
       badgePulseActive.value = false;
     }, 1200);
   };

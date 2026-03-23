@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
   return {
     base:
       process.env.NODE_ENV === 'production' ? '/S2I_INJECT_PUBLIC_PATH/' : '/',
-    plugins: [vue(), svgLoader(), Components({}), basicSsl()],
+    plugins: plugins,
     resolve: {
       alias: {
         '@': path.resolve(__dirname, vueSrc),

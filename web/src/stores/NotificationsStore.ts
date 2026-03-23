@@ -26,7 +26,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
       const ordersStore = useOrdersStore();
       registerHandler((notification) => {
         if (notification.type === NotificationType.ORDER_RECEIVED) {
-          void ordersStore.fetchOrders(orderService);
+          ordersStore.fetchOrders(orderService);
         }
       });
       hasOrderHandler.value = true;

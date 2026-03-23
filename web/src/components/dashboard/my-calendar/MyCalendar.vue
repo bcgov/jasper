@@ -35,6 +35,7 @@
 <script setup lang="ts">
   import { DashboardService } from '@/services';
   import { CalendarDay } from '@/types';
+  import { ActivityClassEnum } from '@/types/common';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { CalendarOptions, DayCellMountArg } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
@@ -119,8 +120,17 @@
     }))
   );
 
+  const hasExpandableActivities = (activities: CalendarDay['activities']) =>
+    // Days with activities that are not just Sitting or NonSitting, or have any restrictions, will be expandable.
+    activities.some(
+      (a) =>
+        ![ActivityClassEnum.Sitting, ActivityClassEnum.NonSitting].includes(
+          a.activityClassCode as ActivityClassEnum
+        ) || a.restrictions.length > 0
+    );
+
   const calendarEventsWithActivities = computed(() =>
-    calendarData.value.filter((d) => d.activities.length > 0 && d.showCourtList)
+    calendarData.value.filter((d) => hasExpandableActivities(d.activities))
   );
 
   const dayCellDidMount = (info: DayCellMountArg) => {
@@ -129,36 +139,40 @@
     const data = calendarData.value.find((d) => d.date === date);
     const dayTop = info.el.querySelector('.fc-daygrid-day-top');
 
-    if (
-      !data ||
-      data.activities.length === 0 ||
-      !data.showCourtList ||
-      !dayTop
-    ) {
+    if (!data || data.activities.length === 0 || !dayTop) {
       return;
     }
 
-    const link = document.createElement('a');
-    link.className = 'court-list';
-    link.href = `/court-list?date=${date}`;
-    link.title = 'View Court List';
+    if (data.showCourtList) {
+      const link = document.createElement('a');
+      link.className = 'court-list';
+      link.href = `/court-list?date=${date}`;
+      link.title = 'View Court List';
 
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('width', '18');
-    svg.setAttribute('height', '18');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('width', '18');
+      svg.setAttribute('height', '18');
 
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', mdiListBoxOutline);
+      const path = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'path'
+      );
+      path.setAttribute('d', mdiListBoxOutline);
 
-    svg.appendChild(path);
-    link.appendChild(svg);
-    dayTop.appendChild(link);
+      svg.appendChild(path);
+      link.appendChild(svg);
+      dayTop.appendChild(link);
+    }
+
+    if (!hasExpandableActivities(data.activities)) {
+      return;
+    }
 
     // Attach a click event for the expanded panel
     const wrapper = document.createElement('div');
     wrapper.classList.add('fc-expand-wrapper');
-    wrapper.setAttribute('data-date', date);
+    wrapper.dataset.date = date;
 
     info.el.style.position = 'relative';
 

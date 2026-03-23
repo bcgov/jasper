@@ -26,7 +26,7 @@ namespace Scv.TdApi.Infrastructure.Authorization
             AuthorizationHandlerContext context,
             TdRoleRequirement requirement)
         {
-            if (context.User?.Identity?.IsAuthenticated != true)
+            if (context.User?.Identity != null && !context.User.Identity.IsAuthenticated)
             {
                 _logger.LogWarning("User is not authenticated");
                 context.Fail();
@@ -34,7 +34,7 @@ namespace Scv.TdApi.Infrastructure.Authorization
             }
 
             // Extract client roles from resource_access claim
-            var resourceAccessClaim = context.User.FindFirst("resource_access")?.Value;
+            var resourceAccessClaim = context.User?.FindFirst("resource_access")?.Value;
 
             if (string.IsNullOrWhiteSpace(resourceAccessClaim))
             {

@@ -42,40 +42,57 @@ namespace Scv.Core.Helpers.Extensions
         public static bool IsServiceAccountUser(this ClaimsPrincipal claimsPrincipal)
         {
             ArgumentNullException.ThrowIfNull(claimsPrincipal);
+            var preferredUsername = claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername);
+
             return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
-               (claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername)?.Equals("service-account-scv") == true);
+               string.Equals(preferredUsername, "service-account-scv");
         }
 
         public static bool IsCsoServiceAccountUser(this ClaimsPrincipal claimsPrincipal)
-            => claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
-               claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername).StartsWith("service-account-cso-jasper");
+        {
+            var preferredUsername = claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername);
+
+            return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
+               !string.IsNullOrEmpty(preferredUsername) &&
+               preferredUsername.StartsWith("service-account-cso-jasper");
+        }
 
         public static bool IsIdirUser(this ClaimsPrincipal claimsPrincipal)
         {
             ArgumentNullException.ThrowIfNull(claimsPrincipal);
+            var preferredUsername = claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername);
+
             return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
-           (claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername)?.EndsWith("@idir") == true);
+               !string.IsNullOrEmpty(preferredUsername) &&
+               preferredUsername.EndsWith("@idir");
         }
 
         public static bool IsVcUser(this ClaimsPrincipal claimsPrincipal)
         {
             ArgumentNullException.ThrowIfNull(claimsPrincipal);
+            var preferredUsername = claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername);
+
             return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.PreferredUsername) &&
-               (claimsPrincipal.FindFirstValue(CustomClaimTypes.PreferredUsername)?.EndsWith("@vc") == true);
+               !string.IsNullOrEmpty(preferredUsername) &&
+               preferredUsername.EndsWith("@vc");
         }
 
         public static bool IsSupremeUser(this ClaimsPrincipal claimsPrincipal)
         {
             ArgumentNullException.ThrowIfNull(claimsPrincipal);
+            var isSupremeUser = claimsPrincipal.FindFirstValue(CustomClaimTypes.IsSupremeUser);
+
             return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.IsSupremeUser) &&
-           (claimsPrincipal.FindFirstValue(CustomClaimTypes.IsSupremeUser)?.Equals("true", StringComparison.OrdinalIgnoreCase) == true);
+               string.Equals(isSupremeUser, "true", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsActive(this ClaimsPrincipal claimsPrincipal)
         {
             ArgumentNullException.ThrowIfNull(claimsPrincipal);
+            var isActive = claimsPrincipal.FindFirstValue(CustomClaimTypes.IsActive);
+
             return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.IsActive) &&
-           (claimsPrincipal.FindFirstValue(CustomClaimTypes.IsActive)?.Equals("true", StringComparison.OrdinalIgnoreCase) == true);
+               string.Equals(isActive, "true", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string? ExternalRole(this ClaimsPrincipal claimsPrincipal)
@@ -93,11 +110,13 @@ namespace Scv.Core.Helpers.Extensions
         public static bool IsStaff(this ClaimsPrincipal claimsPrincipal)
         {
             ArgumentNullException.ThrowIfNull(claimsPrincipal);
+            var externalRole = claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalRole);
+            var subRole = claimsPrincipal.FindFirstValue(CustomClaimTypes.SubRole);
 
             return claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.ExternalRole) &&
                claimsPrincipal.HasClaim(c => c.Type == CustomClaimTypes.SubRole) &&
-               (claimsPrincipal.FindFirstValue(CustomClaimTypes.ExternalRole)?.Equals("EME") == true) &&
-               (claimsPrincipal.FindFirstValue(CustomClaimTypes.SubRole)?.Equals("SCV") == true);
+               string.Equals(externalRole, "EME") &&
+               string.Equals(subRole, "SCV");
         }
 
         public static string? Email(this ClaimsPrincipal claimsPrincipal) =>

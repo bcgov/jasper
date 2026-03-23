@@ -15,14 +15,14 @@ public class PermissionHandler(
 
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
-        if (context.User.Identity?.IsAuthenticated != true)
+        if (context.User.Identity != null && !context.User.Identity.IsAuthenticated)
         {
             _logger.LogInformation("User is unathenticated.");
             context.Fail();
             return Task.CompletedTask;
         }
 
-        if (context.User.IsActive() != true)
+        if (!context.User.IsActive())
         {
             _logger.LogInformation("User is inactive.");
             context.Fail();

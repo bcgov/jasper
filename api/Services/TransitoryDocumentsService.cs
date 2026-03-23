@@ -56,7 +56,7 @@ namespace Scv.Api.Services
             _mapper = mapper;
         }
 
-        private JsonSerializerOptions CreateJsonSerializerOptions()
+        private static JsonSerializerOptions CreateJsonSerializerOptions()
         {
             var options = new JsonSerializerOptions
             {

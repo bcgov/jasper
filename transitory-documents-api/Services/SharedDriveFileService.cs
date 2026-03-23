@@ -234,7 +234,7 @@ namespace Scv.TdApi.Services
             return paths.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        private IReadOnlyList<FileMetadataDto> OrderResults(IEnumerable<FileMetadataDto> results)
+        private static IReadOnlyList<FileMetadataDto> OrderResults(IEnumerable<FileMetadataDto> results)
         {
             return results
                 .OrderByDescending(f => !string.IsNullOrEmpty(f.MatchedRoomFolder)) // Files with rooms first

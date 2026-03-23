@@ -83,9 +83,7 @@ export class HttpService implements IHttpService {
 
     if (error.config?.skipErrorHandler) {
       // Component handles the error
-      return Promise.reject(
-        new CustomAPIError<AxiosError>(error.message, error)
-      );
+      throw new CustomAPIError<AxiosError>(error.message, error);
     }
 
     const status = error.response?.status;
@@ -114,7 +112,7 @@ export class HttpService implements IHttpService {
       );
     }
 
-    return Promise.reject(new CustomAPIError<AxiosError>(error.message, error));
+    throw new CustomAPIError<AxiosError>(error.message, error);
   }
 
   private async getValidatorError(

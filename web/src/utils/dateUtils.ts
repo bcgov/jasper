@@ -29,7 +29,7 @@ export const formatDateToDDMMMYYYY = (dateString: string): string => {
  * @returns A formatted date string in "DD-MMM-YYYY" format (e.g., "01-Jan-2023").
  */
 export const formatDateInstanceToDDMMMYYYY = (date: Date): string => {
-  if (!date || isNaN(date.getTime())) return '';
+  if (!date || Number.isNaN(date.getTime())) return '';
 
   const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
   const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);

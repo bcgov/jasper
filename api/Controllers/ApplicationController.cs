@@ -14,10 +14,10 @@ namespace Scv.Api.Controllers;
 [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
 [Route("api/[controller]")]
 [ApiController]
-public class ApplicationController(IConfiguration configuration, IConfigurationService? configurationService = null) : ControllerBase
+public class ApplicationController(IConfiguration configuration, IConfigurationService configurationService) : ControllerBase
 {
     private readonly IConfiguration _configuration = configuration;
-    private readonly IConfigurationService? _configurationService = configurationService;
+    private readonly IConfigurationService _configurationService = configurationService;
 
     /// <summary>
     /// Get JASPER application-specific information

@@ -60,7 +60,7 @@ public class UsersController(
     }
 
     /// <summary>
-    /// Marks release notes as viewed for the currently logged-in user.
+    /// Marks release notes as viewed for the currently logged-in user using the server dt/tm.
     /// </summary>
     [HttpPost]
     [Route("me/release-notes")]

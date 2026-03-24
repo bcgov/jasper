@@ -328,5 +328,100 @@ namespace tests.api.Controllers
             var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
             Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
         }
+
+        [Fact]
+        public async Task MarkReleaseNotesViewed_ReturnsNoContent_WhenUpdateSucceeds()
+        {
+            // Arrange
+            var userId = ObjectId.GenerateNewId().ToString();
+            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, userId) };
+            var controller = CreateControllerWithContext(claims);
+
+            _mockUserService
+                .Setup(s => s.MarkReleaseNotesViewedAsync(userId, It.IsAny<string>(), It.IsAny<System.DateTime>()))
+                .ReturnsAsync(OperationResult<UserDto>.Success(new UserDto()));
+
+            var request = new ReleaseNotesViewedRequestDto { Version = "1.0.0" };
+
+            // Act
+            var result = await controller.MarkReleaseNotesViewed(request);
+
+            // Assert
+            Assert.IsType<NoContentResult>(result);
+            _mockUserService.Verify(
+                s => s.MarkReleaseNotesViewedAsync(userId, request.Version, It.IsAny<System.DateTime>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task MarkReleaseNotesViewed_ReturnsBadRequest_WhenUserIdMissing()
+        {
+            // Arrange
+            var claims = new List<Claim> { };
+            var controller = CreateControllerWithContext(claims);
+            var request = new ReleaseNotesViewedRequestDto { Version = "1.0.0" };
+
+            // Act
+            var result = await controller.MarkReleaseNotesViewed(request);
+
+            // Assert
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
+        }
+
+        [Fact]
+        public async Task MarkReleaseNotesViewed_ReturnsBadRequest_WhenVersionMissing()
+        {
+            // Arrange
+            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()) };
+            var controller = CreateControllerWithContext(claims);
+
+            // Act
+            var result = await controller.MarkReleaseNotesViewed(new ReleaseNotesViewedRequestDto { Version = "" });
+
+            // Assert
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Version is required.", badRequest.Value);
+        }
+
+        [Fact]
+        public async Task MarkReleaseNotesViewed_ReturnsNotFound_WhenUserNotFound()
+        {
+            // Arrange
+            var userId = ObjectId.GenerateNewId().ToString();
+            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, userId) };
+            var controller = CreateControllerWithContext(claims);
+
+            _mockUserService
+                .Setup(s => s.MarkReleaseNotesViewedAsync(userId, It.IsAny<string>(), It.IsAny<System.DateTime>()))
+                .ReturnsAsync(OperationResult<UserDto>.Failure("User not found."));
+
+            // Act
+            var result = await controller.MarkReleaseNotesViewed(new ReleaseNotesViewedRequestDto { Version = "1.0.0" });
+
+            // Assert
+            var notFound = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.Equal("User not found.", notFound.Value);
+        }
+
+        [Fact]
+        public async Task MarkReleaseNotesViewed_ReturnsBadRequest_WhenServiceFails()
+        {
+            // Arrange
+            var userId = ObjectId.GenerateNewId().ToString();
+            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, userId) };
+            var controller = CreateControllerWithContext(claims);
+
+            _mockUserService
+                .Setup(s => s.MarkReleaseNotesViewedAsync(userId, It.IsAny<string>(), It.IsAny<System.DateTime>()))
+                .ReturnsAsync(OperationResult<UserDto>.Failure("Error updating release notes."));
+
+            // Act
+            var result = await controller.MarkReleaseNotesViewed(new ReleaseNotesViewedRequestDto { Version = "1.0.0" });
+
+            // Assert
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequest.Value);
+        }
     }
 }

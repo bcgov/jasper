@@ -124,6 +124,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<GroupAliasSeeder>();
             services.AddScoped<QuickLinkSeeder>();
             services.AddScoped<EmailTemplateSeeder>();
+            services.AddScoped<ConstantSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -311,6 +312,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IConfigurationService, ConfigurationService>();
                 services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();

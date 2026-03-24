@@ -22,6 +22,7 @@ public interface IUserService : ICrudService<UserDto>
     Task<UserDto> GetByGuidWithPermissionsAsync(string guid);
     Task<UserDto> GetByIdWithPermissionsAsync(string userId);
     Task<UserDto> GetByJudgeIdAsync(int judgeId);
+    Task<OperationResult<UserDto>> MarkReleaseNotesViewedAsync(string userId, string version, DateTime viewedAtUtc);
     Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user);
     Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
     Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
@@ -157,6 +158,50 @@ public class UserService(
         }
 
         return Mapper.Map<UserDto>(result.Single());
+    }
+
+    public async Task<OperationResult<UserDto>> MarkReleaseNotesViewedAsync(string userId, string version, DateTime viewedAtUtc)
+    {
+        Logger.LogInformation(
+            "Marking release notes as viewed. UserId: {UserId}, Version: {Version}, ViewedAtUtc: {ViewedAtUtc}",
+            userId,
+            version,
+            viewedAtUtc);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return OperationResult<UserDto>.Failure("User ID is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return OperationResult<UserDto>.Failure("Version is required.");
+        }
+
+        try
+        {
+            var user = await Repo.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return OperationResult<UserDto>.Failure("User not found.");
+            }
+
+            user.ReleaseNotes ??= new UserReleaseNotes();
+            user.ReleaseNotes.LastViewedVersion = version;
+            user.ReleaseNotes.LastViewedAt = viewedAtUtc;
+
+            await Repo.UpdateAsync(user);
+
+            InvalidateCache(CacheName);
+
+            var dto = Mapper.Map<UserDto>(user);
+            return OperationResult<UserDto>.Success(dto);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating release notes for user {UserId}: {Message}", userId, ex.Message);
+            return OperationResult<UserDto>.Failure("Error updating release notes.");
+        }
     }
 
     public async Task<List<Location>> GetCourtCalendarLocations(ClaimsPrincipal user)

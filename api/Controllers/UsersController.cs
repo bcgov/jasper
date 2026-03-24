@@ -60,6 +60,39 @@ public class UsersController(
     }
 
     /// <summary>
+    /// Marks release notes as viewed for the currently logged-in user.
+    /// </summary>
+    [HttpPost]
+    [Route("me/release-notes")]
+    public async Task<IActionResult> MarkReleaseNotesViewed([FromBody] ReleaseNotesViewedRequestDto request)
+    {
+        var userId = User.UserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("Invalid user. Please contact the JASPER admin.");
+        }
+
+        if (request == null || string.IsNullOrWhiteSpace(request.Version))
+        {
+            return BadRequest("Version is required.");
+        }
+
+        var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request.Version, DateTime.UtcNow);
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.FirstOrDefault();
+            if (string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(error);
+            }
+
+            return BadRequest(result.Errors);
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Allows a new user without authorization to JASPER to request access to the application.
     /// </summary>
     /// <returns>The user resulting from the access request.</returns>

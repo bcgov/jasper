@@ -30,9 +30,7 @@ public class ApplicationController(IConfiguration configuration, IConfigurationS
         var assembly = Assembly.GetExecutingAssembly();
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.
             InformationalVersion ?? assembly.GetName().Version?.ToString() ?? "Unknown";
-        var dbConfig = _configurationService == null
-            ? []
-            : (await _configurationService.GetConfigurationAsync()).ToArray();
+        var dbConfig = await _configurationService.GetConfigurationAsync();
 
         return Ok(new
         {

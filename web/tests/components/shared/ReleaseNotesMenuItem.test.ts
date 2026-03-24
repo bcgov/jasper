@@ -1,6 +1,6 @@
 import { useCommonStore } from '@/stores';
 import { ApplicationConfigurationKey } from '@/stores/CommonStore';
-import { UserInfo } from '@/types/common';
+import { ApplicationInfo, UserInfo } from '@/types/common';
 import { flushPromises, mount } from '@vue/test-utils';
 import ReleaseNotesMenuItem from 'CMP/shared/ReleaseNotesMenuItem.vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -11,7 +11,7 @@ type MockUserService = {
   markReleaseNotesViewed: ReturnType<typeof vi.fn>;
 };
 
-const makeAppInfo = (overrides: Partial<any> = {}) => ({
+const makeAppInfo = (overrides: Partial<ApplicationInfo> = {}) => ({
   version: '1.0.0',
   nutrientFeLicenseKey: '',
   environment: 'test',
@@ -43,7 +43,7 @@ const makeUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
 
 describe('ReleaseNotesMenuItem.vue', () => {
   let mockUserService: MockUserService;
-  let openSpy: ReturnType<typeof vi.spyOn>;
+  let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -51,18 +51,21 @@ describe('ReleaseNotesMenuItem.vue', () => {
       getMyUser: vi.fn(),
       markReleaseNotesViewed: vi.fn(),
     };
-    openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    openSpy = vi.fn();
+    vi.stubGlobal('open', openSpy);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    openSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   const createWrapper = (props = {}, provide: Record<string, unknown> = {}) => {
+    const pinia = createPinia();
     return mount(ReleaseNotesMenuItem, {
       props,
       global: {
+        plugins: [pinia],
         provide,
       },
     });
@@ -75,7 +78,7 @@ describe('ReleaseNotesMenuItem.vue', () => {
     const wrapper = createWrapper();
 
     expect(wrapper.text()).not.toContain("What's new in JASPER?");
-    expect(wrapper.find('v-list-item-stub').exists()).toBe(false);
+    expect(wrapper.find('v-list-item').exists()).toBe(false);
   });
 
   it('renders without emphasis when release notes are up to date', async () => {
@@ -128,7 +131,7 @@ describe('ReleaseNotesMenuItem.vue', () => {
       }
     );
 
-    await wrapper.find('v-list-item-stub').trigger('click');
+    await wrapper.find('v-list-item').trigger('click');
     await flushPromises();
 
     expect(openSpy).toHaveBeenCalledWith(
@@ -155,7 +158,7 @@ describe('ReleaseNotesMenuItem.vue', () => {
       }
     );
 
-    await wrapper.find('v-list-item-stub').trigger('click');
+    await wrapper.find('v-list-item').trigger('click');
     await flushPromises();
 
     expect(openSpy).toHaveBeenCalled();
@@ -216,7 +219,7 @@ describe('ReleaseNotesMenuItem.vue', () => {
       }
     );
 
-    await wrapper.find('v-list-item-stub').trigger('click');
+    await wrapper.find('v-list-item').trigger('click');
     await flushPromises();
 
     expect(errorSpy).toHaveBeenCalled();

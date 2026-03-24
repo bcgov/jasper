@@ -2,8 +2,11 @@ using System.Collections.Generic;
 using Bogus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers.Exceptions;
+using Scv.Api.Models.Configuration;
+using Scv.Api.Services;
 using Xunit;
 
 namespace tests.api.Controllers;
@@ -22,7 +25,13 @@ public class ApplicationControllerTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configValues)
             .Build();
-        return new ApplicationController(configuration);
+
+        var configurationService = new Mock<IConfigurationService>();
+        configurationService
+            .Setup(x => x.GetConfigurationAsync())
+            .ReturnsAsync(new List<ConstantDto>());
+
+        return new ApplicationController(configuration, configurationService.Object);
     }
 
     #region Unit Tests

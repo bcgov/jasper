@@ -25,9 +25,7 @@
   import { UserService } from '@/services/UserService';
   import { useCommonStore } from '@/stores/CommonStore';
   import { mdiUpdate } from '@mdi/js';
-  import { computed, inject, watch } from 'vue';
-
-  const props = defineProps<{ isOpen?: boolean }>();
+  import { computed, inject } from 'vue';
 
   const commonStore = useCommonStore();
   const userService = inject<UserService>('userService');
@@ -73,16 +71,6 @@
       console.error('Failed to update release notes viewed state.', error);
     }
   };
-
-  watch(
-    () => props.isOpen,
-    (isOpen) => {
-      if (isOpen) {
-        void refreshCurrentUserInfo();
-      }
-    },
-    { immediate: true }
-  );
 </script>
 
 <style scoped>

@@ -744,7 +744,9 @@ public class UserServiceTests : ServiceTestBase
         {
             Id = "user-1",
             Email = _faker.Internet.Email(),
-            ReleaseNotes = null
+            ReleaseNotes = null,
+            FirstName = "first",
+            LastName = "last"
         };
 
         _mockUserRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);

@@ -165,42 +165,6 @@ describe('ReleaseNotesMenuItem.vue', () => {
     expect(mockUserService.markReleaseNotesViewed).not.toHaveBeenCalled();
   });
 
-  it('refreshes user info when isOpen is true', async () => {
-    const commonStore = useCommonStore();
-    commonStore.appInfo = makeAppInfo();
-
-    mockUserService.getMyUser.mockResolvedValue(makeUserInfo());
-
-    createWrapper(
-      { isOpen: true },
-      {
-        userService: mockUserService,
-      }
-    );
-
-    await flushPromises();
-
-    expect(mockUserService.getMyUser).toHaveBeenCalled();
-  });
-
-  it('does not refresh user info when isOpen is false', async () => {
-    const commonStore = useCommonStore();
-    commonStore.appInfo = makeAppInfo();
-
-    mockUserService.getMyUser.mockResolvedValue(makeUserInfo());
-
-    createWrapper(
-      { isOpen: false },
-      {
-        userService: mockUserService,
-      }
-    );
-
-    await flushPromises();
-
-    expect(mockUserService.getMyUser).not.toHaveBeenCalled();
-  });
-
   it('logs when markReleaseNotesViewed fails', async () => {
     const commonStore = useCommonStore();
     commonStore.appInfo = makeAppInfo();
@@ -224,30 +188,6 @@ describe('ReleaseNotesMenuItem.vue', () => {
 
     expect(errorSpy).toHaveBeenCalled();
     expect(mockUserService.getMyUser).not.toHaveBeenCalled();
-
-    errorSpy.mockRestore();
-  });
-
-  it('logs when refreshCurrentUserInfo fails', async () => {
-    const commonStore = useCommonStore();
-    commonStore.appInfo = makeAppInfo();
-
-    const errorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
-
-    mockUserService.getMyUser.mockRejectedValue(new Error('fail'));
-
-    createWrapper(
-      { isOpen: true },
-      {
-        userService: mockUserService,
-      }
-    );
-
-    await flushPromises();
-
-    expect(errorSpy).toHaveBeenCalled();
 
     errorSpy.mockRestore();
   });

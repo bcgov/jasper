@@ -120,7 +120,6 @@
     DocumentData,
     DocumentRequestType,
   } from '@/types/shared';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
     mdiFileDocumentMultipleOutline,
@@ -325,11 +324,11 @@
           documentType,
           documentData,
           groupKeyOne: documentData.fileNumberText!,
-          groupKeyTwo: '',
-          documentName:
-            item.documentTypeDescription +
-            ' - ' +
-            formatDateToDDMMMYYYY(item.filedDt),
+          groupKeyTwo: shared.getGroupKeyTwo(civilDocType, documentData),
+          documentName: shared.getDocumentDisplayName(
+            civilDocType,
+            documentData
+          ),
         });
       });
     shared.openMergedDocuments(documents);

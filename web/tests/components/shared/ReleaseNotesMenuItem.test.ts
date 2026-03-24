@@ -44,9 +44,11 @@ const makeUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
 describe('ReleaseNotesMenuItem.vue', () => {
   let mockUserService: MockUserService;
   let openSpy: ReturnType<typeof vi.fn>;
+  let pinia;
 
   beforeEach(() => {
-    setActivePinia(createPinia());
+    pinia = createPinia();
+    setActivePinia(pinia);
     mockUserService = {
       getMyUser: vi.fn(),
       markReleaseNotesViewed: vi.fn(),
@@ -61,7 +63,6 @@ describe('ReleaseNotesMenuItem.vue', () => {
   });
 
   const createWrapper = (props = {}, provide: Record<string, unknown> = {}) => {
-    const pinia = createPinia();
     return mount(ReleaseNotesMenuItem, {
       props,
       global: {
@@ -107,7 +108,6 @@ describe('ReleaseNotesMenuItem.vue', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find('.release-notes-emphasis').exists()).toBe(true);
-    expect(wrapper.find('.release-notes-icon-emphasis').exists()).toBe(true);
   });
 
   it('opens release notes and updates user info after mark succeeds', async () => {

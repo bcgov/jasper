@@ -8,6 +8,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -27,6 +28,7 @@ using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
+using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Infrastructure.Middleware;
 using Scv.Api.Repositories;
 using Scv.Api.Infrastructure.Options;
@@ -103,6 +105,7 @@ namespace Scv.Api
             services.AddAWSConfig(Configuration);
             services.AddHangfire(Configuration);
             services.AddGraphService(Configuration);
+            services.AddClamAv(Configuration);
 
             #region Cors
 
@@ -260,6 +263,10 @@ namespace Scv.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHealthChecks("/api/health", new HealthCheckOptions
+                {
+                    ResponseWriter = HealthCheckResponseWriter.WriteResponse,
+                });
             });
         }
     }

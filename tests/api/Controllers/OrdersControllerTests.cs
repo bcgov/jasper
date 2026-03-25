@@ -36,7 +36,8 @@ public class OrdersControllerTests
 
         _controller = new OrdersController(
             _mockOrderRequestValidator.Object,
-            _mockOrderService.Object);
+            _mockOrderService.Object,
+            null);
 
         var claims = new List<Claim>
         {

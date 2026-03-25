@@ -47,6 +47,8 @@ services:
       - AZURE__CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - AZURE__SERVICE_ACCOUNT=${AZURE_SERVICE_ACCOUNT}
       - AZURE__TENANT_ID=${AZURE_TENANT_ID}
+      - CLAM_AV__HOST=${CLAM_AV_HOST}
+      - CLAM_AV__PORT=${CLAM_AV_PORT}
       - DatabaseConnectionString=${DatabaseConnectionString}
       - DataProtectionKeyEncryptionKey=${DataProtectionKeyEncryptionKey}
       - DEFAULT_QUICK_LINKS=${DEFAULT_QUICK_LINKS}
@@ -99,7 +101,7 @@ services:
       - ORDER_MAX_REASSIGNMENT_NOTIFICATIONS=${ORDER_MAX_REASSIGNMENT_NOTIFICATIONS}
       - ORDER_MAX_REMINDER_NOTIFICATIONS=${ORDER_MAX_REMINDER_NOTIFICATIONS}
       - ORDER_REASSIGNMENT_THRESHOLD_DAYS=${ORDER_REASSIGNMENT_THRESHOLD_DAYS}
-      - ORDER_REMINDER_THRESHOLD_DAYS=${ORDER_REMINDER_THRESHOLD_DAYS}   
+      - ORDER_REMINDER_THRESHOLD_DAYS=${ORDER_REMINDER_THRESHOLD_DAYS}
       - PCSS__JudgeHomeLocationId=${PCSS_JUDGE_HOME_LOCATION_ID}
       - PCSS__JudgeId=${PCSS_JUDGE_ID}
       - PCSS__Password=${PCSS_PASSWORD}
@@ -169,7 +171,17 @@ services:
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/tmp-mongo
 
+  clamav:
+    image: clamav/clamav:latest
+    ports:
+      - '3310:3310'
+    environment:
+      - CLAMAV_NO_FRESHCLAMD=false
+    volumes:
+      - clamav-db:/var/lib/clamav
+
 volumes:
   api-dev-bin:
   api-dev-obj:
   nuget-packages:
+  clamav-db:

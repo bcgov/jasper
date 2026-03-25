@@ -24,6 +24,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using MongoDB.Driver;
+using Scv.Api.Infrastructure.ClamAv;
+using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
@@ -302,6 +304,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ICsvParser, CsvParser>();
             services.AddScoped<IPcssSyncService, PcssSyncService>();
             services.AddScoped<IPcssConfigService, PcssConfigService>();
+            services.AddScoped<IAntiVirusService, ClamAvAntiVirusService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -368,6 +371,21 @@ namespace Scv.Api.Infrastructure
                 options.WorkerCount = Math.Max(1, Environment.ProcessorCount / 4);
                 options.SchedulePollingInterval = TimeSpan.FromSeconds(30);
             });
+
+            return services;
+        }
+
+        public static IServiceCollection AddClamAv(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddScoped<IClamAvClient>(sp =>
+            {
+                var host = configuration.GetNonEmptyValue("CLAM_AV:HOST");
+                int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int port);
+                return new ClamAvClient(host, port);
+            });
+
+            services.AddHealthChecks()
+                .AddCheck<ClamAvHealthCheck>("clamav");
 
             return services;
         }

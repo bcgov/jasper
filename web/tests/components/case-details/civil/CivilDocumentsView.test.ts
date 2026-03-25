@@ -1,3 +1,4 @@
+import shared from '@/components/shared';
 import { BinderService } from '@/services';
 import { useCommonStore } from '@/stores';
 import { DocumentRequestType } from '@/types/shared';
@@ -180,6 +181,22 @@ describe('CivilDocumentsView.vue', () => {
       title: 'Affidavits/Financial Stmts',
       value: 'Affidavits',
     });
+  });
+
+  it('uses leaf document name to include filed date when opening merged civil documents', () => {
+    const openMergedDocumentsSpy = vi
+      .spyOn(shared, 'openMergedDocuments')
+      .mockImplementation(() => {});
+
+    wrapper.vm.openMergedDocuments([mockDocuments[0]]);
+
+    expect(openMergedDocumentsSpy).toHaveBeenCalledWith([
+      expect.objectContaining({
+        groupKeyTwo: '',
+        documentName:
+          mockDocuments[0].documentTypeDescription + ' - ' + '01 Jan 2023',
+      }),
+    ]);
   });
 
   describe('addDocumentToBinder', () => {

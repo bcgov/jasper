@@ -92,8 +92,8 @@ export default {
         documentData: documentData,
         groupKeyOne:
           documentData.aslCourtFileNumber ?? documentData.fileNumberText ?? '',
-        groupKeyTwo: documentData.partyName ?? '',
-        documentName: documentData.documentDescription ?? 'Document',
+        groupKeyTwo: this.getGroupKeyTwo(documentType, documentData),
+        documentName: this.getDocumentDisplayName(documentType, documentData),
         physicalFileId: documentData.fileId || '',
       },
     ]);
@@ -101,6 +101,44 @@ export default {
     const newWindow = window.open('/file-viewer?type=file', '_blank');
 
     this.replaceWindowTitle(newWindow, fileName);
+  },
+  getGroupKeyTwo(
+    documentType: CourtDocumentType,
+    documentData: DocumentData
+  ): string {
+    const isCivilFileDocument =
+      !documentData.isCriminal &&
+      [
+        CourtDocumentType.Civil,
+        CourtDocumentType.CSR,
+        CourtDocumentType.Transcript,
+      ].includes(documentType);
+
+    if (isCivilFileDocument) {
+      return '';
+    }
+
+    return documentData.partyName ?? '';
+  },
+  getDocumentDisplayName(
+    documentType: CourtDocumentType,
+    documentData: DocumentData
+  ): string {
+    const isCivilFileDocument =
+      !documentData.isCriminal &&
+      [
+        CourtDocumentType.Civil,
+        CourtDocumentType.CSR,
+        CourtDocumentType.Transcript,
+      ].includes(documentType);
+
+    if (isCivilFileDocument) {
+      return [documentData.documentDescription, documentData.dateFiled]
+        .filter((value): value is string => !!value)
+        .join(' - ');
+    }
+
+    return documentData.documentDescription ?? 'Document';
   },
   openMergedDocuments(
     documents?: {

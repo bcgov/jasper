@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using MongoDB.Driver;
-using Scv.Api.Infrastructure.ClamAv;
+using nClam;
 using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
@@ -379,11 +379,11 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddClamAv(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<IClamAvClient>(sp =>
+            services.AddScoped<IClamClient>(sp =>
             {
-                var host = configuration.GetNonEmptyValue("CLAM_AV:HOST");
-                int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int port);
-                return new ClamAvClient(host, port);
+                var clamAvHost = configuration.GetNonEmptyValue("CLAM_AV:HOST");
+                int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int clamAvPort);
+                return new ClamClient(clamAvHost, clamAvPort);
             });
 
             services.AddHealthChecks()

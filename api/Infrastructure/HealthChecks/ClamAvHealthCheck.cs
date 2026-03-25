@@ -5,11 +5,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Scv.Api.Infrastructure.ClamAv;
+using nClam;
 
 namespace Scv.Api.Infrastructure.HealthChecks
 {
-    public partial class ClamAvHealthCheck(IClamAvClient clamClient) : IHealthCheck
+    public partial class ClamAvHealthCheck(IClamClient clamClient) : IHealthCheck
     {
         private const int MaxDefinitionAgeDays = 7;
 

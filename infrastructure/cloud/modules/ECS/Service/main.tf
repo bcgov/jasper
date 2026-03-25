@@ -1,9 +1,10 @@
 resource "aws_ecs_service" "ecs_service" {
-  name            = "${var.app_name}-${var.name}-ecs-service-${var.environment}"
-  cluster         = var.ecs_cluster_id
-  task_definition = var.ecs_td_arn
-  launch_type     = "FARGATE"
-  desired_count   = var.min_capacity
+  name                   = "${var.app_name}-${var.name}-ecs-service-${var.environment}"
+  cluster                = var.ecs_cluster_id
+  task_definition        = var.ecs_td_arn
+  launch_type            = "FARGATE"
+  desired_count          = var.min_capacity
+  enable_execute_command = true
 
   network_configuration {
     subnets          = var.subnet_ids

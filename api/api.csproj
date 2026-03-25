@@ -30,6 +30,7 @@
     <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.5" />
     <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
+    <PackageReference Include="nClam" Version="9.0.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.6.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.5" />

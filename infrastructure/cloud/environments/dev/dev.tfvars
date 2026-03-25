@@ -41,3 +41,10 @@ efs_config = {
 get_assigned_cases_lambda_timeout = 5 // minutes
 lambda_long_timeout               = 5 // minutes
 lambda_retry_attempts             = 0
+clamav_config = {
+  image              = "clamav/clamav:latest"
+  host               = "localhost" // ClamAV will run as a sidecar container, so it can be accessed via localhost
+  port               = 3310
+  memory_reservation = 512
+  stream_max_length  = "100M"
+}

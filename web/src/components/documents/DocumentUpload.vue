@@ -47,8 +47,6 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { VFileUpload } from 'vuetify/labs/VFileUpload';
-  import { VExpandTransition } from 'vuetify/components';
 
   const show = defineModel<boolean>('show', { type: Boolean, required: true });
   const props = defineProps<{

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -21,9 +20,11 @@ namespace Scv.Api.Controllers;
 public class UsersController(
     IUserService userService,
     IValidator<UserDto> validator,
+    IValidator<ReleaseNotesViewedRequestDto> releaseNotesViewedRequestValidator,
     ILogger<UsersController> logger
 ) : AccessControlManagementControllerBase<IUserService, UserDto>(userService, validator)
 {
+    private readonly IValidator<ReleaseNotesViewedRequestDto> _releaseNotesViewedRequestValidator = releaseNotesViewedRequestValidator;
 
     /// <summary>
     /// Get all active users
@@ -72,9 +73,10 @@ public class UsersController(
             return BadRequest("Invalid user. Please contact the JASPER admin.");
         }
 
-        if (request == null || string.IsNullOrWhiteSpace(request.Version))
+        var validationResult = await _releaseNotesViewedRequestValidator.ValidateAsync(request ?? new ReleaseNotesViewedRequestDto());
+        if (!validationResult.IsValid)
         {
-            return BadRequest("Version is required.");
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
         }
 
         var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request.Version, DateTime.UtcNow);

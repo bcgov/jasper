@@ -14,6 +14,7 @@ using Scv.Api.Helpers;
 using Scv.Api.Infrastructure;
 using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
+using Scv.Api.Validators;
 using Xunit;
 
 namespace tests.api.Controllers
@@ -22,6 +23,7 @@ namespace tests.api.Controllers
     {
         private readonly Mock<IUserService> _mockUserService;
         private readonly Mock<IValidator<UserDto>> _mockValidator;
+        private readonly IValidator<ReleaseNotesViewedRequestDto> _releaseNotesViewedRequestValidator;
         private readonly Mock<ILogger<UsersController>> _mockLogger;
         private readonly Faker _faker;
 
@@ -29,6 +31,7 @@ namespace tests.api.Controllers
         {
             _mockUserService = new Mock<IUserService>();
             _mockValidator = new Mock<IValidator<UserDto>>();
+            _releaseNotesViewedRequestValidator = new ReleaseNotesViewedRequestDtoValidator();
             _mockLogger = new Mock<ILogger<UsersController>>();
             _faker = new Faker();
         }
@@ -38,6 +41,7 @@ namespace tests.api.Controllers
             var controller = new UsersController(
                 _mockUserService.Object,
                 _mockValidator.Object,
+                _releaseNotesViewedRequestValidator,
                 _mockLogger.Object
             );
 

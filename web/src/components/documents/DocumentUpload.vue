@@ -78,6 +78,7 @@
   watch(showDocumentUpload, (newVal) => {
     if (!newVal) {
       rejectedUploadMessage.value = '';
+      selectedUpload.value = null;
     }
   });
 

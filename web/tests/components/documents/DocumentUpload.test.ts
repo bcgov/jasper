@@ -64,8 +64,12 @@ describe('DocumentUpload.vue', () => {
 
 		it('clears rejected upload message when upload area is closed', async () => {
 			const wrapper = createWrapper();
+			const existing = new File(['x'], 'existing.pdf', {
+				type: 'application/pdf',
+			});
 
 			vm(wrapper).showDocumentUpload = true;
+			vm(wrapper).selectedUpload = existing;
 			vm(wrapper).rejectedUploadMessage = 'Bad file';
 			await nextTick();
 
@@ -73,6 +77,8 @@ describe('DocumentUpload.vue', () => {
 			await nextTick();
 
 			expect(vm(wrapper).rejectedUploadMessage).toBe('');
+			expect(vm(wrapper).selectedUpload).toBe(null);
+			expect(wrapper.emitted('update:selectedFile')?.at(-1)).toEqual([null]);
 		});
 
 		it('closes upload area when disabled prop becomes true', async () => {

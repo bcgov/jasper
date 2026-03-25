@@ -79,7 +79,7 @@ public class UsersController(
             return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
         }
 
-        var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request.Version, DateTime.UtcNow);
+        var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request?.Version, DateTime.UtcNow);
         if (!result.Succeeded)
         {
             var error = result.Errors.FirstOrDefault();

@@ -1,6 +1,7 @@
-﻿using Scv.Api.Infrastructure.ClamAv;
-using System.IO;
+﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using nClam;
 
 namespace Scv.Api.Services
 {
@@ -9,17 +10,17 @@ namespace Scv.Api.Services
         Task<(bool isClean, string message)> ScanAsync(Stream fileStream);
     }
 
-    public class ClamAvAntiVirusService(IClamAvClient clamAvClient) : IAntiVirusService
+    public class ClamAvAntiVirusService(IClamClient clamClient) : IAntiVirusService
     {
         public async Task<(bool isClean, string message)> ScanAsync(Stream fileStream)
         {
-            var result = await clamAvClient.ScanAsync(fileStream);
+            var scanResult = await clamClient.SendAndScanFileAsync(fileStream);
 
-            return result.Status switch
+            return scanResult.Result switch
             {
-                ClamAvScanStatus.Clean => (true, "File is clean."),
-                ClamAvScanStatus.VirusDetected => (false, $"Virus detected: {result.VirusName}"),
-                ClamAvScanStatus.Error => (false, $"Scan error: {result.RawResponse}"),
+                ClamScanResults.Clean => (true, "File is clean."),
+                ClamScanResults.VirusDetected => (false, $"Virus detected: {scanResult.InfectedFiles?.FirstOrDefault()?.VirusName}"),
+                ClamScanResults.Error => (false, $"Scan error: {scanResult.RawResult}"),
                 _ => (false, "Unknown scan result.")
             };
         }

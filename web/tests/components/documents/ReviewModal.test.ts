@@ -1,8 +1,28 @@
-import { describe, it, expect } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mount, flushPromises } from '@vue/test-utils';
 import ReviewModal from '@/components/documents/ReviewModal.vue';
 
+class MockFileReader {
+  public result: string | ArrayBuffer | null = null;
+  public onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
+  public onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
+  public error: DOMException | null = null;
+
+  readAsDataURL() {
+    this.result = 'data:application/pdf;base64,VEVTVA==';
+    this.onload?.call(this as unknown as FileReader, new ProgressEvent('load'));
+  }
+}
+
 describe('ReviewModal.vue', () => {
+  beforeEach(() => {
+    vi.stubGlobal('FileReader', MockFileReader as unknown as typeof FileReader);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   const createWrapper = (props = {}, modelValue = true) => {
     return mount(ReviewModal, {
       props: {
@@ -105,6 +125,67 @@ describe('ReviewModal.vue', () => {
       const wrapper = createWrapper({ canApprove: false });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.attributes('disabled')).toBeDefined();
+    });
+  });
+
+  describe('Optional file upload', () => {
+    const createUploadWrapper = () =>
+      mount(ReviewModal, {
+        props: {
+          canApprove: true,
+          modelValue: true,
+        },
+        global: {
+          stubs: {
+            'v-btn': {
+              props: ['disabled'],
+              emits: ['click'],
+              template:
+                '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+            },
+            'v-file-upload': {
+              emits: ['update:modelValue'],
+              template: '<div data-testid="review-document-upload"></div>',
+            },
+          },
+        },
+      });
+
+    it('should emit empty documentData when no file is uploaded', async () => {
+      const wrapper = createUploadWrapper();
+      const approveButton = wrapper
+        .findAll('button')
+        .find((button) => button.text().includes('Approve'));
+
+      expect(approveButton).toBeTruthy();
+      await approveButton!.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder');
+      expect(emitted).toBeTruthy();
+      expect(emitted?.[0]?.[0]?.documentData).toBe('');
+    });
+
+    it('should emit uploaded file as base64 documentData', async () => {
+      const wrapper = createUploadWrapper();
+
+      const uploadStub = wrapper.get('[data-testid="review-document-upload"]');
+      const uploadedFile = new File(['test'], 'uploaded.pdf', {
+        type: 'application/pdf',
+      });
+      uploadStub.vm.$emit('update:modelValue', [uploadedFile]);
+
+      const approveButton = wrapper
+        .findAll('button')
+        .find((button) => button.text().includes('Approve'));
+
+      expect(approveButton).toBeTruthy();
+      await approveButton!.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder');
+      expect(emitted).toBeTruthy();
+      expect(emitted?.[0]?.[0]?.documentData).toBe('VEVTVA==');
     });
   });
 });

@@ -5,4 +5,5 @@ export interface OrderReview {
   signed: boolean;
   status: OrderReviewStatus;
   documentData: string;
+  userProvidedDocument: boolean;
 }

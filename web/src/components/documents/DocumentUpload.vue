@@ -1,15 +1,14 @@
 <template>
   <div
-    class="px-4 py-3 rounded-lg"
+    class="px-4 py-3 rounded-lg upload-container"
     :class="{ 'upload-disabled': props.disabled }"
-    style="background-color: rgba(66, 133, 244, 0.04); border: 1px solid rgba(66, 133, 244, 0.2)"
   >
-    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+    <label class="upload-label">
       <v-checkbox
         v-model="showDocumentUpload"
         density="compact"
         hide-details
-        style="margin: 0; padding: 0; min-width: 24px"
+        class="upload-checkbox"
         :disabled="props.disabled"
       />
       <span>Attach supporting document (optional)</span>
@@ -125,6 +124,24 @@
 </script>
 
 <style scoped>
+  .upload-container {
+    background-color: rgba(66, 133, 244, 0.04);
+    border: 1px solid rgba(66, 133, 244, 0.2);
+  }
+
+  .upload-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .upload-checkbox {
+    margin: 0;
+    padding: 0;
+    min-width: 24px;
+  }
+
   .upload-disabled {
     opacity: 0.65;
     pointer-events: none;

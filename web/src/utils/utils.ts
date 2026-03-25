@@ -244,7 +244,8 @@ export const fileToBase64 = async (file: File): Promise<string> =>
       const [, base64Data = ''] = reader.result.split(',', 2);
       resolve(base64Data);
     };
-    reader.onerror = () => reject(reader.error ?? new Error('Unable to read uploaded file.'));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error('Unable to read uploaded file.'));
     reader.readAsDataURL(file);
   });
 

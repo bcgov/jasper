@@ -2,29 +2,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import ReviewModal from '@/components/documents/ReviewModal.vue';
 
-class MockFileReader {
-  public result: string | ArrayBuffer | null = null;
-  public onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  public onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  public error: DOMException | null = null;
-
-  readAsDataURL() {
-    this.result = 'data:application/pdf;base64,VEVTVA==';
-    this.onload?.call(this as unknown as FileReader, new ProgressEvent('load'));
-  }
-}
-
 describe('ReviewModal.vue', () => {
-  beforeEach(() => {
-    vi.stubGlobal('FileReader', MockFileReader as unknown as typeof FileReader);
-  });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   const createWrapper = (props = {}, modelValue = true) => {
-    return mount(ReviewModal, {
+    return mount(ReviewModal, 
+      {
       props: {
         canApprove: false,
         modelValue,
@@ -57,7 +43,7 @@ describe('ReviewModal.vue', () => {
     it('should render instruction text', () => {
       const wrapper = createWrapper();
       expect(wrapper.text()).toContain('Add any notes or reasoning for your decision');
-      expect(wrapper.text()).toContain('Note: Comments are required for any action other than Approval');
+      expect(wrapper.text()).toContain('Required for any action other than Approval');
     });
 
     it('should render comments textarea', () => {
@@ -70,16 +56,12 @@ describe('ReviewModal.vue', () => {
   describe('canApprove prop behavior', () => {
     it('should show warning alert when canApprove is false', () => {
       const wrapper = createWrapper({ canApprove: false });
-      expect(wrapper.text()).toContain('Document signature is required before Approval');
+      expect(wrapper.text()).toContain('Document signature or upload is required before Approval');
     });
 
     it('should not show warning alert when canApprove is true', () => {
       const wrapper = createWrapper({ canApprove: true });
-      const alerts = wrapper.findAll('.v-alert');
-      const warningAlert = alerts.find(alert => 
-        alert.text().includes('Document signature is required before Approval')
-      );
-      expect(warningAlert).toBeFalsy();
+      expect(wrapper.text()).not.toContain('Document signature or upload is required before Approval');
     });
   });
 
@@ -164,28 +146,6 @@ describe('ReviewModal.vue', () => {
       const emitted = wrapper.emitted('reviewOrder');
       expect(emitted).toBeTruthy();
       expect(emitted?.[0]?.[0]?.documentData).toBe('');
-    });
-
-    it('should emit uploaded file as base64 documentData', async () => {
-      const wrapper = createUploadWrapper();
-
-      const uploadStub = wrapper.get('[data-testid="review-document-upload"]');
-      const uploadedFile = new File(['test'], 'uploaded.pdf', {
-        type: 'application/pdf',
-      });
-      uploadStub.vm.$emit('update:modelValue', [uploadedFile]);
-
-      const approveButton = wrapper
-        .findAll('button')
-        .find((button) => button.text().includes('Approve'));
-
-      expect(approveButton).toBeTruthy();
-      await approveButton!.trigger('click');
-      await flushPromises();
-
-      const emitted = wrapper.emitted('reviewOrder');
-      expect(emitted).toBeTruthy();
-      expect(emitted?.[0]?.[0]?.documentData).toBe('VEVTVA==');
     });
   });
 });

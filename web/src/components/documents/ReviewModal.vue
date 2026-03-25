@@ -39,18 +39,22 @@
           />
         </div>
 
-        <DocumentUpload v-model:show="show" v-model:selectedFile="selectedUpload" :disabled="props.canApprove" />
+        <DocumentUpload
+          v-model:show="show"
+          v-model:selectedFile="selectedUpload"
+          :disabled="props.canApprove"
+        />
       </v-card-text>
 
       <v-card-text>
-      <v-alert
-        v-if="!canApprove"
-        type="warning"
-        variant="tonal"
-        density="comfortable"
-      >
-        Document signature or upload is required before Approval.
-      </v-alert>
+        <v-alert
+          v-if="!canApprove"
+          type="warning"
+          variant="tonal"
+          density="comfortable"
+        >
+          Document signature or upload is required before Approval.
+        </v-alert>
       </v-card-text>
       <!-- Actions -->
       <v-card-actions class="px-6 py-4">
@@ -117,7 +121,9 @@
   const comments = ref<string>('');
   const selectedUpload = ref<File | null>(null);
   const canReject = computed<boolean>(() => comments.value?.length > 0);
-  const canApprove = computed<boolean>(() => props.canApprove || selectedUpload.value !== null);
+  const canApprove = computed<boolean>(
+    () => props.canApprove || selectedUpload.value !== null
+  );
 
   // Reset form when modal closes
   watch(show, (newVal) => {

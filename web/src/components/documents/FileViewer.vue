@@ -251,7 +251,10 @@
     // Check if strategy supports order review
     try {
       // If the user approved the Order and did not provide their own document, export the flattened PDF
-      if (orderReview.status === OrderReviewStatus.Approved && !orderReview.userProvidedDocument) {
+      if (
+        orderReview.status === OrderReviewStatus.Approved &&
+        !orderReview.userProvidedDocument
+      ) {
         orderReview.documentData = await instance.exportPDF({ flatten: true });
       }
       await props.strategy.reviewOrder(orderReview);

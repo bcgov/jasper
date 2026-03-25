@@ -27,7 +27,6 @@
   import ReviewModal from './ReviewModal.vue';
   import { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
-  import { arrayBufferToBase64 } from '@/utils/utils';
 
   // Declare NutrientViewer global
   declare global {

@@ -227,29 +227,6 @@ export const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
 };
 
 /**
- * Converts a File object to a base64 encoded string.
- *
- * @param file - The File object to convert
- * @returns A promise that resolves to the base64 encoded string
- */
-export const fileToBase64 = async (file: File): Promise<string> =>
-  await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== 'string') {
-        reject(new Error('Unable to read uploaded file.'));
-        return;
-      }
-
-      const [, base64Data = ''] = reader.result.split(',', 2);
-      resolve(base64Data);
-    };
-    reader.onerror = () =>
-      reject(reader.error ?? new Error('Unable to read uploaded file.'));
-    reader.readAsDataURL(file);
-  });
-
-/**
  * Retrieves the list of roles, either from the common store if already available,
  * or by fetching them using the lookup service. The roles are then stored in the
  * common store for future use.

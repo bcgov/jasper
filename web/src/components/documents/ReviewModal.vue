@@ -108,7 +108,7 @@
   } from '@mdi/js';
   import { OrderReviewStatus } from '@/types/common';
   import { OrderReview } from '@/types';
-  import { fileToBase64 } from '@/utils/utils';
+  import { arrayBufferToBase64 } from '@/utils/utils';
   import DocumentUpload from './DocumentUpload.vue';
 
   const props = defineProps<{
@@ -133,9 +133,11 @@
   });
 
   const reviewOrder = async (status: OrderReviewStatus) => {
-    const documentData = selectedUpload.value
-      ? await fileToBase64(selectedUpload.value)
-      : '';
+    let documentData = '';
+    if (selectedUpload.value) {
+      const arrayBuffer = await selectedUpload.value.arrayBuffer();
+      documentData = arrayBufferToBase64(arrayBuffer);
+    }
 
     const review: OrderReview = {
       comments: comments.value,

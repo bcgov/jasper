@@ -7,7 +7,7 @@ import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
 import { civilAppearancesListType } from '@/types/civil';
 import { civilApprDetailType } from '@/types/civil/jsonTypes';
-import { CourtClassEnum, LookupCode } from '@/types/common';
+import { CourtClassEnum, LookupCode, UserInfo } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
 import _ from 'underscore';
@@ -37,8 +37,11 @@ export const SessionManager = {
         succeeded = false;
       }
       commonStore.setLoggedInUserInfo(userInfo ?? null);
-      commonStore.setUserInfo(myUserInfo ?? userInfo ?? null);
-
+      commonStore.setUserInfo(
+        userInfo || myUserInfo
+          ? ({ ...userInfo, ...myUserInfo } as UserInfo)
+          : null
+      );
       commonStore.appInfo = appInfo ?? null;
       return succeeded;
     } catch (error) {

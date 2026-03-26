@@ -150,6 +150,17 @@ variable "efs_config" {
   })
 }
 
+variable "clamav_config" {
+  description = "ClamAV sidecar configuration for the API ECS task"
+  type = object({
+    image              = string
+    port               = number
+    memory_reservation = number
+    stream_max_length  = optional(string, "100M")
+  })
+  default = null
+}
+
 variable "get_assigned_cases_lambda_timeout" {
   description = "Timeout for getAssignedCases Lambda function"
   type        = number

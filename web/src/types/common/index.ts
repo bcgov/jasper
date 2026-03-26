@@ -70,8 +70,21 @@ export interface CourtRoomsInfo {
 }
 
 export interface ApplicationInfo {
+  version: string;
   nutrientFeLicenseKey: string;
   environment: string;
+  configuration: ApplicationConfiguration[];
+}
+
+export interface ApplicationConfiguration {
+  id: string;
+  key: string;
+  values: string[];
+}
+
+export interface ReleaseNotesInfo {
+  lastViewedVersion?: string | null;
+  lastViewedAt?: string | null;
 }
 
 export interface UserInfo {
@@ -88,6 +101,7 @@ export interface UserInfo {
   judgeHomeLocationId: number;
   email: string;
   userTitle: string;
+  releaseNotes?: ReleaseNotesInfo | null;
   permissions?: string[];
   groups?: string[];
 }

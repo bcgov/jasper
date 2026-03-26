@@ -7,6 +7,10 @@ import {
 } from '@/types/common';
 import { defineStore } from 'pinia';
 
+export enum ApplicationConfigurationKey {
+  ReleaseNotesUrl = 'ReleaseNotesUrl',
+}
+
 enum appearanceStatus {
   UNCF = 'Unconfirmed',
   CNCL = 'Canceled',
@@ -29,6 +33,28 @@ export const useCommonStore = defineStore('CommonStore', {
     enableArchive: false,
     email: '',
   }),
+  getters: {
+    currentUserTitle: (state): string =>
+      state.userInfo?.userTitle ?? state.loggedInUserInfo?.userTitle ?? '',
+    currentAppVersion: (state): string => state.appInfo?.version ?? '',
+    releaseNotesUrl: (state): string => {
+      const configuration = state.appInfo?.configuration ?? [];
+      const entry = configuration.find(
+        (item) => item.key === ApplicationConfigurationKey.ReleaseNotesUrl
+      );
+      return entry?.values?.[0] ?? '';
+    },
+    hasUnviewedReleaseNotes(state): boolean {
+      if (!this.releaseNotesUrl || !this.currentAppVersion) {
+        return false;
+      }
+
+      return (
+        state.userInfo?.releaseNotes?.lastViewedVersion !==
+        this.currentAppVersion
+      );
+    },
+  },
   actions: {
     setLoggedInUserInfo(loggedInUserInfo: UserInfo | null): void {
       this.loggedInUserInfo = loggedInUserInfo;
@@ -147,6 +173,14 @@ export const useCommonStore = defineStore('CommonStore', {
     },
     UpdateEnableArchive(newEnableArchive): void {
       this.setEnableArchive(newEnableArchive);
+    },
+    getConfigurationValues(key: ApplicationConfigurationKey): string[] {
+      const configuration = this.appInfo?.configuration ?? [];
+      const entry = configuration.find((item) => item.key === key);
+      return entry?.values ?? [];
+    },
+    getConfigurationValue(key: ApplicationConfigurationKey): string {
+      return this.getConfigurationValues(key)[0] ?? '';
     },
   },
 });

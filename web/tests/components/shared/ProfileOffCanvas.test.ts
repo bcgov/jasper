@@ -1,7 +1,8 @@
+import { useCommonStore } from '@/stores';
 import { mount } from '@vue/test-utils';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ProfileOffCanvas from 'CMP/shared/ProfileOffCanvas.vue';
 import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('SRC/stores/ThemeStore', () => ({
   useThemeStore: () => ({
@@ -12,15 +13,6 @@ vi.mock('SRC/stores/ThemeStore', () => ({
   }),
 }));
 
-vi.mock('@/stores/CommonStore', () => ({
-  useCommonStore: () => ({
-    userInfo: { userTitle: 'Judge Josh', judgeId: 123 },
-    state: () => ({
-      userInfo: { userTitle: 'Judge Josh', judgeId: 123 },
-    }),
-  }),
-}));
-
 describe('ProfileOffCanvas.vue', () => {
   let wrapper;
   let pinia: any;
@@ -28,6 +20,13 @@ describe('ProfileOffCanvas.vue', () => {
   beforeEach(() => {
     pinia = createPinia();
     setActivePinia(pinia);
+
+    const commonStore = useCommonStore();
+    commonStore.userInfo = { userTitle: 'Judge Josh', judgeId: 123 } as any;
+    commonStore.loggedInUserInfo = {
+      userTitle: 'Judge Josh',
+      judgeId: 123,
+    } as any;
 
     // Mount with explicit props to bypass store dependency
     wrapper = mount(ProfileOffCanvas, {

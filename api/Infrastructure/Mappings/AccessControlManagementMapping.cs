@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.AccessControlManagement;
+using Scv.Api.Models.Configuration;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;
@@ -36,6 +37,12 @@ public class AccessControlManagementMapping : IRegister
                 if (!string.IsNullOrEmpty(src.Email))
                     dest.Email = src.Email.ToLower();
             })
+            .IgnoreNullValues(true);
+
+        config.NewConfig<Constant, ConstantDto>();
+
+        config.NewConfig<ConstantDto, Constant>()
+            .Map(dest => dest.Values, src => src.Values.DistinctList())
             .IgnoreNullValues(true);
     }
 }

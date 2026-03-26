@@ -701,4 +701,78 @@ public class UserServiceTests : ServiceTestBase
         AssertLocationIds(result, "1");
         _mockLocationService.Verify(l => l.GetLocations(false), Times.Once);
     }
+
+    [Fact]
+    public async Task MarkReleaseNotesViewedAsync_ShouldReturnFailure_WhenUserIdMissing()
+    {
+        var result = await _userService.MarkReleaseNotesViewedAsync("", "1.0.0", DateTime.UtcNow);
+
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("User ID is required.", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task MarkReleaseNotesViewedAsync_ShouldReturnFailure_WhenVersionMissing()
+    {
+        var result = await _userService.MarkReleaseNotesViewedAsync("user-1", " ", DateTime.UtcNow);
+
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Version is required.", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task MarkReleaseNotesViewedAsync_ShouldReturnFailure_WhenUserNotFound()
+    {
+        _mockUserRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync((User)null);
+
+        var result = await _userService.MarkReleaseNotesViewedAsync("user-1", "1.0.0", DateTime.UtcNow);
+
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("User not found.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync("user-1"), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MarkReleaseNotesViewedAsync_ShouldUpdateReleaseNotes_WhenUserExists()
+    {
+        var user = new User
+        {
+            Id = "user-1",
+            Email = _faker.Internet.Email(),
+            ReleaseNotes = null,
+            FirstName = "first",
+            LastName = "last"
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+
+        var viewedAt = DateTime.UtcNow;
+        var result = await _userService.MarkReleaseNotesViewedAsync(user.Id, "2.0.0", viewedAt);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(user.ReleaseNotes);
+        Assert.Equal("2.0.0", user.ReleaseNotes.LastViewedVersion);
+        Assert.Equal(viewedAt, user.ReleaseNotes.LastViewedAt);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkReleaseNotesViewedAsync_ShouldReturnFailure_WhenExceptionThrown()
+    {
+        _mockUserRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await _userService.MarkReleaseNotesViewedAsync("user-1", "1.0.0", DateTime.UtcNow);
+
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Error updating release notes.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
 }

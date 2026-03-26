@@ -2,6 +2,7 @@ import { beautifyDate } from '@/filters';
 import { ApplicationService } from '@/services/ApplicationService';
 import { AuthService } from '@/services/AuthService';
 import { LookupService } from '@/services/LookupService';
+import { UserService } from '@/services/UserService';
 import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
 import { civilAppearancesListType } from '@/types/civil';
@@ -18,11 +19,13 @@ export const SessionManager = {
     const commonStore = useCommonStore();
     const authService = inject<AuthService>('authService');
     const appService = inject<ApplicationService>('applicationService');
+    const userService = inject<UserService>('userService');
 
     try {
-      const [userInfo, appInfo] = await Promise.all([
+      const [userInfo, appInfo, myUserInfo] = await Promise.all([
         authService?.getUserInfo(),
         appService?.getApplicationInfo(),
+        userService?.getMyUser(),
       ]);
       let succeeded = true;
       if (!userInfo) {
@@ -34,9 +37,7 @@ export const SessionManager = {
         succeeded = false;
       }
       commonStore.setLoggedInUserInfo(userInfo ?? null);
-      if (!commonStore.userInfo) {
-        commonStore.setUserInfo(userInfo ?? null);
-      }
+      commonStore.setUserInfo(myUserInfo ?? userInfo ?? null);
 
       commonStore.appInfo = appInfo ?? null;
       return succeeded;

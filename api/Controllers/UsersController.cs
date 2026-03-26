@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -21,9 +20,11 @@ namespace Scv.Api.Controllers;
 public class UsersController(
     IUserService userService,
     IValidator<UserDto> validator,
+    IValidator<ReleaseNotesViewedRequestDto> releaseNotesViewedRequestValidator,
     ILogger<UsersController> logger
 ) : AccessControlManagementControllerBase<IUserService, UserDto>(userService, validator)
 {
+    private readonly IValidator<ReleaseNotesViewedRequestDto> _releaseNotesViewedRequestValidator = releaseNotesViewedRequestValidator;
 
     /// <summary>
     /// Get all active users
@@ -57,6 +58,40 @@ public class UsersController(
             return Ok(user);
         }
         return NotFound("Unable to locate JASPER user. Please contact the JASPER admin.");
+    }
+
+    /// <summary>
+    /// Marks release notes as viewed for the currently logged-in user using the server dt/tm.
+    /// </summary>
+    [HttpPost]
+    [Route("me/release-notes")]
+    public async Task<IActionResult> MarkReleaseNotesViewed([FromBody] ReleaseNotesViewedRequestDto request)
+    {
+        var userId = User.UserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("Invalid user. Please contact the JASPER admin.");
+        }
+
+        var validationResult = await _releaseNotesViewedRequestValidator.ValidateAsync(request ?? new ReleaseNotesViewedRequestDto());
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
+        }
+
+        var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request?.Version, DateTime.UtcNow);
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.FirstOrDefault();
+            if (string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(error);
+            }
+
+            return BadRequest(result.Errors);
+        }
+
+        return NoContent();
     }
 
     /// <summary>

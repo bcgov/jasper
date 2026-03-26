@@ -42,3 +42,9 @@ get_assigned_cases_lambda_timeout = 5 // minutes
 lambda_long_timeout               = 5 // minutes
 lambda_retry_attempts             = 0
 lza_log_archive_account_id        = "897722703828"
+clamav_config = {
+  image              = "clamav/clamav:latest"
+  port               = 3310
+  memory_reservation = 512
+  stream_max_length  = "100M"
+}

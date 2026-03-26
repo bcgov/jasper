@@ -14,47 +14,97 @@ resource "aws_ecs_task_definition" "ecs_td" {
   execution_role_arn       = var.ecs_execution_role_arn
   task_role_arn            = var.ecs_execution_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "${var.app_name}-${var.name}-container-${var.environment}"
-      image     = "${var.ecr_repository_url}:${data.aws_ssm_parameter.image_param.value}"
-      essential = true
-      portMappings = [
-        {
-          containerPort = var.port
-          hostPort      = var.port
-          protocol      = "tcp"
+  container_definitions = jsonencode(concat(
+    [
+      {
+        name      = "${var.app_name}-${var.name}-container-${var.environment}"
+        image     = "${var.ecr_repository_url}:${data.aws_ssm_parameter.image_param.value}"
+        essential = true
+        portMappings = [
+          {
+            containerPort = var.port
+            hostPort      = var.port
+            protocol      = "tcp"
+          }
+        ]
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            "awslogs-group"         = var.log_group_name
+            "awslogs-region"        = var.region
+            "awslogs-stream-prefix" = "ecs"
+          }
         }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = var.log_group_name
-          "awslogs-region"        = var.region
-          "awslogs-stream-prefix" = "ecs"
-        }
+        environment = var.env_variables != null ? [
+          for env in var.env_variables : {
+            name  = env.name
+            value = env.value
+          }
+        ] : []
+        secrets = [
+          for secret in var.secret_env_variables : {
+            name      = secret[0]
+            valueFrom = secret[1]
+          }
+        ]
+        mountPoints = var.efs_volume_config != null ? [
+          {
+            sourceVolume  = var.efs_volume_config.name
+            containerPath = var.efs_volume_config.container_path
+            readOnly      = false
+          }
+        ] : []
+        dependsOn = var.clamav_config != null ? [
+          {
+            containerName = "${var.app_name}-clamav-${var.environment}"
+            condition     = "HEALTHY"
+          }
+        ] : []
       }
-      environment = var.env_variables != null ? [
-        for env in var.env_variables : {
-          name  = env.name
-          value = env.value
+    ],
+    var.clamav_config != null ? [
+      {
+        name              = "${var.app_name}-clamav-${var.environment}"
+        image             = var.clamav_config.image
+        essential         = false
+        memoryReservation = var.clamav_config.memory_reservation
+        portMappings = [
+          {
+            containerPort = var.clamav_config.port
+            hostPort      = var.clamav_config.port
+            protocol      = "tcp"
+          }
+        ]
+        environment = [
+          {
+            name  = "CLAMAV_NO_FRESHCLAMD"
+            value = "false"
+          },
+          {
+            name  = "CLAMD_CONF_StreamMaxLength"
+            value = var.clamav_config.stream_max_length
+          }
+        ]
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            "awslogs-group"         = var.log_group_name
+            "awslogs-region"        = var.region
+            "awslogs-stream-prefix" = "clamav"
+          }
         }
-      ] : []
-      secrets = [
-        for secret in var.secret_env_variables : {
-          name      = secret[0]
-          valueFrom = secret[1]
+        healthCheck = {
+          command     = ["CMD", "/usr/local/bin/clamdcheck.sh"]
+          interval    = 30
+          timeout     = 10
+          retries     = 3
+          startPeriod = 120
         }
-      ]
-      mountPoints = var.efs_volume_config != null ? [
-        {
-          sourceVolume  = var.efs_volume_config.name
-          containerPath = var.efs_volume_config.container_path
-          readOnly      = false
-        }
-      ] : []
-    }
-  ])
+        mountPoints = []
+        volumesFrom = []
+      }
+    ] : []
+  ))
 
   dynamic "volume" {
     for_each = var.efs_volume_config != null ? [var.efs_volume_config] : []

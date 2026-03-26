@@ -77,3 +77,14 @@ variable "efs_volume_config" {
   })
   default = null
 }
+
+variable "clamav_config" {
+  description = "ClamAV sidecar container configuration. When set, a ClamAV daemon container is added to the task."
+  type = object({
+    image              = string
+    port               = number
+    memory_reservation = number
+    stream_max_length  = optional(string, "100M")
+  })
+  default = null
+}

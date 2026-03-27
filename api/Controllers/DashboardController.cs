@@ -53,20 +53,43 @@ namespace Scv.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves the court calendar based on the given location id(s), start and end dates.
+        /// Retrieves the court calendar for presiders based on the given location id(s), start and end dates.
         /// </summary>
         /// <param name="startDate">The start date of the schedule.</param>
         /// <param name="endDate">The end date of the schedule.</param>
         /// <param name="locationIds">List location ids.</param>
         /// <param name="judgeId">The override judgeId.</param>
-        /// <returns>Court calendar</returns>
+        /// <returns>Court calendar data for Presiders</returns>
         [HttpGet]
-        [Route("court-calendar")]
+        [Route("court-calendar/presiders")]
         public async Task<IActionResult> GetCourtCalendar(string startDate, string endDate, string locationIds = "", int? judgeId = null)
         {
             var ids = string.IsNullOrWhiteSpace(locationIds) ? this.User.JudgeHomeLocationId().ToString() : locationIds;
 
             var result = await _dashboardService.GetCourtCalendarScheduleAsync(this.User.JudgeId(judgeId), ids, startDate, endDate);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { error = result.Errors });
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Retrieves the court calendar for activities based on the given location id(s), start and end dates.
+        /// </summary>
+        /// <param name="locationIds">List of location ids.</param>
+        /// <param name="startDate">The start date of the schedule.</param>
+        /// <param name="endDate">The end date of the schedule.</param>
+        /// <returns>Court Calendar data for Activities</returns>
+        [HttpGet]
+        [Route("court-calendar/activities")]
+        public async Task<IActionResult> GetCourtCalendarActivities(string locationIds, string startDate, string endDate)
+        {
+            var ids = string.IsNullOrWhiteSpace(locationIds) ? this.User.JudgeHomeLocationId().ToString() : locationIds;
+
+            var result = await _dashboardService.GetCourtCalendarActivitiesAsync(ids, startDate, endDate);
 
             if (!result.Succeeded)
             {

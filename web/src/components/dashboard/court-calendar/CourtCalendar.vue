@@ -25,7 +25,7 @@
     ></v-skeleton-loader>
     <FullCalendar
       class="mx-2"
-      v-else
+      v-if="!isCalendarLoading && isPresidersView"
       :options="calendarOptions"
       ref="calendarRef"
     >
@@ -36,11 +36,15 @@
         />
       </template>
     </FullCalendar>
+    <CourtCalendarActivitiesView
+      v-if="!isCalendarLoading && !isPresidersView"
+      :calendar-view="calendarView"
+    />
   </div>
 </template>
 <script setup lang="ts">
   import { DashboardService, LocationService } from '@/services';
-  import { Activity, CalendarDay, Presider } from '@/types';
+  import { Activity, CalendarDay, CourtCalendarDay, Presider } from '@/types';
   import { CalendarViewEnum } from '@/types/common';
   import { LocationInfo } from '@/types/courtlist';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
@@ -48,6 +52,7 @@
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
   import { computed, inject, onMounted, ref, watch, watchEffect } from 'vue';
+  import CourtCalendarActivitiesView from './CourtCalendarActivitiesView.vue';
   import CourtCalendarFilters from './filters/CourtCalendarFilters.vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
@@ -65,13 +70,15 @@
   const calendarView = defineModel<string>('calendarView');
   const isCalendarLoading = defineModel<boolean>('isCalendarLoading');
   const isLocationFilterLoading = ref(true);
+  const isPresidersView = ref(true);
 
   if (!selectedDate.value) {
     throw new Error('selectedDate is required');
   }
 
   const calendarRef = ref();
-  const calendarData = ref<CalendarDay[]>([]);
+  const presidersCalendarData = ref<CalendarDay[]>([]);
+  const activitiesCalendarData = ref<CourtCalendarDay[]>([]);
   const locations = ref<LocationInfo[]>([]);
   const presiders = ref<Presider[]>([]);
   const activities = ref<Activity[]>([]);
@@ -97,15 +104,11 @@
   const loadCalendarData = async () => {
     isCalendarLoading.value = true;
     try {
-      const { payload } = await dashboardService.getCourtCalendar(
-        formatDateInstanceToDDMMMYYYY(startDay.value),
-        formatDateInstanceToDDMMMYYYY(endDay.value),
-        locationIds.value,
-        props.judgeId
-      );
-      calendarData.value = [...payload.days];
-      presiders.value = [...payload.presiders];
-      activities.value = [...payload.activities];
+      if (isPresidersView.value) {
+        await loadPresidersCalendar();
+      } else {
+        await loadActivitiesCalendar();
+      }
     } catch (error) {
       console.error('Failed to load calendar data:', error);
     } finally {
@@ -113,8 +116,30 @@
     }
   };
 
+  const loadPresidersCalendar = async () => {
+    const { payload } = await dashboardService.getCourtCalendarPresiders(
+      formatDateInstanceToDDMMMYYYY(startDay.value),
+      formatDateInstanceToDDMMMYYYY(endDay.value),
+      locationIds.value,
+      props.judgeId
+    );
+    presidersCalendarData.value = [...payload.days];
+    presiders.value = [...payload.presiders];
+    activities.value = [...payload.activities];
+  };
+
+  const loadActivitiesCalendar = async () => {
+    const { payload } = await dashboardService.getCourtCalendarActivities(
+      formatDateInstanceToDDMMMYYYY(startDay.value),
+      formatDateInstanceToDDMMMYYYY(endDay.value),
+      locationIds.value
+    );
+    activitiesCalendarData.value = [...payload.days];
+    activities.value = [...payload.activities];
+  };
+
   const filteredCalendarData = computed(() =>
-    calendarData.value.map((day) => ({
+    presidersCalendarData.value.map((day) => ({
       ...day,
       activities: day.activities.filter(
         (a) =>
@@ -132,6 +157,22 @@
       extendedProps: {
         ...d,
       } as CalendarDay,
+    }))
+  );
+
+  const filteredActivitiesCalendarData = computed(() =>
+    activitiesCalendarData.value.map((day) => ({
+      ...day,
+      locations: day.locations,
+    }))
+  );
+
+  const activitiesCalendarEvents = computed(() =>
+    activitiesCalendarData.value.map((d) => ({
+      start: new Date(d.date),
+      extendedProps: {
+        ...d,
+      } as CourtCalendarDay,
     }))
   );
 

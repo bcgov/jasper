@@ -92,7 +92,8 @@ public class DashboardServiceTests : ServiceTestBase
             mockLocationService.Object,
             _mapper,
             new Mock<ILogger<DashboardService>>().Object,
-            _mockExternalConfigClient.Object);
+            _mockExternalConfigClient.Object,
+            null);
 
         return (
             dashboardService,

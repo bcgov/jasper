@@ -104,7 +104,7 @@ namespace tests.api.Controllers
         {
             _dashboardService
                 .Setup(d => d.GetCourtCalendarScheduleAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Failure(_faker.Lorem.Paragraph()));
+                .ReturnsAsync(OperationResult<CourtCalendarPresidersSchedule>.Failure(_faker.Lorem.Paragraph()));
 
             var result = await _controller.GetCourtCalendar(_faker.Date.ToString(), _faker.Date.ToString());
 
@@ -121,7 +121,7 @@ namespace tests.api.Controllers
                     _controller.HttpContext.User.JudgeHomeLocationId().ToString(),
                     It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule()));
+                .ReturnsAsync(OperationResult<CourtCalendarPresidersSchedule>.Success(new CourtCalendarPresidersSchedule()));
 
             var result = await _controller.GetCourtCalendar(
                 _faker.Date.ToString(),
@@ -147,7 +147,7 @@ namespace tests.api.Controllers
                     locationIds,
                     It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule()));
+                .ReturnsAsync(OperationResult<CourtCalendarPresidersSchedule>.Success(new CourtCalendarPresidersSchedule()));
 
             var result = await _controller.GetCourtCalendar(
                 _faker.Date.ToString(),

@@ -2,7 +2,7 @@
 
 namespace Scv.Api.Models.Calendar;
 
-public class CourtCalendarSchedule
+public class CourtCalendarPresidersSchedule
 {
     public List<CalendarDay> Days { get; set; } = [];
     public List<Activity> Activities { get; set; } = [];

@@ -125,7 +125,6 @@
     () => props.canApprove || selectedUpload.value !== null
   );
 
-  // Reset form when modal closes
   watch(show, (newVal) => {
     if (!newVal) {
       selectedUpload.value = null;

@@ -36,8 +36,8 @@
         >
           {{ rejectedUploadMessage }}
         </v-alert>
-        <p v-if="selectedUpload" class="text-caption text-success mt-2">
-          ✓ {{ selectedUpload.name }}
+        <p v-if="selectedFile" class="text-caption text-success mt-2">
+          ✓ {{ selectedFile.name }}
         </p>
       </div>
     </v-expand-transition>
@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
 
   const show = defineModel<boolean>('show', { type: Boolean, required: true });
   const props = defineProps<{
@@ -55,41 +55,32 @@
     default: null,
   });
 
-  const showDocumentUpload = ref<boolean>(false);
-  const selectedUpload = ref<File | null>(null);
-  const rejectedUploadMessage = ref<string>('');
-
-  // Sync internal state with model
-  watch(selectedUpload, (newVal) => {
-    selectedFile.value = newVal;
+  const selectedUpload = computed<File | null>({
+    get: () => selectedFile.value,
+    set: (file) => {
+      selectedFile.value = file;
+    },
   });
 
-  watch(
-    () => show.value,
-    (newVal) => {
-      if (!newVal) {
-        showDocumentUpload.value = false;
-        selectedUpload.value = null;
-        rejectedUploadMessage.value = '';
-      }
+  const showDocumentUpload = ref<boolean>(false);
+  const rejectedUploadMessage = ref<string>('');
+
+  const clearUploadState = () => {
+    selectedUpload.value = null;
+    rejectedUploadMessage.value = '';
+  };
+
+  watch([() => show.value, () => props.disabled], ([newShow, newDisabled]) => {
+    if (!newShow || newDisabled) {
+      showDocumentUpload.value = false;
     }
-  );
+  });
 
   watch(showDocumentUpload, (newVal) => {
     if (!newVal) {
-      rejectedUploadMessage.value = '';
-      selectedUpload.value = null;
+      clearUploadState();
     }
   });
-
-  watch(
-    () => props.disabled,
-    (newVal) => {
-      if (newVal) {
-        showDocumentUpload.value = false;
-      }
-    }
-  );
 
   const onDocumentSelected = (files: File[] | File | null | undefined) => {
     if (props.disabled) {
@@ -99,11 +90,11 @@
     rejectedUploadMessage.value = '';
 
     if (!files) {
-      selectedUpload.value = null;
+      selectedFile.value = null;
       return;
     }
 
-    selectedUpload.value = Array.isArray(files) ? (files[0] ?? null) : files;
+    selectedFile.value = Array.isArray(files) ? (files[0] ?? null) : files;
   };
 
   const onDocumentRejected = (files: File[]) => {

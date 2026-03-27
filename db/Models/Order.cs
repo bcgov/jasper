@@ -18,6 +18,7 @@ public class Order : EntityBase
     public bool Signed { get; set; }
     public string Comments { get; set; }
     public string DocumentData { get; set; }
+    public bool UserProvidedDocument { get; set; }
     public int ReminderNotificationsSent { get; set; } = 0;
     public int ReassignmentNotificationsSent { get; set; } = 0;
 }

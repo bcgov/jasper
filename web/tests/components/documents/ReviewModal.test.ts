@@ -1,10 +1,16 @@
-import { describe, it, expect } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mount, flushPromises } from '@vue/test-utils';
 import ReviewModal from '@/components/documents/ReviewModal.vue';
 
 describe('ReviewModal.vue', () => {
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   const createWrapper = (props = {}, modelValue = true) => {
-    return mount(ReviewModal, {
+    return mount(ReviewModal, 
+      {
       props: {
         canApprove: false,
         modelValue,
@@ -37,7 +43,7 @@ describe('ReviewModal.vue', () => {
     it('should render instruction text', () => {
       const wrapper = createWrapper();
       expect(wrapper.text()).toContain('Add any notes or reasoning for your decision');
-      expect(wrapper.text()).toContain('Note: Comments are required for any action other than Approval');
+      expect(wrapper.text()).toContain('Required for any action other than Approval');
     });
 
     it('should render comments textarea', () => {
@@ -50,16 +56,12 @@ describe('ReviewModal.vue', () => {
   describe('canApprove prop behavior', () => {
     it('should show warning alert when canApprove is false', () => {
       const wrapper = createWrapper({ canApprove: false });
-      expect(wrapper.text()).toContain('Document signature is required before Approval');
+      expect(wrapper.text()).toContain('Document signature or upload is required before Approval');
     });
 
     it('should not show warning alert when canApprove is true', () => {
       const wrapper = createWrapper({ canApprove: true });
-      const alerts = wrapper.findAll('.v-alert');
-      const warningAlert = alerts.find(alert => 
-        alert.text().includes('Document signature is required before Approval')
-      );
-      expect(warningAlert).toBeFalsy();
+      expect(wrapper.text()).not.toContain('Document signature or upload is required before Approval');
     });
   });
 
@@ -105,6 +107,45 @@ describe('ReviewModal.vue', () => {
       const wrapper = createWrapper({ canApprove: false });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.attributes('disabled')).toBeDefined();
+    });
+  });
+
+  describe('Optional file upload', () => {
+    const createUploadWrapper = () =>
+      mount(ReviewModal, {
+        props: {
+          canApprove: true,
+          modelValue: true,
+        },
+        global: {
+          stubs: {
+            'v-btn': {
+              props: ['disabled'],
+              emits: ['click'],
+              template:
+                '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+            },
+            'v-file-upload': {
+              emits: ['update:modelValue'],
+              template: '<div data-testid="review-document-upload"></div>',
+            },
+          },
+        },
+      });
+
+    it('should emit empty documentData when no file is uploaded', async () => {
+      const wrapper = createUploadWrapper();
+      const approveButton = wrapper
+        .findAll('button')
+        .find((button) => button.text().includes('Approve'));
+
+      expect(approveButton).toBeTruthy();
+      await approveButton!.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder');
+      expect(emitted).toBeTruthy();
+      expect(emitted?.[0]?.[0]?.documentData).toBe('');
     });
   });
 });

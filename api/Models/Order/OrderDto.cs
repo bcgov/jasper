@@ -13,6 +13,7 @@ public class OrderDto : BaseDto
     public SubmitStatus SubmitStatus { get; set; }
     public int SubmitAttempts { get; set; }
     public bool Signed { get; set; } = false;
+    public bool UserProvidedDocument { get; set; } = false;
     public string Comments { get; set; }
     public string DocumentData { get; set; }
 }

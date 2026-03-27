@@ -267,6 +267,20 @@ public class OrderMappingTests
         Assert.True(result.Signed);
     }
 
+    [Fact]
+    public void OrderReviewDto_To_OrderDto_MapsUserProvidedDocument()
+    {
+        var orderReviewDto = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            UserProvidedDocument = true
+        };
+
+        var result = orderReviewDto.Adapt<OrderDto>(_config);
+
+        Assert.True(result.UserProvidedDocument);
+    }
+
     #endregion
 
     #region Order -> OrderViewDto Mapping Tests

@@ -27,7 +27,6 @@
   import ReviewModal from './ReviewModal.vue';
   import { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
-  import { arrayBufferToBase64 } from '@/utils/utils';
 
   // Declare NutrientViewer global
   declare global {
@@ -250,9 +249,12 @@
     }
     // Check if strategy supports order review
     try {
-      if (orderReview.status === OrderReviewStatus.Approved) {
-        const arrayBuffer = await instance.exportPDF({ flatten: true });
-        orderReview.documentData = arrayBufferToBase64(arrayBuffer);
+      // If the user approved the Order and did not provide their own document, export the flattened PDF
+      if (
+        orderReview.status === OrderReviewStatus.Approved &&
+        !orderReview.userProvidedDocument
+      ) {
+        orderReview.documentData = await instance.exportPDF({ flatten: true });
       }
       await props.strategy.reviewOrder(orderReview);
     } catch (error) {

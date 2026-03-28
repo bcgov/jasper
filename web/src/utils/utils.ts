@@ -14,9 +14,7 @@ import _ from 'underscore';
 import { inject } from 'vue';
 import { LocationQueryValue } from 'vue-router';
 
-let sessionSettingsPromise: Promise<boolean> | null = null;
-
-const initializeSessionSettings = async (): Promise<boolean> => {
+export const initializeSessionSettings = async (): Promise<boolean> => {
   const commonStore = useCommonStore();
   const authService = inject<AuthService>('authService');
   const appService = inject<ApplicationService>('applicationService');
@@ -60,19 +58,6 @@ const initializeSessionSettings = async (): Promise<boolean> => {
     console.log(error);
     return false;
   }
-};
-
-export const SessionManager = {
-  getSettings: function (): Promise<boolean> {
-    if (sessionSettingsPromise !== null) {
-      return sessionSettingsPromise;
-    }
-
-    const initializedPromise = initializeSessionSettings();
-    sessionSettingsPromise = initializedPromise;
-
-    return initializedPromise;
-  },
 };
 
 export const splunkLog = (message) => {

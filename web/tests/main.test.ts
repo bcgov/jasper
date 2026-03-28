@@ -5,7 +5,7 @@ describe('main bootstrap', () => {
   const registerRouter = vi.fn();
   const registerPinia = vi.fn();
   const callRefreshLinkClickTracking = vi.fn();
-  const getSettings = vi.fn();
+  const initializeSessionSettings = vi.fn();
   const setIsInitializing = vi.fn();
 
   const use = vi.fn();
@@ -27,7 +27,7 @@ describe('main bootstrap', () => {
     registerRouter.mockClear();
     registerPinia.mockClear();
     callRefreshLinkClickTracking.mockClear();
-    getSettings.mockClear();
+    initializeSessionSettings.mockClear();
     setIsInitializing.mockClear();
     use.mockClear();
     runWithContext.mockClear();
@@ -47,9 +47,11 @@ describe('main bootstrap', () => {
     vi.stubGlobal('MutationObserver', MutationObserverMock);
 
     if (options?.rejectSettings) {
-      getSettings.mockRejectedValueOnce(new Error('bootstrap failed'));
+      initializeSessionSettings.mockRejectedValueOnce(
+        new Error('bootstrap failed')
+      );
     } else {
-      getSettings.mockResolvedValueOnce(true);
+      initializeSessionSettings.mockResolvedValueOnce(true);
     }
 
     vi.doMock('vue', async () => {
@@ -77,9 +79,7 @@ describe('main bootstrap', () => {
     }));
 
     vi.doMock('@/utils/utils', () => ({
-      SessionManager: {
-        getSettings,
-      },
+      initializeSessionSettings,
     }));
 
     vi.doMock('@/router/index', () => ({
@@ -118,7 +118,7 @@ describe('main bootstrap', () => {
     expect(registerPlugins).toHaveBeenCalledTimes(1);
     expect(use).toHaveBeenCalledWith(router);
     expect(runWithContext).toHaveBeenCalledTimes(1);
-    expect(getSettings).toHaveBeenCalledTimes(1);
+    expect(initializeSessionSettings).toHaveBeenCalledTimes(1);
     expect(mount).toHaveBeenCalledWith('#app');
 
     expect(setIsInitializing).toHaveBeenNthCalledWith(1, true);
@@ -139,7 +139,7 @@ describe('main bootstrap', () => {
 
     await loadMain({ pathname: '/dashboard', rejectSettings: true });
 
-    expect(getSettings).toHaveBeenCalledTimes(1);
+    expect(initializeSessionSettings).toHaveBeenCalledTimes(1);
     expect(setIsInitializing).toHaveBeenCalledWith(true);
     expect(setIsInitializing).toHaveBeenCalledWith(false);
     expect(callRefreshLinkClickTracking).not.toHaveBeenCalled();

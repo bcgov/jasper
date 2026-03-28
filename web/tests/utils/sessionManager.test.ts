@@ -26,7 +26,7 @@ interface MockCommonStore {
   setUserInfo: ReturnType<typeof vi.fn>;
 }
 
-describe('SessionManager.getSettings', () => {
+describe('initializeSessionSettings', () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -35,7 +35,9 @@ describe('SessionManager.getSettings', () => {
     vi.clearAllMocks();
   });
 
-  const loadSessionManager = async (options?: SessionManagerLoadOptions) => {
+  const loadSessionInitialization = async (
+    options?: SessionManagerLoadOptions
+  ) => {
     const mockStore: MockCommonStore = {
       userInfo: options?.currentUserInfo ?? null,
       appInfo: null,
@@ -73,7 +75,7 @@ describe('SessionManager.getSettings', () => {
     const module = await import('@/utils/utils');
 
     return {
-      SessionManager: module.SessionManager,
+      initializeSessionSettings: module.initializeSessionSettings,
       mockStore,
       authService,
       appService,
@@ -86,12 +88,12 @@ describe('SessionManager.getSettings', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
 
-    const { SessionManager, mockStore, appService, userService } =
-      await loadSessionManager({
+    const { initializeSessionSettings, mockStore, appService, userService } =
+      await loadSessionInitialization({
         userInfo: null,
       });
 
-    const result = await SessionManager.getSettings();
+    const result = await initializeSessionSettings();
 
     expect(result).toBe(false);
     expect(mockStore.setLoggedInUserInfo).toHaveBeenCalledWith(null);
@@ -103,26 +105,27 @@ describe('SessionManager.getSettings', () => {
   });
 
   it('merges user info and preserves judge override from current store user', async () => {
-    const { SessionManager, mockStore } = await loadSessionManager({
-      userInfo: {
-        userId: 'u-1',
-        judgeId: 10,
-        judgeHomeLocationId: 100,
-        userTitle: 'Judge A',
-      },
-      myUserInfo: {
-        roles: ['Role1'],
-      },
-      appInfo: {
-        version: '1.0.0',
-      },
-      currentUserInfo: {
-        judgeId: 99,
-        judgeHomeLocationId: 999,
-      },
-    });
+    const { initializeSessionSettings, mockStore } =
+      await loadSessionInitialization({
+        userInfo: {
+          userId: 'u-1',
+          judgeId: 10,
+          judgeHomeLocationId: 100,
+          userTitle: 'Judge A',
+        },
+        myUserInfo: {
+          roles: ['Role1'],
+        },
+        appInfo: {
+          version: '1.0.0',
+        },
+        currentUserInfo: {
+          judgeId: 99,
+          judgeHomeLocationId: 999,
+        },
+      });
 
-    const result = await SessionManager.getSettings();
+    const result = await initializeSessionSettings();
 
     expect(result).toBe(true);
     expect(mockStore.setLoggedInUserInfo).toHaveBeenCalledWith(
@@ -139,23 +142,20 @@ describe('SessionManager.getSettings', () => {
     expect(mockStore.appInfo).toEqual({ version: '1.0.0' });
   });
 
-  it('returns the same promise for repeated calls and initializes only once', async () => {
-    const { SessionManager, authService } = await loadSessionManager({
-      userInfo: {
-        userId: 'u-1',
-        judgeId: 10,
-      },
-      myUserInfo: {},
-      appInfo: {},
-    });
+  it('initializes each time it is called', async () => {
+    const { initializeSessionSettings, authService } =
+      await loadSessionInitialization({
+        userInfo: {
+          userId: 'u-1',
+          judgeId: 10,
+        },
+        myUserInfo: {},
+        appInfo: {},
+      });
 
-    const first = SessionManager.getSettings();
-    const second = SessionManager.getSettings();
+    await initializeSessionSettings();
+    await initializeSessionSettings();
 
-    expect(first).toBe(second);
-
-    await first;
-
-    expect(authService.getUserInfo).toHaveBeenCalledTimes(1);
+    expect(authService.getUserInfo).toHaveBeenCalledTimes(2);
   });
 });

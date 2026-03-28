@@ -1,6 +1,6 @@
 import { registerPlugins } from '@/plugins';
 import { callRefreshLinkClickTracking } from '@/utils/snowplowUtils';
-import { SessionManager } from '@/utils/utils';
+import { initializeSessionSettings } from '@/utils/utils';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'intersection-observer';
 import { createApp } from 'vue';
@@ -24,7 +24,7 @@ const bootstrap = async () => {
 
   // Start session initialization as early as possible so 401 redirects fire sooner.
   const sessionSettingsTask = app.runWithContext(() =>
-    SessionManager.getSettings()
+    initializeSessionSettings()
   );
 
   registerPlugins(app);

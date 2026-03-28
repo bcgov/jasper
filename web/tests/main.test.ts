@@ -39,9 +39,7 @@ describe('main bootstrap', () => {
     history.pushState({}, '', pathname);
 
     class MutationObserverMock {
-      constructor(callback: MutationCallback) {
-        void callback;
-      }
+      constructor(private readonly _callback: MutationCallback) {}
 
       observe = observe;
     }

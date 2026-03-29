@@ -34,10 +34,10 @@
     :model-value="selectedItems"
     @update:model-value="handleSelectedItemsChange"
     :headers="baseHeaders"
-    :items="documents"
+    :items="documentsWithRowKey"
     :sortBy
     return-object
-    item-value="civilDocumentId"
+    item-value="__rowKey"
     show-select
     class="my-3"
     height="800"
@@ -94,6 +94,7 @@
   import { DataTableHeader } from '@/types/shared';
   import { mdiNotebookOutline } from '@mdi/js';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+  import { computed } from 'vue';
 
   const props = defineProps<{
     selectedItems: civilDocumentType[];
@@ -114,7 +115,17 @@
       (e: 'update:selectedItems', value: civilDocumentType[]) => void
     >();
 
-  const handleSelectedItemsChange = (newItems) => {
+  type RowCivilDocument = civilDocumentType & { __rowKey: string };
+
+  // We need to create a unique row key for each document to ensure proper table drawing.
+  const documentsWithRowKey = computed<RowCivilDocument[]>(() =>
+    props.documents.map((doc, index) => ({
+      ...doc,
+      __rowKey: `${doc.civilDocumentId}|${doc.fileSeqNo}|${index}`,
+    }))
+  );
+
+  const handleSelectedItemsChange = (newItems: RowCivilDocument[]) => {
     emit('update:selectedItems', [...newItems]);
   };
 

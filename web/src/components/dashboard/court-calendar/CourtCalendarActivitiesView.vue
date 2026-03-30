@@ -9,17 +9,22 @@
   </FullCalendar>
 </template>
 <script setup lang="ts">
+  import { CourtCalendarDay } from '@/types';
   import { CalendarOptions } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
-  import CourtCalendarActivityDay from './CourtCalendarActivityDay.vue';
   import { ref, watchEffect } from 'vue';
+  import CourtCalendarActivityDay from './CourtCalendarActivityDay.vue';
 
   const calendarRef = ref();
 
   const props = defineProps<{
-    calendarView: string;
-    selectedDate: Date;
+    calendarView: string | undefined;
+    selectedDate: Date | undefined;
+    events: {
+      start: Date;
+      extendedProps: CourtCalendarDay;
+    }[];
   }>();
 
   const calendarOptions: CalendarOptions = {
@@ -43,7 +48,7 @@
     if (calendarApi) {
       calendarApi.removeAllEvents();
 
-      calendarEvents.value.forEach((e) => {
+      props.events.forEach((e) => {
         return calendarApi.addEvent({ ...e });
       });
       calendarApi.gotoDate(props.selectedDate);

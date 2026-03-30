@@ -39,6 +39,8 @@
     <CourtCalendarActivitiesView
       v-if="!isCalendarLoading && !isPresidersView"
       :calendar-view="calendarView"
+      :events="activitiesCalendarEvents"
+      :selected-date="selectedDate"
     />
   </div>
 </template>
@@ -70,7 +72,7 @@
   const calendarView = defineModel<string>('calendarView');
   const isCalendarLoading = defineModel<boolean>('isCalendarLoading');
   const isLocationFilterLoading = ref(true);
-  const isPresidersView = ref(true);
+  const isPresidersView = ref(false);
 
   if (!selectedDate.value) {
     throw new Error('selectedDate is required');

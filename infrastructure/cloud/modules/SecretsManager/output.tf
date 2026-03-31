@@ -142,6 +142,16 @@ output "default_users" {
   value = jsonencode(jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string)["defaultUsers"])
 }
 
+output "managed_notifications_email_addresses" {
+  value = try(
+    tolist(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails),
+    tolist(jsondecode(try(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails, "[]"))),
+    compact([try(tostring(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails), "")]),
+    []
+  )
+  sensitive = true
+}
+
 output "lambda_secrets" {
   value = {
     mtls                 = aws_secretsmanager_secret.mtls_cert_secret.name

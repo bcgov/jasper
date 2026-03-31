@@ -46,6 +46,7 @@ using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using PCSSActivityServices = PCSSCommon.Clients.ActivityServices;
 using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
@@ -233,7 +234,7 @@ namespace Scv.Api.Infrastructure
                     (client) => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
             services
-                .AddHttpClient<PCSSCourtCalendarServices.CourtCalendarClientServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpClient<PCSSCourtCalendarServices.CourtCalendarServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSJudicialCalendarServices.JudicialCalendarServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
@@ -280,6 +281,9 @@ namespace Scv.Api.Infrastructure
                 });
             services
                 .AddHttpClient<PCSSAuthorizationServices.IAuthorizationServicesClient, PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSActivityServices.ActivityServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();

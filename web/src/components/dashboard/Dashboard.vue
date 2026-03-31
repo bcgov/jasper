@@ -6,7 +6,7 @@
     v-model:calendarView="calendarView"
     :isCalendarLoading="isCalendarLoading"
   />
-  <CourtCalendar
+  <CourtCalendarView
     v-if="isCourtCalendar"
     v-model:selectedDate="selectedDate"
     v-model:calendarView="calendarView"
@@ -26,7 +26,7 @@
   import { CalendarViewEnum } from '@/types/common';
   import { ref, watch } from 'vue';
   import CalendarToolbar from './CalendarToolbar.vue';
-  import CourtCalendar from './court-calendar/CourtCalendar.vue';
+  import CourtCalendarView from './court-calendar/CourtCalendarView.vue';
   import CourtToday from './CourtToday.vue';
   import MyCalendar from './my-calendar/MyCalendar.vue';
   import DashboardPanels from './panels/DashboardPanels.vue';

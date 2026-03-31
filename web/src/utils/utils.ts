@@ -259,6 +259,12 @@ export const hasPermission = (permission: string): boolean => {
   return !!commonStore.userInfo?.permissions?.includes(permission);
 };
 
+export const hasRole = (role: string | string[]): boolean => {
+  const commonStore = useCommonStore();
+  const roles = Array.isArray(role) ? role : [role];
+  return roles.some((r) => !!commonStore.userInfo?.roles?.includes(r));
+};
+
 /**
  * Retrieves the short description of a lookup code from a list of lookup codes.
  *

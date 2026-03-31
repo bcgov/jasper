@@ -17,7 +17,6 @@
     <v-container>
       <v-skeleton-loader
         class="my-0"
-        type="table"
         :loading="loading || !isMounted"
       >
         <v-row style="display: flex; flex-wrap: nowrap">
@@ -25,7 +24,13 @@
             <CriminalSidePanel
               v-if="isDataReady && details"
               :details="details"
+              :summaryDetails="summaryDetails"
               :adjudicatorRestrictions="adjudicatorRestrictions"
+              :loadingStates="{
+                summary: sectionLoading.overview,
+                participants: sectionLoading.participants,
+                restrictions: sectionLoading.restrictions,
+              }"
             />
           </v-col>
 
@@ -35,6 +40,10 @@
               :activityClassCd="details.activityClassCd"
               :fileId="fileId"
               :transcripts="transcripts"
+              :loadingStates="{
+                participants: sectionLoading.participants,
+                appearances: sectionLoading.appearances,
+              }"
             />
             <!-- Comment this out for now as we continue to deprecate it -->
             <!-- 
@@ -85,6 +94,7 @@
   import CriminalSidePanel from '@/components/case-details/criminal/CriminalSidePanel.vue';
   import { beautifyDate } from '@/filters';
   import { DarsService, TranscriptDocument } from '@/services/DarsService';
+  import { FilesService } from '@/services/FilesService';
   import { HttpService } from '@/services/HttpService';
   import {
     useCommonStore,
@@ -103,6 +113,7 @@
     ropRequestsInfoType,
   } from '@/types/criminal';
   import {
+    criminalAppearancesType,
     criminalFileDetailsType,
     criminalHearingRestrictionType,
     criminalParticipantType,
@@ -159,27 +170,89 @@
       const criminalFileStore = useCriminalFileStore();
       const route = useRoute();
       //      const router = useRouter();
+      const filesService = inject<FilesService>('filesService');
       const httpService = inject<HttpService>('httpService');
       const darsService = inject<DarsService>('darsService');
 
-      if (!httpService || !darsService) {
+      if (!httpService || !darsService || !filesService) {
         throw new Error('Service is not available!');
       }
+
+      const createEmptyAppearances = (): criminalAppearancesType => ({
+        responseCd: '',
+        responseMessageTxt: '',
+        futureRecCount: '',
+        historyRecCount: '',
+        apprDetail: [],
+        additionalProperties: {},
+        additionalProp1: {},
+        additionalProp2: {},
+        additionalProp3: {},
+      });
+
+      const createEmptyDetails = (): criminalFileDetailsType =>
+        ({
+          responseCd: '',
+          responseMessageTxt: '',
+          fileNumberTxt: '',
+          courtClassCd: '',
+          courtClassDescription: '',
+          courtLevelCd: '',
+          courtLevelDescription: '',
+          appearances: createEmptyAppearances(),
+          activityClassCd: '',
+          activityClassDesc: '',
+          homeLocationAgenId: '',
+          homeLocationAgencyName: '',
+          homeLocationAgencyCode: '',
+          homeLocationRegionName: '',
+          justinNo: '',
+          currentEstimateLenQty: '',
+          currentEstimateLenUnit: '',
+          initialEstimateLenQty: '',
+          initialEstimateLenUnit: '',
+          trialStartDt: '',
+          mdocSubCategoryDsc: '',
+          mdocCcn: '',
+          assignedPartNm: '',
+          approvedByAgencyCd: '',
+          approvedByPartNm: '',
+          approvalCrownAgencyTypeCd: '',
+          crownEstimateLenQty: 0,
+          crownEstimateLenDsc: '',
+          crownEstimateLenUnit: '',
+          caseAgeDays: '',
+          indictableYN: '',
+          complexityTypeCd: '',
+          assignmentTypeDsc: '',
+          trialRemark: [],
+          participant: [],
+          witness: [],
+          crown: [],
+          hearingRestriction: [],
+        }) as criminalFileDetailsType;
 
       const participantList = ref<participantListInfoType[]>([]);
       const adjudicatorRestrictionsInfo = ref<
         AdjudicatorRestrictionsInfoType[]
       >([]);
       const bans = ref<bansInfoType[]>([]);
-      const details = ref<criminalFileDetailsType>(
-        {} as criminalFileDetailsType
-      );
+      const details = ref<criminalFileDetailsType>(createEmptyDetails());
+      const summaryDetails = ref<criminalFileDetailsType>(createEmptyDetails());
       const isDataReady = ref(false);
       const isMounted = ref(false);
       const downloadCompleted = ref(true);
       const errorCode = ref(0);
       const errorText = ref('');
       const loading = ref(false);
+      const sectionLoading = ref({
+        overview: false,
+        participants: false,
+        appearances: false,
+        restrictions: false,
+        transcripts: false,
+      });
+      const activeLoadId = ref(0);
       const fileNumber = ref('');
       const fileId = ref('');
       const transcripts = ref<TranscriptDocument[]>([]);
@@ -311,106 +384,365 @@
       };
 
       onMounted(() => {
-        loading.value = true;
         const routeFileNumber = getSingleValue(route.params.fileNumber);
         criminalFileStore.criminalFileInformation.fileNumber = routeFileNumber;
         criminalFileStore.updateCriminalFile(
           criminalFileStore.criminalFileInformation
         );
         fileNumber.value = routeFileNumber;
-        loading.value = false;
       });
 
-      const getFileDetails = () => {
-        errorCode.value = 0;
+      const updateCriminalFileStore = () => {
+        criminalFileStore.criminalFileInformation.fileNumber = fileNumber.value;
+        criminalFileStore.criminalFileInformation.detailsData = details.value;
+        criminalFileStore.criminalFileInformation.participantList =
+          participantList.value;
+        criminalFileStore.criminalFileInformation.adjudicatorRestrictionsInfo =
+          adjudicatorRestrictionsInfo.value;
+        criminalFileStore.criminalFileInformation.bans = bans.value;
+        criminalFileStore.criminalFileInformation.courtLevel =
+          details.value.courtLevelCd
+            ? DecodeCourtLevel[details.value.courtLevelCd]
+            : '';
+        criminalFileStore.criminalFileInformation.courtClass =
+          details.value.courtClassCd
+            ? DecodeCourtClass[details.value.courtClassCd]
+            : '';
+        criminalFileStore.updateCriminalFile(
+          criminalFileStore.criminalFileInformation
+        );
+      };
 
-        // Start loading file details
-        const fileDetailsPromise = httpService
-          .get<criminalFileDetailsType>(
-            'api/files/criminal/' +
-              criminalFileStore.criminalFileInformation.fileNumber
-          )
-          .then(
-            (Response) => Response,
-            (err) => {
-              // this.$bvToast.toast(`Error - ${err.url} - ${err.status} - ${err.statusText}`, {
-              //   title: "An error has occured.",
-              //   variant: "danger",
-              //   autoHideDelay: 10000,
-              // });
-              errorCode.value = err.status;
-              errorText.value = err.statusText;
-              console.log(err);
-              return null;
-            }
+      const buildParticipantInfo = () => {
+        participantList.value = [];
+        bans.value = [];
+
+        for (const partIndex in participantJson.value) {
+          const participantInfo = {} as participantListInfoType;
+          const jParticipant = participantJson.value[partIndex];
+          participantInfo.index = partIndex;
+          participantInfo.firstName =
+            jParticipant.givenNm.trim().length > 0 ? jParticipant.givenNm : '';
+          participantInfo.lastName = jParticipant.lastNm
+            ? jParticipant.lastNm
+            : jParticipant.orgNm;
+          commonStore.updateDisplayName({
+            lastName: participantInfo.lastName,
+            givenName: participantInfo.firstName,
+          });
+          participantInfo.name = commonStore.displayName;
+
+          participantInfo.dob = jParticipant.birthDt
+            ? new Date(jParticipant.birthDt.split(' ')[0])
+                .toUTCString()
+                .substr(4, 12)
+            : '';
+          participantInfo.partId = jParticipant.partId;
+          participantInfo.profSeqNo = jParticipant.profSeqNo;
+          participantInfo.documentsJson = jParticipant.document ?? [];
+          participantInfo.charges = [];
+          const charges: chargesInfoType[] = [];
+          for (const charge of jParticipant.charge) {
+            const chargeInfo = {} as chargesInfoType;
+            chargeInfo.description = charge.sectionDscTxt;
+            chargeInfo.code = charge.sectionTxt;
+            charges.push(chargeInfo);
+          }
+          participantInfo.charges = charges;
+
+          participantInfo.status = [];
+          for (const status of statusFields) {
+            if (jParticipant[status.code] == 'Y')
+              participantInfo.status.push(status);
+          }
+
+          for (const ban of jParticipant.ban) {
+            const banInfo = {} as bansInfoType;
+            banInfo.banParticipant = participantInfo.name;
+            banInfo.banType = ban.banTypeDescription;
+            banInfo.orderDate = ban.banOrderedDate;
+            banInfo.act = ban.banTypeAct;
+            banInfo.sect = ban.banTypeSection;
+            banInfo.sub = ban.banTypeSubSection;
+            banInfo.description = ban.banStatuteId;
+            banInfo.comment = ban.banCommentText;
+            bans.value.push(banInfo);
+          }
+
+          participantInfo.countsJson = jParticipant.count;
+
+          commonStore.updateDisplayName({
+            lastName: jParticipant.counselLastNm
+              ? jParticipant.counselLastNm
+              : '',
+            givenName: jParticipant.counselGivenNm
+              ? jParticipant.counselGivenNm
+              : '',
+          });
+          participantInfo.counsel = commonStore.displayName.trim.length
+            ? 'JUSTIN: ' + commonStore.displayName
+            : '';
+          participantInfo.counselDesignationFiled =
+            jParticipant.designatedCounselYN;
+          participantList.value.push(participantInfo);
+        }
+      };
+
+      const buildAdjudicatorRestrictions = () => {
+        adjudicatorRestrictionsInfo.value = [];
+
+        for (const jRestriction of adjudicatorRestrictionsJson.value) {
+          const restrictionInfo = {} as AdjudicatorRestrictionsInfoType;
+          restrictionInfo.adjRestriction = jRestriction.adjInitialsTxt
+            ? jRestriction.hearingRestrictionTypeDsc +
+              ': ' +
+              jRestriction.adjInitialsTxt
+            : jRestriction.hearingRestrictionTypeDsc;
+          restrictionInfo.fullName = jRestriction.adjFullNm;
+          restrictionInfo.adjudicator = jRestriction.adjInitialsTxt
+            ? jRestriction.adjInitialsTxt + ' - ' + jRestriction.adjFullNm
+            : jRestriction.adjFullNm;
+          restrictionInfo.status = jRestriction.hearingRestrictionTypeDsc + ' ';
+          restrictionInfo.appliesTo = jRestriction.partNm
+            ? jRestriction.partNm
+            : 'All participants on file';
+          adjudicatorRestrictionsInfo.value.push(restrictionInfo);
+        }
+      };
+
+      const syncTranscriptsToParticipants = () => {
+        if (!participantJson.value.length) {
+          details.value.participant = [];
+          return;
+        }
+
+        buildParticipantInfo();
+
+        participantJson.value.forEach((participant) => {
+          participant.document = (participant.document ?? []).filter(
+            (document) => document.category !== 'Transcript'
+          );
+        });
+
+        if (
+          details.value.appearances?.apprDetail?.length &&
+          transcripts.value.length
+        ) {
+          const appearanceToPartId = new Map<string, string>();
+          details.value.appearances.apprDetail.forEach((appr) => {
+            appearanceToPartId.set(appr.appearanceId, appr.partId);
+          });
+
+          const transcriptToParticipants =
+            buildTranscriptToParticipantMappings(
+              transcripts.value,
+              appearanceToPartId
+            );
+
+          const participantMap = new Map(
+            participantList.value.map((participant) => [participant.partId, participant])
           );
 
-        fileDetailsPromise.then(async (data) => {
-          if (data) {
-            // Start transcript loading early
-            const transcriptsPromise = darsService
-              .getTranscripts(undefined, data.justinNo)
-              .catch((error) => {
-                console.error('Error loading transcripts:', error);
-                return []; // Return empty array on error, don't fail the page load
-              });
+          addTranscriptsToParticipants(
+            transcriptToParticipants,
+            transcripts.value,
+            participantMap
+          );
+        }
 
-            criminalFileStore.criminalFileInformation.detailsData = data;
-            participantJson.value = data.participant;
-            adjudicatorRestrictionsJson.value = data.hearingRestriction;
-            const courtLevel = DecodeCourtLevel[data.courtLevelCd];
-            const courtClass = DecodeCourtClass[data.courtClassCd];
-            ExtractFileInfo();
-            //Allow blank participants, it's a real case file 1019 for example on dev.
+        details.value.participant = [...participantJson.value];
+        buildParticipantInfo();
+      };
 
-            const transcriptsData = await transcriptsPromise;
-            transcripts.value = transcriptsData;
+      const isCurrentLoad = (loadId: number) => activeLoadId.value === loadId;
 
-            // Map all transcripts to participants, match appearances on file to appearances on the transcript, and then use that file appearance to determine the participant.
-            // Step 1: Build appearance ID to participant ID mapping
-            const appearanceToPartId = new Map<string, string>();
-            data.appearances?.apprDetail?.forEach((appr) => {
-              appearanceToPartId.set(appr.appearanceId, appr.partId);
+      const loadOverview = async (loadId: number) => {
+        sectionLoading.value.overview = true;
+        loading.value = true;
+
+        try {
+          const overview = await filesService.criminalFileOverview(fileNumber.value);
+
+          if (!isCurrentLoad(loadId)) {
+            return null;
+          }
+
+          details.value = {
+            ...createEmptyDetails(),
+            ...overview,
+            appearances: createEmptyAppearances(),
+            participant: overview.participant ?? [],
+            crown: overview.crown ?? [],
+            witness: overview.witness ?? [],
+            hearingRestriction: [],
+          } as criminalFileDetailsType;
+
+          summaryDetails.value = {
+            ...details.value,
+            appearances: {
+              ...details.value.appearances,
+              apprDetail: [...(details.value.appearances?.apprDetail ?? [])],
+            },
+            participant: [...(details.value.participant ?? [])],
+            crown: [...(details.value.crown ?? [])],
+            witness: [...(details.value.witness ?? [])],
+            hearingRestriction: [...(details.value.hearingRestriction ?? [])],
+          } as criminalFileDetailsType;
+
+          fileId.value = details.value.justinNo;
+          updateCriminalFileStore();
+          isDataReady.value = true;
+
+          return details.value;
+        } catch (err: any) {
+          if (isCurrentLoad(loadId)) {
+            errorCode.value = err?.status ?? 500;
+            errorText.value = err?.statusText ?? 'An error has occurred.';
+            console.log(err);
+          }
+
+          return null;
+        } finally {
+          if (isCurrentLoad(loadId)) {
+            sectionLoading.value.overview = false;
+            loading.value = false;
+            isMounted.value = true;
+          }
+        }
+      };
+
+      const loadAppearances = async (loadId: number) => {
+        sectionLoading.value.appearances = true;
+
+        try {
+          const appearances = await filesService.criminalFileAppearances(
+            fileNumber.value
+          );
+
+          if (!isCurrentLoad(loadId)) {
+            return;
+          }
+
+          details.value.appearances = appearances ?? createEmptyAppearances();
+          syncTranscriptsToParticipants();
+          updateCriminalFileStore();
+        } catch (err) {
+          if (isCurrentLoad(loadId)) {
+            console.error('Error loading criminal appearances:', err);
+          }
+        } finally {
+          if (isCurrentLoad(loadId)) {
+            sectionLoading.value.appearances = false;
+          }
+        }
+      };
+
+      const loadParticipants = async (loadId: number) => {
+        sectionLoading.value.participants = true;
+
+        try {
+          const participants = await filesService.criminalFileParticipants(
+            fileNumber.value
+          );
+
+          if (!isCurrentLoad(loadId)) {
+            return;
+          }
+
+          participantJson.value = participants ?? [];
+          syncTranscriptsToParticipants();
+          updateCriminalFileStore();
+        } catch (err) {
+          if (isCurrentLoad(loadId)) {
+            console.error('Error loading criminal participants:', err);
+          }
+        } finally {
+          if (isCurrentLoad(loadId)) {
+            sectionLoading.value.participants = false;
+          }
+        }
+      };
+
+      const loadHearingRestrictions = async (loadId: number) => {
+        sectionLoading.value.restrictions = true;
+
+        try {
+          const hearingRestrictions =
+            await filesService.criminalFileHearingRestrictions(fileNumber.value);
+
+          if (!isCurrentLoad(loadId)) {
+            return;
+          }
+
+          adjudicatorRestrictionsJson.value = hearingRestrictions ?? [];
+          details.value.hearingRestriction = hearingRestrictions ?? [];
+          buildAdjudicatorRestrictions();
+          updateCriminalFileStore();
+        } catch (err) {
+          if (isCurrentLoad(loadId)) {
+            console.error('Error loading criminal hearing restrictions:', err);
+          }
+        } finally {
+          if (isCurrentLoad(loadId)) {
+            sectionLoading.value.restrictions = false;
+          }
+        }
+      };
+
+      const loadTranscripts = async (justinNo: string, loadId: number) => {
+        sectionLoading.value.transcripts = true;
+
+        try {
+          const transcriptsData = await darsService
+            .getTranscripts(undefined, justinNo)
+            .catch((error) => {
+              console.error('Error loading transcripts:', error);
+              return [];
             });
 
-            // Step 2: Build transcript to participant mappings with appearance details
-            const transcriptToParticipants =
-              buildTranscriptToParticipantMappings(
-                transcriptsData,
-                appearanceToPartId
-              );
+          if (!isCurrentLoad(loadId)) {
+            return;
+          }
 
-            // Step 3: Build participant lookup map
-            const participantMap = new Map(
-              participantList.value.map((p) => [p.partId, p])
-            );
+          transcripts.value = transcriptsData;
+          syncTranscriptsToParticipants();
+          updateCriminalFileStore();
+        } finally {
+          if (isCurrentLoad(loadId)) {
+            sectionLoading.value.transcripts = false;
+          }
+        }
+      };
 
-            // Step 4: Add transcripts to participants using matched appearance
-            addTranscriptsToParticipants(
-              transcriptToParticipants,
-              transcriptsData,
-              participantMap
-            );
+      const getFileDetails = async () => {
+        errorCode.value = 0;
+        const loadId = ++activeLoadId.value;
 
-            criminalFileStore.criminalFileInformation.participantList =
-              participantList.value;
-            criminalFileStore.criminalFileInformation.adjudicatorRestrictionsInfo =
-              adjudicatorRestrictionsInfo.value;
-            criminalFileStore.criminalFileInformation.bans = bans.value;
-            criminalFileStore.criminalFileInformation.courtLevel = courtLevel;
-            criminalFileStore.criminalFileInformation.courtClass = courtClass;
-            criminalFileStore.updateCriminalFile(
-              criminalFileStore.criminalFileInformation
-            );
-            details.value = data;
-            details.value.participant = participantJson.value;
-            fileId.value = data.justinNo;
-            isDataReady.value = true;
-            loading.value = false;
-          } else if (errorCode.value == 0) errorCode.value = 200;
-          loading.value = false;
-          isMounted.value = true;
-        });
+        details.value = createEmptyDetails();
+        participantJson.value = [];
+        adjudicatorRestrictionsJson.value = [];
+        participantList.value = [];
+        bans.value = [];
+        adjudicatorRestrictionsInfo.value = [];
+        transcripts.value = [];
+        fileId.value = '';
+        summaryDetails.value = createEmptyDetails();
+        isMounted.value = false;
+        isDataReady.value = false;
+
+        const overview = await loadOverview(loadId);
+
+        if (!overview) {
+          if (isCurrentLoad(loadId) && errorCode.value == 0) {
+            errorCode.value = 200;
+          }
+          return;
+        }
+
+        void loadParticipants(loadId);
+        void loadAppearances(loadId);
+        void loadHearingRestrictions(loadId);
+        void loadTranscripts(overview.justinNo, loadId);
       };
 
       const downloadDocuments = () => {
@@ -597,109 +929,13 @@
         );
       });
 
-      const ExtractFileInfo = () => {
-        for (const partIndex in participantJson.value) {
-          const participantInfo = {} as participantListInfoType;
-          const jParticipant = participantJson.value[partIndex];
-          participantInfo.index = partIndex;
-          participantInfo.firstName =
-            jParticipant.givenNm.trim().length > 0 ? jParticipant.givenNm : '';
-          participantInfo.lastName = jParticipant.lastNm
-            ? jParticipant.lastNm
-            : jParticipant.orgNm;
-          commonStore.updateDisplayName({
-            lastName: participantInfo.lastName,
-            givenName: participantInfo.firstName,
-          });
-          participantInfo.name = commonStore.displayName;
-
-          participantInfo.dob = jParticipant.birthDt
-            ? new Date(jParticipant.birthDt.split(' ')[0])
-                .toUTCString()
-                .substr(4, 12)
-            : '';
-          participantInfo.partId = jParticipant.partId;
-          participantInfo.profSeqNo = jParticipant.profSeqNo;
-          participantInfo.charges = [];
-          const charges: chargesInfoType[] = [];
-          for (const charge of jParticipant.charge) {
-            const chargeInfo = {} as chargesInfoType;
-            chargeInfo.description = charge.sectionDscTxt;
-            chargeInfo.code = charge.sectionTxt;
-            charges.push(chargeInfo);
-          }
-          participantInfo.charges = charges;
-
-          participantInfo.status = [];
-          for (const status of statusFields) {
-            if (jParticipant[status.code] == 'Y')
-              participantInfo.status.push(status);
-          }
-
-          for (const ban of jParticipant.ban) {
-            const banInfo = {} as bansInfoType;
-            banInfo.banParticipant = participantInfo.name;
-            banInfo.banType = ban.banTypeDescription;
-            banInfo.orderDate = ban.banOrderedDate;
-            banInfo.act = ban.banTypeAct;
-            banInfo.sect = ban.banTypeSection;
-            banInfo.sub = ban.banTypeSubSection;
-            banInfo.description = ban.banStatuteId;
-            banInfo.comment = ban.banCommentText;
-            bans.value.push(banInfo);
-          }
-
-          participantInfo.countsJson = jParticipant.count;
-
-          commonStore.updateDisplayName({
-            lastName: jParticipant.counselLastNm
-              ? jParticipant.counselLastNm
-              : '',
-            givenName: jParticipant.counselGivenNm
-              ? jParticipant.counselGivenNm
-              : '',
-          });
-          participantInfo.counsel = commonStore.displayName.trim.length
-            ? 'JUSTIN: ' + commonStore.displayName
-            : '';
-          participantInfo.counselDesignationFiled =
-            jParticipant.designatedCounselYN;
-          participantList.value.push(participantInfo);
-        }
-
-        for (const jRestriction of adjudicatorRestrictionsJson.value) {
-          const restrictionInfo = {} as AdjudicatorRestrictionsInfoType;
-          restrictionInfo.adjRestriction = jRestriction.adjInitialsTxt
-            ? jRestriction.hearingRestrictionTypeDsc +
-              ': ' +
-              jRestriction.adjInitialsTxt
-            : jRestriction.hearingRestrictionTypeDsc;
-          restrictionInfo.fullName = jRestriction.adjFullNm;
-          restrictionInfo.adjudicator = jRestriction.adjInitialsTxt
-            ? jRestriction.adjInitialsTxt + ' - ' + jRestriction.adjFullNm
-            : jRestriction.adjFullNm;
-          restrictionInfo.status = jRestriction.hearingRestrictionTypeDsc + ' ';
-          restrictionInfo.appliesTo = jRestriction.partNm
-            ? jRestriction.partNm
-            : 'All participants on file';
-          adjudicatorRestrictionsInfo.value.push(restrictionInfo);
-        }
-      };
-
       // const navigateToLandingPage = () => {
       //   router.push({ name: 'Home' });
       // };
 
       const reloadCaseDetails = () => {
-        loading.value = true;
-        // Reset the properties to load new case details.
         criminalFileStore.criminalFileInformation.fileNumber = fileNumber.value;
-        participantList.value.length = 0;
-        bans.value.length = 0;
-        adjudicatorRestrictionsInfo.value.length = 0;
-        isMounted.value = false;
-        isDataReady.value = false;
-        getFileDetails();
+        void getFileDetails();
       };
 
       return {
@@ -723,7 +959,9 @@
         fileNumber,
         fileId,
         loading,
+        sectionLoading,
         details,
+        summaryDetails,
         adjudicatorRestrictions: adjudicatorRestrictionsInfo,
         transcripts,
       };

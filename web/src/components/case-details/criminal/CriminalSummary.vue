@@ -58,35 +58,50 @@
   import { CourtLevelEnum } from '@/types/common';
   import { criminalFileDetailsType } from '@/types/criminal/jsonTypes';
   import { getCourtClassLabel } from '@/utils/utils';
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import { mdiBank } from '@mdi/js';
   import DivisionBadge from '../common/DivisionBadge.vue';
 
-  const props = defineProps<{ details: criminalFileDetailsType }>();
+  const props = defineProps<{
+    details: criminalFileDetailsType;
+    hasBans?: boolean;
+  }>();
 
-  const details = ref(props.details);
-  const participants = ref(details.value.participant);
-  const bansExist = participants.value.some((p) => p.ban.length > 0);
-  const courtClassCd = props.details.courtClassCd;
+  const details = computed(() => props.details);
+  const participants = computed(() => props.details.participant ?? []);
+  const bansExist = computed(
+    () =>
+      props.hasBans ??
+      participants.value.some((participant) => (participant.ban ?? []).length > 0)
+  );
+  const courtClassCd = computed(() => props.details.courtClassCd);
   const proceeded = computed(() =>
-    details.value.indictableYN === 'Y' ? 'By Indictment' : 'Summarily'
+    props.details.indictableYN === 'Y' ? 'By Indictment' : 'Summarily'
   );
   const names = computed(() => {
+    const primaryParticipant = participants.value[0];
+
+    if (!primaryParticipant) {
+      return '';
+    }
+
     return (
-      participants.value[0].lastNm.toUpperCase() +
+      primaryParticipant.lastNm.toUpperCase() +
       ', ' +
-      participants.value[0].givenNm +
+      primaryParticipant.givenNm +
       (participants.value.length > 1
         ? ` and ${participants.value.length - 1} other(s)`
         : '')
     );
   });
-  const activityClassDesc = details.value.activityClassDesc;
-  const location = details.value.homeLocationAgencyName;
-  const crownAssigned = details.value.crown?.filter((c) => c.assigned)[0];
-  const crownName = crownAssigned
-    ? crownAssigned.lastNm + ', ' + crownAssigned.givenNm
-    : '';
+  const activityClassDesc = computed(() => props.details.activityClassDesc);
+  const location = computed(() => props.details.homeLocationAgencyName);
+  const crownAssigned = computed(() => props.details.crown?.find((c) => c.assigned));
+  const crownName = computed(() =>
+    crownAssigned.value
+      ? `${crownAssigned.value.lastNm}, ${crownAssigned.value.givenNm}`
+      : ''
+  );
 </script>
 <style scoped>
   .case-details-header {

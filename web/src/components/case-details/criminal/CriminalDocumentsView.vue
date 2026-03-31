@@ -177,7 +177,7 @@
   const unfilteredDocuments = computed(
     () =>
       props.participants?.flatMap((participant) =>
-        participant.document.map((doc) => ({
+        (participant.document ?? []).map((doc) => ({
           ...doc,
           fullName: participant.fullName || '',
           profSeqNo: participant.profSeqNo,
@@ -227,11 +227,11 @@
     return selectedCategory.value ? selectedCategory.value : 'All Documents';
   };
 
-  const documentCategories = ref<string[]>([
+  const documentCategories = computed<string[]>(() => [
     ...new Set(
-      unfilteredDocuments.value
-        ?.filter((doc) => doc.category)
-        .map((doc) => doc.category) || []
+      (unfilteredDocuments.value ?? [])
+        .filter((doc) => doc.category)
+        .map((doc) => doc.category)
     ),
   ]);
 

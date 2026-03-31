@@ -24,23 +24,27 @@ public static class KeyDocumentResolver
     /// </returns>
     public static IEnumerable<CriminalDocument> GetCriminalKeyDocuments(IEnumerable<CriminalDocument> documents)
     {
-        if (!documents.Any())
+        var safeDocuments = documents?
+            .Where(d => d != null)
+            .ToList() ?? [];
+
+        if (safeDocuments.Count == 0)
         {
             return [];
         }
 
         // Get all Reports
-        var reportDocs = documents
+        var reportDocs = safeDocuments
             .Where(d => (d.Category?.ToUpper()) == DocumentCategory.REPORT);
 
         // Get other key documents (excluding PSR)
-        var otherKeyDocs = documents
+        var otherKeyDocs = safeDocuments
             .Where(d =>
             DocumentCategory.KEY_DOCUMENT_CATEGORIES.Contains(d.Category?.ToUpper()) &&
             (d.Category?.ToUpper()) != DocumentCategory.REPORT);
 
         // Get most recent uncancelled bail document
-        var bailDoc = documents
+        var bailDoc = safeDocuments
             .Where(d =>
             (d.Category?.ToUpper() == DocumentCategory.BAIL) &&
             (d.DocmDispositionDsc == null || !d.DocmDispositionDsc.Equals(_cancelled, StringComparison.OrdinalIgnoreCase)))
@@ -55,6 +59,7 @@ public static class KeyDocumentResolver
 
     public static IOrderedEnumerable<T> OrderByDescendingIssueDate<T>(this IEnumerable<T> source) where T : CriminalDocument
     {
-        return source.OrderByDescending(d => DateTime.TryParse(d.IssueDate, CultureInfo.InvariantCulture, out var date) ? date : DateTime.MinValue);
+        return (source ?? Enumerable.Empty<T>())
+            .OrderByDescending(d => DateTime.TryParse(d.IssueDate, CultureInfo.InvariantCulture, out var date) ? date : DateTime.MinValue);
     }
 }

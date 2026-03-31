@@ -42,10 +42,16 @@
     </v-row>
     <v-window mandatory continuous v-model="selectedTab" class="mt-3">
       <v-window-item value="documents">
-        <CriminalDocumentsView
+        <v-skeleton-loader
           v-if="isCriminal"
-          :participants="criminalDetails.participant"
-        />
+          :loading="props.loadingStates?.participants"
+          type="table"
+        >
+          <CriminalDocumentsView
+            :participants="criminalDetails.participant"
+          />
+        </v-skeleton-loader>
+
         <CivilDocumentsView
           v-else
           :documents="civilDetails.document"
@@ -54,11 +60,16 @@
         />
       </v-window-item>
       <v-window-item value="appearances">
+        <v-skeleton-loader
+          v-if="props.loadingStates?.appearances"
+          type="table"
+        />
         <AppearancesView
+          v-else
           :appearances="
             isCriminal
-              ? criminalDetails.appearances?.apprDetail
-              : civilDetails.appearances?.apprDetail
+              ? criminalDetails.appearances?.apprDetail ?? []
+              : civilDetails.appearances?.apprDetail ?? []
           "
           :isCriminal="isCriminal"
           :fileNumber="fileId"
@@ -68,9 +79,13 @@
         />
       </v-window-item>
       <v-window-item value="sentence">
+        <v-skeleton-loader
+          v-if="isCriminal && props.loadingStates?.participants"
+          type="table"
+        />
         <SentenceOrderDetailsView
-          v-if="isCriminal"
-          :participants="criminalDetails.participant"
+          v-else-if="isCriminal"
+          :participants="criminalDetails.participant ?? []"
         />
       </v-window-item>
     </v-window>
@@ -96,20 +111,18 @@
     fileId: string;
     courtClassCd?: string;
     transcripts?: TranscriptDocument[];
+    loadingStates?: {
+      participants: boolean;
+      appearances: boolean;
+    };
   }>();
 
   const isCriminal = computed(() => props.activityClassCd === DivisionEnum.R);
   const selectedTab = ref('documents');
-  const criminalDetails = ref<criminalFileDetailsType>(
-    {} as criminalFileDetailsType
+  const criminalDetails = computed(
+    () => props.details as criminalFileDetailsType
   );
-  const civilDetails = ref<civilFileDetailsType>({} as civilFileDetailsType);
-
-  if (isCriminal.value) {
-    criminalDetails.value = props.details as criminalFileDetailsType;
-  } else {
-    civilDetails.value = props.details as civilFileDetailsType;
-  }
+  const civilDetails = computed(() => props.details as civilFileDetailsType);
 </script>
 
 <style scoped>

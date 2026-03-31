@@ -6,6 +6,7 @@
           <v-tab
             class="text-body-1 mb-0"
             selected-class="active-tab"
+            :value="file.key"
             :rounded="fileNumber == file.key ? 't-lg' : false"
             :ripple="false"
             :to="file.key"
@@ -24,15 +25,35 @@
 <script setup lang="ts">
   import { KeyValueInfo } from '@/types/common';
   import { getCourtClassStyle } from '@/utils/utils';
-  import { computed, PropType, ref } from 'vue';
+  import { computed, PropType, ref, watch } from 'vue';
 
-  const fileNumber = defineModel<string>();
+  const fileNumber = defineModel<string | number>();
   const props = defineProps({
     files: { type: Array as PropType<KeyValueInfo[]>, default: () => [] },
     courtClass: { type: String, default: null },
   });
-  const activeTab = ref(() => fileNumber.value);
-  const getBannerStyle = computed(() => getCourtClassStyle(props.courtClass));
+
+  const activeTab = computed({
+    get: () => fileNumber.value,
+    set: (value: string | number) => {
+      fileNumber.value = value;
+    },
+  });
+
+  const lastKnownCourtClass = ref<string | null>(props.courtClass);
+
+  watch(
+    () => props.courtClass,
+    (courtClass) => {
+      if (courtClass) {
+        lastKnownCourtClass.value = courtClass;
+      }
+    }
+  );
+
+  const getBannerStyle = computed(() =>
+    getCourtClassStyle(lastKnownCourtClass.value ?? props.courtClass ?? '')
+  );
 </script>
 
 <style scoped>

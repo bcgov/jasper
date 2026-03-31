@@ -239,7 +239,8 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     keyDocsBinderRefreshHours       = "",
     lazyCacheDefaultDurationSeconds = "",
     supportAccount                  = "",
-    documentRetrievalBatchSize      = ""
+    documentRetrievalBatchSize      = "",
+    awsNotifEmails                  = []
   })
   lifecycle {
     ignore_changes = [secret_string]

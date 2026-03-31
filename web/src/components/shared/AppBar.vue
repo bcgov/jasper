@@ -50,7 +50,16 @@
           class="text-subtitle-1"
         >
           <span class="text-left">
-            <div class="mb-1">{{ userName }}</div>
+            <div
+              class="mb-1"
+              :class="
+                hasUnviewedReleaseNotes
+                  ? 'font-weight-bold release-notes-emphasis'
+                  : ''
+              "
+            >
+              {{ userName }}
+            </div>
           </span>
           <template #append>
             <v-icon :icon="mdiAccountCircle" size="32" />
@@ -115,7 +124,11 @@
     }
   );
 
-  const userName = computed(() => commonStore.userInfo?.userTitle || '');
+  const userName = computed(() => commonStore.currentUserTitle);
+
+  const hasUnviewedReleaseNotes = computed(
+    () => commonStore.hasUnviewedReleaseNotes
+  );
 
   const showOrders = computed(
     () =>
@@ -164,6 +177,11 @@
   }
 
   .underline-on-hover:hover :deep(.v-btn__content) {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .release-notes-emphasis {
     text-decoration: underline;
     text-underline-offset: 2px;
   }

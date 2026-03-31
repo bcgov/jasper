@@ -231,7 +231,10 @@ public class DashboardService(
             var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
             var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
 
-            var result = await _courtCalendarClient.GetCourtCalendarsForLocationsV2Async(locationIds, formattedStartDate, formattedEndDate, string.Empty);
+            async Task<ICollection<PCSS.CourtCalendarLocation>> GetCourtCalendarLocations() =>
+                await _courtCalendarClient.GetCourtCalendarsForLocationsV2Async(locationIds, formattedStartDate, formattedEndDate, "");
+            var courtCalendarLocationsTask = GetDataFromCache($"{CacheName}-CourtCalendarActivities-{locationIds}-{formattedStartDate}-{formattedEndDate}", GetCourtCalendarLocations);
+            var result = await courtCalendarLocationsTask;
 
             // Retrieve the location's short name as its not available in response from PCSS.
             var filteredLocationIds = result.Select(loc => loc.Id.ToString()).Distinct();
@@ -241,8 +244,10 @@ public class DashboardService(
                 locationNameMap[locationId] = await _locationService.GetLocationShortName(locationId);
             }
 
-            // Retrieve all activities
-            var activities = await _activityServicesClient.GetActivitiesAsync();
+            // Retrieve all activities for mapping because response of Court Calendar API is incomplete.
+            async Task<ICollection<PCSS.ActivityType>> GetActivities() => await _activityServicesClient.GetActivitiesAsync();
+            var getActivitiesTask = GetDataFromCache($"{CacheName}-Activities", GetActivities);
+            var activities = await getActivitiesTask;
             var activitiesMap = activities.ToDictionary(a => a.ActivityCd, a => a);
 
             // Transform the PCSS response shape:

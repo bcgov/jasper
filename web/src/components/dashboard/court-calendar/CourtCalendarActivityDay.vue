@@ -38,7 +38,7 @@
 <script lang="ts" setup>
   import { CourtCalendarLocation } from '@/types';
 
-  const props = defineProps<{
+  defineProps<{
     locations: CourtCalendarLocation[];
     date?: Date;
   }>();

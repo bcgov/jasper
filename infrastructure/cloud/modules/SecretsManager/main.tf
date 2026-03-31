@@ -238,7 +238,8 @@ resource "aws_secretsmanager_secret_version" "misc_secret_value" {
     allowedIpRanges                 = "",
     keyDocsBinderRefreshHours       = "",
     lazyCacheDefaultDurationSeconds = "",
-    supportAccount                  = ""
+    supportAccount                  = "",
+    managed_notifications_secret    = []
   })
   lifecycle {
     ignore_changes = [secret_string]

@@ -115,8 +115,10 @@
 
   const showClearAll = computed(
     () =>
-      (selectedLocations.value.length > 0 &&
+      selectedLocations.value.length > 1 ||
+      (selectedLocations.value.length === 1 &&
         selectedLocations.value[0] !== props.judgeHomeLocationId) ||
+      selectedPresiders.value.length > 0 ||
       selectedActivityClass.value !== 'all'
   );
 </script>

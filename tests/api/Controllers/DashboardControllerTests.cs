@@ -163,5 +163,98 @@ namespace tests.api.Controllers
                     It.IsAny<string>()),
                     Times.Once);
         }
+
+        [Fact]
+        public async Task GetCourtCalendarActivities_Returns_BadRequest()
+        {
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarActivitiesAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarActivitiesSchedule>.Failure(_faker.Lorem.Paragraph()));
+
+            var result = await _controller.GetCourtCalendarActivities(
+                _faker.Random.Number().ToString(),
+                _faker.Date.ToString(),
+                _faker.Date.ToString());
+
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendarActivities_Returns_OK_And_Uses_Judge_Home_Location_Id_When_Location_Ids_Is_Missing()
+        {
+            var homeLocationId = _controller.HttpContext.User.JudgeHomeLocationId().ToString();
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarActivitiesAsync(
+                    homeLocationId,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule()));
+
+            var result = await _controller.GetCourtCalendarActivities(
+                null,
+                _faker.Date.ToString(),
+                _faker.Date.ToString());
+
+            Assert.IsType<OkObjectResult>(result);
+            _dashboardService
+                .Verify(d => d.GetCourtCalendarActivitiesAsync(
+                    homeLocationId,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+                    Times.Once);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendarActivities_Returns_OK_And_Uses_Judge_Home_Location_Id_When_Location_Ids_Is_Whitespace()
+        {
+            var homeLocationId = _controller.HttpContext.User.JudgeHomeLocationId().ToString();
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarActivitiesAsync(
+                    homeLocationId,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule()));
+
+            var result = await _controller.GetCourtCalendarActivities(
+                "  ",
+                _faker.Date.ToString(),
+                _faker.Date.ToString());
+
+            Assert.IsType<OkObjectResult>(result);
+            _dashboardService
+                .Verify(d => d.GetCourtCalendarActivitiesAsync(
+                    homeLocationId,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+                    Times.Once);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendarActivities_Returns_OK_And_Uses_Location_Ids()
+        {
+            var locationIds = _faker.Random.Number().ToString();
+            _dashboardService
+                .Setup(d => d.GetCourtCalendarActivitiesAsync(
+                    locationIds,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule()));
+
+            var result = await _controller.GetCourtCalendarActivities(
+                locationIds,
+                _faker.Date.ToString(),
+                _faker.Date.ToString());
+
+            Assert.IsType<OkObjectResult>(result);
+            _dashboardService
+                .Verify(d => d.GetCourtCalendarActivitiesAsync(
+                    locationIds,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+                    Times.Once);
+        }
     }
 }

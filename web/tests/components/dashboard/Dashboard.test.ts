@@ -1,6 +1,6 @@
 import Dashboard from '@/components/dashboard/Dashboard.vue';
 import { useCommonStore } from '@/stores';
-import { mount, shallowMount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
@@ -22,7 +22,7 @@ describe('Dashboard.vue', () => {
         stubs: {
           CourtToday: true,
           CalendarToolbar: true,
-          CourtCalendar: true,
+          CourtCalendarView: true,
           MyCalendar: true,
           DashboardPanels: true,
         },
@@ -37,10 +37,10 @@ describe('Dashboard.vue', () => {
     expect(wrapper.find('calendar-toolbar-stub').exists()).toBe(true);
     expect(wrapper.find('my-calendar-stub').exists()).toBe(true);
     expect(wrapper.find('dashboard-panels-stub').exists()).toBe(true);
-    expect(wrapper.find('court-calendar-stub').exists()).toBe(false);
+    expect(wrapper.find('court-calendar-view-stub').exists()).toBe(false);
   });
 
-  it('renders CourtCalendar when flag is set', async () => {
+  it('renders CourtCalendarView when flag is set', async () => {
     const wrapper = mountComponent();
 
     (wrapper.vm as any).isCourtCalendar = true;
@@ -50,6 +50,6 @@ describe('Dashboard.vue', () => {
     expect(wrapper.find('court-today-stub').exists()).toBe(false);
     expect(wrapper.find('calendar-toolbar-stub').exists()).toBe(true);
     expect(wrapper.find('my-calendar-stub').exists()).toBe(false);
-    expect(wrapper.find('court-calendar-stub').exists()).toBe(true);
+    expect(wrapper.find('court-calendar-view-stub').exists()).toBe(true);
   });
 });

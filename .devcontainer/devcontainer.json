@@ -40,8 +40,7 @@
           "editor.defaultFormatter": "ms-dotnettools.csharp"
         },
         "[terraform]": {
-          "editor.formatOnSave": true,
-          "editor.defaultFormatter": "hashicorp.terraform"
+          "editor.formatOnSave": true
         }
       }
     }

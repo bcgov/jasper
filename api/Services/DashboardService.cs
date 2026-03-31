@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using PCSSCommon.Clients.ActivityServices;
 using PCSSCommon.Clients.CourtCalendarServices;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
@@ -32,7 +33,8 @@ public class DashboardService(
     IMapper mapper,
     ILogger<DashboardService> logger,
     IPcssConfigService pcssConfigService,
-    CourtCalendarClientServicesClient courtCalendarClient
+    CourtCalendarServicesClient courtCalendarClient,
+    ActivityServicesClient activityServicesClient
 ) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
@@ -47,7 +49,8 @@ public class DashboardService(
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<DashboardService> _logger = logger;
     private readonly IPcssConfigService _pcssConfigService = pcssConfigService;
-    private readonly CourtCalendarClientServicesClient _courtCalendarClient = courtCalendarClient;
+    private readonly CourtCalendarServicesClient _courtCalendarClient = courtCalendarClient;
+    private readonly ActivityServicesClient _activityServicesClient = activityServicesClient;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -230,6 +233,18 @@ public class DashboardService(
 
             var result = await _courtCalendarClient.GetCourtCalendarsForLocationsV2Async(locationIds, formattedStartDate, formattedEndDate, string.Empty);
 
+            // Retrieve the location's short name as its not available in response from PCSS.
+            var filteredLocationIds = result.Select(loc => loc.Id.ToString()).Distinct();
+            var locationNameMap = new Dictionary<string, string>();
+            foreach (var locationId in filteredLocationIds)
+            {
+                locationNameMap[locationId] = await _locationService.GetLocationShortName(locationId);
+            }
+
+            // Retrieve all activities
+            var activities = await _activityServicesClient.GetActivitiesAsync();
+            var activitiesMap = activities.ToDictionary(a => a.ActivityCd, a => a);
+
             // Transform the PCSS response shape:
             //
             //   Location[]            Day[]
@@ -253,12 +268,13 @@ public class DashboardService(
                             .Select(x => new CourtCalendarLocation
                             {
                                 LocationId = x.loc.Id.ToString(),
-                                LocationShortName = x.loc.Name,
+                                LocationShortName = locationNameMap.GetValueOrDefault(x.loc.Id.ToString(), "Unknown"),
                                 Activities = [.. x.day.Activities
                                     .GroupBy(a => a.ActivityCode)
                                     .Select(g => new CourtCalendarActivity
                                     {
                                         ActivityCode = g.Key,
+                                        ActivityDisplayCode = activitiesMap.GetValueOrDefault(g.Key)?.ActivityDisplayCd ?? g.Key,
                                         ActivityDescription = g.First().ActivityDescription,
                                         ActivityClassCode = g.First().ActivityClassCode,
                                         ActivityClassDescription = g.First().ActivityClassDescription,
@@ -271,7 +287,7 @@ public class DashboardService(
                 .OrderBy(d => DateTime.ParseExact(d.Date, DATE_FORMAT, CultureInfo.InvariantCulture))
                 .ToList();
 
-            var activities = result
+            var currentActivities = result
                 .SelectMany(loc => loc.Days.SelectMany(day => day.Activities))
                 .DistinctBy(a => a.ActivityCode)
                 .Select(a => new Activity
@@ -287,7 +303,7 @@ public class DashboardService(
             return OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule
             {
                 Days = days,
-                Activities = activities
+                Activities = currentActivities
             });
         }
         catch (Exception ex)

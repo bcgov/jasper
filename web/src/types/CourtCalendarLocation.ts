@@ -2,6 +2,6 @@ import { CourtCalendarActivity } from './CourtCalendarActivity';
 
 export interface CourtCalendarLocation {
   locationId: number;
-  locationName: string;
+  locationShortName: string;
   activities: CourtCalendarActivity[];
 }

@@ -26,7 +26,7 @@ const createActivity = (
 const createLocation = (
   overrides: Partial<CourtCalendarLocation> = {}
 ): CourtCalendarLocation => ({
-  locationId: faker.number.int({ min: 1, max: 999 }),
+  locationId: faker.number.int({ min: 1, max: 999 }).toString(),
   locationShortName: faker.location.city(),
   activities: [createActivity()],
   ...overrides,

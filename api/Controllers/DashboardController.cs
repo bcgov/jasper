@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
+using Scv.Db.Models;
 
 namespace Scv.Api.Controllers
 {
@@ -88,6 +90,12 @@ namespace Scv.Api.Controllers
         public async Task<IActionResult> GetCourtCalendarActivities(string locationIds, string startDate, string endDate)
         {
             var ids = string.IsNullOrWhiteSpace(locationIds) ? this.User.JudgeHomeLocationId().ToString() : locationIds;
+
+            var allowedRoles = new List<string> { Role.ACJ_CHIEF_JUDGE, Role.RAJ, Role.PO_MANAGER, Role.ADMIN };
+            if (!this.User.HasRoles(allowedRoles, true))
+            {
+                return BadRequest(new { error = "User does not have permission to access this resource." });
+            }
 
             var result = await _dashboardService.GetCourtCalendarActivitiesAsync(ids, startDate, endDate);
 

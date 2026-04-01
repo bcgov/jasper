@@ -44,9 +44,9 @@
   }>();
 
   const cleanActivityClassDescription = (
-    activityClassDescription: string
+    activityClassDescription: string | null | undefined
   ): string => {
-    return activityClassDescription
+    return (activityClassDescription ?? '')
       .trim()
       .replaceAll(/\s+/g, '-')
       .toLowerCase();

@@ -217,12 +217,11 @@ public class DashboardService(
             var result = await courtCalendarLocationsTask;
 
             // Retrieve the location's short name as its not available in response from PCSS.
-            var filteredLocationIds = result.Select(loc => loc.Id.ToString()).Distinct();
-            var locationNameMap = new Dictionary<string, string>();
-            foreach (var locationId in filteredLocationIds)
-            {
-                locationNameMap[locationId] = await _locationService.GetLocationShortName(locationId);
-            }
+            var filteredLocationIds = result.Select(loc => loc.Id.ToString()).Distinct().ToList();
+            var locationEntries = await Task.WhenAll(
+                filteredLocationIds.Select(async id => (id, name: await _locationService.GetLocationShortName(id)))
+            );
+            var locationNameMap = locationEntries.ToDictionary(x => x.id, x => x.name);
 
             // Retrieve all activities for mapping because response of Court Calendar API is incomplete.
             async Task<ICollection<PCSS.ActivityType>> GetActivities() => await _activityServicesClient.GetActivitiesAsync();

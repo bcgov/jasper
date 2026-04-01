@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using NJsonSchema;
+using PCSSCommon.Clients.ActivityServices;
+using PCSSCommon.Clients.CourtCalendarServices;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
 using Scv.Api.Helpers.Extensions;
@@ -20,7 +21,8 @@ public interface IDashboardService
 {
     Task<OperationResult<CalendarDay>> GetTodaysScheduleAsync(int judgeId);
     Task<OperationResult<List<CalendarDay>>> GetMyScheduleAsync(int judgeId, string startDate, string endDate);
-    Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate);
+    Task<OperationResult<CourtCalendarPresidersSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate);
+    Task<OperationResult<CourtCalendarActivitiesSchedule>> GetCourtCalendarActivitiesAsync(string locationIds, string startDate, string endDate);
 }
 
 public class DashboardService(
@@ -30,7 +32,9 @@ public class DashboardService(
     LocationService locationService,
     IMapper mapper,
     ILogger<DashboardService> logger,
-    IPcssConfigService pcssConfigService
+    IPcssConfigService pcssConfigService,
+    CourtCalendarServicesClient courtCalendarClient,
+    ActivityServicesClient activityServicesClient
 ) : ServiceBase(cache), IDashboardService
 {
     public const string DATE_FORMAT = "dd-MMM-yyyy";
@@ -45,6 +49,8 @@ public class DashboardService(
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<DashboardService> _logger = logger;
     private readonly IPcssConfigService _pcssConfigService = pcssConfigService;
+    private readonly CourtCalendarServicesClient _courtCalendarClient = courtCalendarClient;
+    private readonly ActivityServicesClient _activityServicesClient = activityServicesClient;
 
     public override string CacheName => nameof(DashboardService);
 
@@ -107,23 +113,15 @@ public class DashboardService(
     {
         try
         {
-            // Validate dates
-            var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
-            var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
-
-            if (!isValidStartDate || !isValidEndDate)
+            if (!TryParseDateRange(startDate, endDate, out var formattedStartDate, out var formattedEndDate))
             {
                 return OperationResult<List<CalendarDay>>.Failure("currentDate, startDate and/or endDate is invalid.");
             }
-
-            var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
-            var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
 
             var mySchedule = await _calendarClient.ReadCalendarV2Async(judgeId, formattedStartDate, formattedEndDate);
             var days = await GetDays(mySchedule);
 
             return OperationResult<List<CalendarDay>>.Success(days);
-
         }
         catch (Exception ex)
         {
@@ -132,28 +130,22 @@ public class DashboardService(
         }
     }
 
-    public async Task<OperationResult<CourtCalendarSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate)
+    public async Task<OperationResult<CourtCalendarPresidersSchedule>> GetCourtCalendarScheduleAsync(int judgeId, string locationIds, string startDate, string endDate)
     {
         try
         {
-            var isValidStartDate = DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate);
-            var isValidEndDate = DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate);
-
-            if (!isValidStartDate || !isValidEndDate)
+            if (!TryParseDateRange(startDate, endDate, out var formattedStartDate, out var formattedEndDate))
             {
-                return OperationResult<CourtCalendarSchedule>.Failure("startDate and/or endDate is invalid.");
+                return OperationResult<CourtCalendarPresidersSchedule>.Failure("startDate and/or endDate is invalid.");
             }
 
-            var formattedStartDate = validStartDate.ToString(DATE_FORMAT);
-            var formattedEndDate = validEndDate.ToString(DATE_FORMAT);
-
             var judicialCalendar = await _calendarClient.ReadCalendarsV2Async(
-                   locationIds,
-                   formattedStartDate,
-                   formattedEndDate,
-                   string.Empty);
-            var calendarsWithData = judicialCalendar.Calendars.Where(c => c.Days.Count > 0);
+               locationIds,
+               formattedStartDate,
+               formattedEndDate,
+               string.Empty);
 
+            var calendarsWithData = judicialCalendar.Calendars.Where(c => c.Days.Count > 0);
             // Aggregate calendars into a single list of CalendarDay
             var calendarDays = await Task.WhenAll(calendarsWithData.Select(c => GetDays(c, judgeId)));
             var aggCalendarDays = calendarDays.SelectMany(c => c)
@@ -196,7 +188,7 @@ public class DashboardService(
                 })
                 .OrderBy(a => a.ClassDescription);
 
-            return OperationResult<CourtCalendarSchedule>.Success(new CourtCalendarSchedule
+            return OperationResult<CourtCalendarPresidersSchedule>.Success(new CourtCalendarPresidersSchedule
             {
                 Days = [.. aggCalendarDays],
                 Presiders = [.. presiders],
@@ -206,7 +198,102 @@ public class DashboardService(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Something went wrong when querying Court Calendar: {Message}", ex.Message);
-            return OperationResult<CourtCalendarSchedule>.Failure("Something went wrong when querying Court Calendar");
+            return OperationResult<CourtCalendarPresidersSchedule>.Failure("Something went wrong when querying Court Calendar");
+        }
+    }
+
+    public async Task<OperationResult<CourtCalendarActivitiesSchedule>> GetCourtCalendarActivitiesAsync(string locationIds, string startDate, string endDate)
+    {
+        try
+        {
+            if (!TryParseDateRange(startDate, endDate, out var formattedStartDate, out var formattedEndDate))
+            {
+                return OperationResult<CourtCalendarActivitiesSchedule>.Failure("startDate and/or endDate is invalid.");
+            }
+
+            async Task<ICollection<PCSS.CourtCalendarLocation>> GetCourtCalendarLocations() =>
+                await _courtCalendarClient.GetCourtCalendarsForLocationsV2Async(locationIds, formattedStartDate, formattedEndDate, "");
+            var courtCalendarLocationsTask = GetDataFromCache($"{CacheName}-CourtCalendarActivities-{locationIds}-{formattedStartDate}-{formattedEndDate}", GetCourtCalendarLocations);
+            var result = await courtCalendarLocationsTask;
+
+            // Retrieve the location's short name as its not available in response from PCSS.
+            var filteredLocationIds = result.Select(loc => loc.Id.ToString()).Distinct().ToList();
+            var locationEntries = await Task.WhenAll(
+                filteredLocationIds.Select(async id => (id, name: await _locationService.GetLocationShortName(id)))
+            );
+            var locationNameMap = locationEntries.ToDictionary(x => x.id, x => x.name);
+
+            // Retrieve all activities for mapping because response of Court Calendar API is incomplete.
+            async Task<ICollection<PCSS.ActivityType>> GetActivities() => await _activityServicesClient.GetActivitiesAsync();
+            var getActivitiesTask = GetDataFromCache($"{CacheName}-Activities", GetActivities);
+            var activities = await getActivitiesTask;
+            var activitiesMap = activities.ToDictionary(a => a.ActivityCd, a => a);
+
+            // Transform the PCSS response shape:
+            //
+            //   Location[]            Day[]
+            //     └─ Day[]       →      └─ Location[]
+            //         └─ Activity[]          └─ Activity[]
+            //
+            // This flattens the location-first hierarchy into a date-first one
+            // for easier rendering on the frontend.
+            var days = result
+                .SelectMany(loc => loc.Days.Select(day => new { loc, day }))
+                .GroupBy(x => x.day.Date)
+                .Select(locDayGroup =>
+                {
+                    DateTime.TryParseExact(locDayGroup.Key, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate);
+                    var isWeekend = parsedDate.DayOfWeek == DayOfWeek.Saturday || parsedDate.DayOfWeek == DayOfWeek.Sunday;
+                    return new CourtCalendarDay
+                    {
+                        Date = locDayGroup.Key,
+                        IsWeekend = isWeekend,
+                        Locations = [.. locDayGroup
+                            .Select(x => new CourtCalendarLocation
+                            {
+                                LocationId = x.loc.Id.ToString(),
+                                LocationShortName = locationNameMap.GetValueOrDefault(x.loc.Id.ToString(), "Unknown"),
+                                Activities = [.. x.day.Activities
+                                    .GroupBy(a => a.ActivityCode)
+                                    .Select(activityGroup => new CourtCalendarActivity
+                                    {
+                                        ActivityCode = activityGroup.Key,
+                                        ActivityDisplayCode = activitiesMap.GetValueOrDefault(activityGroup.Key)?.ActivityDisplayCd ?? activityGroup.Key,
+                                        ActivityDescription = activityGroup.First().ActivityDescription,
+                                        ActivityClassCode = activityGroup.First().ActivityClassCode,
+                                        ActivityClassDescription = activityGroup.First().ActivityClassDescription,
+                                        CourtRooms = [.. activityGroup.SelectMany(a => a.Slots.Select(s => s.CourtRoomCode)).Distinct()]
+                                    })]
+                            })
+                            .OrderBy(l => l.LocationShortName)]
+                    };
+                })
+                .OrderBy(d => DateTime.ParseExact(d.Date, DATE_FORMAT, CultureInfo.InvariantCulture))
+                .ToList();
+
+            var currentActivities = result
+                .SelectMany(loc => loc.Days.SelectMany(day => day.Activities))
+                .DistinctBy(a => a.ActivityCode)
+                .Select(a => new Activity
+                {
+                    Code = a.ActivityCode,
+                    Description = a.ActivityDescription,
+                    ClassCode = a.ActivityClassCode,
+                    ClassDescription = a.ActivityClassDescription
+                })
+                .OrderBy(a => a.ClassDescription)
+                .ToList();
+
+            return OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule
+            {
+                Days = days,
+                Activities = currentActivities
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Something went wrong when querying Court Calendar Activities: {Message}", ex.Message);
+            return OperationResult<CourtCalendarActivitiesSchedule>.Failure("Something went wrong when querying Court Calendar Activities");
         }
     }
 
@@ -339,6 +426,22 @@ public class DashboardService(
         activity.Restrictions = restrictions;
 
         return activity;
+    }
+
+    private static bool TryParseDateRange(string startDate, string endDate, out string formattedStartDate, out string formattedEndDate)
+    {
+        formattedStartDate = null;
+        formattedEndDate = null;
+
+        if (!DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate) ||
+            !DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate))
+        {
+            return false;
+        }
+
+        formattedStartDate = validStartDate.ToString(DATE_FORMAT);
+        formattedEndDate = validEndDate.ToString(DATE_FORMAT);
+        return true;
     }
 
     #endregion Private Methods

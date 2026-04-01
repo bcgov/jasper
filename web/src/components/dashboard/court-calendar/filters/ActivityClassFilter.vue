@@ -16,9 +16,3 @@
 
   const modelValue = defineModel<string>({ default: 'all' });
 </script>
-<style scoped>
-  :deep(.v-btn.v-btn--active) {
-    background-color: var(--bg-blue-800);
-    color: var(--text-white-500);
-  }
-</style>

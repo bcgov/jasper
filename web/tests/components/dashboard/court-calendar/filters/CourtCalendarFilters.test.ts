@@ -6,10 +6,15 @@ import { Presider } from '@/types';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 
 describe('CourtCalendarFilters.vue', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
   const createLocation = (overrides?: Partial<LocationInfo>): LocationInfo => ({
     locationId: faker.string.uuid(),
     shortName: faker.location.city(),
@@ -35,6 +40,7 @@ describe('CourtCalendarFilters.vue', () => {
         isLocationFilterLoading: false,
         locations: [],
         presiders: [],
+        judgeHomeLocationId: '',
         selectedLocations: [],
         selectedPresiders: [],
         selectedActivityClass: 'all',
@@ -274,7 +280,9 @@ describe('CourtCalendarFilters.vue', () => {
 
       await wrapper.find('.clearAll').trigger('click');
 
-      expect(wrapper.emitted('update:selectedLocations')?.at(-1)).toEqual([[]]);
+      expect(wrapper.emitted('update:selectedLocations')?.at(-1)).toEqual([
+        [wrapper.props('judgeHomeLocationId')],
+      ]);
       expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedActivityClass')?.at(-1)).toEqual([
         'all',

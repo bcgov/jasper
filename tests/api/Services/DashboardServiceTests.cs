@@ -12,6 +12,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using PCSSCommon.Clients.ActivityServices;
+using PCSSCommon.Clients.CourtCalendarServices;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
@@ -68,8 +70,8 @@ public class DashboardServiceTests : ServiceTestBase
         JudicialCalendar schedule,
         ActivityClassUsage.ActivityAppearanceResultsCollection courtList)
     {
-        var mockJudicialCalendarClient = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, this.HttpClient);
-        mockJudicialCalendarClient
+        var mockJudicialCalendar = new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, this.HttpClient);
+        mockJudicialCalendar
             .Setup(c => c.ReadCalendarV2Async(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(schedule);
 
@@ -87,16 +89,18 @@ public class DashboardServiceTests : ServiceTestBase
 
         var dashboardService = new DashboardService(
             _cachingService,
-            mockJudicialCalendarClient.Object,
+            mockJudicialCalendar.Object,
             mockSearchDateClient.Object,
             mockLocationService.Object,
             _mapper,
             new Mock<ILogger<DashboardService>>().Object,
-            _mockExternalConfigClient.Object);
+            _mockExternalConfigClient.Object,
+            null,
+            null);
 
         return (
             dashboardService,
-            mockJudicialCalendarClient,
+            mockJudicialCalendar,
             mockSearchDateClient,
             mockLocationService
         );
@@ -865,6 +869,498 @@ public class DashboardServiceTests : ServiceTestBase
     }
 
 
+    #region GetCourtCalendarActivitiesAsync
+
+    private (
+        DashboardService dashboardService,
+        Mock<CourtCalendarServicesClient> mockCourtCalendarClient,
+        Mock<ActivityServicesClient> mockActivityServicesClient,
+        Mock<LocationService> mockLocationService
+    ) SetupCourtCalendarActivitiesService(
+        ICollection<PCSSCommon.Models.CourtCalendarLocation> courtCalendarLocations = null,
+        ICollection<ActivityType> activities = null)
+    {
+        var mockCourtCalendarClient = new Mock<CourtCalendarServicesClient>(MockBehavior.Strict, this.HttpClient);
+        mockCourtCalendarClient
+            .Setup(c => c.GetCourtCalendarsForLocationsV2Async(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(courtCalendarLocations ?? []);
+
+        var mockActivityServicesClient = new Mock<ActivityServicesClient>(MockBehavior.Strict, this.HttpClient);
+        mockActivityServicesClient
+            .Setup(c => c.GetActivitiesAsync())
+            .ReturnsAsync(activities ?? []);
+
+        var mockLocationService = this.SetupLocationService();
+
+        var dashboardService = new DashboardService(
+            _cachingService,
+            new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, this.HttpClient).Object,
+            new Mock<SearchDateClient>(MockBehavior.Strict, this.HttpClient).Object,
+            mockLocationService.Object,
+            _mapper,
+            new Mock<ILogger<DashboardService>>().Object,
+            _mockExternalConfigClient.Object,
+            mockCourtCalendarClient.Object,
+            mockActivityServicesClient.Object);
+
+        return (
+            dashboardService,
+            mockCourtCalendarClient,
+            mockActivityServicesClient,
+            mockLocationService
+        );
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Returns_Failure_When_Dates_Are_Invalid()
+    {
+        var (dashboardService, _, _, _) = SetupCourtCalendarActivitiesService();
+
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1",
+            "invalid-date",
+            "invalid-date");
+
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("startDate and/or endDate is invalid.", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Returns_Success_With_Empty_Result()
+    {
+        var (dashboardService, mockCourtCalendarClient, _, _) = SetupCourtCalendarActivitiesService();
+
+        var startDate = DateTime.Now.AddDays(-5).ToString(DashboardService.DATE_FORMAT);
+        var endDate = DateTime.Now.AddDays(5).ToString(DashboardService.DATE_FORMAT);
+
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync("1", startDate, endDate);
+
+        Assert.True(result.Succeeded);
+        Assert.Empty(result.Payload.Days);
+        Assert.Empty(result.Payload.Activities);
+        mockCourtCalendarClient
+            .Verify(c => c.GetCourtCalendarsForLocationsV2Async(
+                "1",
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Returns_Success_And_Transforms_Shape_Correctly()
+    {
+        // Arrange: Two locations, each with one day on the same date
+        var mockDate = "15-Apr-2026";
+        var mockActivityCode = "CR";
+        var mockActivityDescription = "Criminal";
+        var mockActivityClassCode = "CRM";
+        var mockActivityClassDescription = "Criminal Remand";
+        var mockActivityDisplayCode = "CRM-D";
+        var mockCourtRoom1 = "101";
+        var mockCourtRoom2 = "102";
+
+        var courtCalendarLocations = new List<PCSSCommon.Models.CourtCalendarLocation>
+        {
+            new()
+            {
+                Id = 1,
+                Name = "LOC-A",
+                Days =
+                [
+                    new()
+                    {
+                        Date = mockDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = mockActivityCode,
+                                ActivityDescription = mockActivityDescription,
+                                ActivityClassCode = mockActivityClassCode,
+                                ActivityClassDescription = mockActivityClassDescription,
+                                Slots = { new() { CourtRoomCode = mockCourtRoom1 } }
+                            }
+                        }
+                    }
+                ]
+            },
+            new()
+            {
+                Id = 2,
+                Name = "LOC-B",
+                Days =
+                [
+                    new()
+                    {
+                        Date = mockDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = mockActivityCode,
+                                ActivityDescription = mockActivityDescription,
+                                ActivityClassCode = mockActivityClassCode,
+                                ActivityClassDescription = mockActivityClassDescription,
+                                Slots = { new() { CourtRoomCode = mockCourtRoom2 } }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        var activities = new List<ActivityType>
+        {
+            new() { ActivityCd = mockActivityCode, ActivityDisplayCd = mockActivityDisplayCode }
+        };
+
+        var (dashboardService, _, _, mockLocationService) =
+            SetupCourtCalendarActivitiesService(courtCalendarLocations, activities);
+
+        mockLocationService
+            .Setup(l => l.GetLocationShortName("1"))
+            .ReturnsAsync("VAN");
+        mockLocationService
+            .Setup(l => l.GetLocationShortName("2"))
+            .ReturnsAsync("VIC");
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1,2",
+            "10-Apr-2026",
+            "20-Apr-2026");
+
+        // Assert: Both locations are grouped under a single day
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Payload.Days);
+
+        var day = result.Payload.Days[0];
+        Assert.Equal(mockDate, day.Date);
+        Assert.False(day.IsWeekend);
+        Assert.Equal(2, day.Locations.Count);
+
+        // Locations should be ordered by short name (VAN < VIC)
+        Assert.Equal("VAN", day.Locations[0].LocationShortName);
+        Assert.Equal("VIC", day.Locations[1].LocationShortName);
+
+        // Each location has one activity with correct display code from lookup
+        Assert.Single(day.Locations[0].Activities);
+        Assert.Equal(mockActivityCode, day.Locations[0].Activities[0].ActivityCode);
+        Assert.Equal(mockActivityDisplayCode, day.Locations[0].Activities[0].ActivityDisplayCode);
+        Assert.Equal(mockCourtRoom1, day.Locations[0].Activities[0].CourtRooms[0]);
+        Assert.Equal(mockCourtRoom2, day.Locations[1].Activities[0].CourtRooms[0]);
+
+        // Distinct activities list
+        Assert.Single(result.Payload.Activities);
+        Assert.Equal(mockActivityCode, result.Payload.Activities[0].Code);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Groups_Activities_By_ActivityCode_Within_Location()
+    {
+        // Arrange: One location with two slots of the same activity code on the same day
+        var mockDate = "15-Apr-2026";
+        var courtCalendarLocations = new List<PCSSCommon.Models.CourtCalendarLocation>
+        {
+            new()
+            {
+                Id = 1,
+                Name = "LOC-A",
+                Days =
+                [
+                    new()
+                    {
+                        Date = mockDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = "CR",
+                                ActivityDescription = "Criminal",
+                                ActivityClassCode = "CRM",
+                                ActivityClassDescription = "Criminal Remand",
+                                Slots = { new() { CourtRoomCode = "101" } }
+                            },
+                            new()
+                            {
+                                ActivityCode = "CR",
+                                ActivityDescription = "Criminal",
+                                ActivityClassCode = "CRM",
+                                ActivityClassDescription = "Criminal Remand",
+                                Slots = { new() { CourtRoomCode = "102" } }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        var (dashboardService, _, _, _) = SetupCourtCalendarActivitiesService(courtCalendarLocations);
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1",
+            "10-Apr-2026",
+            "20-Apr-2026");
+
+        // Assert: Two PCSS activities with the same code are grouped into one, with both court rooms
+        Assert.True(result.Succeeded);
+        var location = result.Payload.Days[0].Locations[0];
+        Assert.Single(location.Activities);
+        Assert.Equal(2, location.Activities[0].CourtRooms.Count);
+        Assert.Contains("101", location.Activities[0].CourtRooms);
+        Assert.Contains("102", location.Activities[0].CourtRooms);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Marks_Weekend_Days()
+    {
+        // Arrange: Saturday April 18, 2026
+        var weekendDate = "18-Apr-2026";
+        var courtCalendarLocations = new List<PCSSCommon.Models.CourtCalendarLocation>
+        {
+            new()
+            {
+                Id = 1,
+                Name = "LOC-A",
+                Days =
+                [
+                    new()
+                    {
+                        Date = weekendDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = "CR",
+                                ActivityDescription = "Criminal",
+                                ActivityClassCode = "CRM",
+                                ActivityClassDescription = "Criminal",
+                                Slots = { new() { CourtRoomCode = "101" } }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        var (dashboardService, _, _, _) = SetupCourtCalendarActivitiesService(courtCalendarLocations);
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1",
+            "17-Apr-2026",
+            "19-Apr-2026");
+
+        // Assert
+        Assert.True(result.Succeeded);
+        Assert.True(result.Payload.Days[0].IsWeekend);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Falls_Back_To_ActivityCode_When_DisplayCode_Not_Found()
+    {
+        // Arrange: No matching ActivityType in lookup
+        var mockDate = "15-Apr-2026";
+        var courtCalendarLocations = new List<PCSSCommon.Models.CourtCalendarLocation>
+        {
+            new()
+            {
+                Id = 1,
+                Name = "LOC-A",
+                Days =
+                [
+                    new()
+                    {
+                        Date = mockDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = "UNKNOWN",
+                                ActivityDescription = "Unknown Activity",
+                                ActivityClassCode = "UNK",
+                                ActivityClassDescription = "Unknown",
+                                Slots = { new() { CourtRoomCode = "101" } }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        // Empty activities lookup
+        var (dashboardService, _, _, _) = SetupCourtCalendarActivitiesService(courtCalendarLocations, []);
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1",
+            "10-Apr-2026",
+            "20-Apr-2026");
+
+        // Assert: Falls back to activity code as display code
+        Assert.True(result.Succeeded);
+        Assert.Equal("UNKNOWN", result.Payload.Days[0].Locations[0].Activities[0].ActivityDisplayCode);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Orders_Days_By_Date()
+    {
+        // Arrange: Two days in reverse chronological order
+        var earlierDate = "13-Apr-2026";
+        var laterDate = "15-Apr-2026";
+        var courtCalendarLocations = new List<PCSSCommon.Models.CourtCalendarLocation>
+        {
+            new()
+            {
+                Id = 1,
+                Name = "LOC-A",
+                Days =
+                [
+                    new()
+                    {
+                        Date = laterDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = "CR",
+                                ActivityDescription = "Criminal",
+                                ActivityClassCode = "CRM",
+                                ActivityClassDescription = "Criminal",
+                                Slots = { new() { CourtRoomCode = "101" } }
+                            }
+                        }
+                    },
+                    new()
+                    {
+                        Date = earlierDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = "CV",
+                                ActivityDescription = "Civil",
+                                ActivityClassCode = "CVL",
+                                ActivityClassDescription = "Civil",
+                                Slots = { new() { CourtRoomCode = "201" } }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        var (dashboardService, _, _, _) = SetupCourtCalendarActivitiesService(courtCalendarLocations);
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1",
+            "10-Apr-2026",
+            "20-Apr-2026");
+
+        // Assert: Days are ordered chronologically
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Payload.Days.Count);
+        Assert.Equal(earlierDate, result.Payload.Days[0].Date);
+        Assert.Equal(laterDate, result.Payload.Days[1].Date);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Returns_Failure_When_Exception_Is_Thrown()
+    {
+        var mockCourtCalendarClient = new Mock<CourtCalendarServicesClient>(MockBehavior.Strict, this.HttpClient);
+        mockCourtCalendarClient
+            .Setup(c => c.GetCourtCalendarsForLocationsV2Async(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ThrowsAsync(new Exception("Service unavailable"));
+
+        var mockLocationService = SetupLocationService();
+
+        var dashboardService = new DashboardService(
+            _cachingService,
+            new Mock<JudicialCalendarServicesClient>(MockBehavior.Strict, this.HttpClient).Object,
+            new Mock<SearchDateClient>(MockBehavior.Strict, this.HttpClient).Object,
+            mockLocationService.Object,
+            _mapper,
+            new Mock<ILogger<DashboardService>>().Object,
+            _mockExternalConfigClient.Object,
+            mockCourtCalendarClient.Object,
+            new Mock<ActivityServicesClient>(MockBehavior.Strict, this.HttpClient).Object);
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "1",
+            DateTime.Now.AddDays(-5).ToString(DashboardService.DATE_FORMAT),
+            DateTime.Now.AddDays(5).ToString(DashboardService.DATE_FORMAT));
+
+        // Assert
+        Assert.False(result.Succeeded);
+        Assert.Equal("Something went wrong when querying Court Calendar Activities", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task GetCourtCalendarActivities_Uses_Location_ShortName_From_LocationService()
+    {
+        var mockDate = "15-Apr-2026";
+        var courtCalendarLocations = new List<PCSSCommon.Models.CourtCalendarLocation>
+        {
+            new()
+            {
+                Id = 42,
+                Name = "Full Location Name",
+                Days =
+                [
+                    new()
+                    {
+                        Date = mockDate,
+                        Activities =
+                        {
+                            new()
+                            {
+                                ActivityCode = "CR",
+                                ActivityDescription = "Criminal",
+                                ActivityClassCode = "CRM",
+                                ActivityClassDescription = "Criminal",
+                                Slots = { new() { CourtRoomCode = "101" } }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        var (dashboardService, _, _, mockLocationService) =
+            SetupCourtCalendarActivitiesService(courtCalendarLocations);
+
+        mockLocationService
+            .Setup(l => l.GetLocationShortName("42"))
+            .ReturnsAsync("VAN");
+
+        // Act
+        var result = await dashboardService.GetCourtCalendarActivitiesAsync(
+            "42",
+            "10-Apr-2026",
+            "20-Apr-2026");
+
+        // Assert: LocationShortName comes from the service, not the PCSS Name
+        Assert.True(result.Succeeded);
+        Assert.Equal("VAN", result.Payload.Days[0].Locations[0].LocationShortName);
+        Assert.Equal("42", result.Payload.Days[0].Locations[0].LocationId);
+        mockLocationService.Verify(l => l.GetLocationShortName("42"), Times.Once);
+    }
+
+    #endregion GetCourtCalendarActivitiesAsync
+
+    #region Private Methods
     private static DateTime GetRandomWeekend()
     {
         var baseDate = new Faker().Date.Past(2).Date;
@@ -872,4 +1368,6 @@ public class DashboardServiceTests : ServiceTestBase
         var saturday = baseDate.AddDays(offset);
         return saturday.AddDays(new Faker().Random.Int(0, 1));
     }
+
+    #endregion Private Methods
 }

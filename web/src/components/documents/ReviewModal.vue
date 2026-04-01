@@ -132,10 +132,11 @@
   });
 
   const reviewOrder = async (status: OrderReviewStatus) => {
-    let documentData = '';
+    const documentData = '';
+    let supportingDocumentData = '';
     if (selectedUpload.value) {
       const arrayBuffer = await selectedUpload.value.arrayBuffer();
-      documentData = arrayBufferToBase64(arrayBuffer);
+      supportingDocumentData = arrayBufferToBase64(arrayBuffer);
     }
 
     const review: OrderReview = {
@@ -143,7 +144,7 @@
       status: status,
       signed: status === OrderReviewStatus.Approved,
       documentData,
-      userProvidedDocument: selectedUpload.value !== null,
+      supportingDocumentData,
     };
     emit('reviewOrder', review);
 

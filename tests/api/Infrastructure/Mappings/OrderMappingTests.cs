@@ -36,7 +36,8 @@ public class OrderMappingTests
         Assert.Equal(order.Status, result.Status);
         Assert.Equal(order.Signed, result.Signed);
         Assert.Equal(order.Comments, result.Comments);
-        Assert.Equal(order.DocumentData, result.DocumentData);
+        Assert.Equal(Convert.ToBase64String(order.DocumentData), result.DocumentData);
+        Assert.Equal(Convert.ToBase64String(order.SupportingDocumentData), result.SupportingDocumentData);
         Assert.Equal(order.ProcessedDate, result.ProcessedDate);
         Assert.NotNull(result.OrderRequest);
     }
@@ -94,7 +95,8 @@ public class OrderMappingTests
         Assert.Equal(orderDto.Status, result.Status);
         Assert.Equal(orderDto.Signed, result.Signed);
         Assert.Equal(orderDto.Comments, result.Comments);
-        Assert.Equal(orderDto.DocumentData, result.DocumentData);
+        Assert.Equal(Convert.FromBase64String(orderDto.DocumentData), result.DocumentData);
+        Assert.Equal(Convert.FromBase64String(orderDto.SupportingDocumentData), result.SupportingDocumentData);
         Assert.Equal(orderDto.ProcessedDate, result.ProcessedDate);
         Assert.NotNull(result.OrderRequest);
     }
@@ -268,17 +270,18 @@ public class OrderMappingTests
     }
 
     [Fact]
-    public void OrderReviewDto_To_OrderDto_MapsUserProvidedDocument()
+    public void OrderReviewDto_To_OrderDto_MapsSupportingDocumentData()
     {
+        var supportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64));
         var orderReviewDto = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
-            UserProvidedDocument = true
+            SupportingDocumentData = supportingDocumentData
         };
 
         var result = orderReviewDto.Adapt<OrderDto>(_config);
 
-        Assert.True(result.UserProvidedDocument);
+        Assert.Equal(supportingDocumentData, result.SupportingDocumentData);
     }
 
     #endregion
@@ -426,7 +429,8 @@ public class OrderMappingTests
             Status = _faker.PickRandom<OrderStatus>(),
             Signed = _faker.Random.Bool(),
             Comments = _faker.Lorem.Sentence(),
-            DocumentData = _faker.Lorem.Paragraph(),
+            DocumentData = _faker.Random.Bytes(64),
+            SupportingDocumentData = _faker.Random.Bytes(64),
             ProcessedDate = _faker.Date.Recent(),
             Ent_Dtm = _faker.Date.Past(),
             Upd_Dtm = _faker.Date.Recent(),
@@ -466,7 +470,8 @@ public class OrderMappingTests
             Status = _faker.PickRandom<OrderStatus>(),
             Signed = _faker.Random.Bool(),
             Comments = _faker.Lorem.Sentence(),
-            DocumentData = _faker.Lorem.Paragraph(),
+            DocumentData = Convert.ToBase64String(_faker.Random.Bytes(64)),
+            SupportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64)),
             ProcessedDate = _faker.Date.Recent(),
             CreatedDate = _faker.Date.Past(),
             UpdatedDate = _faker.Date.Recent()

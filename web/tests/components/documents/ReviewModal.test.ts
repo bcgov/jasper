@@ -146,6 +146,7 @@ describe('ReviewModal.vue', () => {
       const emitted = wrapper.emitted('reviewOrder');
       expect(emitted).toBeTruthy();
       expect(emitted?.[0]?.[0]?.documentData).toBe('');
+      expect(emitted?.[0]?.[0]?.supportingDocumentData).toBe('');
     });
   });
 });

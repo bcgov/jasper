@@ -21,7 +21,7 @@
           density="comfortable"
           clearable
           :multiple="false"
-          filter-by-type=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+          filter-by-type=".pdf,.doc,.docx"
           scrim="primary"
           :disabled="props.disabled"
           @update:model-value="onDocumentSelected"

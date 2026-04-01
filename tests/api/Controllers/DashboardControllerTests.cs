@@ -12,6 +12,7 @@ using Scv.Api.Infrastructure;
 using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
 using Xunit;
+using JasperRole = Scv.Db.Models.Role;
 
 namespace tests.api.Controllers
 {
@@ -30,6 +31,7 @@ namespace tests.api.Controllers
             {
                 new(CustomClaimTypes.JudgeId, _faker.Random.Int().ToString()),
                 new(CustomClaimTypes.JudgeHomeLocationId, _faker.Random.Int().ToString()),
+                new(CustomClaimTypes.Role, JasperRole.ADMIN),
             };
 
             var identity = new ClaimsIdentity(claims, _faker.Random.Word());
@@ -255,6 +257,36 @@ namespace tests.api.Controllers
                     It.IsAny<string>(),
                     It.IsAny<string>()),
                     Times.Once);
+        }
+
+        [Fact]
+        public async Task GetCourtCalendarActivities_Returns_BadRequest_When_User_Does_Not_Have_Required_Role()
+        {
+            var httpContext = new Mock<HttpContext>();
+            var claims = new List<Claim>
+            {
+                new(CustomClaimTypes.JudgeId, _faker.Random.Int().ToString()),
+                new(CustomClaimTypes.JudgeHomeLocationId, _faker.Random.Int().ToString()),
+                new(CustomClaimTypes.Role, JasperRole.JUDGE), // role not in allowed list
+            };
+            var identity = new ClaimsIdentity(claims, _faker.Random.Word());
+            httpContext.Setup(c => c.User).Returns(new ClaimsPrincipal(identity));
+
+            var controller = new DashboardController(_dashboardService.Object)
+            {
+                ControllerContext = new ControllerContext { HttpContext = httpContext.Object }
+            };
+
+            var result = await controller.GetCourtCalendarActivities(
+                _faker.Random.Number().ToString(),
+                _faker.Date.ToString(),
+                _faker.Date.ToString());
+
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            _dashboardService.Verify(d => d.GetCourtCalendarActivitiesAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()), Times.Never); // service never reached
         }
     }
 }

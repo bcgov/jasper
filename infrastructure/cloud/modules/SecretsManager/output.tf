@@ -149,7 +149,7 @@ output "default_users" {
 }
 
 output "managed_notifications_email_addresses" {
-  value     = tolist(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).managed_notifications_secret)
+  value     = tolist(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails)
   sensitive = true
 }
 

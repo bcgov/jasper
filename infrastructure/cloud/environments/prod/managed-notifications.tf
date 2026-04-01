@@ -18,7 +18,7 @@ resource "aws_notifications_notification_hub" "aws_health" {
 
 resource "aws_notificationscontacts_email_contact" "aws_health" {
   provider      = aws.notifications_hub
-  for_each      = toset(module.secrets_manager.managed_notifications_email_addresses)
+  for_each      = toset(nonsensitive(module.secrets_manager.managed_notifications_email_addresses))
   name          = "health-${var.environment}-${substr(sha1(each.value), 0, 12)}"
   email_address = each.value
 }

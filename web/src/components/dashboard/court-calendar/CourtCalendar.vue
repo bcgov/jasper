@@ -41,7 +41,7 @@
 <script setup lang="ts">
   import { DashboardService, LocationService } from '@/services';
   import { Activity, CalendarDay, Presider } from '@/types';
-  import { CalendarViewEnum } from '@/types/common';
+  import { ActivityClassEnum, CalendarViewEnum } from '@/types/common';
   import { LocationInfo } from '@/types/courtlist';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { CalendarOptions } from '@fullcalendar/core';
@@ -120,8 +120,13 @@
         (a) =>
           (selectedPresiderIds.value.length === 0 ||
             selectedPresiderIds.value.includes(a.judgeId.toString())) &&
+          // If 'all' is selected, include all activities.
+          // If 'non-sitting' is selected, include only non-sitting activities.
+          // If 'sitting' is selected, exclude non-sitting activities.
           (selectedActivityClass.value === 'all' ||
-            a.activityClassCode === selectedActivityClass.value)
+            (selectedActivityClass.value === ActivityClassEnum.NonSitting
+              ? a.activityClassCode === ActivityClassEnum.NonSitting
+              : a.activityClassCode !== ActivityClassEnum.NonSitting))
       ),
     }))
   );

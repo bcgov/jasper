@@ -77,5 +77,5 @@ public class OrderMapping : IRegister
         data is { Length: > 0 } ? Convert.ToBase64String(data) : null;
 
     private static byte[] FromBase64OrNull(string value) =>
-        string.IsNullOrWhiteSpace(value) ? null : Convert.FromBase64String(value);
+        string.IsNullOrWhiteSpace(value) ? [] : Convert.FromBase64String(value);
 }

@@ -28,7 +28,12 @@
         :courtClassCd
         class="my-0"
       />
-      <span v-if="bansExist"
+      <v-skeleton-loader
+        v-if="hasBansLoading"
+        type="text"
+        class="ban-skeleton ml-2"
+      />
+      <span v-else-if="bansExist"
         ><b style="color: var(--text-red-500)">BAN</b></span
       >
     </div>
@@ -65,15 +70,18 @@
   const props = defineProps<{
     details: criminalFileDetailsType;
     hasBans?: boolean;
+    hasBansLoading?: boolean;
   }>();
 
   const details = computed(() => props.details);
   const participants = computed(() => props.details.participant ?? []);
-  const bansExist = computed(
-    () =>
-      props.hasBans ??
-      participants.value.some((participant) => (participant.ban ?? []).length > 0)
+  const hasParticipantBans = computed(() =>
+    participants.value.some((participant) => (participant.ban ?? []).length > 0)
   );
+  const bansExist = computed(
+    () => Boolean(props.hasBans) || hasParticipantBans.value
+  );
+  const hasBansLoading = computed(() => Boolean(props.hasBansLoading));
   const courtClassCd = computed(() => props.details.courtClassCd);
   const proceeded = computed(() =>
     props.details.indictableYN === 'Y' ? 'By Indictment' : 'Summarily'
@@ -113,5 +121,19 @@
 
   .v-card {
     border-radius: 0.5rem !important;
+  }
+
+  .ban-skeleton {
+    width: 2.5rem;
+    min-width: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ban-skeleton :deep(.v-skeleton-loader__text) {
+    margin: 0;
+    height: 1rem;
+    width: 100%;
+    border-radius: 999px;
   }
 </style>

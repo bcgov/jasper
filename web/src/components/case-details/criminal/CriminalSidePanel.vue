@@ -1,20 +1,27 @@
 <template>
   <div class="scrollable">
+    <!-- Summary panel -->
     <v-skeleton-loader
-      :loading="loadingStates.summary"
+    v-if="loadingStates.summary"
       type="card"
-    >
-      <CriminalSummary :details="summaryData" :hasBans="hasBans" />
-    </v-skeleton-loader>
+     />
+    <CriminalSummary
+      v-else
+      :details="summaryData"
+      :hasBans="hasBans"
+      :hasBansLoading="loadingStates.participants"
+    />
+    <!-- Adjudicator Restrictions panel -->
     <v-skeleton-loader
       v-if="loadingStates.restrictions"
-      type="list-item-two-line@2"
+      type="card"
       class="mt-4"
     />
     <adjudicator-restrictions-panel
       v-else-if="adjudicatorRestrictions?.length > 0"
       :adjudicatorRestrictions
     />
+    <!-- Participants panel -->
     <v-skeleton-loader
       v-if="loadingStates.participants"
       type="list-item-three-line@3"
@@ -52,7 +59,7 @@
   const details = computed(() => props.details);
   const appearances = computed(() => props.details.appearances?.apprDetail ?? []);
   const hasBans = computed(() =>
-    (summaryData.value.participant ?? []).some((participant) =>
+    (props.details.participant ?? []).some((participant) =>
       (participant.ban ?? []).length > 0
     )
   );

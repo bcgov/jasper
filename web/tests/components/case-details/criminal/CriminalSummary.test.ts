@@ -161,7 +161,17 @@ describe('CriminalSummary.vue', () => {
       props: { details },
     });
 
-    expect(wrapper.findAll('span')[2].text()).toBe('BAN');
+    expect(wrapper.text()).toContain('BAN');
+  });
+
+  it('renders bans text even when hasBans is explicitly false', () => {
+    details.participant[0].ban = [{} as banType];
+
+    const wrapper = mount(CriminalSummary, {
+      props: { details, hasBans: false },
+    });
+
+    expect(wrapper.text()).toContain('BAN');
   });
 
   it.each([

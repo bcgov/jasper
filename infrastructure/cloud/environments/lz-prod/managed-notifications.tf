@@ -1,8 +1,8 @@
 locals {
   aws_health_managed_notification_configuration_arns = toset([
     "arn:aws:notifications::${data.aws_caller_identity.current.account_id}:managed-notification-configuration/category/AWS-Health/sub-category/Security",
-    "arn:aws:notifications::${data.aws_caller_identity.current.account_id}:managed-notification-configuration/category/AWS-Health/sub-category/Health-Operations-Issue",
-    "arn:aws:notifications::${data.aws_caller_identity.current.account_id}:managed-notification-configuration/category/AWS-Health/sub-category/Account-Specific-Issue"
+    "arn:aws:notifications::${data.aws_caller_identity.current.account_id}:managed-notification-configuration/category/AWS-Health/sub-category/Operations",
+    "arn:aws:notifications::${data.aws_caller_identity.current.account_id}:managed-notification-configuration/category/AWS-Health/sub-category/Issue",
   ])
 }
 

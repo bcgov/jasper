@@ -20,34 +20,42 @@
 
       <!-- Body -->
       <v-card-text>
-        <p class="text-body-2 text-medium-emphasis">
-          Add any notes or reasoning for your decision. These comments will be
-          saved with the order. <br />
-          Note: Comments are required for any action other than Approval.
-        </p>
+        <!-- Comments Section -->
+        <div class="mb-6">
+          <p class="text-body-2 text-medium-emphasis mb-3">
+            Add any notes or reasoning for your decision. These comments will be
+            saved with the order. <br />
+            <strong>Required</strong> for any action other than Approval.
+          </p>
 
-        <v-textarea
-          ref="commentsRef"
-          v-model="comments"
-          label="Review comments"
-          rows="4"
-          auto-grow
-          clearable
-          variant="outlined"
+          <v-textarea
+            ref="commentsRef"
+            v-model="comments"
+            label="Review comments"
+            rows="4"
+            auto-grow
+            clearable
+            variant="outlined"
+          />
+        </div>
+
+        <DocumentUpload
+          v-model:show="show"
+          v-model:selectedFile="selectedUpload"
+          :disabled="props.canApprove"
         />
+      </v-card-text>
+
+      <v-card-text>
         <v-alert
           v-if="!canApprove"
           type="warning"
           variant="tonal"
           density="comfortable"
-          class="mx-6 mt-2"
         >
-          Document signature is required before Approval.
+          Document signature or upload is required before Approval.
         </v-alert>
       </v-card-text>
-
-      <v-divider />
-
       <!-- Actions -->
       <v-card-actions class="px-6 py-4">
         <!-- Left (destructive / secondary) -->
@@ -91,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import {
     mdiClose,
     mdiCheckBold,
@@ -100,8 +108,10 @@
   } from '@mdi/js';
   import { OrderReviewStatus } from '@/types/common';
   import { OrderReview } from '@/types';
+  import { arrayBufferToBase64 } from '@/utils/utils';
+  import DocumentUpload from './DocumentUpload.vue';
 
-  defineProps<{
+  const props = defineProps<{
     canApprove: boolean;
   }>();
 
@@ -109,14 +119,32 @@
   const show = defineModel<boolean>({ type: Boolean, required: true });
 
   const comments = ref<string>('');
+  const selectedUpload = ref<File | null>(null);
   const canReject = computed<boolean>(() => comments.value?.length > 0);
+  const canApprove = computed<boolean>(
+    () => props.canApprove || selectedUpload.value !== null
+  );
 
-  const reviewOrder = (status: OrderReviewStatus) => {
+  watch(show, (newVal) => {
+    if (!newVal) {
+      selectedUpload.value = null;
+    }
+  });
+
+  const reviewOrder = async (status: OrderReviewStatus) => {
+    const documentData = '';
+    let supportingDocumentData = '';
+    if (selectedUpload.value) {
+      const arrayBuffer = await selectedUpload.value.arrayBuffer();
+      supportingDocumentData = arrayBufferToBase64(arrayBuffer);
+    }
+
     const review: OrderReview = {
       comments: comments.value,
       status: status,
       signed: status === OrderReviewStatus.Approved,
-      documentData: '',
+      documentData,
+      supportingDocumentData,
     };
     emit('reviewOrder', review);
 

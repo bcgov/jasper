@@ -13,10 +13,14 @@ public class OrderMapping : IRegister
     {
         config.NewConfig<Order, OrderDto>()
             .Map(dest => dest.CreatedDate, src => src.Ent_Dtm)
-            .Map(dest => dest.UpdatedDate, src => src.Upd_Dtm);
+            .Map(dest => dest.UpdatedDate, src => src.Upd_Dtm)
+            .Map(dest => dest.DocumentData, src => ToBase64OrNull(src.DocumentData))
+            .Map(dest => dest.SupportingDocumentData, src => ToBase64OrNull(src.SupportingDocumentData));
 
         config.NewConfig<OrderDto, Order>()
             .Ignore(dest => dest.Id)
+            .Map(dest => dest.DocumentData, src => FromBase64OrNull(src.DocumentData))
+            .Map(dest => dest.SupportingDocumentData, src => FromBase64OrNull(src.SupportingDocumentData))
             .Ignore(dest => dest.Ent_Dtm)
             .Ignore(dest => dest.Ent_UserId)
             .Ignore(dest => dest.Upd_Dtm)
@@ -39,14 +43,7 @@ public class OrderMapping : IRegister
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))
             .AfterMapping((src, dest) =>
             {
-                if (src.ProcessedDate.HasValue)
-                {
-                    dest.ProcessedDate = src.ProcessedDate.Value.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture);
-                }
-                else
-                {
-                    dest.ProcessedDate = null;
-                }
+                dest.ProcessedDate = src.ProcessedDate?.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture);
             });
 
         config.NewConfig<OrderDto, OrderActionDto>()
@@ -58,7 +55,7 @@ public class OrderMapping : IRegister
             .Map(dest => dest.SentToPartId, src => src.OrderRequest.Referral.SentToPartId)
             .Map(dest => dest.DigitalSignatureApplied, src => src.Signed)
             .Map(dest => dest.CommentTxt, src => src.Comments)
-            .Map(dest => dest.PdfObject, src => src.DocumentData)
+            .Map(dest => dest.PdfObject, src => !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData)
             .Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
             .AfterMapping((src, dest) =>
             {
@@ -75,4 +72,10 @@ public class OrderMapping : IRegister
                 };
             });
     }
+
+    private static string ToBase64OrNull(byte[] data) =>
+        data is { Length: > 0 } ? Convert.ToBase64String(data) : null;
+
+    private static byte[] FromBase64OrNull(string value) =>
+        string.IsNullOrWhiteSpace(value) ? [] : Convert.FromBase64String(value);
 }

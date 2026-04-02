@@ -133,7 +133,11 @@ export default {
       ].includes(documentType);
 
     if (isCivilFileDocument) {
-      return [documentData.documentDescription, documentData.dateFiled]
+      return [
+        documentData.fileSeqNo,
+        documentData.documentDescription,
+        documentData.dateFiled,
+      ]
         .filter((value): value is string => !!value)
         .join(' - ');
     }

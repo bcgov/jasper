@@ -41,6 +41,7 @@ describe('CivilDocumentsView.vue', () => {
       documentTypeDescription: 'Civil Document 1',
       filedDt: '2023-01-01',
       filedBy: [{ roleTypeCode: 'Role1' }],
+      fileSeqNo: '1',
       issue: [{ issueTypeDesc: 'Issue1' }],
       documentSupport: [{ actCd: 'Act1' }],
       imageId: '123',
@@ -194,7 +195,11 @@ describe('CivilDocumentsView.vue', () => {
       expect.objectContaining({
         groupKeyTwo: '',
         documentName:
-          mockDocuments[0].documentTypeDescription + ' - ' + '01 Jan 2023',
+          mockDocuments[0].fileSeqNo +
+          ' - ' +
+          mockDocuments[0].documentTypeDescription +
+          ' - ' +
+          '01 Jan 2023',
       }),
     ]);
   });

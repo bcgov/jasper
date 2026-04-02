@@ -85,10 +85,10 @@ export class HttpService implements IHttpService {
     }
 
     // todo: check for a 403 and handle it
-    if (error.response && error.response.status === 401) {
-      redirectHandlerService.handleUnauthorized(window.location.href);
-    } else if (error.response && error.response.status === 409) {
-      window.location.replace(
+    if (error.response?.status === 401) {
+      redirectHandlerService.handleUnauthorized(globalThis.location.href);
+    } else if (error.response?.status === 409) {
+      globalThis.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
     } else if (error.response.status !== 403) {

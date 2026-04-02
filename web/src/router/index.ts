@@ -1,11 +1,10 @@
 import { useCommonStore } from '@/stores';
-import { isPositiveInteger, SessionManager } from '@/utils/utils';
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { callTrackPageView } from '@/utils/snowplowUtils';
+import { isPositiveInteger } from '@/utils/utils';
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 
-async function authGuard(to: any, from: any, next: any) {
+function authGuard(to: any, from: any, next: any) {
   const commonStore = useCommonStore();
-  const results = await SessionManager.getSettings();
 
   if (
     !isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
@@ -17,17 +16,15 @@ async function authGuard(to: any, from: any, next: any) {
     } else {
       next({ path: '/request-access' });
     }
-  } else if (results) {
-    if (
-      isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
-      commonStore?.userInfo?.isActive === true &&
-      commonStore?.userInfo?.judgeId &&
-      to.name === 'RequestAccess'
-    ) {
-      next({ path: '/' });
-    } else {
-      next();
-    }
+  } else if (
+    isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
+    commonStore?.userInfo?.isActive === true &&
+    commonStore?.userInfo?.judgeId &&
+    to.name === 'RequestAccess'
+  ) {
+    next({ path: '/' });
+  } else {
+    next();
   }
 }
 

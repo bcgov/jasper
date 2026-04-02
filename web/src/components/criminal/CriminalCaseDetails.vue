@@ -15,10 +15,7 @@
       </v-col>
     </v-row>
     <v-container>
-      <v-skeleton-loader
-        class="my-0"
-        :loading="loading || !isMounted"
-      >
+      <v-skeleton-loader class="my-0" :loading="loading || !isMounted">
         <v-row style="display: flex; flex-wrap: nowrap">
           <v-col cols="3" style="overflow-y: auto">
             <CriminalSidePanel
@@ -400,14 +397,14 @@
         criminalFileStore.criminalFileInformation.adjudicatorRestrictionsInfo =
           adjudicatorRestrictionsInfo.value;
         criminalFileStore.criminalFileInformation.bans = bans.value;
-        criminalFileStore.criminalFileInformation.courtLevel =
-          details.value.courtLevelCd
-            ? DecodeCourtLevel[details.value.courtLevelCd]
-            : '';
-        criminalFileStore.criminalFileInformation.courtClass =
-          details.value.courtClassCd
-            ? DecodeCourtClass[details.value.courtClassCd]
-            : '';
+        criminalFileStore.criminalFileInformation.courtLevel = details.value
+          .courtLevelCd
+          ? DecodeCourtLevel[details.value.courtLevelCd]
+          : '';
+        criminalFileStore.criminalFileInformation.courtClass = details.value
+          .courtClassCd
+          ? DecodeCourtClass[details.value.courtClassCd]
+          : '';
         criminalFileStore.updateCriminalFile(
           criminalFileStore.criminalFileInformation
         );
@@ -533,14 +530,16 @@
             appearanceToPartId.set(appr.appearanceId, appr.partId);
           });
 
-          const transcriptToParticipants =
-            buildTranscriptToParticipantMappings(
-              transcripts.value,
-              appearanceToPartId
-            );
+          const transcriptToParticipants = buildTranscriptToParticipantMappings(
+            transcripts.value,
+            appearanceToPartId
+          );
 
           const participantMap = new Map(
-            participantList.value.map((participant) => [participant.partId, participant])
+            participantList.value.map((participant) => [
+              participant.partId,
+              participant,
+            ])
           );
 
           addTranscriptsToParticipants(
@@ -561,7 +560,9 @@
         loading.value = true;
 
         try {
-          const overview = await filesService.criminalFileOverview(fileNumber.value);
+          const overview = await filesService.criminalFileOverview(
+            fileNumber.value
+          );
 
           if (!isCurrentLoad(loadId)) {
             return null;
@@ -668,7 +669,9 @@
 
         try {
           const hearingRestrictions =
-            await filesService.criminalFileHearingRestrictions(fileNumber.value);
+            await filesService.criminalFileHearingRestrictions(
+              fileNumber.value
+            );
 
           if (!isCurrentLoad(loadId)) {
             return;

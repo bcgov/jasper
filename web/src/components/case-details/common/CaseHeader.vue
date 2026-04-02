@@ -47,9 +47,7 @@
           :loading="props.loadingStates?.participants"
           type="table"
         >
-          <CriminalDocumentsView
-            :participants="criminalDetails.participant"
-          />
+          <CriminalDocumentsView :participants="criminalDetails.participant" />
         </v-skeleton-loader>
 
         <CivilDocumentsView
@@ -68,8 +66,8 @@
           v-else
           :appearances="
             isCriminal
-              ? criminalDetails.appearances?.apprDetail ?? []
-              : civilDetails.appearances?.apprDetail ?? []
+              ? (criminalDetails.appearances?.apprDetail ?? [])
+              : (civilDetails.appearances?.apprDetail ?? [])
           "
           :isCriminal="isCriminal"
           :fileNumber="fileId"

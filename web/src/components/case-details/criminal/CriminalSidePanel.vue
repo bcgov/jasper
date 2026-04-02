@@ -1,10 +1,7 @@
 <template>
   <div class="scrollable">
     <!-- Summary panel -->
-    <v-skeleton-loader
-    v-if="loadingStates.summary"
-      type="card"
-     />
+    <v-skeleton-loader v-if="loadingStates.summary" type="card" />
     <CriminalSummary
       v-else
       :details="summaryData"
@@ -57,10 +54,12 @@
 
   const summaryData = computed(() => props.summaryDetails ?? props.details);
   const details = computed(() => props.details);
-  const appearances = computed(() => props.details.appearances?.apprDetail ?? []);
+  const appearances = computed(
+    () => props.details.appearances?.apprDetail ?? []
+  );
   const hasBans = computed(() =>
-    (props.details.participant ?? []).some((participant) =>
-      (participant.ban ?? []).length > 0
+    (props.details.participant ?? []).some(
+      (participant) => (participant.ban ?? []).length > 0
     )
   );
 </script>

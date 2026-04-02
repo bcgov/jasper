@@ -104,7 +104,9 @@
   });
   const activityClassDesc = computed(() => props.details.activityClassDesc);
   const location = computed(() => props.details.homeLocationAgencyName);
-  const crownAssigned = computed(() => props.details.crown?.find((c) => c.assigned));
+  const crownAssigned = computed(() =>
+    props.details.crown?.find((c) => c.assigned)
+  );
   const crownName = computed(() =>
     crownAssigned.value
       ? `${crownAssigned.value.lastNm}, ${crownAssigned.value.givenNm}`

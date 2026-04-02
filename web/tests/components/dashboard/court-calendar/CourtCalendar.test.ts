@@ -1,7 +1,7 @@
 import CourtCalendar from '@/components/dashboard/court-calendar/CourtCalendar.vue';
 import { DashboardService, LocationService } from '@/services';
 import { CalendarDay, CalendarDayActivity } from '@/types';
-import { CalendarViewEnum } from '@/types/common';
+import { ActivityClassEnum, CalendarViewEnum } from '@/types/common';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
@@ -618,6 +618,112 @@ describe('CourtCalendar.vue', () => {
       }
 
       expect(dashboardService.getCourtCalendar).not.toHaveBeenCalled();
+    });
+
+    it('when selectedActivityClass is NonSitting, only NS activities are shown and SIT activities are excluded', async () => {
+      const judgeId = 101;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({
+                judgeId,
+                activityClassCode: ActivityClassEnum.Sitting,
+              }),
+              createMockActivity({
+                judgeId,
+                activityClassCode: ActivityClassEnum.NonSitting,
+              }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit(
+          'update:selectedActivityClass',
+          ActivityClassEnum.NonSitting
+        );
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        const activityClasses: string[] = event.extendedProps.activities.map(
+          (a: CalendarDayActivity) => a.activityClassCode
+        );
+        expect(activityClasses).toContain(ActivityClassEnum.NonSitting);
+        expect(activityClasses).not.toContain(ActivityClassEnum.Sitting);
+      });
+    });
+
+    it('when selectedActivityClass is Sitting, all non-NS activities are shown including activities with other codes', async () => {
+      const judgeId = 101;
+
+      dashboardService.getCourtCalendar = vi.fn().mockResolvedValue({
+        payload: {
+          days: [
+            createMockCalendarDay([
+              createMockActivity({
+                judgeId,
+                activityClassCode: ActivityClassEnum.Sitting,
+              }),
+              createMockActivity({
+                judgeId,
+                activityClassCode: ActivityClassEnum.NonSitting,
+              }),
+              createMockActivity({ judgeId, activityClassCode: 'OTHER' }),
+            ]),
+          ],
+          presiders: [],
+          activities: [],
+        },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit(
+          'update:selectedActivityClass',
+          ActivityClassEnum.Sitting
+        );
+        await nextTick();
+      }
+
+      const events = getCalendarEvents(wrapper);
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach((event: any) => {
+        const activityClasses: string[] = event.extendedProps.activities.map(
+          (a: CalendarDayActivity) => a.activityClassCode
+        );
+        expect(activityClasses).toContain(ActivityClassEnum.Sitting);
+        expect(activityClasses).toContain('OTHER');
+        expect(activityClasses).not.toContain(ActivityClassEnum.NonSitting);
+      });
     });
 
     it('restores all activities when presider selection is cleared', async () => {

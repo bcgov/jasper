@@ -13,11 +13,11 @@ using PCSSCommon.Clients.LookupServices;
 using PCSSCommon.Models;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Parsers.Models;
-using Scv.Api.Helpers;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models;
 
 namespace Scv.Api.Jobs;
 

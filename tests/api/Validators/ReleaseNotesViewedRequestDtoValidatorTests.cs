@@ -1,5 +1,5 @@
 using FluentValidation.TestHelper;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Models.AccessControlManagement;
 using Scv.Api.Validators;
 using Xunit;
 

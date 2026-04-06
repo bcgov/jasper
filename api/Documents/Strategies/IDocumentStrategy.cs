@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading.Tasks;
-using Scv.Api.Models.Document;
+using Scv.Models;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents.Strategies;
 

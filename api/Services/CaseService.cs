@@ -7,10 +7,10 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
 
 namespace Scv.Api.Services;
 

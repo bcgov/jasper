@@ -4,6 +4,7 @@ import * as qs from "qs";
 // Only include headers from the original request when present.
 const allowedHeaders = new Set([
   "Accept",
+  "Authorization",
   "applicationCd",
   "Cookie",
   "correlationId",
@@ -25,7 +26,7 @@ const allowedHeaders = new Set([
  * @returns A sanitized headers object.
  */
 export const sanitizeHeaders = (
-  headers: Record<string, string | undefined>
+  headers: Record<string, string | undefined>,
 ): Record<string, string> => {
   const filteredHeaders: Record<string, string> = {};
 
@@ -44,7 +45,7 @@ export const sanitizeHeaders = (
  * @returns A sanitized query string.
  */
 export const sanitizeQueryStringParams = (
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
 ): string => {
   for (const key of Object.keys(params)) {
     const value = params[key];

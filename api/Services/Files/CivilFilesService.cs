@@ -10,14 +10,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Civil.AppearanceDetail;
-using Scv.Api.Models.Civil.Appearances;
-using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Search;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
-using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
+using Scv.Models.Civil.AppearanceDetail;
+using Scv.Models.Civil.Appearances;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Search;
+using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
 
 namespace Scv.Api.Services.Files
 {

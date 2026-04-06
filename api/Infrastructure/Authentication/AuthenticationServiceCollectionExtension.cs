@@ -23,13 +23,14 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PCSSCommon.Models;
-using Scv.Api.Helpers;
+using Polly;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Options;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
-using Polly;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Infrastructure.Authentication
 {

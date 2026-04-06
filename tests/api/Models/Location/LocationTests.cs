@@ -1,6 +1,6 @@
 using System;
 using Xunit;
-using LocationModel = Scv.Api.Models.Location.Location;
+using LocationModel = Scv.Models.Location.Location;
 
 namespace tests.api.Models.Location;
 

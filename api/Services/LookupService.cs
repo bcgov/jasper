@@ -5,8 +5,8 @@ using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
+using Scv.Core.Helpers.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using CodeLookup = System.Collections.Generic.ICollection<JCCommon.Clients.LookupCodeServices.LookupCode>;
 
 namespace Scv.Api.Services

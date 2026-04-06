@@ -1,12 +1,11 @@
 using System.Reflection;
-using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 using System.Threading.Tasks;
 
 namespace Scv.Api.Controllers;

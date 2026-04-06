@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Lookup;
 using Scv.Api.Services;
+using Scv.Models.Lookup;
 
 namespace Scv.Api.Controllers
 {

@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using DARSCommon.Clients.TranscriptsServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Document;
+using Scv.Models;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents.Strategies;
 

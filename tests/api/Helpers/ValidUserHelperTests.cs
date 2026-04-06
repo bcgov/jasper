@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using Scv.Api.Helpers;
 using Scv.Api.Models;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Helpers;

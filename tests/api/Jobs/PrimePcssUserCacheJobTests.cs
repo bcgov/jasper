@@ -1,5 +1,4 @@
 using System;
-using System.Net.Http;
 using Bogus;
 using Hangfire;
 using LazyCache;
@@ -38,7 +37,7 @@ public class PrimePcssUserCacheJobTests
     private Mock<IConfiguration> SetupMockConfiguration(string expiryMinutes = "60")
     {
         var mockConfig = new Mock<IConfiguration>();
-        
+
         var mockExpirySection = new Mock<IConfigurationSection>();
         mockExpirySection.Setup(s => s.Value).Returns(expiryMinutes);
         mockConfig.Setup(c => c.GetSection("Caching:UserExpiryMinutes")).Returns(mockExpirySection.Object);

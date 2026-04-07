@@ -18,21 +18,16 @@ public class ClamAvAntiVirusServiceTests
         _service = new ClamAvAntiVirusService(_mockClamClient.Object);
     }
 
-    #region ScanAsync
-
     [Fact]
     public async Task ScanAsync_ReturnsTrue_WhenFileIsClean()
     {
-        // Arrange
         var scanResult = new ClamScanResult("stream: OK");
         _mockClamClient
             .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
             .ReturnsAsync(scanResult);
 
-        // Act
         var (isClean, message) = await _service.ScanAsync(new MemoryStream());
 
-        // Assert
         Assert.True(isClean);
         Assert.Equal("File is clean.", message);
     }
@@ -40,17 +35,14 @@ public class ClamAvAntiVirusServiceTests
     [Fact]
     public async Task ScanAsync_ReturnsFalse_WhenVirusIsDetected()
     {
-        // Arrange
         var virusName = "Eicar-Test-Signature";
         var scanResult = new ClamScanResult($"stream: {virusName} FOUND");
         _mockClamClient
             .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
             .ReturnsAsync(scanResult);
 
-        // Act
         var (isClean, message) = await _service.ScanAsync(new MemoryStream());
 
-        // Assert
         Assert.False(isClean);
         Assert.Contains(virusName, message);
         Assert.StartsWith("Virus detected:", message);
@@ -59,17 +51,14 @@ public class ClamAvAntiVirusServiceTests
     [Fact]
     public async Task ScanAsync_ReturnsFalse_WhenScanReturnsError()
     {
-        // Arrange
         var rawResult = "stream: lstat() failed. ERROR";
         var scanResult = new ClamScanResult(rawResult);
         _mockClamClient
             .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
             .ReturnsAsync(scanResult);
 
-        // Act
         var (isClean, message) = await _service.ScanAsync(new MemoryStream());
 
-        // Assert
         Assert.False(isClean);
         Assert.Equal($"Scan error: {rawResult}", message);
     }
@@ -77,16 +66,13 @@ public class ClamAvAntiVirusServiceTests
     [Fact]
     public async Task ScanAsync_ReturnsFalse_WhenScanResultIsUnknown()
     {
-        // Arrange
         var scanResult = new ClamScanResult("stream: UNEXPECTED_STATUS");
         _mockClamClient
             .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
             .ReturnsAsync(scanResult);
 
-        // Act
         var (isClean, message) = await _service.ScanAsync(new MemoryStream());
 
-        // Assert
         Assert.False(isClean);
         Assert.Equal("Unknown scan result.", message);
     }
@@ -94,19 +80,14 @@ public class ClamAvAntiVirusServiceTests
     [Fact]
     public async Task ScanAsync_ReturnsNullVirusName_WhenInfectedFilesIsEmpty()
     {
-        // Arrange — VirusDetected result with no infected file info
         var scanResult = new ClamScanResult("FOUND");
         _mockClamClient
             .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
             .ReturnsAsync(scanResult);
 
-        // Act
         var (isClean, message) = await _service.ScanAsync(new MemoryStream());
 
-        // Assert
         Assert.False(isClean);
         Assert.Equal("Virus detected: ", message);
     }
-
-    #endregion ScanAsync
 }

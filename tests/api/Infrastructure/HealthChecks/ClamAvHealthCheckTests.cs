@@ -25,20 +25,15 @@ public class ClamAvHealthCheckTests
         _healthCheck = new ClamAvHealthCheck(_mockClamClient.Object);
     }
 
-    #region CheckHealthAsync
-
     [Fact]
     public async Task CheckHealthAsync_ReturnsUnhealthy_WhenDaemonIsUnreachable()
     {
-        // Arrange
         _mockClamClient
             .Setup(c => c.PingAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        // Act
         var result = await _healthCheck.CheckHealthAsync(null!);
 
-        // Assert
         Assert.Equal(HealthStatus.Unhealthy, result.Status);
         Assert.Equal("ClamAV daemon is unreachable.", result.Description);
     }
@@ -46,7 +41,6 @@ public class ClamAvHealthCheckTests
     [Fact]
     public async Task CheckHealthAsync_ReturnsDegraded_WhenVersionIsNull()
     {
-        // Arrange
         _mockClamClient
             .Setup(c => c.PingAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -54,10 +48,8 @@ public class ClamAvHealthCheckTests
             .Setup(c => c.GetVersionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((string)null);
 
-        // Act
         var result = await _healthCheck.CheckHealthAsync(null!);
 
-        // Assert
         Assert.Equal(HealthStatus.Degraded, result.Status);
         Assert.Contains("Unable to parse ClamAV version string", result.Description);
     }
@@ -65,7 +57,6 @@ public class ClamAvHealthCheckTests
     [Fact]
     public async Task CheckHealthAsync_ReturnsDegraded_WhenVersionStringDoesNotMatchExpectedFormat()
     {
-        // Arrange
         _mockClamClient
             .Setup(c => c.PingAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -73,10 +64,8 @@ public class ClamAvHealthCheckTests
             .Setup(c => c.GetVersionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync("not-a-valid-clam-version");
 
-        // Act
         var result = await _healthCheck.CheckHealthAsync(null!);
 
-        // Assert
         Assert.Equal(HealthStatus.Degraded, result.Status);
         Assert.Contains("Unable to parse ClamAV version string", result.Description);
     }
@@ -84,7 +73,7 @@ public class ClamAvHealthCheckTests
     [Fact]
     public async Task CheckHealthAsync_ReturnsHealthy_WhenDefinitionsAreUpToDate()
     {
-        // Arrange — definitions updated 12 hours ago, within the 1-day threshold
+        // definitions updated 12 hours ago, within the 1-day threshold
         var recentDate = DateTimeOffset.UtcNow.AddHours(-12);
         var version = BuildVersionString(recentDate);
 
@@ -95,10 +84,8 @@ public class ClamAvHealthCheckTests
             .Setup(c => c.GetVersionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(version);
 
-        // Act
         var result = await _healthCheck.CheckHealthAsync(null!);
 
-        // Assert
         Assert.Equal(HealthStatus.Healthy, result.Status);
         Assert.Contains("ClamAV OK", result.Description);
         Assert.Contains("1.4.2", result.Description);
@@ -110,7 +97,7 @@ public class ClamAvHealthCheckTests
     [Fact]
     public async Task CheckHealthAsync_ReturnsDegraded_WhenDefinitionsAreTooOld()
     {
-        // Arrange — definitions updated 3 days ago, exceeds the 1-day threshold
+        // definitions updated 3 days ago, exceeds the 1-day threshold
         var oldDate = DateTimeOffset.UtcNow.AddDays(-3);
         var version = BuildVersionString(oldDate);
 
@@ -121,10 +108,8 @@ public class ClamAvHealthCheckTests
             .Setup(c => c.GetVersionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(version);
 
-        // Act
         var result = await _healthCheck.CheckHealthAsync(null!);
 
-        // Assert
         Assert.Equal(HealthStatus.Degraded, result.Status);
         Assert.Contains("day(s) old", result.Description);
         Assert.Contains("freshclamd", result.Description);
@@ -133,22 +118,17 @@ public class ClamAvHealthCheckTests
     [Fact]
     public async Task CheckHealthAsync_ReturnsUnhealthy_WhenExceptionIsThrown()
     {
-        // Arrange
         _mockClamClient
             .Setup(c => c.PingAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Connection refused"));
 
-        // Act
         var result = await _healthCheck.CheckHealthAsync(null!);
 
-        // Assert
         Assert.Equal(HealthStatus.Unhealthy, result.Status);
         Assert.Contains("threw an exception", result.Description);
         Assert.NotNull(result.Exception);
         Assert.Equal("Connection refused", result.Exception.Message);
     }
-
-    #endregion CheckHealthAsync
 
     #region Helpers
 

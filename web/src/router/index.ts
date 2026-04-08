@@ -1,31 +1,36 @@
 import { useCommonStore } from '@/stores';
 import { callTrackPageView } from '@/utils/snowplowUtils';
 import { isPositiveInteger } from '@/utils/utils';
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import {
+  createRouter,
+  createWebHistory,
+  RouteLocationNormalizedGeneric,
+  RouteRecordRaw,
+} from 'vue-router';
 
-function authGuard(to: any, from: any, next: any) {
+function authGuard(to: RouteLocationNormalizedGeneric) {
   const commonStore = useCommonStore();
 
-  if (
-    !isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
-    commonStore?.userInfo?.isActive === false ||
-    !commonStore?.userInfo?.judgeId
-  ) {
-    if (to.name === 'RequestAccess') {
-      next();
-    } else {
-      next({ path: '/request-access' });
-    }
-  } else if (
-    isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
-    commonStore?.userInfo?.isActive === true &&
-    commonStore?.userInfo?.judgeId &&
-    to.name === 'RequestAccess'
-  ) {
-    next({ path: '/' });
-  } else {
-    next();
+  // Still loading user data, allow navigation to proceed.
+  if (commonStore.isInitializing) {
+    return true;
   }
+
+  // Check user's access control only when user data is fully loaded (commonStore.isInitializing is false).
+  const isAuthorized =
+    isPositiveInteger(commonStore.userInfo?.roles?.length) &&
+    commonStore.userInfo?.isActive === true &&
+    !!commonStore.userInfo?.judgeId;
+
+  if (!isAuthorized) {
+    return to.name === 'RequestAccess' ? true : { path: '/request-access' };
+  }
+
+  if (to.name === 'RequestAccess') {
+    return { path: '/' };
+  }
+
+  return true;
 }
 
 const routes: RouteRecordRaw[] = [
@@ -94,11 +99,11 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   if (to.path === '/') {
-    next();
+    return true;
   } else {
-    authGuard(to, from, next);
+    return authGuard(to);
   }
 });
 

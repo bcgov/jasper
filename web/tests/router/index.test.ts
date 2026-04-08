@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type NextArg = { path: string } | undefined;
-type NextCallback = (arg?: NextArg) => void;
+type RouteResult = { path: string } | boolean | undefined;
 type RouteLike = { path: string; name: string };
 
 interface RouterHooks {
-  beforeEach?: (to: RouteLike, from: unknown, next: NextCallback) => void;
+  beforeEach?: (to: RouteLike, from: unknown) => RouteResult;
   afterEach?: () => void;
 }
 
 interface MockStore {
+  isInitializing: boolean;
   userInfo: {
     roles: string[];
     isActive: boolean;
@@ -53,6 +53,7 @@ describe('router/index', () => {
 
   beforeEach(() => {
     mockStore = {
+      isInitializing: false,
       userInfo: {
         roles: ['role-1'],
         isActive: true,
@@ -64,11 +65,10 @@ describe('router/index', () => {
 
   it('allows root path without auth guard', async () => {
     await loadRouter();
-    const next = vi.fn();
 
-    hooks.beforeEach?.({ path: '/', name: 'HomeView' }, {}, next);
+    const result = hooks.beforeEach?.({ path: '/', name: 'HomeView' }, {});
 
-    expect(next).toHaveBeenCalledWith();
+    expect(result).toBe(true);
   });
 
   it('redirects to request access when user is unauthorized', async () => {
@@ -79,11 +79,13 @@ describe('router/index', () => {
     };
 
     await loadRouter();
-    const next = vi.fn();
 
-    hooks.beforeEach?.({ path: '/dashboard', name: 'DashboardView' }, {}, next);
+    const result = hooks.beforeEach?.(
+      { path: '/dashboard', name: 'DashboardView' },
+      {}
+    );
 
-    expect(next).toHaveBeenCalledWith({ path: '/request-access' });
+    expect(result).toEqual({ path: '/request-access' });
   });
 
   it('allows navigation to request access for unauthorized user', async () => {
@@ -94,37 +96,48 @@ describe('router/index', () => {
     };
 
     await loadRouter();
-    const next = vi.fn();
 
-    hooks.beforeEach?.(
+    const result = hooks.beforeEach?.(
       { path: '/request-access', name: 'RequestAccess' },
-      {},
-      next
+      {}
     );
 
-    expect(next).toHaveBeenCalledWith();
+    expect(result).toBe(true);
   });
 
   it('redirects authorized user away from request access', async () => {
     await loadRouter();
-    const next = vi.fn();
 
-    hooks.beforeEach?.(
+    const result = hooks.beforeEach?.(
       { path: '/request-access', name: 'RequestAccess' },
-      {},
-      next
+      {}
     );
 
-    expect(next).toHaveBeenCalledWith({ path: '/' });
+    expect(result).toEqual({ path: '/' });
   });
 
   it('allows authorized user to access other routes', async () => {
     await loadRouter();
-    const next = vi.fn();
 
-    hooks.beforeEach?.({ path: '/dashboard', name: 'DashboardView' }, {}, next);
+    const result = hooks.beforeEach?.(
+      { path: '/dashboard', name: 'DashboardView' },
+      {}
+    );
 
-    expect(next).toHaveBeenCalledWith();
+    expect(result).toBe(true);
+  });
+
+  it('allows navigation while user data is still loading', async () => {
+    mockStore.isInitializing = true;
+
+    await loadRouter();
+
+    const result = hooks.beforeEach?.(
+      { path: '/dashboard', name: 'DashboardView' },
+      {}
+    );
+
+    expect(result).toBe(true);
   });
 
   it('tracks page view on afterEach hook', async () => {

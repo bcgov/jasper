@@ -125,7 +125,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             : OperationResult.Success();
     }
 
-    public async Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto)
+    public async Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto requestDto)
     {
         try
         {
@@ -142,7 +142,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             if (existingOrder != null)
             {
                 this.Logger.LogInformation("Updating existing order's request for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
-                    fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
+                    fileId, requestDto.Referral.SentToPartId, requestDto.Referral.ReferredDocumentId);
 
                 orderDto = this.Mapper.Map<OrderDto>(existingOrder);
 
@@ -153,11 +153,11 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             else
             {
                 this.Logger.LogInformation("Creating new order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
-                    fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
+                    fileId, requestDto.Referral.SentToPartId, requestDto.Referral.ReferredDocumentId);
 
                 orderDto = new OrderDto
                 {
-                    OrderRequest = dto,
+                    OrderRequest = requestDto,
                     Status = OrderStatus.Pending,
                     SubmitStatus = SubmitStatus.Pending,
                     SubmitAttempts = 0,

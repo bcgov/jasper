@@ -36,6 +36,7 @@ export enum CourtDocumentType {
   CivilZip,
   Report,
   Transcript,
+  Order,
 }
 
 export enum DocumentRequestType {
@@ -44,6 +45,7 @@ export enum DocumentRequestType {
   Report,
   CourtSummary,
   Transcript,
+  Order,
 }
 
 export interface FileDetailsType {

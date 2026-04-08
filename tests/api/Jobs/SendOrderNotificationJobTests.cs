@@ -87,7 +87,7 @@ public class SendOrderNotificationJobTests
             "Order Received",
             judgeEmail,
             It.Is<object>(data =>
-                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderRequestDto.CourtFile.CourtFileNo)),
+                data.GetType().GetProperty("CaseFileNumber").GetValue(data).ToString() == orderDto.OrderRequest.CourtFileNo)),
             Times.Once);
 
         _mockLogger.Verify(
@@ -302,23 +302,22 @@ public class SendOrderNotificationJobTests
         var firstName = _faker.Name.FirstName();
         var lastName = _faker.Name.LastName();
         var courtFileNumber = _faker.Random.AlphaNumeric(10);
-        var styleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}";
         var referralNotes = _faker.Lorem.Sentence();
         var referredBy = _faker.Name.FullName();
 
-        var orderRequestDto = new OrderRequestDto
+        var orderDto = new OrderDto
         {
-            CourtFile = new CourtFileDto
+            JudgeId = judgeId,
+            OrderRequest = new OrderRequestDto
             {
                 PhysicalFileId = _faker.Random.Int(1, 9999),
                 CourtFileNo = courtFileNumber,
-                StyleOfCause = styleOfCause
-            },
-            Referral = new ReferralDto
-            {
-                SentToPartId = judgeId,
-                ReferralNotesTxt = referralNotes,
-                ReferredByName = referredBy
+                Referral = new ReferralDto
+                {
+                    SentToPartId = judgeId,
+                    ReferralNotesTxt = referralNotes,
+                    ReferredByName = referredBy
+                }
             }
         };
 
@@ -442,7 +441,7 @@ public class SendOrderNotificationJobTests
         var judgeId = _faker.Random.Int(1, 1000);
         var physicalFileId = _faker.Random.Int(1, 9999);
         var orderRequestDto = CreateValidOrderDto(judgeId);
-        orderRequestDto.CourtFile.PhysicalFileId = physicalFileId;
+        orderRequestDto.OrderRequest.PhysicalFileId = physicalFileId;
         var orderDto = CreateOrderDto(orderRequestDto);
 
         _mockJudgeService.Setup(s => s.GetJudge(judgeId))
@@ -467,7 +466,7 @@ public class SendOrderNotificationJobTests
         var physicalFileId = _faker.Random.Int(1, 9999);
         var judgeEmail = _faker.Internet.Email();
         var orderRequestDto = CreateValidOrderDto(judgeId);
-        orderRequestDto.CourtFile.PhysicalFileId = physicalFileId;
+        orderRequestDto.OrderRequest.PhysicalFileId = physicalFileId;
         var orderDto = CreateOrderDto(orderRequestDto);
 
         var judge = CreateActiveJudge(judgeId);
@@ -504,24 +503,32 @@ public class SendOrderNotificationJobTests
             Times.Once);
     }
 
-    private OrderRequestDto CreateValidOrderDto(int? judgeId)
+    private OrderDto CreateValidOrderDto(int? judgeId)
     {
-        return new OrderRequestDto
+        return new OrderDto
         {
-            CourtFile = new CourtFileDto
+            JudgeId = judgeId ?? 0,
+            OrderRequest = new OrderRequestDto
             {
                 PhysicalFileId = _faker.Random.Int(1, 9999),
                 CourtFileNo = _faker.Random.AlphaNumeric(10),
-                StyleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}",
-                CourtLocationDesc = 0,
+                CourtLocationDesc = _faker.Address.City(),
+                Referral = new ReferralDto
+                {
+                    SentToPartId = judgeId,
+                    ReferralNotesTxt = _faker.Lorem.Sentence(),
+                    ReferredByName = _faker.Name.FullName(),
+                }
+            }
+        };
+    }
 
-            },
-            Referral = new ReferralDto
-            {
-                SentToPartId = judgeId,
-                ReferralNotesTxt = _faker.Lorem.Sentence(),
-                ReferredByName = _faker.Name.FullName(),
-            },
+    private OrderDto CreateOrderDto(OrderRequestDto orderRequestDto)
+    {
+        return new OrderDto
+        {
+            Id = _faker.Random.AlphaNumeric(24),
+            OrderRequest = orderRequestDto
         };
     }
 

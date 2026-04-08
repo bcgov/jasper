@@ -85,7 +85,10 @@ export default {
       type = DocumentRequestType.CourtSummary;
     } else if (documentType === CourtDocumentType.Transcript) {
       type = DocumentRequestType.Transcript;
+    } else if (documentType === CourtDocumentType.Order) {
+      type = DocumentRequestType.Order;
     }
+
     this.addDocumentsToPdfStore([
       {
         documentType: type,

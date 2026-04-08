@@ -7,14 +7,15 @@ public class ReferralDto
     public string PackageCreatedBy { get; set; }
     public string ReferralDtm { get; set; }
     public string ReferralNotesTxt { get; set; }
-    public int? ReferredByAgenId { get; set; }
-    public int? ReferredByPartId { get; set; }
+    public double? ReferredByAgenId { get; set; }
+    public double? ReferredByPartId { get; set; }
     public int? ReferredByPaasSeqNo { get; set; }
     public string ReferredByName { get; set; }
     public string DutyTypeCd { get; set; }
-    public int? SentToAgenId { get; set; }
-    public int? SentToPartId { get; set; }
+    public double? SentToAgenId { get; set; }
+    public double? SentToPartId { get; set; }
     public int? SentToPaasSeqNo { get; set; }
     public string SentToName { get; set; }
     public string PriorityType { get; set; }
+    public string CourtListTypeCd { get; set; }
 }

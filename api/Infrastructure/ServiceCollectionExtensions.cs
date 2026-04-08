@@ -50,6 +50,7 @@ using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
+using CSOJudicialServices = CSOCommon.Clients.JudicialServices;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
 using PCSSActivityServices = PCSSCommon.Clients.ActivityServices;
 using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
@@ -252,12 +253,20 @@ namespace Scv.Api.Infrastructure
                 .Bind(configuration.GetSection("CsoClientKeycloak"))
                 .ValidateDataAnnotations();
 
-            services.AddHttpClient<ICsoClient, CsoClient>((sp, client) =>
-            {
-                var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
-            })
-            .AddHttpMessageHandler<CsoBearerTokenHandler>();
+            services
+                .AddHttpClient<ICsoClient, CsoClient>((sp, client) =>
+                {
+                    var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
+                    client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
+                })
+                .AddHttpMessageHandler<CsoBearerTokenHandler>();
+            services
+                .AddHttpClient<CSOJudicialServices.IJudicialServicesClient, CSOJudicialServices.JudicialServicesClient>((sp, client) =>
+                {
+                    var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
+                    client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
+                })
+                .AddHttpMessageHandler<CsoBearerTokenHandler>();
 
             // JC Interface
             services

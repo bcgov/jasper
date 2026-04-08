@@ -66,11 +66,12 @@ public class OrderReminderJobTests : ServiceTestBase
         );
     }
 
-    private Order CreateTestOrder(int judgeId, DateTime entryDate, string priorityType = "High")
+    private Order CreateTestOrder(int judgeId, double participantId, DateTime entryDate, string priorityType = "High")
     {
         return new Order
         {
             Id = _faker.Random.Guid().ToString(),
+            JudgeId = judgeId,
             Status = OrderStatus.Pending,
             SubmitStatus = SubmitStatus.Pending,
             Ent_Dtm = entryDate,
@@ -78,15 +79,11 @@ public class OrderReminderJobTests : ServiceTestBase
             ReassignmentNotificationsSent = 0,
             OrderRequest = new OrderRequest
             {
-                CourtFile = new CourtFile
-                {
-                    CourtFileNo = _faker.Random.AlphaNumeric(10),
-                    CourtLocationDesc = _faker.Random.Int(1, 100),
-                    StyleOfCause = "Test v. Case"
-                },
+                CourtFileNo = _faker.Random.AlphaNumeric(10),
+                CourtLocationDesc = _faker.Address.City(),
                 Referral = new Referral
                 {
-                    SentToPartId = judgeId,
+                    SentToPartId = participantId,
                     SentToName = "Test Judge",
                     PriorityType = priorityType
                 }
@@ -141,7 +138,7 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_NoUnresolvedOrders_LogsAndReturns()
     {
         SetupConfiguration("5", "10");
-        
+
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync([]);
@@ -159,35 +156,35 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         var reminderSection = new Mock<IConfigurationSection>();
         reminderSection.Setup(s => s.Value).Returns(reminderDays);
-        
+
         var reassignmentSection = new Mock<IConfigurationSection>();
         reassignmentSection.Setup(s => s.Value).Returns(reassignmentDays);
-        
+
         var maxRemindersSection = new Mock<IConfigurationSection>();
         maxRemindersSection.Setup(s => s.Value).Returns(maxReminders);
-        
+
         var maxReassignmentsSection = new Mock<IConfigurationSection>();
         maxReassignmentsSection.Setup(s => s.Value).Returns(maxReassignments);
-        
+
         var supportAccountSection = new Mock<IConfigurationSection>();
         supportAccountSection.Setup(s => s.Value).Returns(supportAccount);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REMINDER_THRESHOLD_DAYS"))
             .Returns(reminderSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_REASSIGNMENT_THRESHOLD_DAYS"))
             .Returns(reassignmentSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_MAX_REMINDER_NOTIFICATIONS"))
             .Returns(maxRemindersSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"))
             .Returns(maxReassignmentsSection.Object);
-        
+
         _mockConfiguration
             .Setup(c => c.GetSection("SUPPORT_ACCOUNT"))
             .Returns(supportAccountSection.Object);
@@ -197,10 +194,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_WithReminderOrders_SendsReminders()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var reminderDate = DateTime.UtcNow.AddDays(-6); // Past reminder threshold (5 days)
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
         var user = CreateTestUser(judgeId, "judge@example.com");
 
@@ -233,7 +231,7 @@ public class OrderReminderJobTests : ServiceTestBase
             e => e.SendEmailTemplateAsync(
                 "Order Reminder",
                 user.Email,
-                It.Is<object>(obj => 
+                It.Is<object>(obj =>
                     obj.GetType().GetProperty("JudgeName") != null &&
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("DateReceived") != null &&
@@ -254,11 +252,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_WithReassignmentOrders_ReassignsToRAJ()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var rajId = 201;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11); // Past reassignment threshold (10 days)
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
@@ -295,7 +294,7 @@ public class OrderReminderJobTests : ServiceTestBase
         await _job.Execute();
 
         _mockOrderRepo.Verify(
-            r => r.UpdateAsync(It.Is<Order>(o => 
+            r => r.UpdateAsync(It.Is<Order>(o =>
                 o.OrderRequest.Referral.SentToPartId == rajId &&
                 o.OrderRequest.Referral.SentToName == $"{raj.FirstName} {raj.LastName}".Trim())),
             Times.AtLeastOnce
@@ -319,8 +318,9 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_UsesDefaultThresholds_WhenConfigurationMissing()
     {
         var judgeId = 101;
+        var participantId = 123.45;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
 
         // Setup config to return null/empty strings to trigger the default behavior in TryParse
         SetupConfiguration(null, null);
@@ -343,10 +343,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenNoJudgeAssigned()
     {
         SetupConfiguration("5", "10");
-        
+
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(101, reminderDate);
-        order.OrderRequest.Referral.SentToPartId = null; // No judge assigned
+        var participantId = 123.45;
+        var order = CreateTestOrder(101, participantId, reminderDate);
+        order.JudgeId = 0; // No judge assigned
+        order.OrderRequest.Referral.SentToPartId = null;
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -365,10 +367,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenJudgeNotFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -391,10 +394,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenUserNotFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
 
         _mockOrderRepo
@@ -421,10 +425,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenUserHasNoEmail()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
         var user = CreateTestUser(judgeId, null); // No email
 
@@ -452,16 +457,17 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_IncludesCorrectEmailData()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
         var expectedPriority = "Urgent";
         var expectedCaseNumber = "TEST-123";
-        var expectedLocation = 123;
-        
-        var order = CreateTestOrder(judgeId, reminderDate, expectedPriority);
-        order.OrderRequest.CourtFile.CourtFileNo = expectedCaseNumber;
-        order.OrderRequest.CourtFile.CourtLocationDesc = expectedLocation;
+        var expectedLocation = "Test City";
+
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reminderDate, expectedPriority);
+        order.OrderRequest.CourtFileNo = expectedCaseNumber;
+        order.OrderRequest.CourtLocationDesc = expectedLocation;
 
         var judge = CreateTestJudge(judgeId);
         var expectedJudgeName = $"{judge.Names.First().FirstName} {judge.Names.First().LastName}".Trim();
@@ -488,11 +494,15 @@ public class OrderReminderJobTests : ServiceTestBase
             .Callback<string, string, object>((template, email, data) => capturedEmailData = data)
             .Returns(Task.CompletedTask);
 
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
         await _job.Execute();
 
         Assert.NotNull(capturedEmailData);
         var dataType = capturedEmailData.GetType();
-        
+
         var judgeNameProp = dataType.GetProperty("JudgeName");
         var caseFileNumberProp = dataType.GetProperty("CaseFileNumber");
         var dateReceivedProp = dataType.GetProperty("DateReceived");
@@ -516,10 +526,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsWhenNoRAJFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
 
         _mockOrderRepo
@@ -549,11 +560,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_UpdatesOrderWithRAJDetails()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
@@ -591,7 +603,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var expectedRajName = $"{raj.FirstName} {raj.LastName}".Trim();
         _mockOrderRepo.Verify(
-            r => r.UpdateAsync(It.Is<Order>(o => 
+            r => r.UpdateAsync(It.Is<Order>(o =>
                 o.OrderRequest.Referral.SentToPartId == rajId &&
                 o.OrderRequest.Referral.SentToName == expectedRajName)),
             Times.AtLeastOnce
@@ -602,11 +614,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SendsEmailToRAJ()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
@@ -646,7 +659,7 @@ public class OrderReminderJobTests : ServiceTestBase
             e => e.SendEmailTemplateAsync(
                 "Order Reassignment",
                 rajUser.Email,
-                It.Is<object>(obj => 
+                It.Is<object>(obj =>
                     obj.GetType().GetProperty("JudgeName") != null &&
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("LocationName") != null &&
@@ -662,11 +675,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsEmailWhenRAJUserNotFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId);
 
@@ -705,11 +719,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsEmailWhenRAJUserHasNoEmail()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId);
         var rajUser = CreateTestUser(rajId, ""); // Empty email
@@ -749,10 +764,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_SkipsWhenMaxRemindersReached()
     {
         SetupConfiguration("5", "10", "2", "1");
-        
+
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
         order.ReminderNotificationsSent = 2; // Already at max
 
         _mockOrderRepo
@@ -772,10 +788,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_SkipsWhenMaxReassignmentsReached()
     {
         SetupConfiguration("5", "10", "1", "2");
-        
+
         var judgeId = 101;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         order.ReassignmentNotificationsSent = 2; // Already at max
 
         _mockOrderRepo
@@ -799,10 +816,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetRAJForJudge_CallsJudgeServiceWithCorrectParameters()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         judge.HomeLocationId = 456;
 
@@ -834,12 +852,13 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetRAJForJudge_ReturnsFirstRAJ_WhenMultipleFound()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
         var raj1Id = 201;
         var raj2Id = 202;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var participantId = 123.45;
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj1 = CreateTestRAJ(raj1Id);
         var raj2 = CreateTestRAJ(raj2Id);
@@ -890,10 +909,11 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetJudgeName_HandlesJudgeWithoutNames()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order = CreateTestOrder(judgeId, reminderDate);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
         judge.Names = null; // No names
         var user = CreateTestUser(judgeId, "judge@example.com");
@@ -934,11 +954,12 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_GetRajName_FormatsNameCorrectly()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId = 101;
+        var participantId = 123.45;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order = CreateTestOrder(judgeId, reassignmentDate);
+        var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId);
         raj.FirstName = "John";
@@ -990,12 +1011,14 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_SendReminder_ContinuesOnException()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId1 = 101;
         var judgeId2 = 102;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var order1 = CreateTestOrder(judgeId1, reminderDate);
-        var order2 = CreateTestOrder(judgeId2, reminderDate);
+        var participantId1 = 123.45;
+        var participantId2 = 124.45;
+        var order1 = CreateTestOrder(judgeId1, participantId1, reminderDate);
+        var order2 = CreateTestOrder(judgeId2, participantId2, reminderDate);
         var judge2 = CreateTestJudge(judgeId2);
         var user2 = CreateTestUser(judgeId2, "judge2@example.com");
 
@@ -1039,13 +1062,15 @@ public class OrderReminderJobTests : ServiceTestBase
     public async Task Execute_ReassignOrder_ContinuesOnException()
     {
         SetupConfiguration("5", "10");
-        
+
         var judgeId1 = 101;
         var judgeId2 = 102;
         var rajId = 201;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var order1 = CreateTestOrder(judgeId1, reassignmentDate);
-        var order2 = CreateTestOrder(judgeId2, reassignmentDate);
+        var participantId1 = 123.45;
+        var participantId2 = 124.45;
+        var order1 = CreateTestOrder(judgeId1, participantId1, reassignmentDate);
+        var order2 = CreateTestOrder(judgeId2, participantId2, reassignmentDate);
         var judge2 = CreateTestJudge(judgeId2);
         var raj = CreateTestRAJ(rajId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");

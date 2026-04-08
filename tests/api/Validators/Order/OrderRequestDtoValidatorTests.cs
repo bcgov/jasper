@@ -18,43 +18,29 @@ public class OrderRequestDtoValidatorTests
         _faker = new Faker();
     }
 
-    #region CourtFile Validation Tests
-
-    [Fact]
-    public async Task Validate_ShouldHaveError_WhenCourtFileIsNull()
-    {
-        var orderDto = new OrderRequestDto
-        {
-            CourtFile = null,
-            Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
-            PackageDocuments = [new()]
-        };
-
-        var result = await _validator.TestValidateAsync(orderDto);
-
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile)
-            .WithErrorMessage("CourtFile is required.");
-    }
+    #region PhysicalFileId Validation Tests
 
     [Fact]
     public async Task Validate_ShouldHaveError_WhenPhysicalFileIdIsNull()
     {
-        var orderDto = new OrderRequestDto
-        {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = null,
-                CourtDivisionCd = "R",
-                CourtClassCd = "A"
-            },
-            Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
-            PackageDocuments = [new()]
-        };
+        var orderDto = CreateValidOrderDto();
+        orderDto.PhysicalFileId = null;
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.PhysicalFileId)
+        result.ShouldHaveValidationErrorFor(o => o.PhysicalFileId)
             .WithErrorMessage("PhysicalFileId is required.");
+    }
+
+    [Fact]
+    public async Task Validate_ShouldNotHaveError_WhenPhysicalFileIdIsSet()
+    {
+        var orderDto = CreateValidOrderDto();
+        orderDto.PhysicalFileId = _faker.Random.Int(1, 10000);
+
+        var result = await _validator.TestValidateAsync(orderDto);
+
+        result.ShouldNotHaveValidationErrorFor(o => o.PhysicalFileId);
     }
 
     #endregion
@@ -65,11 +51,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtDivisionCdIsEmpty()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = "";
+        orderDto.CourtDivisionCd = "";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd)
             .WithErrorMessage("CourtDivisionCd is required.");
     }
 
@@ -77,11 +63,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtDivisionCdIsNull()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = null;
+        orderDto.CourtDivisionCd = null;
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd)
             .WithErrorMessage("CourtDivisionCd is required.");
     }
 
@@ -89,11 +75,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtDivisionCdIsWhitespace()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = "   ";
+        orderDto.CourtDivisionCd = "   ";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd)
             .WithErrorMessage("CourtDivisionCd is required.");
     }
 
@@ -101,11 +87,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtDivisionCdIsInvalid()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = "INVALID";
+        orderDto.CourtDivisionCd = "INVALID";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd)
             .WithErrorMessage("CourtDivisionCd is unsupported.");
     }
 
@@ -113,11 +99,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtDivisionCdIsF()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = "F";
+        orderDto.CourtDivisionCd = "F";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd)
             .WithErrorMessage("CourtDivisionCd is unsupported.");
     }
 
@@ -127,27 +113,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldNotHaveError_WhenCourtDivisionCdIsValid(string division)
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = division;
+        orderDto.CourtDivisionCd = division;
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd);
-    }
-
-    [Fact]
-    public async Task Validate_ShouldNotValidateCourtDivisionCd_WhenCourtFileIsNull()
-    {
-        var orderDto = new OrderRequestDto
-        {
-            CourtFile = null,
-            Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
-            PackageDocuments = [new()]
-        };
-
-        var result = await _validator.TestValidateAsync(orderDto);
-
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile);
-        result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd);
+        result.ShouldNotHaveValidationErrorFor(o => o.CourtDivisionCd);
     }
 
     #endregion
@@ -158,11 +128,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtClassCdIsEmpty()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "";
+        orderDto.CourtClassCd = "";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtClassCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtClassCd)
             .WithErrorMessage("CourtClassCd is required.");
     }
 
@@ -170,11 +140,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtClassCdIsNull()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = null;
+        orderDto.CourtClassCd = null;
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtClassCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtClassCd)
             .WithErrorMessage("CourtClassCd is required.");
     }
 
@@ -182,11 +152,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtClassCdIsWhitespace()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "   ";
+        orderDto.CourtClassCd = "   ";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtClassCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtClassCd)
             .WithErrorMessage("CourtClassCd is required.");
     }
 
@@ -194,11 +164,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHaveError_WhenCourtClassCdIsInvalid()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "Z";
+        orderDto.CourtClassCd = "Z";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtClassCd)
+        result.ShouldHaveValidationErrorFor(o => o.CourtClassCd)
             .WithErrorMessage("CourtClassCd is unsupported.");
     }
 
@@ -213,27 +183,11 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldNotHaveError_WhenCourtClassCdIsValid(string courtClass)
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = courtClass;
+        orderDto.CourtClassCd = courtClass;
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtClassCd);
-    }
-
-    [Fact]
-    public async Task Validate_ShouldNotValidateCourtClassCd_WhenCourtFileIsNull()
-    {
-        var orderDto = new OrderRequestDto
-        {
-            CourtFile = null,
-            Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
-            PackageDocuments = [new()]
-        };
-
-        var result = await _validator.TestValidateAsync(orderDto);
-
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile);
-        result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtClassCd);
+        result.ShouldNotHaveValidationErrorFor(o => o.CourtClassCd);
     }
 
     #endregion
@@ -245,12 +199,9 @@ public class OrderRequestDtoValidatorTests
     {
         var orderDto = new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = "R",
-                CourtClassCd = "A"
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = "R",
+            CourtClassCd = "A",
             Referral = null,
             PackageDocuments = [new()]
         };
@@ -289,12 +240,9 @@ public class OrderRequestDtoValidatorTests
     {
         var orderDto = new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = "R",
-                CourtClassCd = "A"
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = "R",
+            CourtClassCd = "A",
             Referral = null,
             PackageDocuments = [new()]
         };
@@ -314,12 +262,9 @@ public class OrderRequestDtoValidatorTests
     {
         var orderDto = new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = "R",
-                CourtClassCd = "A"
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = "R",
+            CourtClassCd = "A",
             Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
             PackageDocuments = null
         };
@@ -335,12 +280,9 @@ public class OrderRequestDtoValidatorTests
     {
         var orderDto = new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = "R",
-                CourtClassCd = "A"
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = "R",
+            CourtClassCd = "A",
             Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
             PackageDocuments = []
         };
@@ -396,38 +338,39 @@ public class OrderRequestDtoValidatorTests
     {
         var orderDto = new OrderRequestDto
         {
-            CourtFile = null,
+            PhysicalFileId = null,
+            CourtDivisionCd = null,
+            CourtClassCd = null,
             Referral = null,
             PackageDocuments = null
         };
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile);
+        result.ShouldHaveValidationErrorFor(o => o.PhysicalFileId);
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd);
+        result.ShouldHaveValidationErrorFor(o => o.CourtClassCd);
         result.ShouldHaveValidationErrorFor(o => o.Referral);
         result.ShouldHaveValidationErrorFor(o => o.PackageDocuments);
     }
 
     [Fact]
-    public async Task Validate_ShouldHaveMultipleErrors_ForCourtFile()
+    public async Task Validate_ShouldHaveMultipleErrors_ForCourtFields()
     {
         var orderDto = new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = null,
-                CourtDivisionCd = "",
-                CourtClassCd = ""
-            },
+            PhysicalFileId = null,
+            CourtDivisionCd = "",
+            CourtClassCd = "",
             Referral = new ReferralDto { SentToPartId = _faker.Random.Int(1, 1000) },
             PackageDocuments = [new()]
         };
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.PhysicalFileId);
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd);
-        result.ShouldHaveValidationErrorFor(o => o.CourtFile.CourtClassCd);
+        result.ShouldHaveValidationErrorFor(o => o.PhysicalFileId);
+        result.ShouldHaveValidationErrorFor(o => o.CourtDivisionCd);
+        result.ShouldHaveValidationErrorFor(o => o.CourtClassCd);
     }
 
     [Fact]
@@ -438,12 +381,12 @@ public class OrderRequestDtoValidatorTests
         foreach (var courtClass in criminalCourtClasses)
         {
             var orderDto = CreateValidOrderDto();
-            orderDto.CourtFile.CourtClassCd = courtClass;
-            orderDto.CourtFile.CourtDivisionCd = "R";
+            orderDto.CourtClassCd = courtClass;
+            orderDto.CourtDivisionCd = "R";
 
             var result = await _validator.TestValidateAsync(orderDto);
 
-            result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtClassCd);
+            result.ShouldNotHaveValidationErrorFor(o => o.CourtClassCd);
         }
     }
 
@@ -455,12 +398,12 @@ public class OrderRequestDtoValidatorTests
         foreach (var courtClass in civilCourtClasses)
         {
             var orderDto = CreateValidOrderDto();
-            orderDto.CourtFile.CourtClassCd = courtClass;
-            orderDto.CourtFile.CourtDivisionCd = "I";
+            orderDto.CourtClassCd = courtClass;
+            orderDto.CourtDivisionCd = "I";
 
             var result = await _validator.TestValidateAsync(orderDto);
 
-            result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtClassCd);
+            result.ShouldNotHaveValidationErrorFor(o => o.CourtClassCd);
         }
     }
 
@@ -468,22 +411,22 @@ public class OrderRequestDtoValidatorTests
     public async Task Validate_ShouldHandleCaseInsensitiveCourtClass()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtClassCd = "a";
+        orderDto.CourtClassCd = "a";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtClassCd);
+        result.ShouldNotHaveValidationErrorFor(o => o.CourtClassCd);
     }
 
     [Fact]
     public async Task Validate_ShouldHandleCaseInsensitiveCourtDivision()
     {
         var orderDto = CreateValidOrderDto();
-        orderDto.CourtFile.CourtDivisionCd = "r";
+        orderDto.CourtDivisionCd = "r";
 
         var result = await _validator.TestValidateAsync(orderDto);
 
-        result.ShouldNotHaveValidationErrorFor(o => o.CourtFile.CourtDivisionCd);
+        result.ShouldNotHaveValidationErrorFor(o => o.CourtDivisionCd);
     }
 
     #endregion
@@ -494,13 +437,10 @@ public class OrderRequestDtoValidatorTests
     {
         return new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = _faker.PickRandom("R", "I"),
-                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                CourtFileNo = _faker.Random.AlphaNumeric(10)
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = _faker.PickRandom("R", "I"),
+            CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+            CourtFileNo = _faker.Random.AlphaNumeric(10),
             Referral = new ReferralDto
             {
                 SentToPartId = _faker.Random.Int(1, 1000),

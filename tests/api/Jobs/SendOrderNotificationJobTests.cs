@@ -302,7 +302,6 @@ public class SendOrderNotificationJobTests
         var firstName = _faker.Name.FirstName();
         var lastName = _faker.Name.LastName();
         var courtFileNumber = _faker.Random.AlphaNumeric(10);
-        var styleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}";
         var referralNotes = _faker.Lorem.Sentence();
         var referredBy = _faker.Name.FullName();
 
@@ -502,7 +501,7 @@ public class SendOrderNotificationJobTests
 
     private OrderRequestDto CreateValidOrderRequestDto()
     {
-        return new OrderRequestDto
+        return new OrderDto
         {
             PhysicalFileId = _faker.Random.Int(1, 100),
             CourtFileNo = _faker.Random.AlphaNumeric(10),

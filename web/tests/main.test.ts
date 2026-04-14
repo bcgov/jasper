@@ -5,10 +5,8 @@ describe('main bootstrap', () => {
   const registerRouter = vi.fn();
   const registerPinia = vi.fn();
   const callRefreshLinkClickTracking = vi.fn();
-  const setIsInitialized = vi.fn();
 
   const use = vi.fn();
-  const runWithContext = vi.fn((cb: () => unknown) => cb());
   const mount = vi.fn();
 
   const observe = vi.fn();
@@ -26,9 +24,7 @@ describe('main bootstrap', () => {
     registerRouter.mockClear();
     registerPinia.mockClear();
     callRefreshLinkClickTracking.mockClear();
-    setIsInitialized.mockClear();
     use.mockClear();
-    runWithContext.mockClear();
     mount.mockClear();
     observe.mockClear();
     pushStateSpy.mockClear();
@@ -50,7 +46,6 @@ describe('main bootstrap', () => {
         ...actual,
         createApp: vi.fn(() => ({
           use,
-          runWithContext,
           mount: options?.throwOnMount
             ? vi.fn().mockImplementation(() => {
                 throw new Error('bootstrap failed');
@@ -82,9 +77,6 @@ describe('main bootstrap', () => {
 
     vi.doMock('@/stores', () => ({
       registerPinia,
-      useCommonStore: () => ({
-        setIsInitialized,
-      }),
     }));
 
     await import('@/main');
@@ -108,7 +100,6 @@ describe('main bootstrap', () => {
     expect(registerPlugins).toHaveBeenCalledTimes(1);
     expect(use).toHaveBeenCalledWith(router);
     expect(mount).toHaveBeenCalledWith('#app');
-    expect(setIsInitialized).toHaveBeenCalledWith(false);
 
     expect(callRefreshLinkClickTracking).toHaveBeenCalledTimes(1);
     expect(observe).toHaveBeenCalledWith(document.body, {
@@ -125,7 +116,6 @@ describe('main bootstrap', () => {
 
     await loadMain({ pathname: '/dashboard', throwOnMount: true });
 
-    expect(setIsInitialized).toHaveBeenCalledWith(false);
     expect(callRefreshLinkClickTracking).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Failed to bootstrap application.',

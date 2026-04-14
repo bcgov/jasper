@@ -8,13 +8,11 @@ import './assets/colors.css';
 import './filters';
 import router from './router/index';
 import { registerRouter } from './services';
-import { registerPinia, useCommonStore } from './stores';
+import { registerPinia } from './stores';
 
 const bootstrap = async () => {
   const app = createApp(App);
   registerPinia(app);
-  const commonStore = useCommonStore();
-  commonStore.setIsInitialized(false);
 
   app.use(router);
 
@@ -55,6 +53,4 @@ try {
   await bootstrap();
 } catch (error) {
   console.error('Failed to bootstrap application.', error);
-  const commonStore = useCommonStore();
-  commonStore.setIsInitialized(false);
 }

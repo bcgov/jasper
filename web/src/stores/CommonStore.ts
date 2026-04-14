@@ -20,7 +20,7 @@ enum appearanceStatus {
 export const useCommonStore = defineStore('CommonStore', {
   persist: true,
   state: () => ({
-    isInitializing: true,
+    isInitialized: false,
     displayName: '',
     loggedInUserInfo: null as UserInfo | null,
     userInfo: null as UserInfo | null,
@@ -57,8 +57,8 @@ export const useCommonStore = defineStore('CommonStore', {
     },
   },
   actions: {
-    setIsInitializing(isInitializing: boolean): void {
-      this.isInitializing = isInitializing;
+    setIsInitialized(isInitialized: boolean): void {
+      this.isInitialized = isInitialized;
     },
     setLoggedInUserInfo(loggedInUserInfo: UserInfo | null): void {
       this.loggedInUserInfo = loggedInUserInfo;

@@ -24,6 +24,7 @@ interface MockCommonStore {
   appInfo: TestAppInfo | null;
   setLoggedInUserInfo: ReturnType<typeof vi.fn>;
   setUserInfo: ReturnType<typeof vi.fn>;
+  setIsInitialized: ReturnType<typeof vi.fn>;
 }
 
 describe('initializeSessionSettings', () => {
@@ -43,6 +44,7 @@ describe('initializeSessionSettings', () => {
       appInfo: null,
       setLoggedInUserInfo: vi.fn(),
       setUserInfo: vi.fn(),
+      setIsInitialized: vi.fn(),
     };
 
     const authService = {

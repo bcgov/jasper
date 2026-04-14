@@ -1,6 +1,6 @@
 import { useCommonStore } from '@/stores';
 import { callTrackPageView } from '@/utils/snowplowUtils';
-import { isPositiveInteger } from '@/utils/utils';
+import { initializeSessionSettings, isPositiveInteger } from '@/utils/utils';
 import {
   createRouter,
   createWebHistory,
@@ -10,11 +10,6 @@ import {
 
 function authGuard(to: RouteLocationNormalizedGeneric) {
   const commonStore = useCommonStore();
-
-  // Still loading user data, allow navigation to proceed.
-  if (commonStore.isInitializing) {
-    return true;
-  }
 
   // Check user's access control only when user data is fully loaded (commonStore.isInitializing is false).
   const isAuthorized =
@@ -99,7 +94,16 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
+  const commonStore = useCommonStore();
+
+  // Initialize session settings if not already initialized. This
+  // ensures that user data is loaded before performing auth
+  // checks in authGuard.
+  if (!commonStore.isInitialized) {
+    await initializeSessionSettings();
+  }
+
   if (to.path === '/') {
     return true;
   } else {

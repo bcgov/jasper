@@ -4,12 +4,15 @@ type RouteResult = { path: string } | boolean | undefined;
 type RouteLike = { path: string; name: string };
 
 interface RouterHooks {
-  beforeEach?: (to: RouteLike, from: unknown) => RouteResult;
+  beforeEach?: (
+    to: RouteLike,
+    from: unknown
+  ) => Promise<RouteResult> | RouteResult;
   afterEach?: () => void;
 }
 
 interface MockStore {
-  isInitializing: boolean;
+  isInitialized: boolean;
   userInfo: {
     roles: string[];
     isActive: boolean;
@@ -22,6 +25,7 @@ describe('router/index', () => {
 
   let mockStore: MockStore;
   const callTrackPageView = vi.fn();
+  const initializeSessionSettings = vi.fn().mockResolvedValue(true);
 
   const loadRouter = async () => {
     vi.resetModules();
@@ -34,6 +38,11 @@ describe('router/index', () => {
 
     vi.doMock('@/utils/snowplowUtils', () => ({
       callTrackPageView,
+    }));
+
+    vi.doMock('@/utils/utils', () => ({
+      initializeSessionSettings,
+      isPositiveInteger: (n: number) => Number.isInteger(n) && n > 0,
     }));
 
     vi.doMock('vue-router', () => ({
@@ -53,7 +62,7 @@ describe('router/index', () => {
 
   beforeEach(() => {
     mockStore = {
-      isInitializing: false,
+      isInitialized: false,
       userInfo: {
         roles: ['role-1'],
         isActive: true,
@@ -61,12 +70,16 @@ describe('router/index', () => {
       },
     };
     callTrackPageView.mockClear();
+    initializeSessionSettings.mockClear();
   });
 
   it('allows root path without auth guard', async () => {
     await loadRouter();
 
-    const result = hooks.beforeEach?.({ path: '/', name: 'HomeView' }, {});
+    const result = await hooks.beforeEach?.(
+      { path: '/', name: 'HomeView' },
+      {}
+    );
 
     expect(result).toBe(true);
   });
@@ -80,7 +93,7 @@ describe('router/index', () => {
 
     await loadRouter();
 
-    const result = hooks.beforeEach?.(
+    const result = await hooks.beforeEach?.(
       { path: '/dashboard', name: 'DashboardView' },
       {}
     );
@@ -97,7 +110,7 @@ describe('router/index', () => {
 
     await loadRouter();
 
-    const result = hooks.beforeEach?.(
+    const result = await hooks.beforeEach?.(
       { path: '/request-access', name: 'RequestAccess' },
       {}
     );
@@ -108,7 +121,7 @@ describe('router/index', () => {
   it('redirects authorized user away from request access', async () => {
     await loadRouter();
 
-    const result = hooks.beforeEach?.(
+    const result = await hooks.beforeEach?.(
       { path: '/request-access', name: 'RequestAccess' },
       {}
     );
@@ -119,7 +132,7 @@ describe('router/index', () => {
   it('allows authorized user to access other routes', async () => {
     await loadRouter();
 
-    const result = hooks.beforeEach?.(
+    const result = await hooks.beforeEach?.(
       { path: '/dashboard', name: 'DashboardView' },
       {}
     );
@@ -128,11 +141,11 @@ describe('router/index', () => {
   });
 
   it('allows navigation while user data is still loading', async () => {
-    mockStore.isInitializing = true;
+    mockStore.isInitialized = true;
 
     await loadRouter();
 
-    const result = hooks.beforeEach?.(
+    const result = await hooks.beforeEach?.(
       { path: '/dashboard', name: 'DashboardView' },
       {}
     );
@@ -146,5 +159,23 @@ describe('router/index', () => {
     hooks.afterEach?.();
 
     expect(callTrackPageView).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls initializeSessionSettings when store is not yet initialized', async () => {
+    mockStore.isInitialized = false;
+
+    await loadRouter();
+    await hooks.beforeEach?.({ path: '/dashboard', name: 'DashboardView' }, {});
+
+    expect(initializeSessionSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips initializeSessionSettings when store is already initialized', async () => {
+    mockStore.isInitialized = true;
+
+    await loadRouter();
+    await hooks.beforeEach?.({ path: '/dashboard', name: 'DashboardView' }, {});
+
+    expect(initializeSessionSettings).not.toHaveBeenCalled();
   });
 });

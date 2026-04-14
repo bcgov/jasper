@@ -1,6 +1,5 @@
 import { registerPlugins } from '@/plugins';
 import { callRefreshLinkClickTracking } from '@/utils/snowplowUtils';
-import { initializeSessionSettings } from '@/utils/utils';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'intersection-observer';
 import { createApp } from 'vue';
@@ -15,26 +14,14 @@ const bootstrap = async () => {
   const app = createApp(App);
   registerPinia(app);
   const commonStore = useCommonStore();
-  commonStore.setIsInitializing(true);
+  commonStore.setIsInitialized(false);
 
   app.use(router);
-  //Vue.config.productionTip = true
 
   registerRouter(app);
 
-  // Start session initialization as early as possible so 401 redirects fire sooner.
-  const sessionSettingsTask = app.runWithContext(() =>
-    initializeSessionSettings()
-  );
-
   registerPlugins(app);
   app.mount('#app');
-
-  try {
-    await sessionSettingsTask;
-  } finally {
-    commonStore.setIsInitializing(false);
-  }
 
   // Initialize Snowplow link click tracking after app mounts
   callRefreshLinkClickTracking();
@@ -69,5 +56,5 @@ try {
 } catch (error) {
   console.error('Failed to bootstrap application.', error);
   const commonStore = useCommonStore();
-  commonStore.setIsInitializing(false);
+  commonStore.setIsInitialized(false);
 }

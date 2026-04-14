@@ -14,10 +14,10 @@ describe('CommonStore', () => {
   it('updates initialization state with setIsInitializing', () => {
     const store = useCommonStore();
 
-    expect(store.isInitializing).toBe(true);
-    store.setIsInitializing(false);
+    expect(store.isInitialized).toBe(false);
+    store.setIsInitialized(true);
 
-    expect(store.isInitializing).toBe(false);
+    expect(store.isInitialized).toBe(true);
   });
 
   it('prefers userInfo title over loggedInUserInfo title', () => {

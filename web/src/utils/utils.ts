@@ -57,6 +57,8 @@ export const initializeSessionSettings = async (): Promise<boolean> => {
   } catch (error) {
     console.log(error);
     return false;
+  } finally {
+    commonStore.setIsInitialized(true);
   }
 };
 

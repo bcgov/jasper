@@ -22,20 +22,20 @@ export class ApiService {
 
   public async initialize(): Promise<void> {
     const credentialsSecret = await this.smService.getSecret(
-      this.credentialsSecret
+      this.credentialsSecret,
     );
     const mtlsSecret = await this.smService.getSecret(
-      process.env.MTLS_SECRET_NAME!
+      process.env.MTLS_SECRET_NAME!,
     );
 
     await this.httpService.init(credentialsSecret, mtlsSecret);
   }
 
   private async saveBinaryToEFS(
-    response: AxiosResponse<unknown>
+    response: AxiosResponse<unknown>,
   ): Promise<string> {
     const binaryData = Buffer.from(
-      new Uint8Array(response.data as ArrayBuffer)
+      new Uint8Array(response.data as ArrayBuffer),
     );
 
     const filePath = await this.efsService.saveFile(binaryData);
@@ -48,7 +48,7 @@ export class ApiService {
     method: string,
     url: string,
     body: Record<string, unknown>,
-    config: AxiosRequestConfig
+    config: AxiosRequestConfig,
   ): Promise<AxiosResponse<unknown>> {
     switch (method) {
       case "GET":
@@ -64,35 +64,94 @@ export class ApiService {
 
   private buildAxiosConfig(
     headers: Record<string, string>,
-    isBinary: boolean
+    isBinary: boolean,
   ): AxiosRequestConfig {
     return {
       headers: {
         ...headers,
         "Content-Type": isBinary
           ? "application/octet-stream"
-          : "application/json"
+          : "application/json",
       },
-      responseType: isBinary ? "arraybuffer" : "json"
+      responseType: isBinary ? "arraybuffer" : "json",
     };
   }
 
+  private static maskCookieValue(cookieValue: string): string {
+    if (!cookieValue) {
+      return "";
+    }
+
+    if (cookieValue.length <= 12) {
+      return "***";
+    }
+
+    return `${cookieValue.slice(0, 6)}...${cookieValue.slice(-4)}`;
+  }
+
+  private static maskCookieHeader(cookieHeader?: string): string | undefined {
+    if (!cookieHeader) {
+      return undefined;
+    }
+
+    return cookieHeader
+      .split(";")
+      .map((cookiePart) => {
+        const trimmedPart = cookiePart.trim();
+        const separatorIndex = trimmedPart.indexOf("=");
+
+        if (separatorIndex === -1) {
+          return trimmedPart;
+        }
+
+        const key = trimmedPart.slice(0, separatorIndex);
+        const value = trimmedPart.slice(separatorIndex + 1);
+        return `${key}=${ApiService.maskCookieValue(value)}`;
+      })
+      .join("; ");
+  }
+
+  private static maskSetCookieHeaders(setCookieHeaders: unknown): string[] {
+    if (!setCookieHeaders) {
+      return [];
+    }
+
+    const values = Array.isArray(setCookieHeaders)
+      ? setCookieHeaders
+      : [setCookieHeaders];
+
+    return values
+      .map((value) => String(value))
+      .map((setCookieValue) => {
+        const [cookiePair] = setCookieValue.split(";");
+        const separatorIndex = cookiePair.indexOf("=");
+
+        if (separatorIndex === -1) {
+          return cookiePair;
+        }
+
+        const key = cookiePair.slice(0, separatorIndex);
+        const value = cookiePair.slice(separatorIndex + 1);
+        return `${key}=${ApiService.maskCookieValue(value)}`;
+      });
+  }
+
   private sanitizeResponseHeaders(
-    headers: Record<string, unknown>
+    headers: Record<string, unknown>,
   ): ResponseHeaders {
     return Object.fromEntries(
       Object.entries(headers)
         .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, String(value)])
+        .map(([key, value]) => [key, String(value)]),
     ) as ResponseHeaders;
   }
 
   private async handleBinaryResponse(
     response: AxiosResponse<unknown>,
-    responseHeaders: ResponseHeaders
+    responseHeaders: ResponseHeaders,
   ): Promise<APIGatewayProxyResult> {
     const binaryBuffer = Buffer.from(
-      new Uint8Array(response.data as ArrayBuffer)
+      new Uint8Array(response.data as ArrayBuffer),
     );
     const fileSizeInBytes = binaryBuffer.length;
 
@@ -112,9 +171,9 @@ export class ApiService {
         body: JSON.stringify({
           message: "File saved to EFS due to size limit",
           filePath,
-          fileSize: fileSizeInBytes
+          fileSize: fileSizeInBytes,
         }),
-        isBase64Encoded: false
+        isBase64Encoded: false,
       };
     }
 
@@ -123,24 +182,24 @@ export class ApiService {
       statusCode: response.status,
       headers: responseHeaders,
       body: binaryBuffer.toString("base64"),
-      isBase64Encoded: true
+      isBase64Encoded: true,
     };
   }
 
   private buildJsonResponse(
     response: AxiosResponse<unknown>,
-    responseHeaders: ResponseHeaders
+    responseHeaders: ResponseHeaders,
   ): APIGatewayProxyResult {
     return {
       statusCode: response.status,
       headers: responseHeaders,
       body: JSON.stringify(response.data),
-      isBase64Encoded: false
+      isBase64Encoded: false,
     };
   }
 
   public async handleRequest(
-    event: APIGatewayEvent
+    event: APIGatewayEvent,
   ): Promise<APIGatewayProxyResult> {
     try {
       const method = event.httpMethod.toUpperCase();
@@ -149,17 +208,28 @@ export class ApiService {
       if (!["GET", "POST", "PUT"].includes(method)) {
         return {
           statusCode: 405,
-          body: JSON.stringify({ message: `Method ${method} not allowed` })
+          body: JSON.stringify({ message: `Method ${method} not allowed` }),
         };
       }
 
       // Parse request
       const body = event.body ? JSON.parse(event.body) : {};
       const queryString = sanitizeQueryStringParams(
-        event.queryStringParameters || {}
+        event.queryStringParameters || {},
       );
       const headers = sanitizeHeaders(event.headers);
       const url = `${event.path}?${queryString}`;
+
+      const inboundCookie = event.headers?.Cookie || event.headers?.cookie;
+      const forwardedCookie = headers.Cookie || headers.cookie;
+
+      console.log("Cookie flow (request):", {
+        path: event.path,
+        inboundCookiePresent: Boolean(inboundCookie),
+        inboundCookieMasked: ApiService.maskCookieHeader(inboundCookie),
+        forwardedCookiePresent: Boolean(forwardedCookie),
+        forwardedCookieMasked: ApiService.maskCookieHeader(forwardedCookie),
+      });
 
       console.log(`${method} ${url}`);
 
@@ -173,8 +243,16 @@ export class ApiService {
         method,
         url,
         body,
-        axiosConfig
+        axiosConfig,
       );
+
+      console.log("Cookie flow (response):", {
+        path: event.path,
+        setCookiePresent: Boolean(response.headers?.["set-cookie"]),
+        setCookieMasked: ApiService.maskSetCookieHeaders(
+          response.headers?.["set-cookie"],
+        ),
+      });
 
       console.log(`Response status: ${response.status}`);
 
@@ -190,15 +268,24 @@ export class ApiService {
       console.error("Error handling request:", {
         method: event?.httpMethod,
         path: event?.path,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
 
       // Attempt to pass the original error back from the proxy - so the client can determine how to handle the error.
       if (error && typeof error === "object" && "response" in error) {
         const resp = (error as { response?: AxiosResponse<unknown> })
           .response as AxiosResponse<unknown>;
+
+        console.log("Cookie flow (error response):", {
+          path: event?.path,
+          setCookiePresent: Boolean(resp.headers?.["set-cookie"]),
+          setCookieMasked: ApiService.maskSetCookieHeaders(
+            resp.headers?.["set-cookie"],
+          ),
+        });
+
         const responseHeaders = this.sanitizeResponseHeaders(
-          resp.headers || {}
+          resp.headers || {},
         );
 
         let body: string;
@@ -218,13 +305,13 @@ export class ApiService {
           statusCode: resp.status || 500,
           headers: responseHeaders,
           body,
-          isBase64Encoded: false
+          isBase64Encoded: false,
         };
       }
 
       return {
         statusCode: 500,
-        body: JSON.stringify({ message: "Internal Server Error" })
+        body: JSON.stringify({ message: "Internal Server Error" }),
       };
     }
   }

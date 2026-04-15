@@ -46,10 +46,11 @@
   import FilterDropdown from './FilterDropdown.vue';
   import FilterDropdownGrouped from './FilterDropdownGrouped.vue';
 
+  // Temporarily show for admins only until JASPER-792 is implemented.
   const allowedRolesForViewToggle = [
-    RolesEnum.Raj,
-    RolesEnum.AcjChiefJudge,
-    RolesEnum.PoManager,
+    // RolesEnum.Raj,
+    // RolesEnum.AcjChiefJudge,
+    // RolesEnum.PoManager,
     RolesEnum.Admin,
   ];
 

@@ -1,7 +1,7 @@
 import CourtCalendarView from '@/components/dashboard/court-calendar/CourtCalendarView.vue';
 import { DashboardService, LocationService } from '@/services';
 import { useCommonStore } from '@/stores';
-import { CalendarDay, CalendarDayActivity } from '@/types';
+import { CalendarDay, CalendarDayActivity, CourtCalendarDay } from '@/types';
 import { CalendarViewEnum } from '@/types/common';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
@@ -49,6 +49,9 @@ describe('CourtCalendarView.vue', () => {
     dashboardService = {
       getCourtCalendarPresiders: vi.fn().mockResolvedValue({
         payload: { days: [], presiders: [], activities: [] },
+      }),
+      getCourtCalendarActivities: vi.fn().mockResolvedValue({
+        payload: { days: [], activities: [] },
       }),
     };
     locationService = {
@@ -676,6 +679,191 @@ describe('CourtCalendarView.vue', () => {
       events.forEach((event: any) => {
         expect(event.extendedProps.activities).toHaveLength(1);
       });
+    });
+  });
+
+  describe('Activities View (isPresidersView = false)', () => {
+    const createMockCourtCalendarDay = (
+      overrides?: Partial<CourtCalendarDay>
+    ): CourtCalendarDay => ({
+      date: new Date().toISOString(),
+      isWeekend: false,
+      locations: [],
+      ...overrides,
+    });
+
+    const waitForLocationsAndCalendar = async (wrapper: any) => {
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+    };
+
+    const switchToActivitiesView = async (wrapper: any) => {
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:isPresidersView', false);
+        await nextTick();
+      }
+    };
+
+    it('calls getCourtCalendarActivities when isPresidersView is toggled to false', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+      expect(
+        dashboardService.getCourtCalendarPresiders
+      ).not.toHaveBeenCalledAfter(dashboardService.getCourtCalendarActivities);
+    });
+
+    it('does not call getCourtCalendarPresiders when switching to activities view', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      dashboardService.getCourtCalendarPresiders.mockClear();
+
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+
+      expect(dashboardService.getCourtCalendarPresiders).not.toHaveBeenCalled();
+    });
+
+    it('calls getCourtCalendarActivities with location ids and date range', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(
+          dashboardService.getCourtCalendarActivities
+        ).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.any(String),
+          expect.any(String)
+        );
+      });
+    });
+
+    it('passes activities calendar events to CourtCalendar', async () => {
+      const mockDay = createMockCourtCalendarDay({
+        locations: [
+          { locationId: 'LOC1', locationShortName: 'VIC', activities: [] },
+        ],
+      });
+
+      dashboardService.getCourtCalendarActivities = vi.fn().mockResolvedValue({
+        payload: { days: [mockDay], activities: [] },
+      });
+
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const calendarComp = wrapper.findComponent({ name: 'CourtCalendar' });
+      const events = calendarComp.props('events') ?? [];
+
+      expect(events).toHaveLength(1);
+      expect(events[0].extendedProps.locations).toEqual(mockDay.locations);
+    });
+
+    it('shows CourtCalendarActivityDay slot when in activities view', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      expect(
+        wrapper.findComponent({ name: 'CourtCalendarActivityDay' }).exists()
+      ).toBe(false); // not rendered until events are present, but CourtCalendar itself is shown
+      const calendarComp = wrapper.findComponent({ name: 'CourtCalendar' });
+      expect(calendarComp.exists()).toBe(true);
+    });
+
+    it('switches back to presiders view and calls getCourtCalendarPresiders', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+
+      dashboardService.getCourtCalendarPresiders.mockClear();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:isPresidersView', true);
+        await nextTick();
+      }
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarPresiders).toHaveBeenCalled();
+      });
+      expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalledTimes(
+        1
+      );
+    });
+
+    it('updates activities calendar when selected locations change in activities view', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+
+      dashboardService.getCourtCalendarActivities.mockClear();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedLocations', [
+          'LOC1',
+          'LOC2',
+        ]);
+        await nextTick();
+
+        await vi.waitFor(() => {
+          expect(
+            dashboardService.getCourtCalendarActivities
+          ).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
+            'LOC1,LOC2'
+          );
+        });
+      }
     });
   });
 });

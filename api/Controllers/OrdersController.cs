@@ -97,18 +97,6 @@ public class OrdersController(
 
         return NoContent();
     }
-
-    [HttpPost("upload")]
-    public async Task<IActionResult> Upload(IFormFile file)
-    {
-        using var stream = file.OpenReadStream();
-        var (isClean, message) = await _antiVirusService.ScanAsync(stream);
-
-        if (!isClean)
-            return BadRequest(new { error = message });
-
-        return Ok();
-    }
 }
 
 

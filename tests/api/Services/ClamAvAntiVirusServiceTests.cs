@@ -1,5 +1,8 @@
+using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Moq;
 using nClam;
 using Scv.Api.Services;
@@ -10,12 +13,14 @@ namespace tests.api.Services;
 public class ClamAvAntiVirusServiceTests
 {
     private readonly Mock<IClamClient> _mockClamClient;
+    private readonly Mock<ILogger<ClamAvAntiVirusService>> _mockLogger;
     private readonly ClamAvAntiVirusService _service;
 
     public ClamAvAntiVirusServiceTests()
     {
         _mockClamClient = new Mock<IClamClient>();
-        _service = new ClamAvAntiVirusService(_mockClamClient.Object);
+        _mockLogger = new Mock<ILogger<ClamAvAntiVirusService>>();
+        _service = new ClamAvAntiVirusService(_mockClamClient.Object, _mockLogger.Object);
     }
 
     [Fact]
@@ -90,4 +95,92 @@ public class ClamAvAntiVirusServiceTests
         Assert.False(isClean);
         Assert.Equal("Virus detected: ", message);
     }
+
+    #region Exception handling
+
+    [Fact]
+    public async Task ScanAsync_ReturnsFalse_WhenSocketExceptionIsThrown()
+    {
+        _mockClamClient
+            .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
+            .ThrowsAsync(new SocketException());
+
+        var (isClean, message) = await _service.ScanAsync(new MemoryStream());
+
+        Assert.False(isClean);
+        Assert.StartsWith("Scan error:", message);
+        VerifyLogError();
+    }
+
+    [Fact]
+    public async Task ScanAsync_ReturnsFalse_WhenIOExceptionIsThrown()
+    {
+        _mockClamClient
+            .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
+            .ThrowsAsync(new IOException("Connection dropped"));
+
+        var (isClean, message) = await _service.ScanAsync(new MemoryStream());
+
+        Assert.False(isClean);
+        Assert.Equal("Scan error: Connection dropped", message);
+        VerifyLogError();
+    }
+
+    [Fact]
+    public async Task ScanAsync_ReturnsFalse_WhenInvalidOperationExceptionIsThrown()
+    {
+        _mockClamClient
+            .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
+            .ThrowsAsync(new InvalidOperationException("Stream not readable"));
+
+        var (isClean, message) = await _service.ScanAsync(new MemoryStream());
+
+        Assert.False(isClean);
+        Assert.Equal("Scan error: Stream not readable", message);
+        VerifyLogError();
+    }
+
+    [Fact]
+    public async Task ScanAsync_ReturnsFalse_WhenObjectDisposedExceptionIsThrown()
+    {
+        _mockClamClient
+            .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
+            .ThrowsAsync(new ObjectDisposedException("stream"));
+
+        var (isClean, message) = await _service.ScanAsync(new MemoryStream());
+
+        Assert.False(isClean);
+        Assert.StartsWith("Scan error:", message);
+        VerifyLogError();
+    }
+
+    [Fact]
+    public async Task ScanAsync_PropagatesException_WhenUnexpectedExceptionIsThrown()
+    {
+        // Verifies the `when` filter lets non-communication exceptions propagate
+        _mockClamClient
+            .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
+            .ThrowsAsync(new OutOfMemoryException());
+
+        await Assert.ThrowsAsync<OutOfMemoryException>(() => _service.ScanAsync(new MemoryStream()));
+        _mockLogger.Verify(
+            l => l.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(), It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Never);
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private void VerifyLogError() =>
+        _mockLogger.Verify(
+            l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Once);
+
+    #endregion
 }

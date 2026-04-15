@@ -322,7 +322,7 @@ module "ecs_api_td" {
         value = var.lambda_retry_attempts
       },
     ],
-    # ClamAV connection settings � only injected when the sidecar is enabled
+    # ClamAV connection settings - Only injected when the sidecar is enabled
     var.clamav_config != null ? [
       {
         name  = "CLAM_AV__HOST"

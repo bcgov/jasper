@@ -1,6 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using nClam;
 
 namespace Scv.Api.Services
@@ -10,11 +12,22 @@ namespace Scv.Api.Services
         Task<(bool isClean, string message)> ScanAsync(Stream fileStream);
     }
 
-    public class ClamAvAntiVirusService(IClamClient clamClient) : IAntiVirusService
+    public class ClamAvAntiVirusService(IClamClient clamClient, ILogger<ClamAvAntiVirusService> logger) : IAntiVirusService
     {
+        private readonly ILogger<ClamAvAntiVirusService> _logger = logger;
+
         public async Task<(bool isClean, string message)> ScanAsync(Stream fileStream)
         {
-            var scanResult = await clamClient.SendAndScanFileAsync(fileStream);
+            ClamScanResult scanResult;
+            try
+            {
+                scanResult = await clamClient.SendAndScanFileAsync(fileStream);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error scanning file with ClamAV.");
+                return (false, $"Scan error: {ex.Message}");
+            }
 
             return scanResult.Result switch
             {

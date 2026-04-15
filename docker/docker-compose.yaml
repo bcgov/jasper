@@ -173,7 +173,7 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/tmp-mongo
 
   clamav:
-    image: clamav/clamav:latest
+    image: clamav/clamav@sha256:c6eb128c7bd57bb0c533491198753a2130b471c517605ad8d289174a56c450a8 # v1.5.2
     ports:
       - '3310:3310'
     environment:

@@ -140,7 +140,7 @@ describe('router/index', () => {
     expect(result).toBe(true);
   });
 
-  it('allows navigation while user data is still loading', async () => {
+  it('allows navigation when store is already initialized', async () => {
     mockStore.isInitialized = true;
 
     await loadRouter();

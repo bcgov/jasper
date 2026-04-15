@@ -5,6 +5,7 @@ describe('main bootstrap', () => {
   const registerRouter = vi.fn();
   const registerPinia = vi.fn();
   const callRefreshLinkClickTracking = vi.fn();
+  const setIsInitialized = vi.fn();
 
   const use = vi.fn();
   const mount = vi.fn();
@@ -24,6 +25,7 @@ describe('main bootstrap', () => {
     registerRouter.mockClear();
     registerPinia.mockClear();
     callRefreshLinkClickTracking.mockClear();
+    setIsInitialized.mockClear();
     use.mockClear();
     mount.mockClear();
     observe.mockClear();
@@ -77,6 +79,9 @@ describe('main bootstrap', () => {
 
     vi.doMock('@/stores', () => ({
       registerPinia,
+      useCommonStore: () => ({
+        setIsInitialized,
+      }),
     }));
 
     await import('@/main');
@@ -101,6 +106,7 @@ describe('main bootstrap', () => {
     expect(use).toHaveBeenCalledWith(router);
     expect(mount).toHaveBeenCalledWith('#app');
 
+    expect(setIsInitialized).toHaveBeenCalledWith(false);
     expect(callRefreshLinkClickTracking).toHaveBeenCalledTimes(1);
     expect(observe).toHaveBeenCalledWith(document.body, {
       childList: true,
@@ -116,6 +122,7 @@ describe('main bootstrap', () => {
 
     await loadMain({ pathname: '/dashboard', throwOnMount: true });
 
+    expect(setIsInitialized).toHaveBeenCalledWith(false);
     expect(callRefreshLinkClickTracking).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Failed to bootstrap application.',

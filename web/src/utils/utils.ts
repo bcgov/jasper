@@ -54,11 +54,12 @@ export const initializeSessionSettings = async (): Promise<boolean> => {
     commonStore.setLoggedInUserInfo(userInfo ?? null);
     commonStore.setUserInfo(mergedUserInfo);
     commonStore.appInfo = appInfo ?? null;
-    commonStore.setIsInitialized(true);
     return true;
   } catch (error) {
     console.log(error);
     return false;
+  } finally {
+    commonStore.setIsInitialized(true);
   }
 };
 

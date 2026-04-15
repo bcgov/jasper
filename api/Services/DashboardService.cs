@@ -242,12 +242,9 @@ public class DashboardService(
                 .GroupBy(x => x.day.Date)
                 .Select(locDayGroup =>
                 {
-                    DateTime.TryParseExact(locDayGroup.Key, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate);
-                    var isWeekend = parsedDate.DayOfWeek == DayOfWeek.Saturday || parsedDate.DayOfWeek == DayOfWeek.Sunday;
                     return new CourtCalendarDay
                     {
                         Date = locDayGroup.Key,
-                        IsWeekend = isWeekend,
                         Locations = [.. locDayGroup
                             .Select(x => new CourtCalendarLocation
                             {
@@ -268,8 +265,7 @@ public class DashboardService(
                             .OrderBy(l => l.LocationShortName)]
                     };
                 })
-                .OrderBy(d => DateTime.ParseExact(d.Date, DATE_FORMAT, CultureInfo.InvariantCulture))
-                .ToList();
+                .OrderBy(d => DateTime.ParseExact(d.Date, DATE_FORMAT, CultureInfo.InvariantCulture));
 
             var currentActivities = result
                 .SelectMany(loc => loc.Days.SelectMany(day => day.Activities))
@@ -281,8 +277,7 @@ public class DashboardService(
                     ClassCode = a.ActivityClassCode,
                     ClassDescription = a.ActivityClassDescription
                 })
-                .OrderBy(a => a.ClassDescription)
-                .ToList();
+                .OrderBy(a => a.ClassDescription);
 
             return OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule
             {

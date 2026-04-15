@@ -1039,7 +1039,7 @@ public class DashboardServiceTests : ServiceTestBase
         Assert.True(result.Succeeded);
         Assert.Single(result.Payload.Days);
 
-        var day = result.Payload.Days[0];
+        var day = result.Payload.Days.ElementAt(0);
         Assert.Equal(mockDate, day.Date);
         Assert.False(day.IsWeekend);
         Assert.Equal(2, day.Locations.Count);
@@ -1057,7 +1057,7 @@ public class DashboardServiceTests : ServiceTestBase
 
         // Distinct activities list
         Assert.Single(result.Payload.Activities);
-        Assert.Equal(mockActivityCode, result.Payload.Activities[0].Code);
+        Assert.Equal(mockActivityCode, result.Payload.Activities.ElementAt(0).Code);
     }
 
     [Fact]
@@ -1110,11 +1110,11 @@ public class DashboardServiceTests : ServiceTestBase
 
         // Assert: Two PCSS activities with the same code are grouped into one, with both court rooms
         Assert.True(result.Succeeded);
-        var location = result.Payload.Days[0].Locations[0];
+        var location = result.Payload.Days.ElementAt(0).Locations.ElementAt(0);
         Assert.Single(location.Activities);
-        Assert.Equal(2, location.Activities[0].CourtRooms.Count);
-        Assert.Contains("101", location.Activities[0].CourtRooms);
-        Assert.Contains("102", location.Activities[0].CourtRooms);
+        Assert.Equal(2, location.Activities.ElementAt(0).CourtRooms.Count);
+        Assert.Contains("101", location.Activities.ElementAt(0).CourtRooms);
+        Assert.Contains("102", location.Activities.ElementAt(0).CourtRooms);
     }
 
     [Fact]
@@ -1159,7 +1159,7 @@ public class DashboardServiceTests : ServiceTestBase
 
         // Assert
         Assert.True(result.Succeeded);
-        Assert.True(result.Payload.Days[0].IsWeekend);
+        Assert.True(result.Payload.Days.ElementAt(0).IsWeekend);
     }
 
     [Fact]
@@ -1205,7 +1205,7 @@ public class DashboardServiceTests : ServiceTestBase
 
         // Assert: Falls back to activity code as display code
         Assert.True(result.Succeeded);
-        Assert.Equal("UNKNOWN", result.Payload.Days[0].Locations[0].Activities[0].ActivityDisplayCode);
+        Assert.Equal("UNKNOWN", result.Payload.Days.ElementAt(0).Locations.ElementAt(0).Activities.ElementAt(0).ActivityDisplayCode);
     }
 
     [Fact]
@@ -1266,9 +1266,9 @@ public class DashboardServiceTests : ServiceTestBase
 
         // Assert: Days are ordered chronologically
         Assert.True(result.Succeeded);
-        Assert.Equal(2, result.Payload.Days.Count);
-        Assert.Equal(earlierDate, result.Payload.Days[0].Date);
-        Assert.Equal(laterDate, result.Payload.Days[1].Date);
+        Assert.Equal(2, result.Payload.Days.Count());
+        Assert.Equal(earlierDate, result.Payload.Days.ElementAt(0).Date);
+        Assert.Equal(laterDate, result.Payload.Days.ElementAt(1).Date);
     }
 
     [Fact]
@@ -1353,8 +1353,8 @@ public class DashboardServiceTests : ServiceTestBase
 
         // Assert: LocationShortName comes from the service, not the PCSS Name
         Assert.True(result.Succeeded);
-        Assert.Equal("VAN", result.Payload.Days[0].Locations[0].LocationShortName);
-        Assert.Equal("42", result.Payload.Days[0].Locations[0].LocationId);
+        Assert.Equal("VAN", result.Payload.Days.ElementAt(0).Locations.ElementAt(0).LocationShortName);
+        Assert.Equal("42", result.Payload.Days.ElementAt(0).Locations.ElementAt(0).LocationId);
         mockLocationService.Verify(l => l.GetLocationShortName("42"), Times.Once);
     }
 

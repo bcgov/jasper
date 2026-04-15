@@ -383,7 +383,7 @@ namespace Scv.Api.Infrastructure
 
         public static IServiceCollection AddClamAv(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<IClamClient>(sp =>
+            services.AddSingleton<IClamClient>(sp =>
             {
                 var clamAvHost = configuration.GetNonEmptyValue("CLAM_AV:HOST");
                 int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int clamAvPort);

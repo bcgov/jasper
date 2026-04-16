@@ -21,12 +21,15 @@ public class RequiresPermissionFilter(IAuthorizationService authService, Permiss
 
         if (!result.Succeeded)
         {
-            context.Result = new UnauthorizedObjectResult(new
+            context.Result = new ObjectResult(new
             {
-                Status = StatusCodes.Status401Unauthorized,
+                Status = StatusCodes.Status403Forbidden,
                 Message = "Access Denied",
                 Detail = "Insufficient permissions."
-            });
+            })
+            {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         await Task.CompletedTask;

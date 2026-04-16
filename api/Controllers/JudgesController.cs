@@ -25,7 +25,7 @@ public class JudgesController(IJudgeService judgeService) : ControllerBase
     {
         if (!this.User.CanViewOthersSchedule())
         {
-            return Unauthorized();
+            return Forbid();
         }
 
         var positionCodes = new List<string>

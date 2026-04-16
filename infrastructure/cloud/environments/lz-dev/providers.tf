@@ -19,5 +19,6 @@ terraform {
 }
 
 provider "aws" {
+  alias  = "notifications_hub"
   region = var.region
 }

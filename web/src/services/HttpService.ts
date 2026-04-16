@@ -77,12 +77,6 @@ export class HttpService implements IHttpService {
   private handleError(error: any) {
     console.error(error);
 
-    const status = error?.response?.status;
-
-    if (status === 401) {
-      redirectHandlerService.handleUnauthorized(globalThis.location.href);
-    }
-
     if (error.config?.skipErrorHandler) {
       // Component handles the error
       return Promise.reject(
@@ -91,11 +85,13 @@ export class HttpService implements IHttpService {
     }
 
     // todo: check for a 403 and handle it
-    if (status === 409) {
+    if (error.response?.status === 401) {
+      redirectHandlerService.handleUnauthorized(globalThis.location.href);
+    } else if (error.response?.status === 409) {
       globalThis.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
-    } else if (status !== 403 && status !== 401) {
+    } else if (error.response.status !== 403) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',

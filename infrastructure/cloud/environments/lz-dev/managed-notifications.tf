@@ -1,18 +1,3 @@
-moved {
-  from = aws_notifications_notification_hub.aws_health
-  to   = module.managed_notifications.aws_notifications_notification_hub.aws_health
-}
-
-moved {
-  from = aws_notificationscontacts_email_contact.aws_health
-  to   = module.managed_notifications.aws_notificationscontacts_email_contact.aws_health
-}
-
-moved {
-  from = aws_notifications_managed_notification_additional_channel_association.aws_health_email_contacts
-  to   = module.managed_notifications.aws_notifications_managed_notification_additional_channel_association.aws_health_email_contacts
-}
-
 module "managed_notifications" {
   source = "../../modules/ManagedNotifications"
 

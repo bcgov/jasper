@@ -133,9 +133,9 @@ public class OrderReminderJob(
             }
 
             // Only reassign if the RAJ is not already assigned
-            if (order.OrderRequest.Referral.SentToPartId != raj.PersonId)
+            if (order.JudgeId != raj.PersonId)
             {
-                order.OrderRequest.Referral.SentToPartId = raj.PersonId;
+                order.OrderRequest.Referral.SentToPartId = raj.ParticipantId;
                 order.OrderRequest.Referral.SentToName = GetRajName(raj);
                 await _orderRepo.UpdateAsync(order);
 

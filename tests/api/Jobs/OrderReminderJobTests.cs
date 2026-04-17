@@ -108,12 +108,13 @@ public class OrderReminderJobTests : ServiceTestBase
         };
     }
 
-    private PersonSearchItem CreateTestRAJ(int rajId)
+    private PersonSearchItem CreateTestRAJ(int rajId, double participantId)
     {
         return new PersonSearchItem
         {
             PersonId = rajId,
             UserId = rajId,
+            ParticipantId = participantId,
             FirstName = _faker.Name.FirstName(),
             LastName = _faker.Name.LastName(),
             PositionCode = "RAJ",
@@ -256,10 +257,11 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId = 101;
         var participantId = 123.45;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
 
         _mockOrderRepo
@@ -295,7 +297,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.Is<Order>(o =>
-                o.OrderRequest.Referral.SentToPartId == rajId &&
+                o.OrderRequest.Referral.SentToPartId == rajPartId &&
                 o.OrderRequest.Referral.SentToName == $"{raj.FirstName} {raj.LastName}".Trim())),
             Times.AtLeastOnce
         );
@@ -563,11 +565,12 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
 
         _mockOrderRepo
@@ -604,7 +607,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var expectedRajName = $"{raj.FirstName} {raj.LastName}".Trim();
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.Is<Order>(o =>
-                o.OrderRequest.Referral.SentToPartId == rajId &&
+                o.OrderRequest.Referral.SentToPartId == rajPartId &&
                 o.OrderRequest.Referral.SentToName == expectedRajName)),
             Times.AtLeastOnce
         );
@@ -617,11 +620,12 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
 
         _mockOrderRepo
@@ -678,11 +682,12 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
 
         _mockOrderRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
@@ -722,11 +727,12 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
         var rajUser = CreateTestUser(rajId, ""); // Empty email
 
         _mockOrderRepo
@@ -855,13 +861,15 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var raj1Id = 201;
+        var raj1PartId = 123.45;
         var raj2Id = 202;
+        var raj2PartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
-        var participantId = 123.45;
+        var participantId = 123.47;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj1 = CreateTestRAJ(raj1Id);
-        var raj2 = CreateTestRAJ(raj2Id);
+        var raj1 = CreateTestRAJ(raj1Id, raj1PartId);
+        var raj2 = CreateTestRAJ(raj2Id, raj2PartId);
         var rajUser = CreateTestUser(raj1Id, "raj1@example.com");
 
         _mockOrderRepo
@@ -896,7 +904,7 @@ public class OrderReminderJobTests : ServiceTestBase
         await _job.Execute();
 
         _mockOrderRepo.Verify(
-            r => r.UpdateAsync(It.Is<Order>(o => o.OrderRequest.Referral.SentToPartId == raj1Id)),
+            r => r.UpdateAsync(It.Is<Order>(o => o.OrderRequest.Referral.SentToPartId == raj1PartId)),
             Times.AtLeastOnce
         );
     }
@@ -958,10 +966,11 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId = 101;
         var participantId = 123.45;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
         raj.FirstName = "John";
         raj.LastName = "Doe";
         var rajUser = CreateTestUser(rajId, "raj@example.com");
@@ -1066,13 +1075,14 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId1 = 101;
         var judgeId2 = 102;
         var rajId = 201;
+        var rajPartId = 123.46;
         var reassignmentDate = DateTime.UtcNow.AddDays(-11);
         var participantId1 = 123.45;
         var participantId2 = 124.45;
         var order1 = CreateTestOrder(judgeId1, participantId1, reassignmentDate);
         var order2 = CreateTestOrder(judgeId2, participantId2, reassignmentDate);
         var judge2 = CreateTestJudge(judgeId2);
-        var raj = CreateTestRAJ(rajId);
+        var raj = CreateTestRAJ(rajId, rajPartId);
         var rajUser = CreateTestUser(rajId, "raj@example.com");
 
         _mockOrderRepo

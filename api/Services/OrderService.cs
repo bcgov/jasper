@@ -114,7 +114,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         // Validate judge existence
         var judges = await _judgeService.GetJudges();
-        if (!judges.Any(j => j.ParticipantId == dto.Referral.SentToPartId))
+        if (!judges.Any(j => j.ParticipantId.Equals(dto.Referral.SentToPartId)))
         {
             errors.Add($"Judge with id: {dto.Referral.SentToPartId} is not found.");
         }
@@ -134,7 +134,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             var fileId = requestDto.PhysicalFileId;
             var existingOrders = await this.Repo
                 .FindAsync(o => o.OrderRequest.PhysicalFileId == fileId
-                    && o.OrderRequest.Referral.SentToPartId == requestDto.Referral.SentToPartId
+                    && o.OrderRequest.Referral.SentToPartId.Equals(requestDto.Referral.SentToPartId)
                     && o.OrderRequest.Referral.ReferredDocumentId == requestDto.Referral.ReferredDocumentId);
 
             var existingOrder = existingOrders?.FirstOrDefault();
@@ -381,7 +381,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         var judges = await _judgeService.GetJudges();
-        var judge = judges.FirstOrDefault(j => j.ParticipantId == dto?.Referral?.SentToPartId);
+        var judge = judges.FirstOrDefault(j => j.ParticipantId.Equals(dto?.Referral?.SentToPartId));
         if (judge == null)
         {
             return OperationResult<OrderDto>.Failure($"Judge with part id: {dto?.Referral?.SentToPartId} is not found.");

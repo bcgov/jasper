@@ -22,7 +22,7 @@ api_ecs_config = {
   min_capacity = 3
   max_capacity = 6
   cpu          = 1024
-  memory_size  = 2560 # Increased from 2048 to accommodate ClamAV sidecar (~512MB)
+  memory_size  = 3072 # Increased from 2048 to accommodate ClamAV sidecar (~512MB)
 }
 alarm_config = {
   cpu_threshold             = 70

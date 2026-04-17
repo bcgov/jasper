@@ -162,10 +162,11 @@ public class ClamAvAntiVirusServiceTests
             .Setup(c => c.SendAndScanFileAsync(It.IsAny<Stream>()))
             .ThrowsAsync(new OutOfMemoryException());
 
-        await Assert.ThrowsAsync<OutOfMemoryException>(() => _service.ScanAsync(new MemoryStream()));
-        _mockLogger.Verify(
-            l => l.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(), It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Never);
+        var (isClean, message) = await _service.ScanAsync(new MemoryStream());
+
+        Assert.False(isClean);
+        Assert.StartsWith("Scan error:", message);
+        VerifyLogError();
     }
 
     #endregion

@@ -126,16 +126,16 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             : OperationResult.Success();
     }
 
-    public async Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto requestDto)
+    public async Task<OperationResult<OrderDto>> ProcessOrderRequestAsync(OrderRequestDto dto)
     {
         try
         {
             // Determine if the order already exists. If it is, this is an edit request. Otherwise, create a new one.
-            var fileId = requestDto.PhysicalFileId;
+            var fileId = dto.PhysicalFileId;
             var existingOrders = await this.Repo
                 .FindAsync(o => o.OrderRequest.PhysicalFileId == fileId
-                    && o.OrderRequest.Referral.SentToPartId.Equals(requestDto.Referral.SentToPartId)
-                    && o.OrderRequest.Referral.ReferredDocumentId == requestDto.Referral.ReferredDocumentId);
+                    && o.OrderRequest.Referral.SentToPartId.Equals(dto.Referral.SentToPartId)
+                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
 
             var existingOrder = existingOrders?.FirstOrDefault();
             OrderDto orderDto;
@@ -143,22 +143,22 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             if (existingOrder != null)
             {
                 this.Logger.LogInformation("Updating existing order's request for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
-                    fileId, requestDto.Referral.SentToPartId, requestDto.Referral.ReferredDocumentId);
+                    fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
                 orderDto = this.Mapper.Map<OrderDto>(existingOrder);
 
                 // Update the existing order's request
                 orderDto.Id = existingOrder.Id;
-                orderDto.OrderRequest = requestDto;
+                orderDto.OrderRequest = dto;
             }
             else
             {
                 this.Logger.LogInformation("Creating new order for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
-                    fileId, requestDto.Referral.SentToPartId, requestDto.Referral.ReferredDocumentId);
+                    fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 
                 orderDto = new OrderDto
                 {
-                    OrderRequest = requestDto,
+                    OrderRequest = dto,
                     Status = OrderStatus.Pending,
                     SubmitStatus = SubmitStatus.Pending,
                     SubmitAttempts = 0,
@@ -166,7 +166,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             }
 
             // Populate other Order fields like StyleOfCause and JudgeId that is not part of the request.
-            var populateResult = await PopulateOrder(requestDto, orderDto);
+            var populateResult = await PopulateOrder(dto, orderDto);
             if (!populateResult.Succeeded)
             {
                 return populateResult;

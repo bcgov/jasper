@@ -312,16 +312,16 @@ describe('OrderPDFStrategy', () => {
       mockOrderService.review.mockResolvedValue(undefined);
 
       await strategy.reviewOrder({
-        comments: 'Under review',
+        comments: 'Needs more info',
         signed: false,
-        status: OrderReviewStatus.Pending,
+        status: OrderReviewStatus.AwaitingDocumentation,
         documentData: 'base64pdf',
       });
 
       expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
-        comments: 'Under review',
+        comments: 'Needs more info',
         signed: false,
-        status: OrderReviewStatus.Pending,
+        status: OrderReviewStatus.AwaitingDocumentation,
         documentData: 'base64pdf',
       });
       expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(

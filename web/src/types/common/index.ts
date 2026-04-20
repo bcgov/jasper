@@ -70,8 +70,21 @@ export interface CourtRoomsInfo {
 }
 
 export interface ApplicationInfo {
+  version: string;
   nutrientFeLicenseKey: string;
   environment: string;
+  configuration: ApplicationConfiguration[];
+}
+
+export interface ApplicationConfiguration {
+  id: string;
+  key: string;
+  values: string[];
+}
+
+export interface ReleaseNotesInfo {
+  lastViewedVersion?: string | null;
+  lastViewedAt?: string | null;
 }
 
 export interface UserInfo {
@@ -88,6 +101,7 @@ export interface UserInfo {
   judgeHomeLocationId: number;
   email: string;
   userTitle: string;
+  releaseNotes?: ReleaseNotesInfo | null;
   permissions?: string[];
   groups?: string[];
 }
@@ -108,6 +122,12 @@ export enum DivisionEnum {
   R = 'R',
   I = 'I',
 }
+
+export enum CourtLevelEnum {
+  P = 'P', // Provincial court
+  S = 'S', // Supreme court
+}
+
 // Can't seem to import this type from Vuetify yet, so defining it here until they're made available
 export enum Anchor {
   Start = 'start',
@@ -166,6 +186,7 @@ export enum OrderReviewStatus {
   Unapproved = 'Unapproved',
   Pending = 'Pending',
   Approved = 'Approved',
+  AwaitingDocumentation = 'AwaitingDocumentation',
 }
 
 export enum RolesEnum {
@@ -176,4 +197,9 @@ export enum RolesEnum {
   Judge = 'Judge',
   AcjChiefJudge = 'ACJ/Chief Judge',
   Raj = 'RAJ',
+}
+
+export enum ActivityClassEnum {
+  Sitting = 'SIT',
+  NonSitting = 'NS',
 }

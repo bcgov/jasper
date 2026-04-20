@@ -17,7 +17,8 @@ public class Order : EntityBase
     public DateTime? ProcessedDate { get; set; }
     public bool Signed { get; set; }
     public string Comments { get; set; }
-    public string DocumentData { get; set; }
+    public byte[] DocumentData { get; set; }
+    public byte[] SupportingDocumentData { get; set; }
     public int ReminderNotificationsSent { get; set; } = 0;
     public int ReassignmentNotificationsSent { get; set; } = 0;
 }
@@ -35,6 +36,7 @@ public enum OrderStatus
     Unapproved,
     Pending,
     Approved,
+    AwaitingDocumentation
 }
 
 public enum SubmitStatus

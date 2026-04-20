@@ -24,6 +24,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using MongoDB.Driver;
+using nClam;
+using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
@@ -46,6 +48,7 @@ using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
+using PCSSActivityServices = PCSSCommon.Clients.ActivityServices;
 using PCSSAuthorizationServices = PCSSCommon.Clients.AuthorizationServices;
 using PCSSConfigServices = PCSSCommon.Clients.ConfigurationServices;
 using PCSSCourtCalendarServices = PCSSCommon.Clients.CourtCalendarServices;
@@ -124,6 +127,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<GroupAliasSeeder>();
             services.AddScoped<QuickLinkSeeder>();
             services.AddScoped<EmailTemplateSeeder>();
+            services.AddScoped<ConstantSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -232,7 +236,7 @@ namespace Scv.Api.Infrastructure
                     (client) => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
             services
-                .AddHttpClient<PCSSCourtCalendarServices.CourtCalendarClientServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpClient<PCSSCourtCalendarServices.CourtCalendarServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
             services
                 .AddHttpClient<PCSSJudicialCalendarServices.JudicialCalendarServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
@@ -280,12 +284,16 @@ namespace Scv.Api.Infrastructure
             services
                 .AddHttpClient<PCSSAuthorizationServices.IAuthorizationServicesClient, PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
+            services
+                .AddHttpClient<PCSSActivityServices.ActivityServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpContextAccessor();
             services.AddTransient(s => s.GetService<IHttpContextAccessor>()?.HttpContext?.User);
             services.AddScoped<FilesService>();
             services.AddScoped<LookupService>();
             services.AddScoped<LocationService>();
+            services.AddScoped<ILocationService>(serviceProvider => serviceProvider.GetRequiredService<LocationService>());
             services.AddScoped<IPcssAuthorizationService, PcssAuthorizationService>();
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
@@ -301,6 +309,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ICsvParser, CsvParser>();
             services.AddScoped<IPcssSyncService, PcssSyncService>();
             services.AddScoped<IPcssConfigService, PcssConfigService>();
+            services.AddScoped<IAntiVirusService, ClamAvAntiVirusService>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -310,6 +319,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IConfigurationService, ConfigurationService>();
                 services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
@@ -322,6 +332,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<SubmitOrderJob>();
                 services.AddTransient<IRecurringJob, PrimePcssUserCacheJob>();
                 services.AddTransient<IRecurringJob, RetryErroredOrderSubmitJob>();
+                services.AddTransient<IRecurringJob, RetryUrgentErroredOrderSubmitJob>();
                 services.AddTransient<IRecurringJob, OrderReminderJob>();
                 services.AddTransient<IRecurringJob, PopulateJudicialBinderDocumentFieldsJob>();
 
@@ -366,6 +377,21 @@ namespace Scv.Api.Infrastructure
                 options.WorkerCount = Math.Max(1, Environment.ProcessorCount / 4);
                 options.SchedulePollingInterval = TimeSpan.FromSeconds(30);
             });
+
+            return services;
+        }
+
+        public static IServiceCollection AddClamAv(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddSingleton<IClamClient>(sp =>
+            {
+                var clamAvHost = configuration.GetNonEmptyValue("CLAM_AV:HOST");
+                int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int clamAvPort);
+                return new ClamClient(clamAvHost, clamAvPort);
+            });
+
+            services.AddHealthChecks()
+                .AddCheck<ClamAvHealthCheck>("clamav");
 
             return services;
         }

@@ -15,4 +15,5 @@ public class OrderDto : BaseDto
     public bool Signed { get; set; } = false;
     public string Comments { get; set; }
     public string DocumentData { get; set; }
+    public string SupportingDocumentData { get; set; }
 }

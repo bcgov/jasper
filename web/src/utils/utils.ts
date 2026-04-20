@@ -2,49 +2,65 @@ import { beautifyDate } from '@/filters';
 import { ApplicationService } from '@/services/ApplicationService';
 import { AuthService } from '@/services/AuthService';
 import { LookupService } from '@/services/LookupService';
+import { UserService } from '@/services/UserService';
 import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
 import { civilAppearancesListType } from '@/types/civil';
 import { civilApprDetailType } from '@/types/civil/jsonTypes';
-import { CourtClassEnum, LookupCode } from '@/types/common';
+import { CourtClassEnum, LookupCode, UserInfo } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
 import _ from 'underscore';
 import { inject } from 'vue';
 import { LocationQueryValue } from 'vue-router';
 
-export const SessionManager = {
-  getSettings: async function () {
-    const commonStore = useCommonStore();
-    const authService = inject<AuthService>('authService');
-    const appService = inject<ApplicationService>('applicationService');
+export const initializeSessionSettings = async (): Promise<boolean> => {
+  const commonStore = useCommonStore();
+  const authService = inject<AuthService>('authService');
+  const appService = inject<ApplicationService>('applicationService');
+  const userService = inject<UserService>('userService');
 
-    try {
-      const [userInfo, appInfo] = await Promise.all([
-        authService?.getUserInfo(),
-        appService?.getApplicationInfo(),
-      ]);
-      let succeeded = true;
-      if (!userInfo) {
-        console.error('User info not available.');
-        succeeded = false;
-      }
-      if (!appInfo) {
-        console.error('Application info not available.');
-        succeeded = false;
-      }
-      commonStore.setLoggedInUserInfo(userInfo ?? null);
-      if (!commonStore.userInfo) {
-        commonStore.setUserInfo(userInfo ?? null);
-      }
-
-      commonStore.appInfo = appInfo ?? null;
-      return succeeded;
-    } catch (error) {
-      console.log(error);
+  try {
+    commonStore.setIsInitialized(false);
+    const userInfo = await authService?.getUserInfo();
+    if (!userInfo) {
+      console.error('User info not available.');
+      commonStore.setLoggedInUserInfo(null);
+      commonStore.setUserInfo(null);
       return false;
     }
-  },
+
+    const [appInfo, myUserInfo] = await Promise.all([
+      appService?.getApplicationInfo(),
+      userService?.getMyUser(),
+    ]);
+
+    const currentUserInfo = commonStore.userInfo;
+    const mergedUserInfo =
+      userInfo || myUserInfo
+        ? ({ ...userInfo, ...myUserInfo } as UserInfo)
+        : null;
+
+    // Preserve the judge override selected in the UI when session info refreshes.
+    if (
+      mergedUserInfo &&
+      currentUserInfo?.judgeId &&
+      currentUserInfo.judgeId !== userInfo.judgeId
+    ) {
+      mergedUserInfo.judgeId = currentUserInfo.judgeId;
+      mergedUserInfo.judgeHomeLocationId = currentUserInfo.judgeHomeLocationId;
+    }
+
+    commonStore.setLoggedInUserInfo(userInfo ?? null);
+    commonStore.setUserInfo(mergedUserInfo);
+    commonStore.appInfo = appInfo ?? null;
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  } finally {
+    commonStore.setIsInitialized(true);
+  }
 };
 
 export const splunkLog = (message) => {
@@ -253,6 +269,12 @@ export const getRoles = async (): Promise<LookupCode[] | undefined> => {
 export const hasPermission = (permission: string): boolean => {
   const commonStore = useCommonStore();
   return !!commonStore.userInfo?.permissions?.includes(permission);
+};
+
+export const hasRole = (role: string | string[]): boolean => {
+  const commonStore = useCommonStore();
+  const roles = Array.isArray(role) ? role : [role];
+  return roles.some((r) => !!commonStore.userInfo?.roles?.includes(r));
 };
 
 /**

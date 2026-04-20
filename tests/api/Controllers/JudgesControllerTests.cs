@@ -31,14 +31,14 @@ public class JudgesControllerTests
     #region GetJudges Tests
 
     [Fact]
-    public async Task GetJudges_ReturnsUnauthorized_WhenUserCannotViewOthersSchedule()
+    public async Task GetJudges_ReturnsForbidden_WhenUserCannotViewOthersSchedule()
     {
         SetupUserWithPermissions(canViewOthersSchedule: false);
 
         var result = await _controller.GetJudges();
 
-        Assert.IsType<UnauthorizedResult>(result);
-        _mockJudgeService.Verify(s => s.GetJudges(It.IsAny<List<string>>()), Times.Never);
+        Assert.IsType<ForbidResult>(result);
+        _mockJudgeService.Verify(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()), Times.Never);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class JudgesControllerTests
         var judges = CreateJudgesList(5);
 
         _mockJudgeService
-            .Setup(s => s.GetJudges(It.IsAny<List<string>>()))
+            .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .ReturnsAsync(judges);
 
         var result = await _controller.GetJudges();
@@ -187,7 +187,7 @@ public class JudgesControllerTests
         SetupUserWithPermissions(canViewOthersSchedule: true);
 
         _mockJudgeService
-            .Setup(s => s.GetJudges(It.IsAny<List<string>>()))
+            .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .ReturnsAsync((IEnumerable<PersonSearchItem>)null);
 
         var result = await _controller.GetJudges();
@@ -209,7 +209,7 @@ public class JudgesControllerTests
         var judges = CreateJudgesList(1);
 
         _mockJudgeService
-            .Setup(s => s.GetJudges(It.IsAny<List<string>>()))
+            .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .ReturnsAsync(judges);
 
         var result = await _controller.GetJudges();
@@ -220,18 +220,18 @@ public class JudgesControllerTests
         }
         else
         {
-            Assert.IsType<UnauthorizedResult>(result);
+            Assert.IsType<ForbidResult>(result);
         }
     }
 
     [Fact]
-    public async Task GetJudges_ReturnsUnauthorized_WhenUserHasNoPermissionClaim()
+    public async Task GetJudges_ReturnsForbidden_WhenUserHasNoPermissionClaim()
     {
         SetupUserWithoutPermissions();
 
         var result = await _controller.GetJudges();
 
-        Assert.IsType<UnauthorizedResult>(result);
+        Assert.IsType<ForbidResult>(result);
     }
 
     #endregion

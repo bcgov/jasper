@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0.0"
+      version = "~> 6.38.0"
     }
 
     tls = {
@@ -19,5 +19,6 @@ terraform {
 }
 
 provider "aws" {
+  alias  = "notifications_hub"
   region = var.region
 }

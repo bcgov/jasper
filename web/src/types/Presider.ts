@@ -1,3 +1,7 @@
-import { TextValue } from './TextValue';
-
-export interface Presider extends TextValue<string> {}
+export interface Presider {
+  id: number;
+  name: string;
+  initials: string;
+  homeLocationId: number;
+  homeLocationName: string;
+}

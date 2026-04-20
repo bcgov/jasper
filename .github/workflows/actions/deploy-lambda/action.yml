@@ -26,8 +26,8 @@ inputs:
   github_image_repo:
     description: The GCHR repo where images are stored.
     required: true
-  short_sha:
-    description: The short SHA used to tag image in GCHR.
+  image_tag:
+    description: The image tag used in GHCR (release version e.g. 1.2.3, or short SHA for CI builds).
     required: true
 
 runs:
@@ -87,11 +87,11 @@ runs:
       shell: bash
       env:
         GH_IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_IMAGE_TAG: ${{ inputs.image_tag }}
         GH_APP_NAME: ${{ inputs.app_name }}
         GH_ENVIRONMENT: ${{ inputs.environment }}
       run: |
-        IMAGE_TAG="${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+        IMAGE_TAG="${GH_IMAGE_NAME}-${GH_IMAGE_TAG}"
         REPOSITORY_NAME="${GH_APP_NAME}-lambda-repo-${GH_ENVIRONMENT}"
 
         IMAGE_EXISTS=$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" --output text)
@@ -110,12 +110,12 @@ runs:
       env:
         GH_GITHUB_IMAGE_REPO: ${{ inputs.github_image_repo }}
         GH_IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_IMAGE_TAG: ${{ inputs.image_tag }}
         GH_FULL_ECR_REPO_URL: ${{ steps.vars.outputs.full_ecr_repo_url }}
       run: |
-        docker pull "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_SHORT_SHA}"
-        docker tag "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_SHORT_SHA}" "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
-        docker push "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+        docker pull "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_IMAGE_TAG}"
+        docker tag "${GH_GITHUB_IMAGE_REPO}/${GH_IMAGE_NAME}:${GH_IMAGE_TAG}" "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_IMAGE_TAG}"
+        docker push "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_IMAGE_TAG}"
 
     - name: Update Lambda Function
       shell: bash
@@ -125,8 +125,8 @@ runs:
         GH_ENVIRONMENT: ${{ inputs.environment }}
         GH_FULL_ECR_REPO_URL: ${{ steps.vars.outputs.full_ecr_repo_url }}
         GH_IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        GH_SHORT_SHA: ${{ inputs.short_sha }}
+        GH_IMAGE_TAG: ${{ inputs.image_tag }}
       run: |
         aws lambda update-function-code \
           --function-name "${GH_APP_NAME}-${GH_LAMBDA}-lambda-${GH_ENVIRONMENT}" \
-          --image-uri "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_SHORT_SHA}"
+          --image-uri "${GH_FULL_ECR_REPO_URL}:${GH_IMAGE_NAME}-${GH_IMAGE_TAG}"

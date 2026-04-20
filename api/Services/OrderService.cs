@@ -211,6 +211,20 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult.Failure("Order not found");
         }
 
+        // Validate signed document type if provided
+        if (!string.IsNullOrWhiteSpace(orderReview.DocumentData)
+            && !DocumentHelper.IsPdfOrWordDocumentBase64(orderReview.DocumentData))
+        {
+            return OperationResult.Failure("Signed document must be a valid PDF, Word Document (.doc or .docx).");
+        }
+
+        // Validate uploaded supporting document type if provided
+        if (!string.IsNullOrWhiteSpace(orderReview.SupportingDocumentData)
+            && !DocumentHelper.IsPdfOrWordDocumentBase64(orderReview.SupportingDocumentData))
+        {
+            return OperationResult.Failure("Supporting document must be a valid PDF, Word Document (.doc or .docx).");
+        }
+
         var assignedJudgeId = order.OrderRequest.Referral.SentToPartId;
         var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
 
@@ -228,7 +242,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if ((orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved) && !string.IsNullOrEmpty(orderDto.Comments))
+        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved || orderDto.Status == OrderStatus.AwaitingDocumentation)
         {
             _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
         }
@@ -274,7 +288,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 return OperationResult.Failure("Failed to map Order to OrderAction.");
             }
 
-            var success = await _csoClient.SendOrderAsync(actionDto);
+            var success = await _csoClient.SendOrderAsync(actionDto, default);
             if (!success)
             {
                 this.Logger.LogWarning("Order {OrderId} submission to CSO failed.", id);
@@ -290,6 +304,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
             // Cleanup the successful, submitted order to remove potentially private document data and comments.
             orderDto.DocumentData = null;
+            orderDto.SupportingDocumentData = null;
             orderDto.Comments = null;
             orderDto.SubmitStatus = SubmitStatus.Submitted;
 

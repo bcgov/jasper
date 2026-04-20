@@ -12,7 +12,7 @@ vi.mock("../../util", () => ({
   sanitizeHeaders: vi.fn((headers) => headers),
   sanitizeQueryStringParams: vi.fn((params) =>
     new URLSearchParams(params).toString()
-  ),
+  )
 }));
 
 describe("ApiService", () => {
@@ -79,7 +79,7 @@ describe("ApiService", () => {
       path: "/test",
       queryStringParameters: { key: "value" },
       headers: { Authorization: "Bearer token" },
-      body: null,
+      body: null
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -87,15 +87,15 @@ describe("ApiService", () => {
     expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
       headers: {
         Authorization: "Bearer token",
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      responseType: "json",
+      responseType: "json"
     });
     expect(response).toEqual({
       statusCode: 200,
       body: JSON.stringify("get response"),
       isBase64Encoded: false,
-      headers: {},
+      headers: {}
     });
   });
 
@@ -105,7 +105,7 @@ describe("ApiService", () => {
       path: "/test",
       queryStringParameters: {},
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "test" }),
+      body: JSON.stringify({ name: "test" })
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -119,19 +119,19 @@ describe("ApiService", () => {
       statusCode: 200,
       body: JSON.stringify("post response"),
       isBase64Encoded: false,
-      headers: {},
+      headers: {}
     });
   });
 
   it("should return 405 for unsupported methods", async () => {
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "DELETE",
-      path: "/test",
+      path: "/test"
     };
     const response = await apiService.handleRequest(event as APIGatewayEvent);
     expect(response).toEqual({
       statusCode: 405,
-      body: JSON.stringify({ message: "Method DELETE not allowed" }),
+      body: JSON.stringify({ message: "Method DELETE not allowed" })
     });
   });
 
@@ -139,21 +139,21 @@ describe("ApiService", () => {
     mockHttpService.get.mockRejectedValue(new Error("Test error"));
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
-      path: "/test",
+      path: "/test"
     };
     const response = await apiService.handleRequest(event as APIGatewayEvent);
     expect(response).toEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "Internal Server Error" }),
+      body: JSON.stringify({ message: "Internal Server Error" })
     });
   });
 
-  it("should handle a GET binary request with small file (< 4.5MB)", async () => {
+  it("should handle a GET binary request with small file (< 4MB)", async () => {
     const smallBinaryData = new ArrayBuffer(1024 * 1024); // 1MB
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: smallBinaryData,
       headers: { "content-type": "application/pdf" },
-      status: 200,
+      status: 200
     });
 
     const event: Partial<APIGatewayEvent> = {
@@ -161,7 +161,7 @@ describe("ApiService", () => {
       path: "/test",
       queryStringParameters: { key: "value" },
       headers: { Accept: "application/octet-stream" },
-      body: null,
+      body: null
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -169,9 +169,9 @@ describe("ApiService", () => {
     expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
       headers: {
         Accept: "application/octet-stream",
-        "Content-Type": "application/octet-stream",
+        "Content-Type": "application/octet-stream"
       },
-      responseType: "arraybuffer",
+      responseType: "arraybuffer"
     });
     expect(mockEfsService.saveFile).not.toHaveBeenCalled();
     expect(response.statusCode).toBe(200);
@@ -179,12 +179,12 @@ describe("ApiService", () => {
     expect(response.headers).toEqual({ "content-type": "application/pdf" });
   });
 
-  it("should save large binary file to EFS (> 4.5MB)", async () => {
+  it("should save large binary file to EFS (> 4MB)", async () => {
     const largeBinaryData = new ArrayBuffer(5 * 1024 * 1024); // 5MB
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: largeBinaryData,
       headers: { "content-type": "application/pdf" },
-      status: 200,
+      status: 200
     });
 
     const event: Partial<APIGatewayEvent> = {
@@ -192,7 +192,7 @@ describe("ApiService", () => {
       path: "/test/large-file",
       queryStringParameters: {},
       headers: { Accept: "application/octet-stream" },
-      body: null,
+      body: null
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -206,43 +206,43 @@ describe("ApiService", () => {
     expect(JSON.parse(response.body)).toEqual({
       message: "File saved to EFS due to size limit",
       filePath: "/mnt/efs/test-file.pdf",
-      fileSize: 5 * 1024 * 1024,
+      fileSize: 5 * 1024 * 1024
     });
   });
 
-  it("should handle exactly 4.5MB file as threshold", async () => {
-    const thresholdData = new ArrayBuffer(4.5 * 1024 * 1024); // Exactly 4.5MB
+  it("should handle exactly 4MB file as threshold", async () => {
+    const thresholdData = new ArrayBuffer(4 * 1024 * 1024); // Exactly 4MB
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: thresholdData,
       headers: {},
-      status: 200,
+      status: 200
     });
 
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
       path: "/test/threshold",
-      headers: { Accept: "application/octet-stream" },
+      headers: { Accept: "application/octet-stream" }
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
 
-    // At exactly 4.5MB, should still return base64 (not > threshold)
+    // At exactly 4MB, should still return base64 (not > threshold)
     expect(mockEfsService.saveFile).not.toHaveBeenCalled();
     expect(response.isBase64Encoded).toBe(true);
   });
 
-  it("should save file to EFS when size is just over 4.5MB", async () => {
-    const justOverThreshold = new ArrayBuffer(4.5 * 1024 * 1024 + 1); // 4.5MB + 1 byte
+  it("should save file to EFS when size is just over 4MB", async () => {
+    const justOverThreshold = new ArrayBuffer(4 * 1024 * 1024 + 1); // 4MB + 1 byte
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: justOverThreshold,
       headers: {},
-      status: 200,
+      status: 200
     });
 
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
       path: "/test/just-over",
-      headers: { Accept: "application/octet-stream" },
+      headers: { Accept: "application/octet-stream" }
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);

@@ -147,4 +147,38 @@ public class RetryErroredOrderSubmitJobTests
             c => c.Create(It.IsAny<Hangfire.Common.Job>(), It.IsAny<Hangfire.States.IState>()),
             Times.Never);
     }
+
+    [Fact]
+    public async Task Execute_DoesNotEnqueue_UrgentPriorityOrders()
+    {
+        var options = Options.Create(new JobsRetrySubmitOrderOptions { CronSchedule = "0 0 * * 0", MaxRetries = 9 });
+        var job = new RetryErroredOrderSubmitJob(
+            _mockRepo.Object,
+            _mockBackgroundJobClient.Object,
+            options,
+            _mockLogger.Object);
+
+        var orders = new List<Order>
+        {
+            new()
+            {
+                Id = "ORDER-URG",
+                SubmitStatus = SubmitStatus.Error,
+                Status = OrderStatus.Approved,
+                OrderRequest = new OrderRequest
+                {
+                    Referral = new Referral { PriorityType = "URG" }
+                }
+            }
+        };
+
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync(orders);
+
+        await job.Execute();
+
+        _mockBackgroundJobClient.Verify(
+            c => c.Create(It.IsAny<Hangfire.Common.Job>(), It.IsAny<Hangfire.States.IState>()),
+            Times.Never);
+    }
 }

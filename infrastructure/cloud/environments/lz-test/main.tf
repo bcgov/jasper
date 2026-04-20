@@ -154,6 +154,18 @@ module "efs_files" {
   kms_key_arn        = module.initial.kms_key_arn
 }
 
+# Setup EFS ClamAV DB storage (persists virus definitions across task restarts)
+module "efs_clamav_db" {
+  source             = "../../modules/EFS"
+  environment        = var.environment
+  app_name           = var.app_name
+  name               = "clamav-db"
+  purpose            = "Persistent ClamAV virus definition storage."
+  subnet_ids         = module.subnets.app_subnets_ids
+  security_group_ids = [data.aws_security_group.app_sg.id]
+  kms_key_arn        = module.initial.kms_key_arn
+}
+
 # Create Lambda Functions
 module "lambda" {
   source                            = "../../modules/Lambda"
@@ -271,45 +283,57 @@ module "ecs_api_td" {
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
   ecr_repository_url     = module.initial.app_ecr.ecr_repo_url
   port                   = 5000
-  env_variables = [
-    {
-      name  = "CORS_DOMAIN"
-      value = module.alb.default_lb_dns_name
-    },
-    {
-      name  = "AWS_API_GATEWAY_URL"
-      value = "${module.apigw.apigw_invoke_url}"
-    },
-    {
-      name  = "DEFAULT_QUICK_LINKS"
-      value = "${module.secrets_manager.default_quick_links}"
-    },
-    {
-      name  = "DEFAULT_USERS"
-      value = "${module.secrets_manager.default_users}"
-    },
-    {
-      name  = "AWS_REGION"
-      value = var.region
-    },
-    {
-      name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"
-      value = "${module.lambda.lambda_functions["get-assigned-cases-request"].name}"
-    },
-    {
-      name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"
-      value = var.get_assigned_cases_lambda_timeout
-    },
-    {
-      name  = "AWS_LAMBDA_LONG_TIMEOUT_MINUTES"
-      value = var.lambda_long_timeout
-    },
-    {
-      name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
-      value = var.lambda_retry_attempts
-    },
-
-  ]
+  env_variables = concat(
+    [
+      {
+        name  = "CORS_DOMAIN"
+        value = module.alb.default_lb_dns_name
+      },
+      {
+        name  = "AWS_API_GATEWAY_URL"
+        value = "${module.apigw.apigw_invoke_url}"
+      },
+      {
+        name  = "DEFAULT_QUICK_LINKS"
+        value = "${module.secrets_manager.default_quick_links}"
+      },
+      {
+        name  = "DEFAULT_USERS"
+        value = "${module.secrets_manager.default_users}"
+      },
+      {
+        name  = "AWS_REGION"
+        value = var.region
+      },
+      {
+        name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"
+        value = "${module.lambda.lambda_functions["get-assigned-cases-request"].name}"
+      },
+      {
+        name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES"
+        value = var.get_assigned_cases_lambda_timeout
+      },
+      {
+        name  = "AWS_LAMBDA_LONG_TIMEOUT_MINUTES"
+        value = var.lambda_long_timeout
+      },
+      {
+        name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
+        value = var.lambda_retry_attempts
+      },
+    ],
+    # ClamAV connection settings - only injected when the sidecar is enabled
+    var.clamav_config != null ? [
+      {
+        name  = "CLAM_AV__HOST"
+        value = var.clamav_config.host
+      },
+      {
+        name  = "CLAM_AV__PORT"
+        value = tostring(var.clamav_config.port)
+      }
+    ] : []
+  )
   secret_env_variables = module.secrets_manager.api_secrets
   kms_key_arn          = module.initial.kms_key_arn
   log_group_name       = module.ecs_api_td_log_group.log_group.name
@@ -322,6 +346,11 @@ module "ecs_api_td" {
     root_directory  = var.efs_config.files_dir
     container_path  = var.efs_config.mount_path
   }
+  clamav_config = var.clamav_config != null ? merge(var.clamav_config, {
+    efs_volume = {
+      file_system_id = module.efs_clamav_db.efs_id
+    }
+  }) : null
 }
 
 # Create Web ECS Service

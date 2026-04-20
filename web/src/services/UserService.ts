@@ -16,4 +16,10 @@ export class UserService extends ServiceBase {
   async getMyUser(): Promise<UserInfo> {
     return await this.httpService.get<UserInfo>(`api/users/me`);
   }
+
+  async markReleaseNotesViewed(version: string): Promise<void> {
+    await this.httpService.post<void>(`api/users/me/release-notes`, {
+      version,
+    });
+  }
 }

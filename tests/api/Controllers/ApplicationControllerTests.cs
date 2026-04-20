@@ -2,8 +2,11 @@ using System.Collections.Generic;
 using Bogus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Helpers.Exceptions;
+using Scv.Api.Models.Configuration;
+using Scv.Api.Services;
 using Xunit;
 
 namespace tests.api.Controllers;
@@ -22,16 +25,22 @@ public class ApplicationControllerTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configValues)
             .Build();
-        return new ApplicationController(configuration);
+
+        var configurationService = new Mock<IConfigurationService>();
+        configurationService
+            .Setup(x => x.GetConfigurationAsync())
+            .ReturnsAsync(new List<ConstantDto>());
+
+        return new ApplicationController(configuration, configurationService.Object);
     }
 
     #region Unit Tests
 
     [Fact]
-    public void GetApplicationInfo_ThrowsConfigurationException_WhenNutrientFeLicenseKeyIsNull()
+    public async System.Threading.Tasks.Task GetApplicationInfo_ThrowsConfigurationException_WhenNutrientFeLicenseKeyIsNull()
     {
         var expectedEnvironment = _faker.PickRandom("Development", "Staging");
-        
+
         var configValues = new Dictionary<string, string>
         {
             // NUTRIENT_FE_LICENSE_KEY is intentionally missing
@@ -40,15 +49,15 @@ public class ApplicationControllerTests
 
         var controller = CreateController(configValues);
 
-        var exception = Assert.Throws<ConfigurationException>(() => controller.GetApplicationInfo());
+        var exception = await Assert.ThrowsAsync<ConfigurationException>(() => controller.GetApplicationInfo());
         Assert.Equal("Configuration 'NUTRIENT_FE_LICENSE_KEY' is invalid or missing.", exception.Message);
     }
 
     [Fact]
-    public void GetApplicationInfo_ThrowsConfigurationException_WhenNutrientFeLicenseKeyIsEmpty()
+    public async System.Threading.Tasks.Task GetApplicationInfo_ThrowsConfigurationException_WhenNutrientFeLicenseKeyIsEmpty()
     {
         var expectedEnvironment = _faker.PickRandom("Development", "Staging");
-        
+
         var configValues = new Dictionary<string, string>
         {
             ["NUTRIENT_FE_LICENSE_KEY"] = string.Empty,
@@ -57,15 +66,15 @@ public class ApplicationControllerTests
 
         var controller = CreateController(configValues);
 
-        var exception = Assert.Throws<ConfigurationException>(() => controller.GetApplicationInfo());
+        var exception = await Assert.ThrowsAsync<ConfigurationException>(() => controller.GetApplicationInfo());
         Assert.Equal("Configuration 'NUTRIENT_FE_LICENSE_KEY' is invalid or missing.", exception.Message);
     }
 
     [Fact]
-    public void GetApplicationInfo_ThrowsConfigurationException_WhenEnvironmentIsNull()
+    public async System.Threading.Tasks.Task GetApplicationInfo_ThrowsConfigurationException_WhenEnvironmentIsNull()
     {
         var expectedLicenseKey = _faker.Random.AlphaNumeric(32);
-        
+
         var configValues = new Dictionary<string, string>
         {
             ["NUTRIENT_FE_LICENSE_KEY"] = expectedLicenseKey
@@ -74,15 +83,15 @@ public class ApplicationControllerTests
 
         var controller = CreateController(configValues);
 
-        var exception = Assert.Throws<ConfigurationException>(() => controller.GetApplicationInfo());
+        var exception = await Assert.ThrowsAsync<ConfigurationException>(() => controller.GetApplicationInfo());
         Assert.Equal("Configuration 'ASPNETCORE_ENVIRONMENT' is invalid or missing.", exception.Message);
     }
 
     [Fact]
-    public void GetApplicationInfo_ThrowsConfigurationException_WhenEnvironmentIsEmpty()
+    public async System.Threading.Tasks.Task GetApplicationInfo_ThrowsConfigurationException_WhenEnvironmentIsEmpty()
     {
         var expectedLicenseKey = _faker.Random.AlphaNumeric(32);
-        
+
         var configValues = new Dictionary<string, string>
         {
             ["NUTRIENT_FE_LICENSE_KEY"] = expectedLicenseKey,
@@ -91,8 +100,33 @@ public class ApplicationControllerTests
 
         var controller = CreateController(configValues);
 
-        var exception = Assert.Throws<ConfigurationException>(() => controller.GetApplicationInfo());
+        var exception = await Assert.ThrowsAsync<ConfigurationException>(() => controller.GetApplicationInfo());
         Assert.Equal("Configuration 'ASPNETCORE_ENVIRONMENT' is invalid or missing.", exception.Message);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task GetApplicationInfo_ReturnsVersionInResponse()
+    {
+        var expectedLicenseKey = _faker.Random.AlphaNumeric(32);
+        var expectedEnvironment = _faker.PickRandom("Development", "Staging", "Production");
+
+        var configValues = new Dictionary<string, string>
+        {
+            ["NUTRIENT_FE_LICENSE_KEY"] = expectedLicenseKey,
+            ["ASPNETCORE_ENVIRONMENT"] = expectedEnvironment
+        };
+
+        var controller = CreateController(configValues);
+        var result = await controller.GetApplicationInfo() as OkObjectResult;
+
+        Assert.NotNull(result);
+        var value = result.Value;
+        var versionProperty = value.GetType().GetProperty("Version");
+        Assert.NotNull(versionProperty);
+
+        var version = versionProperty.GetValue(value) as string;
+        Assert.NotNull(version);
+        Assert.NotEmpty(version);
     }
 
     #endregion

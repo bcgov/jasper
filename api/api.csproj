@@ -4,6 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Scv.Api</RootNamespace>
     <UserSecretsId>de959767-ede6-4f8a-b6b9-d36aed703396</UserSecretsId>
+    <!-- Version information - set by ReleaseVersion MSBuild property from GitHub Release tag (e.g. 1.2.3) -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Version Condition="'$(ReleaseVersion)' != ''">$(ReleaseVersion)</Version>
+    <Version Condition="'$(ReleaseVersion)' == ''">$(VersionPrefix)</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\$(Configuration)\net10.0\api.xml</DocumentationFile>
@@ -14,27 +19,28 @@
     <DocumentationFile>bin\$(Configuration)\net10.0\api.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.3" />
-    <PackageReference Include="Azure.Identity" Version="1.18.0" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.7" />
+    <PackageReference Include="Azure.Identity" Version="1.19.0" />
     <PackageReference Include="ColeSoft.Extensions.Logging.Splunk" Version="1.0.72" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
-    <PackageReference Include="GdPicture.API" Version="14.3.26" />
+    <PackageReference Include="GdPicture.API" Version="14.4.1" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.23" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.5" />
     <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
+    <PackageReference Include="nClam" Version="9.0.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.6.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.5" />
     <PackageReference Include="IdentityModel" Version="6.2.0" />
-    <PackageReference Include="Mapster" Version="7.4.0" />
+    <PackageReference Include="Mapster" Version="10.0.7" />
     <PackageReference Include="LazyCache" Version="2.4.0" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.25" />
     <PackageReference Include="Polly" Version="8.4.2" />
-    <PackageReference Include="Scriban" Version="6.5.5" />
+    <PackageReference Include="Scriban" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.6" />

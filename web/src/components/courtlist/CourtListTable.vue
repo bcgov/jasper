@@ -91,6 +91,9 @@
           :icon="mdiHomeOutline"
         />
       </template>
+      <template v-if="item.courtLevelCd === CourtLevelEnum.S">
+        <TooltipIcon text="Supreme Court appearance" :icon="mdiBank" />
+      </template>
     </template>
     <template v-slot:[`item.estimatedTime`]="{ item }">
       {{ hoursMinsFormatter(item.estimatedTimeHour, item.estimatedTimeMin) }}
@@ -169,6 +172,7 @@
   import { useCourtFileSearchStore, useCommonStore } from '@/stores';
   import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
   import {
+    CourtLevelEnum,
     CourtClassEnum,
     DivisionEnum,
     FileMarkerEnum,
@@ -185,6 +189,7 @@
     mdiHomeOutline,
     mdiNotebookOutline,
     mdiTrashCanOutline,
+    mdiBank,
   } from '@mdi/js';
   import { computed, ref } from 'vue';
 
@@ -247,7 +252,7 @@
     {
       title: '',
       key: 'icons',
-      width: '3%',
+      width: '5%',
       sortable: false,
     },
     {

@@ -29,7 +29,7 @@
     "@aws-lambda-powertools/logger": "^2.31.0",
     "@aws-sdk/client-ecs": "^3.998.0",
     "@aws-sdk/client-secrets-manager": "^3.998.0",
-    "axios": "^1.13.5",
+    "axios": "^1.15.0",
     "glob": "^13.0.6",
     "qs": "^6.15.0",
     "uuid": "^13.0.0"

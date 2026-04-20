@@ -6,8 +6,6 @@ EXPOSE 8080
 ENV ASPNETCORE_URLS=http://*:8080
 ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 ENV DOTNET_gcServer=1
-ARG VERSION
-ENV VERSION=$VERSION
 
 FROM mcr.microsoft.com/dotnet/sdk:${dotnet_version} AS build
 
@@ -21,11 +19,13 @@ COPY ["dars-client/dars-client.csproj", "dars-client/"]
 COPY ["cso-client/cso-client.csproj", "cso-client/"]
 RUN dotnet restore api/api.csproj
 COPY . .
-RUN dotnet build "api/api.csproj" -c Release
+ARG RELEASE_VERSION=0.0.0
+RUN dotnet build "api/api.csproj" -c Release /p:ReleaseVersion="${RELEASE_VERSION}"
 # build
 FROM build AS publish
+ARG RELEASE_VERSION=0.0.0
 RUN dotnet publish "api/api.csproj" -c Release -o /app/publish \
-    --runtime linux-musl-x64 --no-self-contained
+    --runtime linux-musl-x64 --no-self-contained /p:ReleaseVersion="${RELEASE_VERSION}"
 
 FROM base AS final
 

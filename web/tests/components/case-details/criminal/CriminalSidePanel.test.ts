@@ -3,9 +3,19 @@ import CriminalSidePanel from 'CMP/case-details/criminal/CriminalSidePanel.vue';
 import { describe, expect, it } from 'vitest';
 
 describe('CriminalSidePanel.vue', () => {
+  const baseProps = {
+    details: {},
+    adjudicatorRestrictions: [],
+    loadingStates: {
+      summary: false,
+      participants: false,
+      restrictions: false,
+    },
+  };
+
   it('renders Summary component', () => {
     const wrapper = shallowMount(CriminalSidePanel, {
-      props: { details: {} },
+      props: baseProps,
     });
 
     const summaryComponent = wrapper.findComponent({ name: 'CriminalSummary' });
@@ -14,7 +24,7 @@ describe('CriminalSidePanel.vue', () => {
 
   it('renders AccusedPanel component', () => {
     const wrapper = shallowMount(CriminalSidePanel, {
-      props: { details: {} },
+      props: baseProps,
     });
 
     const accusedComponent = wrapper.findComponent({ name: 'AccusedPanel' });
@@ -23,7 +33,10 @@ describe('CriminalSidePanel.vue', () => {
 
   it('renders AdjudicatorRestrictionsPanel component', () => {
     const wrapper = shallowMount(CriminalSidePanel, {
-      props: { details: {}, adjudicatorRestrictions: [{}] },
+      props: {
+        ...baseProps,
+        adjudicatorRestrictions: [{}],
+      },
     });
 
     const arComponent = wrapper.findComponent({

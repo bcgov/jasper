@@ -1,5 +1,14 @@
-import { isPositiveInteger, parseQueryStringToString, isCourtClassLabelCriminal, arrayBufferToBase64 } from '@/utils/utils';
-import { describe, expect, it } from 'vitest';
+import { useCommonStore } from '@/stores';
+import {
+  arrayBufferToBase64,
+  hasRole,
+  isCourtClassLabelCriminal,
+  isPositiveInteger,
+  parseQueryStringToString,
+} from '@/utils/utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/stores');
 
 describe('utils', () => {
   describe('parseQueryStringToString', () => {
@@ -58,7 +67,7 @@ describe('utils', () => {
         expect(isPositiveInteger(NaN)).toBe(false);
       });
     });
-    
+
     describe('isCourtClassLabelCriminal', () => {
       it('returns true for "Criminal - Adult"', () => {
         expect(isCourtClassLabelCriminal('Criminal - Adult')).toBe(true);
@@ -118,13 +127,69 @@ describe('utils', () => {
       });
 
       it('handles buffer with binary data', () => {
-        const bytes = new Uint8Array([0xFF, 0xFE, 0xFD, 0xFC]);
+        const bytes = new Uint8Array([0xff, 0xfe, 0xfd, 0xfc]);
         const buffer = bytes.buffer;
         const result = arrayBufferToBase64(buffer);
         expect(result).toBeTruthy();
         expect(typeof result).toBe('string');
         expect(result.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe('hasRole', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('returns true when userInfo contains the role', () => {
+      (useCommonStore as any).mockReturnValue({
+        userInfo: { roles: ['judge', 'admin'] },
+      });
+      expect(hasRole('judge')).toBe(true);
+    });
+
+    it('returns false when userInfo does not contain the role', () => {
+      (useCommonStore as any).mockReturnValue({
+        userInfo: { roles: ['admin'] },
+      });
+      expect(hasRole('judge')).toBe(false);
+    });
+
+    it('returns true when any role in an array matches', () => {
+      (useCommonStore as any).mockReturnValue({
+        userInfo: { roles: ['judge'] },
+      });
+      expect(hasRole(['admin', 'judge'])).toBe(true);
+    });
+
+    it('returns false when no role in an array matches', () => {
+      (useCommonStore as any).mockReturnValue({
+        userInfo: { roles: ['clerk'] },
+      });
+      expect(hasRole(['admin', 'judge'])).toBe(false);
+    });
+
+    it('returns false when roles array is empty', () => {
+      (useCommonStore as any).mockReturnValue({ userInfo: { roles: [] } });
+      expect(hasRole('judge')).toBe(false);
+    });
+
+    it('returns false when userInfo is null', () => {
+      (useCommonStore as any).mockReturnValue({ userInfo: null });
+      expect(hasRole('judge')).toBe(false);
+    });
+
+    it('returns false when userInfo has no roles property', () => {
+      (useCommonStore as any).mockReturnValue({ userInfo: {} });
+      expect(hasRole('judge')).toBe(false);
+    });
+
+    it('returns true when passing an array with a single matching role', () => {
+      (useCommonStore as any).mockReturnValue({
+        userInfo: { roles: ['judge'] },
+      });
+      expect(hasRole(['judge'])).toBe(true);
     });
   });
 });

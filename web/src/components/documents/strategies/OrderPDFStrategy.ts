@@ -52,7 +52,7 @@ export class OrderPDFStrategy extends BasePDFStrategy {
           '📋 Rejected'
         );
         break;
-      case OrderReviewStatus.Pending:
+      case OrderReviewStatus.AwaitingDocumentation:
         this.snackBarStore.showSnackbar(
           'The order review is awaiting documentation.',
           'rgb(46, 139, 43)',

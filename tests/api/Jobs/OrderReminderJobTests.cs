@@ -115,6 +115,7 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         return new PersonSearchItem
         {
+            PersonId = rajId,
             UserId = rajId,
             FirstName = _faker.Name.FirstName(),
             LastName = _faker.Name.LastName(),

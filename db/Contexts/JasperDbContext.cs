@@ -15,6 +15,7 @@ namespace Scv.Db.Contexts
         public DbSet<Binder> Binders { get; set; }
         public DbSet<DocumentCategory> DocumentCategories { get; set; }
         public DbSet<Case> Cases { get; set; }
+        public DbSet<Constant> Constants { get; set; }
         public DbSet<QuickLink> QuickLinks { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
@@ -49,6 +50,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
             modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
             modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
+            modelBuilder.Entity<Constant>(c => c.HasKey(c => c.Id));
             modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
             modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));
             modelBuilder.Entity<EmailTemplate>(o => o.HasKey(o => o.Id));

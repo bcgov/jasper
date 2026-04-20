@@ -12,6 +12,10 @@ import { CourtFileSearchResponse } from '@/types/courtFileSearch';
 import {
   CriminalAppearanceDetails,
   CriminalAppearanceDocuments,
+  criminalAppearancesType,
+  criminalFileDetailsType,
+  criminalHearingRestrictionType,
+  criminalParticipantType,
 } from '@/types/criminal/jsonTypes/index';
 import { HttpService } from './HttpService';
 
@@ -82,6 +86,38 @@ export class FilesService {
   ): Promise<CriminalAppearanceDocuments> {
     return this.httpService.get<any>(
       `${this.baseUrl}/criminal/${fileId}/appearance-detail/${partId}/documents`
+    );
+  }
+
+  async criminalFileOverview(
+    fileId: string
+  ): Promise<Partial<criminalFileDetailsType>> {
+    return this.httpService.get<Partial<criminalFileDetailsType>>(
+      `${this.baseUrl}/criminal/${fileId}/overview`
+    );
+  }
+
+  async criminalFileAppearances(
+    fileId: string
+  ): Promise<criminalAppearancesType> {
+    return this.httpService.get<criminalAppearancesType>(
+      `${this.baseUrl}/criminal/${fileId}/appearances`
+    );
+  }
+
+  async criminalFileParticipants(
+    fileId: string
+  ): Promise<criminalParticipantType[]> {
+    return this.httpService.get<criminalParticipantType[]>(
+      `${this.baseUrl}/criminal/${fileId}/participants`
+    );
+  }
+
+  async criminalFileHearingRestrictions(
+    fileId: string
+  ): Promise<criminalHearingRestrictionType[]> {
+    return this.httpService.get<criminalHearingRestrictionType[]>(
+      `${this.baseUrl}/criminal/${fileId}/hearing-restrictions`
     );
   }
 

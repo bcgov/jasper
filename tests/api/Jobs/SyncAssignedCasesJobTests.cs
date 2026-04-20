@@ -219,7 +219,7 @@ public class SyncAssignedCasesJobTests
         _mockCsvParser.Setup(p => p.Parse<CsvReservedJudgement>(It.IsAny<MemoryStream>(), "\t"))
             .Returns(csvData);
 
-        _mockJudgeService.Setup(s => s.GetJudges(null))
+        _mockJudgeService.Setup(s => s.GetJudges(null, null))
             .ReturnsAsync([]);
 
         _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))

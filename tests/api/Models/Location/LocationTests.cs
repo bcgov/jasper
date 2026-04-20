@@ -77,6 +77,7 @@ public class LocationTest
     public void Create_ShouldReturnLocation_WhenPcssLocationIsNull()
     {
         var jcLocation = LocationModel.Create("Vancouver Law Courts", "123", "456", true, default);
+        jcLocation.RegionCd = "N";
 
         var result = LocationModel.Create(jcLocation, null);
 
@@ -86,6 +87,7 @@ public class LocationTest
         Assert.Null(result.LocationId);
         Assert.True(result.Active);
         Assert.Equal(jcLocation.CourtRooms, result.CourtRooms);
+        Assert.Equal("N", result.RegionCd);
     }
 
     [Fact]

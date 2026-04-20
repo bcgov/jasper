@@ -5,7 +5,7 @@
       <NameFilter
         v-if="isCriminal"
         v-model="selectedAccused"
-        :people="appearances"
+        :people="props.appearances"
       />
     </v-col>
   </v-row>
@@ -17,7 +17,6 @@
     </v-card-text>
   </v-card>
   <v-data-table-virtual
-    v-if="appearances?.length"
     :headers="headers"
     :items="appearances"
     :sort-by="sortBy"
@@ -25,6 +24,7 @@
     item-value="appearanceId"
     fixed-header
     show-expand
+    no-data-text="No appearances"
     variant="hover"
   >
     <template v-slot:[`header.appearanceTm`]>
@@ -122,21 +122,6 @@
       <AppearanceStatusChip :status="value" />
     </template>
   </v-data-table-virtual>
-  <div v-else>
-    <v-card class="my-6" color="var(--bg-gray-500)" elevation="0">
-      <v-card-text>
-        <v-row align="center" no-gutters>
-          <v-col class="text-h5" cols="12"> Appearances </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
-    <v-data-table-virtual
-      :headers="headers"
-      :items="appearances"
-      no-data-text="No appearances"
-    >
-    </v-data-table-virtual>
-  </div>
 </template>
 
 <script setup lang="ts">

@@ -24,6 +24,31 @@ describe('dateUtils', () => {
       const result = formatDateToDDMMMYYYY(null as unknown as string);
       expect(result).toBe('');
     });
+
+    it('uses dashes by default', () => {
+      const result = formatDateToDDMMMYYYY('2023-06-15');
+      expect(result).toBe('15-Jun-2023');
+    });
+
+    it('uses spaces when includeDashes is false', () => {
+      const result = formatDateToDDMMMYYYY('2023-06-15', false);
+      expect(result).toBe('15 Jun 2023');
+    });
+
+    it('uses dashes when includeDashes is explicitly true', () => {
+      const result = formatDateToDDMMMYYYY('2023-06-15', true);
+      expect(result).toBe('15-Jun-2023');
+    });
+
+    it('returns empty string with no dashes when input is empty', () => {
+      const result = formatDateToDDMMMYYYY('', false);
+      expect(result).toBe('');
+    });
+
+    it('returns empty string with no dashes when input is null', () => {
+      const result = formatDateToDDMMMYYYY(null as unknown as string, false);
+      expect(result).toBe('');
+    });
   });
 
   describe('hoursMinsFormatter', () => {

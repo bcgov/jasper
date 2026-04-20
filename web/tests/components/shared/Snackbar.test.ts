@@ -22,9 +22,21 @@ describe('Snackbar.vue', () => {
   });
 
   it('closes snackbar when close button is clicked', async () => {
-    const wrapper = mount(Snackbar);
+    store.showSnackbar('Test message', 'error', 'Test title');
+    const wrapper = mount(Snackbar, {
+      global: {
+        stubs: {
+          'v-snackbar': {
+            template: '<div><slot /><slot name="actions" /></div>',
+          },
+        },
+      },
+    });
 
-    await wrapper.find('v-snackbar__actions v-icon').trigger('click');
+    const closeButton = wrapper.find('v-icon');
+    expect(closeButton.exists()).toBe(true);
+
+    await closeButton.trigger('click');
 
     expect(store.isVisible).toBe(false);
   });

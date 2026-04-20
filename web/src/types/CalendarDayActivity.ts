@@ -7,6 +7,7 @@ export interface CalendarDayActivity {
   activityCode: string;
   activityDisplayCode: string;
   activityDescription: string;
+  activityClassCode: string;
   activityClassDescription: string;
   isRemote: boolean;
   roomCode: string;

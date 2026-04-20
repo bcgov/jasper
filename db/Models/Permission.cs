@@ -21,6 +21,12 @@ namespace Scv.Db.Models
         public const string VIEW_OTHER_CALENDARS = "VIEW_OTHER_CALENDARS";
         public const string VIEW_RESERVED_JUDGMENTS = "VIEW_RESERVED_JUDGMENTS";
         public const string VIEW_CONTINUATIONS = "VIEW_CONTINUATIONS";
+        public const string COURT_CALENDAR_ACTIVITY_PROVINCE = "COURT_CALENDAR_ACTIVITY_PROVINCE";
+        public const string COURT_CALENDAR_ACTIVITY_REGION = "COURT_CALENDAR_ACTIVITY_REGION";
+        public const string JUDICIAL_LISTING_ACTIVITY_PROVINCE = "JUDICIAL_LISTING_ACTIVITY_PROVINCE";
+        public const string JUDICIAL_LISTING_ACTIVITY_REGION = "JUDICIAL_LISTING_ACTIVITY_REGION";
+        public const string ROTA_ADMIN_PROVINCE = "ROTA_ADMIN_PROVINCE";
+        public const string ROTA_ADMIN_REGION = "ROTA_ADMIN_REGION";
 
         // Court List
         public const string VIEW_COURT_LIST = "VIEW_COURT_LIST";
@@ -102,42 +108,84 @@ namespace Scv.Db.Models
             {
                 Code = VIEW_DASHBOARD,
                 Name = "View Dashboard",
-                Description = "Permissions to view dashboard",
+                Description = "Permission to view dashboard",
                 IsActive = true
             },
             new Permission
             {
                 Code = VIEW_OWN_SCHEDULE,
                 Name = "View Own Schedule",
-                Description = "Permissions to view own schedule",
+                Description = "Permission to view own schedule",
                 IsActive = true
             },
             new Permission
             {
                 Code = VIEW_OTHER_JUDGE_SCHEDULE,
                 Name = "View Other Judge Schedule",
-                Description = "Permissions to view other judge schedule",
+                Description = "Permission to view other judge schedule",
                 IsActive = true
             },
             new Permission
             {
                 Code = VIEW_OTHER_CALENDARS,
                 Name = "View Other Calendars",
-                Description = "Permissions to view other calendars",
+                Description = "Permission to view other calendars",
                 IsActive = true
             },
             new Permission
             {
                 Code = VIEW_RESERVED_JUDGMENTS,
                 Name = "View Reserved Judgments",
-                Description = "Permissions to view reserved judgments",
+                Description = "Permission to view reserved judgments",
                 IsActive = true
             },
             new Permission
             {
                 Code = VIEW_CONTINUATIONS,
                 Name = "View Continuations",
-                Description = "Permissions to view continuations",
+                Description = "Permission to view continuations",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = COURT_CALENDAR_ACTIVITY_PROVINCE,
+                Name = "Court Calendar Activity Province",
+                Description = "Permission to view province-wide court calendar activity",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = COURT_CALENDAR_ACTIVITY_REGION,
+                Name = "Court Calendar Activity Region",
+                Description = "Permission to view regional court calendar activity",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+                Name = "Judicial Listing Activity Province",
+                Description = "Permission to view province-wide judicial listing activity",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = JUDICIAL_LISTING_ACTIVITY_REGION,
+                Name = "Judicial Listing Activity Region",
+                Description = "Permission to view regional judicial listing activity",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = ROTA_ADMIN_PROVINCE,
+                Name = "Rota Admin Province",
+                Description = "Permission to view admin rota screen with all locations in province",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = ROTA_ADMIN_REGION,
+                Name = "Rota Admin Region",
+                Description = "Permission to view admin rota screen with all locations at the user's home region",
                 IsActive = true
             },
 

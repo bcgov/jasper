@@ -394,13 +394,13 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     it('should sort DATE FILED by date correctly', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders(false);
       const dateHeader = headers[3];
-      
+
       const item1 = { filedDt: '2024-01-15' } as civilDocumentType;
       const item2 = { filedDt: '2024-06-20' } as civilDocumentType;
-      
+
       const result = dateHeader.sortRaw!(item1, item2);
       expect(result).toBeLessThan(0); // item1 is before item2
-      
+
       const reverseResult = dateHeader.sortRaw!(item2, item1);
       expect(reverseResult).toBeGreaterThan(0); // item2 is after item1
     });
@@ -419,10 +419,10 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     it('should sort ORDER MADE by date correctly', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
       const orderMadeHeader = headers[4];
-      
+
       const item1 = { orderMadeDt: '2024-03-10' } as civilDocumentType;
       const item2 = { orderMadeDt: '2024-08-25' } as civilDocumentType;
-      
+
       const result = orderMadeHeader.sortRaw!(item1, item2);
       expect(result).toBeLessThan(0);
     });
@@ -476,21 +476,22 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     it('should sort DATE SCHEDULED by date correctly', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders(true);
       const dateHeader = headers[3];
-      
+
       const item1 = { nextAppearanceDt: '2024-02-10' } as civilDocumentType;
       const item2 = { nextAppearanceDt: '2024-09-15' } as civilDocumentType;
-      
+
       const result = dateHeader.sortRaw!(item1, item2);
       expect(result).toBeLessThan(0); // item1 is before item2
-      
+
       const reverseResult = dateHeader.sortRaw!(item2, item1);
       expect(reverseResult).toBeGreaterThan(0); // item2 is after item1
     });
 
     it('should have same first 3 headers as when isScheduledCategory is false', () => {
       const headersScheduled = shared.getBaseCivilDocumentTableHeaders(true);
-      const headersNotScheduled = shared.getBaseCivilDocumentTableHeaders(false);
-      
+      const headersNotScheduled =
+        shared.getBaseCivilDocumentTableHeaders(false);
+
       expect(headersScheduled[0]).toEqual(headersNotScheduled[0]);
       expect(headersScheduled[1]).toEqual(headersNotScheduled[1]);
       expect(headersScheduled[2]).toEqual(headersNotScheduled[2]);
@@ -498,9 +499,12 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
 
     it('should have different 4th header than when isScheduledCategory is false', () => {
       const headersScheduled = shared.getBaseCivilDocumentTableHeaders(true);
-      const headersNotScheduled = shared.getBaseCivilDocumentTableHeaders(false);
-      
-      expect(headersScheduled[3].title).not.toEqual(headersNotScheduled[3].title);
+      const headersNotScheduled =
+        shared.getBaseCivilDocumentTableHeaders(false);
+
+      expect(headersScheduled[3].title).not.toEqual(
+        headersNotScheduled[3].title
+      );
       expect(headersScheduled[3].key).not.toEqual(headersNotScheduled[3].key);
     });
   });
@@ -509,10 +513,10 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     it('should handle equal dates in DATE FILED sortRaw', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders(false);
       const dateHeader = headers[3];
-      
+
       const item1 = { filedDt: '2024-05-15' } as civilDocumentType;
       const item2 = { filedDt: '2024-05-15' } as civilDocumentType;
-      
+
       const result = dateHeader.sortRaw!(item1, item2);
       expect(result).toBe(0);
     });
@@ -520,10 +524,10 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     it('should handle equal dates in DATE SCHEDULED sortRaw', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders(true);
       const dateHeader = headers[3];
-      
+
       const item1 = { nextAppearanceDt: '2024-07-20' } as civilDocumentType;
       const item2 = { nextAppearanceDt: '2024-07-20' } as civilDocumentType;
-      
+
       const result = dateHeader.sortRaw!(item1, item2);
       expect(result).toBe(0);
     });
@@ -531,12 +535,84 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     it('should handle equal dates in ORDER MADE sortRaw', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
       const orderMadeHeader = headers[4];
-      
+
       const item1 = { orderMadeDt: '2024-04-10' } as civilDocumentType;
       const item2 = { orderMadeDt: '2024-04-10' } as civilDocumentType;
-      
+
       const result = orderMadeHeader.sortRaw!(item1, item2);
       expect(result).toBe(0);
     });
+  });
+});
+
+describe('shared.getGroupKeyTwo', () => {
+  it('uses empty group key two for civil file documents', () => {
+    const groupKeyTwo = shared.getGroupKeyTwo(CourtDocumentType.Civil, {
+      isCriminal: false,
+      documentDescription: 'Application for an Order - CFCSA',
+      dateFiled: '01-Jun-2024',
+      partyName: 'Ignored Party Name',
+    } as any);
+
+    expect(groupKeyTwo).toBe('');
+  });
+
+  it('uses empty group key two for civil docs with no filed date', () => {
+    const groupKeyTwo = shared.getGroupKeyTwo(CourtDocumentType.Civil, {
+      isCriminal: false,
+      documentDescription: 'Application for an Order - CFCSA',
+      dateFiled: undefined,
+      partyName: 'Ignored Party Name',
+    } as any);
+
+    expect(groupKeyTwo).toBe('');
+  });
+
+  it('uses party name for criminal documents', () => {
+    const groupKeyTwo = shared.getGroupKeyTwo(CourtDocumentType.Criminal, {
+      isCriminal: true,
+      dateFiled: '01-Jun-2024',
+      partyName: 'John Doe',
+    } as any);
+
+    expect(groupKeyTwo).toBe('John Doe');
+  });
+
+  it('keeps provided-civil behavior based on party name', () => {
+    const groupKeyTwo = shared.getGroupKeyTwo(CourtDocumentType.ProvidedCivil, {
+      isCriminal: false,
+      dateFiled: '01-Jun-2024',
+      partyName: 'Jane Doe',
+    } as any);
+
+    expect(groupKeyTwo).toBe('Jane Doe');
+  });
+});
+
+describe('shared.getDocumentDisplayName', () => {
+  it('uses document description and filed date for civil file documents', () => {
+    const documentName = shared.getDocumentDisplayName(
+      CourtDocumentType.Civil,
+      {
+        isCriminal: false,
+        documentDescription: 'Application for an Order - CFCSA',
+        dateFiled: '01-Jun-2024',
+      } as any
+    );
+
+    expect(documentName).toBe('Application for an Order - CFCSA - 01-Jun-2024');
+  });
+
+  it('falls back to document description when civil filed date is missing', () => {
+    const documentName = shared.getDocumentDisplayName(
+      CourtDocumentType.Civil,
+      {
+        isCriminal: false,
+        documentDescription: 'Application for an Order - CFCSA',
+        dateFiled: undefined,
+      } as any
+    );
+
+    expect(documentName).toBe('Application for an Order - CFCSA');
   });
 });

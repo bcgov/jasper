@@ -24,6 +24,8 @@
       <v-list-item-title>My Timebank</v-list-item-title>
     </v-list-item>
 
+    <ReleaseNotesMenuItem :is-open="model" />
+
     <v-list density="compact" v-model:opened="openedGroups">
       <QuickLinksMenu />
     </v-list>
@@ -52,7 +54,6 @@
   import QuickLinksMenu from '@/components/shared/QuickLinksMenu.vue';
   import { useCommonStore } from '@/stores/CommonStore';
   import { useThemeStore } from '@/stores/ThemeStore';
-  import { UserInfo } from '@/types/common';
   import {
     mdiAccountCircle,
     mdiCalendarClock,
@@ -60,6 +61,7 @@
     mdiWeatherNight,
   } from '@mdi/js';
   import { computed, ref, watch } from 'vue';
+  import ReleaseNotesMenuItem from './ReleaseNotesMenuItem.vue';
   import TimebankModal from './TimebankModal.vue';
 
   const model = defineModel<boolean>();
@@ -79,21 +81,11 @@
     return commonStore.userInfo?.judgeId;
   });
 
-  const userName = ref<string>(commonStore.userInfo?.userTitle || '');
+  const userName = computed(() => commonStore.currentUserTitle);
 
   function openTimebankModal() {
     showTimebankModal.value = true;
   }
-
-  watch(
-    () => commonStore.userInfo,
-    (newUserInfo: UserInfo | null) => {
-      if (!newUserInfo) {
-        return;
-      }
-      userName.value = newUserInfo.userTitle || '';
-    }
-  );
 
   watch(appliedThemes, (newValue) => {
     // Currently we only support light and dark themes

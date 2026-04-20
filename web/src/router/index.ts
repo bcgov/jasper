@@ -1,34 +1,31 @@
 import { useCommonStore } from '@/stores';
-import { isPositiveInteger, SessionManager } from '@/utils/utils';
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { callTrackPageView } from '@/utils/snowplowUtils';
+import { initializeSessionSettings, isPositiveInteger } from '@/utils/utils';
+import {
+  createRouter,
+  createWebHistory,
+  RouteLocationNormalizedGeneric,
+  RouteRecordRaw,
+} from 'vue-router';
 
-async function authGuard(to: any, from: any, next: any) {
+function authGuard(to: RouteLocationNormalizedGeneric) {
   const commonStore = useCommonStore();
-  const results = await SessionManager.getSettings();
 
-  if (
-    !isPositiveInteger(commonStore?.userInfo?.roles?.length) ||
-    commonStore?.userInfo?.isActive === false ||
-    !commonStore?.userInfo?.judgeId
-  ) {
-    if (to.name === 'RequestAccess') {
-      next();
-    } else {
-      next({ path: '/request-access' });
-    }
-  } else if (results) {
-    if (
-      isPositiveInteger(commonStore?.userInfo?.roles?.length) &&
-      commonStore?.userInfo?.isActive === true &&
-      commonStore?.userInfo?.judgeId &&
-      to.name === 'RequestAccess'
-    ) {
-      next({ path: '/' });
-    } else {
-      next();
-    }
+  // Check user's access control only when user data is fully loaded (commonStore.isInitializing is false).
+  const isAuthorized =
+    isPositiveInteger(commonStore.userInfo?.roles?.length) &&
+    commonStore.userInfo?.isActive === true &&
+    !!commonStore.userInfo?.judgeId;
+
+  if (!isAuthorized) {
+    return to.name === 'RequestAccess' ? true : { path: '/request-access' };
   }
+
+  if (to.name === 'RequestAccess') {
+    return { path: '/' };
+  }
+
+  return true;
 }
 
 const routes: RouteRecordRaw[] = [
@@ -97,11 +94,20 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to) => {
+  const commonStore = useCommonStore();
+
+  // Initialize session settings if not already initialized. This
+  // ensures that user data is loaded before performing auth
+  // checks in authGuard.
+  if (!commonStore.isInitialized) {
+    await initializeSessionSettings();
+  }
+
   if (to.path === '/') {
-    next();
+    return true;
   } else {
-    authGuard(to, from, next);
+    return authGuard(to);
   }
 });
 

@@ -38,5 +38,7 @@ namespace Scv.Db.Models
         public int? JudgeId { get; set; }
 
         public List<string> GroupIds { get; set; } = [];
+
+        public UserReleaseNotes? ReleaseNotes { get; set; }
     }
 }

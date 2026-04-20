@@ -1,4 +1,4 @@
-import { AdditionalProperties } from '@/types/common';
+import { AdditionalProperties, CourtLevelEnum } from '@/types/common';
 import {
   banType,
   criminalAppearancesType,
@@ -92,6 +92,36 @@ const details: criminalFileDetailsType = {
 };
 
 describe('CriminalSummary.vue', () => {
+  it('renders Supreme Court icon when court level is Supreme', () => {
+    details.courtLevelCd = CourtLevelEnum.S;
+
+    const wrapper = mount(CriminalSummary, {
+      props: { details },
+      global: {
+        stubs: {
+          TooltipIcon: true,
+        },
+      },
+    });
+
+    expect(wrapper.find('tooltip-icon-stub').exists()).toBe(true);
+  });
+
+  it('does not render Supreme Court icon when court level is Provincial', () => {
+    details.courtLevelCd = CourtLevelEnum.P;
+
+    const wrapper = mount(CriminalSummary, {
+      props: { details },
+      global: {
+        stubs: {
+          TooltipIcon: true,
+        },
+      },
+    });
+
+    expect(wrapper.find('tooltip-icon-stub').exists()).toBe(false);
+  });
+
   it('renders case details correctly', () => {
     const wrapper = mount(CriminalSummary, {
       props: { details },
@@ -131,7 +161,17 @@ describe('CriminalSummary.vue', () => {
       props: { details },
     });
 
-    expect(wrapper.findAll('span')[2].text()).toBe('BAN');
+    expect(wrapper.text()).toContain('BAN');
+  });
+
+  it('renders bans text even when hasBans is explicitly false', () => {
+    details.participant[0].ban = [{} as banType];
+
+    const wrapper = mount(CriminalSummary, {
+      props: { details, hasBans: false },
+    });
+
+    expect(wrapper.text()).toContain('BAN');
   });
 
   it.each([

@@ -22,6 +22,7 @@ using Scv.Api.Models.archive;
 using Scv.Api.Models.Civil.AppearanceDetail;
 using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Models.Criminal.AppearanceDetail;
+using Scv.Api.Models.Criminal.Appearances;
 using Scv.Api.Models.Criminal.Detail;
 using Scv.Api.Models.Document;
 using Scv.Api.Models.Search;
@@ -256,6 +257,81 @@ namespace Scv.Api.Controllers
                 return Forbid();
 
             return Ok(redactedCriminalFileDetailResponse);
+        }
+
+        /// <summary>
+        /// Gets the overview details for a given criminal file id.
+        /// </summary>
+        /// <param name="fileId">Target file id.</param>
+        [HttpGet]
+        [Route("criminal/{fileId}/overview")]
+        public async Task<ActionResult<RedactedCriminalFileDetailResponse>> GetCriminalFileOverviewByFileId(string fileId)
+        {
+            var criminalFileOverview = await _criminalFilesService.FileOverviewAsync(fileId);
+            if (criminalFileOverview?.JustinNo == null)
+                throw new NotFoundException("Couldn't find criminal file with this id.");
+
+            if (User.IsSupremeUser() && criminalFileOverview.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
+                return Forbid();
+
+            return Ok(criminalFileOverview);
+        }
+
+        /// <summary>
+        /// Gets the appearances for a given criminal file id.
+        /// </summary>
+        /// <param name="fileId">Target file id.</param>
+        [HttpGet]
+        [Route("criminal/{fileId}/appearances")]
+        public async Task<ActionResult<CriminalFileAppearances>> GetCriminalFileAppearancesByFileId(string fileId)
+        {
+            var criminalFileOverview = await _criminalFilesService.FileOverviewAsync(fileId);
+            if (criminalFileOverview?.JustinNo == null)
+                throw new NotFoundException("Couldn't find criminal file with this id.");
+
+            if (User.IsSupremeUser() && criminalFileOverview.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
+                return Forbid();
+
+            var appearances = await _criminalFilesService.FileAppearancesAsync(fileId);
+            return Ok(appearances);
+        }
+
+        /// <summary>
+        /// Gets the participants for a given criminal file id.
+        /// </summary>
+        /// <param name="fileId">Target file id.</param>
+        [HttpGet]
+        [Route("criminal/{fileId}/participants")]
+        public async Task<ActionResult<ICollection<Scv.Api.Models.Criminal.Detail.CriminalParticipant>>> GetCriminalFileParticipantsByFileId(string fileId)
+        {
+            var criminalFileOverview = await _criminalFilesService.FileOverviewAsync(fileId);
+            if (criminalFileOverview?.JustinNo == null)
+                throw new NotFoundException("Couldn't find criminal file with this id.");
+
+            if (User.IsSupremeUser() && criminalFileOverview.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
+                return Forbid();
+
+            var participants = await _criminalFilesService.FileParticipantsAsync(fileId);
+            return Ok(participants);
+        }
+
+        /// <summary>
+        /// Gets the hearing restrictions for a given criminal file id.
+        /// </summary>
+        /// <param name="fileId">Target file id.</param>
+        [HttpGet]
+        [Route("criminal/{fileId}/hearing-restrictions")]
+        public async Task<ActionResult<ICollection<CriminalHearingRestriction>>> GetCriminalFileHearingRestrictionsByFileId(string fileId)
+        {
+            var criminalFileOverview = await _criminalFilesService.FileOverviewAsync(fileId);
+            if (criminalFileOverview?.JustinNo == null)
+                throw new NotFoundException("Couldn't find criminal file with this id.");
+
+            if (User.IsSupremeUser() && criminalFileOverview.CourtLevelCd != CriminalFileDetailResponseCourtLevelCd.P)
+                return Forbid();
+
+            var hearingRestrictions = await _criminalFilesService.FileHearingRestrictionsAsync(fileId);
+            return Ok(hearingRestrictions);
         }
 
         /// <summary>

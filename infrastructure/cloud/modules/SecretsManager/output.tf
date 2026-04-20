@@ -58,6 +58,7 @@ output "api_secrets" {
     ["DARS__LogsheetUrl", "${aws_secretsmanager_secret.dars_secret.arn}:logsheetUrl::"],
     ["DatabaseConnectionString", "${aws_secretsmanager_secret.database_secret.arn}:dbConnectionString::"],
     ["DataProtectionKeyEncryptionKey", "${aws_secretsmanager_secret.misc_secret.arn}:dataProtectionKeyEncryptionKey::"],
+    ["DOCUMENT_RETRIEVAL_BATCH_SIZE", "${aws_secretsmanager_secret.misc_secret.arn}:documentRetrievalBatchSize::"],
     ["FileServicesClient__Username", "${aws_secretsmanager_secret.file_services_client_secret.arn}:username::"],
     ["FileServicesClient__Password", "${aws_secretsmanager_secret.file_services_client_secret.arn}:password::"],
     ["FileServicesClient__Url", "${aws_secretsmanager_secret.file_services_client_secret.arn}:baseUrl::"],
@@ -146,6 +147,16 @@ output "default_quick_links" {
 
 output "default_users" {
   value = jsonencode(jsondecode(data.aws_secretsmanager_secret_version.current_db_secret_value.secret_string)["defaultUsers"])
+}
+
+output "managed_notifications_email_addresses" {
+  value = try(
+    tolist(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails),
+    tolist(jsondecode(try(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails, "[]"))),
+    compact([try(tostring(jsondecode(data.aws_secretsmanager_secret_version.current_misc_secret_value.secret_string).awsNotifEmails), "")]),
+    []
+  )
+  sensitive = true
 }
 
 output "lambda_secrets" {

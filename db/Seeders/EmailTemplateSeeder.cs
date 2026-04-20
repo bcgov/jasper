@@ -8,7 +8,7 @@ namespace Scv.Db.Seeders;
 
 public class EmailTemplateSeeder(ILogger<EmailTemplateSeeder> logger) : SeederBase<JasperDbContext>(logger)
 {
-    public override int Order => 6;
+    public override int Order => 7;
 
     protected override async Task ExecuteAsync(JasperDbContext context)
     {

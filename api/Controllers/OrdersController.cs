@@ -17,10 +17,12 @@ namespace Scv.Api.Controllers;
 [ApiController]
 public class OrdersController(
     IValidator<OrderRequestDto> orderRequestValidator,
-    IOrderService orderService) : ControllerBase
+    IOrderService orderService,
+    IAntiVirusService antiVirusService) : ControllerBase
 {
     private readonly IValidator<OrderRequestDto> _orderRequestValidator = orderRequestValidator;
     private readonly IOrderService _orderService = orderService;
+    private readonly IAntiVirusService _antiVirusService = antiVirusService;
 
     /// <summary>
     /// Retrieves all orders assigned to the judge.

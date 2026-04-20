@@ -219,7 +219,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([new PersonSearchItem { PersonId = judgeId }]);
 
         orderRequestDto.Referral.SentToPartId = judgeId;
@@ -302,7 +302,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CivilFileContent { CivilFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
         orderRequestDto.Referral.SentToPartId = judgeId;
@@ -350,7 +350,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
@@ -376,7 +376,7 @@ public class OrderServiceTests : ServiceTestBase
             .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
 
         _mockJudgeService
-            .Setup(d => d.GetJudges(null))
+            .Setup(d => d.GetJudges(null, null))
             .ReturnsAsync([new() { PersonId = judgeId }]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
@@ -650,6 +650,60 @@ public class OrderServiceTests : ServiceTestBase
         Assert.False(result.Succeeded);
         Assert.Contains("Order not found", result.Errors);
         _mockOrderRepo.Verify(r => r.GetByIdAsync(orderId), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsFailure_WhenSignedDocumentIsInvalidType()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.OrderRequest.Referral.SentToPartId = judgeId;
+
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            DocumentData = Convert.ToBase64String([0x89, 0x50, 0x4E, 0x47])
+        };
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Signed document must be a valid PDF, Word Document (.doc or .docx).", result.Errors);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsFailure_WhenSupportingDocumentIsInvalidType()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.OrderRequest.Referral.SentToPartId = judgeId;
+
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.AwaitingDocumentation,
+            SupportingDocumentData = Convert.ToBase64String([0x89, 0x50, 0x4E, 0x47])
+        };
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Supporting document must be a valid PDF, Word Document (.doc or .docx).", result.Errors);
     }
 
     [Fact]

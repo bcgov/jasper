@@ -392,6 +392,34 @@ namespace tests.api.Controllers
         }
 
         [Fact]
+        public async void Criminal_File_Overview_by_JustinNo()
+        {
+            var criminalFileOverview = await _service.Criminal.FileOverviewAsync("35674");
+
+            Assert.Equal("35674", criminalFileOverview.JustinNo);
+            Assert.True(criminalFileOverview.Participant.Count > 0);
+            Assert.NotNull(criminalFileOverview.Crown);
+        }
+
+        [Fact]
+        public async void Criminal_File_Appearances_by_JustinNo_Split()
+        {
+            var appearances = await _service.Criminal.FileAppearancesAsync("35674");
+
+            Assert.Contains(appearances.ApprDetail,
+                f => f.LastNm == "Young" && f.GivenNm == "Johnny");
+        }
+
+        [Fact]
+        public async void Criminal_File_Participants_by_JustinNo_Split()
+        {
+            var participants = await _service.Criminal.FileParticipantsAsync("35674");
+
+            Assert.True(participants.Count > 0);
+            Assert.Contains(participants, participant => participant.Document.Count > 0);
+        }
+
+        [Fact]
         public async void Civil_File_Details_by_PhysicalFileId()
         {
             var actionResult = await _controller.GetCivilFileDetailByFileId("40");

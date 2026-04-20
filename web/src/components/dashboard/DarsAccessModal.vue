@@ -19,6 +19,8 @@
                 :disabled="isSearching"
                 hide-details
                 required
+                name="dars-search-date"
+                autocomplete="off"
               />
             </v-col>
 

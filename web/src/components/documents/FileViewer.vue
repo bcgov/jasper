@@ -26,6 +26,7 @@
   import { OrderService } from '@/services';
   import ReviewModal from './ReviewModal.vue';
   import { OrderReview } from '@/types';
+  import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
 
   // Declare NutrientViewer global
@@ -249,8 +250,14 @@
     }
     // Check if strategy supports order review
     try {
-      const arrayBuffer = await instance.exportPDF({ flatten: true });
-      orderReview.documentData = arrayBufferToBase64(arrayBuffer);
+      // If the user approved the Order and did not upload a supporting document, export the flattened PDF
+      if (
+        orderReview.status === OrderReviewStatus.Approved &&
+        !orderReview.supportingDocumentData
+      ) {
+        const arrayBuffer = await instance.exportPDF({ flatten: true });
+        orderReview.documentData = arrayBufferToBase64(arrayBuffer);
+      }
       await props.strategy.reviewOrder(orderReview);
     } catch (error) {
       console.error('Error reviewing order:', error);

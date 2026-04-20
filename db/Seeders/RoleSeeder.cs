@@ -75,6 +75,9 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.UPDATE_POSITIONS,
             Permission.UPDATE_POSITIONS_PCSS_MAPPINGS,
             Permission.LOCK_UNLOCK_USERS,
+            Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
+            Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+            Permission.ROTA_ADMIN_PROVINCE,
 
             Permission.VIEW_DASHBOARD,
             Permission.VIEW_OWN_SCHEDULE,
@@ -127,6 +130,9 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_OTHER_CALENDARS,
             Permission.VIEW_RESERVED_JUDGMENTS,
             Permission.VIEW_CONTINUATIONS,
+            Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
+            Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+            Permission.ROTA_ADMIN_PROVINCE,
 
             Permission.VIEW_COURT_LIST,
             Permission.RETRIEVE_OWN_COURT_LIST,
@@ -170,6 +176,9 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_OTHER_CALENDARS,
             Permission.VIEW_RESERVED_JUDGMENTS,
             Permission.VIEW_CONTINUATIONS,
+            Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
+            Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+            Permission.ROTA_ADMIN_PROVINCE,
 
             Permission.VIEW_COURT_LIST,
             Permission.RETRIEVE_OWN_COURT_LIST,
@@ -214,6 +223,9 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_OTHER_CALENDARS,
             Permission.VIEW_RESERVED_JUDGMENTS,
             Permission.VIEW_CONTINUATIONS,
+            Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
+            Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+            Permission.ROTA_ADMIN_PROVINCE,
 
             Permission.VIEW_COURT_LIST,
             Permission.RETRIEVE_OWN_COURT_LIST,
@@ -303,6 +315,9 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_OTHER_CALENDARS,
             Permission.VIEW_RESERVED_JUDGMENTS,
             Permission.VIEW_CONTINUATIONS,
+            Permission.COURT_CALENDAR_ACTIVITY_REGION,
+            Permission.JUDICIAL_LISTING_ACTIVITY_REGION,
+            Permission.ROTA_ADMIN_REGION,
 
             Permission.VIEW_COURT_LIST,
             Permission.RETRIEVE_OWN_COURT_LIST,
@@ -346,6 +361,9 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_OTHER_CALENDARS,
             Permission.VIEW_RESERVED_JUDGMENTS,
             Permission.VIEW_CONTINUATIONS,
+            Permission.COURT_CALENDAR_ACTIVITY_PROVINCE,
+            Permission.JUDICIAL_LISTING_ACTIVITY_PROVINCE,
+            Permission.ROTA_ADMIN_PROVINCE,
 
             Permission.VIEW_COURT_LIST,
             Permission.RETRIEVE_OWN_COURT_LIST,

@@ -22,7 +22,7 @@ api_ecs_config = {
   min_capacity = 3
   max_capacity = 6
   cpu          = 1024
-  memory_size  = 2048
+  memory_size  = 2560 # Increased from 2048 to accommodate ClamAV sidecar (~512MB)
 }
 alarm_config = {
   cpu_threshold             = 70
@@ -42,3 +42,10 @@ get_assigned_cases_lambda_timeout = 10 // minutes
 lambda_long_timeout               = 15 // minutes
 lambda_retry_attempts             = 3
 lza_log_archive_account_id        = "897722703828"
+clamav_config = {
+  image              = "clamav/clamav@sha256:c6eb128c7bd57bb0c533491198753a2130b471c517605ad8d289174a56c450a8" # v1.5.2
+  host               = "localhost" // ClamAV will run as a sidecar container, so it can be accessed via localhost
+  port               = 3310
+  memory_reservation = 512
+  stream_max_length  = "100M"
+}

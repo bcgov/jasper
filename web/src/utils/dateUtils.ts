@@ -2,9 +2,13 @@
  * Formats a given date string into the format "DD-MMM-YYYY".
  *
  * @param dateString - The date string to format. It should be a valid date string.
+ * @param includeDashes - Optional boolean to determine if dashes should be included in the output. Defaults to true.
  * @returns {string} A formatted date string in "DD-MMM-YYYY" format (e.g., "01-Jan-2023").
  */
-export const formatDateToDDMMMYYYY = (dateString: string): string => {
+export const formatDateToDDMMMYYYY = (
+  dateString: string,
+  includeDashes: boolean = true
+): string => {
   if (!dateString) {
     return '';
   }
@@ -20,7 +24,7 @@ export const formatDateToDDMMMYYYY = (dateString: string): string => {
   const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);
   const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
 
-  return `${day}-${month}-${year}`;
+  return includeDashes ? `${day}-${month}-${year}` : `${day} ${month} ${year}`;
 };
 
 /**

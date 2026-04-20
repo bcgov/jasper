@@ -23,6 +23,7 @@ public class OrdersControllerTests
 {
     private readonly Mock<IValidator<OrderRequestDto>> _mockOrderRequestValidator;
     private readonly Mock<IOrderService> _mockOrderService;
+    private readonly Mock<IAntiVirusService> _mockAntiVirusService;
     private readonly OrdersController _controller;
     private readonly Faker _faker;
     private readonly int _judgeId;
@@ -31,12 +32,14 @@ public class OrdersControllerTests
     {
         _mockOrderRequestValidator = new Mock<IValidator<OrderRequestDto>>();
         _mockOrderService = new Mock<IOrderService>();
+        _mockAntiVirusService = new Mock<IAntiVirusService>();
         _faker = new Faker();
         _judgeId = _faker.Random.Int(1, 1000);
 
         _controller = new OrdersController(
             _mockOrderRequestValidator.Object,
-            _mockOrderService.Object);
+            _mockOrderService.Object,
+            _mockAntiVirusService.Object);
 
         var claims = new List<Claim>
         {

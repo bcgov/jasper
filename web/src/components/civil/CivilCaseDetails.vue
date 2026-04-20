@@ -87,6 +87,7 @@
     DocumentRequestsInfoType,
   } from '@/types/common';
   import { CourtDocumentType, DocumentData } from '@/types/shared';
+  import { syncSelectedFilesForCurrentCase } from '@/utils/courtFileSelection';
   import { getSingleValue } from '@/utils/utils';
   import base64url from 'base64url';
   import _ from 'underscore';
@@ -142,6 +143,7 @@
       const fileNumber = ref('');
       const fileId = ref('');
       const transcripts = ref<TranscriptDocument[]>([]);
+      const selectedFiles = computed(() => courtFileSearchStore.selectedFiles);
 
       const partiesJson = ref<partyType[]>([]);
       const adjudicatorRestrictionsJson = ref<civilHearingRestrictionType[]>(
@@ -254,6 +256,11 @@
                   document: documentsDetailsJson,
                 };
                 fileId.value = data.physicalFileId;
+                syncSelectedFilesForCurrentCase(
+                  courtFileSearchStore,
+                  civilFileStore.civilFileInformation.fileNumber,
+                  data.fileNumberTxt
+                );
                 isDataReady.value = true;
               } else errorCode.value = 200;
             } else if (errorCode.value == 0) errorCode.value = 200;
@@ -778,7 +785,7 @@
         isDataReady,
         errorCode,
         errorText,
-        selectedFiles: courtFileSearchStore.selectedFiles,
+        selectedFiles,
         reloadCaseDetails,
         showAllDocuments,
         selectedSideBar,

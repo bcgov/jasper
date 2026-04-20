@@ -1,6 +1,12 @@
 import { useCommonStore, useDarsStore } from '@/stores';
+import { ApplicationConfigurationKey } from '@/stores/CommonStore';
 import { PersonSearchItem } from '@/types';
-import { OrderReviewStatus, RolesEnum, UserInfo } from '@/types/common';
+import {
+  ApplicationInfo,
+  OrderReviewStatus,
+  RolesEnum,
+  UserInfo,
+} from '@/types/common';
 import { faker } from '@faker-js/faker';
 import { flushPromises, mount } from '@vue/test-utils';
 import AppBar from 'CMP/shared/AppBar.vue';
@@ -62,6 +68,20 @@ const generateOrder = (status: OrderReviewStatus) => ({
   courtFileNumber: faker.string.alphanumeric({ length: 10 }).toUpperCase(),
   styleOfCause: `${faker.person.lastName()} v ${faker.person.lastName()}`,
   physicalFileId: faker.number.int().toString(),
+});
+
+const generateAppInfo = (overrides: Partial<ApplicationInfo> = {}) => ({
+  version: '1.0.0',
+  nutrientFeLicenseKey: '',
+  environment: 'test',
+  configuration: [
+    {
+      id: faker.string.uuid(),
+      key: ApplicationConfigurationKey.ReleaseNotesUrl,
+      values: ['https://example.com/release-notes'],
+    },
+  ],
+  ...overrides,
 });
 
 describe('AppBar.vue', () => {
@@ -469,6 +489,47 @@ describe('AppBar.vue', () => {
       await wrapper.vm.$nextTick();
 
       expect((wrapper.vm as any).userName).toBe('');
+    });
+  });
+
+  describe('release notes highlight', () => {
+    it('should highlight username when release notes are unviewed', async () => {
+      const commonStore = useCommonStore();
+      commonStore.appInfo = generateAppInfo({ version: '2.0.0' });
+      commonStore.userInfo = generateUserInfo({
+        releaseNotes: { lastViewedVersion: '1.0.0' },
+      });
+
+      const wrapper = createWrapper();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('.release-notes-emphasis').exists()).toBe(true);
+    });
+
+    it('should not highlight username when release notes are up to date', async () => {
+      const commonStore = useCommonStore();
+      commonStore.appInfo = generateAppInfo({ version: '2.0.0' });
+      commonStore.userInfo = generateUserInfo({
+        releaseNotes: { lastViewedVersion: '2.0.0' },
+      });
+
+      const wrapper = createWrapper();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('.release-notes-emphasis').exists()).toBe(false);
+    });
+
+    it('should not highlight username when release notes url is missing', async () => {
+      const commonStore = useCommonStore();
+      commonStore.appInfo = generateAppInfo({ configuration: [] });
+      commonStore.userInfo = generateUserInfo({
+        releaseNotes: { lastViewedVersion: '1.0.0' },
+      });
+
+      const wrapper = createWrapper();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('.release-notes-emphasis').exists()).toBe(false);
     });
   });
 });

@@ -1,6 +1,12 @@
 <template>
   <v-theme-provider :theme="theme">
-    <v-app>
+    <div
+      v-if="!commonStore.isInitialized"
+      class="d-flex align-center justify-center ma-3"
+    >
+      <v-progress-circular indeterminate color="primary" />
+    </div>
+    <v-app v-else>
       <ProfileOffCanvas v-model="profile" />
       <AppBar @open-profile="profile = true" />
       <v-main>
@@ -18,11 +24,13 @@
   import AppBar from './components/shared/AppBar.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
   import Snackbar from './components/shared/Snackbar.vue';
+  import { useCommonStore } from './stores/CommonStore';
   import { useDarsStore } from './stores/DarsStore';
   import { useThemeStore } from './stores/ThemeStore';
 
   const themeStore = useThemeStore();
   const darsStore = useDarsStore();
+  const commonStore = useCommonStore();
   const theme = ref(themeStore.state);
   const profile = ref(false);
 </script>

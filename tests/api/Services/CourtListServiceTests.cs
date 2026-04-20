@@ -165,8 +165,11 @@ public class CourtListServiceTests : ServiceTestBase
     {
         var (courtListService, _, _, mockSearchDateClient) = SetupCourtListService();
 
-        var mockJudgeId = _faker.Random.Int();
-        var mockAmPm = _faker.Lorem.Word();
+        var mockJudgeId = 100;
+        var mockAmPm = "AM";
+        var nonMatchingAmPm = "PM";
+        var nonMatchingJudgeId1 = 200;
+        var nonMatchingJudgeId2 = 300;
         var mockResult = new ActivityClassUsage.ActivityAppearanceResultsCollection
         {
             Items =
@@ -185,7 +188,7 @@ public class CourtListServiceTests : ServiceTestBase
                         },
                         new PcssCounsel.ActivityAppearanceDetail
                         {
-                            AppearanceTm = _faker.Lorem.Word()
+                            AppearanceTm = nonMatchingAmPm
                         }
                     ],
                     CourtActivityDetails =
@@ -196,11 +199,11 @@ public class CourtListServiceTests : ServiceTestBase
                         },
                         new ActivityClassUsage.CourtActivityDetail
                         {
-                            CourtSittingCd = _faker.Lorem.Word()
+                            CourtSittingCd = nonMatchingAmPm
                         },
                         new ActivityClassUsage.CourtActivityDetail
                         {
-                            CourtSittingCd = _faker.Lorem.Word()
+                            CourtSittingCd = nonMatchingAmPm
                         },
                     ],
                     CourtRoomDetails =
@@ -216,11 +219,11 @@ public class CourtListServiceTests : ServiceTestBase
                                 },
                                 new ActivityClassUsage.AdjudicatorDetail
                                 {
-                                    AdjudicatorId = _faker.Random.Int()
+                                    AdjudicatorId = nonMatchingJudgeId1
                                 },
                                  new ActivityClassUsage.AdjudicatorDetail
                                 {
-                                    AdjudicatorId = _faker.Random.Int()
+                                    AdjudicatorId = nonMatchingJudgeId2
                                 }
                             ]
                         }

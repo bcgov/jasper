@@ -65,6 +65,7 @@ export const prepareCivilDocumentData = (data: civilDocumentType) => {
     appearanceDate: beautifyDate(data.lastAppearanceDt),
     appearanceId: data.appearanceId ?? data.civilDocumentId,
     dateFiled: beautifyDate(data.filedDt),
+    fileSeqNo: data.fileSeqNo,
     documentDescription: data.documentTypeDescription,
     documentId: isLitigantDocument ? data.imageId : data.civilDocumentId,
     fileId: civilFileStore.civilFileInformation?.fileNumber,

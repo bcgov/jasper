@@ -10,6 +10,7 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useDarsStore } from '@/stores/DarsStore';
+import { useCourtFileSearchStore } from '@/stores';
 
 const pinia = createPinia();
 setActivePinia(pinia);
@@ -89,14 +90,8 @@ describe('MyCalendarDayExpanded.vue', () => {
 
     expect(links.length).toBe(mockRestrictions.length);
 
-    expect(links[0].attributes('href')).toBe(
-      `/criminal-file/${mockRestrictions[0].fileId}`
-    );
     expect(links[0].text()).toBe(
       `${mockRestrictions[0].fileName} (${mockRestrictions[0].appearanceReasonCode})`
-    );
-    expect(links[1].attributes('href')).toBe(
-      `/civil-file/${mockRestrictions[1].fileId}`
     );
     expect(links[1].text()).toBe(
       `${mockRestrictions[1].fileName} (${mockRestrictions[1].appearanceReasonCode})`
@@ -197,5 +192,62 @@ describe('MyCalendarDayExpanded.vue', () => {
     );
     expect(darsStore.searchLocationId).toBe(null);
     expect(darsStore.searchRoom).toBe(mockRoomCode);
+  });
+
+  it('updates selected files and opens a new tab when a restriction link is clicked', async () => {
+    const date = faker.date.anytime();
+    const formattedDate = formatDateInstanceToDDMMMYYYY(date);
+    const mockLocation = faker.location.city();
+    const mockRestriction = {
+      isCivil: true,
+      fileId: faker.string.alphanumeric(),
+      fileName: faker.system.fileName(),
+      appearanceReasonCode: faker.string.alphanumeric(),
+    } as AdjudicatorRestriction;
+
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    const wrapper = mount(MyCalendarDayExpanded, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          teleport: true,
+        },
+      },
+      props: {
+        expandedDate: formattedDate,
+        day: {
+          date: formattedDate,
+          showCourtList: true,
+          activities: [
+            {
+              locationName: mockLocation,
+              activityClassDescription: faker.lorem.word(),
+              activityDescription: faker.lorem.sentence(),
+              restrictions: [mockRestriction],
+            } as CalendarDayActivity,
+          ] as CalendarDayActivity[],
+        } as CalendarDay,
+        close: vi.fn(),
+      },
+    });
+
+    const courtFileSearchStore = useCourtFileSearchStore();
+    courtFileSearchStore.clearSelectedFiles();
+
+    await wrapper.find('[data-testid="restrictions"] a').trigger('click');
+
+    expect(courtFileSearchStore.selectedFiles).toEqual([
+      {
+        key: mockRestriction.fileId,
+        value: mockRestriction.fileName,
+      },
+    ]);
+    expect(openSpy).toHaveBeenCalledWith(
+      `/civil-file/${mockRestriction.fileId}`,
+      '_blank'
+    );
+
+    openSpy.mockRestore();
   });
 });

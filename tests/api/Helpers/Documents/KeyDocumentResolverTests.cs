@@ -10,6 +10,16 @@ namespace tests.api.Helpers.Documents;
 public class KeyDocumentResolverTest
 {
     [Fact]
+    public void GetCriminalKeyDocuments_ReturnsEmpty_WhenDocumentsAreNull()
+    {
+        IEnumerable<CriminalDocument> documents = null;
+
+        var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public void GetCriminalKeyDocuments_ReturnsEmpty_WhenNoDocuments()
     {
         var documents = Enumerable.Empty<CriminalDocument>();

@@ -95,9 +95,9 @@
                   isCivil,
                   appearanceReasonCode,
                 } in restrictions"
-                :href="`/${isCivil ? 'civil' : 'criminal'}-file/${fileId}`"
-                target="_blank"
+                href="#"
                 rel="noopener"
+                @click.prevent="viewFiles(fileId, fileName, isCivil)"
                 >{{ fileName }} ({{ appearanceReasonCode }})</a
               >
             </div>
@@ -111,6 +111,8 @@
 </template>
 <script setup lang="ts">
   import { CalendarDay, CalendarDayActivity } from '@/types';
+  import { useCourtFileSearchStore } from '@/stores';
+  import { KeyValueInfo } from '@/types/common';
   import { parseDDMMMYYYYToDate } from '@/utils/dateUtils';
   import { mdiHeadphones, mdiListBoxOutline, mdiVideo } from '@mdi/js';
   import { computed } from 'vue';
@@ -123,6 +125,7 @@
   }>();
 
   const darsStore = useDarsStore();
+  const courtFileSearchStore = useCourtFileSearchStore();
 
   const openDarsModal = (locationId: number | undefined, roomCode: string) => {
     // Parse the date from the day.date string (format: DD MMM YYYY)
@@ -164,6 +167,24 @@
       activities,
     }));
   });
+
+  const viewFiles = (fileId: string, fileName: string, isCivil: boolean) => {
+    const selectedFiles: KeyValueInfo[] = [
+      {
+        key: fileId,
+        value: fileName,
+      },
+    ];
+
+    courtFileSearchStore.addFilesForViewing({
+      searchCriteria: {},
+      searchResults: [],
+      files: selectedFiles,
+    });
+
+    const caseDetailUrl = `/${isCivil ? 'civil-file' : 'criminal-file'}/${fileId}`;
+    window.open(caseDetailUrl, '_blank');
+  };
 </script>
 <style scoped>
   .expanded-content {

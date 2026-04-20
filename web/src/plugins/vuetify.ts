@@ -4,6 +4,7 @@ import { VBtn } from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
 import { VDateInput } from 'vuetify/labs/VDateInput';
+import { VFileUpload } from 'vuetify/labs/VFileUpload';
 import 'vuetify/styles';
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
@@ -19,6 +20,7 @@ export default createVuetify({
   components: {
     ...components,
     VDateInput,
+    VFileUpload,
   },
   directives,
   aliases: {

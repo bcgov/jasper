@@ -265,6 +265,8 @@
     box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2);
     grid-template-columns: repeat(4, 1fr);
     grid-gap: 0;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
 
   :deep(.v-date-picker-months__content .v-btn) {

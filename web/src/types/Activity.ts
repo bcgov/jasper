@@ -1,3 +1,6 @@
-import { TextValue } from './TextValue';
-
-export interface Activity extends TextValue<string> {}
+export interface Activity {
+  code: string;
+  description: string;
+  classCode: string;
+  classDescription: string;
+}

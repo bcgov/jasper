@@ -381,3 +381,18 @@ export const parseQueryStringToString = (
 export const isPositiveInteger = (value) => {
   return _.isNumber(value) && value > 0;
 };
+
+/**
+ * Converts an activity class description to a lowercase, hyphenated string for use as a CSS class name.
+ * Styles can be found in /public/styles/common.css
+ * @param activityClassDescription The original activity class description, which may contain spaces and uppercase letters.
+ * @returns A cleaned version of the activity class description
+ */
+export const cleanActivityClassDescription = (
+  activityClassDescription: string | null | undefined
+): string => {
+  return (activityClassDescription ?? '')
+    .trim()
+    .replaceAll(/\s+/g, '-')
+    .toLowerCase();
+};

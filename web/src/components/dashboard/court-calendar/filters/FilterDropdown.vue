@@ -22,6 +22,9 @@
             @update:model-value="toggleItem(item.value)"
           />
         </template>
+        <template v-if="item.color" #title>
+          <span :class="item.color">{{ item.text }}</span>
+        </template>
       </v-list-item>
     </v-list>
 
@@ -29,7 +32,7 @@
       v-if="showSelectAll"
       :thickness="3"
       class="my-1"
-      color="grey-darken-2"
+      color="var(--border-gray-500)"
     />
 
     <!-- all list -->
@@ -65,6 +68,9 @@
             @click.stop
             @update:model-value="toggleItem(item.value)"
           />
+        </template>
+        <template v-if="item.color" #title>
+          <span :class="item.color">{{ item.text }}</span>
         </template>
       </v-list-item>
     </v-list>

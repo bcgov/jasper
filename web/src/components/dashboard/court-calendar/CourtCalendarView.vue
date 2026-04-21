@@ -227,6 +227,7 @@
     selectedLocationIds,
     async () => {
       selectedPresiderIds.value = [];
+      selectedActivities.value = [];
       await updateCalendar();
     },
     { deep: true }

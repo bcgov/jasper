@@ -191,10 +191,9 @@ describe('utils', () => {
       expect(cleanActivityClassDescription('  Family  ')).toBe('family');
     });
 
-    it('replaces multiple consecutive spaces with a single hyphen', () => {
-      expect(cleanActivityClassDescription('Small  Claims')).toBe(
-        'small-claims'
-      );
+    it('returns empty string for unrecognized descriptions', () => {
+      expect(cleanActivityClassDescription('Small  Claims')).toBe('');
+      expect(cleanActivityClassDescription('Unknown')).toBe('');
     });
   });
 

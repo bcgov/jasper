@@ -302,12 +302,12 @@ describe('CourtCalendarFilters.vue', () => {
       const act1 = createActivity({
         code: 'TRL',
         description: 'Trial',
-        classDescription: 'Criminal SIT',
+        classDescription: 'Criminal',
       });
       const act2 = createActivity({
         code: 'HRG',
         description: 'Hearing',
-        classDescription: 'Civil  NS',
+        classDescription: 'Civil',
       });
       const wrapper = mountComponent({
         activities: [act1, act2],
@@ -317,16 +317,16 @@ describe('CourtCalendarFilters.vue', () => {
         .findAllComponents(FilterDropdown)
         .find((d) => d.props('title') === 'Activities')!;
       expect(activityDropdown.props('items')).toEqual([
-        { value: 'TRL', text: 'Trial', color: 'criminal-sit' },
-        { value: 'HRG', text: 'Hearing', color: 'civil-ns' },
+        { value: 'TRL', text: 'Trial', color: 'criminal' },
+        { value: 'HRG', text: 'Hearing', color: 'civil' },
       ]);
     });
 
-    it('normalizes classDescription: trims whitespace and lowercases for color', () => {
+    it('trims leading and trailing whitespace from classDescription for color', () => {
       const act = createActivity({
         code: 'X',
         description: 'X',
-        classDescription: '  Some  Class  ',
+        classDescription: '  Small Claims  ',
       });
       const wrapper = mountComponent({
         activities: [act],
@@ -335,7 +335,7 @@ describe('CourtCalendarFilters.vue', () => {
       const activityDropdown = wrapper
         .findAllComponents(FilterDropdown)
         .find((d) => d.props('title') === 'Activities')!;
-      expect(activityDropdown.props('items')[0].color).toBe('some-class');
+      expect(activityDropdown.props('items')[0].color).toBe('small-claims');
     });
 
     it('passes showSelectAll=false to the Activities FilterDropdown', () => {

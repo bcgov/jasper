@@ -383,16 +383,32 @@ export const isPositiveInteger = (value) => {
 };
 
 /**
- * Converts an activity class description to a lowercase, hyphenated string for use as a CSS class name.
+ * Maps a known activity class description to its corresponding CSS class name.
  * Styles can be found in /public/styles/common.css
- * @param activityClassDescription The original activity class description, which may contain spaces and uppercase letters.
- * @returns A cleaned version of the activity class description
+ * @param activityClassDescription The activity class description to map.
+ * @returns The CSS class name for the given description, or an empty string if the description is unknown.
  */
 export const cleanActivityClassDescription = (
   activityClassDescription: string | null | undefined
 ): string => {
-  return (activityClassDescription ?? '')
-    .trim()
-    .replaceAll(/\s+/g, '-')
-    .toLowerCase();
+  switch (activityClassDescription?.trim()) {
+    case 'Civil':
+      return 'civil';
+    case 'Small Claims':
+      return 'small-claims';
+    case 'Criminal':
+      return 'criminal';
+    case 'Family':
+      return 'family';
+    case 'Mixed':
+      return 'mixed';
+    case 'Non-Sitting':
+      return 'non-sitting';
+    case 'Judge-Sitting':
+      return 'judge-sitting';
+    case 'Specialty':
+      return 'specialty';
+    default:
+      return '';
+  }
 };

@@ -7,6 +7,7 @@ using Newtonsoft.Json.Serialization;
 using Nutrient.NativeSDK.API.Exceptions;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
+using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents.Strategies
@@ -52,7 +53,7 @@ namespace Scv.Api.Documents.Strategies
                 documentId,
                 agencyId,
                 DocumentApplicationName.CSO,
-                "JASPER",
+                _configuration.GetNonEmptyValue("Request:ApplicationCd"),
                 true.ToString());
 
             await response.Stream.CopyToAsync(documentResponseStreamCopy);

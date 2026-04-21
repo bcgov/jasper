@@ -102,6 +102,20 @@
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
+    toolBarItems: [
+      { type: 'sidebar-thumbnails' },
+      { type: 'sidebar-document-outline' },
+      { type: 'sidebar-annotations' },
+      { type: 'pager' },
+      { type: 'pan' },
+      { type: 'zoom-out' },
+      { type: 'zoom-in' },
+      { type: 'spacer' },
+      { type: 'document-editor' },
+      { type: 'content-editor' },
+      { type: 'print' },
+      { type: 'export-pdf' },
+    ],
   };
 
   async function hasImageAnnotation(pageIndex: number) {

@@ -209,7 +209,9 @@
         )
       );
       instance.setToolbarItems(() => {
-        const customItems = props.strategy.showOrderReviewOptions ? [openInfoItem, reviewItem] : [];
+        const customItems = props.strategy.showOrderReviewOptions
+          ? [openInfoItem, reviewItem]
+          : [];
         return [...configuration.toolBarItems, ...customItems];
       });
 

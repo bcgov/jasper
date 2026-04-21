@@ -208,11 +208,9 @@
           NutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
-      instance.setToolbarItems((items: any) => {
-        if (props.strategy.showOrderReviewOptions) {
-          items.push(openInfoItem, reviewItem);
-        }
-        return items;
+      instance.setToolbarItems(() => {
+        const customItems = props.strategy.showOrderReviewOptions ? [openInfoItem, reviewItem] : [];
+        return [...configuration.toolBarItems, ...customItems];
       });
 
       // Listen for annotation changes to update canApprove

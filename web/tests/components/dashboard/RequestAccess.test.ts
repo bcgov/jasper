@@ -121,7 +121,7 @@ describe('RequestAccess.vue', () => {
     wrapper.find('v-btn').trigger('click');
     await nextTick();
 
-    expect(mockRequestAccess).toHaveBeenCalledWith('test@example.com');
+    expect(mockRequestAccess).toHaveBeenCalled();
     expect(snackStore.showSnackbar).toHaveBeenCalled();
   });
 

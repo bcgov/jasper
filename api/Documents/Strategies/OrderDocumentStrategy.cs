@@ -28,11 +28,6 @@ namespace Scv.Api.Documents.Strategies
         public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
         {
             var documentResponseStreamCopy = new MemoryStream();
-            var isValidGuid = Guid.TryParse(documentRequest.DocumentId, out var guid);
-            if (!isValidGuid)
-            {
-                throw new InvalidArgumentException("Invalid correlation id");
-            }
 
             var transactionId = Guid.NewGuid();
             documentRequest.CorrelationId ??= transactionId.ToString();
@@ -52,7 +47,6 @@ namespace Scv.Api.Documents.Strategies
                 transactionId,
                 agencyId,
                 documentId,
-                agencyId,
                 DocumentApplicationName.CSO,
                 _configuration.GetNonEmptyValue("Request:ApplicationCd"),
                 "Y");

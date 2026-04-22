@@ -34,6 +34,8 @@ namespace Scv.Api.Infrastructure.Authentication
                 _logger.LogDebug("CSO request already contains an Authorization header.");
             }
 
+            _logger.LogInformation("Sending request to {RequestUri} with method {Method}", request.RequestUri, request.Method);
+
             return await base.SendAsync(request, cancellationToken);
         }
     }

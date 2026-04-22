@@ -89,7 +89,8 @@ namespace Scv.Api.Infrastructure.Authentication
                 string.IsNullOrWhiteSpace(options.Audience) ? "(null)" : options.Audience,
                 string.IsNullOrWhiteSpace(options.Scope) ? "(null)" : options.Scope);
 
-            var request = new ClientCredentialsTokenRequest
+            // TODO: Temporary workaround - replace with ClientCredentialsTokenRequest once Keycloak service account is configured
+            var request = new PasswordTokenRequest
             {
                 Address = tokenEndpoint,
                 ClientId = options.ClientId,
@@ -107,7 +108,8 @@ namespace Scv.Api.Infrastructure.Authentication
                 _logger.LogWarning("No audience configured in KeycloakClientOptions. Token may not include audience claim.");
             }
 
-            var response = await client.RequestClientCredentialsTokenAsync(request, cancellationToken);
+            // TODO: Temporary workaround - var response = await client.RequestClientCredentialsTokenAsync(request, cancellationToken);
+            var response = await client.RequestPasswordTokenAsync(request, cancellationToken);
             if (response.IsError || string.IsNullOrWhiteSpace(response.AccessToken))
             {
                 _logger.LogError(

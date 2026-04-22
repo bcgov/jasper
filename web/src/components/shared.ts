@@ -244,7 +244,7 @@ export default {
 
     this.addDocumentsToPdfStore([
       {
-        documentType: DocumentRequestType.File,
+        documentType: DocumentRequestType.Order,
         documentData: documentData,
         groupKeyOne: documentData.fileNumberText ?? '',
         groupKeyTwo: '',

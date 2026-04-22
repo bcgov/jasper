@@ -7,7 +7,6 @@ using Newtonsoft.Json.Serialization;
 using Nutrient.NativeSDK.API.Exceptions;
 using Scv.Api.Helpers;
 using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents.Strategies
@@ -29,13 +28,9 @@ namespace Scv.Api.Documents.Strategies
         public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
         {
             var documentResponseStreamCopy = new MemoryStream();
-            var isValidGuid = Guid.TryParse(documentRequest.DocumentId, out var guid);
-            if (!isValidGuid)
-            {
-                throw new InvalidArgumentException("Invalid correlation id");
-            }
 
-            documentRequest.CorrelationId ??= Guid.NewGuid().ToString();
+            var transactionId = Guid.NewGuid();
+            documentRequest.CorrelationId ??= transactionId.ToString();
             var isValidAgencyId = double.TryParse(_configuration.GetNonEmptyValue("Request:AgencyIdentifierId"), out var agencyId);
             if (!isValidAgencyId)
             {
@@ -49,12 +44,12 @@ namespace Scv.Api.Documents.Strategies
             }
 
             using var response = await _judicialClient.GetJudicialDocumentAsync(
-                guid,
-                documentId,
+                transactionId,
                 agencyId,
+                documentId,
                 DocumentApplicationName.CSO,
                 _configuration.GetNonEmptyValue("Request:ApplicationCd"),
-                true.ToString());
+                "Y");
 
             await response.Stream.CopyToAsync(documentResponseStreamCopy);
 

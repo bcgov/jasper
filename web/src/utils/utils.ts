@@ -57,6 +57,8 @@ export const initializeSessionSettings = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.log(error);
+    commonStore.setLoggedInUserInfo(null);
+    commonStore.setUserInfo(null);
     return false;
   } finally {
     commonStore.setIsInitialized(true);

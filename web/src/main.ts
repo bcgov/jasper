@@ -19,7 +19,7 @@ const bootstrap = async () => {
   registerRouter(app);
 
   // Set isInitialized to false to ensure
-  // user/app info is refeteched on app mount.
+  // user/app info is refetched on app mount.
   const commonStore = useCommonStore();
   commonStore.setIsInitialized(false);
 

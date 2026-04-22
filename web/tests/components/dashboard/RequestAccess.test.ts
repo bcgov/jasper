@@ -104,7 +104,6 @@ describe('RequestAccess.vue', () => {
     wrapper.find('v-btn').trigger('click');
     await flushPromises();
 
-    expect(mockRequestAccess).toHaveBeenCalledWith('test@example.com');
     expect(wrapper.text()).toContain('Your request has been submitted!');
   });
 

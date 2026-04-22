@@ -25,7 +25,7 @@ public class OrderReceivedAckNotification
         if (string.IsNullOrWhiteSpace(userId))
         {
             _logger.LogWarning(
-                "Order received notification skipped. No user found for userId {userId}.",
+                "Order received notification skipped. No user found for userId {UserId}.",
                 userId);
             return;
         }

@@ -6,7 +6,7 @@ namespace Scv.Api.SignalR;
 public class UserConnectionTracker
 {
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _connections =
-        new(StringComparer.Ordinal);
+        new(StringComparer.OrdinalIgnoreCase);
 
     public void AddConnection(string userId, string connectionId)
     {
@@ -17,7 +17,7 @@ public class UserConnectionTracker
 
         var userConnections = _connections.GetOrAdd(
             userId,
-            _ => new ConcurrentDictionary<string, byte>(StringComparer.Ordinal));
+            _ => new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase));
         userConnections.TryAdd(connectionId, 0);
     }
 

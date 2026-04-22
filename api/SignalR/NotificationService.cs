@@ -92,7 +92,7 @@ public class NotificationService(
         };
 
         // Always add an outbox row before publishing - this ensures that all messages are tracked in the outbox regardless if they are received via listen/notify or not.
-        _dbContext.SignalROutboxMessages.Add(outboxMessage);
+        await _dbContext.SignalROutboxMessages.AddAsync(outboxMessage);
         await _dbContext.SaveChangesAsync();
 
         try

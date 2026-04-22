@@ -34,34 +34,30 @@ public class NotificationsHub : Hub
         var httpContext = Context.GetHttpContext();
         var config = httpContext?.RequestServices.GetService<IConfiguration>();
         var logger = httpContext?.RequestServices.GetService<ILogger<NotificationsHub>>();
-        var allowedOrigin = config?.GetValue<string>("PublicCorsDomain");
+        var corsDomain = config?.GetValue<string>("CORS_DOMAIN");
+        var publicCorsDomain = config?.GetValue<string>("PublicCorsDomain");
         var disableOriginCheck = config?.GetValue<bool>("DISABLE_SIGNALR_ORIGIN_CHECK") ?? false;
         var origin = httpContext?.Request.Headers["Origin"].ToString();
+        var allowedOrigins = ParseOrigins(corsDomain, publicCorsDomain);
 
         logger?.LogInformation(
-            "SignalR connect attempt. Origin={Origin}, CORS_DOMAIN={CorsDomain}",
+            "SignalR connect attempt. Origin={Origin}, CORS_DOMAIN={CorsDomain}, PublicCorsDomain={PublicCorsDomain}",
             origin,
-            allowedOrigin);
+            corsDomain,
+            publicCorsDomain);
 
         if (disableOriginCheck)
         {
             logger?.LogWarning("SignalR origin check disabled via DISABLE_SIGNALR_ORIGIN_CHECK.");
         }
-        else if (!string.IsNullOrWhiteSpace(allowedOrigin))
+        else if (allowedOrigins.Length > 0)
         {
-            var allowedOrigins = allowedOrigin
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(value => value.Trim().Trim('"', '\''))
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .ToArray();
-
             logger?.LogInformation(
                 "SignalR allowed origins resolved to {AllowedOrigins}",
                 string.Join(";", allowedOrigins));
 
-            if (allowedOrigins.Length > 0 &&
-                (string.IsNullOrWhiteSpace(origin) ||
-                 !allowedOrigins.Any(value => string.Equals(origin, value, StringComparison.OrdinalIgnoreCase))))
+            if (string.IsNullOrWhiteSpace(origin) ||
+                !allowedOrigins.Any(value => string.Equals(origin, value, StringComparison.OrdinalIgnoreCase)))
             {
                 logger?.LogWarning(
                     "SignalR connection aborted due to origin mismatch. Origin={Origin}",
@@ -203,5 +199,16 @@ public class NotificationsHub : Hub
         }
 
         return true;
+    }
+
+    private static string[] ParseOrigins(params string[] rawValues)
+    {
+        return rawValues
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .SelectMany(value => value!.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Select(value => value.Trim('"', '\''))
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 }

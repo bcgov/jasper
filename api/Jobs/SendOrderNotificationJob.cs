@@ -42,7 +42,7 @@ public class SendOrderNotificationJob(
         {
             _logger.LogError(ex, "Failed to send order notification for file {FileId}",
                 order.OrderRequest.CourtFile.PhysicalFileId);
-            throw new InvalidOperationException(ex.Message, ex.InnerException);
+            throw new InvalidOperationException(ex.Message, ex);
         }
     }
 

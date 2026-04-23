@@ -15,19 +15,11 @@
     <v-row v-if="type === 'documents'">
       <v-col cols="6" />
       <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
-        <v-select
-          v-model="selectedCategory"
-          placeholder="All documents"
-          hide-details
+        <ChipMultiSelect
+          v-model="selectedCategories"
           :items="documentCategories"
-        >
-          <template v-slot:[`item`]="{ props: itemProps, item }">
-            <v-list-item
-              v-bind="itemProps"
-              :title="item.raw + ' (' + categoryCount(item.raw) + ')'"
-            ></v-list-item>
-          </template>
-        </v-select>
+          :select-all-count="unfilteredDocuments.length"
+        />
       </v-col>
     </v-row>
     <v-card
@@ -40,9 +32,7 @@
         <v-row align="center" no-gutters>
           <v-col class="text-h5" cols="6">
             {{
-              type === 'keyDocuments'
-                ? 'Key Documents'
-                : getCategoryDisplayTitle()
+              type === 'keyDocuments' ? 'Key Documents' : documentsSectionTitle
             }}
             ({{ documentList.length }})
           </v-col>
@@ -154,6 +144,7 @@
   import { formatFromFullname } from '@/utils/utils';
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
   import { computed, ref } from 'vue';
+  import ChipMultiSelect from '../common/ChipMultiSelect.vue';
 
   const props = defineProps<{ participants: criminalParticipantType[] }>();
 
@@ -163,12 +154,36 @@
   );
   const sortBy = ref([{ key: 'issueDate', order: 'desc' }] as const);
   const keyDocumentsSortBy = ref([{ key: 'category', order: 'asc' }] as const);
-  const selectedCategory = ref<string>();
+  const selectedCategories = ref<string[]>([]);
   const selectedAccused = ref<string>();
+  const OTHER_CATEGORY = 'Other';
 
-  const filterByCategory = (item: any) =>
-    !selectedCategory.value ||
-    item.category?.toLowerCase() === selectedCategory.value?.toLowerCase();
+  const isAllSelected = computed<boolean>(() => {
+    return (
+      documentCategories.value.length > 0 &&
+      selectedCategories.value.length === documentCategories.value.length
+    );
+  });
+
+  const activeCategories = computed<string[]>(() =>
+    isAllSelected.value ? [] : selectedCategories.value
+  );
+
+  const filterByCategory = (item: any) => {
+    if (activeCategories.value.length === 0) {
+      return true;
+    }
+
+    const normalizedItemCategory = item.category?.trim().toLowerCase();
+    return activeCategories.value.some((category) => {
+      if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
+        return !normalizedItemCategory;
+      }
+
+      return normalizedItemCategory === category.toLowerCase();
+    });
+  };
+
   const filterByAccused = (item: any) =>
     !selectedAccused.value ||
     (item.fullName &&
@@ -218,22 +233,54 @@
     unfilteredKeyDocuments.value.filter(filterByAccused)
   );
 
+  const getUncategorizedDocumentCount = (): number =>
+    unfilteredDocuments.value.filter((doc) => !doc.category?.trim()).length;
+
   const categoryCount = (category: string): number => {
-    return unfilteredDocuments.value.filter((doc) => doc.category === category)
-      .length;
+    if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
+      return getUncategorizedDocumentCount();
+    }
+
+    return unfilteredDocuments.value.filter(
+      (doc) => doc.category?.trim().toLowerCase() === category.toLowerCase()
+    ).length;
   };
 
-  const getCategoryDisplayTitle = (): string => {
-    return selectedCategory.value ? selectedCategory.value : 'All Documents';
-  };
+  const documentsSectionTitle = computed<string>(() => {
+    if (activeCategories.value.length === 0) {
+      return 'All Documents';
+    }
 
-  const documentCategories = computed<string[]>(() => [
-    ...new Set(
-      (unfilteredDocuments.value ?? [])
-        .filter((doc) => doc.category)
-        .map((doc) => doc.category)
-    ),
-  ]);
+    if (activeCategories.value.length === 1) {
+      return activeCategories.value[0];
+    }
+
+    return 'Selected Categories';
+  });
+
+  const documentCategories = computed<
+    { title: string; value: string; count: number }[]
+  >(() =>
+    [
+      ...new Set(
+        unfilteredDocuments.value
+          ?.filter((doc) => doc.category)
+          .map((doc) => doc.category) || []
+      ),
+    ]
+      .map((category) => ({
+        title: category,
+        value: category,
+        count: categoryCount(category),
+      }))
+      .concat([
+        {
+          title: OTHER_CATEGORY,
+          value: OTHER_CATEGORY,
+          count: getUncategorizedDocumentCount(),
+        },
+      ])
+  );
 
   const groupBy = ref([
     {

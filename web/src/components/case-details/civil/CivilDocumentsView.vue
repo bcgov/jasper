@@ -16,21 +16,11 @@
   <v-row>
     <v-col cols="6" />
     <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
-      <v-select
-        v-model="selectedCategory"
-        placeholder="All documents"
-        hide-details
+      <ChipMultiSelect
+        v-model="selectedCategories"
         :items="documentCategories"
-        item-title="title"
-        item-value="value"
-      >
-        <template v-slot:item="{ props: itemProps, item }">
-          <v-list-item
-            v-bind="itemProps"
-            :title="`${item.title} (${categoryCount(item.raw.value)})`"
-          ></v-list-item>
-        </template>
-      </v-select>
+        :select-all-count="props.documents.length"
+      />
     </v-col>
   </v-row>
   <AllDocuments
@@ -44,6 +34,7 @@
     :selectedItems
     :binderDocumentIds="currentBinder?.documents.map((d) => d.documentId) ?? []"
     :selectedCategory="selectedCategory"
+    :sectionTitle="allDocumentsSectionTitle"
     :sortBy
     :getCategoryDisplayTitle="getCategoryDisplayTitle"
     @update:selectedItems="(val) => (selectedItems = val)"
@@ -127,6 +118,7 @@
     mdiNotebookRemoveOutline,
   } from '@mdi/js';
   import { computed, inject, onMounted, ref } from 'vue';
+  import ChipMultiSelect from '../common/ChipMultiSelect.vue';
   import AllDocuments from './documents/AllDocuments.vue';
   import JudicialBinder from './documents/JudicialBinder.vue';
 
@@ -148,6 +140,7 @@
   const CSR_CATEGORY_DESC = 'Court Summary';
   const AFF_FIN_STMT = 'Affidavits/Financial Stmts';
   const LITIGANT = 'Litigant';
+  const OTHER_CATEGORY = 'Other';
 
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
@@ -171,14 +164,44 @@
   const scheduledDocuments = computed(() =>
     uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt)
   );
-  const selectedCategory = ref<string | undefined>(
-    scheduledDocuments.value.length > 0 ? SCHEDULED_CATEGORY : undefined
+  const selectedCategories = ref<string[]>(
+    scheduledDocuments.value.length > 0 ? [SCHEDULED_CATEGORY] : []
   );
   const isBinderLoading = ref(true);
   const rolesLoading = ref(false);
   const roles = ref<LookupCode[]>();
   const currentBinder = ref<Binder>();
   const courtClassCdStyle = getCourtClassStyle(props.courtClassCd);
+  const selectedCategory = computed<string | undefined>(() => {
+    return selectedCategories.value.length === 1
+      ? selectedCategories.value[0]
+      : undefined;
+  });
+  const isAllSelected = computed<boolean>(() => {
+    return (
+      documentCategories.value.length > 0 &&
+      selectedCategories.value.length === documentCategories.value.length
+    );
+  });
+  const activeCategories = computed<string[]>(() =>
+    isAllSelected.value ? [] : selectedCategories.value
+  );
+  const isScheduledOnlySelected = computed<boolean>(
+    () =>
+      activeCategories.value.length === 1 &&
+      activeCategories.value[0] === SCHEDULED_CATEGORY
+  );
+  const allDocumentsSectionTitle = computed<string>(() => {
+    if (activeCategories.value.length === 0) {
+      return 'All Documents';
+    }
+
+    if (activeCategories.value.length === 1) {
+      return getCategoryDisplayTitle(activeCategories.value[0]);
+    }
+
+    return 'Selected Categories';
+  });
   const sortBy = computed<[{ key: string; order: 'desc' | 'asc' }]>(() => {
     return selectedCategory?.value === CSR_CATEGORY
       ? [{ key: 'filedDt', order: 'desc' as const }]
@@ -187,7 +210,7 @@
 
   const headers = computed<DataTableHeader[]>(() => {
     const baseHeaders = shared.getBaseCivilDocumentTableHeaders(
-      selectedCategory.value === SCHEDULED_CATEGORY
+      isScheduledOnlySelected.value
     );
 
     return [
@@ -216,9 +239,20 @@
     return categoryMap[category] || category;
   };
 
-  const documentCategories = computed<{ title: string; value: string }[]>(() =>
+  const getUncategorizedDocumentCount = (): number =>
+    uniqueDocuments.value.filter((doc) => !doc.category?.trim()).length;
+
+  const documentCategories = computed<
+    { title: string; value: string; count: number }[]
+  >(() =>
     (scheduledDocuments.value.length > 0
-      ? [{ title: SCHEDULED_CATEGORY, value: SCHEDULED_CATEGORY }]
+      ? [
+          {
+            title: SCHEDULED_CATEGORY,
+            value: SCHEDULED_CATEGORY,
+            count: categoryCount(SCHEDULED_CATEGORY),
+          },
+        ]
       : []
     ).concat(
       [
@@ -227,28 +261,41 @@
             .filter((d) => d.category)
             .map((doc) => doc.category)
         ),
-      ].map((category) => ({
-        title: getCategoryDisplayTitle(category),
-        value: category,
-      }))
+      ]
+        .map((category) => ({
+          title: getCategoryDisplayTitle(category),
+          value: category,
+          count: categoryCount(category),
+        }))
+        .concat([
+          {
+            title: OTHER_CATEGORY,
+            value: OTHER_CATEGORY,
+            count: getUncategorizedDocumentCount(),
+          },
+        ])
     )
   );
 
   const filterByCategory = (item: civilDocumentType) => {
-    const category = selectedCategory.value?.toLowerCase();
-    if (!category) {
+    if (activeCategories.value.length === 0) {
       return true;
     }
 
-    if (category === SCHEDULED_CATEGORY.toLowerCase()) {
-      return !!item.nextAppearanceDt;
-    }
+    const normalizedItemCategory = item.category?.trim().toLowerCase();
+    return activeCategories.value.some((category) => {
+      const normalizedCategory = category.toLowerCase();
 
-    if (category === CSR_CATEGORY_DESC.toLowerCase()) {
-      return item.category === CSR_CATEGORY;
-    }
+      if (normalizedCategory === SCHEDULED_CATEGORY.toLowerCase()) {
+        return !!item.nextAppearanceDt;
+      }
 
-    return item.category?.toLowerCase() === category;
+      if (normalizedCategory === OTHER_CATEGORY.toLowerCase()) {
+        return !normalizedItemCategory;
+      }
+
+      return normalizedItemCategory === normalizedCategory;
+    });
   };
 
   const filteredDocuments = computed(() =>
@@ -278,14 +325,22 @@
       return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
     }
 
-    if (category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase()) {
+    if (
+      category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase() ||
+      category.toLowerCase() === CSR_CATEGORY.toLowerCase()
+    ) {
       return uniqueDocuments.value.filter(
-        (doc) => doc.category === CSR_CATEGORY
+        (doc) =>
+          doc.category?.trim().toLowerCase() === CSR_CATEGORY.toLowerCase()
       ).length;
     }
 
+    if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
+      return getUncategorizedDocumentCount();
+    }
+
     return uniqueDocuments.value.filter(
-      (doc) => doc.category?.toLowerCase() === category.toLowerCase()
+      (doc) => doc.category?.trim().toLowerCase() === category.toLowerCase()
     ).length;
   };
 

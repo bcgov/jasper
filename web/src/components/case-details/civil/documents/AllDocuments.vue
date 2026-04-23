@@ -4,15 +4,17 @@
     color="var(--bg-gray-500)"
     elevation="0"
     data-testid="all-documents-container"
-    v-if="documents?.length > 0"
+    v-if="documents?.length > 0 || props.selectedCategory"
   >
     <v-card-text>
       <v-row align="center" no-gutters>
         <v-col class="text-h5" cols="6">
           {{
-            props.selectedCategory && props.getCategoryDisplayTitle
-              ? props.getCategoryDisplayTitle(props.selectedCategory)
-              : 'All Documents'
+            props.sectionTitle
+              ? props.sectionTitle
+              : props.selectedCategory && props.getCategoryDisplayTitle
+                ? props.getCategoryDisplayTitle(props.selectedCategory)
+                : 'All Documents'
           }}
           ({{ documents.length }})
         </v-col>
@@ -105,6 +107,7 @@
     binderDocumentIds: string[];
     addDocumentToBinder: (document: civilDocumentType) => void;
     selectedCategory?: string;
+    sectionTitle?: string;
     sortBy?: [{ key: string; order: 'asc' | 'desc' }];
     getCategoryDisplayTitle?: (category: string) => string;
     openIndividualDocument: (data: civilDocumentType) => void;

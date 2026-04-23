@@ -31,6 +31,22 @@ describe('AllDocuments.vue', () => {
     expect(mainEl.exists()).toBe(false);
   });
 
+  it('renders header when selectedCategory is set even if there are no documents', () => {
+    const wrapper = mount(AllDocuments, {
+      props: {
+        ...mockProps,
+        documents: [],
+        selectedCategory: 'Scheduled',
+      },
+    });
+
+    const mainEl = wrapper.find('[data-testid="all-documents-container"]');
+    const header = wrapper.find('.text-h5');
+
+    expect(mainEl.exists()).toBe(true);
+    expect(header.text()).toContain('All Documents (0)');
+  });
+
   it('renders All Documents', () => {
     const mockDocuments = [{} as civilDocumentType, {} as civilDocumentType];
     mockProps.documents = mockDocuments;
@@ -116,7 +132,7 @@ describe('AllDocuments.vue', () => {
       imageId: 'img-123',
       nextAppearanceDt: '2026-01-15',
     } as civilDocumentType;
-    
+
     mockProps.documents = [mockDocument];
     const wrapper = mount(AllDocuments, {
       props: {
@@ -125,7 +141,9 @@ describe('AllDocuments.vue', () => {
       },
     });
 
-    const documentCell = wrapper.find('[data-testid="all-documents-container"]');
+    const documentCell = wrapper.find(
+      '[data-testid="all-documents-container"]'
+    );
     expect(documentCell.exists()).toBe(true);
     // The scheduled date should be formatted and displayed
     const tableEl = wrapper.find('v-data-table-virtual');
@@ -139,7 +157,7 @@ describe('AllDocuments.vue', () => {
       imageId: 'img-123',
       nextAppearanceDt: '2026-01-15',
     } as civilDocumentType;
-    
+
     mockProps.documents = [mockDocument];
     const wrapper = mount(AllDocuments, {
       props: {
@@ -158,7 +176,7 @@ describe('AllDocuments.vue', () => {
       documentTypeDescription: 'Test Document',
       imageId: 'img-123',
     } as civilDocumentType;
-    
+
     mockProps.documents = [mockDocument];
     const wrapper = mount(AllDocuments, {
       props: {

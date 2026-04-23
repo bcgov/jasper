@@ -33,10 +33,10 @@
     :openIndividualDocument
     :selectedItems
     :binderDocumentIds="currentBinder?.documents.map((d) => d.documentId) ?? []"
-    :selectedCategory="selectedCategory"
+    :hasActiveFilters="activeCategories.length > 0"
+    :isScheduledView="isScheduledOnlySelected"
     :sectionTitle="allDocumentsSectionTitle"
     :sortBy
-    :getCategoryDisplayTitle="getCategoryDisplayTitle"
     @update:selectedItems="(val) => (selectedItems = val)"
   />
 
@@ -113,11 +113,19 @@
   } from '@/types/shared';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
+    DEFAULT_OTHER_LABEL,
+    getActiveSelections,
+    getSectionTitle,
+    getUncategorizedCount,
+    isAllOptionsSelected,
+    matchesCategorySelection,
+  } from '../common/categoryFilterUtils';
+  import {
     mdiFileDocumentMultipleOutline,
     mdiNotebookOutline,
     mdiNotebookRemoveOutline,
   } from '@mdi/js';
-  import { computed, inject, onMounted, ref } from 'vue';
+  import { computed, inject, onMounted, ref, watch } from 'vue';
   import ChipMultiSelect from '../common/ChipMultiSelect.vue';
   import AllDocuments from './documents/AllDocuments.vue';
   import JudicialBinder from './documents/JudicialBinder.vue';
@@ -140,7 +148,7 @@
   const CSR_CATEGORY_DESC = 'Court Summary';
   const AFF_FIN_STMT = 'Affidavits/Financial Stmts';
   const LITIGANT = 'Litigant';
-  const OTHER_CATEGORY = 'Other';
+  const OTHER_CATEGORY = DEFAULT_OTHER_LABEL;
 
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
@@ -177,31 +185,23 @@
       ? selectedCategories.value[0]
       : undefined;
   });
-  const isAllSelected = computed<boolean>(() => {
-    return (
-      documentCategories.value.length > 0 &&
-      selectedCategories.value.length === documentCategories.value.length
-    );
-  });
+  const isAllSelected = computed<boolean>(() =>
+    isAllOptionsSelected(
+      selectedCategories.value,
+      documentCategories.value.length
+    )
+  );
   const activeCategories = computed<string[]>(() =>
-    isAllSelected.value ? [] : selectedCategories.value
+    getActiveSelections(selectedCategories.value, isAllSelected.value)
   );
   const isScheduledOnlySelected = computed<boolean>(
     () =>
       activeCategories.value.length === 1 &&
       activeCategories.value[0] === SCHEDULED_CATEGORY
   );
-  const allDocumentsSectionTitle = computed<string>(() => {
-    if (activeCategories.value.length === 0) {
-      return 'All Documents';
-    }
-
-    if (activeCategories.value.length === 1) {
-      return getCategoryDisplayTitle(activeCategories.value[0]);
-    }
-
-    return 'Selected Categories';
-  });
+  const allDocumentsSectionTitle = computed<string>(() =>
+    getSectionTitle(activeCategories.value, getCategoryDisplayTitle)
+  );
   const sortBy = computed<[{ key: string; order: 'desc' | 'asc' }]>(() => {
     return selectedCategory?.value === CSR_CATEGORY
       ? [{ key: 'filedDt', order: 'desc' as const }]
@@ -240,85 +240,7 @@
   };
 
   const getUncategorizedDocumentCount = (): number =>
-    uniqueDocuments.value.filter((doc) => !doc.category?.trim()).length;
-
-  const documentCategories = computed<
-    { title: string; value: string; count: number }[]
-  >(() =>
-    (scheduledDocuments.value.length > 0
-      ? [
-          {
-            title: SCHEDULED_CATEGORY,
-            value: SCHEDULED_CATEGORY,
-            count: categoryCount(SCHEDULED_CATEGORY),
-          },
-        ]
-      : []
-    ).concat(
-      [
-        ...new Set(
-          uniqueDocuments.value
-            .filter((d) => d.category)
-            .map((doc) => doc.category)
-        ),
-      ]
-        .map((category) => ({
-          title: getCategoryDisplayTitle(category),
-          value: category,
-          count: categoryCount(category),
-        }))
-        .concat([
-          {
-            title: OTHER_CATEGORY,
-            value: OTHER_CATEGORY,
-            count: getUncategorizedDocumentCount(),
-          },
-        ])
-    )
-  );
-
-  const filterByCategory = (item: civilDocumentType) => {
-    if (activeCategories.value.length === 0) {
-      return true;
-    }
-
-    const normalizedItemCategory = item.category?.trim().toLowerCase();
-    return activeCategories.value.some((category) => {
-      const normalizedCategory = category.toLowerCase();
-
-      if (normalizedCategory === SCHEDULED_CATEGORY.toLowerCase()) {
-        return !!item.nextAppearanceDt;
-      }
-
-      if (normalizedCategory === OTHER_CATEGORY.toLowerCase()) {
-        return !normalizedItemCategory;
-      }
-
-      return normalizedItemCategory === normalizedCategory;
-    });
-  };
-
-  const filteredDocuments = computed(() =>
-    uniqueDocuments.value.filter(filterByCategory)
-  );
-
-  const binderDocuments = computed(() => {
-    const binderDocumentIds = currentBinder.value?.documents
-      .slice()
-      .sort((d) => d.order)
-      .map((d) => d.documentId);
-
-    if (!binderDocumentIds || binderDocumentIds.length === 0) {
-      return [];
-    }
-
-    const documentsMaps = new Map(
-      uniqueDocuments.value.map((d) => [d.civilDocumentId, d])
-    );
-    return binderDocumentIds
-      .map((id) => documentsMaps.get(id))
-      .filter((item): item is civilDocumentType => item !== undefined);
-  });
+    getUncategorizedCount(uniqueDocuments.value, (doc) => doc.category);
 
   const categoryCount = (category: string): number => {
     if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
@@ -343,6 +265,99 @@
       (doc) => doc.category?.trim().toLowerCase() === category.toLowerCase()
     ).length;
   };
+
+  const documentCategories = computed<
+    { title: string; value: string; count: number }[]
+  >(() => {
+    const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+
+    return (
+      scheduledDocuments.value.length > 0
+        ? [
+            {
+              title: SCHEDULED_CATEGORY,
+              value: SCHEDULED_CATEGORY,
+              count: categoryCount(SCHEDULED_CATEGORY),
+            },
+          ]
+        : []
+    ).concat(
+      [
+        ...new Set(
+          uniqueDocuments.value
+            .filter((d) => d.category)
+            .map((doc) => doc.category)
+        ),
+      ]
+        .map((category) => ({
+          title: getCategoryDisplayTitle(category),
+          value: category,
+          count: categoryCount(category),
+        }))
+        .concat(
+          uncategorizedDocumentCount > 0
+            ? [
+                {
+                  title: OTHER_CATEGORY,
+                  value: OTHER_CATEGORY,
+                  count: uncategorizedDocumentCount,
+                },
+              ]
+            : []
+        )
+    );
+  });
+
+  watch(
+    documentCategories,
+    (categories) => {
+      const validValues = new Set(categories.map((category) => category.value));
+      const filteredSelections = selectedCategories.value.filter((value) =>
+        validValues.has(value)
+      );
+
+      if (filteredSelections.length !== selectedCategories.value.length) {
+        selectedCategories.value = filteredSelections;
+      }
+    },
+    { immediate: true }
+  );
+
+  const filterByCategory = (item: civilDocumentType) => {
+    return matchesCategorySelection(
+      item,
+      activeCategories.value,
+      (doc) => doc.category,
+      {
+        otherLabel: OTHER_CATEGORY,
+        specialPredicates: {
+          [SCHEDULED_CATEGORY.toLowerCase()]: (doc) => !!doc.nextAppearanceDt,
+        },
+      }
+    );
+  };
+
+  const filteredDocuments = computed(() =>
+    uniqueDocuments.value.filter(filterByCategory)
+  );
+
+  const binderDocuments = computed(() => {
+    const binderDocumentIds = currentBinder.value?.documents
+      .slice()
+      .sort((d) => d.order)
+      .map((d) => d.documentId);
+
+    if (!binderDocumentIds || binderDocumentIds.length === 0) {
+      return [];
+    }
+
+    const documentsMaps = new Map(
+      uniqueDocuments.value.map((d) => [d.civilDocumentId, d])
+    );
+    return binderDocumentIds
+      .map((id) => documentsMaps.get(id))
+      .filter((item): item is civilDocumentType => item !== undefined);
+  });
 
   onMounted(async () => {
     try {

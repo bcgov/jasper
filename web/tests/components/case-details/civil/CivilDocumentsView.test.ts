@@ -463,5 +463,30 @@ describe('CivilDocumentsView.vue', () => {
     it('uses deduplicated documents for category counts', () => {
       expect(wrapper.vm.categoryCount('CSR')).toBe(1);
     });
+
+    it('removes stale selected categories that are no longer valid', async () => {
+      wrapper.vm.selectedCategories = ['Scheduled'];
+
+      await wrapper.setProps({
+        documents: [
+          {
+            civilDocumentId: '10',
+            category: 'CSR',
+            documentTypeDescription: 'Civil Document 10',
+            filedDt: '2024-04-01',
+            filedBy: [{ roleTypeCode: 'Role10' }],
+            fileSeqNo: '10',
+            issue: [{ issueTypeDesc: 'Issue10' }],
+            documentSupport: [{ actCd: 'Act10' }],
+            nextAppearanceDt: '',
+          },
+        ],
+      });
+
+      await nextTick();
+
+      expect(wrapper.vm.selectedCategories).toEqual([]);
+      expect(wrapper.vm.allDocumentsSectionTitle).toBe('All Documents');
+    });
   });
 });

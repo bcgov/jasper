@@ -36,7 +36,7 @@ describe('AllDocuments.vue', () => {
       props: {
         ...mockProps,
         documents: [],
-        selectedCategory: 'Scheduled',
+        hasActiveFilters: true,
       },
     });
 
@@ -81,43 +81,26 @@ describe('AllDocuments.vue', () => {
     expect(tableEl.exists()).toBe(true);
   });
 
-  it('displays "All Documents" when no category is selected', () => {
+  it('displays sectionTitle when provided', () => {
     mockProps.documents = [{} as civilDocumentType];
     mockProps.binderDocumentIds = [];
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: undefined,
+        sectionTitle: 'Orders',
       },
     });
 
     const header = wrapper.find('.text-h5');
-    expect(header.text()).toContain('All Documents (1)');
-  });
-
-  it('displays category display title when category is selected', () => {
-    mockProps.documents = [{} as civilDocumentType];
-    const getCategoryDisplayTitle = vi.fn().mockReturnValue('Orders');
-    const wrapper = mount(AllDocuments, {
-      props: {
-        ...mockProps,
-        selectedCategory: 'ORDER',
-        getCategoryDisplayTitle,
-      },
-    });
-
-    const header = wrapper.find('.text-h5');
-    expect(getCategoryDisplayTitle).toHaveBeenCalledWith('ORDER');
     expect(header.text()).toContain('Orders (1)');
   });
 
-  it('displays "All Documents" when category is selected but getCategoryDisplayTitle is not provided', () => {
+  it('displays "All Documents" when sectionTitle is not provided', () => {
     mockProps.documents = [{} as civilDocumentType];
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: 'ORDER',
-        getCategoryDisplayTitle: undefined,
+        sectionTitle: undefined,
       },
     });
 
@@ -125,7 +108,7 @@ describe('AllDocuments.vue', () => {
     expect(header.text()).toContain('All Documents (1)');
   });
 
-  it('displays scheduled date when selectedCategory is "Scheduled" and nextAppearanceDt exists', () => {
+  it('displays scheduled date when isScheduledView is true and nextAppearanceDt exists', () => {
     const mockDocument = {
       civilDocumentId: '1',
       documentTypeDescription: 'Test Document',
@@ -137,7 +120,7 @@ describe('AllDocuments.vue', () => {
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: 'Scheduled',
+        isScheduledView: true,
       },
     });
 
@@ -150,7 +133,7 @@ describe('AllDocuments.vue', () => {
     expect(tableEl.exists()).toBe(true);
   });
 
-  it('does not display scheduled date when selectedCategory is not "Scheduled"', () => {
+  it('does not display scheduled date when isScheduledView is false', () => {
     const mockDocument = {
       civilDocumentId: '1',
       documentTypeDescription: 'Test Document',
@@ -162,7 +145,7 @@ describe('AllDocuments.vue', () => {
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: 'ORDER',
+        isScheduledView: false,
       },
     });
 
@@ -181,7 +164,7 @@ describe('AllDocuments.vue', () => {
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: 'Scheduled',
+        isScheduledView: true,
       },
     });
 

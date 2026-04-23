@@ -144,6 +144,14 @@
   import { formatFromFullname } from '@/utils/utils';
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
   import { computed, ref } from 'vue';
+  import {
+    DEFAULT_OTHER_LABEL,
+    getActiveSelections,
+    getSectionTitle,
+    getUncategorizedCount,
+    isAllOptionsSelected,
+    matchesCategorySelection,
+  } from '../common/categoryFilterUtils';
   import ChipMultiSelect from '../common/ChipMultiSelect.vue';
 
   const props = defineProps<{ participants: criminalParticipantType[] }>();
@@ -156,37 +164,39 @@
   const keyDocumentsSortBy = ref([{ key: 'category', order: 'asc' }] as const);
   const selectedCategories = ref<string[]>([]);
   const selectedAccused = ref<string>();
-  const OTHER_CATEGORY = 'Other';
-
-  const isAllSelected = computed<boolean>(() => {
-    return (
-      documentCategories.value.length > 0 &&
-      selectedCategories.value.length === documentCategories.value.length
-    );
-  });
-
-  const activeCategories = computed<string[]>(() =>
-    isAllSelected.value ? [] : selectedCategories.value
-  );
-
-  const filterByCategory = (item: any) => {
-    if (activeCategories.value.length === 0) {
-      return true;
-    }
-
-    const normalizedItemCategory = item.category?.trim().toLowerCase();
-    return activeCategories.value.some((category) => {
-      if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
-        return !normalizedItemCategory;
-      }
-
-      return normalizedItemCategory === category.toLowerCase();
-    });
+  const OTHER_CATEGORY = DEFAULT_OTHER_LABEL;
+  type CriminalViewDocument = documentType & {
+    fullName?: string;
+    fullNameLastFirst?: string;
+    profSeqNo?: string | number;
+    id: string;
   };
 
-  const filterByAccused = (item: any) =>
+  const isAllSelected = computed<boolean>(() =>
+    isAllOptionsSelected(
+      selectedCategories.value,
+      documentCategories.value.length
+    )
+  );
+
+  const activeCategories = computed<string[]>(() =>
+    getActiveSelections(selectedCategories.value, isAllSelected.value)
+  );
+
+  const filterByCategory = (item: CriminalViewDocument) => {
+    return matchesCategorySelection(
+      item,
+      activeCategories.value,
+      (doc) => doc.category,
+      {
+        otherLabel: OTHER_CATEGORY,
+      }
+    );
+  };
+
+  const filterByAccused = (item: CriminalViewDocument) =>
     !selectedAccused.value ||
-    (item.fullName &&
+    (!!item.fullName &&
       formatFromFullname(item.fullName) === selectedAccused.value);
 
   const unfilteredDocuments = computed(
@@ -234,7 +244,7 @@
   );
 
   const getUncategorizedDocumentCount = (): number =>
-    unfilteredDocuments.value.filter((doc) => !doc.category?.trim()).length;
+    getUncategorizedCount(unfilteredDocuments.value, (doc) => doc.category);
 
   const categoryCount = (category: string): number => {
     if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
@@ -246,22 +256,16 @@
     ).length;
   };
 
-  const documentsSectionTitle = computed<string>(() => {
-    if (activeCategories.value.length === 0) {
-      return 'All Documents';
-    }
-
-    if (activeCategories.value.length === 1) {
-      return activeCategories.value[0];
-    }
-
-    return 'Selected Categories';
-  });
+  const documentsSectionTitle = computed<string>(() =>
+    getSectionTitle(activeCategories.value)
+  );
 
   const documentCategories = computed<
     { title: string; value: string; count: number }[]
-  >(() =>
-    [
+  >(() => {
+    const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+
+    return [
       ...new Set(
         unfilteredDocuments.value
           ?.filter((doc) => doc.category)
@@ -273,14 +277,18 @@
         value: category,
         count: categoryCount(category),
       }))
-      .concat([
-        {
-          title: OTHER_CATEGORY,
-          value: OTHER_CATEGORY,
-          count: getUncategorizedDocumentCount(),
-        },
-      ])
-  );
+      .concat(
+        uncategorizedDocumentCount > 0
+          ? [
+              {
+                title: OTHER_CATEGORY,
+                value: OTHER_CATEGORY,
+                count: uncategorizedDocumentCount,
+              },
+            ]
+          : []
+      );
+  });
 
   const groupBy = ref([
     {

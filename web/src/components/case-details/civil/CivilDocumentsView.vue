@@ -19,7 +19,7 @@
       <ChipMultiSelect
         v-model="selectedCategories"
         :items="documentCategories"
-        :select-all-count="props.documents.length"
+        :select-all-count="uniqueDocuments.length"
       />
     </v-col>
   </v-row>

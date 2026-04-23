@@ -259,13 +259,6 @@ namespace Scv.Api.Infrastructure
                 .ValidateDataAnnotations();
 
             services
-                .AddHttpClient<ICsoClient, CsoClient>((sp, client) =>
-                {
-                    var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
-                    client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
-                })
-                .AddHttpMessageHandler<CsoBearerTokenHandler>();
-            services
                 .AddHttpClient<CSOJudicialServices.IJudicialServicesClient, CSOJudicialServices.JudicialServicesClient>((sp, client) =>
                 {
                     var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;

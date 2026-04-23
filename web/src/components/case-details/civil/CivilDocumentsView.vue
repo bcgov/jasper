@@ -155,8 +155,21 @@
   const enableViewTogether = computed<boolean>(
     () => selectedItems.value.filter((d) => d.imageId).length > 1
   );
+  const uniqueDocuments = computed<civilDocumentType[]>(() => {
+    const seen = new Set<string>();
+
+    return props.documents.filter((document) => {
+      if (seen.has(document.civilDocumentId)) {
+        return false;
+      }
+
+      seen.add(document.civilDocumentId);
+      return true;
+    });
+  });
+
   const scheduledDocuments = computed(() =>
-    props.documents.filter((doc) => doc.nextAppearanceDt)
+    uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt)
   );
   const selectedCategory = ref<string | undefined>(
     scheduledDocuments.value.length > 0 ? SCHEDULED_CATEGORY : undefined
@@ -210,7 +223,9 @@
     ).concat(
       [
         ...new Set(
-          props.documents.filter((d) => d.category).map((doc) => doc.category)
+          uniqueDocuments.value
+            .filter((d) => d.category)
+            .map((doc) => doc.category)
         ),
       ].map((category) => ({
         title: getCategoryDisplayTitle(category),
@@ -237,7 +252,7 @@
   };
 
   const filteredDocuments = computed(() =>
-    props.documents.filter(filterByCategory)
+    uniqueDocuments.value.filter(filterByCategory)
   );
 
   const binderDocuments = computed(() => {
@@ -251,26 +266,25 @@
     }
 
     const documentsMaps = new Map(
-      props.documents.map((d) => [d.civilDocumentId, d])
+      uniqueDocuments.value.map((d) => [d.civilDocumentId, d])
     );
     return binderDocumentIds
       .map((id) => documentsMaps.get(id))
-      .filter(
-        (item): item is (typeof props.documents)[number] => item !== undefined
-      );
+      .filter((item): item is civilDocumentType => item !== undefined);
   });
 
   const categoryCount = (category: string): number => {
     if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
-      return props.documents.filter((doc) => doc.nextAppearanceDt).length;
+      return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
     }
 
     if (category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase()) {
-      return props.documents.filter((doc) => doc.category === CSR_CATEGORY)
-        .length;
+      return uniqueDocuments.value.filter(
+        (doc) => doc.category === CSR_CATEGORY
+      ).length;
     }
 
-    return props.documents.filter(
+    return uniqueDocuments.value.filter(
       (doc) => doc.category?.toLowerCase() === category.toLowerCase()
     ).length;
   };

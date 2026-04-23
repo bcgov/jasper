@@ -388,4 +388,75 @@ describe('CivilDocumentsView.vue', () => {
       expect(wrapper.vm.filteredDocuments[0].civilDocumentId).toBe('2');
     });
   });
+
+  describe('Unique documents', () => {
+    const duplicateDocuments = [
+      {
+        civilDocumentId: '1',
+        category: 'CSR',
+        documentTypeDescription: 'Civil Document 1 - Original',
+        filedDt: '2024-01-01',
+        filedBy: [{ roleTypeCode: 'Role1' }],
+        fileSeqNo: '1',
+        issue: [{ issueTypeDesc: 'Issue1' }],
+        documentSupport: [{ actCd: 'Act1' }],
+      },
+      {
+        civilDocumentId: '1',
+        category: 'CSR',
+        documentTypeDescription: 'Civil Document 1 - Duplicate',
+        filedDt: '2024-01-02',
+        filedBy: [{ roleTypeCode: 'Role1' }],
+        fileSeqNo: '99',
+        issue: [{ issueTypeDesc: 'Issue1' }],
+        documentSupport: [{ actCd: 'Act1' }],
+      },
+      {
+        civilDocumentId: '2',
+        category: 'ROP',
+        documentTypeDescription: 'Civil Document 2',
+        filedDt: '2024-02-01',
+        filedBy: [{ roleTypeCode: 'Role2' }],
+        fileSeqNo: '2',
+        issue: [{ issueTypeDesc: 'Issue2' }],
+        documentSupport: [{ actCd: 'Act2' }],
+      },
+    ];
+
+    beforeEach(async () => {
+      wrapper = shallowMount(CivilDocumentsView, {
+        props: {
+          documents: duplicateDocuments,
+          courtClassCd: 'F',
+          fileId: 'PF-123',
+        },
+        global: {
+          provide: {
+            binderService: mockBinderService,
+          },
+        },
+      });
+
+      await nextTick();
+    });
+
+    it('removes duplicate documents by civilDocumentId', () => {
+      expect(wrapper.vm.uniqueDocuments).toHaveLength(2);
+      expect(wrapper.vm.uniqueDocuments.map((d) => d.civilDocumentId)).toEqual([
+        '1',
+        '2',
+      ]);
+    });
+
+    it('uses deduplicated documents in filteredDocuments', () => {
+      expect(wrapper.vm.filteredDocuments).toHaveLength(2);
+      expect(
+        wrapper.vm.filteredDocuments.filter((d) => d.civilDocumentId === '1')
+      ).toHaveLength(1);
+    });
+
+    it('uses deduplicated documents for category counts', () => {
+      expect(wrapper.vm.categoryCount('CSR')).toBe(1);
+    });
+  });
 });

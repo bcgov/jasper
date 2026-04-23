@@ -501,7 +501,7 @@ public class SendOrderNotificationJobTests
 
     private OrderRequestDto CreateValidOrderRequestDto()
     {
-        return new OrderDto
+        return new OrderRequestDto
         {
             PhysicalFileId = _faker.Random.Int(1, 100),
             CourtFileNo = _faker.Random.AlphaNumeric(10),

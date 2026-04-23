@@ -1,4 +1,4 @@
-namespace Scv.Models.Order;
+﻿namespace CSOCommon.Models;
 
 public enum JudicialDecisionCd
 {

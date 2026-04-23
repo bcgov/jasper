@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using CSOCommon.Models;
 using Mapster;
 using Scv.Db.Models;
 using Scv.Models.Order;
@@ -50,24 +51,15 @@ public class OrderMapping : IRegister
                 dest.ProcessedDate = src.ProcessedDate?.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture);
             });
 
-        config.NewConfig<OrderDto, OrderActionDto>()
-            .Map(dest => dest.ReferredDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId.GetValueOrDefault())
-            .Map(dest => dest.ReviewedByAgenId, src => src.OrderRequest.Referral.ReferredByAgenId)
-            .Map(dest => dest.ReviewedByPartId, src => src.OrderRequest.Referral.ReferredByPartId)
-            .Map(dest => dest.ReviewedByPaasSeqNo, src => src.OrderRequest.Referral.ReferredByPaasSeqNo)
-            .Map(dest => dest.SentToAgenId, src => src.OrderRequest.Referral.SentToAgenId)
-            .Map(dest => dest.SentToPartId, src => src.OrderRequest.Referral.SentToPartId)
-            .Map(dest => dest.DigitalSignatureApplied, src => src.Signed)
-            .Map(dest => dest.CommentTxt, src => src.Comments)
-            .Map(dest => dest.PdfObject, src => !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData)
+        config.NewConfig<OrderDto, JudicialAction>()
+            .Map(dest => dest.SignatureApplied, src => src.Signed)
+            .Map(dest => dest.Comment, src => src.Comments)
+            .Map(dest => dest.Document, src => !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData)
             .Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
             .AfterMapping((src, dest) =>
             {
-                dest.JudicialActionDt = src.ProcessedDate.HasValue
-                    ? src.ProcessedDate.Value.ToString(CultureInfo.InvariantCulture)
-                    : null;
-
-                dest.JudicialDecisionCd = src.Status switch
+                dest.ActionDate = src.ProcessedDate.HasValue ? src.ProcessedDate.Value : default;
+                dest.DecisionCode = src.Status switch
                 {
                     OrderStatus.Approved => nameof(JudicialDecisionCd.APPR),
                     OrderStatus.Unapproved => nameof(JudicialDecisionCd.NAPP),

@@ -703,4 +703,35 @@ describe('CriminalDocumentsView.vue', () => {
       expect(documentIds[1]).toContain('IMG-002');
     });
   });
+
+  it('removes stale selected categories that are no longer valid', async () => {
+    wrapper.vm.selectedCategories = ['bail'];
+
+    await wrapper.setProps({
+      participants: [
+        {
+          fullName: 'New Person',
+          lastNm: 'Person',
+          givenNm: 'New',
+          profSeqNo: 99,
+          keyDocuments: [],
+          document: [
+            {
+              issueDate: '2023-09-01',
+              documentTypeDescription: 'Only Transcript',
+              category: 'Transcript',
+              documentPageCount: 1,
+              imageId: '999',
+              docmDispositionDsc: 'Disposition',
+            },
+          ],
+        },
+      ],
+    });
+
+    await nextTick();
+
+    expect(wrapper.vm.selectedCategories).toEqual([]);
+    expect(wrapper.vm.documentsSectionTitle).toBe('All Documents');
+  });
 });

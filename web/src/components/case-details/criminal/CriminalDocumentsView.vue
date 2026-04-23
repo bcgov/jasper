@@ -143,15 +143,16 @@
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { formatFromFullname } from '@/utils/utils';
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import {
     DEFAULT_OTHER_LABEL,
     getActiveSelections,
+    pruneInvalidSelections,
     getSectionTitle,
     getUncategorizedCount,
     isAllOptionsSelected,
     matchesCategorySelection,
-  } from '../common/categoryFilterUtils';
+  } from '@/utils/categoryFilterUtils';
   import ChipMultiSelect from '../common/ChipMultiSelect.vue';
 
   const props = defineProps<{ participants: criminalParticipantType[] }>();
@@ -289,6 +290,21 @@
           : []
       );
   });
+
+  watch(
+    documentCategories,
+    (categories) => {
+      const filteredSelections = pruneInvalidSelections(
+        selectedCategories.value,
+        categories.map((category) => category.value)
+      );
+
+      if (filteredSelections.length !== selectedCategories.value.length) {
+        selectedCategories.value = filteredSelections;
+      }
+    },
+    { immediate: true }
+  );
 
   const groupBy = ref([
     {

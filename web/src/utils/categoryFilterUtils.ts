@@ -17,6 +17,14 @@ export const getActiveSelections = (
   allSelected: boolean
 ): string[] => (allSelected ? [] : selectedValues);
 
+export const pruneInvalidSelections = (
+  selectedValues: string[],
+  validValues: string[]
+): string[] => {
+  const validSet = new Set(validValues);
+  return selectedValues.filter((value) => validSet.has(value));
+};
+
 export const getSectionTitle = (
   activeValues: string[],
   mapDisplayTitle?: (value: string) => string

@@ -115,11 +115,12 @@
   import {
     DEFAULT_OTHER_LABEL,
     getActiveSelections,
+    pruneInvalidSelections,
     getSectionTitle,
     getUncategorizedCount,
     isAllOptionsSelected,
     matchesCategorySelection,
-  } from '../common/categoryFilterUtils';
+  } from '@/utils/categoryFilterUtils';
   import {
     mdiFileDocumentMultipleOutline,
     mdiNotebookOutline,
@@ -311,9 +312,9 @@
   watch(
     documentCategories,
     (categories) => {
-      const validValues = new Set(categories.map((category) => category.value));
-      const filteredSelections = selectedCategories.value.filter((value) =>
-        validValues.has(value)
+      const filteredSelections = pruneInvalidSelections(
+        selectedCategories.value,
+        categories.map((category) => category.value)
       );
 
       if (filteredSelections.length !== selectedCategories.value.length) {

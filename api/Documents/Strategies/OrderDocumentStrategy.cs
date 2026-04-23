@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
+using CSOCommon.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;

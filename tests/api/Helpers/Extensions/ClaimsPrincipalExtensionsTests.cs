@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading.Tasks;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Xunit;
 

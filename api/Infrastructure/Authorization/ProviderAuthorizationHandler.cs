@@ -1,30 +1,25 @@
-﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.IdentityModel.Tokens;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Services;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Scv.Core.Helpers.Extensions;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 
 namespace Scv.Api.Infrastructure.Authorization
 {
-    public class ProviderAuthorizationHandler : AuthorizationHandler<ProviderRequirement>, IAuthorizationRequirement
+    public class ProviderAuthorizationHandler(IUserService userService) : AuthorizationHandler<ProviderRequirement>, IAuthorizationRequirement
     {
-        private readonly IUserService _userService;
+        private readonly IUserService _userService = userService;
 
         public sealed class ProviderRequirement : IAuthorizationRequirement
         {
             public ProviderRequirement() { }
-        }
-
-        public ProviderAuthorizationHandler(IUserService userService)
-        {
-            _userService = userService;
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
-﻿using DARSCommon.Models;
+﻿using System.Collections.Generic;
+using DARSCommon.Models;
 using Microsoft.Net.Http.Headers;
-using System.Collections.Generic;
 
 namespace Scv.Api.Models.Dars
 {

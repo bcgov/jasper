@@ -150,9 +150,6 @@ public partial class PersonServicesClient
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public virtual async System.Threading.Tasks.Task<object> ReadPersonAsync(int id, System.Threading.CancellationToken cancellationToken)
     {
-        if (id == null)
-            throw new System.ArgumentNullException("id");
-
         var client_ = _httpClient;
         var disposeClient_ = false;
         try

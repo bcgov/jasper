@@ -16,4 +16,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CS8618,CS8601</NoWarn>
+  </PropertyGroup>
+
 </Project>

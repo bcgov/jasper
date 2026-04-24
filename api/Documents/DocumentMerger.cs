@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using GdPicture14;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Models.Document;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents;
 
@@ -74,7 +75,7 @@ public class DocumentMerger(
             if (stream == null)
             {
                 logger.LogError("Stream {Index} is null for document type {Type}",
-                    i, documentRequests[i].Type);
+                i, documentRequests[i].Type);
                 throw new InvalidOperationException($"Document stream {i} is null");
             }
 
@@ -85,8 +86,25 @@ public class DocumentMerger(
                 throw new InvalidOperationException($"Document stream {i} is empty");
             }
 
-            logger.LogInformation("Stream {Index} validated - Type: {Type}, Size: {Size} bytes",
-                i, documentRequests[i].Type, stream.Length);
+            var looksLikePdf = HasPdfSignature(stream);
+            var headerHex = ReadHeaderHex(stream);
+
+            logger.LogInformation(
+                "Stream {Index} validated - Type: {Type}, Size: {Size} bytes, LooksLikePdf: {LooksLikePdf}, HeaderHex: {HeaderHex}",
+                i,
+                documentRequests[i].Type,
+                stream.Length,
+                looksLikePdf,
+                headerHex);
+
+            if (!looksLikePdf)
+            {
+                logger.LogWarning(
+                    "Stream {Index} does not match PDF signature. Type: {Type}, HeaderAsciiPreview: {HeaderAsciiPreview}",
+                    i,
+                    documentRequests[i].Type,
+                    ReadHeaderAsciiPreview(stream));
+            }
         }
     }
 
@@ -133,10 +151,80 @@ public class DocumentMerger(
         if (loadStatus != GdPictureStatus.OK)
         {
             logger.LogError(
-                "GdPicture failed to load stream {Index} (Type: {Type}) with status: {Status}",
-                index, documentRequest.Type, loadStatus);
+                "GdPicture failed to load stream {Index} (Type: {Type}) with status: {Status}. Size: {Size}, LooksLikePdf: {LooksLikePdf}, HeaderHex: {HeaderHex}, HeaderAsciiPreview: {HeaderAsciiPreview}",
+                index,
+                documentRequest.Type,
+                loadStatus,
+                docStream.Length,
+                HasPdfSignature(docStream),
+                ReadHeaderHex(docStream),
+                ReadHeaderAsciiPreview(docStream));
             throw new InvalidOperationException(
                 $"Failed to load document stream {index} (Type: {documentRequest.Type}): {loadStatus}");
+        }
+    }
+
+    private static bool HasPdfSignature(MemoryStream stream)
+    {
+        var originalPosition = stream.Position;
+        try
+        {
+            stream.Position = 0;
+            if (stream.Length < 5)
+            {
+                return false;
+            }
+
+            Span<byte> prefix = stackalloc byte[5];
+            var bytesRead = stream.Read(prefix);
+            return bytesRead == 5
+                && prefix[0] == '%'
+                && prefix[1] == 'P'
+                && prefix[2] == 'D'
+                && prefix[3] == 'F'
+                && prefix[4] == '-';
+        }
+        finally
+        {
+            stream.Position = originalPosition;
+        }
+    }
+
+    private static string ReadHeaderHex(MemoryStream stream, int maxBytes = 16)
+    {
+        var originalPosition = stream.Position;
+        try
+        {
+            stream.Position = 0;
+            var buffer = new byte[Math.Min(maxBytes, checked((int)stream.Length))];
+            var bytesRead = stream.Read(buffer, 0, buffer.Length);
+            return bytesRead == 0 ? string.Empty : Convert.ToHexString(buffer.AsSpan(0, bytesRead));
+        }
+        finally
+        {
+            stream.Position = originalPosition;
+        }
+    }
+
+    private static string ReadHeaderAsciiPreview(MemoryStream stream, int maxBytes = 64)
+    {
+        var originalPosition = stream.Position;
+        try
+        {
+            stream.Position = 0;
+            var buffer = new byte[Math.Min(maxBytes, checked((int)stream.Length))];
+            var bytesRead = stream.Read(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+            {
+                return string.Empty;
+            }
+
+            var raw = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            return new string(raw.Select(c => char.IsControl(c) && c is not '\r' and not '\n' and not '\t' ? '.' : c).ToArray());
+        }
+        finally
+        {
+            stream.Position = originalPosition;
         }
     }
 
@@ -235,7 +323,7 @@ public class DocumentMerger(
             var batchSize = int.TryParse(configuredValue, out var parsedBatchSize) && parsedBatchSize > 0
                 ? parsedBatchSize
                 : DefaultRetrieveBatchSize;
-            
+
             for (var batchStart = 0; batchStart < documentRequests.Length; batchStart += batchSize)
             {
                 var batchCount = Math.Min(batchSize, documentRequests.Length - batchStart);

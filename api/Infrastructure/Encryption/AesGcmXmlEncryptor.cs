@@ -3,7 +3,6 @@ using System.Text;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.DependencyInjection;
-using Exception = System.Exception;
 
 namespace Scv.Api.Infrastructure.Encryption
 {
@@ -16,13 +15,12 @@ namespace Scv.Api.Infrastructure.Encryption
             var options = services.GetRequiredService<AesGcmEncryptionOptions>();
             _key = Encoding.UTF8.GetBytes(options.Key);
             if (_key.Length != 32)
-                throw new Exception("Key length not 32 bytes (256 bits)");
+                throw new InvalidOperationException("Key length not 32 bytes (256 bits)");
         }
 
         public EncryptedXmlInfo Encrypt(XElement plaintextElement)
         {
-            if (plaintextElement == null)
-                throw new ArgumentNullException(nameof(plaintextElement));
+            ArgumentNullException.ThrowIfNull(plaintextElement);
 
             using var aesObj = new AesGcmService(_key);
 

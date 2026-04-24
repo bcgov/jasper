@@ -45,7 +45,10 @@
         :key="pairing.card.courtListLocationID"
       >
         <div class="w-100">
-          <court-list-card :cardInfo="pairing.card" />
+          <court-list-card
+            :cardInfo="pairing.card"
+            :date="formatDateInstanceToYYYYMMDD(appliedDate)"
+          />
           <court-list-table :search="search" :data="pairing.tableData" />
         </div>
       </template>
@@ -77,6 +80,7 @@
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
+    formatDateInstanceToYYYYMMDD,
     formatDateInstanceToDDMMMYYYY,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';

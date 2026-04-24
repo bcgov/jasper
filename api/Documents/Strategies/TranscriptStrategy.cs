@@ -1,29 +1,18 @@
 using System;
 using System.IO;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using DARSCommon.Clients.TranscriptsServices;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Document;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents.Strategies;
 
-public class TranscriptStrategy : IDocumentStrategy
+public class TranscriptStrategy(
+    TranscriptsServicesClient transcriptsClient,
+    ILogger<TranscriptStrategy> logger) : IDocumentStrategy
 {
-    private readonly TranscriptsServicesClient _transcriptsClient;
-    private readonly ILogger<TranscriptStrategy> _logger;
-
-    public TranscriptStrategy(
-        TranscriptsServicesClient transcriptsClient,
-        ClaimsPrincipal currentUser,
-        IConfiguration configuration,
-        ILogger<TranscriptStrategy> logger)
-    {
-        _transcriptsClient = transcriptsClient;
-        _logger = logger;
-    }
+    private readonly TranscriptsServicesClient _transcriptsClient = transcriptsClient;
+    private readonly ILogger<TranscriptStrategy> _logger = logger;
 
     public DocumentType Type => DocumentType.Transcript;
 
@@ -36,8 +25,6 @@ public class TranscriptStrategy : IDocumentStrategy
             "Fetching transcript attachment - OrderId: {OrderId}, DocumentId: {DocumentId}",
             documentRequest.OrderId,
             documentRequest.DocumentId);
-
-        MemoryStream documentStream = null;
 
         try
         {
@@ -55,7 +42,7 @@ public class TranscriptStrategy : IDocumentStrategy
                     $"Failed to retrieve transcript attachment: Response stream is null for OrderId {documentRequest.OrderId}, DocumentId {documentRequest.DocumentId}");
             }
 
-            documentStream = new MemoryStream();
+            var documentStream = new MemoryStream();
 
             // Copy the stream completely before disposing the response
             await response.Stream.CopyToAsync(documentStream);

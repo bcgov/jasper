@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -26,17 +25,17 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
 
             [Role.JUDGE] = GetJudgePermissions(),
             [Role.RAJ] = GetRAJPermissions(),
-            [Role.ACJ_CHIEF_JUDGE] = GetACJPermissions()
+            [Role.ACJ_CHIEF_JUDGE] = GetACJPermissions(),
+            [Role.DEVELOPER] = GetDeveloperPermissions()
         };
 
         foreach (var role in roles)
         {
             if (rolePermissions.TryGetValue(role.Name, out var permissionCodes))
             {
-                role.PermissionIds = permissions
+                role.PermissionIds = [.. permissions
                     .Where(p => permissionCodes.Contains(p.Code))
-                    .Select(p => p.Id)
-                    .ToList();
+                    .Select(p => p.Id)];
             }
             else
             {
@@ -395,6 +394,20 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_QUICK_LINKS,
             Permission.SET_DEFAULT_HOME_SCREEN,
             Permission.ADD_EDIT_OWN_NOTES_ONLY
+        ];
+    }
+    #endregion Judiciary Group Permissions
+
+    #region Test Group Permissions
+
+    private static List<string> GetDeveloperPermissions()
+    {
+        return
+        [
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS,
+
         ];
     }
     #endregion Judiciary Group Permissions

@@ -6,11 +6,11 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
+using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Timebank;
 using Scv.Api.Services;
-using Scv.Db.Models;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Timebank;
 
 namespace Scv.Api.Controllers;
 
@@ -55,8 +55,9 @@ public class TimebankController(
 
         if (!validationResult.IsValid)
         {
-            _logger.LogWarning("Invalid timebank summary request. Errors: {Errors}",
-                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+            var validationErrors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+            _logger.LogWarning("Invalid timebank summary request. Errors: {Errors}", validationErrors);
+
             return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
@@ -68,8 +69,10 @@ public class TimebankController(
 
         if (!result.Succeeded)
         {
+            var resultErrors = string.Join(", ", result.Errors);
             _logger.LogWarning("Failed to retrieve timebank summary for judge {JudgeId}, period {Period}. Errors: {Errors}",
-                resolvedJudgeId, request.Period, string.Join(", ", result.Errors));
+                resolvedJudgeId, request.Period, resultErrors);
+
             return BadRequest(new { error = result.Errors });
         }
 
@@ -89,7 +92,7 @@ public class TimebankController(
     /// <returns>Vacation payout details.</returns>
     [HttpGet]
     [Route("payout/{period}")]
-    [RequiresPermission(permissions: Permission.VIEW_VACATION_PAYOUT)]
+    [RequiresPermission(permissions: Db.Models.Permission.VIEW_VACATION_PAYOUT)]
     public async Task<ActionResult<VacationPayoutDto>> GetTimebankPayoutsForJudges(
         int period,
         [FromQuery] int? judgeId = null,
@@ -109,8 +112,9 @@ public class TimebankController(
 
         if (!validationResult.IsValid)
         {
-            _logger.LogWarning("Invalid timebank payout request. Errors: {Errors}",
-                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+            var validationErrors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+            _logger.LogWarning("Invalid timebank payout request. Errors: {Errors}", validationErrors);
+
             return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
@@ -123,8 +127,10 @@ public class TimebankController(
 
         if (!result.Succeeded)
         {
+            var resultErrors = string.Join(", ", result.Errors);
             _logger.LogWarning("Failed to retrieve timebank payout for judge {JudgeId}, period {Period}. Errors: {Errors}",
-                resolvedJudgeId, request.Period, string.Join(", ", result.Errors));
+                resolvedJudgeId, request.Period, resultErrors);
+
             return BadRequest(new { error = result.Errors });
         }
 

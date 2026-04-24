@@ -17,11 +17,11 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Order;
-using Scv.Api.Repositories;
 using Scv.Api.Services;
+using Scv.Cso;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Order;
 using Xunit;
 
 namespace tests.api.Services;
@@ -1083,7 +1083,7 @@ public class OrderServiceTests : ServiceTestBase
     {
         var claims = new List<Claim>
         {
-            new Claim(Scv.Api.Helpers.CustomClaimTypes.JudgeId, judgeId.ToString())
+            new (Scv.Core.Helpers.CustomClaimTypes.JudgeId, judgeId.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var claimsPrincipal = new ClaimsPrincipal(identity);
@@ -1104,8 +1104,8 @@ public class OrderServiceTests : ServiceTestBase
         var base64Guid = Convert.ToBase64String(guidBytes);
         var claims = new List<Claim>
         {
-            new Claim(Scv.Api.Helpers.CustomClaimTypes.UserGuid, Guid.NewGuid().ToString()),
-            new Claim(Scv.Api.Helpers.CustomClaimTypes.ProvjudUserGuid, base64Guid)
+            new (Scv.Core.Helpers.CustomClaimTypes.UserGuid, Guid.NewGuid().ToString()),
+            new (Scv.Core.Helpers.CustomClaimTypes.ProvjudUserGuid, base64Guid)
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var claimsPrincipal = new ClaimsPrincipal(identity);

@@ -82,8 +82,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet.json",
                 Key = _faker.Random.AlphaNumeric(10),
                 Url = "path/to/logsheet.json",
@@ -131,8 +130,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_ccd.html",
                 Url = "path/to/logsheet_ccd.html",
                 Location = agencyIdentifierCd,
@@ -143,8 +141,7 @@ public class DarsServiceTests : ServiceTestBase
                 Key = _faker.Random.AlphaNumeric(10),
                 Region = _faker.Address.State()
             },
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_ccd.json",
                 Url = "path/to/logsheet_ccd.json",
                 Location = agencyIdentifierCd,
@@ -181,8 +178,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_fls_1.pdf",
                 Url = "path/to/logsheet_fls_1.pdf",
                 Location = agencyIdentifierCd,
@@ -193,8 +189,7 @@ public class DarsServiceTests : ServiceTestBase
                 Key = _faker.Random.AlphaNumeric(10),
                 Region = _faker.Address.State()
             },
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_fls_2.pdf",
                 Url = "path/to/logsheet_fls_2.pdf",
                 Location = agencyIdentifierCd,
@@ -229,8 +224,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_ccd.html",
                 Url = "path/to/logsheet_ccd.html",
                 Location = agencyIdentifierCd,
@@ -241,8 +235,7 @@ public class DarsServiceTests : ServiceTestBase
                 Key = _faker.Random.AlphaNumeric(10),
                 Region = _faker.Address.State()
             },
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_fls.pdf",
                 Url = "path/to/logsheet_fls.pdf",
                 Location = agencyIdentifierCd,
@@ -278,8 +271,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_ccd.html",
                 Url = "path/to/logsheet_ccd.html",
                 Location = agencyIdentifierCd,
@@ -316,8 +308,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_room1.json",
                 Url = "path/to/logsheet_room1.json",
                 Location = agencyIdentifierCd,
@@ -328,8 +319,7 @@ public class DarsServiceTests : ServiceTestBase
                 Key = _faker.Random.AlphaNumeric(10),
                 Region = _faker.Address.State()
             },
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet_room2.json",
                 Url = "path/to/logsheet_room2.json",
                 Location = agencyIdentifierCd,
@@ -364,8 +354,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet.json",
                 Url = null,
                 Location = agencyIdentifierCd,
@@ -421,8 +410,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet.json",
                 Url = "/path/to/logsheet.json",
                 Location = agencyIdentifierCd,
@@ -459,8 +447,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = null,
                 Url = "path/to/logsheet",
                 Location = agencyIdentifierCd,
@@ -497,8 +484,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var mockLognotes = new List<Lognotes>
         {
-            new Lognotes
-            {
+            new() {
                 FileName = "logsheet.json",
                 Url = "path/to/logsheet.json",
                 Location = agencyIdentifierCd,
@@ -537,8 +523,7 @@ public class DarsServiceTests : ServiceTestBase
         var physicalFileId = _faker.Random.AlphaNumeric(10);
         var expectedDocuments = new List<DARSCommon.Clients.TranscriptsServices.Documents>
         {
-            new DARSCommon.Clients.TranscriptsServices.Documents
-            {
+            new() {
                 Id = _faker.Random.Int(1, 1000),
                 OrderId = _faker.Random.Int(1, 1000),
                 Description = _faker.Lorem.Sentence(),
@@ -546,8 +531,7 @@ public class DarsServiceTests : ServiceTestBase
                 PagesComplete = _faker.Random.Int(1, 100),
                 StatusCodeId = 1
             },
-            new DARSCommon.Clients.TranscriptsServices.Documents
-            {
+            new() {
                 Id = _faker.Random.Int(1, 1000),
                 OrderId = _faker.Random.Int(1, 1000),
                 Description = _faker.Lorem.Sentence(),
@@ -557,7 +541,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(
@@ -595,7 +579,7 @@ public class DarsServiceTests : ServiceTestBase
         // Arrange
         var physicalFileId = _faker.Random.AlphaNumeric(10);
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(
@@ -609,7 +593,7 @@ public class DarsServiceTests : ServiceTestBase
             .ReturnsAsync(new DARSCommon.Clients.TranscriptsServices.SwaggerResponse<System.Collections.Generic.ICollection<DARSCommon.Clients.TranscriptsServices.Documents>>(
                 200,
                 new Dictionary<string, IEnumerable<string>>(),
-                new List<DARSCommon.Clients.TranscriptsServices.Documents>()));
+                []));
 
         // Act
         var result = await setup.DarsService.GetCompletedDocuments(physicalFileId, null, true);
@@ -626,7 +610,7 @@ public class DarsServiceTests : ServiceTestBase
         var physicalFileId = "12345";
         var returnChildRecords = true;
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(
@@ -640,7 +624,7 @@ public class DarsServiceTests : ServiceTestBase
             .ReturnsAsync(new DARSCommon.Clients.TranscriptsServices.SwaggerResponse<System.Collections.Generic.ICollection<DARSCommon.Clients.TranscriptsServices.Documents>>(
                 200,
                 new Dictionary<string, IEnumerable<string>>(),
-                new List<DARSCommon.Clients.TranscriptsServices.Documents>()));
+                []));
 
         // Act
         await setup.DarsService.GetCompletedDocuments(physicalFileId, null, returnChildRecords);
@@ -663,7 +647,7 @@ public class DarsServiceTests : ServiceTestBase
         var mdocJustinNo = "54321";
         var returnChildRecords = false;
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(
@@ -677,7 +661,7 @@ public class DarsServiceTests : ServiceTestBase
             .ReturnsAsync(new DARSCommon.Clients.TranscriptsServices.SwaggerResponse<System.Collections.Generic.ICollection<DARSCommon.Clients.TranscriptsServices.Documents>>(
                 200,
                 new Dictionary<string, IEnumerable<string>>(),
-                new List<DARSCommon.Clients.TranscriptsServices.Documents>()));
+                []));
 
         // Act
         await setup.DarsService.GetCompletedDocuments(null, mdocJustinNo, returnChildRecords);
@@ -701,7 +685,7 @@ public class DarsServiceTests : ServiceTestBase
         var mdocJustinNo = "54321";
         var returnChildRecords = true;
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(
@@ -715,7 +699,7 @@ public class DarsServiceTests : ServiceTestBase
             .ReturnsAsync(new DARSCommon.Clients.TranscriptsServices.SwaggerResponse<System.Collections.Generic.ICollection<DARSCommon.Clients.TranscriptsServices.Documents>>(
                 200,
                 new Dictionary<string, IEnumerable<string>>(),
-                new List<DARSCommon.Clients.TranscriptsServices.Documents>()));
+                []));
 
         // Act
         await setup.DarsService.GetCompletedDocuments(physicalFileId, mdocJustinNo, returnChildRecords);
@@ -744,8 +728,7 @@ public class DarsServiceTests : ServiceTestBase
 
         var expectedDocuments = new List<DARSCommon.Clients.TranscriptsServices.Documents>
         {
-            new DARSCommon.Clients.TranscriptsServices.Documents
-            {
+            new() {
                 Id = expectedId,
                 OrderId = expectedOrderId,
                 Description = expectedDescription,
@@ -755,7 +738,7 @@ public class DarsServiceTests : ServiceTestBase
             }
         };
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(
@@ -791,7 +774,7 @@ public class DarsServiceTests : ServiceTestBase
         // Arrange
         var physicalFileId = _faker.Random.AlphaNumeric(10);
 
-        var setup = SetupDarsService(new List<Lognotes>());
+        var setup = SetupDarsService([]);
 
         setup.MockTranscriptsClient
             .Setup(c => c.GetCompletedDocumentsBaseAsync(

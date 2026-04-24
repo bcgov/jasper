@@ -1,6 +1,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Scv.Core.Exceptions;
 using Scv.Db.Models;
 
 namespace Scv.Db.DesignTime
@@ -12,7 +13,7 @@ namespace Scv.Db.DesignTime
             var connectionString = Environment.GetEnvironmentVariable("DatabaseConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new InvalidOperationException(
+                throw new ConfigurationException(
                     "DatabaseConnectionString is not set. Set it as an environment variable before running dotnet ef.");
             }
 

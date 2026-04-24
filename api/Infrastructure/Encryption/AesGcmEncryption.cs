@@ -13,13 +13,12 @@ namespace Scv.Api.Infrastructure.Encryption
             var options = services.GetRequiredService<AesGcmEncryptionOptions>();
             _key = Encoding.UTF8.GetBytes(options.Key);
             if (_key.Length != 32)
-                throw new Exception("Key length not 32 bytes (256 bits)");
+                throw new InvalidOperationException("Key length not 32 bytes (256 bits)");
         }
 
         public string Encrypt(string content)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            ArgumentNullException.ThrowIfNull(content);
             using var aesObj = new AesGcmService(_key);
             return aesObj.Encrypt(content);
         }
@@ -27,8 +26,7 @@ namespace Scv.Api.Infrastructure.Encryption
         //It's possible CryptographicException can be thrown if the keys are changed. 
         public string Decrypt(string content)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            ArgumentNullException.ThrowIfNull(content);
             using var aesObj = new AesGcmService(_key);
             return aesObj.Decrypt(content);
         }

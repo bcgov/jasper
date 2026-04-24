@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Controllers;
@@ -18,7 +18,7 @@ public class CasesControllerTests
     private readonly CasesController _controller;
     private readonly Mock<ICaseService> _mockCaseService;
 
-    private int judgeId = 1;
+    private readonly int judgeId = 1;
 
     public CasesControllerTests()
     {
@@ -51,7 +51,6 @@ public class CasesControllerTests
 
         var result = await _controller.GetAssignedCases();
 
-        var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.IsType<OkObjectResult>(result);
         _mockCaseService.Verify(s => s.GetAssignedCasesAsync(judgeId), Times.Once());
     }

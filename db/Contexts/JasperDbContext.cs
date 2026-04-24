@@ -25,10 +25,7 @@ namespace Scv.Db.Contexts
             base.OnConfiguring(optionsBuilder);
 
             // For local development
-            if (this.Database != null)
-            {
-                this.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
-            }
+            this.Database?.AutoTransactionBehavior = AutoTransactionBehavior.Never;
 
             optionsBuilder.AddInterceptors(new AuditInterceptor());
         }

@@ -1,24 +1,18 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Models;
-using Scv.Api.Models.Order;
 using Scv.Api.Services;
+using Scv.Models;
+using Scv.Models.Order;
 
-namespace Scv.Api.SignalR;
+namespace Scv.Api.SignalR.Notifications;
 
-public class OrderReceivedAckNotification
+public class OrderReceivedAckNotification(
+    INotificationService notificationService,
+    ILogger<OrderReceivedAckNotification> logger)
 {
-    private readonly INotificationService _notificationService;
-    private readonly ILogger<OrderReceivedAckNotification> _logger;
-
-    public OrderReceivedAckNotification(
-        INotificationService notificationService,
-        ILogger<OrderReceivedAckNotification> logger)
-    {
-        _notificationService = notificationService;
-        _logger = logger;
-    }
+    private readonly INotificationService _notificationService = notificationService;
+    private readonly ILogger<OrderReceivedAckNotification> _logger = logger;
 
     public async Task SendAsync(OrderDto order, string userId)
     {

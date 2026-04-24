@@ -3,8 +3,8 @@ using System.Globalization;
 using Bogus;
 using Mapster;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Order;
 using Scv.Db.Models;
+using Scv.Models.Order;
 using Xunit;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 
@@ -19,7 +19,7 @@ public class OrderMappingTests
     {
         _faker = new Faker();
         _config = new TypeAdapterConfig();
-        new OrderMapping().Register(_config);
+        OrderMapping.Register(_config);
     }
 
     #region Order -> OrderDto Mapping Tests
@@ -119,7 +119,7 @@ public class OrderMappingTests
 
         var result = orderDto.Adapt<Order>(_config);
 
-        Assert.Equal(default(DateTime), result.Ent_Dtm);
+        Assert.Equal(default, result.Ent_Dtm);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class OrderMappingTests
 
         var result = orderDto.Adapt<Order>(_config);
 
-        Assert.Equal(default(DateTime), result.Upd_Dtm);
+        Assert.Equal(default, result.Upd_Dtm);
     }
 
     [Fact]

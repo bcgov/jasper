@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
+using Scv.Core.Infrastructure.Authorization;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 
 namespace Scv.Api.Infrastructure.Authorization
@@ -12,13 +13,11 @@ namespace Scv.Api.Infrastructure.Authorization
             services.AddScoped<IAuthorizationHandler, CSoRoleAuthorizationHandler>();
             services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy(nameof(ProviderAuthorizationHandler), policy =>
-                    policy.Requirements.Add(new ProviderRequirement()));
-                options.AddPolicy(CsoPolicies.RequireWriteRole, policy =>
+            services.AddAuthorizationBuilder()
+                .AddPolicy(nameof(ProviderAuthorizationHandler), policy =>
+                    policy.Requirements.Add(new ProviderRequirement()))
+                .AddPolicy(CsoPolicies.RequireWriteRole, policy =>
                     policy.Requirements.Add(new CsoRoleRequirement(CsoRoles.Write)));
-            });
 
             return services;
         }

@@ -7,30 +7,25 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.JCUserService;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.JCUserService;
 
 namespace Scv.Api.Infrastructure.Authentication
 {
-    public class SiteMinderAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+    public class SiteMinderAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder,
+        IConfiguration configuration, JCUserService jcUserService) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
         #region Properties 
         public const string SiteMinder = nameof(SiteMinder);
-        private JCUserService JCUserService { get; }
-        private string ValidSiteMinderUserType { get; }
-        #endregion
+        private JCUserService JCUserService { get; } = jcUserService;
+        private string ValidSiteMinderUserType { get; } = configuration.GetNonEmptyValue("Auth:AllowSiteMinderUserType");
 
+        #endregion
         #region Constructor
-        public SiteMinderAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
-            ILoggerFactory logger,
-            UrlEncoder encoder,
-            IConfiguration configuration, JCUserService jcUserService) : base(options, logger, encoder)
-        {
-            JCUserService = jcUserService;
-            ValidSiteMinderUserType = configuration.GetNonEmptyValue("Auth:AllowSiteMinderUserType");
-        }
         #endregion
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -38,12 +33,12 @@ namespace Scv.Api.Infrastructure.Authentication
             Logger.LogInformation("Authenticating with SiteMinder");
             string siteMinderUserGuidHeader = Request.Headers["SMGOV_USERGUID"];
             string siteMinderUserTypeHeader = Request.Headers["SMGOV_USERTYPE"];
-            Logger.LogDebug("SMGOV_USERGUID: {0}", siteMinderUserGuidHeader);
-            Logger.LogDebug("SMGOV_USERTYPE: {0}", siteMinderUserTypeHeader);
+            Logger.LogDebug("SMGOV_USERGUID: {SiteMinderUserGuidHeader}", siteMinderUserGuidHeader);
+            Logger.LogDebug("SMGOV_USERTYPE: {SiteMinderUserTypeHeader}", siteMinderUserTypeHeader);
 
             if (siteMinderUserGuidHeader == null || siteMinderUserTypeHeader == null)
             {
-                Logger.LogDebug($"One of the SiteMinder headers was null: siteMinderUserGuidHeader: {siteMinderUserGuidHeader}, siteMinderUserTypeHeader: {siteMinderUserTypeHeader}");
+                Logger.LogDebug("One of the SiteMinder headers was null: siteMinderUserGuidHeader: {SiteMinderUserGuidHeader}, siteMinderUserTypeHeader: {SiteMinderUserTypeHeader}", siteMinderUserGuidHeader, siteMinderUserTypeHeader);
                 return AuthenticateResult.NoResult();
             }
             else
@@ -53,7 +48,7 @@ namespace Scv.Api.Infrastructure.Authentication
 
             if (siteMinderUserTypeHeader != ValidSiteMinderUserType)
             {
-                Logger.LogDebug("USERTYPE does not match ValidSiteMinderUserType: {0} vs {1}", siteMinderUserTypeHeader, ValidSiteMinderUserType);
+                Logger.LogDebug("USERTYPE does not match ValidSiteMinderUserType: {SiteMinderUserTypeHeader} vs {ValidSiteMinderUserType}", siteMinderUserTypeHeader, ValidSiteMinderUserType);
                 return AuthenticateResult.Fail("Invalid SiteMinder UserType Header.");
             }
             else
@@ -63,9 +58,9 @@ namespace Scv.Api.Infrastructure.Authentication
 
             // set authtype when we get guid, find out where this context is being set for identity
             Logger.LogDebug("Context.User.Identity all:");
-            Logger.LogDebug("\tContext.User.Identity.AuthenticationType: {0}", Context.User.Identity.AuthenticationType);
-            Logger.LogDebug("\tContext.User.Identity.IsAuthenticated: {0}", Context.User.Identity.IsAuthenticated);
-            Logger.LogDebug("\tContext.User.Identity.Name: {0}", Context.User.Identity.Name);
+            Logger.LogDebug("\tContext.User.Identity.AuthenticationType: {ContextUserIdentityAuthenticationType}", Context.User.Identity.AuthenticationType);
+            Logger.LogDebug("\tContext.User.Identity.IsAuthenticated: {ContextUserIdentityIsAuthenticated}", Context.User.Identity.IsAuthenticated);
+            Logger.LogDebug("\tContext.User.Identity.Name: {ContextUserIdentityName}", Context.User.Identity.Name);
 
             var authenticatedBySiteMinderPreviously = Context.User.Identity.AuthenticationType == SiteMinder;
             var participantId = Context.User.ParticipantId();
@@ -74,14 +69,13 @@ namespace Scv.Api.Infrastructure.Authentication
             var role = Context.User.ExternalRole();
             var subRole = Context.User.SubRole();
 
-            Logger.LogDebug("SiteMinder: {0}", SiteMinder);
-            Logger.LogDebug("authenticatedBySiteMinderPreviously: {0}", authenticatedBySiteMinderPreviously);
-            Logger.LogDebug("participantId : {0}", participantId);
-            Logger.LogDebug("agencyCode : {0}", agencyCode);
-            Logger.LogDebug("isSupremeUser : {0}", isSupremeUser);
-            Logger.LogDebug("role : {0}", role);
-            Logger.LogDebug("subRole : {0}", subRole);
-
+            Logger.LogDebug("SiteMinder: {SiteMinder}", SiteMinder);
+            Logger.LogDebug("authenticatedBySiteMinderPreviously: {AuthenticatedBySiteMinderPreviously}", authenticatedBySiteMinderPreviously);
+            Logger.LogDebug("participantId : {ParticipantId}", participantId);
+            Logger.LogDebug("agencyCode : {AgencyCode}", agencyCode);
+            Logger.LogDebug("isSupremeUser : {IsSupremeUser}", isSupremeUser);
+            Logger.LogDebug("role : {Role}", role);
+            Logger.LogDebug("subRole : {SubRole}", subRole);
             if (!authenticatedBySiteMinderPreviously || role == null || subRole == null)
             {
                 Logger.LogDebug("Not Authenticated through siteminder previously, checking against JCI");
@@ -138,7 +132,7 @@ namespace Scv.Api.Infrastructure.Authentication
             }
 
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
-            Logger.LogInformation("Scheme.Name: {0}", Scheme.Name);
+            Logger.LogInformation("Scheme.Name: {SchemeName}", Scheme.Name);
             Logger.LogInformation("Successfully logged in");
             return AuthenticateResult.Success(ticket);
         }

@@ -3,10 +3,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PostgreSQL.ListenNotify;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models;
 
 namespace Scv.Api.SignalR;
 

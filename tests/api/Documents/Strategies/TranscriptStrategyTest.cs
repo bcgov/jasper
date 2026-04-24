@@ -5,12 +5,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using DARSCommon.Clients.TranscriptsServices;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Helpers;
-using Scv.Api.Models.Document;
+using Scv.Core.Helpers;
+using Scv.Models.Document;
 using tests.api.Services;
 using Xunit;
 
@@ -19,11 +18,11 @@ namespace tests.api.Documents.Strategies;
 public class TranscriptStrategyTest : ServiceTestBase
 {
     private Mock<TranscriptsServicesClient> _mockTranscriptsClient;
-    private Mock<IConfiguration> _mockConfiguration;
     private Mock<ILogger<TranscriptStrategy>> _mockLogger;
-    private ClaimsPrincipal _mockUser;
     private readonly string _fakeContent = "PDF transcript content";
     private readonly byte[] _fakeContentBytes;
+    private static readonly string[] value = ["application/pdf"];
+    private static readonly string[] valueArray = ["inline; filename=transcript.pdf"];
 
     public TranscriptStrategyTest()
     {
@@ -40,11 +39,7 @@ public class TranscriptStrategyTest : ServiceTestBase
             new(CustomClaimTypes.JcParticipantId, "TESTPART"),
         };
 
-        var identity = new ClaimsIdentity(claims, "HELLO");
-        _mockUser = new ClaimsPrincipal(identity);
-
         _mockTranscriptsClient = new Mock<TranscriptsServicesClient>(MockBehavior.Strict, this.HttpClient);
-        _mockConfiguration = new Mock<IConfiguration>();
         _mockLogger = new Mock<ILogger<TranscriptStrategy>>();
 
         _mockTranscriptsClient.Setup(c => c.GetAttachmentBaseAsync(
@@ -58,9 +53,9 @@ public class TranscriptStrategyTest : ServiceTestBase
                     200,
                     new Dictionary<string, IEnumerable<string>>
                     {
-                        { "Content-Type", new [] { "application/pdf" } },
+                        { "Content-Type", value },
                         { "Content-Length", new [] { _fakeContentBytes.Length.ToString() } },
-                        { "Content-Disposition", new [] { "inline; filename=transcript.pdf" } }
+                        { "Content-Disposition", valueArray }
                     },
                     stream,
                     null,
@@ -83,8 +78,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act
@@ -108,15 +101,13 @@ public class TranscriptStrategyTest : ServiceTestBase
         // Arrange
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act
         var type = strategy.Type;
 
         // Assert
-        Assert.Equal(Scv.Api.Documents.DocumentType.Transcript, type);
+        Assert.Equal(DocumentType.Transcript, type);
     }
 
     [Fact]
@@ -131,8 +122,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act & Assert
@@ -152,8 +141,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act & Assert
@@ -175,8 +162,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act
@@ -201,8 +186,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act
@@ -226,8 +209,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act
@@ -271,7 +252,7 @@ public class TranscriptStrategyTest : ServiceTestBase
                     200,
                     new Dictionary<string, IEnumerable<string>>
                     {
-                        { "Content-Type", new [] { "application/pdf" } },
+                        { "Content-Type", value },
                         { "Content-Length", new [] { largeFakeContent.Length.ToString() } }
                     },
                     stream,
@@ -288,8 +269,6 @@ public class TranscriptStrategyTest : ServiceTestBase
 
         var strategy = new TranscriptStrategy(
             _mockTranscriptsClient.Object,
-            _mockUser,
-            _mockConfiguration.Object,
             _mockLogger.Object);
 
         // Act

@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using ColeSoft.Extensions.Logging.Splunk;
 using FluentValidation;
@@ -19,12 +19,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
-using Scv.Db.Repositories;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
+using Scv.Api.Hubs;
 using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
@@ -32,28 +30,24 @@ using Scv.Api.Infrastructure.Encryption;
 using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Infrastructure.Middleware;
-using Scv.Api.Repositories;
 using Scv.Api.Infrastructure.Options;
-using Scv.Api.Hubs;
-using Scv.Api.Services;
-using Scv.Api.SignalR;
 using Scv.Api.Services.EF;
+using Scv.Api.SignalR;
+using Scv.Core.ContractResolver;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
+using Scv.Cso.Infrastructure.Options;
 using Scv.Db.Models;
-using System.Linq;
+using Scv.Db.Repositories;
+using Scv.Models;
 
 namespace Scv.Api
 {
-    public class Startup
+    public class Startup(IWebHostEnvironment env, IConfiguration configuration)
     {
-        private IWebHostEnvironment CurrentEnvironment { get; }
+        private IWebHostEnvironment CurrentEnvironment { get; } = env;
 
-        public Startup(IWebHostEnvironment env, IConfiguration configuration)
-        {
-            Configuration = configuration;
-            CurrentEnvironment = env;
-        }
-
-        private IConfiguration Configuration { get; }
+        private IConfiguration Configuration { get; } = configuration;
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -64,7 +58,13 @@ namespace Scv.Api
                 .Bind(Configuration.GetSection("CSO"))
                 .ValidateDataAnnotations();
 
-            services.Configure<JobsSubmitOrderOptions>(Configuration.GetSection("JOBS:SubmitOrder"));
+            services.Configure<JobsSubmitOrderOptions>(options =>
+            {
+                var retryCountRaw = Configuration["JOBS:SubmitOrder:RetryCount"];
+                options.RetryCount = int.TryParse(retryCountRaw, out var retryCount)
+                    ? retryCount
+                    : new JobsSubmitOrderOptions().RetryCount;
+            });
             services.Configure<JobsFailureEmailOptions>(Configuration.GetSection("JOBS:FailureEmail"));
             services.Configure<JobsRetrySubmitOrderOptions>(Configuration.GetSection("JOBS:RetrySubmitOrder"));
             services.Configure<JobsRetryUrgentSubmitOrderOptions>(Configuration.GetSection("JOBS:RetryUrgentSubmitOrder"));
@@ -155,6 +155,8 @@ namespace Scv.Api
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
+            services.Configure<TdApiOptions>(Configuration.GetSection("TDApi"));
+
             #endregion Setup Services
 
             services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
@@ -221,7 +223,7 @@ namespace Scv.Api
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // Configure DateTimeExtensions to use the service provider
-            Helpers.Extensions.DateTimeExtensions.Configure(app.ApplicationServices);
+            DateTimeExtensions.Configure(app.ApplicationServices);
 
             // Use the new exception handler
             app.UseExceptionHandler();
@@ -238,7 +240,7 @@ namespace Scv.Api
                 if (context.Request.Headers.ContainsKey("X-Forwarded-Host") && !env.IsDevelopment())
                 {
                     var baseUrl = context.Request.Headers["X-Base-Href"].ToString();
-                    context.Request.PathBase = new PathString(baseUrl.Remove(baseUrl.Length - 1));
+                    context.Request.PathBase = new PathString(baseUrl[..^1]);
                 }
                 return next();
             });
@@ -251,16 +253,14 @@ namespace Scv.Api
                 options.RouteTemplate = "api/swagger/{documentname}/swagger.json";
                 options.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
                 {
-                    if (!httpReq.Headers.ContainsKey("X-Forwarded-Host"))
+                    if (!httpReq.Headers.TryGetValue("X-Forwarded-Host", out Microsoft.Extensions.Primitives.StringValues forwardedHost))
                         return;
-
-                    var forwardedHost = httpReq.Headers["X-Forwarded-Host"];
                     var forwardedPort = httpReq.Headers["X-Forwarded-Port"];
                     var baseUrl = httpReq.Headers["X-Base-Href"];
-                    swaggerDoc.Servers = new List<OpenApiServer>
-                    {
+                    swaggerDoc.Servers =
+                    [
                         new OpenApiServer { Url = XForwardedForHelper.BuildUrlString(forwardedHost, forwardedPort, baseUrl) }
-                    };
+                    ];
                 });
             });
 
@@ -270,7 +270,7 @@ namespace Scv.Api
                 options.RoutePrefix = "api";
             });
 
-            app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+            app.UseMiddleware<ErrorHandlingMiddleware>();
 
             app.UseHttpsRedirection();
 
@@ -298,15 +298,15 @@ namespace Scv.Api
                 });
             });
         }
+#nullable enable
         private static string[] ParseOrigins(params string?[] rawValues)
         {
-            return rawValues
+            return [.. rawValues
                 .Where(v => !string.IsNullOrWhiteSpace(v))
                 .SelectMany(v => v!.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 .Select(o => o.Trim('"', '\''))
                 .Where(o => !string.IsNullOrWhiteSpace(o))
-                .Distinct()
-                .ToArray();
+                .Distinct()];
         }
     }
 }

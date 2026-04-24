@@ -6,21 +6,16 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.SignalR;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Repositories;
 
 namespace Scv.Api.Hubs;
 
 [Authorize]
-public class NotificationsHub : Hub
+public class NotificationsHub(UserConnectionTracker connectionTracker) : Hub
 {
-    private readonly UserConnectionTracker _connectionTracker;
-
-    public NotificationsHub(UserConnectionTracker connectionTracker)
-    {
-        _connectionTracker = connectionTracker;
-    }
+    private readonly UserConnectionTracker _connectionTracker = connectionTracker;
 
     /// <summary>
     /// Validates origin and user of this connection in order to safely send/receive notifications.
@@ -37,7 +32,7 @@ public class NotificationsHub : Hub
         var corsDomain = config?.GetValue<string>("CORS_DOMAIN");
         var publicCorsDomain = config?.GetValue<string>("PublicCorsDomain");
         var disableOriginCheck = config?.GetValue<bool>("DISABLE_SIGNALR_ORIGIN_CHECK") ?? false;
-        var origin = httpContext?.Request.Headers["Origin"].ToString();
+        var origin = httpContext?.Request.Headers.Origin.ToString();
         var allowedOrigins = ParseOrigins(corsDomain, publicCorsDomain);
 
         logger?.LogInformation(
@@ -73,7 +68,7 @@ public class NotificationsHub : Hub
             {
                 var claims = Context.User?.Claims
                     .Select(claim => $"{claim.Type}={claim.Value}")
-                    .ToArray() ?? Array.Empty<string>();
+                    .ToArray() ?? [];
                 logger.LogDebug(
                     "SignalR user claims: {Claims}",
                     string.Join(";", claims));
@@ -203,12 +198,11 @@ public class NotificationsHub : Hub
 
     private static string[] ParseOrigins(params string[] rawValues)
     {
-        return rawValues
+        return [.. rawValues
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .SelectMany(value => value!.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             .Select(value => value.Trim('"', '\''))
             .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 }

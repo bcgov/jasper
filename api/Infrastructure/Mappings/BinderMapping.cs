@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using JCCommon.Clients.FileServices;
 using Mapster;
-using Scv.Api.Documents;
-using Scv.Api.Models;
-using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Criminal.Detail;
 using Scv.Db.Models;
+using Scv.Models;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Criminal.Detail;
+using Scv.Models.Document;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
 public class BinderMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<BinderDto, Binder>()
             .Ignore(dest => dest.Id)
@@ -34,7 +34,7 @@ public class BinderMapping : IRegister
                     : src.ImageId)
             .Map(dest => dest.FileName, src => src.DocumentTypeDescription)
             .Map(dest => dest.DocumentType, src =>
-                string.Equals(src.Category, DocumentCategory.ROP, StringComparison.OrdinalIgnoreCase)
+                string.Equals(src.Category, DocumentCategories.ROP, StringComparison.OrdinalIgnoreCase)
                     ? DocumentType.ROP
                     : DocumentType.File)
             .Map(dest => dest.Category, src => src.Category)
@@ -44,7 +44,7 @@ public class BinderMapping : IRegister
             .Map(dest => dest.DocumentId, src => src.CivilDocumentId)
             .Map(dest => dest.FileName, src => src.DocumentTypeDescription)
             .Map(dest => dest.DocumentType, src =>
-                string.Equals(src.DocumentTypeCd, DocumentCategory.CSR, StringComparison.OrdinalIgnoreCase)
+                string.Equals(src.DocumentTypeCd, DocumentCategories.CSR, StringComparison.OrdinalIgnoreCase)
                     ? DocumentType.CourtSummary
                     : DocumentType.File)
             .Map(dest => dest.Category, src => src.DocumentTypeCd)
@@ -55,5 +55,10 @@ public class BinderMapping : IRegister
         config.NewConfig<CivilIssue, IssueDto>();
         config.NewConfig<ClFiledBy, FiledByDto>();
         config.NewConfig<CvfcDocumentSupport, DocumentSupportDto>();
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

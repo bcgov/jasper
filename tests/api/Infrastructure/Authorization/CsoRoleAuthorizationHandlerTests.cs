@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Options;
+using Scv.Core.Helpers;
 using Xunit;
 
 namespace tests.api.Infrastructure.Authorization;
@@ -62,8 +62,8 @@ public class CsoRoleAuthorizationHandlerTests
         var handler = CreateHandler();
         var requirement = new CsoRoleRequirement(CsoRoles.Write);
         var context = new AuthorizationHandlerContext(
-            new[] { requirement },
-            CreateUser(isAuthenticated: false, roles: new[] { WriteRole }),
+            [requirement],
+            CreateUser(isAuthenticated: false, roles: [WriteRole]),
             null);
 
         await handler.HandleAsync(context);
@@ -78,8 +78,8 @@ public class CsoRoleAuthorizationHandlerTests
         var handler = CreateHandler();
         var requirement = new CsoRoleRequirement(CsoRoles.Write);
         var context = new AuthorizationHandlerContext(
-            new[] { requirement },
-            CreateUser(isServiceAccount: false, roles: new[] { WriteRole }),
+            [requirement],
+            CreateUser(isServiceAccount: false, roles: [WriteRole]),
             null);
 
         await handler.HandleAsync(context);
@@ -94,7 +94,7 @@ public class CsoRoleAuthorizationHandlerTests
         var handler = CreateHandler();
         var requirement = new CsoRoleRequirement(CsoRoles.Write);
         var context = new AuthorizationHandlerContext(
-            new[] { requirement },
+            [requirement],
             CreateUser(roles: null),
             null);
 
@@ -110,8 +110,8 @@ public class CsoRoleAuthorizationHandlerTests
         var handler = CreateHandler();
         var requirement = new CsoRoleRequirement(CsoRoles.Write);
         var context = new AuthorizationHandlerContext(
-            new[] { requirement },
-            CreateUser(roles: new[] { WriteRole.ToUpperInvariant() }),
+            [requirement],
+            CreateUser(roles: [WriteRole.ToUpperInvariant()]),
             null);
 
         await handler.HandleAsync(context);
@@ -126,8 +126,8 @@ public class CsoRoleAuthorizationHandlerTests
         var handler = CreateHandler();
         var requirement = new CsoRoleRequirement(CsoRoles.Write);
         var context = new AuthorizationHandlerContext(
-            new[] { requirement },
-            CreateUser(roles: new[] { "some-other-role" }),
+            [requirement],
+            CreateUser(roles: ["some-other-role"]),
             null);
 
         await handler.HandleAsync(context);
@@ -142,8 +142,8 @@ public class CsoRoleAuthorizationHandlerTests
         var handler = CreateHandler();
         var requirement = new CsoRoleRequirement("unknown-role");
         var context = new AuthorizationHandlerContext(
-            new[] { requirement },
-            CreateUser(roles: new[] { WriteRole }),
+            [requirement],
+            CreateUser(roles: [WriteRole]),
             null);
 
         await handler.HandleAsync(context);
@@ -185,7 +185,7 @@ public class CsoRoleAuthorizationHandlerTests
 
     private static string BuildResourceAccess(string audience, IEnumerable<string> roles)
     {
-        var sanitizedRoles = (roles ?? Array.Empty<string>()).Where(role => !string.IsNullOrWhiteSpace(role));
+        var sanitizedRoles = (roles ?? []).Where(role => !string.IsNullOrWhiteSpace(role));
         var encodedRoles = string.Join(",", sanitizedRoles.Select(role => $"\"{role}\""));
         return $"{{\"{audience}\":{{\"roles\":[{encodedRoles}]}}}}";
     }

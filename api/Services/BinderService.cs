@@ -11,15 +11,15 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Scv.Api.Documents;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
-using Scv.Api.Models.Binder;
-using Scv.Api.Models.Document;
 using Scv.Api.Processors;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
+using Scv.Models.Binder;
+using Scv.Models.Document;
 
 namespace Scv.Api.Services;
 
@@ -231,9 +231,9 @@ public class BinderService(
         this.Logger.LogInformation(
             "SearchBinders returned {Count} results. Criteria: LabelKeysExist={KeysExist}, LabelMatches={Matches}, UpdatedBefore={UpdatedBefore}",
             binders.Count,
-            string.Join(",", criteria.LabelKeysExist ?? []),
-            string.Join(",", criteria.LabelMatches?.Keys != null ? criteria.LabelMatches.Keys : Array.Empty<string>()),
-            criteria.UpdatedBefore?.ToString("o") ?? "N/A");
+            criteria.LabelKeysExist is { Count: > 0 } labelKeys ? string.Join(",", labelKeys) : string.Empty,
+            criteria.LabelMatches?.Keys is { Count: > 0 } labelMatches ? string.Join(",", labelMatches) : string.Empty,
+            criteria.UpdatedBefore.HasValue ? criteria.UpdatedBefore.Value.ToString("o") : "N/A");
 
         return binders;
     }
@@ -252,10 +252,10 @@ public class BinderService(
 
     private static int GetCategoryOrder(string category) => category?.ToUpper() switch
     {
-        DocumentCategory.INITIATING => 0,
-        DocumentCategory.ROP => 1,
-        DocumentCategory.BAIL => 2,
-        DocumentCategory.REPORT => 3,
+        DocumentCategories.INITIATING => 0,
+        DocumentCategories.ROP => 1,
+        DocumentCategories.BAIL => 2,
+        DocumentCategories.REPORT => 3,
         _ => 4
     };
 
@@ -269,6 +269,7 @@ public class BinderService(
             if (!bindersResult.Succeeded)
             {
                 Logger.LogWarning("Failed to get binder(s) for the current context: {Error}", string.Join(",", bindersResult.Errors));
+
                 continue;
             }
 
@@ -296,6 +297,7 @@ public class BinderService(
         if (!result.Succeeded)
         {
             this.Logger.LogWarning("Failed to process binder for the current context: {Error}", string.Join(",", result.Errors));
+
             return null;
         }
 
@@ -303,6 +305,7 @@ public class BinderService(
         if (!newBinderResult.Succeeded)
         {
             this.Logger.LogWarning("Failed to create binder for the current context: {Error}", string.Join(",", newBinderResult.Errors));
+
             return null;
         }
 
@@ -321,6 +324,7 @@ public class BinderService(
             if (!result.Succeeded)
             {
                 this.Logger.LogWarning("Failed to process binder:{Id} - {Error}", binder.Id, string.Join(",", result.Errors));
+
                 continue;
             }
 

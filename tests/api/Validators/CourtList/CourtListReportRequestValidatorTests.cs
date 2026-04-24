@@ -2,8 +2,8 @@
 using System.Linq;
 using Bogus;
 using FluentValidation.TestHelper;
-using Scv.Api.Models.CourtList;
 using Scv.Api.Validators.CourtList;
+using Scv.Models.CourtList;
 using Xunit;
 
 namespace tests.api.Validators.CourtList;

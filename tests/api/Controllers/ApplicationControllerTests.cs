@@ -4,9 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers.Exceptions;
-using Scv.Api.Models.Configuration;
 using Scv.Api.Services;
+using Scv.Core.Exceptions;
 using Xunit;
 
 namespace tests.api.Controllers;
@@ -29,7 +28,7 @@ public class ApplicationControllerTests
         var configurationService = new Mock<IConfigurationService>();
         configurationService
             .Setup(x => x.GetConfigurationAsync())
-            .ReturnsAsync(new List<ConstantDto>());
+            .ReturnsAsync([]);
 
         return new ApplicationController(configuration, configurationService.Object);
     }

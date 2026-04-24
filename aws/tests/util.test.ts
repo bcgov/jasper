@@ -32,9 +32,11 @@ describe("sanitizeHeaders", () => {
     expect(sanitizeHeaders(headers)).toEqual({});
   });
 
-  it("should return an empty object when Authorization header is present", () => {
+  it("should keep Authorization header when present", () => {
     const headers = { Authorization: "Bearer 123" };
-    expect(sanitizeHeaders(headers)).toEqual({});
+    expect(sanitizeHeaders(headers, { forwardAuthorization: true })).toEqual({
+      Authorization: "Bearer 123",
+    });
   });
 });
 
@@ -194,5 +196,19 @@ describe("detectFileExtension", () => {
     // PDF-2.0
     const pdf20Buffer = Buffer.from("%PDF-2.0\n", "ascii");
     expect(detectFileExtension(pdf20Buffer)).toBe(".pdf");
+  });
+
+  it("does not forward Authorization by default", () => {
+    const headers = { Authorization: "Bearer 123" };
+
+    expect(sanitizeHeaders(headers)).toEqual({});
+  });
+
+  it("forwards Authorization when explicitly enabled", () => {
+    const headers = { Authorization: "Bearer 123" };
+
+    expect(sanitizeHeaders(headers, { forwardAuthorization: true })).toEqual({
+      Authorization: "Bearer 123",
+    });
   });
 });

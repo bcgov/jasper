@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Scv.Api.Infrastructure.Options;
+namespace Scv.Cso.Infrastructure.Options;
 
 public sealed class CsoOptions
 {

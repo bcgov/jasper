@@ -7,11 +7,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PCSSCommon.Models;
-using Scv.Api.Helpers;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
+using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
 
@@ -158,7 +160,7 @@ public class OrderReminderJob(
         }
     }
 
-    private async Task<PersonSearchItem> GetRAJForJudge(Models.Person judge)
+    private async Task<PersonSearchItem> GetRAJForJudge(Person judge)
     {
         if (!judge.HomeLocationId.HasValue)
         {
@@ -195,7 +197,7 @@ public class OrderReminderJob(
             raj.UserId, order.Id, order.ReassignmentNotificationsSent);
     }
 
-    private async Task<(Models.Person judge, Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)
+    private async Task<(Person judge, Scv.Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)
     {
         var judgeId = order.JudgeId;
         if (judgeId <= 0)
@@ -231,7 +233,7 @@ public class OrderReminderJob(
         SupportAccount = supportAccount
     };
 
-    private static string GetJudgeName(Models.Person judge)
+    private static string GetJudgeName(Person judge)
     {
         var latestName = judge.Names?.FirstOrDefault();
         if (latestName == null)

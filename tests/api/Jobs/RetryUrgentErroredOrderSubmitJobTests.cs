@@ -10,6 +10,7 @@ using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Order;
 using Xunit;
 
 namespace tests.api.Jobs;
@@ -61,7 +62,7 @@ public class RetryUrgentErroredOrderSubmitJobTests
             }
         };
 
-        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>() ))
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync(orders);
 
         await job.Execute();
@@ -87,8 +88,8 @@ public class RetryUrgentErroredOrderSubmitJobTests
             options,
             _mockLogger.Object);
 
-        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>() ))
-            .ReturnsAsync(new List<Order>());
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([]);
 
         await job.Execute();
 
@@ -124,7 +125,7 @@ public class RetryUrgentErroredOrderSubmitJobTests
             }
         };
 
-        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>() ))
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync(orders);
 
         await job.Execute();

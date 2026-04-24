@@ -1,14 +1,14 @@
 ﻿using Mapster;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.AccessControlManagement;
-using Scv.Api.Models.Configuration;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models.AccessControlManagement;
+using Scv.Models.Configuration;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
 public class AccessControlManagementMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<Permission, PermissionDto>();
 
@@ -44,5 +44,10 @@ public class AccessControlManagementMapping : IRegister
         config.NewConfig<ConstantDto, Constant>()
             .Map(dest => dest.Values, src => src.Values.DistinctList())
             .IgnoreNullValues(true);
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

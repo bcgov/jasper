@@ -4,6 +4,7 @@ import { ApiService } from "../../services/apiService";
 import { EFSService } from "../../services/efsService";
 import { HttpService } from "../../services/httpService";
 import { SecretsManagerService } from "../../services/secretsManagerService";
+import { sanitizeHeaders } from "../../util";
 
 vi.mock("../../services/httpService");
 vi.mock("../../services/secretsManagerService");
@@ -11,8 +12,8 @@ vi.mock("../../services/efsService");
 vi.mock("../../util", () => ({
   sanitizeHeaders: vi.fn((headers) => headers),
   sanitizeQueryStringParams: vi.fn((params) =>
-    new URLSearchParams(params).toString()
-  )
+    new URLSearchParams(params).toString(),
+  ),
 }));
 
 describe("ApiService", () => {
@@ -62,14 +63,14 @@ describe("ApiService", () => {
   it("should initialize the service", async () => {
     await apiService.initialize();
     expect(mockSecretsManagerService.getSecret).toHaveBeenCalledWith(
-      "test-secret"
+      "test-secret",
     );
     expect(mockSecretsManagerService.getSecret).toHaveBeenCalledWith(
-      process.env.MTLS_SECRET_NAME
+      process.env.MTLS_SECRET_NAME,
     );
     expect(mockHttpService.init).toHaveBeenCalledWith(
       "mock-secret",
-      "mock-secret"
+      "mock-secret",
     );
   });
 
@@ -79,7 +80,7 @@ describe("ApiService", () => {
       path: "/test",
       queryStringParameters: { key: "value" },
       headers: { Authorization: "Bearer token" },
-      body: null
+      body: null,
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -87,15 +88,15 @@ describe("ApiService", () => {
     expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
       headers: {
         Authorization: "Bearer token",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      responseType: "json"
+      responseType: "json",
     });
     expect(response).toEqual({
       statusCode: 200,
       body: JSON.stringify("get response"),
       isBase64Encoded: false,
-      headers: {}
+      headers: {},
     });
   });
 
@@ -105,7 +106,7 @@ describe("ApiService", () => {
       path: "/test",
       queryStringParameters: {},
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "test" })
+      body: JSON.stringify({ name: "test" }),
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -113,25 +114,25 @@ describe("ApiService", () => {
     expect(mockHttpService.post).toHaveBeenCalledWith(
       "/test?",
       { name: "test" },
-      { headers: { "Content-Type": "application/json" }, responseType: "json" }
+      { headers: { "Content-Type": "application/json" }, responseType: "json" },
     );
     expect(response).toEqual({
       statusCode: 200,
       body: JSON.stringify("post response"),
       isBase64Encoded: false,
-      headers: {}
+      headers: {},
     });
   });
 
   it("should return 405 for unsupported methods", async () => {
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "DELETE",
-      path: "/test"
+      path: "/test",
     };
     const response = await apiService.handleRequest(event as APIGatewayEvent);
     expect(response).toEqual({
       statusCode: 405,
-      body: JSON.stringify({ message: "Method DELETE not allowed" })
+      body: JSON.stringify({ message: "Method DELETE not allowed" }),
     });
   });
 
@@ -139,12 +140,12 @@ describe("ApiService", () => {
     mockHttpService.get.mockRejectedValue(new Error("Test error"));
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
-      path: "/test"
+      path: "/test",
     };
     const response = await apiService.handleRequest(event as APIGatewayEvent);
     expect(response).toEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "Internal Server Error" })
+      body: JSON.stringify({ message: "Internal Server Error" }),
     });
   });
 
@@ -153,7 +154,7 @@ describe("ApiService", () => {
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: smallBinaryData,
       headers: { "content-type": "application/pdf" },
-      status: 200
+      status: 200,
     });
 
     const event: Partial<APIGatewayEvent> = {
@@ -161,7 +162,7 @@ describe("ApiService", () => {
       path: "/test",
       queryStringParameters: { key: "value" },
       headers: { Accept: "application/octet-stream" },
-      body: null
+      body: null,
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -169,9 +170,9 @@ describe("ApiService", () => {
     expect(mockHttpService.get).toHaveBeenCalledWith("/test?key=value", {
       headers: {
         Accept: "application/octet-stream",
-        "Content-Type": "application/octet-stream"
+        "Content-Type": "application/octet-stream",
       },
-      responseType: "arraybuffer"
+      responseType: "arraybuffer",
     });
     expect(mockEfsService.saveFile).not.toHaveBeenCalled();
     expect(response.statusCode).toBe(200);
@@ -184,7 +185,7 @@ describe("ApiService", () => {
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: largeBinaryData,
       headers: { "content-type": "application/pdf" },
-      status: 200
+      status: 200,
     });
 
     const event: Partial<APIGatewayEvent> = {
@@ -192,7 +193,7 @@ describe("ApiService", () => {
       path: "/test/large-file",
       queryStringParameters: {},
       headers: { Accept: "application/octet-stream" },
-      body: null
+      body: null,
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -206,7 +207,7 @@ describe("ApiService", () => {
     expect(JSON.parse(response.body)).toEqual({
       message: "File saved to EFS due to size limit",
       filePath: "/mnt/efs/test-file.pdf",
-      fileSize: 5 * 1024 * 1024
+      fileSize: 5 * 1024 * 1024,
     });
   });
 
@@ -215,13 +216,13 @@ describe("ApiService", () => {
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: thresholdData,
       headers: {},
-      status: 200
+      status: 200,
     });
 
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
       path: "/test/threshold",
-      headers: { Accept: "application/octet-stream" }
+      headers: { Accept: "application/octet-stream" },
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -236,13 +237,13 @@ describe("ApiService", () => {
     mockHttpService.get = vi.fn().mockResolvedValue({
       data: justOverThreshold,
       headers: {},
-      status: 200
+      status: 200,
     });
 
     const event: Partial<APIGatewayEvent> = {
       httpMethod: "GET",
       path: "/test/just-over",
-      headers: { Accept: "application/octet-stream" }
+      headers: { Accept: "application/octet-stream" },
     };
 
     const response = await apiService.handleRequest(event as APIGatewayEvent);
@@ -250,5 +251,43 @@ describe("ApiService", () => {
     expect(mockEfsService.saveFile).toHaveBeenCalled();
     expect(response.headers).toBeDefined();
     expect(response.headers!["X-EFS-File-Path"]).toBe("/mnt/efs/test-file.pdf");
+  });
+
+  it("does not forward Authorization by default", async () => {
+    const headers = { Authorization: "Bearer 123" };
+    const sanitizeHeadersMock = vi.mocked(sanitizeHeaders);
+    sanitizeHeadersMock.mockClear();
+
+    const event: Partial<APIGatewayEvent> = {
+      httpMethod: "GET",
+      path: "/test/just-over",
+      headers: headers,
+    };
+
+    await apiService.handleRequest(event as APIGatewayEvent);
+
+    expect(sanitizeHeadersMock).toHaveBeenCalledWith(event.headers, {
+      forwardAuthorization: false,
+    });
+  });
+
+  it("forwards Authorization when explicitly enabled", async () => {
+    const headers = { Authorization: "Bearer 123" };
+    const sanitizeHeadersMock = vi.mocked(sanitizeHeaders);
+    sanitizeHeadersMock.mockClear();
+
+    const event: Partial<APIGatewayEvent> = {
+      httpMethod: "GET",
+      path: "/test/just-over",
+      headers: headers,
+    };
+
+    await apiService.handleRequest(event as APIGatewayEvent, {
+      forwardAuthorization: true,
+    });
+
+    expect(sanitizeHeadersMock).toHaveBeenCalledWith(event.headers, {
+      forwardAuthorization: true,
+    });
   });
 });

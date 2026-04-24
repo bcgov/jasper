@@ -5,13 +5,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
 using Scv.Api.Services;
+using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
+using Scv.Models;
 using Xunit;
 
 namespace tests.api.Controllers;
+
 public class BindersControllerTests
 {
     private readonly Faker _faker;

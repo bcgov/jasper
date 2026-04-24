@@ -17,10 +17,10 @@ using PCSSCommon.Clients.CourtCalendarServices;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
 using PCSSCommon.Models;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.Calendar;
 using Scv.Api.Services;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Calendar;
 using Xunit;
 using static PCSSCommon.Models.ActivityClassUsage;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -169,12 +169,17 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
 
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddDays(-5);
+        var endDate = currentDate.AddDays(5);
+
         var mockJudicialCalendar = new JudicialCalendar
         {
             Days =
             [
                 new JudicialCalendarDay
                 {
+                    Date = currentDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -190,14 +195,10 @@ public class DashboardServiceTests : ServiceTestBase
 
         var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
 
-        var currentDate = DateTime.Now;
-        var startDate = currentDate.AddDays(-5);
-        var endDate = currentDate.AddDays(5);
-
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            startDate.ToString(DashboardService.DATE_FORMAT),
-            endDate.ToString(DashboardService.DATE_FORMAT)
+            startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            endDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT)
         );
 
         Assert.Single(result.Payload);
@@ -233,12 +234,17 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
 
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddDays(-5);
+        var endDate = currentDate.AddDays(5);
+
         var mockJudicialCalendar = new JudicialCalendar
         {
             Days =
             [
                 new JudicialCalendarDay
                 {
+                    Date = currentDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
 
@@ -267,14 +273,10 @@ public class DashboardServiceTests : ServiceTestBase
 
         var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
 
-        var currentDate = DateTime.Now;
-        var startDate = currentDate.AddDays(-5);
-        var endDate = currentDate.AddDays(5);
-
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            startDate.ToString(DashboardService.DATE_FORMAT),
-            endDate.ToString(DashboardService.DATE_FORMAT)
+            startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            endDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT)
         );
 
         Assert.Single(result.Payload);
@@ -312,6 +314,7 @@ public class DashboardServiceTests : ServiceTestBase
         var mockLocationName = _faker.Address.City();
         var mockActivityCode = _faker.Lorem.Word();
         var mockActivityDisplayCode = _faker.Lorem.Word();
+        var mockActivityClassCode = _faker.Lorem.Word();
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
@@ -324,7 +327,7 @@ public class DashboardServiceTests : ServiceTestBase
             [
                 new JudicialCalendarDay
                 {
-                    Date = currentDate.ToString(DashboardService.DATE_FORMAT),
+                    Date = currentDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
 
@@ -334,6 +337,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                             CourtRoomCode = mockCourtRoom,
@@ -344,6 +348,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                         },
@@ -392,8 +397,8 @@ public class DashboardServiceTests : ServiceTestBase
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            startDate.ToString(DashboardService.DATE_FORMAT),
-            endDate.ToString(DashboardService.DATE_FORMAT)
+            startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            endDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT)
         );
 
         var activities = result.Payload[0].Activities.ToList();
@@ -423,12 +428,17 @@ public class DashboardServiceTests : ServiceTestBase
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
 
+        var currentDate = DateTime.Now;
+        var startDate = currentDate.AddMonths(-5);
+        var endDate = currentDate.AddMonths(-4);
+
         var mockJudicialCalendar = new JudicialCalendar
         {
             Days =
             [
                 new JudicialCalendarDay
                 {
+                    Date = startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -444,14 +454,10 @@ public class DashboardServiceTests : ServiceTestBase
 
         var (dashboardService, mockJudicialCalendarClient, _, _) = this.SetupDashboardService(mockJudicialCalendar, null);
 
-        var currentDate = DateTime.Now;
-        var startDate = currentDate.AddMonths(-5);
-        var endDate = currentDate.AddMonths(-4);
-
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            startDate.ToString(DashboardService.DATE_FORMAT),
-            endDate.ToString(DashboardService.DATE_FORMAT)
+            startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            endDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT)
         );
 
         Assert.Single(result.Payload);
@@ -492,7 +498,7 @@ public class DashboardServiceTests : ServiceTestBase
             [
                 new JudicialCalendarDay
                 {
-                    Date = GetRandomWeekend().ToString(DashboardService.DATE_FORMAT),
+                    Date = GetRandomWeekend().ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -506,7 +512,7 @@ public class DashboardServiceTests : ServiceTestBase
                 },
                 new JudicialCalendarDay
                 {
-                    Date = GetRandomWeekend().ToString(DashboardService.DATE_FORMAT),
+                    Date = GetRandomWeekend().ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -520,7 +526,7 @@ public class DashboardServiceTests : ServiceTestBase
                 },
                 new JudicialCalendarDay
                 {
-                    Date = GetRandomWeekend().ToString(DashboardService.DATE_FORMAT),
+                    Date = GetRandomWeekend().ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
                         LocationId = mockLocationId,
@@ -546,8 +552,8 @@ public class DashboardServiceTests : ServiceTestBase
 
         var result = await dashboardService.GetMyScheduleAsync(
             mockJudgeId,
-            startDate.ToString(DashboardService.DATE_FORMAT),
-            endDate.ToString(DashboardService.DATE_FORMAT)
+            startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            endDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT)
         );
 
         Assert.Equal(3, result.Payload.Count);
@@ -605,11 +611,14 @@ public class DashboardServiceTests : ServiceTestBase
         var mockLocationName = _faker.Address.City();
         var mockActivityCode = _faker.Lorem.Word();
         var mockActivityDisplayCode = _faker.Lorem.Word();
+        var mockActivityClassCode = _faker.Lorem.Word();
         var mockActivityClassDescription = _faker.Lorem.Word();
         var mockIsRemote = _faker.Random.Bool();
         var mockCourtRoom = _faker.Address.BuildingNumber();
         var mockFileCount = _faker.Random.Int();
-        var currentDate = DateTime.Now.ToClientTimezone();
+
+        // Use UTC time to match what ToClientTimezone() returns in test environment
+        var currentDate = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.Now, "UTC");
 
         var mockJudicialCalendar = new JudicialCalendar
         {
@@ -617,7 +626,7 @@ public class DashboardServiceTests : ServiceTestBase
             [
                 new JudicialCalendarDay
                 {
-                    Date = currentDate.ToClientTimezone().ToString(DashboardService.DATE_FORMAT),
+                    Date = currentDate.ToClientTimezone().ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                     Assignment = new JudicialCalendarAssignment
                     {
 
@@ -627,6 +636,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                             CourtRoomCode = mockCourtRoom,
@@ -637,6 +647,7 @@ public class DashboardServiceTests : ServiceTestBase
                             LocationName = mockLocationName,
                             ActivityCode = mockActivityCode,
                             ActivityDisplayCode = mockActivityDisplayCode,
+                            ActivityClassCode = mockActivityClassCode,
                             ActivityClassDescription = mockActivityClassDescription,
                             IsVideo = mockIsRemote,
                         },
@@ -787,7 +798,7 @@ public class DashboardServiceTests : ServiceTestBase
                 Days = [
                     new JudicialCalendarDay
                     {
-                        Date = currentDate.ToString(DashboardService.DATE_FORMAT),
+                        Date = currentDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                         Assignment = new JudicialCalendarAssignment
                         {
                             ActivityAm = new JudicialCalendarActivity
@@ -824,7 +835,7 @@ public class DashboardServiceTests : ServiceTestBase
                 Days = [
                     new JudicialCalendarDay
                     {
-                        Date = currentDate.ToString(DashboardService.DATE_FORMAT),
+                        Date = currentDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
                         Assignment = new JudicialCalendarAssignment
                         {
                             ActivityAm = new JudicialCalendarActivity
@@ -859,8 +870,8 @@ public class DashboardServiceTests : ServiceTestBase
         var result = await dashboardService.GetCourtCalendarScheduleAsync(
             _faker.Random.Number(),
             mockLocationId.ToString(),
-            startDate.ToString(DashboardService.DATE_FORMAT),
-            endDate.ToString(DashboardService.DATE_FORMAT));
+            startDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            endDate.ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT));
 
         Assert.True(result.Succeeded);
         Assert.Single(result.Payload.Days);
@@ -935,8 +946,8 @@ public class DashboardServiceTests : ServiceTestBase
     {
         var (dashboardService, mockCourtCalendarClient, _, _) = SetupCourtCalendarActivitiesService();
 
-        var startDate = DateTime.Now.AddDays(-5).ToString(DashboardService.DATE_FORMAT);
-        var endDate = DateTime.Now.AddDays(5).ToString(DashboardService.DATE_FORMAT);
+        var startDate = DateTime.Now.AddDays(-5).ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT);
+        var endDate = DateTime.Now.AddDays(5).ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT);
 
         var result = await dashboardService.GetCourtCalendarActivitiesAsync("1", startDate, endDate);
 
@@ -1299,8 +1310,8 @@ public class DashboardServiceTests : ServiceTestBase
         // Act
         var result = await dashboardService.GetCourtCalendarActivitiesAsync(
             "1",
-            DateTime.Now.AddDays(-5).ToString(DashboardService.DATE_FORMAT),
-            DateTime.Now.AddDays(5).ToString(DashboardService.DATE_FORMAT));
+            DateTime.Now.AddDays(-5).ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT),
+            DateTime.Now.AddDays(5).ToString(Scv.Models.Calendar.CourtCalendarDay.DASHBOARD_DATE_FORMAT));
 
         // Assert
         Assert.False(result.Succeeded);

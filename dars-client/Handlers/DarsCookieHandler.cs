@@ -7,22 +7,15 @@ namespace DARSCommon.Handlers
     /// <summary>
     /// HTTP message handler that forwards the LogSheetSessionService.Token cookie from incoming requests to outgoing DARS requests
     /// </summary>
-    public class DarsCookieHandler : DelegatingHandler
+    public class DarsCookieHandler(
+        IHttpContextAccessor httpContextAccessor,
+        IConfiguration configuration,
+        ILogger<DarsCookieHandler> logger) : DelegatingHandler
     {
         private const string DEFAULT_COOKIE_NAME = "LogSheetSessionService.Token";
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly ILogger<DarsCookieHandler> _logger;
-        private readonly string _logsheetSessionCookieName;
-
-        public DarsCookieHandler(
-            IHttpContextAccessor httpContextAccessor,
-            IConfiguration configuration,
-            ILogger<DarsCookieHandler> logger)
-        {
-            _httpContextAccessor = httpContextAccessor;
-            _logger = logger;
-            _logsheetSessionCookieName = configuration["DARS:LogSheetSessionCookieName"] ?? DEFAULT_COOKIE_NAME;
-        }
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly ILogger<DarsCookieHandler> _logger = logger;
+        private readonly string _logsheetSessionCookieName = configuration["DARS:LogSheetSessionCookieName"] ?? DEFAULT_COOKIE_NAME;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

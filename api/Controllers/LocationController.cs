@@ -1,25 +1,19 @@
-﻿﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Location;
 using Scv.Api.Services;
+using Scv.Models.Location;
 
 namespace Scv.Api.Controllers
 {
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("api/[controller]")]
     [ApiController]
-    public class LocationController : ControllerBase
+    public class LocationController(LocationService locationService) : ControllerBase
     {
-        private readonly LocationService _locationService;
-
-        public LocationController(LocationService locationService)
-        {
-            _locationService = locationService;
-        }
+        private readonly LocationService _locationService = locationService;
 
         /// <summary>
         /// Provides Locations from all source systems (JC and PCSS)

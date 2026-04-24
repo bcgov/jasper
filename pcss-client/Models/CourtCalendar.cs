@@ -4,7 +4,6 @@ using PCSSCommon.Common;
 
 #pragma warning disable 8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable 8603 // Disable "CS8603 Possible null reference return"
-#pragma warning disable 8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace PCSSCommon.Models
 {
@@ -28,7 +27,7 @@ namespace PCSSCommon.Models
 
         public CourtCalendarLocation()
         {
-            Days = new List<CourtCalendarDay>();
+            Days = [];
         }
 
         public DateTime GetStartDate()
@@ -37,7 +36,7 @@ namespace PCSSCommon.Models
         }
         public DateTime GetEndDate()
         {
-            return DateTime.ParseExact(Days[Days.Count - 1].Date, Constants.DATE_FORMAT, CultureInfo.CurrentCulture);
+            return DateTime.ParseExact(Days[^1].Date, Constants.DATE_FORMAT, CultureInfo.CurrentCulture);
         }
 
         public int CourtRoomConflictDayCount
@@ -92,7 +91,7 @@ namespace PCSSCommon.Models
         public void CalculateCourtRoomConflicts()
         {
             // flatten out days/sittings/rooms and activities...
-            List<CourtCalendarConflict> items = new List<CourtCalendarConflict>();
+            List<CourtCalendarConflict> items = [];
             foreach (CourtCalendarDay day in Days)
             {
                 foreach (CourtCalendarActivity activity in day.Activities)
@@ -108,7 +107,7 @@ namespace PCSSCommon.Models
             //
             foreach (CourtCalendarDay day in Days)
             {
-                day.CourtRoomConflicts = items.Where(x => x.ActivityCodes.Count > 1 && x.Date == day.Date).ToList();
+                day.CourtRoomConflicts = [.. items.Where(x => x.ActivityCodes.Count > 1 && x.Date == day.Date)];
             }
         }
 
@@ -275,7 +274,7 @@ namespace PCSSCommon.Models
 
         public List<NeedJudgeResponse> NeedJudgeDetails { get; set; }
 
-        public CourtCalendarActivity() { NeedJudgeDetails = new List<NeedJudgeResponse>(); }
+        public CourtCalendarActivity() { NeedJudgeDetails = []; }
         public CourtCalendarActivity(int locationId, DateTime date, string activityCode, string activityDesc, string activityClassCode, string activityClassDesc)
         {
             LocationId = locationId;
@@ -284,7 +283,7 @@ namespace PCSSCommon.Models
             ActivityDescription = activityDesc;
             ActivityClassCode = activityClassCode;
             ActivityClassDescription = activityClassDesc;
-            NeedJudgeDetails = new List<NeedJudgeResponse>();
+            NeedJudgeDetails = [];
         }
 
         public List<CourtCalendarSlot> Slots { get { return _slots; } }
@@ -352,7 +351,7 @@ namespace PCSSCommon.Models
         public string CourtSittingCode { get; set; }
         public List<string> ActivityCodes { get; set; }
 
-        public CourtCalendarConflict() { ActivityCodes = new List<string>(); }
+        public CourtCalendarConflict() { ActivityCodes = []; }
     }
 
     public class CourtCalendarActivityImbalance
@@ -374,7 +373,7 @@ namespace PCSSCommon.Models
         public bool IsBalanced { get { return !IsAboveRange && !IsBelowRange; } }
 
 
-        public CourtCalendarActivityImbalance() { PcjActivityCodes = new List<string>(); }
+        public CourtCalendarActivityImbalance() { PcjActivityCodes = []; }
     }
 
     public class CourtCalendarJudicialImbalance
@@ -395,7 +394,7 @@ namespace PCSSCommon.Models
         public bool IsBelowRange { get { return PcjSitting < PcjMinimum; } }
         public bool IsBalanced { get { return !IsAboveRange && !IsBelowRange; } }
 
-        public CourtCalendarJudicialImbalance() { SittingActivityCodes = new List<string>(); }
+        public CourtCalendarJudicialImbalance() { SittingActivityCodes = []; }
     }
 
     public class PresiderQuantityRange
@@ -426,24 +425,16 @@ namespace PCSSCommon.Models
         public static int DayOfCourtCalendarWeek(DateTime dt)
         {
             // our Court Calendar starts with Monday as the First day of the week...
-            switch (dt.DayOfWeek)
+            return dt.DayOfWeek switch
             {
-                case DayOfWeek.Monday:
-                    return 1;
-                case DayOfWeek.Tuesday:
-                    return 2;
-                case DayOfWeek.Wednesday:
-                    return 3;
-                case DayOfWeek.Thursday:
-                    return 4;
-                case DayOfWeek.Friday:
-                    return 5;
-                case DayOfWeek.Saturday:
-                    return 6;
-                default:
-                    // must be sunday
-                    return 7;
-            }
+                DayOfWeek.Monday => 1,
+                DayOfWeek.Tuesday => 2,
+                DayOfWeek.Wednesday => 3,
+                DayOfWeek.Thursday => 4,
+                DayOfWeek.Friday => 5,
+                DayOfWeek.Saturday => 6,
+                _ => 7,// must be sunday
+            };
         }
 
 
@@ -468,4 +459,3 @@ namespace PCSSCommon.Models
 
 #pragma warning restore 8600
 #pragma warning restore 8603
-#pragma warning restore 8618

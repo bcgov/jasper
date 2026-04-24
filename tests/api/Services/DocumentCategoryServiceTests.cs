@@ -14,9 +14,11 @@ using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Scv.Db.Models;
+using Scv.Models.Document;
 using Xunit;
 
 namespace tests.api.Services;
+
 public class DocumentCategoryServiceTests : ServiceTestBase
 {
     private readonly Faker _faker;
@@ -48,7 +50,7 @@ public class DocumentCategoryServiceTests : ServiceTestBase
     [Fact]
     public async Task GetAllAsync_ShouldReturnDocumentCategories()
     {
-        var key = DocumentCategory.PSR;
+        var key = DocumentCategories.PSR;
         var value = _faker.Lorem.Paragraph();
         var configId = _faker.Random.Int();
         var configData = new List<PcssConfiguration>

@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Xunit;
 
 namespace tests.api.Controllers;
@@ -19,6 +19,7 @@ public class JudgesControllerTests
     private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly JudgesController _controller;
     private readonly Faker _faker;
+    private static readonly string[] collection = ["CJ", "ACJ", "RAJ", "PJ", "SJ"];
 
     public JudgesControllerTests()
     {
@@ -54,7 +55,7 @@ public class JudgesControllerTests
         var result = await _controller.GetJudges();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedJudges = Assert.IsAssignableFrom<IEnumerable<PersonSearchItem>>(okResult.Value);
+        var returnedJudges = Assert.IsType<IEnumerable<PersonSearchItem>>(okResult.Value, false);
         Assert.Equal(5, returnedJudges.Count());
     }
 
@@ -88,12 +89,12 @@ public class JudgesControllerTests
 
         _mockJudgeService
             .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
-            .ReturnsAsync(new List<PersonSearchItem>());
+            .ReturnsAsync([]);
 
         var result = await _controller.GetJudges();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedJudges = Assert.IsAssignableFrom<IEnumerable<PersonSearchItem>>(okResult.Value);
+        var returnedJudges = Assert.IsType<IEnumerable<PersonSearchItem>>(okResult.Value, false);
         Assert.Empty(returnedJudges);
     }
 
@@ -110,7 +111,7 @@ public class JudgesControllerTests
         var result = await _controller.GetJudges();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedJudges = Assert.IsAssignableFrom<IEnumerable<PersonSearchItem>>(okResult.Value).ToList();
+        var returnedJudges = Assert.IsType<IEnumerable<PersonSearchItem>>(okResult.Value, false).ToList();
 
         Assert.All(returnedJudges, judge =>
         {
@@ -153,7 +154,7 @@ public class JudgesControllerTests
         var result = await _controller.GetJudges();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedJudges = Assert.IsAssignableFrom<IEnumerable<PersonSearchItem>>(okResult.Value).ToList();
+        var returnedJudges = Assert.IsType<IEnumerable<PersonSearchItem>>(okResult.Value, false).ToList();
 
         Assert.Equal(3, returnedJudges.Count);
         Assert.Equal("Zulu", returnedJudges[0].LastName);
@@ -170,7 +171,7 @@ public class JudgesControllerTests
         _mockJudgeService
             .Setup(s => s.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
             .Callback<List<string>, List<string>>((codes, locations) => capturedPositionCodes = codes)
-            .ReturnsAsync(new List<PersonSearchItem>());
+            .ReturnsAsync([]);
 
         await _controller.GetJudges();
 
@@ -178,7 +179,7 @@ public class JudgesControllerTests
         Assert.DoesNotContain("OTHER", capturedPositionCodes);
         Assert.DoesNotContain("ADMIN", capturedPositionCodes);
         Assert.All(capturedPositionCodes, code =>
-            Assert.Contains(code, new[] { "CJ", "ACJ", "RAJ", "PJ", "SJ" }));
+            Assert.Contains(code, collection));
     }
 
     [Fact]
@@ -258,7 +259,7 @@ public class JudgesControllerTests
 
     private void SetupUserWithoutPermissions()
     {
-        var identity = new ClaimsIdentity(new List<Claim>(), "TestAuthType");
+        var identity = new ClaimsIdentity([], "TestAuthType");
         var principal = new ClaimsPrincipal(identity);
 
         _controller.ControllerContext = new ControllerContext
@@ -310,7 +311,7 @@ public class JudgesControllerTests
         };
     }
 
-    private string GetPositionDescription(string positionCode)
+    private static string GetPositionDescription(string positionCode)
     {
         return positionCode switch
         {

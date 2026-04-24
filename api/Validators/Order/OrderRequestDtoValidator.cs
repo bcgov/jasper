@@ -1,7 +1,7 @@
 ﻿using System;
 using FluentValidation;
 using JCCommon.Clients.FileServices;
-using Scv.Api.Models.Order;
+using Scv.Models.Order;
 
 namespace Scv.Api.Validators.Order;
 

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Scv.Api.Infrastructure.Options;
 
 public sealed class JobsSubmitOrderOptions

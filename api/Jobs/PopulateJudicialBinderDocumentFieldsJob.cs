@@ -7,11 +7,11 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Models;
-using Scv.Api.Models.Binder;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Db.Contants;
+using Scv.Models;
+using Scv.Models.Binder;
 
 namespace Scv.Api.Jobs;
 
@@ -110,8 +110,8 @@ public class PopulateJudicialBinderDocumentFieldsJob(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Fatal error in PopulateJudicialBinderDocumentFieldsJob: {Message}", ex.Message);
-            throw;
+            Logger.LogError(ex, "Fatal error in PopulateJudicialBinderDocumentFieldsJob");
+            throw new InvalidOperationException($"Fatal error in PopulateJudicialBinderDocumentFieldsJob: {ex.Message}");
         }
     }
 
@@ -137,11 +137,12 @@ public class PopulateJudicialBinderDocumentFieldsJob(
 
         if (missingDocumentIds.Count > 0)
         {
+            var missingIds = string.Join(", ", missingDocumentIds);
             this.Logger.LogWarning(
                 "Binder {BinderId}: {Count} document(s) not found in civil file service. Missing IDs: {MissingIds}",
                 binder.Id,
                 missingDocumentIds.Count,
-                string.Join(", ", missingDocumentIds));
+                missingIds);
         }
 
         var enrichedDocuments = this.Mapper.Map<List<BinderDocumentDto>>(civilDocuments);
@@ -155,6 +156,7 @@ public class PopulateJudicialBinderDocumentFieldsJob(
                 "Failed to update binder {BinderId}: {Errors}",
                 binder.Id,
                 string.Join(", ", updateResult.Errors));
+
             return ProcessResult.Error;
         }
 
@@ -173,7 +175,7 @@ public class PopulateJudicialBinderDocumentFieldsJob(
 
         var logLevel = result == ProcessResult.Error ? LogLevel.Warning : LogLevel.Information;
 
-        this.Logger.Log(logLevel, message, current, total, binderId);
+        Logger.Log(logLevel, message, current, total, binderId);
     }
 
     private enum ProcessResult

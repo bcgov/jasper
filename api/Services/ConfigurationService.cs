@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.Configuration;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Configuration;
 
 namespace Scv.Api.Services;
 

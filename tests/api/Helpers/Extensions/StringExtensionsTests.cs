@@ -1,5 +1,5 @@
 ﻿using Bogus;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using Xunit;
 
 namespace tests.api.Helpers.Extensions;

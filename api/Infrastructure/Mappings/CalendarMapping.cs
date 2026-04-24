@@ -1,12 +1,12 @@
 ﻿using Mapster;
-using Scv.Api.Models.Calendar;
+using Scv.Models.Calendar;
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
 public class CalendarMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<PCSS.JudicialCalendarActivity, CalendarDayActivity>()
             .Map(dest => dest.RoomCode, src => src.CourtRoomCode)
@@ -19,5 +19,10 @@ public class CalendarMapping : IRegister
             .Map(dest => dest.FileId, src => src.JustinOrCeisId)
 
             .Map(dest => dest.RoomCode, src => src.CourtRoomCode);
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

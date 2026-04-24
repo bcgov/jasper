@@ -4,10 +4,13 @@ import { handler } from "../../lambdas/proxy/proxy-request/index";
 
 const mockInitialize = vi.fn();
 const mockHandleRequest = vi.fn();
+const mockApiServiceCtor = vi.fn();
 
 vi.mock("../../services/apiService", () => ({
   ApiService: class ApiService {
-    constructor(public secretName: string) {}
+    constructor(public secretName: string) {
+      mockApiServiceCtor(secretName);
+    }
     initialize = mockInitialize;
     handleRequest = mockHandleRequest;
   },
@@ -18,6 +21,7 @@ describe("Lambda Handler", () => {
 
   const darsSecret = "dars-secret";
   const pcssSecret = "pcss-secret";
+  const tdSecret = "td-secret";
   const fileServicesClientSecret = "files-services-client-secret";
 
   beforeEach(() => {
@@ -32,6 +36,7 @@ describe("Lambda Handler", () => {
 
     process.env.DARS_SECRET_NAME = darsSecret;
     process.env.PCSS_SECRET_NAME = pcssSecret;
+    process.env.TD_SECRET_NAME = tdSecret;
     process.env.FILE_SERVICES_CLIENT_SECRET_NAME = fileServicesClientSecret;
 
     mockEvent = {
@@ -45,7 +50,10 @@ describe("Lambda Handler", () => {
     const response = await handler(mockEvent as APIGatewayEvent);
 
     expect(mockInitialize).toHaveBeenCalledTimes(1);
-    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent);
+    expect(mockApiServiceCtor).toHaveBeenCalledWith(darsSecret);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent, {
+      forwardAuthorization: false,
+    });
     expect(response.statusCode).toBe(200);
   });
 
@@ -55,7 +63,23 @@ describe("Lambda Handler", () => {
     const response = await handler(mockEvent as APIGatewayEvent);
 
     expect(mockInitialize).toHaveBeenCalledTimes(1);
-    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent);
+    expect(mockApiServiceCtor).toHaveBeenCalledWith(pcssSecret);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent, {
+      forwardAuthorization: false,
+    });
+    expect(response.statusCode).toBe(200);
+  });
+
+  it("should use TD secret when x-target-app is TD", async () => {
+    mockEvent.headers!["x-target-app"] = "TD";
+
+    const response = await handler(mockEvent as APIGatewayEvent);
+
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+    expect(mockApiServiceCtor).toHaveBeenCalledWith(tdSecret);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent, {
+      forwardAuthorization: true,
+    });
     expect(response.statusCode).toBe(200);
   });
 
@@ -63,7 +87,38 @@ describe("Lambda Handler", () => {
     const response = await handler(mockEvent as APIGatewayEvent);
 
     expect(mockInitialize).toHaveBeenCalledTimes(1);
-    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent);
+    expect(mockApiServiceCtor).toHaveBeenCalledWith(fileServicesClientSecret);
+    expect(mockHandleRequest).toHaveBeenCalledWith(mockEvent, {
+      forwardAuthorization: false,
+    });
     expect(response.statusCode).toBe(200);
+  });
+
+  it("forwards Authorization for TD target", async () => {
+    mockEvent.headers = {
+      "x-target-app": "TD",
+      Authorization: "Bearer 123",
+    };
+
+    await handler(mockEvent as APIGatewayEvent);
+
+    expect(mockHandleRequest).toHaveBeenCalledWith(
+      mockEvent,
+      expect.objectContaining({ forwardAuthorization: true }),
+    );
+  });
+
+  it("does not forward Authorization for DARS target", async () => {
+    mockEvent.headers = {
+      "x-target-app": "DARS",
+      Authorization: "Bearer 123",
+    };
+
+    await handler(mockEvent as APIGatewayEvent);
+
+    expect(mockHandleRequest).toHaveBeenCalledWith(
+      mockEvent,
+      expect.objectContaining({ forwardAuthorization: false }),
+    );
   });
 });

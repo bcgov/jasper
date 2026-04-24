@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using PCSSCommon.Clients.ConfigurationServices;
-using Scv.Api.Models;
-using Scv.Db.Models;
+using Scv.Models;
+using Scv.Models.Document;
 
 namespace Scv.Api.Services;
 
@@ -35,7 +35,7 @@ public class DocumentCategoryService(
             async () => await _configClient.GetAllAsync());
 
         var externalDocumentCategories = configData
-            .Where(c => DocumentCategory.ALL_DOCUMENT_CATEGORIES.Contains(c.Key));
+            .Where(c => DocumentCategories.ALL_DOCUMENT_CATEGORIES.Contains(c.Key));
 
         return _mapper.Map<List<DocumentCategoryDto>>(externalDocumentCategories);
     }

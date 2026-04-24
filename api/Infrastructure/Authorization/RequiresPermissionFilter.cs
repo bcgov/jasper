@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Scv.Core.Infrastructure.Authorization;
 
 namespace Scv.Api.Infrastructure.Authorization;
 

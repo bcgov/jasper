@@ -77,7 +77,7 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
 
         return message.Attachments?
             .OfType<FileAttachment>()
-            .Where(att => (string.IsNullOrWhiteSpace(attachmentName) || att.Name.Equals(attachmentName, StringComparison.OrdinalIgnoreCase)))
+            .Where(att => string.IsNullOrWhiteSpace(attachmentName) || att.Name.Equals(attachmentName, StringComparison.OrdinalIgnoreCase))
             .ToDictionary(
                 att => att.Name,
                 att => new MemoryStream(att.ContentBytes))

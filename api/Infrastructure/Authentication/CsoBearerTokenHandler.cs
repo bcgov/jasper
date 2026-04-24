@@ -9,30 +9,20 @@ using Scv.Api.Infrastructure.Options;
 
 namespace Scv.Api.Infrastructure.Authentication
 {
-    public sealed class CsoBearerTokenHandler : DelegatingHandler
+    public sealed class CsoBearerTokenHandler(
+        IKeycloakTokenService tokenService,
+        IOptions<CsoKeycloakClientOptions> options,
+        ILogger<CsoBearerTokenHandler> logger) : DelegatingHandler
     {
-        private readonly IKeycloakTokenService _tokenService;
-        private readonly KeycloakClientOptions _options;
-        private readonly ILogger<CsoBearerTokenHandler> _logger;
-
-        public CsoBearerTokenHandler(
-            IKeycloakTokenService tokenService,
-            IOptions<KeycloakClientOptions> options,
-            ILogger<CsoBearerTokenHandler> logger)
-        {
-            _tokenService = tokenService;
-            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
-            _logger = logger;
-        }
+        private readonly IKeycloakTokenService _tokenService = tokenService;
+        private readonly CsoKeycloakClientOptions _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+        private readonly ILogger<CsoBearerTokenHandler> _logger = logger;
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             if (request.Headers.Authorization == null)
             {

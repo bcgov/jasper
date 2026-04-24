@@ -13,13 +13,14 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace tests.api.Services;
+
 public class GroupServiceTests
 {
     private readonly Faker _faker;
@@ -128,7 +129,7 @@ public class GroupServiceTests
             .Setup(r => r.GetAllAsync())
             .ReturnsAsync([
                 new Role {
-                    Id = dto.RoleIds.First(),
+                    Id = dto.RoleIds[0],
                     Name = _faker.Lorem.Word(),
                     Description = _faker.Lorem.Paragraph()
                 }
@@ -173,7 +174,7 @@ public class GroupServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Entity not found.", result.Errors.First());
+        Assert.Equal("Entity not found.", result.Errors[0]);
         _mockGroupRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
         _mockGroupRepo.Verify(r => r.DeleteAsync(It.IsAny<Group>()), Times.Never);
     }
@@ -191,7 +192,7 @@ public class GroupServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Error when deleting data.", result.Errors.First());
+        Assert.Equal("Error when deleting data.", result.Errors[0]);
         _mockGroupRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
         _mockGroupRepo.Verify(r => r.DeleteAsync(It.IsAny<Group>()), Times.Never);
     }
@@ -237,7 +238,7 @@ public class GroupServiceTests
         // Arrange
         var aliases = new List<string> { _faker.Random.Word() };
         _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
-            .ReturnsAsync(Enumerable.Empty<GroupAlias>());
+            .ReturnsAsync([]);
 
         // Act
         var result = await _groupService.GetGroupsByAliases(aliases);
@@ -246,7 +247,7 @@ public class GroupServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Group alias not found.", result.Errors.First());
+        Assert.Equal("Group alias not found.", result.Errors[0]);
     }
 
     [Fact]
@@ -254,12 +255,12 @@ public class GroupServiceTests
     {
         // Arrange
         var aliases = new List<string> { _faker.Random.Word() };
-        var groupAlias = new GroupAlias { Name = aliases.First(), GroupId = ObjectId.GenerateNewId().ToString() };
+        var groupAlias = new GroupAlias { Name = aliases[0], GroupId = ObjectId.GenerateNewId().ToString() };
         _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
-            .ReturnsAsync(new[] { groupAlias });
+            .ReturnsAsync([groupAlias]);
 
         _mockGroupRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
-            .ReturnsAsync(Enumerable.Empty<Group>());
+            .ReturnsAsync([]);
 
         // Act
         var result = await _groupService.GetGroupsByAliases(aliases);
@@ -276,14 +277,14 @@ public class GroupServiceTests
         // Arrange
         var aliases = new List<string> { _faker.Random.Word() };
         var groupId = ObjectId.GenerateNewId().ToString();
-        var groupAlias = new GroupAlias { Name = aliases.First(), GroupId = groupId };
+        var groupAlias = new GroupAlias { Name = aliases[0], GroupId = groupId };
         var group = new Group { Id = groupId, Name = _faker.Company.CompanyName(), Description = _faker.Lorem.Paragraph() };
 
         _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
-            .ReturnsAsync(new[] { groupAlias });
+            .ReturnsAsync([groupAlias]);
 
         _mockGroupRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
-            .ReturnsAsync(new[] { group });
+            .ReturnsAsync([group]);
 
         // Act
         var result = await _groupService.GetGroupsByAliases(aliases);

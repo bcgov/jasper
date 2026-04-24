@@ -1,5 +1,5 @@
 using System;
-using Scv.Api.Helpers;
+using Scv.Core.Helpers;
 using Xunit;
 
 namespace tests.api.Helpers;
@@ -25,7 +25,7 @@ public class DocumentHelperTests
     [Fact]
     public void IsPdfOrWordDocumentBase64_ReturnsTrue_ForPdfSignature()
     {
-        var bytes = new byte[] { 0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x37 };
+        var bytes = "%PDF-1.7"u8.ToArray();
         var base64 = Convert.ToBase64String(bytes);
 
         var result = DocumentHelper.IsPdfOrWordDocumentBase64(base64);

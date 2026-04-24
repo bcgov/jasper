@@ -6,10 +6,11 @@ namespace Scv.Db.Migrations
 {
     public partial class SignalROutbox : Migration
     {
+        private static readonly string SIGNALR_OUTBOX_MESSAGE_TABLE_NAME = "signalr_outbox_message";
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "signalr_outbox_message",
+                name: SIGNALR_OUTBOX_MESSAGE_TABLE_NAME,
                 columns: table => new
                 {
                     id = table.Column<long>(type: "bigint", nullable: false)
@@ -33,12 +34,12 @@ namespace Scv.Db.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "ix_signalr_outbox_message_channel_delivered_created",
-                table: "signalr_outbox_message",
-                columns: new[] { "channel", "delivered_at", "created_at" });
+                table: SIGNALR_OUTBOX_MESSAGE_TABLE_NAME,
+                columns: ["channel", "delivered_at", "created_at"]);
 
             migrationBuilder.CreateIndex(
                 name: "ix_signalr_outbox_message_ack_guid",
-                table: "signalr_outbox_message",
+                table: SIGNALR_OUTBOX_MESSAGE_TABLE_NAME,
                 column: "ack_guid",
                 unique: true);
         }
@@ -46,7 +47,7 @@ namespace Scv.Db.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "signalr_outbox_message");
+                name: SIGNALR_OUTBOX_MESSAGE_TABLE_NAME);
         }
     }
 }

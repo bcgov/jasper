@@ -4,7 +4,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 
 // Credits to PIMS for this. 
-namespace SS.Db
+namespace Scv.Db
 {
     /// <summary>
     /// ModelBuilderExtensions static class, provides extension methods for ModelBuilder objects.
@@ -38,7 +38,7 @@ namespace SS.Db
         /// <returns></returns>
         public static ModelBuilder ApplyAllConfigurations(this ModelBuilder modelBuilder, Assembly assembly, DbContext context = null)
         {
-            if (assembly == null) throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly);
 
             // Find all the configuration classes.
             var type = typeof(IEntityTypeConfiguration<>);
@@ -54,7 +54,7 @@ namespace SS.Db
                     var entityConfig = includeContext ? Activator.CreateInstance(config, context) : Activator.CreateInstance(config);
                     var entityType = config.GetInterfaces().FirstOrDefault()?.GetGenericArguments()[0];
                     var applyConfigurationMethod = method.MakeGenericMethod(entityType ?? throw new InvalidOperationException());
-                    applyConfigurationMethod.Invoke(modelBuilder, new[] { entityConfig });
+                    applyConfigurationMethod.Invoke(modelBuilder, [entityConfig]);
                 }
             }
 

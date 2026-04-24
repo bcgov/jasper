@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure.Options;
-using System;
+﻿using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Scv.Api.Infrastructure.Options;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Infrastructure.Authorization
 {
@@ -54,7 +54,7 @@ namespace Scv.Api.Infrastructure.Authorization
 
             var clientRoles = context.User.ClientRoles(_audience);
 
-            if (clientRoles == null || !clientRoles.Any())
+            if (clientRoles == null || clientRoles.Length == 0)
             {
                 _logger.LogWarning(
                     "No client roles found for audience: {ClientId}",

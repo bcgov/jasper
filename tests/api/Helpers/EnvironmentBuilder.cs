@@ -1,10 +1,8 @@
 ﻿using System;
-using JCCommon.Framework;
+using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Net.Http;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using tests.api.Controllers;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 

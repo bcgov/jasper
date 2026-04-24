@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.SignalR;
 

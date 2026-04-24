@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Helpers;
-using Scv.Api.Models.Document;
+using Scv.Core.Helpers;
+using Scv.Models.Document;
 using tests.api.Services;
 using Xunit;
 
@@ -100,7 +100,7 @@ public class FileStrategyTest : ServiceTestBase
 
         var type = strategy.Type;
 
-        Assert.Equal(Scv.Api.Documents.DocumentType.File, type);
+        Assert.Equal(DocumentType.File, type);
     }
 }
 

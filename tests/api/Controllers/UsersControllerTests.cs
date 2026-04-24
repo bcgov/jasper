@@ -10,11 +10,11 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Api.Validators;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace tests.api.Controllers
@@ -69,8 +69,8 @@ namespace tests.api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
-                new Claim(ClaimTypes.Email, email),
+                new(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -101,7 +101,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             var updatedResult = Assert.IsType<OkObjectResult>(actionResult);
             var userDto = Assert.IsType<UserDto>(updatedResult.Value);
             Assert.Equal(email, userDto.Email);
@@ -115,8 +115,8 @@ namespace tests.api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
-                new Claim(ClaimTypes.Email, email),
+                new(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new(ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -147,7 +147,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
             Assert.NotNull(badRequest.Value);
         }
@@ -160,8 +160,8 @@ namespace tests.api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
-                new Claim(ClaimTypes.Email, email),
+                new (CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new (ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -193,7 +193,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             // Controller returns result from base.Update, which is likely OkObjectResult
             var okResult = Assert.IsType<OkObjectResult>(actionResult);
             var userDto = Assert.IsType<UserDto>(okResult.Value);
@@ -208,8 +208,8 @@ namespace tests.api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
-                new Claim(ClaimTypes.Email, email),
+                new (CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new (ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -223,7 +223,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             Assert.IsType<NotFoundResult>(actionResult);
         }
 
@@ -235,8 +235,8 @@ namespace tests.api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
-                new Claim(ClaimTypes.Email, invalidEmail),
+                new (CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new (ClaimTypes.Email, invalidEmail),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -263,7 +263,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             Assert.IsType<BadRequestObjectResult>(actionResult);
         }
 
@@ -275,8 +275,8 @@ namespace tests.api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
-                new Claim(ClaimTypes.Email, email),
+                new (CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()),
+                new (ClaimTypes.Email, email),
             };
 
             var controller = CreateControllerWithContext(claims);
@@ -307,7 +307,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             var okResult = Assert.IsType<OkObjectResult>(actionResult);
             var userDto = Assert.IsType<UserDto>(okResult.Value);
             Assert.Equal(email, userDto.Email);
@@ -328,7 +328,7 @@ namespace tests.api.Controllers
             var result = await controller.RequestAccess();
 
             // Assert
-            var actionResult = Assert.IsAssignableFrom<ActionResult>(result);
+            var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
             var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
             Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
         }
@@ -338,7 +338,7 @@ namespace tests.api.Controllers
         {
             // Arrange
             var userId = ObjectId.GenerateNewId().ToString();
-            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, userId) };
+            var claims = new List<Claim> { new(CustomClaimTypes.UserId, userId) };
             var controller = CreateControllerWithContext(claims);
 
             _mockUserService
@@ -377,7 +377,7 @@ namespace tests.api.Controllers
         public async Task MarkReleaseNotesViewed_ReturnsBadRequest_WhenVersionMissing()
         {
             // Arrange
-            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()) };
+            var claims = new List<Claim> { new(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()) };
             var controller = CreateControllerWithContext(claims);
 
             // Act
@@ -393,7 +393,7 @@ namespace tests.api.Controllers
         {
             // Arrange
             var userId = ObjectId.GenerateNewId().ToString();
-            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, userId) };
+            var claims = new List<Claim> { new(CustomClaimTypes.UserId, userId) };
             var controller = CreateControllerWithContext(claims);
 
             _mockUserService
@@ -413,7 +413,7 @@ namespace tests.api.Controllers
         {
             // Arrange
             var userId = ObjectId.GenerateNewId().ToString();
-            var claims = new List<Claim> { new Claim(CustomClaimTypes.UserId, userId) };
+            var claims = new List<Claim> { new(CustomClaimTypes.UserId, userId) };
             var controller = CreateControllerWithContext(claims);
 
             _mockUserService

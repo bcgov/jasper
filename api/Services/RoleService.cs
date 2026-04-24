@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.AccessControlManagement;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Services;
 
@@ -71,7 +71,7 @@ public class RoleService(
             var groupsWithRef = await _groupRepo.FindAsync(g => g.RoleIds.Contains(id));
             var updateTasks = groupsWithRef.Select(g =>
             {
-                g.RoleIds = g.RoleIds.Where(roleId => roleId != id).ToList();
+                g.RoleIds = [.. g.RoleIds.Where(roleId => roleId != id)];
                 return _groupRepo.UpdateAsync(g);
             });
 

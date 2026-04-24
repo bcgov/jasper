@@ -8,8 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Xunit;
 
@@ -48,7 +47,6 @@ namespace tests.api.Controllers
                 expectedRole,
                 expectedSubRole,
                 expectedJcAgencyCode);
-            var mockUserService = new Mock<IUserService>();
 
             var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
@@ -99,7 +97,6 @@ namespace tests.api.Controllers
                 _faker.Random.Word(),
                 _faker.Random.Word(),
                 _faker.Random.Word());
-            var mockUserService = new Mock<IUserService>();
 
             var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {
@@ -132,7 +129,6 @@ namespace tests.api.Controllers
                 _faker.Random.Word(),
                 _faker.Random.Word(),
                 _faker.Random.Word());
-            var mockUserService = new Mock<IUserService>();
 
             var controller = new AuthController(_dbContext.Object, _mockConfig.Object, null)
             {

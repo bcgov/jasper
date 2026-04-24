@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Models.auth;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Models.Auth;
+using Scv.Models.auth;
 
 namespace Scv.Api.Controllers
 {
@@ -46,8 +46,8 @@ namespace Scv.Api.Controllers
 
             var logoutUrl = $"{Configuration.GetNonEmptyValue("Keycloak:Authority")}/protocol/openid-connect/logout";
 
-            var forwardedHost = HttpContext.Request.Headers.ContainsKey("X-Forwarded-Host")
-                ? HttpContext.Request.Headers["X-Forwarded-Host"].ToString()
+            var forwardedHost = HttpContext.Request.Headers.TryGetValue("X-Forwarded-Host", out Microsoft.Extensions.Primitives.StringValues value)
+                ? value.ToString()
                 : Request.Host.ToString();
             var forwardedPort = HttpContext.Request.Headers["X-Forwarded-Port"];
 

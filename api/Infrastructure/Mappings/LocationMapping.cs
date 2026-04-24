@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Mapster;
-using Scv.Api.Models.Location;
+using Scv.Models.Location;
 using JC = JCCommon.Clients.LocationServices;
 using PCSS = PCSSCommon.Models;
 
@@ -8,7 +8,7 @@ namespace Scv.Api.Infrastructure.Mappings;
 
 public class LocationMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<JC.CodeValue, Location>()
            .ConstructUsing(src => Location.Create(
@@ -35,9 +35,15 @@ public class LocationMapping : IRegister
                 src.JustinAgenId != null ? src.JustinAgenId.ToString() : null,
                 src.LocationId != null ? src.LocationId.ToString() : null,
                 src.ActiveYn == "Y",
-                new List<CourtRoom>()))
+                new List<CourtRoom>()
+            ))
             .Map(dest => dest.RegionCd, src => src.WorkArea != null ? src.WorkArea.RegionCd : null)
             .Ignore(dest => dest.InfoLink)
             .IgnoreIf((src, dest) => src.CourtRooms == null, dest => dest.CourtRooms);
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

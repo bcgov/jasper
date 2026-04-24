@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using Scv.Api.Models;
+using Scv.Models;
 
 namespace Scv.Api.Services;
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -10,22 +10,22 @@ using JCCommon.Clients.LookupCodeServices;
 using LazyCache;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Documents;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Exceptions;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.archive;
-using Scv.Api.Models.Search;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Core.Exceptions;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
+using Scv.Models.Archive;
+using Scv.Models.Search;
 using tests.api.Helpers;
 using Xunit;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
@@ -117,8 +117,10 @@ namespace tests.api.Controllers
                 mockDocumentMerger.Object,
                 _service,
                 vcCivilFileAccessHandler,
-                contextAccessor);
-            _controller.ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration);
+                contextAccessor)
+            {
+                ControllerContext = HttpResponseTest.SetupMockControllerContext(fileServices.Configuration)
+            };
         }
 
         #endregion Constructor
@@ -129,11 +131,12 @@ namespace tests.api.Controllers
         public async Task Civil_Document_Reference_Document_and_Binder_Document()
         {
             //NEEDS PCSS APPLICATION CODE CODE
-            //var civilFileContent = await _controller.GetCivilFileDetailByFileId("3811");
 
-            var civilFileContent = await _controller.GetCivilFileDetailByFileId("3822");
+            await _controller.GetCivilFileDetailByFileId("3822");
             var documentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("GeWzGIDmGMUu.#CGMKv9.i`E|ahP'P^^z>qK*[sfUw=M\":Zxf)f#'AI(92O2adE'VGA9_7.368246000.074711.2459184..#C4"));
-            var document = await _controller.GetDocument(documentId, "hello.txt", false, "3822", "abc123");
+            var actionResult = await _controller.GetDocument(documentId, "hello.txt", false, "3822", "abc123");
+
+            Assert.IsType<FileContentResult>(actionResult);
         }
 
         [Fact(Skip = "TEST")]
@@ -152,11 +155,11 @@ namespace tests.api.Controllers
             Assert.Equal(2, referenceDocuments.Count);
             var firstReferenceDocument = referenceDocuments.First();
 
-            var document = await _controller.GetDocument(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(firstReferenceDocument.ObjectGuid)), "hello.txt", false, "4987", "abc123");
+            await _controller.GetDocument(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(firstReferenceDocument.ObjectGuid)), "hello.txt", false, "4987", "abc123");
         }
 
         [Fact]
-        public async void Civil_Document_With_Reference_Document()
+        public async Task Civil_Document_With_Reference_Document()
         {
             var actionResult = await _controller.GetCivilFileDetailByFileId("3822");
 
@@ -169,7 +172,7 @@ namespace tests.api.Controllers
             Assert.Equal(4, referenceDocuments.Count);
             var firstReferenceDocument = referenceDocuments.First();
 
-            var document = await _controller.GetDocument(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(firstReferenceDocument.ObjectGuid)), "hello.txt", false, "3822", "abc123");
+            await _controller.GetDocument(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(firstReferenceDocument.ObjectGuid)), "hello.txt", false, "3822", "abc123");
         }
 
         [Fact]
@@ -195,7 +198,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Document_Filed_By_Name()
+        public async Task Civil_File_Document_Filed_By_Name()
         {
             var actionResult = await _controller.GetCivilFileDetailByFileId("3834");
 
@@ -203,14 +206,14 @@ namespace tests.api.Controllers
 
             var document = fileDetailResponse.Document.FirstOrDefault(doc => doc.CivilDocumentId == "10672");
             Assert.NotNull(document);
-            Assert.Equal(2, document.FiledBy.Count());
+            Assert.Equal(2, document.FiledBy.Count);
             Assert.NotNull(document.FiledBy.FirstOrDefault());
             Assert.Equal("CHAMBERS, Martin", document.FiledBy.FirstOrDefault().FiledByName);
             Assert.Equal("PLA", document.FiledBy.FirstOrDefault().RoleTypeCode);
         }
 
         [Fact]
-        public async void Civil_File_Services_File_Content()
+        public async Task Civil_File_Services_File_Content()
         {
             /* This is the largest civil file on dev. Unfortunately if the WSDL changes for this route, 
              * it will always return back 200, but a null file. It would have been nice if the server 
@@ -220,7 +223,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Details_ByFileNumberText_One()
+        public async Task Criminal_File_Details_ByFileNumberText_One()
         {
             var actionResult = await _controller.GetCriminalFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "98050101");
 
@@ -229,7 +232,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Details_ByFileNumberText_Multiple()
+        public async Task Civil_File_Details_ByFileNumberText_Multiple()
         {
             var actionResult =
                 await _controller.GetCivilFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "1");
@@ -239,7 +242,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Details_ByFileNumberText_Multiple()
+        public async Task Criminal_File_Details_ByFileNumberText_Multiple()
         {
             var actionResult =
                 await _controller.GetCriminalFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "58819");
@@ -249,13 +252,12 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Details_By_FileNumberText_Empty()
+        public async Task Criminal_File_Details_By_FileNumberText_Empty()
         {
             var failed = false;
             try
             {
-                var actionResult =
-                    await _controller.GetCriminalFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "500-24747474774");
+                await _controller.GetCriminalFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "500-24747474774");
             }
             catch (NotFoundException)
             {
@@ -266,13 +268,12 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Details_By_FileNumberText_Empty()
+        public async Task Civil_File_Details_By_FileNumberText_Empty()
         {
             var failed = false;
             try
             {
-                var actionResult =
-                    await _controller.GetCivilFileIdsByAgencyIdCodeAndFileNumberText("104.0001", "P-24166666666");
+                await _controller.GetCivilFileIdsByAgencyIdCodeAndFileNumberText("104.0001", "P-24166666666");
             }
             catch (NotFoundException)
             {
@@ -282,36 +283,36 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Details_By_FileNumberText()
+        public async Task Criminal_File_Details_By_FileNumberText()
         {
             var actionResult = await _controller.GetCriminalFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "58819-1");
 
             var fileSearchResponse = HttpResponseTest.CheckForValidHttpResponseAndReturnValue(actionResult);
-            Assert.Contains("3779", fileSearchResponse.First().JustinNo);
+            Assert.Contains("3779", fileSearchResponse[0].JustinNo);
         }
 
 
         [Fact]
-        public async void Civil_File_Details_By_FileNumberText_2()
+        public async Task Civil_File_Details_By_FileNumberText_2()
         {
             var actionResult = await _controller.GetCivilFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "S-1");
 
             var fileSearchResponse = HttpResponseTest.CheckForValidHttpResponseAndReturnValue(actionResult);
-            Assert.Contains("1619", fileSearchResponse.First().PhysicalFileId);
+            Assert.Contains("1619", fileSearchResponse[0].PhysicalFileId);
         }
 
         [Fact]
-        public async void Civil_File_Details_By_FileNumberText()
+        public async Task Civil_File_Details_By_FileNumberText()
         {
             var actionResult = await _controller.GetCivilFileIdsByAgencyIdCodeAndFileNumberText("83.0001", "44459");
 
             var fileSearchResponse = HttpResponseTest.CheckForValidHttpResponseAndReturnValue(actionResult);
-            Assert.Contains("3059", fileSearchResponse.First().PhysicalFileId);
+            Assert.Contains("3059", fileSearchResponse[0].PhysicalFileId);
         }
 
 
         [Fact]
-        public async void Criminal_File_Search_By_LastName()
+        public async Task Criminal_File_Search_By_LastName()
         {
             var fcq = new FilesCriminalQuery
             {
@@ -325,7 +326,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Search_By_LastName()
+        public async Task Civil_File_Search_By_LastName()
         {
             var fcq = new FilesCivilQuery
             {
@@ -337,13 +338,13 @@ namespace tests.api.Controllers
             var actionResult = await _service.Civil.SearchAsync(fcq);
 
             Assert.Equal("1", actionResult.RecCount);
-            Assert.Equal(1, actionResult.FileDetail.Count);
+            Assert.Single(actionResult.FileDetail);
             Assert.Contains("2437", actionResult.FileDetail.First().PhysicalFileId);
             Assert.Contains("BADGUY, Borris", actionResult.FileDetail.First().Participant.Select(u => u.FullNm));
         }
 
         [Fact]
-        public async void Criminal_File_Search_By_JustinNo()
+        public async Task Criminal_File_Search_By_JustinNo()
         {
             var fcq = new FilesCriminalQuery
             {
@@ -357,7 +358,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Search_By_PhysicalFileId()
+        public async Task Civil_File_Search_By_PhysicalFileId()
         {
             var fcq = new FilesCivilQuery
             {
@@ -368,13 +369,13 @@ namespace tests.api.Controllers
             var actionResult = await _service.Civil.SearchAsync(fcq);
 
             Assert.Equal("1", actionResult.RecCount);
-            Assert.Equal(1, actionResult.FileDetail.Count);
+            Assert.Single(actionResult.FileDetail);
             Assert.Equal("C-11011", actionResult.FileDetail.First().FileNumberTxt);
             Assert.Contains("BYSTANDER, Innocent", actionResult.FileDetail.First().Participant.Select(u => u.FullNm));
         }
 
         [Fact]
-        public async void Criminal_File_Details_by_JustinNo_Test()
+        public async Task Criminal_File_Details_by_JustinNo_Test()
         {
             var redactedCriminalFileDetailResponse = await _service.Criminal.FileIdAsync("4074");
 
@@ -383,7 +384,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Details_by_JustinNo()
+        public async Task Criminal_File_Details_by_JustinNo()
         {
             var redactedCriminalFileDetailResponse = await _service.Criminal.FileIdAsync("35674");
 
@@ -392,7 +393,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Overview_by_JustinNo()
+        public async Task Criminal_File_Overview_by_JustinNo()
         {
             var criminalFileOverview = await _service.Criminal.FileOverviewAsync("35674");
 
@@ -402,7 +403,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Appearances_by_JustinNo_Split()
+        public async Task Criminal_File_Appearances_by_JustinNo_Split()
         {
             var appearances = await _service.Criminal.FileAppearancesAsync("35674");
 
@@ -411,7 +412,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Participants_by_JustinNo_Split()
+        public async Task Criminal_File_Participants_by_JustinNo_Split()
         {
             var participants = await _service.Criminal.FileParticipantsAsync("35674");
 
@@ -420,7 +421,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Details_by_PhysicalFileId()
+        public async Task Civil_File_Details_by_PhysicalFileId()
         {
             var actionResult = await _controller.GetCivilFileDetailByFileId("40");
 
@@ -432,7 +433,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_Appearances_by_JustinNo()
+        public async Task Criminal_Appearances_by_JustinNo()
         {
             var criminalFileAppearancesResponse = await _service.Criminal.FileIdAsync("35674");
 
@@ -441,7 +442,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_Appearances_by_PhysicalFileId()
+        public async Task Civil_Appearances_by_PhysicalFileId()
         {
             var civilFile = await _service.Civil.FileIdAsync("2506", false, false);
 
@@ -450,9 +451,9 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Content()
+        public async Task Criminal_File_Content()
         {
-            var criminalFileContent = await _service.Criminal.FileContentAsync("4801", "101", DateTime.Parse("2016-04-04"), "44150.0734", null);
+            var criminalFileContent = await _service.Criminal.FileContentAsync("4801", "101", DateTime.Parse("2016-04-04", CultureInfo.InvariantCulture), "44150.0734", null);
 
             Assert.Equal("4801", criminalFileContent.CourtLocaCd);
             Assert.Equal("101", criminalFileContent.CourtRoomCd);
@@ -460,19 +461,19 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Content_By_AgencyId_Room_Proceeding_Appearance()
+        public async Task Civil_File_Content_By_AgencyId_Room_Proceeding_Appearance()
         {
-            var civilFileContent = await _service.Civil.FileContentAsync("4801", "101", DateTime.Parse("2016-04-04"), "984", null);
+            var civilFileContent = await _service.Civil.FileContentAsync("4801", "101", DateTime.Parse("2016-04-04", CultureInfo.InvariantCulture), "984", null);
 
             Assert.Equal("4801", civilFileContent.CourtLocaCd);
             Assert.Equal("101", civilFileContent.CourtRoomCd);
             Assert.Equal("2016-04-04", civilFileContent.CourtProceedingDate);
-            Assert.Equal(1, civilFileContent.CivilFile.Count);
+            Assert.Single(civilFileContent.CivilFile);
             Assert.Equal("2506", civilFileContent.CivilFile.First().PhysicalFileID);
         }
 
         [Fact]
-        public async void Criminal_File_Search_By_FileNo_Provincial()
+        public async Task Criminal_File_Search_By_FileNo_Provincial()
         {
             var fcq = new FilesCriminalQuery
             {
@@ -487,7 +488,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Search_By_FileNo_Supreme()
+        public async Task Criminal_File_Search_By_FileNo_Supreme()
         {
             var fcq = new FilesCriminalQuery
             {
@@ -502,7 +503,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Search_By_FileNo_ProvincialAndSupreme()
+        public async Task Criminal_File_Search_By_FileNo_ProvincialAndSupreme()
         {
             var fcq = new FilesCriminalQuery
             {
@@ -539,7 +540,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Search_By_FileNo_Provincial()
+        public async Task Civil_File_Search_By_FileNo_Provincial()
         {
             var fcq = new FilesCivilQuery
             {
@@ -551,13 +552,13 @@ namespace tests.api.Controllers
             var fileSearchResponse = await _service.Civil.SearchAsync(fcq);
 
             Assert.Equal("1", fileSearchResponse.RecCount);
-            Assert.Equal(1, fileSearchResponse.FileDetail.Count);
+            Assert.Single(fileSearchResponse.FileDetail);
             Assert.Equal("2506", fileSearchResponse.FileDetail.First().PhysicalFileId);
             Assert.Contains("BYSTANDER, Innocent", fileSearchResponse.FileDetail.First().Participant.Select(u => u.FullNm));
         }
 
         [Fact]
-        public async void Civil_Court_Summary_Report()
+        public async Task Civil_Court_Summary_Report()
         {
             var actionResult = await _controller.GetCivilCourtSummaryReport("984", "test123.pdf");
 
@@ -567,7 +568,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_Record_Of_Proceeding()
+        public async Task Criminal_Record_Of_Proceeding()
         {
             var actionResult = await _controller.GetRecordsOfProceeding("12971.0026", "ropTest.pdf", "24", CourtLevelCd.P, CourtClassCd.A);
 
@@ -577,22 +578,20 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Civil_File_Content_By_FileId()
+        public async Task Civil_File_Content_By_FileId()
         {
             var civilFileContent = await _service.Civil.FileContentAsync(null, null, null, null, physicalFileId: "2506");
 
             Assert.Null(civilFileContent.CourtLocaCd);
             Assert.Null(civilFileContent.CourtRoomCd);
             Assert.Equal("", civilFileContent.CourtProceedingDate);
-            Assert.Equal(1, civilFileContent.CivilFile.Count);
+            Assert.Single(civilFileContent.CivilFile);
             Assert.Equal("2506", civilFileContent.CivilFile.First().PhysicalFileID);
         }
 
         [Fact]
-        public async void Document_Civil()
+        public async Task Document_Civil()
         {
-            //var civilFile = await _controller.GetCivilFileDetailByFileId("3197");
-
             var actionResult = await _controller.GetDocument(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("6874")), "test.pdf", false, "3197", "abc123");
 
             var fileContentResult = actionResult as FileContentResult;
@@ -601,7 +600,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Document_Criminal()
+        public async Task Document_Criminal()
         {
             var actionResult = await _controller.GetDocument(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("6196.0734")), "test.pdf", true, "3192", "abc123");
 
@@ -611,21 +610,21 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_File_Content_By_JustinNumber()
+        public async Task Criminal_File_Content_By_JustinNumber()
         {
             var criminalFileContent = await _service.Criminal.FileContentAsync(null, null, null, null, justinNumber: "3179.0000");
 
             Assert.Equal("", criminalFileContent.CourtLocaCd);
             Assert.Equal("", criminalFileContent.CourtRoomCd);
             Assert.Equal("", criminalFileContent.CourtProceedingDate);
-            Assert.Equal(1, criminalFileContent.AccusedFile.Count);
+            Assert.Single(criminalFileContent.AccusedFile);
             Assert.Equal("3179", criminalFileContent.AccusedFile.First().MdocJustinNo);
         }
 
         #endregion Tests
 
         [Fact]
-        public async void Criminal_File_Detail_Document_By_JustinNumber()
+        public async Task Criminal_File_Detail_Document_By_JustinNumber()
         {
             var criminalFileDocuments = await _service.Criminal.FileIdAsync(fileId: "35840");
 
@@ -636,21 +635,21 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_Appearance_Details()
+        public async Task Criminal_Appearance_Details()
         {
             var criminalAppearanceDetail = await _service.Criminal.AppearanceDetailAsync("2934", "36548.0734", "19498.0042");
 
-            Assert.Equal(1, criminalAppearanceDetail.Charges.Count);
+            Assert.Single(criminalAppearanceDetail.Charges);
             Assert.Equal("2934", criminalAppearanceDetail.JustinNo);
             Assert.Contains(criminalAppearanceDetail.Charges, p => p.AppearanceReasonDsc == "First Appearance");
             Assert.Contains(criminalAppearanceDetail.Charges, p => p.StatuteDsc == "offer bribe to justice/pol comm/peac off");
             Assert.Contains(criminalAppearanceDetail.Charges, p => p.StatuteSectionDsc == "CCC - 120(b)");
-            Assert.Equal(1, criminalAppearanceDetail.AppearanceMethods.Count);
+            Assert.Single(criminalAppearanceDetail.AppearanceMethods);
             Assert.Equal("TC", criminalAppearanceDetail.AppearanceMethods.First().AppearanceMethodCd);
         }
 
         [Fact]
-        public async void Criminal_Appearance_Details_Accused_Prosecutor_Adjudicator()
+        public async Task Criminal_Appearance_Details_Accused_Prosecutor_Adjudicator()
         {
             var criminalAppearanceDetail = await _service.Criminal.AppearanceDetailAsync("2800", "34595.0734", "13816.0026");
 
@@ -665,7 +664,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_Appearance_Details_No_Prosecutor_Adjudicator()
+        public async Task Criminal_Appearance_Details_No_Prosecutor_Adjudicator()
         {
             var criminalAppearanceDetail = await _service.Criminal.AppearanceDetailAsync("2934", "36548.0734", "19498.0042");
 
@@ -680,7 +679,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_Appearance_Details_Prosecutor_Adjudicator_Accused()
+        public async Task Criminal_Appearance_Details_Prosecutor_Adjudicator_Accused()
         {
             var criminalAppearanceDetail = await _service.Criminal.AppearanceDetailAsync("1009", "1169.0026", "14188.0026");
 
@@ -695,7 +694,7 @@ namespace tests.api.Controllers
         }
 
         [Fact]
-        public async void Criminal_Appearance_Details_AttendanceMethod_PartyAppearanceMethod_AppearanceMethod()
+        public async Task Criminal_Appearance_Details_AttendanceMethod_PartyAppearanceMethod_AppearanceMethod()
         {
             var criminalAppearanceDetail = await _service.Criminal.AppearanceDetailAsync("3058", "30503.0734", "19621.0042");
 
@@ -716,33 +715,32 @@ namespace tests.api.Controllers
             var archiveRequest = new ArchiveRequest
             {
                 ZipName = "Hello.zip",
-                CsrRequests = new List<CsrRequest>
-                {
+                CsrRequests =
+                [
                     new CsrRequest
                     {
                         AppearanceId = "984",
                         PdfFileName = "test123.pdf"
                     }
-                },
-                DocumentRequests = new List<DocumentRequest>
-                {
-                    new DocumentRequest
+                ],
+                DocumentRequests = [
+                    new ()
                     {
                         Base64UrlEncodedDocumentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("6874")),
                         IsCriminal = false,
                         PdfFileName = "55",
                         FileId = "3197"
                     },
-                    new DocumentRequest
+                    new ()
                     {
                         Base64UrlEncodedDocumentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("6196.0734")),
                         IsCriminal = true,
                         PdfFileName = "4646363",
                         FileId = "3192"
                     }
-                },
-                RopRequests = new List<RopRequest>
-                {
+                ],
+                RopRequests =
+                [
                     new RopRequest
                     {
                         CourtLevelCode = CourtLevelCd.P,
@@ -751,7 +749,7 @@ namespace tests.api.Controllers
                         PdfFileName = "ropTest.pdf",
                         ProfSequenceNumber = "24"
                     }
-                }
+                ]
             };
 
             var actionResult = await _controller.GetArchive(archiveRequest) as FileContentResult;
@@ -761,42 +759,23 @@ namespace tests.api.Controllers
         }
 
         [Fact(Skip = "Adhoc Test")]
-        public async void Criminal_Appearance_Details_CacheTest()
+        public async Task Criminal_Appearance_Details_CacheTest()
         {
             //This fetches the FileDetail plus the appearances. So these should be cached after this call.
             var actionResult = await _controller.GetCriminalFileDetailByFileId("2934");
-            var fileDetail = HttpResponseTest.CheckForValidHttpResponseAndReturnValue(actionResult);
+            HttpResponseTest.CheckForValidHttpResponseAndReturnValue(actionResult);
 
             //Now call criminalAppearanceDetails.
             var actionResult2 = await _controller.GetCriminalAppearanceDetails("2934", "36548.0734", "19498.0042");
 
             var criminalAppearanceDetail = HttpResponseTest.CheckForValidHttpResponseAndReturnValue(actionResult2);
-            Assert.Equal(1, criminalAppearanceDetail.Charges.Count);
+            Assert.Single(criminalAppearanceDetail.Charges);
             Assert.Equal("2934", criminalAppearanceDetail.JustinNo);
             Assert.Contains(criminalAppearanceDetail.Charges, p => p.AppearanceReasonDsc == "First Appearance");
             Assert.Contains(criminalAppearanceDetail.Charges, p => p.StatuteDsc == "offer bribe to justice/pol comm/peac off");
             Assert.Contains(criminalAppearanceDetail.Charges, p => p.StatuteSectionDsc == "CCC - 120(b)");
-            Assert.Equal(1, criminalAppearanceDetail.AppearanceMethods.Count);
+            Assert.Single(criminalAppearanceDetail.AppearanceMethods);
             Assert.Equal("TC", criminalAppearanceDetail.AppearanceMethods.First().AppearanceMethodCd);
         }
-
-        #region Helpers
-
-        private void SetupMocks()
-        {
-            var headerDictionary = new HeaderDictionary();
-            var response = new Mock<HttpResponse>();
-            response.SetupGet(r => r.Headers).Returns(headerDictionary);
-
-            var httpContext = new Mock<HttpContext>();
-            httpContext.SetupGet(a => a.Response).Returns(response.Object);
-
-            _controller.ControllerContext = new ControllerContext()
-            {
-                HttpContext = httpContext.Object
-            };
-        }
-
-        #endregion Helpers
     }
 }

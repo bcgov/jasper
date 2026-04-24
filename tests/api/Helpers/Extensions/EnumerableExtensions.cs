@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Bogus;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using Xunit;
 
 namespace tests.api.Helpers.Extensions;
@@ -10,6 +10,9 @@ namespace tests.api.Helpers.Extensions;
 public class EnumerableExtensionsTests
 {
     private readonly Faker _faker;
+    private static readonly string[] collection = ["invalid1", "invalid2"];
+    private static readonly string[] collection0 = ["iso2"];
+    private static readonly string[] collection1 = ["iso", "pcss"];
 
     public EnumerableExtensionsTests()
     {
@@ -152,8 +155,8 @@ public class EnumerableExtensionsTests
         var result = items.OrderByDateString(x => x.DateString, nullsLast: true).ToList();
 
         Assert.Equal("valid", result[0].Id);
-        Assert.Contains(result[1].Id, new[] { "invalid1", "invalid2" });
-        Assert.Contains(result[2].Id, new[] { "invalid1", "invalid2" });
+        Assert.Contains(result[1].Id, collection);
+        Assert.Contains(result[2].Id, collection);
     }
 
     [Fact]
@@ -213,8 +216,8 @@ public class EnumerableExtensionsTests
 
         var result = items.OrderByDateString(x => x.DateString).ToList();
 
-        Assert.Contains(result[0].Id, new[] { "iso2" }); // 2025-10-20
-        Assert.Contains(result[1].Id, new[] { "iso", "pcss" }); // 2025-10-25 (same date)
+        Assert.Contains(result[0].Id, collection0); // 2025-10-20
+        Assert.Contains(result[1].Id, collection1); // 2025-10-25 (same date)
     }
 
     [Theory]

@@ -1,14 +1,14 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Models.Order;
+using Scv.Models.Helpers;
+using Scv.Models.Order;
 using Xunit;
 
 namespace tests.Api.Helpers;
 
 public class FlexibleNamingJsonConverterTests
 {
-    private JsonSerializerSettings SettingsWithConverter()
+    private static JsonSerializerSettings SettingsWithConverter()
     {
         return new JsonSerializerSettings
         {

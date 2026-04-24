@@ -5,6 +5,7 @@ using Hangfire;
 using Microsoft.Extensions.Logging;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
 

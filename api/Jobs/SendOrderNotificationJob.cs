@@ -2,10 +2,11 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Helpers;
-using Scv.Api.Models.Order;
 using Scv.Api.Services;
-using Scv.Api.SignalR;
+using Scv.Api.SignalR.Notifications;
+using Scv.Core.Helpers;
+using Scv.Models;
+using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
 
@@ -106,7 +107,7 @@ public class SendOrderNotificationJob(
             judgeId, order.OrderRequest.PhysicalFileId);
     }
 
-    private static string GetJudgeName(Models.Person judge)
+    private static string GetJudgeName(Person judge)
     {
         var latestName = judge.Names?.FirstOrDefault();
         if (latestName == null)

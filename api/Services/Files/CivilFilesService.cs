@@ -9,15 +9,16 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models.Civil.AppearanceDetail;
-using Scv.Api.Models.Civil.Appearances;
-using Scv.Api.Models.Civil.Detail;
-using Scv.Api.Models.Search;
+using Scv.Core.ContractResolver;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
-using CivilAppearanceMethod = Scv.Api.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
+using Scv.Models.Civil.AppearanceDetail;
+using Scv.Models.Civil.Appearances;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Document;
+using Scv.Models.Search;
+using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
 
 namespace Scv.Api.Services.Files
 {
@@ -61,7 +62,7 @@ namespace Scv.Api.Services.Files
             _requestPartId = user?.ParticipantId() ?? configuration.GetNonEmptyValue("Request:PartId");
 
             _logger = logger;
-            _filterOutDocumentTypes = configuration.GetNonEmptyValue("ExcludeDocumentTypeCodesForCounsel").Split(",").ToList();
+            _filterOutDocumentTypes = [.. configuration.GetNonEmptyValue("ExcludeDocumentTypeCodesForCounsel").Split(",")];
             _currentUser = user;
         }
 
@@ -113,7 +114,7 @@ namespace Scv.Api.Services.Files
             var finalResult = new FileSearchResponse
             {
                 RecCount = totalCount.ToString(),
-                FileDetail = combinedFileDetails.ToList(),
+                FileDetail = [.. combinedFileDetails],
                 ResponseMessageTxt = message
             };
 
@@ -140,8 +141,8 @@ namespace Scv.Api.Services.Files
         {
             var fileDetails = new List<RedactedCivilFileDetailResponse>();
             CourtClassCd courtClass = CourtClassCd.A;
-            var courtClassSet = fileNumber.Contains("-") && Enum.TryParse(fileNumber.Split("-")[0], out courtClass);
-            fileNumber = fileNumber.Contains("-") ? fileNumber.Split("-")[1] : fileNumber;
+            var courtClassSet = fileNumber.Contains('-') && Enum.TryParse(fileNumber.Split("-")[0], out courtClass);
+            fileNumber = fileNumber.Contains('-') ? fileNumber.Split("-")[1] : fileNumber;
 
             var fileSearchResponse = await SearchAsync(new FilesCivilQuery
             {
@@ -164,7 +165,7 @@ namespace Scv.Api.Services.Files
 
             //Return the basic entry without doing a lookup.
             if (fileIdAndAppearanceDate.Count == 1)
-                return new List<RedactedCivilFileDetailResponse> { new RedactedCivilFileDetailResponse { PhysicalFileId = fileIdAndAppearanceDate.First().PhysicalFileId } };
+                return [new RedactedCivilFileDetailResponse { PhysicalFileId = fileIdAndAppearanceDate[0].PhysicalFileId }];
 
             var fileDetailTasks = new List<Task<CivilFileDetailResponse>>();
             foreach (var fileId in fileIdAndAppearanceDate)
@@ -485,7 +486,7 @@ namespace Scv.Api.Services.Files
                 document.Category = categories[i];
                 document.DocumentTypeDescription = descriptions[i];
                 document.ImageId = (document.SealedYN == "Y" && isStaff) ? null : document.ImageId;
-                document.NextAppearanceDt = document.Appearance?.Where(app => DateTime.TryParse(app?.AppearanceDate, out DateTime appearanceDate) && appearanceDate >= DateTime.Today).FirstOrDefault()?.AppearanceDate;
+                document.NextAppearanceDt = document.Appearance?.FirstOrDefault(app => DateTime.TryParse(app?.AppearanceDate, out DateTime appearanceDate) && appearanceDate >= DateTime.Today)?.AppearanceDate;
                 document.Appearance = null;
                 document.SwornByNm = documentFromFileContent?.SwornByNm;
                 document.AffidavitNo = documentFromFileContent?.AffidavitNo;
@@ -508,7 +509,7 @@ namespace Scv.Api.Services.Files
                     CivilDocumentId = refDoc.ReferenceDocumentId,
                     DocumentTypeCd = refDoc.ReferenceDocumentTypeCd,
                     DocumentTypeDescription = "Reference", // TODO: temporary, requires future module to handle JASPER document category mapping.
-                    Category = DocumentCategory.LITIGANT,
+                    Category = DocumentCategories.LITIGANT,
                     ImageId = refDoc.ObjectGuid,
                     FiledDt = refDoc.EnterDtm,
                     Issue = [],
@@ -602,22 +603,6 @@ namespace Scv.Api.Services.Files
 
             await Task.WhenAll(tasks);
             return appearanceMethods;
-        }
-
-        private async Task<CivilAdjudicator> PopulateDetailedAppearanceAdjudicator(CvfcPreviousAppearance previousAppearance, ICollection<JCCommon.Clients.FileServices.CivilAppearanceMethod> civilAppearanceMethods)
-        {
-            if (previousAppearance == null)
-                return null;
-
-            var appearanceMethodCd = civilAppearanceMethods.FirstOrDefault(am => am.RoleTypeCd == "ADJ")?.AppearanceMethodCd;
-            return new CivilAdjudicator
-            {
-                FullName = previousAppearance.AdjudicatorName,
-                AdjudicatorAppearanceMethod = previousAppearance.AdjudicatorAppearanceMethod,
-                AdjudicatorAppearanceMethodDesc = await _lookupService.GetCivilAssetsDescription(previousAppearance.AdjudicatorAppearanceMethod),
-                AppearanceMethodCd = appearanceMethodCd,
-                AppearanceMethodDesc = await _lookupService.GetCivilAssetsDescription(appearanceMethodCd)
-            };
         }
 
         /// <summary>

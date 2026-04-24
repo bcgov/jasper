@@ -9,11 +9,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
-using Scv.Api.Helpers;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.Order;
 using Scv.Api.Services;
-using Scv.Db.Models;
+using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Models.Order;
 using Xunit;
 using ValidationResult = FluentValidation.Results.ValidationResult;
 
@@ -116,7 +115,7 @@ public class OrdersControllerTests
         var result = await _controller.UpsertOrder(orderDto);
 
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(unprocessableResult.Value);
+        var errors = Assert.IsType<IEnumerable<string>>(unprocessableResult.Value, exactMatch: false);
         Assert.Contains("CourtFile is required.", errors);
         _mockOrderRequestValidator.Verify(v => v.ValidateAsync(orderDto, default), Times.Once);
         _mockOrderService.Verify(s => s.ValidateAsync(It.IsAny<OrderDto>(), It.IsAny<bool>()), Times.Never);
@@ -245,7 +244,7 @@ public class OrdersControllerTests
         var result = await _controller.UpsertOrder(orderDto);
 
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(unprocessableResult.Value);
+        var errors = Assert.IsType<IEnumerable<string>>(unprocessableResult.Value, false);
         Assert.Equal(3, errors.Count());
         Assert.Contains("CourtFile is required.", errors);
         Assert.Contains("Referral is required.", errors);
@@ -271,7 +270,7 @@ public class OrdersControllerTests
         var result = await _controller.UpsertOrder(orderDto);
 
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(unprocessableResult.Value);
+        var errors = Assert.IsType<IEnumerable<string>>(unprocessableResult.Value, false);
         Assert.Contains("CourtDivisionCd is unsupported.", errors);
     }
 
@@ -294,7 +293,7 @@ public class OrdersControllerTests
         var result = await _controller.UpsertOrder(orderDto);
 
         var unprocessableResult = Assert.IsType<UnprocessableEntityObjectResult>(result);
-        var errors = Assert.IsAssignableFrom<IEnumerable<string>>(unprocessableResult.Value);
+        var errors = Assert.IsType<IEnumerable<string>>(unprocessableResult.Value, false);
         Assert.Contains("CourtClassCd is unsupported.", errors);
     }
 

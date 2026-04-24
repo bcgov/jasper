@@ -4,22 +4,17 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
-using Scv.Api.Models.Lookup;
 using Scv.Api.Services;
+using Scv.Models.Lookup;
 
 namespace Scv.Api.Controllers
 {
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("api/[controller]")]
     [ApiController]
-    public class CodesController : ControllerBase
+    public class CodesController(LookupService lookupService) : ControllerBase
     {
-        private readonly LookupService _lookupService;
-
-        public CodesController(LookupService lookupService)
-        {
-            _lookupService = lookupService;
-        }
+        private readonly LookupService _lookupService = lookupService;
 
         /// <summary>
         /// Gets the Court Classes

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Moq;
-using Scv.Api.Models.Location;
+using Scv.Models.Location;
 
 namespace tests.api.Fixtures;
 
@@ -15,7 +15,7 @@ public static class LocationServiceBuilder
     {
         fixture.MockLocationService
             .Setup(s => s.GetLocations(It.IsAny<bool>()))
-            .ReturnsAsync(locations ?? new List<Location>());
+            .ReturnsAsync(locations ?? []);
 
         return fixture;
     }

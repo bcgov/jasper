@@ -4,9 +4,9 @@ using JCCommon.Clients.UserService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Models.JCUserService;
+using Scv.Core.ContractResolver;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.JCUserService;
 
 namespace Scv.Api.Services
 {
@@ -37,18 +37,21 @@ namespace Scv.Api.Services
                 if (response.ErrorMsg == null)
                 {
                     response.AgenID = string.IsNullOrEmpty(response.AgenID) ? SupremeAgencyId : response.AgenID;
-                    Logger.LogDebug($"SMGOV_USERGUID: {userInfoRequest.DomainUserGuid}, UserAgencyCd: {response.AgenID}, UserPartId: {response.PartID}");
+                    Logger.LogDebug("SMGOV_USERGUID: {DomainUserGuid}, UserAgencyCd: {AgencyId}, UserPartId: {PartId}",
+                        userInfoRequest.DomainUserGuid,
+                        response.AgenID,
+                        response.PartID);
                     return response;
                 }
                 else
                 {
-                    Logger.LogError($"Return failed from getParticipantInfo with error: {response.ErrorMsg}");
+                    Logger.LogError("Return failed from getParticipantInfo with error: {Error}", response.ErrorMsg);
                     return null;
                 }
             }
             catch (Exception e)
             {
-                Logger.LogError(e, e.Message);
+                Logger.LogError(e, "{Message}", e.Message);
                 return null;
             }
         }

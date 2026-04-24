@@ -74,10 +74,9 @@ namespace Scv.Api.Services.EF
                 var historyRepository = db.GetService<IHistoryRepository>();
 
                 var all = migrationsAssembly.Migrations.Keys;
-                var applied = historyRepository.Exists() ? historyRepository.GetAppliedMigrations().Select(r => r.MigrationId).ToList() : new List<string>();
+                var applied = await historyRepository.ExistsAsync() ? (await historyRepository.GetAppliedMigrationsAsync()).Select(r => r.MigrationId).ToList() : [];
                 var pending = all.Except(applied).ToList();
-                Logger.LogInformation($"Pending {pending.Count} Migrations.");
-                Logger.LogDebug($"{string.Join(", ", pending)}");
+                Logger.LogDebug("All pending migrations: {PendingMigrations}", string.Join(", ", pending));
 
                 // Use async migration with timeout
                 await db.Database.MigrateAsync();
@@ -94,24 +93,24 @@ namespace Scv.Api.Services.EF
             }
         }
 
-        private async Task ExecuteSeedScripts(DbContext db, IWebHostEnvironment environment)
+        private async Task ExecuteSeedScripts(ScvDbContext db, IWebHostEnvironment environment)
         {
             var seedPath = environment.IsDevelopment() ? Path.Combine("docker", "seed") : "data";
             var dbSqlPath = environment.IsDevelopment() ? Path.Combine("db", "sql") : Path.Combine("src", "db", "sql");
             var path = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, seedPath);
             var dbPath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, dbSqlPath);
-            Logger.LogInformation($"Fresh database detected. Loading SQL from paths: {dbPath} and then {path}");
+            Logger.LogInformation("Fresh database detected. Loading SQL from paths: {DbPath} and then {Path}", dbPath, path);
 
             using var transaction = await db.Database.BeginTransactionAsync();
             var lastFile = "";
             try
             {
                 var files = GetSqlFilesOrderedByNumber(dbPath).Concat(GetSqlFilesOrderedByNumber(path)).ToList();
-                Logger.LogInformation($"Found {files.Count} files.");
+                Logger.LogInformation("Found {FilesCount} files.", files.Count);
                 foreach (var file in files)
                 {
                     lastFile = file;
-                    Logger.LogInformation($"Executing File: {file}");
+                    Logger.LogInformation("Executing File: {File}", file);
                     await db.Database.ExecuteSqlRawAsync(await File.ReadAllTextAsync(file));
                 }
                 await transaction.CommitAsync();
@@ -119,7 +118,7 @@ namespace Scv.Api.Services.EF
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"Error while executing {lastFile}. Rolling back all files.");
+                Logger.LogError(e, "Error while executing {LastFile}. Rolling back all files.", lastFile);
                 await transaction.RollbackAsync();
             }
         }
@@ -130,8 +129,8 @@ namespace Scv.Api.Services.EF
                 return Directory.GetFiles(path, "*.sql").OrderBy(x =>
                     Regex.Match(x, @"\d+").Value);
 
-            Logger.LogWarning($"{path} does not exist.");
-            return new List<string>();
+            Logger.LogWarning("{Path} does not exist.", path);
+            return [];
         }
 
         #endregion SCV Migrations and Seeds

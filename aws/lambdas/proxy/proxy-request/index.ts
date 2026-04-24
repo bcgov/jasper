@@ -3,14 +3,35 @@ import { ApiService } from "../../../services/apiService";
 
 const X_TARGET_APP_HEADER = "x-target-app";
 
+const getHeader = (
+  headers: Record<string, string | undefined> | null,
+  name: string,
+): string | undefined => {
+  if (!headers) {
+    return undefined;
+  }
+
+  const found = Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === name.toLowerCase(),
+  );
+
+  return found?.[1];
+};
+
 export const handler = async (
-  event: APIGatewayEvent
+  event: APIGatewayEvent,
 ): Promise<APIGatewayProxyResult> => {
-  const targetApp = event.headers[X_TARGET_APP_HEADER];
+  const targetApp = getHeader(
+    event.headers,
+    X_TARGET_APP_HEADER,
+  )?.toUpperCase();
 
   let credentialsSecret: string;
 
   switch (targetApp) {
+    case "TD":
+      credentialsSecret = process.env.TD_SECRET_NAME!;
+      break;
     case "DARS":
       credentialsSecret = process.env.DARS_SECRET_NAME!;
       break;
@@ -25,8 +46,10 @@ export const handler = async (
 
   const apiService = new ApiService(credentialsSecret);
   await apiService.initialize();
-  
-  const result = await apiService.handleRequest(event);
+
+  const result = await apiService.handleRequest(event, {
+    forwardAuthorization: targetApp === "TD",
+  });
 
   return result;
 };

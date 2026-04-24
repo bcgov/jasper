@@ -8,9 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Api.Services.Files
 {
@@ -24,7 +23,6 @@ namespace Scv.Api.Services.Files
         public readonly CivilFilesService Civil;
         public readonly CriminalFilesService Criminal;
         private readonly FileServicesClient _filesClient;
-        private readonly IAppCache _cache;
         private readonly string _applicationCode;
         private readonly string _requestAgencyIdentifierId;
         private readonly string _requestPartId;
@@ -45,18 +43,17 @@ namespace Scv.Api.Services.Files
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
-            _cache = cache;
-            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:FileExpiryMinutes")) * 60;
+            cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:FileExpiryMinutes")) * 60;
             Civil = new CivilFilesService(
                 configuration,
                 filesClient,
                 mapper,
                 lookupService,
                 locationService,
-                _cache,
+                cache,
                 claimsPrincipal,
                 factory.CreateLogger<CivilFilesService>());
-            Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, _cache, claimsPrincipal, documentConverter);
+            Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, cache, claimsPrincipal, documentConverter);
 
             _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
             _requestAgencyIdentifierId = claimsPrincipal?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
@@ -71,10 +68,7 @@ namespace Scv.Api.Services.Files
 
         public async Task<FileResponse> DocumentAsync(string documentId, bool isCriminal, string physicalFileId, string correlationId = null, bool flatten = true)
         {
-            if (correlationId == null)
-            {
-                correlationId = Guid.NewGuid().ToString();
-            }
+            correlationId ??= Guid.NewGuid().ToString();
 
             return await _filesClient.FilesDocumentAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, documentId, isCriminal ? "R" : "I", physicalFileId, flatten, correlationId);
         }

@@ -2,18 +2,15 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Authorization
 {
-    public class VcCivilFileAccessHandler
+    public class VcCivilFileAccessHandler(ScvDbContext db)
     {
-        private ScvDbContext Db { get; }
-        public VcCivilFileAccessHandler(ScvDbContext db)
-        {
-            Db = db;
-        }
+        private ScvDbContext Db { get; } = db;
+
         public async Task<bool> HasCivilFileAccess(ClaimsPrincipal user, string civilFileId)
         {
             var userId = user.ExternalUserId();

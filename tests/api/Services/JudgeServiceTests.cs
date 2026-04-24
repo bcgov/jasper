@@ -8,12 +8,12 @@ using LazyCache.Providers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using PCSSCommon.Clients.PersonServices;
-using Scv.Api.Models.Location;
 using Scv.Api.Services;
+using Scv.Models.Location;
 using tests.api.Fixtures;
 using Xunit;
 using PcssPersonSearchItem = PCSSCommon.Models.PersonSearchItem;
-using ScvPerson = Scv.Api.Models.Person;
+using ScvPerson = Scv.Models.Person;
 
 namespace tests.api.Services;
 
@@ -292,7 +292,7 @@ public class JudgeServiceTests : ServiceTestBase, IClassFixture<LocationServiceF
                 ""))
             .ReturnsAsync(judges);
 
-        var result = await _judgeService.GetJudges(new List<string>());
+        var result = await _judgeService.GetJudges([]);
 
         Assert.NotNull(result);
         Assert.Equal(3, result.Count());
@@ -326,7 +326,7 @@ public class JudgeServiceTests : ServiceTestBase, IClassFixture<LocationServiceF
                 ""))
             .ReturnsAsync(judges);
 
-        var result = await _judgeService.GetJudges(new List<string> { positionCode });
+        var result = await _judgeService.GetJudges([positionCode]);
 
         Assert.NotNull(result);
         Assert.Single(result);

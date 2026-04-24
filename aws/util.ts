@@ -25,12 +25,25 @@ const allowedHeaders = new Set([
  * @returns A sanitized headers object.
  */
 export const sanitizeHeaders = (
-  headers: Record<string, string | undefined>
+  headers: Record<string, string | undefined>,
+  options?: { forwardAuthorization?: boolean },
 ): Record<string, string> => {
   const filteredHeaders: Record<string, string> = {};
 
-  for (const [key, value] of Object.entries(headers || {})) {
-    if (allowedHeaders.has(key) && value !== undefined) {
+  for (const [key, value] of Object.entries(headers)) {
+    if (!value) {
+      continue;
+    }
+
+    if (allowedHeaders.has(key)) {
+      filteredHeaders[key] = value;
+      continue;
+    }
+
+    if (
+      options?.forwardAuthorization &&
+      key.toLowerCase() === "authorization"
+    ) {
       filteredHeaders[key] = value;
     }
   }
@@ -44,7 +57,7 @@ export const sanitizeHeaders = (
  * @returns A sanitized query string.
  */
 export const sanitizeQueryStringParams = (
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
 ): string => {
   for (const key of Object.keys(params)) {
     const value = params[key];

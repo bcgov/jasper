@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
 
 namespace Scv.Api.Services;
 
@@ -28,7 +28,7 @@ public class QuickLinkService(
         quickLinkRepo), IQuickLinkService
 {
     public override string CacheName => nameof(QuickLinkService);
-    
+
     public async Task<IEnumerable<QuickLinkDto>> GetJudgeQuickLinks()
     {
         // For now we are only retrieving default quick links (JudgeId == null)

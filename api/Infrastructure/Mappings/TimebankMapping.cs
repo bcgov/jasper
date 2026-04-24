@@ -1,12 +1,12 @@
 using Mapster;
-using Scv.Api.Models.Timebank;
+using Scv.Models.Timebank;
 using PCSS = PCSSCommon.Clients.TimebankServices;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
 public class TimebankMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<PCSS.VacationPayout, VacationPayoutDto>()
             .Map(dest => dest.JudiciaryPersonId, src => src.JudiciaryPersonId)
@@ -26,5 +26,10 @@ public class TimebankMapping : IRegister
             .Map(dest => dest.TotalCurrent, src => src.TotalCurrent)
             .Map(dest => dest.TotalBanked, src => src.TotalBanked)
             .Map(dest => dest.TotalPayout, src => src.TotalPayout);
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

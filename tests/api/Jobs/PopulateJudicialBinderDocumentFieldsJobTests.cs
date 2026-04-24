@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Bogus;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -7,22 +11,15 @@ using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph.Models;
-using Microsoft.Graph.Models.Security;
 using Moq;
-using Scv.Api.Infrastructure;
 using Scv.Api.Jobs;
-using Scv.Api.Models;
-using Scv.Api.Models.Binder;
-using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Services;
-using Scv.Api.Services.Files;
+using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
-using Scv.Db.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Scv.Models;
+using Scv.Models.Binder;
+using Scv.Models.Civil.Detail;
+using Scv.Models.Document;
 using tests.api.Fixtures;
 using Xunit;
 
@@ -316,15 +313,15 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
 
         this.SetupFileServiceMocks();
         var job = CreateJob();
-        var exception = await Assert.ThrowsAsync<Exception>(() => job.Execute());
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => job.Execute());
 
-        Assert.Equal("Fatal error", exception.Message);
+        Assert.Contains("Fatal error in PopulateJudicialBinderDocumentFieldsJob", exception.Message);
 
         _logger.Verify(
             l => l.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, _) => o.ToString()!.Contains("Fatal error in PopulateJudicialBinderDocumentFieldsJob")),
+                It.IsAny<It.IsAnyType>(),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -386,13 +383,13 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
                 new CvfcDocument3
                 {
                     CivilDocumentId = documentId1,
-                    DocumentTypeCd = DocumentCategory.BAIL,
+                    DocumentTypeCd = DocumentCategories.BAIL,
                     Issue = []
                 },
                 new CvfcDocument3
                 {
                     CivilDocumentId = documentId2,
-                    DocumentTypeCd = DocumentCategory.BAIL,
+                    DocumentTypeCd = DocumentCategories.BAIL,
                     Issue = []
                 }
             ],
@@ -460,7 +457,7 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
                 new CvfcDocument3
                 {
                     CivilDocumentId = documentId,
-                    DocumentTypeCd = DocumentCategory.BAIL,
+                    DocumentTypeCd = DocumentCategories.BAIL,
                     Issue = []
                 }
             ],
@@ -516,7 +513,7 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
                 new CvfcDocument3
                 {
                     CivilDocumentId = "doc-1",
-                    DocumentTypeCd = DocumentCategory.BAIL,
+                    DocumentTypeCd = DocumentCategories.BAIL,
                     Issue = []
                 }
             ],
@@ -534,7 +531,7 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
             ]
         };
 
-        documentCategory ??= DocumentCategory.BAIL;
+        documentCategory ??= DocumentCategories.BAIL;
 
         _filesServiceFixture.MockFileServicesClient
             .Setup(s => s.FilesCivilGetAsync(
@@ -577,23 +574,23 @@ public class PopulateJudicialBinderDocumentFieldsJobTests
                 { LabelConstants.JUDGE_ID, _faker.Random.AlphaNumeric(10) },
                 { LabelConstants.PHYSICAL_FILE_ID, fileId }
             },
-            Documents = documentIds.Select(id => new BinderDocumentDto
+            Documents = [.. documentIds.Select(id => new BinderDocumentDto
             {
                 DocumentId = id,
                 Order = 0
-            }).ToList()
+            })]
         };
     }
 
     private List<CivilDocument> CreateTestCivilDocuments(List<string> documentIds)
     {
-        return documentIds.Select(id => new CivilDocument
+        return [.. documentIds.Select(id => new CivilDocument
         {
             CivilDocumentId = id,
             ImageId = _faker.Random.AlphaNumeric(10),
             DocumentTypeDescription = _faker.Lorem.Sentence(),
             DocumentTypeCd = "LITIGANT"
-        }).ToList();
+        })];
     }
 
     #endregion

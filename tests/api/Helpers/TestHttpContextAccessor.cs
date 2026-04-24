@@ -13,11 +13,11 @@ namespace tests.api.Helpers
             // For example, you can set the User property
             HttpContext = new DefaultHttpContext
             {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Name, "your_username"),
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                [
+                    new(ClaimTypes.Name, "your_username"),
                     // Add other claims as needed
-                }, "mock"))
+                ], "mock"))
             };
         }
     }

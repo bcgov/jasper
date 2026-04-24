@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using Scv.Api.Helpers.Documents;
-using Scv.Api.Models.Criminal.Detail;
 using Scv.Db.Models;
+using Scv.Models.Criminal.Detail;
+using Scv.Models.Document;
+using Scv.Models.Helpers.Extensions;
 using Xunit;
 
 namespace tests.api.Helpers.Documents;
@@ -34,8 +35,8 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.INITIATING, IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.INITIATING, IssueDate = "2024-01-02" },
             new() { Category = "OTHER", IssueDate = "2024-01-03" }
         };
 
@@ -44,7 +45,7 @@ public class KeyDocumentResolverTest
         Assert.NotNull(result);
         var resultList = result.ToList();
         Assert.Equal(2, resultList.Count);
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
+        Assert.Contains(resultList, d => d.Category == DocumentCategories.ROP);
         Assert.Contains(resultList, d => d.Category == "Initiating");
     }
 
@@ -53,8 +54,8 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-05" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-04" }
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-05" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-04" }
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -70,8 +71,8 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-02" },
             new() { Category = "OTHER", IssueDate = "2024-01-03" }
         };
 
@@ -80,8 +81,8 @@ public class KeyDocumentResolverTest
         Assert.NotNull(result);
         var resultList = result.ToList();
         Assert.Equal(2, resultList.Count);
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.ROP));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.BAIL) && d.DocmDispositionDsc == "Active");
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.ROP));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.BAIL) && d.DocmDispositionDsc == "Active");
     }
 
     [Fact]
@@ -89,10 +90,10 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.REPORT, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.INITIATING, IssueDate = "2024-01-03" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-04" },
+            new() { Category = DocumentCategories.REPORT, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.INITIATING, IssueDate = "2024-01-03" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-04" },
             new() { Category = "OTHER", IssueDate = "2024-01-05" } // Should not be included
         };
 
@@ -102,10 +103,10 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Equal(4, resultList.Count);
 
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.REPORT));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.ROP));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.INITIATING));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.BAIL) && d.DocmDispositionDsc == "Active");
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.REPORT));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.ROP));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.INITIATING));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.BAIL) && d.DocmDispositionDsc == "Active");
         Assert.DoesNotContain(resultList, d => d.Category == "OTHER");
     }
 
@@ -114,11 +115,11 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-05" },
-            new() { Category = DocumentCategory.PSR, IssueDate = "2024-01-03" },
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.INITIATING, IssueDate = "2024-01-04" }
+            new() { Category = DocumentCategories.PSR, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.PSR, IssueDate = "2024-01-05" },
+            new() { Category = DocumentCategories.PSR, IssueDate = "2024-01-03" },
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.INITIATING, IssueDate = "2024-01-04" }
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -127,9 +128,9 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Equal(5, resultList.Count);
 
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.REPORT));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.INITIATING));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.REPORT));
+        Assert.Contains(resultList, d => d.Category == DocumentCategories.ROP);
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.INITIATING));
     }
 
     [Fact]
@@ -137,9 +138,9 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.INITIATING, IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-03" }
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.INITIATING, IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-03" }
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -148,10 +149,10 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Equal(3, resultList.Count);
 
-        Assert.DoesNotContain(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.REPORT) || d.DocmClassification == DocumentCategory.Format(DocumentCategory.REPORT));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.ROP));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.INITIATING));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.BAIL) && d.DocmDispositionDsc == "Active");
+        Assert.DoesNotContain(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.REPORT) || d.DocmClassification == DocumentCategory.Format(DocumentCategories.REPORT));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.ROP));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.INITIATING));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.BAIL) && d.DocmDispositionDsc == "Active");
     }
 
     [Fact]
@@ -159,10 +160,10 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "cancelled", IssueDate = "2024-01-03" }, // Case insensitive
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-01" }
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "cancelled", IssueDate = "2024-01-03" }, // Case insensitive
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-01" }
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -171,8 +172,8 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Equal(2, resultList.Count);
 
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.ROP));
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategory.BAIL) && d.DocmDispositionDsc == "Active");
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.ROP));
+        Assert.Contains(resultList, d => d.Category == DocumentCategory.Format(DocumentCategories.BAIL) && d.DocmDispositionDsc == "Active");
         Assert.DoesNotContain(resultList, d => d.DocmDispositionDsc?.ToUpper() == "CANCELLED");
     }
 
@@ -181,9 +182,9 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Cancelled", IssueDate = "2024-01-03" }
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Cancelled", IssueDate = "2024-01-03" }
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -192,8 +193,8 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Single(resultList);
 
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
-        Assert.DoesNotContain(resultList, d => d.Category == DocumentCategory.BAIL);
+        Assert.Contains(resultList, d => d.Category == DocumentCategories.ROP);
+        Assert.DoesNotContain(resultList, d => d.Category == DocumentCategories.BAIL);
     }
 
     [Fact]
@@ -201,10 +202,10 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-03" }, // More recent but cancelled
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "Pending", IssueDate = "2024-01-04" } // Most recent uncancelled
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Active", IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-03" }, // More recent but cancelled
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "Pending", IssueDate = "2024-01-04" } // Most recent uncancelled
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -213,7 +214,7 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Equal(2, resultList.Count);
 
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
+        Assert.Contains(resultList, d => d.Category == DocumentCategories.ROP);
         var bailDocument = resultList.FirstOrDefault(d => d.Category == "Bail");
         Assert.NotNull(bailDocument);
         Assert.Equal("Pending", bailDocument.DocmDispositionDsc);
@@ -225,9 +226,9 @@ public class KeyDocumentResolverTest
     {
         var documents = new List<CriminalDocument>
         {
-            new() { Category = DocumentCategory.ROP, IssueDate = "2024-01-01" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = null, IssueDate = "2024-01-02" },
-            new() { Category = DocumentCategory.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-03" }
+            new() { Category = DocumentCategories.ROP, IssueDate = "2024-01-01" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = null, IssueDate = "2024-01-02" },
+            new() { Category = DocumentCategories.BAIL, DocmDispositionDsc = "CANCELLED", IssueDate = "2024-01-03" }
         };
 
         var result = KeyDocumentResolver.GetCriminalKeyDocuments(documents);
@@ -236,7 +237,7 @@ public class KeyDocumentResolverTest
         var resultList = result.ToList();
         Assert.Equal(2, resultList.Count);
 
-        Assert.Contains(resultList, d => d.Category == DocumentCategory.ROP);
+        Assert.Contains(resultList, d => d.Category == DocumentCategories.ROP);
         var bailDocument = resultList.FirstOrDefault(d => d.Category == "Bail");
         Assert.NotNull(bailDocument);
         Assert.Null(bailDocument.DocmDispositionDsc);

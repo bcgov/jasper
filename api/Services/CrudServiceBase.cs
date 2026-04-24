@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models;
+using Scv.Core.Infrastructure;
+using Scv.Core.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
 
 namespace Scv.Api.Services;
 
@@ -42,7 +43,7 @@ public abstract class CrudServiceBase<TRepo, TEntity, TDto>(
             this.CacheName,
             async () =>
             {
-                var entities = (await this.Repo.GetAllAsync());
+                var entities = await this.Repo.GetAllAsync();
                 return this.Mapper.Map<List<TDto>>(entities);
             });
 

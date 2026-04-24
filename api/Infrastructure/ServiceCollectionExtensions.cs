@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
 using Amazon;
@@ -27,28 +26,30 @@ using Microsoft.Graph;
 using MongoDB.Driver;
 using nClam;
 using PostgreSQL.ListenNotify.DependencyInjection;
-using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Encryption;
-using Scv.Api.Infrastructure.Handler;
 using Scv.Api.Infrastructure.Hangfire;
+using Scv.Api.Infrastructure.HealthChecks;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Processors;
-using Scv.Api.Repositories;
-using Scv.Api.SignalR;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
+using Scv.Api.SignalR;
+using Scv.Api.SignalR.Notifications;
+using Scv.Core.Exceptions;
+using Scv.Core.Handler;
+using Scv.Core.Helpers.Extensions;
+using Scv.Cso;
+using Scv.Cso.Infrastructure.Options;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
+using Scv.Models.AccessControlManagement;
 using BasicAuthenticationHeaderValue = JCCommon.Framework.BasicAuthenticationHeaderValue;
 using CSOJudicialServices = CSOCommon.Clients.JudicialServices;
 using LogNotesServices = DARSCommon.Clients.LogNotesServices;
@@ -65,8 +66,8 @@ using PCSSPersonServices = PCSSCommon.Clients.PersonServices;
 using PCSSReportServices = PCSSCommon.Clients.ReportServices;
 using PCSSSearchDateServices = PCSSCommon.Clients.SearchDateServices;
 using PCSSTimebankServices = PCSSCommon.Clients.TimebankServices;
+using TdDocumentsServices = TDCommon.Clients.DocumentsServices;
 using TranscriptsServices = DARSCommon.Clients.TranscriptsServices;
-using Scv.Api.Helpers.Exceptions;
 
 namespace Scv.Api.Infrastructure
 {
@@ -89,6 +90,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentStrategy, ReportStrategy>();
             services.AddScoped<IDocumentStrategy, CourtSummaryReportStrategy>();
             services.AddScoped<IDocumentStrategy, TranscriptStrategy>();
+            services.AddScoped<IDocumentStrategy, TransitoryDocumentStrategy>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
@@ -186,7 +188,7 @@ namespace Scv.Api.Infrastructure
             services.AddPostgresNotifications(options =>
             {
                 options.ConnectionString = connectionString;
-                options.ListenChannels = new List<string> { channel };
+                options.ListenChannels = [channel];
                 options.DefaultNotifyChannel = channel;
                 options.ApplicationName = "Jasper.SignalR";
             });
@@ -246,10 +248,11 @@ namespace Scv.Api.Infrastructure
         public static IServiceCollection AddHttpClientsAndScvServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<TimingHandler>();
-            services.AddSingleton<IKeycloakTokenService, KeycloakTokenService>();
+            services.AddSingleton<Authentication.IKeycloakTokenService, KeycloakTokenService>();
             services.AddTransient<CsoBearerTokenHandler>();
-            services.AddHttpClient(KeycloakTokenService.HttpClientName);
-            services.AddOptions<KeycloakClientOptions>()
+            services.AddHttpClient(KeycloakTokenService.HttpClientName)
+                .AddHttpMessageHandler<TimingHandler>();
+            services.AddOptions<CsoKeycloakClientOptions>()
                 .Bind(configuration.GetSection("CsoClientKeycloak"))
                 .ValidateDataAnnotations();
 
@@ -316,6 +319,19 @@ namespace Scv.Api.Infrastructure
                 .AddHttpClient<PCSSGlobalNonSittingDaysServices.GlobalNonSittingDaysServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();
 
+            // Transitory Documents
+            services
+                .AddHttpClient<TdDocumentsServices.TransitoryDocumentsClient>(client => { ConfigureHttpClient(client, configuration, "TD"); })
+                .AddHttpMessageHandler<TimingHandler>();
+
+            // Register the wrapper for TransitoryDocumentsClient
+            services.AddScoped<ITransitoryDocumentsClientService, TransitoryDocumentsClientService>();
+
+            // Keycloak - configure TD token request options
+            services.AddOptions<TdKeycloakClientOptions>()
+                .Bind(configuration.GetSection("TDKeycloak"))
+                .ValidateDataAnnotations();
+
             // DARS - Add the cookie handler to forward LogSheetSessionService.Token cookie
             services.AddTransient<DarsCookieHandler>();
             services
@@ -351,6 +367,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<CourtListService>();
             services.AddScoped<VcCivilFileAccessHandler>();
             services.AddScoped<DarsService>();
+            services.AddScoped<ITransitoryDocumentsService, TransitoryDocumentsService>();
             services.AddSingleton<JCUserService>();
             services.AddSingleton<AesGcmEncryption>();
             services.AddSingleton<JudicialCalendarService>();
@@ -440,7 +457,10 @@ namespace Scv.Api.Infrastructure
             services.AddSingleton<IClamClient>(sp =>
             {
                 var clamAvHost = configuration.GetNonEmptyValue("CLAM_AV:HOST");
-                int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int clamAvPort);
+                if (!int.TryParse(configuration.GetNonEmptyValue("CLAM_AV:PORT"), out int clamAvPort))
+                {
+                    throw new ConfigurationException("CLAM_AV:PORT must be a valid integer.");
+                }
                 return new ClamClient(clamAvHost, clamAvPort);
             });
 
@@ -450,7 +470,7 @@ namespace Scv.Api.Infrastructure
             return services;
         }
 
-        private static void ConfigureHttpClient(HttpClient client, IConfiguration configuration, string prefix, int timeoutInSecs = 100)
+        public static void ConfigureHttpClient(HttpClient client, IConfiguration configuration, string prefix, int timeoutInSecs = 100)
         {
             var apigwUrl = configuration.GetValue<string>("AWS_API_GATEWAY_URL");
             var apigwKey = configuration.GetValue<string>("AWS_API_GATEWAY_API_KEY");
@@ -461,9 +481,12 @@ namespace Scv.Api.Infrastructure
             // Defaults to BC Gov API if any config setting is missing
             if (string.IsNullOrWhiteSpace(apigwUrl) || string.IsNullOrWhiteSpace(apigwKey) || string.IsNullOrWhiteSpace(authorizerKey))
             {
-                client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
+                if (prefix != "TD")
+                {
+                    client.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(
                     configuration.GetNonEmptyValue($"{prefix}:Username"),
                     configuration.GetNonEmptyValue($"{prefix}:Password"));
+                }
                 client.BaseAddress = new Uri(configuration.GetNonEmptyValue($"{prefix}:Url").EnsureEndingForwardSlash());
             }
             // Requests are routed to JASPER's API Gateway. Lambda functions are triggered by these requests and are responsible for communicating with the BC Gov API.

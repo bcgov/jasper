@@ -29,6 +29,7 @@ locals {
         FILE_SERVICES_CLIENT_SECRET_NAME = var.lambda_secrets["file_services_client"]
         PCSS_SECRET_NAME                 = var.lambda_secrets["pcss"]
         DARS_SECRET_NAME                 = var.lambda_secrets["dars"]
+        TD_SECRET_NAME                   = var.lambda_secrets["td"]
         EFS_MOUNT_PATH                   = var.efs_mount_path
       }
     }

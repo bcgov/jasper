@@ -2,14 +2,14 @@ using System;
 using System.Globalization;
 using Mapster;
 using Scv.Api.Documents.Parsers.Models;
-using Scv.Api.Models;
+using Scv.Models;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
 public class CaseMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<CsvReservedJudgement, Db.Models.Case>();
         config.NewConfig<Db.Models.Case, CaseDto>()
@@ -31,5 +31,10 @@ public class CaseMapping : IRegister
             .Map(dest => dest.PhysicalFileId, src => src.JustinNo ?? src.PhysicalFileId);
         config.NewConfig<CaseDto, Db.Models.Case>()
              .Ignore(dest => dest.Id);
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

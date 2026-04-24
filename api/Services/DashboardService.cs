@@ -10,9 +10,10 @@ using PCSSCommon.Clients.ActivityServices;
 using PCSSCommon.Clients.CourtCalendarServices;
 using PCSSCommon.Clients.JudicialCalendarServices;
 using PCSSCommon.Clients.SearchDateServices;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Infrastructure;
-using Scv.Api.Models.Calendar;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
+using Scv.Core.Services;
+using Scv.Models.Calendar;
 using PCSS = PCSSCommon.Models;
 
 namespace Scv.Api.Services;
@@ -37,7 +38,7 @@ public class DashboardService(
     ActivityServicesClient activityServicesClient
 ) : ServiceBase(cache), IDashboardService
 {
-    public const string DATE_FORMAT = "dd-MMM-yyyy";
+
     public const string SITTING_ACTIVITY_CODE = "SIT";
     public const string NON_SITTING_ACTIVITY_CODE = "NS";
     public const string SEIZED_RESTRICTION_CODE = "S";
@@ -60,7 +61,7 @@ public class DashboardService(
     {
         try
         {
-            var currentDate = DateTime.Now.ToClientTimezone().ToString(DATE_FORMAT);
+            var currentDate = DateTime.Now.ToClientTimezone().ToString(CourtCalendarDay.DASHBOARD_DATE_FORMAT);
             async Task<PCSS.JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, currentDate, currentDate);
             var todayScheduleTask = GetDataFromCache($"{CacheName}-{judgeId}-{currentDate}-{currentDate}", TodaysSchedule);
             var todaySchedule = await todayScheduleTask;
@@ -265,7 +266,7 @@ public class DashboardService(
                             .OrderBy(l => l.LocationShortName)]
                     };
                 })
-                .OrderBy(d => DateTime.ParseExact(d.Date, DATE_FORMAT, CultureInfo.InvariantCulture));
+                .OrderBy(d => DateTime.ParseExact(d.Date, CourtCalendarDay.DASHBOARD_DATE_FORMAT, CultureInfo.InvariantCulture));
 
             var currentActivities = result
                 .SelectMany(loc => loc.Days.SelectMany(day => day.Activities))
@@ -304,7 +305,7 @@ public class DashboardService(
         var days = new List<CalendarDay>();
         foreach (var day in calendar.Days)
         {
-            DateTime.TryParseExact(day.Date, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
+            DateTime.TryParseExact(day.Date, CourtCalendarDay.DASHBOARD_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
 
             var activities = await GetDayActivities(day);
 
@@ -428,14 +429,14 @@ public class DashboardService(
         formattedStartDate = null;
         formattedEndDate = null;
 
-        if (!DateTime.TryParseExact(startDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate) ||
-            !DateTime.TryParseExact(endDate, DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate))
+        if (!DateTime.TryParseExact(startDate, CourtCalendarDay.DASHBOARD_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validStartDate) ||
+            !DateTime.TryParseExact(endDate, CourtCalendarDay.DASHBOARD_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var validEndDate))
         {
             return false;
         }
 
-        formattedStartDate = validStartDate.ToString(DATE_FORMAT);
-        formattedEndDate = validEndDate.ToString(DATE_FORMAT);
+        formattedStartDate = validStartDate.ToString(CourtCalendarDay.DASHBOARD_DATE_FORMAT);
+        formattedEndDate = validEndDate.ToString(CourtCalendarDay.DASHBOARD_DATE_FORMAT);
         return true;
     }
 

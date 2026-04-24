@@ -4,7 +4,7 @@ using Bogus;
 using Mapster;
 using Scv.Api.Documents.Parsers.Models;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models;
+using Scv.Models;
 using Xunit;
 using PCSSCommonConstants = PCSSCommon.Common.Constants;
 
@@ -21,7 +21,7 @@ public class CaseMappingTests
         _faker = new Faker();
 
         _config = new TypeAdapterConfig();
-        new CaseMapping().Register(_config);
+        CaseMapping.Register(_config);
     }
 
     [Fact]

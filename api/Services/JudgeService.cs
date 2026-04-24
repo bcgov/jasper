@@ -5,8 +5,9 @@ using System.Threading.Tasks;
 using LazyCache;
 using PCSSCommon.Clients.PersonServices;
 using PCSSCommon.Models;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Models;
+using Scv.Core.Helpers.Extensions;
+using Scv.Core.Services;
+using Scv.Models;
 
 namespace Scv.Api.Services;
 
@@ -38,7 +39,7 @@ public class JudgeService(
         positionCodes ??= [];
         var date = DateTime.Now.ToClientTimezone().ToString("dd-MMM-yyyy");
 
-        var locationsIds = locationIds ?? (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId).ToList();
+        var locationsIds = locationIds ?? [.. (await _locationService.GetLocations()).Where(l => l.LocationId != null).Select(l => l.LocationId)];
 
         var concatenatedLocationsIds = string.Join(",", locationsIds);
         async Task<ICollection<PersonSearchItem>> JudicialListing() => await _personClient.GetJudicialListingAsync(date, concatenatedLocationsIds, false, "");

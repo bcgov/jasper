@@ -10,10 +10,10 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
 using Xunit;
 
 namespace tests.api.Services;
@@ -121,7 +121,7 @@ public class PermissionServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Permission ID is not found.", result.Errors.First());
+        Assert.Equal("Permission ID is not found.", result.Errors[0]);
         _mockPermissionRepo.Verify(p => p.GetByIdAsync(fakeId), Times.Once);
     }
 

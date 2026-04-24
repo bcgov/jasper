@@ -1,15 +1,16 @@
-﻿using DARSCommon.Clients.LogNotesServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Scv.Api.Helpers;
 using Scv.Api.Models.Dars;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Dars;
 
 namespace Scv.Api.Services
 {
@@ -84,15 +85,15 @@ namespace Scv.Api.Services
         private static List<DarsSearchResults> GetResultPerRoom(List<DarsSearchResults> allResults)
         {
             var resultsForRoom = allResults.GroupBy(result => result.CourtRoomCd);
-            List<DarsSearchResults> filteredResults = new List<DarsSearchResults>(allResults.Count);
+            List<DarsSearchResults> filteredResults = [];
             foreach (IGrouping<string, DarsSearchResults> roomResults in resultsForRoom)
             {
-                var actualResult = roomResults.FirstOrDefault(roomResult => roomResult.FileName != null && roomResult.FileName.ToLowerInvariant().Contains("json"));
+                var actualResult = roomResults.FirstOrDefault(roomResult => roomResult.FileName != null && roomResult.FileName.Contains("json", StringComparison.InvariantCultureIgnoreCase));
                 if (actualResult != null)
                 {
                     filteredResults.Add(actualResult);
                 }
-                var flsResults = roomResults.Where(roomResult => roomResult.FileName != null && roomResult.FileName.ToLowerInvariant().Contains("fls")).ToList();
+                var flsResults = roomResults.Where(roomResult => roomResult.FileName != null && roomResult.FileName.Contains("fls", StringComparison.InvariantCultureIgnoreCase)).ToList();
                 if (flsResults.Count >= 1)
                 {
                     filteredResults.AddRange(flsResults);
@@ -143,7 +144,7 @@ namespace Scv.Api.Services
                 result?.Result?.Count ?? 0);
 
             var mappedDocuments = mapper.Map<IEnumerable<TranscriptDocument>>(result?.Result);
-            return mappedDocuments ?? Enumerable.Empty<TranscriptDocument>();
+            return mappedDocuments ?? [];
         }
     }
 }

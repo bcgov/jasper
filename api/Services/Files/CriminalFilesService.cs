@@ -9,18 +9,18 @@ using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Helpers.Extensions;
 using Scv.Api.Models.Criminal.AppearanceDetail;
-using Scv.Api.Models.Criminal.Appearances;
-using Scv.Api.Models.Criminal.Detail;
-using Scv.Api.Models.Search;
+using Scv.Core.ContractResolver;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
-using CriminalAppearanceDetail = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
-using CriminalAppearanceMethod = Scv.Api.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
-using CriminalParticipant = Scv.Api.Models.Criminal.Detail.CriminalParticipant;
-using CriminalWitness = Scv.Api.Models.Criminal.Detail.CriminalWitness;
+using Scv.Models.Criminal.AppearanceDetail;
+using Scv.Models.Criminal.Appearances;
+using Scv.Models.Criminal.Detail;
+using Scv.Models.Search;
+using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
+using CriminalAppearanceMethod = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
+using CriminalParticipant = Scv.Models.Criminal.Detail.CriminalParticipant;
+using CriminalWitness = Scv.Models.Criminal.Detail.CriminalWitness;
 
 namespace Scv.Api.Services.Files
 {
@@ -82,8 +82,8 @@ namespace Scv.Api.Services.Files
         {
             var fileDetails = new List<RedactedCriminalFileDetailResponse>();
 
-            var fileNumberText = fileNumber.Contains("-") ? fileNumber.Split("-")[0] : fileNumber;
-            var mdocSequenceNumber = fileNumber.Contains("-") ? fileNumber.Split("-")[1] : null;
+            var fileNumberText = fileNumber.Contains('-') ? fileNumber.Split("-")[0] : fileNumber;
+            var mdocSequenceNumber = fileNumber.Contains('-') ? fileNumber.Split("-")[1] : null;
             var fileSearchResponse = await SearchAsync(new FilesCriminalQuery
             {
                 FileHomeAgencyId = location,
@@ -100,7 +100,7 @@ namespace Scv.Api.Services.Files
 
             //Return the basic entry without doing a lookup.
             if (fileIdAndAppearanceDate.Count == 1)
-                return new List<RedactedCriminalFileDetailResponse> { new RedactedCriminalFileDetailResponse { JustinNo = fileIdAndAppearanceDate.First().MdocJustinNo } };
+                return [new RedactedCriminalFileDetailResponse { JustinNo = fileIdAndAppearanceDate.First().MdocJustinNo }];
 
             //It seems the fileSearch and the FileDetails/FileContent bring up two different participant lists
             //The fileSearch seems to include have extra participants.
@@ -342,7 +342,7 @@ namespace Scv.Api.Services.Files
                 {
                     count.PartId = GetParticipantIdFromDetail(accusedFile.PartId, detail);
                     count.AppearanceDate = appearance.AppearanceDate;
-                    count.Sentence = count.Sentence.Where(s => s != null).ToList();
+                    count.Sentence = [.. count.Sentence.Where(s => s != null)];
                     foreach (var criminalSentence in count.Sentence)
                     {
                         criminalSentence.JudgesRecommendation = appearance.JudgesRecommendation;
@@ -385,7 +385,7 @@ namespace Scv.Api.Services.Files
                 participant.AgeNotice = courtLists?.Where(cl => cl.FileInformation.PartId == participant.PartId)
                     .SelectMany(cl => cl.AgeNotice)
                     .ToList();
-                participant.Document = (documents ?? []).Where(doc => doc.PartId == participant.PartId).ToList();
+                participant.Document = [.. (documents ?? []).Where(doc => doc.PartId == participant.PartId)];
                 participant.HideJustinCounsel = false;   //TODO tie this to a permission. View Witness List permission
                 //TODO COUNSEL? This would have to come from law society data, which is stored in a CSV file. 
                 foreach (var accusedFile in (accusedFiles ?? []).Where(af => af?.PartId == participant.PartId))
@@ -551,49 +551,6 @@ namespace Scv.Api.Services.Files
         #endregion Criminal Details
 
         #region Criminal Appearance Details
-
-
-        private async Task<CriminalAdjudicator> PopulateAppearanceDetailAdjudicator(CfcAppearance appearanceFromAccused, ICollection<ClAttendanceMethod> attendanceMethods, ICollection<JCCommon.Clients.FileServices.CriminalAppearanceMethod> appearanceMethods)
-        {
-            var partyAppearanceMethod = appearanceFromAccused?.PartyAppearanceMethod.FirstOrDefault(pam => pam.PartyRole == "ADJ");
-            var attendanceMethod = attendanceMethods?.FirstOrDefault(am => am.RoleType == "ADJ");
-            var appearanceMethod = appearanceMethods?.FirstOrDefault(am => am.RoleTypeCd == "ADJ");
-            if (partyAppearanceMethod == null || partyAppearanceMethod.PartyName == null && partyAppearanceMethod.PartId == null && appearanceMethod?.AppearanceMethodCd == null)
-                return null;
-
-            return new CriminalAdjudicator
-            {
-                FullName = partyAppearanceMethod.PartyName.ConvertNameLastCommaFirstToFirstLast(),
-                PartId = partyAppearanceMethod.PartId,
-                PartyAppearanceMethod = partyAppearanceMethod.PartyAppearanceMethod,
-                PartyAppearanceMethodDesc = await _lookupService.GetCriminalAdjudicatorAttend(partyAppearanceMethod?.PartyAppearanceMethod),
-                AttendanceMethodCd = attendanceMethod?.AttendanceMethodCd,
-                AttendanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(attendanceMethod?.AttendanceMethodCd),
-                AppearanceMethodCd = appearanceMethod?.AppearanceMethodCd,
-                AppearanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(appearanceMethod?.AppearanceMethodCd)
-            };
-        }
-
-        private async Task<Prosecutor> PopulateAppearanceDetailProsecutor(CfcAppearance appearanceFromAccused, ICollection<ClAttendanceMethod> attendanceMethods, ICollection<JCCommon.Clients.FileServices.CriminalAppearanceMethod> appearanceMethods)
-        {
-            var partyAppearanceMethod = appearanceFromAccused?.PartyAppearanceMethod.FirstOrDefault(pam => pam.PartyRole == "PRO");
-            var attendanceMethod = attendanceMethods?.FirstOrDefault(am => am.RoleType == "PRO");
-            var appearanceMethod = appearanceMethods?.FirstOrDefault(am => am.RoleTypeCd == "PRO");
-            if (partyAppearanceMethod == null || partyAppearanceMethod.PartyName == null && partyAppearanceMethod.PartId == null && appearanceMethod?.AppearanceMethodCd == null)
-                return null;
-
-            return new Prosecutor
-            {
-                FullName = partyAppearanceMethod.PartyName.ConvertNameLastCommaFirstToFirstLast(),
-                PartId = partyAppearanceMethod.PartId,
-                PartyAppearanceMethod = partyAppearanceMethod.PartyAppearanceMethod,
-                PartyAppearanceMethodDesc = await _lookupService.GetCriminalCrownAttendanceType(partyAppearanceMethod?.PartyAppearanceMethod),
-                AttendanceMethodCd = attendanceMethod?.AttendanceMethodCd,
-                AttendanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(attendanceMethod?.AttendanceMethodCd),
-                AppearanceMethodCd = appearanceMethod?.AppearanceMethodCd,
-                AppearanceMethodDesc = await _lookupService.GetCriminalAssetsDescriptions(appearanceMethod?.AppearanceMethodCd)
-            };
-        }
 
         private async Task<JustinCounsel> PopulateAppearanceDetailJustinCounsel(CriminalParticipant criminalParticipant, ICollection<ClAttendanceMethod> attendanceMethods, ICollection<JCCommon.Clients.FileServices.CriminalAppearanceMethod> appearanceMethods)
         {

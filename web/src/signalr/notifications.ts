@@ -12,13 +12,18 @@ export type NotificationDto<TPayload = unknown> = {
   payload?: TPayload;
   ackGuid?: string;
   ackRequired?: boolean;
+  referenceId?: number;
 };
 
-export type NotificationHandler = (notification: NotificationDto) => void;
+export type NotificationHandler<TPayload = unknown> = (
+  notification: NotificationDto<TPayload>
+) => void | Promise<void>;
 
 export class NotificationsService {
   private connection: HubConnection | null = null;
-  private handlerProvider: (() => Iterable<NotificationHandler>) | null = null;
+  private handlerProvider:
+    | (() => Iterable<NotificationHandler<unknown>>)
+    | null = null;
   private readonly seenAckGuids = new Set<string>();
   private readonly seenAckQueue: string[] = [];
   private readonly maxSeenAckGuids = 200;
@@ -65,7 +70,7 @@ export class NotificationsService {
     });
   }
 
-  setHandlerProvider(provider: () => Iterable<NotificationHandler>) {
+  setHandlerProvider(provider: () => Iterable<NotificationHandler<unknown>>) {
     this.handlerProvider = provider;
   }
 

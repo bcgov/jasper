@@ -8,10 +8,14 @@
     PDFViewerType,
     usePDFStrategy,
   } from '@/components/documents/strategies/PDFStrategyFactory';
-  import { computed } from 'vue';
+  import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
+  import { computed, inject } from 'vue';
   import { useRoute } from 'vue-router';
 
   const route = useRoute();
+  const transitoryDocumentsService = inject<TransitoryDocumentsService>(
+    'transitoryDocumentsService'
+  );
 
   const strategy = computed(() => {
     if (route.query.type) {
@@ -21,6 +25,18 @@
           return usePDFStrategy(PDFViewerType.BUNDLE);
         case 'order':
           return usePDFStrategy(PDFViewerType.ORDER);
+        case 'transitory-bundle':
+          if (!transitoryDocumentsService) {
+            throw new Error('TransitoryDocumentsService is not available!');
+          }
+          if (!route.query.tdKey) {
+            throw new Error('Missing transitory bundle key.');
+          }
+          return usePDFStrategy(
+            PDFViewerType.TRANSITORY_BUNDLE,
+            transitoryDocumentsService,
+            route.query.tdKey
+          );
         case 'nutrient':
         case 'file':
         case 'pdf':

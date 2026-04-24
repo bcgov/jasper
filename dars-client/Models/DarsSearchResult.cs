@@ -1,5 +1,5 @@
-﻿#pragma warning disable 8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-#pragma warning disable IDE0130 // Namespace does not match folder structure
+﻿
+#pragma warning disable 8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 namespace DARSCommon.Models
 {
     public class DarsSearchResults
@@ -14,4 +14,3 @@ namespace DARSCommon.Models
     }
 }
 #pragma warning restore 8618
-#pragma warning restore IDE0130

@@ -1,13 +1,13 @@
-using Mapster;
 using DARSCommon.Clients.LogNotesServices;
 using DARSCommon.Models;
-using Scv.Api.Models.Dars;
+using Mapster;
+using Scv.Models.Dars;
 
 namespace Scv.Api.Infrastructure.Mappings;
 
 public class DarsMapping : IRegister
 {
-    public void Register(TypeAdapterConfig config)
+    public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<Lognotes, DarsSearchResults>()
             .Map(dest => dest.Date, src => src.DateTime)
@@ -41,5 +41,10 @@ public class DarsMapping : IRegister
             .Map(dest => dest.Id, src => src.Id ?? 0)
             .Map(dest => dest.IsInCamera, src => src.IsInCamera ?? false)
             .Map(dest => dest.StatusCodeId, src => src.StatusCodeId ?? 0);
+    }
+
+    void IRegister.Register(TypeAdapterConfig config)
+    {
+        Register(config);
     }
 }

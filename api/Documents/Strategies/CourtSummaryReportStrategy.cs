@@ -6,10 +6,10 @@ using JCCommon.Clients.FileServices;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Constants;
-using Scv.Api.Helpers;
-using Scv.Api.Helpers.Extensions;
-using Scv.Api.Helpers.ContractResolver;
-using Scv.Api.Models.Document;
+using Scv.Core.ContractResolver;
+using Scv.Core.Helpers;
+using Scv.Core.Helpers.Extensions;
+using Scv.Models.Document;
 
 namespace Scv.Api.Documents.Strategies;
 

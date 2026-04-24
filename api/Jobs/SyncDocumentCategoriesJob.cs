@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using PCSSCommon.Clients.ConfigurationServices;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.Document;
 
 namespace Scv.Api.Jobs;
 
@@ -47,7 +48,7 @@ public class SyncDocumentCategoriesJob(
                 async () => await _configClient.GetAllAsync());
 
             var externalDocumentCategories = configData
-                .Where(c => DocumentCategory.ALL_DOCUMENT_CATEGORIES.Contains(c.Key));
+                .Where(c => DocumentCategories.ALL_DOCUMENT_CATEGORIES.Contains(c.Key));
 
             var categories = this.Mapper.Map<List<DocumentCategory>>(externalDocumentCategories);
 

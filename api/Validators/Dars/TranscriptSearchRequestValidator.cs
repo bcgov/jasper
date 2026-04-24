@@ -1,5 +1,5 @@
 using FluentValidation;
-using Scv.Api.Models.Dars;
+using Scv.Models.Dars;
 
 namespace Scv.Api.Validators.Dars;
 

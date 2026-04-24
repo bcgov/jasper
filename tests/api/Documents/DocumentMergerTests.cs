@@ -1,17 +1,16 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Documents;
-using Scv.Api.Models.Document;
-using Xunit;
+using Scv.Models.Document;
 using tests.api.Services;
-using Microsoft.Extensions.Logging;
+using Xunit;
 
 namespace tests.api.Documents;
 
@@ -38,7 +37,7 @@ public class DocumentMergerTest : ServiceTestBase
                 await Task.Delay(20);
 
                 Interlocked.Decrement(ref activeRequests);
-                return (MemoryStream)null;
+                return null;
             });
 
         var requests = Enumerable.Range(1, 25)

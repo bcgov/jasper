@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bogus;
@@ -13,10 +12,11 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
-using Scv.Api.Models.AccessControlManagement;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.AccessControlManagement;
+using Scv.Models.Order;
 using tests.api.Services;
 using Xunit;
 
@@ -91,9 +91,9 @@ public class OrderReminderJobTests : ServiceTestBase
         };
     }
 
-    private Scv.Api.Models.Person CreateTestJudge(int judgeId)
+    private Scv.Models.Person CreateTestJudge(int judgeId)
     {
-        return new Scv.Api.Models.Person
+        return new Scv.Models.Person
         {
             UserId = judgeId,
             HomeLocationId = 123,
@@ -331,7 +331,7 @@ public class OrderReminderJobTests : ServiceTestBase
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync([order]);
 
-        await Assert.ThrowsAsync<Scv.Api.Helpers.Exceptions.ConfigurationException>(async () =>
+        await Assert.ThrowsAsync<Scv.Core.Exceptions.ConfigurationException>(async () =>
         {
             await _job.Execute();
         });
@@ -381,7 +381,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockJudgeService
             .Setup(j => j.GetJudge(judgeId))
-            .ReturnsAsync((Scv.Api.Models.Person)null);
+            .ReturnsAsync((Scv.Models.Person)null);
 
         await _job.Execute();
 
@@ -472,7 +472,7 @@ public class OrderReminderJobTests : ServiceTestBase
         order.OrderRequest.CourtLocationDesc = expectedLocation;
 
         var judge = CreateTestJudge(judgeId);
-        var expectedJudgeName = $"{judge.Names.First().FirstName} {judge.Names.First().LastName}".Trim();
+        var expectedJudgeName = $"{judge.Names[0].FirstName} {judge.Names[0].LastName}".Trim();
         var user = CreateTestUser(judgeId, "judge@example.com");
 
         _mockOrderRepo

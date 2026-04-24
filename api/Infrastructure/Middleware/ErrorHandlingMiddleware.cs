@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Scv.Api.Helpers.Exceptions;
-using Scv.Api.Helpers.Extensions;
+using Scv.Core.Exceptions;
+using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 
 namespace Scv.Api.Infrastructure.Middleware
@@ -20,40 +20,31 @@ namespace Scv.Api.Infrastructure.Middleware
     /// <summary>
     /// ErrorHandlingMiddleware class, provides a way to catch and handle unhandled errors in a generic way.
     /// </summary>
-    public class ErrorHandlingMiddleware
+    /// <remarks>
+    /// Creates a new instance of an ErrorHandlingMiddleware class, and initializes it with the specified arguments.
+    /// </remarks>
+    /// <param name="next"></param>
+    /// <param name="env"></param>
+    /// <param name="logger"></param>
+    /// <param name="options"></param>
+    public class ErrorHandlingMiddleware(RequestDelegate next, IWebHostEnvironment env, ILogger<ErrorHandlingMiddleware> logger, IOptions<JsonOptions> options)
     {
         #region Variables
 
-        private readonly RequestDelegate _next;
-        private readonly IWebHostEnvironment _env;
-        private readonly ILogger<ErrorHandlingMiddleware> _logger;
-        private readonly JsonOptions _options;
+        private readonly RequestDelegate _next = next;
+        private readonly IWebHostEnvironment _env = env;
+        private readonly ILogger<ErrorHandlingMiddleware> _logger = logger;
+        private readonly JsonOptions _options = options.Value;
 
         #endregion Variables
-
         #region Constructors
-
-        /// <summary>
-        /// Creates a new instance of an ErrorHandlingMiddleware class, and initializes it with the specified arguments.
-        /// </summary>
-        /// <param name="next"></param>
-        /// <param name="env"></param>
-        /// <param name="logger"></param>
-        /// <param name="options"></param>
-        public ErrorHandlingMiddleware(RequestDelegate next, IWebHostEnvironment env, ILogger<ErrorHandlingMiddleware> logger, IOptions<JsonOptions> options)
-        {
-            _next = next;
-            _env = env;
-            _logger = logger;
-            _options = options.Value;
-        }
 
         #endregion Constructors
 
         #region Methods
 
         /// <summary>
-        /// Handle the exception if one occurs. Note this wont catch exceptions created from async void functions.
+        /// Handle the exception if one occurs. Note this wont catch exceptions created from async Task functions.
         /// </summary>
         /// <param name="context"></param>
         /// <param name="db"></param>
@@ -74,7 +65,7 @@ namespace Scv.Api.Infrastructure.Middleware
             }
         }
 
-        private async Task AuditLog(HttpContext context, ScvDbContext db)
+        private static async Task AuditLog(HttpContext context, ScvDbContext db)
         {
             // May change this later, to include requests that aren't logged into keycloak.
             if (!string.IsNullOrEmpty(context.User.PreferredUsername()))
@@ -94,7 +85,7 @@ namespace Scv.Api.Infrastructure.Middleware
                     Path = $"{request.Method} {request.GetEncodedPathAndQuery()}",
                     Action = $"{(request.RouteValues.ContainsKey("action") ? request.RouteValues["action"] : "")}",
                     JsonBody = jsonBody,
-                    IpAddress = request.Headers.ContainsKey("X-Real-IP") ? request.Headers["X-Real-IP"].ToString() : "",
+                    IpAddress = request.Headers.TryGetValue("X-Real-IP", out Microsoft.Extensions.Primitives.StringValues value) ? value.ToString() : "",
                     ResponseCode = context.Response?.StatusCode.ToString(),
                     UserId = context.User.PreferredUsername()
                 };
@@ -130,13 +121,13 @@ namespace Scv.Api.Infrastructure.Middleware
                 case NotAuthorizedException _:
                     code = HttpStatusCode.Forbidden;
                     message = "User is not authorized to perform this action.";
-                    _logger.LogWarning(ex, ex.Message);
+                    _logger.LogWarning(ex, "Authorization error: {ErrorMessage}", ex.Message);
                     break;
 
                 case ConfigurationException _:
                     code = HttpStatusCode.InternalServerError;
                     message = "Application configuration details invalid or missing.";
-                    _logger.LogError(ex, ex.Message);
+                    _logger.LogError(ex, "Configuration error: {ErrorMessage}", ex.Message);
                     break;
 
                 case NotFoundException _:
@@ -153,19 +144,14 @@ namespace Scv.Api.Infrastructure.Middleware
                 case JCCommon.Clients.FileServices.ApiException exception:
                     code = HttpStatusCode.InternalServerError;
                     message = exception.Message;
-                    _logger.LogError(ex, ex.Message);
+                    _logger.LogError(ex, "{Message}", ex.Message);
                     break;
 
-                case JCCommon.Clients.LocationServices.ApiException exception:
+                case JCCommon.Clients.LocationServices.ApiException:
+                case JCCommon.Clients.LookupCodeServices.ApiException:
                     code = HttpStatusCode.InternalServerError;
-                    message = exception.Message;
-                    _logger.LogError(ex, ex.Message);
-                    break;
-
-                case JCCommon.Clients.LookupCodeServices.ApiException exception:
-                    code = HttpStatusCode.InternalServerError;
-                    message = exception.Message;
-                    _logger.LogError(ex, ex.Message);
+                    message = ex.Message;
+                    _logger.LogError(ex, "{Message}", ex.Message);
                     break;
 
                 default:
@@ -175,7 +161,7 @@ namespace Scv.Api.Infrastructure.Middleware
 
             if (!context.Response.HasStarted)
             {
-                var result = JsonSerializer.Serialize(new Models.ErrorResponseModel(_env, ex, message), _options.JsonSerializerOptions);
+                var result = JsonSerializer.Serialize(new ErrorResponseModel(_env, ex, message), _options.JsonSerializerOptions);
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)code;
                 await context.Response.WriteAsync(result);

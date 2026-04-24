@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
 using LazyCache.Providers;
@@ -7,11 +12,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Clients.AuthorizationServices;
 using Scv.Api.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace tests.api.Services;
@@ -50,8 +50,8 @@ public class AuthorizationServiceTests
         // Arrange
         var users = new List<UserItem>
         {
-            new UserItem { UserId = _faker.Random.Int(), GivenName = _faker.Name.FirstName(), Surname = _faker.Name.LastName() },
-            new UserItem { UserId = _faker.Random.Int(), GivenName = _faker.Name.FirstName(), Surname = _faker.Name.LastName() }
+            new() { UserId = _faker.Random.Int(), GivenName = _faker.Name.FirstName(), Surname = _faker.Name.LastName() },
+            new() { UserId = _faker.Random.Int(), GivenName = _faker.Name.FirstName(), Surname = _faker.Name.LastName() }
         };
 
         _mockPcssAuthorizationServiceClient
@@ -64,7 +64,7 @@ public class AuthorizationServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(users.Count, result.Count);
-        Assert.Equal(users.First().UserId, result.First().UserId);
+        Assert.Equal(users[0].UserId, result.First().UserId);
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUsersAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -84,7 +84,7 @@ public class AuthorizationServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("User not found or has no roles.", result.Errors.First());
+        Assert.Equal("User not found or has no roles.", result.Errors[0]);
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUserAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -96,7 +96,7 @@ public class AuthorizationServiceTests
         var user = new UserItem
         {
             UserId = userId,
-            Roles = new List<EffectiveRoleItem>() // Empty roles
+            Roles = [] // Empty roles
         };
 
         _mockPcssAuthorizationServiceClient
@@ -110,7 +110,7 @@ public class AuthorizationServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("User not found or has no roles.", result.Errors.First());
+        Assert.Equal("User not found or has no roles.", result.Errors[0]);
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUserAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -123,15 +123,15 @@ public class AuthorizationServiceTests
         var user = new UserItem
         {
             UserId = userId,
-            Roles = new List<EffectiveRoleItem>
-            {
+            Roles =
+            [
                 new EffectiveRoleItem
                 {
                     Name = roleName,
                     EffectiveDate = DateTime.Now.AddDays(-1).ToString("o"),
                     ExpiryDate = DateTime.Now.AddDays(30).ToString("o")
                 }
-            }
+            ]
         };
 
         _mockPcssAuthorizationServiceClient

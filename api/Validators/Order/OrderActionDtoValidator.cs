@@ -1,6 +1,6 @@
 ﻿using System;
 using FluentValidation;
-using Scv.Api.Models.Order;
+using Scv.Models.Order;
 
 namespace Scv.Api.Validators.Order;
 

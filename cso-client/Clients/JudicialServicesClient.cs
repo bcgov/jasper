@@ -60,20 +60,22 @@ public partial interface IJudicialServicesClient
     /// Save jusdicial action
     /// </summary>
     /// <param name="transaction_Id">A unique Transaction Id</param>
+    /// <param name="documentId">Document identifier</param>
     /// <param name="body">Judicial action save body</param>
     /// <returns>Report returned as pdf</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, JudicialAction body);
+    System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, double documentId, JudicialAction body);
 
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
     /// <summary>
     /// Save jusdicial action
     /// </summary>
     /// <param name="transaction_Id">A unique Transaction Id</param>
+    /// <param name="documentId">Document identifier</param>
     /// <param name="body">Judicial action save body</param>
     /// <returns>Report returned as pdf</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, JudicialAction body, System.Threading.CancellationToken cancellationToken);
+    System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, double documentId, JudicialAction body, System.Threading.CancellationToken cancellationToken);
 
 }
 
@@ -279,12 +281,13 @@ public partial class JudicialServicesClient : IJudicialServicesClient
     /// Save jusdicial action
     /// </summary>
     /// <param name="transaction_Id">A unique Transaction Id</param>
+    /// <param name="documentId">Document identifier</param>
     /// <param name="body">Judicial action save body</param>
     /// <returns>Report returned as pdf</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, JudicialAction body)
+    public virtual System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, double documentId, JudicialAction body)
     {
-        return SaveJudicialActionAsync(transaction_Id, body, System.Threading.CancellationToken.None);
+        return SaveJudicialActionAsync(transaction_Id, documentId, body, System.Threading.CancellationToken.None);
     }
 
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -292,11 +295,15 @@ public partial class JudicialServicesClient : IJudicialServicesClient
     /// Save jusdicial action
     /// </summary>
     /// <param name="transaction_Id">A unique Transaction Id</param>
+    /// <param name="documentId">Document identifier</param>
     /// <param name="body">Judicial action save body</param>
     /// <returns>Report returned as pdf</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, JudicialAction body, System.Threading.CancellationToken cancellationToken)
+    public virtual async System.Threading.Tasks.Task SaveJudicialActionAsync(System.Guid transaction_Id, double documentId, JudicialAction body, System.Threading.CancellationToken cancellationToken)
     {
+        if (documentId == null)
+            throw new System.ArgumentNullException("documentId");
+
         var client_ = _httpClient;
         var disposeClient_ = false;
         try
@@ -317,6 +324,7 @@ public partial class JudicialServicesClient : IJudicialServicesClient
                 if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                 // Operation Path: "judicial/{documentId}/action"
                 urlBuilder_.Append("judicial/");
+                urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(documentId, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/action");
 
                 PrepareRequest(client_, request_, urlBuilder_);

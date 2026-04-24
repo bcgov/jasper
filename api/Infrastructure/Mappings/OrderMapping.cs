@@ -54,8 +54,8 @@ public class OrderMapping : IRegister
         config.NewConfig<OrderDto, JudicialAction>()
             .Map(dest => dest.SignatureApplied, src => src.Signed)
             .Map(dest => dest.Comment, src => src.Comments)
-            .Map(dest => dest.Document, src => !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData)
-            .Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
+            .Map(dest => dest.Document, src => FromBase64OrNull(
+                !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData)).Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
             .AfterMapping((src, dest) =>
             {
                 dest.ActionDate = src.ProcessedDate.HasValue ? src.ProcessedDate.Value : default;

@@ -32,7 +32,7 @@ public class OrderReceivedAckNotification
 
         var payload = new OrderReceivedNotificationPayload(
             order.Id,
-            order.OrderRequest.CourtFile.PhysicalFileId.ToString(),
+            order.OrderRequest.PhysicalFileId.ToString(),
             "Order received.");
 
         var notification = new NotificationDto<OrderReceivedNotificationPayload>(

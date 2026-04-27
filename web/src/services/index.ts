@@ -15,6 +15,7 @@ import { OrderService } from './OrderService';
 import { QuickLinkService } from './QuickLinkService';
 import { TimebankService } from './TimebankService';
 import { UserService } from './UserService';
+import { notificationsService } from '@/signalr/notifications';
 
 export function registerRouter(app: App) {
   const httpService = new HttpService(import.meta.env.BASE_URL);
@@ -50,6 +51,12 @@ export function registerRouter(app: App) {
   app.provide('quickLinkService', quickLinkService);
   app.provide('orderService', orderService);
   app.provide('judgeService', judgeService);
+  app.provide('notificationsService', notificationsService);
+
+  return {
+    orderService,
+    notificationsService,
+  };
 }
 
 export * from './AuthService';

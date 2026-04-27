@@ -21,12 +21,11 @@ public class CourtSummaryReportStrategyTest : ServiceTestBase
     private Mock<FileServicesClient> _mockFileServicesClient;
     private Mock<IConfiguration> _mockConfiguration;
     private ClaimsPrincipal _mockUser;
-    private readonly string fakeContent = "Hello, world!";
-    private readonly byte[] fakeContentBytes;
+    // Starts with %PDF- magic bytes so it passes DocumentHelper.IsPdfOrWordDocumentBase64
+    private readonly byte[] fakeContentBytes = [0x25, 0x50, 0x44, 0x46, 0x2D, .. "fake pdf content"u8.ToArray()];
 
     public CourtSummaryReportStrategyTest()
     {
-        fakeContentBytes = Encoding.UTF8.GetBytes(fakeContent);
         SetupFileServiceClient();
     }
 

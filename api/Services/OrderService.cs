@@ -17,10 +17,11 @@ using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
 using Scv.Api.Infrastructure;
 using Scv.Api.Jobs;
+using Scv.Api.Models;
 using Scv.Api.Models.Order;
+using Scv.Api.Repositories;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
-using Scv.Api.Repositories;
 
 namespace Scv.Api.Services;
 
@@ -83,49 +84,37 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         var errors = new List<string>();
 
         // Validate file existence based on court class
-        var fileId = dto.CourtFile.PhysicalFileId;
-        if (!Enum.TryParse<CourtClassCd>(dto.CourtFile.CourtClassCd, true, out var courtClass))
+        var fileId = dto.PhysicalFileId;
+        if (!Enum.TryParse<CourtClassCd>(dto.CourtClassCd, true, out var courtClass))
         {
-            errors.Add($"Invalid CourtClassCd: {dto.CourtFile.CourtClassCd}");
+            errors.Add($"Invalid CourtClassCd: {dto.CourtClassCd}");
             return OperationResult<OrderDto>.Failure([.. errors]);
         }
 
-        switch (courtClass)
+        if (IsCriminalCourtClass(courtClass))
         {
-            case CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T:
-                var criminalFile = await _filesClient.FilesCriminalFilecontentAsync(
-                    _requestAgencyIdentifierId,
-                    _requestPartId,
-                    _applicationCode,
-                    null, null, null, null,
-                    fileId.ToString());
-                if (criminalFile == null || criminalFile.AccusedFile.Count == 0)
-                {
-                    errors.Add($"Criminal file with id: {fileId} is not found.");
-                }
-                break;
-
-            case CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M:
-                var civilFile = await _filesClient.FilesCivilFilecontentAsync(
-                    _requestAgencyIdentifierId,
-                    _requestPartId,
-                    _applicationCode,
-                    null, null, null, null,
-                    fileId.ToString());
-                if (civilFile == null || civilFile.CivilFile.Count == 0)
-                {
-                    errors.Add($"Civil file with id: {fileId} is not found.");
-                }
-                break;
-
-            default:
-                errors.Add($"Unsupported CourtClassCd: {courtClass}.");
-                break;
+            var criminalFile = await FetchCriminalFileAsync(fileId);
+            if (criminalFile == null)
+            {
+                errors.Add($"Criminal file with id: {fileId} is not found.");
+            }
+        }
+        else if (IsCivilCourtClass(courtClass))
+        {
+            var civilFile = await FetchCivilFileAsync(fileId);
+            if (civilFile == null || string.IsNullOrWhiteSpace(civilFile.PhysicalFileId))
+            {
+                errors.Add($"Civil file with id: {fileId} is not found.");
+            }
+        }
+        else
+        {
+            errors.Add($"Unsupported CourtClassCd: {courtClass}.");
         }
 
         // Validate judge existence
         var judges = await _judgeService.GetJudges();
-        if (!judges.Any(j => j.PersonId == dto.Referral.SentToPartId))
+        if (!judges.Any(j => j.ParticipantId.Equals(dto.Referral.SentToPartId)))
         {
             errors.Add($"Judge with id: {dto.Referral.SentToPartId} is not found.");
         }
@@ -142,10 +131,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         try
         {
             // Determine if the order already exists. If it is, this is an edit request. Otherwise, create a new one.
-            var fileId = dto.CourtFile.PhysicalFileId;
+            var fileId = dto.PhysicalFileId;
             var existingOrders = await this.Repo
-                .FindAsync(o => o.OrderRequest.CourtFile.PhysicalFileId == fileId
-                    && o.OrderRequest.Referral.SentToPartId == dto.Referral.SentToPartId
+                .FindAsync(o => o.OrderRequest.PhysicalFileId == fileId
+                    && o.OrderRequest.Referral.SentToPartId.Equals(dto.Referral.SentToPartId)
                     && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
 
             var existingOrder = existingOrders?.FirstOrDefault();
@@ -161,12 +150,6 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 // Update the existing order's request
                 orderDto.Id = existingOrder.Id;
                 orderDto.OrderRequest = dto;
-
-                var result = await this.UpdateAsync(orderDto);
-                if (!result.Succeeded)
-                {
-                    return result;
-                }
             }
             else
             {
@@ -180,14 +163,36 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                     SubmitStatus = SubmitStatus.Pending,
                     SubmitAttempts = 0,
                 };
+            }
 
+            // Populate other Order fields like StyleOfCause and JudgeId that is not part of the request.
+            var populateResult = await PopulateOrder(dto, orderDto);
+            if (!populateResult.Succeeded)
+            {
+                return populateResult;
+            }
+
+            orderDto = populateResult.Payload;
+
+            if (existingOrder != null)
+            {
+                var result = await this.UpdateAsync(orderDto);
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
+            }
+            else
+            {
                 var result = await this.AddAsync(orderDto);
                 if (!result.Succeeded)
                 {
                     return result;
                 }
 
-                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(dto));
+                orderDto = result.Payload;
+
+                _backgroundJobClient.Enqueue<SendOrderNotificationJob>(job => job.Execute(orderDto));
             }
 
             this.Logger.LogInformation("Successfully upserted order {OrderId}.", orderDto.Id);
@@ -225,7 +230,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult.Failure("Supporting document must be a valid PDF, Word Document (.doc or .docx).");
         }
 
-        var assignedJudgeId = order.OrderRequest.Referral.SentToPartId;
+        var assignedJudgeId = order.JudgeId;
         var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
 
         if (assignedJudgeId != judgeId)
@@ -257,7 +262,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
     public async Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId)
     {
-        var judgeOrders = await this.Repo.FindAsync(o => o.OrderRequest.Referral.SentToPartId == judgeId);
+        var judgeOrders = await this.Repo.FindAsync(o => o.JudgeId == judgeId);
         return this.Mapper.Map<List<OrderViewDto>>(judgeOrders);
     }
 
@@ -329,6 +334,65 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
     }
 
+    #region Private Methods
+
+    private static bool IsCriminalCourtClass(CourtClassCd courtClass) =>
+        courtClass is CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T;
+
+    private static bool IsCivilCourtClass(CourtClassCd courtClass) =>
+        courtClass is CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M;
+
+    private Task<CriminalFileDetailResponse> FetchCriminalFileAsync(int? fileId) =>
+        GetDataFromCache(
+            $"{CacheName}-CriminalFile-{_requestAgencyIdentifierId}-{_requestPartId}-{fileId}",
+            () => _filesClient.FilesCriminalGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId.ToString()));
+
+    private Task<CivilFileDetailResponse> FetchCivilFileAsync(int? fileId) =>
+        GetDataFromCache(
+            $"{CacheName}-CivilFile-{_requestAgencyIdentifierId}-{_requestPartId}-{fileId}",
+            () => _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId.ToString()));
+
+    private async Task<OperationResult<OrderDto>> PopulateOrder(OrderRequestDto dto, OrderDto orderDto)
+    {
+        var styleOfCause = string.Empty;
+        Enum.TryParse<CourtClassCd>(dto.CourtClassCd, true, out var courtClass);
+        if (IsCriminalCourtClass(courtClass))
+        {
+            var criminalFile = await FetchCriminalFileAsync(dto.PhysicalFileId);
+            if (criminalFile != null && criminalFile.Participant != null && criminalFile.Participant.Count > 0)
+            {
+                var participant = criminalFile.Participant.First();
+                styleOfCause = !string.IsNullOrWhiteSpace(participant.LastNm)
+                    ? $"{participant.LastNm}, {participant.GivenNm}"
+                    : participant.OrgNm;
+            }
+        }
+        else if (IsCivilCourtClass(courtClass))
+        {
+            var civilFile = await FetchCivilFileAsync(dto.PhysicalFileId);
+            if (civilFile != null && !string.IsNullOrWhiteSpace(civilFile.PhysicalFileId))
+            {
+                styleOfCause = civilFile.SocTxt;
+            }
+        }
+        else
+        {
+            return OperationResult<OrderDto>.Failure($"Unsupported CourtClassCd: {dto.CourtClassCd}.");
+        }
+
+        var judges = await _judgeService.GetJudges();
+        var judge = judges.FirstOrDefault(j => j.ParticipantId.Equals(dto?.Referral?.SentToPartId));
+        if (judge == null)
+        {
+            return OperationResult<OrderDto>.Failure($"Judge with part id: {dto?.Referral?.SentToPartId} is not found.");
+        }
+
+        orderDto.StyleOfCause = styleOfCause;
+        orderDto.JudgeId = judge.PersonId;
+
+        return OperationResult<OrderDto>.Success(orderDto);
+    }
+
     private async Task<OrderActionDto> MapToOrderAction(OrderDto orderDto)
     {
         var referral = orderDto.OrderRequest?.Referral;
@@ -347,7 +411,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 return null;
             }
 
-            var user = await _userService.GetByJudgeIdAsync(referral.SentToPartId.Value);
+            var user = await _userService.GetByJudgeIdAsync(orderDto.JudgeId);
             userGuid = user?.NativeGuid;
         }
 
@@ -380,4 +444,6 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         return actionDto;
     }
+
+    #endregion Private Methods
 }

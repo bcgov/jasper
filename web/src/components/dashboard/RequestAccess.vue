@@ -95,9 +95,7 @@
   const requestAccess = async (): Promise<void> => {
     if (!_.isEmpty(selectedEmail.value)) {
       try {
-        const accessRequest = await userService?.requestAccess(
-          selectedEmail.value
-        );
+        const accessRequest = await userService?.requestAccess();
         if (accessRequest?.email === selectedEmail.value) {
           isSubmitted.value = true;
         } else {
@@ -122,6 +120,10 @@
 
   const checkForUser = async (): Promise<void> => {
     const user = await userService?.getMyUser();
+
+    if (!commonStore.userInfo && user?.email) {
+      selectedEmail.value = user.email;
+    }
 
     if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
       isUserDisabled.value = true;

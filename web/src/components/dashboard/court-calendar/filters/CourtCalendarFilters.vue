@@ -15,6 +15,14 @@
       v-model="selectedActivityClass"
       v-if="isPresidersView"
     />
+    <FilterDropdown
+      v-if="activityItems?.length > 0 && !isPresidersView"
+      title="Activities"
+      :items="activityItems"
+      v-model="selectedActivities"
+      :showSelectAll="false"
+      :showSearch="false"
+    />
     <v-btn
       class="clearAll"
       v-if="showClearAll"
@@ -37,10 +45,10 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ItemGroup, Presider } from '@/types';
+  import { Activity, ItemGroup, Presider } from '@/types';
   import { RolesEnum } from '@/types/common';
   import { LocationInfo } from '@/types/courtlist';
-  import { hasRole } from '@/utils/utils';
+  import { cleanActivityClassDescription, hasRole } from '@/utils/utils';
   import { computed } from 'vue';
   import ActivityClassFilter from './ActivityClassFilter.vue';
   import FilterDropdown from './FilterDropdown.vue';
@@ -59,6 +67,7 @@
     locations: LocationInfo[];
     presiders: Presider[];
     judgeHomeLocationId: string;
+    activities: Activity[];
   }>();
 
   const selectedLocations = defineModel<string[]>('selectedLocations', {
@@ -73,6 +82,10 @@
     default: 'all',
   });
 
+  const selectedActivities = defineModel<string[]>('selectedActivities', {
+    default: [],
+  });
+
   const isPresidersView = defineModel<boolean>('isPresidersView', {
     default: true,
   });
@@ -81,6 +94,14 @@
     props.locations.map((location) => ({
       value: location.locationId,
       text: location.shortName,
+    }))
+  );
+
+  const activityItems = computed(() =>
+    props.activities.map((activity) => ({
+      value: activity.code,
+      text: activity.description,
+      color: cleanActivityClassDescription(activity.classDescription),
     }))
   );
 
@@ -108,6 +129,7 @@
   const clearAllFilters = () => {
     selectedLocations.value = [props.judgeHomeLocationId];
     selectedPresiders.value = [];
+    selectedActivities.value = [];
     selectedActivityClass.value = 'all';
   };
 
@@ -120,6 +142,7 @@
       (selectedLocations.value.length === 1 &&
         selectedLocations.value[0] !== props.judgeHomeLocationId) ||
       selectedPresiders.value.length > 0 ||
+      selectedActivities.value.length > 0 ||
       selectedActivityClass.value !== 'all'
   );
 </script>

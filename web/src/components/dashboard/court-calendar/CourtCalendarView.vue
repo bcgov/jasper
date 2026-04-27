@@ -12,10 +12,12 @@
       v-model:selected-locations="selectedLocationIds"
       v-model:selected-presiders="selectedPresiderIds"
       v-model:selected-activity-class="selectedActivityClass"
+      v-model:selected-activities="selectedActivities"
       v-model:is-presiders-view="isPresidersView"
       :isLocationFilterLoading="isLocationFilterLoading"
       :locations="locations"
       :presiders="presiders"
+      :activities="activities"
       :judgeHomeLocationId="judgeHomeLocationId"
     />
 
@@ -104,6 +106,7 @@
   const selectedLocationIds = ref<string[]>([judgeHomeLocationId]);
   const selectedPresiderIds = ref<string[]>([]);
   const selectedActivityClass = ref<string>('all');
+  const selectedActivities = ref<string[]>([]);
   const startDay = ref(new Date(selectedDate.value));
   const endDay = ref(new Date(selectedDate.value));
   const locationIds = computed(() => selectedLocationIds.value.join(','));
@@ -187,7 +190,14 @@
   const filteredActivitiesCalendarData = computed(() =>
     activitiesCalendarData.value.map((day) => ({
       ...day,
-      locations: day.locations,
+      locations: day.locations.map((location) => ({
+        ...location,
+        activities: location.activities.filter(
+          (act) =>
+            selectedActivities.value.length === 0 ||
+            selectedActivities.value.includes(act.activityCode)
+        ),
+      })),
     }))
   );
 
@@ -217,6 +227,7 @@
     selectedLocationIds,
     async () => {
       selectedPresiderIds.value = [];
+      selectedActivities.value = [];
       await updateCalendar();
     },
     { deep: true }

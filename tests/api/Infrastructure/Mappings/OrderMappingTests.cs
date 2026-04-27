@@ -74,8 +74,7 @@ public class OrderMappingTests
         var result = order.Adapt<OrderDto>(_config);
 
         Assert.NotNull(result.OrderRequest);
-        Assert.NotNull(result.OrderRequest.CourtFile);
-        Assert.Equal(order.OrderRequest.CourtFile.PhysicalFileId, result.OrderRequest.CourtFile.PhysicalFileId);
+        Assert.Equal(order.OrderRequest.PhysicalFileId, result.OrderRequest.PhysicalFileId);
         Assert.NotNull(result.OrderRequest.Referral);
         Assert.Equal(order.OrderRequest.Referral.SentToPartId, result.OrderRequest.Referral.SentToPartId);
     }
@@ -293,7 +292,7 @@ public class OrderMappingTests
     {
         var expectedFileNumber = "12345-01";
         var order = CreateOrder();
-        order.OrderRequest.CourtFile.FullFileNo = expectedFileNumber;
+        order.OrderRequest.FullFileNo = expectedFileNumber;
 
         var result = order.Adapt<OrderViewDto>(_config);
 
@@ -305,7 +304,7 @@ public class OrderMappingTests
     {
         var expectedId = _faker.Random.Int(100, 9999);
         var order = CreateOrder();
-        order.OrderRequest.CourtFile.PhysicalFileId = expectedId;
+        order.OrderRequest.PhysicalFileId = expectedId;
 
         var result = order.Adapt<OrderViewDto>(_config);
 
@@ -317,23 +316,11 @@ public class OrderMappingTests
     {
         var expectedCourtClass = "A";
         var order = CreateOrder();
-        order.OrderRequest.CourtFile.CourtClassCd = expectedCourtClass;
+        order.OrderRequest.CourtClassCd = expectedCourtClass;
 
         var result = order.Adapt<OrderViewDto>(_config);
 
         Assert.Equal(expectedCourtClass, result.CourtClass);
-    }
-
-    [Fact]
-    public void Order_To_OrderViewDto_MapsStyleOfCause()
-    {
-        var expectedStyle = "Smith v. Jones";
-        var order = CreateOrder();
-        order.OrderRequest.CourtFile.StyleOfCause = expectedStyle;
-
-        var result = order.Adapt<OrderViewDto>(_config);
-
-        Assert.Equal(expectedStyle, result.StyleOfCause);
     }
 
     [Fact]
@@ -407,22 +394,18 @@ public class OrderMappingTests
             Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
             OrderRequest = new OrderRequest
             {
-                CourtFile = new CourtFile
-                {
-                    PhysicalFileId = _faker.Random.Int(100, 9999),
-                    CourtDivisionCd = _faker.PickRandom("R", "I"),
-                    CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                    CourtFileNo = _faker.Random.Replace("####-##"),
-                    FullFileNo = _faker.Random.Replace("####-##"),
-                    StyleOfCause = $"{_faker.Name.LastName()} v. {_faker.Name.LastName()}",
-                    Parties = []
-                },
+                CourtFileNo = _faker.Random.Replace("####-##"),
+                CourtDivisionCd = _faker.PickRandom("R", "I"),
+                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+                PhysicalFileId = _faker.Random.Int(100, 9999),
+                FullFileNo = _faker.Random.Replace("####-##"),
                 Referral = new Referral
                 {
                     SentToPartId = _faker.Random.Int(1, 1000),
                     SentToName = _faker.Name.FullName(),
                     ReferredDocumentId = _faker.Random.Int(1, 1000)
                 },
+                Parties = [],
                 PackageDocuments = [],
                 RelevantCeisDocuments = []
             },
@@ -448,22 +431,18 @@ public class OrderMappingTests
             Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
             OrderRequest = new OrderRequestDto
             {
-                CourtFile = new CourtFileDto
-                {
-                    PhysicalFileId = _faker.Random.Int(100, 9999),
-                    CourtDivisionCd = _faker.PickRandom("R", "I"),
-                    CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                    CourtFileNo = _faker.Random.Replace("####-##"),
-                    FullFileNo = _faker.Random.Replace("####-##"),
-                    StyleOfCause = $"{_faker.Name.LastName()} v. {_faker.Name.LastName()}",
-                    Parties = []
-                },
+                CourtFileNo = _faker.Random.Replace("####-##"),
+                CourtDivisionCd = _faker.PickRandom("R", "I"),
+                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+                PhysicalFileId = _faker.Random.Int(100, 9999),
+                FullFileNo = _faker.Random.Replace("####-##"),
                 Referral = new ReferralDto
                 {
                     SentToPartId = _faker.Random.Int(1, 1000),
                     SentToName = _faker.Name.FullName(),
                     ReferredDocumentId = _faker.Random.Int(1, 1000)
                 },
+                Parties = [],
                 PackageDocuments = [],
                 RelevantCeisDocuments = []
             },

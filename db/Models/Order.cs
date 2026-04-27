@@ -10,6 +10,8 @@ namespace Scv.Db.Models;
 public class Order : EntityBase
 {
     public OrderRequest OrderRequest { get; set; }
+    public string StyleOfCause { get; set; }
+    public int JudgeId { get; set; }
     [BsonRepresentation(MongoDB.Bson.BsonType.Int32)]
     public OrderStatus Status { get; set; }
     public SubmitStatus? SubmitStatus { get; set; }
@@ -25,8 +27,20 @@ public class Order : EntityBase
 
 public class OrderRequest
 {
-    public CourtFile CourtFile { get; set; }
+    public string CourtFileNo { get; set; }
+    public string CourtLevelCd { get; set; }
+    public string CourtDivisionCd { get; set; }
+    public string CourtClassCd { get; set; }
+    public double? CourtLocationId { get; set; }
+    public int? PhysicalFileId { get; set; }
+    public string CourtLevelDesc { get; set; }
+    public string CourtDivisionDesc { get; set; }
+    public string CourtClassDesc { get; set; }
+    public string CourtLocationDesc { get; set; }
+    public string FullFileNo { get; set; }
+    public string InitiatingAppearanceId { get; set; }
     public Referral Referral { get; set; }
+    public List<Party> Parties { get; set; } = [];
     public List<PackageDocument> PackageDocuments { get; set; } = [];
     public List<RelevantCeisDocument> RelevantCeisDocuments { get; set; } = [];
 }
@@ -45,23 +59,6 @@ public enum SubmitStatus
     Sending,
     Submitted,
     Error,
-}
-
-public class CourtFile
-{
-    public string CourtFileNo { get; set; }
-    public string CourtLevelCd { get; set; }
-    public string CourtDivisionCd { get; set; }
-    public string CourtClassCd { get; set; }
-    public int? CourtLocationId { get; set; }
-    public int? PhysicalFileId { get; set; }
-    public string CourtLevelDesc { get; set; }
-    public string CourtDivisionDesc { get; set; }
-    public string CourtClassDesc { get; set; }
-    public int? CourtLocationDesc { get; set; }
-    public string FullFileNo { get; set; }
-    public string StyleOfCause { get; set; }
-    public List<Party> Parties { get; set; } = [];
 }
 
 public class Party
@@ -89,16 +86,17 @@ public class Referral
     public string PackageCreatedBy { get; set; }
     public string ReferralDtm { get; set; }
     public string ReferralNotesTxt { get; set; }
-    public int? ReferredByAgenId { get; set; }
-    public int? ReferredByPartId { get; set; }
+    public double? ReferredByAgenId { get; set; }
+    public double? ReferredByPartId { get; set; }
     public int? ReferredByPaasSeqNo { get; set; }
     public string ReferredByName { get; set; }
     public string DutyTypeCd { get; set; }
-    public int? SentToAgenId { get; set; }
-    public int? SentToPartId { get; set; }
+    public double? SentToAgenId { get; set; }
+    public double? SentToPartId { get; set; }
     public int? SentToPaasSeqNo { get; set; }
     public string SentToName { get; set; }
     public string PriorityType { get; set; }
+    public string CourtListTypeCd { get; set; }
 }
 
 public class PackageDocument

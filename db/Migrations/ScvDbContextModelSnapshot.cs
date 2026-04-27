@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Scv.Db.Models;
 
+#nullable disable
+
 namespace Scv.Db.Migrations
 {
     [DbContext(typeof(ScvDbContext))]
@@ -15,17 +17,19 @@ namespace Scv.Db.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .UseIdentityByDefaultColumns()
-                .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.1");
+                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("FriendlyName")
                         .HasColumnType("text")
@@ -38,7 +42,7 @@ namespace Scv.Db.Migrations
                     b.HasKey("Id")
                         .HasName("pk_data_protection_keys");
 
-                    b.ToTable("data_protection_keys");
+                    b.ToTable("data_protection_keys", (string)null);
                 });
 
             modelBuilder.Entity("Scv.Db.Models.Audit", b =>
@@ -46,8 +50,9 @@ namespace Scv.Db.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Action")
                         .HasColumnType("text")
@@ -80,7 +85,7 @@ namespace Scv.Db.Migrations
                     b.HasKey("Id")
                         .HasName("pk_audit");
 
-                    b.ToTable("audit");
+                    b.ToTable("audit", (string)null);
                 });
 
             modelBuilder.Entity("Scv.Db.Models.Auth.RequestFileAccess", b =>
@@ -88,8 +93,9 @@ namespace Scv.Db.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AgencyId")
                         .HasColumnType("text")
@@ -124,7 +130,68 @@ namespace Scv.Db.Migrations
                     b.HasKey("Id")
                         .HasName("pk_request_file_access");
 
-                    b.ToTable("request_file_access");
+                    b.ToTable("request_file_access", (string)null);
+                });
+
+            modelBuilder.Entity("Scv.Db.Models.SignalROutboxMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid?>("AckGuid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ack_guid");
+
+                    b.Property<bool>("AckRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ack_required");
+
+                    b.Property<DateTimeOffset?>("AckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acked_at");
+
+                    b.Property<string>("AckedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("acked_by");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeliveredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at");
+
+                    b.Property<string>("DeliveredBy")
+                        .HasColumnType("text")
+                        .HasColumnName("delivered_by");
+
+                    b.Property<string>("EnvelopeJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("envelope_json");
+
+                    b.Property<int>("OfflineMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("offline_minutes");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_signalr_outbox_message");
+
+                    b.ToTable("signalr_outbox_message", (string)null);
                 });
 #pragma warning restore 612, 618
         }

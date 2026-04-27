@@ -1,7 +1,13 @@
 import CourtCalendarView from '@/components/dashboard/court-calendar/CourtCalendarView.vue';
 import { DashboardService, LocationService } from '@/services';
 import { useCommonStore } from '@/stores';
-import { CalendarDay, CalendarDayActivity, CourtCalendarDay } from '@/types';
+import {
+  Activity,
+  CalendarDay,
+  CalendarDayActivity,
+  CourtCalendarDay,
+  CourtCalendarLocation,
+} from '@/types';
 import { CalendarViewEnum } from '@/types/common';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
@@ -219,6 +225,52 @@ describe('CourtCalendarView.vue', () => {
       });
       if (filtersComponent.exists()) {
         expect(filtersComponent.props('selectedActivityClass')).toBe('all');
+      }
+    });
+
+    it('passes activities to filters component after presiders calendar loads', async () => {
+      const mockActivities: Activity[] = [
+        {
+          code: 'TRL',
+          description: 'Trial',
+          classCode: 'SIT',
+          classDescription: 'Sitting',
+        },
+      ];
+      dashboardService.getCourtCalendarPresiders = vi.fn().mockResolvedValue({
+        payload: { days: [], presiders: [], activities: mockActivities },
+      });
+
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        expect(filtersComponent.props('activities')).toEqual(mockActivities);
+      }
+    });
+
+    it('passes selectedActivities as [] by default to filters component', async () => {
+      const wrapper = mountComponent();
+
+      await vi.waitFor(() => {
+        expect(locationService.getLocations).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        expect(filtersComponent.props('selectedActivities')).toEqual([]);
       }
     });
 
@@ -864,6 +916,125 @@ describe('CourtCalendarView.vue', () => {
           );
         });
       }
+    });
+
+    const createMockCourtCalendarActivity = (
+      overrides?: Partial<CourtCalendarLocation['activities'][number]>
+    ) => ({
+      activityCode: faker.string.alpha({ length: 3, casing: 'upper' }),
+      activityDisplayCode: faker.string.alpha({ length: 3, casing: 'upper' }),
+      activityDescription: faker.lorem.word(),
+      activityClassCode: 'SIT',
+      activityClassDescription: 'Sitting',
+      courtRooms: [],
+      ...overrides,
+    });
+
+    it('shows all activities when selectedActivities is empty (default)', async () => {
+      const mockDay = createMockCourtCalendarDay({
+        locations: [
+          {
+            locationId: 'LOC1',
+            locationShortName: 'VIC',
+            activities: [
+              createMockCourtCalendarActivity({ activityCode: 'TRL' }),
+              createMockCourtCalendarActivity({ activityCode: 'HRG' }),
+            ],
+          } as CourtCalendarLocation,
+        ],
+      });
+
+      dashboardService.getCourtCalendarActivities = vi.fn().mockResolvedValue({
+        payload: { days: [mockDay], activities: [] },
+      });
+
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const calendarComp = wrapper.findComponent({ name: 'CourtCalendar' });
+      const events = calendarComp.props('events') ?? [];
+      expect(events).toHaveLength(1);
+      expect(events[0].extendedProps.locations[0].activities).toHaveLength(2);
+    });
+
+    it('filters activities calendar by selectedActivities (client-side)', async () => {
+      const mockDay = createMockCourtCalendarDay({
+        locations: [
+          {
+            locationId: 'LOC1',
+            locationShortName: 'VIC',
+            activities: [
+              createMockCourtCalendarActivity({ activityCode: 'TRL' }),
+              createMockCourtCalendarActivity({ activityCode: 'HRG' }),
+            ],
+          } as CourtCalendarLocation,
+        ],
+      });
+
+      dashboardService.getCourtCalendarActivities = vi.fn().mockResolvedValue({
+        payload: { days: [mockDay], activities: [] },
+      });
+
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedActivities', ['TRL']);
+        await nextTick();
+      }
+
+      const calendarComp = wrapper.findComponent({ name: 'CourtCalendar' });
+      const events = calendarComp.props('events') ?? [];
+      expect(events).toHaveLength(1);
+      const activities = events[0].extendedProps.locations[0].activities;
+      expect(activities).toHaveLength(1);
+      expect(activities[0].activityCode).toBe('TRL');
+    });
+
+    it('does not trigger an API call when selectedActivities changes (client-side filtering)', async () => {
+      const wrapper = mountComponent();
+
+      await waitForLocationsAndCalendar(wrapper);
+      await switchToActivitiesView(wrapper);
+
+      await vi.waitFor(() => {
+        expect(dashboardService.getCourtCalendarActivities).toHaveBeenCalled();
+      });
+      await nextTick();
+      await nextTick();
+
+      dashboardService.getCourtCalendarActivities.mockClear();
+
+      const filtersComponent = wrapper.findComponent({
+        name: 'CourtCalendarFilters',
+      });
+      if (filtersComponent.exists()) {
+        await filtersComponent.vm.$emit('update:selectedActivities', ['TRL']);
+        await nextTick();
+      }
+
+      expect(
+        dashboardService.getCourtCalendarActivities
+      ).not.toHaveBeenCalled();
     });
   });
 });

@@ -17,4 +17,10 @@ resource "aws_lb_target_group" "target_group" {
     unhealthy_threshold = 3
     matcher             = "200"
   }
+
+  stickiness {
+    enabled         = var.stickiness_enabled
+    type            = "lb_cookie"
+    cookie_duration = var.stickiness_cookie_duration
+  }
 }

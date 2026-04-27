@@ -6,5 +6,6 @@ public enum DocumentType
     ROP,
     Report,
     CourtSummary,
-    Transcript
+    Transcript,
+    Order
 }

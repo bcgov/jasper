@@ -1,6 +1,7 @@
 import { useCommonStore } from '@/stores';
 import {
   arrayBufferToBase64,
+  cleanActivityClassDescription,
   hasRole,
   isCourtClassLabelCriminal,
   isPositiveInteger,
@@ -134,6 +135,65 @@ describe('utils', () => {
         expect(typeof result).toBe('string');
         expect(result.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe('cleanActivityClassDescription', () => {
+    it('returns an empty string for null', () => {
+      expect(cleanActivityClassDescription(null)).toBe('');
+    });
+
+    it('returns an empty string for undefined', () => {
+      expect(cleanActivityClassDescription(undefined)).toBe('');
+    });
+
+    it('returns an empty string for an empty string', () => {
+      expect(cleanActivityClassDescription('')).toBe('');
+    });
+
+    it('returns "civil" for "Civil"', () => {
+      expect(cleanActivityClassDescription('Civil')).toBe('civil');
+    });
+
+    it('returns "small-claims" for "Small Claims"', () => {
+      expect(cleanActivityClassDescription('Small Claims')).toBe(
+        'small-claims'
+      );
+    });
+
+    it('returns "criminal" for "Criminal"', () => {
+      expect(cleanActivityClassDescription('Criminal')).toBe('criminal');
+    });
+
+    it('returns "family" for "Family"', () => {
+      expect(cleanActivityClassDescription('Family')).toBe('family');
+    });
+
+    it('returns "mixed" for "Mixed"', () => {
+      expect(cleanActivityClassDescription('Mixed')).toBe('mixed');
+    });
+
+    it('returns "non-sitting" for "Non-Sitting"', () => {
+      expect(cleanActivityClassDescription('Non-Sitting')).toBe('non-sitting');
+    });
+
+    it('returns "judge-sitting" for "Judge-Sitting"', () => {
+      expect(cleanActivityClassDescription('Judge-Sitting')).toBe(
+        'judge-sitting'
+      );
+    });
+
+    it('returns "specialty" for "Specialty"', () => {
+      expect(cleanActivityClassDescription('Specialty')).toBe('specialty');
+    });
+
+    it('trims leading and trailing whitespace', () => {
+      expect(cleanActivityClassDescription('  Family  ')).toBe('family');
+    });
+
+    it('returns empty string for unrecognized descriptions', () => {
+      expect(cleanActivityClassDescription('Small  Claims')).toBe('');
+      expect(cleanActivityClassDescription('Unknown')).toBe('');
     });
   });
 

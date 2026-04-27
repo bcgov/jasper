@@ -256,7 +256,7 @@ public class OrdersControllerTests
     public async Task UpsertOrder_ValidatesCourtDivisionCd()
     {
         var orderDto = CreateValidOrderRequestDto();
-        orderDto.CourtFile.CourtDivisionCd = "INVALID";
+        orderDto.CourtDivisionCd = "INVALID";
 
         var validationFailures = new List<ValidationFailure>
         {
@@ -279,7 +279,7 @@ public class OrdersControllerTests
     public async Task UpsertOrder_ValidatesCourtClassCd()
     {
         var orderDto = CreateValidOrderRequestDto();
-        orderDto.CourtFile.CourtClassCd = "Z";
+        orderDto.CourtClassCd = "Z";
 
         var validationFailures = new List<ValidationFailure>
         {
@@ -516,13 +516,10 @@ public class OrdersControllerTests
     {
         return new()
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = _faker.PickRandom("R", "I"),
-                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                CourtFileNo = _faker.Random.AlphaNumeric(10)
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = _faker.PickRandom("R", "I"),
+            CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+            CourtFileNo = _faker.Random.AlphaNumeric(10),
             Referral = new ReferralDto
             {
                 SentToPartId = _judgeId,

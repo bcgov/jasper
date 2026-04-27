@@ -6,6 +6,8 @@ namespace Scv.Api.Models.Order;
 public class OrderDto : BaseDto
 {
     public OrderRequestDto OrderRequest { get; set; }
+    public string StyleOfCause { get; set; }
+    public int JudgeId { get; set; }
     public DateTime? CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public DateTime? ProcessedDate { get; set; }

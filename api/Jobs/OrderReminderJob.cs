@@ -50,25 +50,25 @@ public class OrderReminderJob(
             return;
         }
 
-        var reminderThresholdDays = int.TryParse(Configuration.GetNonEmptyValue("ORDER_REMINDER_THRESHOLD_DAYS"), out var reminderDays) 
+        var reminderThresholdDays = int.TryParse(Configuration.GetNonEmptyValue("ORDER_REMINDER_THRESHOLD_DAYS"), out var reminderDays)
             ? reminderDays : 5;
-        var reassignmentThresholdDays = int.TryParse(Configuration.GetNonEmptyValue("ORDER_REASSIGNMENT_THRESHOLD_DAYS"), out var reassignDays) 
+        var reassignmentThresholdDays = int.TryParse(Configuration.GetNonEmptyValue("ORDER_REASSIGNMENT_THRESHOLD_DAYS"), out var reassignDays)
             ? reassignDays : 10;
-        var maxReminderNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REMINDER_NOTIFICATIONS"), out var maxReminders) 
+        var maxReminderNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REMINDER_NOTIFICATIONS"), out var maxReminders)
             ? maxReminders : 1;
-        var maxReassignmentNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"), out var maxReassignments) 
+        var maxReassignmentNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"), out var maxReassignments)
             ? maxReassignments : 1;
 
         var reminderFromNow = DateTime.UtcNow.AddDays(-reminderThresholdDays);
         var reassignmentFromNow = DateTime.UtcNow.AddDays(-reassignmentThresholdDays);
 
         var ordersNeedingReminder = unresolvedOrders
-            .Where(o => o.Ent_Dtm <= reminderFromNow && 
-                       o.Ent_Dtm > reassignmentFromNow && 
+            .Where(o => o.Ent_Dtm <= reminderFromNow &&
+                       o.Ent_Dtm > reassignmentFromNow &&
                        o.ReminderNotificationsSent < maxReminderNotifications)
             .ToList();
         var ordersNeedingReassignment = unresolvedOrders
-            .Where(o => o.Ent_Dtm <= reassignmentFromNow && 
+            .Where(o => o.Ent_Dtm <= reassignmentFromNow &&
                        o.ReassignmentNotificationsSent < maxReassignmentNotifications)
             .ToList();
 
@@ -108,7 +108,7 @@ public class OrderReminderJob(
             order.ReminderNotificationsSent++;
             await _orderRepo.UpdateAsync(order);
 
-            Logger.LogInformation("Reminder sent to judge {JudgeId} for order {OrderId} (count: {Count})", 
+            Logger.LogInformation("Reminder sent to judge {JudgeId} for order {OrderId} (count: {Count})",
                 user.JudgeId, order.Id, order.ReminderNotificationsSent);
         }
         catch (Exception ex)
@@ -133,9 +133,10 @@ public class OrderReminderJob(
             }
 
             // Only reassign if the RAJ is not already assigned
-            if (order.OrderRequest.Referral.SentToPartId != raj.PersonId)
+            if (order.JudgeId != raj.PersonId)
             {
-                order.OrderRequest.Referral.SentToPartId = raj.PersonId;
+                order.JudgeId = raj.PersonId;
+                order.OrderRequest.Referral.SentToPartId = raj.ParticipantId;
                 order.OrderRequest.Referral.SentToName = GetRajName(raj);
                 await _orderRepo.UpdateAsync(order);
 
@@ -168,7 +169,7 @@ public class OrderReminderJob(
         var relatedRaj = await _judgeService.GetJudges(
             [JudgeService.REGIONAL_ADMIN_JUDGE],
             [judge.HomeLocationId.Value.ToString()]);
-        
+
         return relatedRaj.FirstOrDefault();
     }
 
@@ -181,39 +182,39 @@ public class OrderReminderJob(
         var emailData = CreateEmailData(order, GetRajName(raj), supportAccount);
 
         Logger.LogInformation("Order reassignment email prepared for order {OrderId}", order.Id);
-        
+
         await _emailTemplateService.SendEmailTemplateAsync(
             "Order Reassignment",
             rajUser.Email,
             emailData);
-        
+
         order.ReassignmentNotificationsSent++;
         await _orderRepo.UpdateAsync(order);
-        
+
         Logger.LogInformation("Reassignment notification sent to RAJ {RajId} for order {OrderId} (count: {Count})",
             raj.UserId, order.Id, order.ReassignmentNotificationsSent);
     }
 
     private async Task<(Models.Person judge, Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)
     {
-        var judgeId = order.OrderRequest?.Referral?.SentToPartId;
-        if (!judgeId.HasValue)
+        var judgeId = order.JudgeId;
+        if (judgeId <= 0)
         {
             Logger.LogWarning("No judge assigned to order {OrderId}", order.Id);
             return (null, null);
         }
 
-        var judge = await _judgeService.GetJudge(judgeId.Value);
+        var judge = await _judgeService.GetJudge(judgeId);
         if (judge == null)
         {
-            Logger.LogWarning("Judge {JudgeId} not found for order {OrderId}", judgeId.Value, order.Id);
+            Logger.LogWarning("Judge {JudgeId} not found for order {OrderId}", judgeId, order.Id);
             return (null, null);
         }
 
-        var user = await _userService.GetByJudgeIdAsync(judgeId.Value);
+        var user = await _userService.GetByJudgeIdAsync(judgeId);
         if (user == null || string.IsNullOrWhiteSpace(user.Email))
         {
-            Logger.LogWarning("No valid user/email for judge {JudgeId} for order {OrderId}", judgeId.Value, order.Id);
+            Logger.LogWarning("No valid user/email for judge {JudgeId} for order {OrderId}", judgeId, order.Id);
             return (judge, null);
         }
 
@@ -223,9 +224,9 @@ public class OrderReminderJob(
     private static object CreateEmailData(Order order, string judgeName, string supportAccount) => new
     {
         JudgeName = judgeName,
-        CaseFileNumber = order.OrderRequest?.CourtFile?.CourtFileNo,
+        CaseFileNumber = order.OrderRequest?.CourtFileNo,
         DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
-        LocationName = order.OrderRequest?.CourtFile?.CourtLocationDesc,
+        LocationName = order.OrderRequest?.CourtLocationDesc,
         Priority = order.OrderRequest?.Referral?.PriorityType,
         SupportAccount = supportAccount
     };
@@ -238,6 +239,6 @@ public class OrderReminderJob(
 
         return $"{latestName.FirstName} {latestName.LastName}".Trim();
     }
-    
+
     private static string GetRajName(PersonSearchItem raj) => $"{raj.FirstName} {raj.LastName}".Trim();
 }

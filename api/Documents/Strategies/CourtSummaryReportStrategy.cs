@@ -7,8 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Constants;
 using Scv.Api.Helpers;
-using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Helpers.Extensions;
+using Scv.Api.Helpers.ContractResolver;
 using Scv.Api.Models.Document;
 
 namespace Scv.Api.Documents.Strategies;
@@ -38,8 +38,11 @@ public class CourtSummaryReportStrategy : IDocumentStrategy
             documentRequest.AppearanceId,
             JustinReportName.CEISR035);
 
-        var result = new MemoryStream(Convert.FromBase64String(documentResponse.ReportContent));
+        var reportContent = documentResponse?.ReportContent;
+        if (!DocumentHelper.IsPdfOrWordDocumentBase64(reportContent))
+            throw new InvalidOperationException(
+                $"CourtSummary report for AppearanceId '{documentRequest.AppearanceId}' did not return a valid document.");
 
-        return result;
+        return new MemoryStream(Convert.FromBase64String(reportContent));
     }
 }

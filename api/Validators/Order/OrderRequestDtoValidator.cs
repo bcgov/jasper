@@ -9,24 +9,17 @@ public class OrderRequestDtoValidator : AbstractValidator<OrderRequestDto>
 {
     public OrderRequestDtoValidator()
     {
-        RuleFor(r => r.CourtFile)
-            .NotNull().WithMessage("CourtFile is required.");
+        RuleFor(r => r.PhysicalFileId)
+           .NotNull().WithMessage("PhysicalFileId is required.");
 
-        RuleFor(r => r.CourtFile.PhysicalFileId)
-           .NotNull().WithMessage("PhysicalFileId is required.")
-           .When(r => r.CourtFile != null);
-
-        RuleFor(r => r.CourtFile.CourtDivisionCd)
+        RuleFor(r => r.CourtDivisionCd)
             .NotEmpty().WithMessage("CourtDivisionCd is required.")
             .Must(BeValidCourtDivision)
-            .WithMessage("CourtDivisionCd is unsupported.")
-            .When(r => r.CourtFile != null);
-
-        RuleFor(r => r.CourtFile.CourtClassCd)
+            .WithMessage("CourtDivisionCd is unsupported.");
+        RuleFor(r => r.CourtClassCd)
             .NotEmpty().WithMessage("CourtClassCd is required.")
             .Must(BeValidCourtClass)
-            .WithMessage("CourtClassCd is unsupported.")
-            .When(r => r.CourtFile != null);
+            .WithMessage("CourtClassCd is unsupported.");
 
         RuleFor(r => r.Referral)
             .NotNull().WithMessage("Referral is required.");

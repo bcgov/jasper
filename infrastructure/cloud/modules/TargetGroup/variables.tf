@@ -32,3 +32,15 @@ variable "protocol" {
   description = "The protocol that will be used by the Target Group and Health Check"
   type        = string
 }
+
+variable "stickiness_enabled" {
+  description = "Enable ALB target group stickiness"
+  type        = bool
+  default     = false
+}
+
+variable "stickiness_cookie_duration" {
+  description = "Stickiness cookie duration in seconds"
+  type        = number
+  default     = 36000
+}

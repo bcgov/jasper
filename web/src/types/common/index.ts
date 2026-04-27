@@ -203,3 +203,8 @@ export enum ActivityClassEnum {
   Sitting = 'SIT',
   NonSitting = 'NS',
 }
+
+export enum NotificationType {
+  SYSTEM = 'SYSTEM',
+  ORDER_RECEIVED = 'ORDER_RECEIVED',
+}

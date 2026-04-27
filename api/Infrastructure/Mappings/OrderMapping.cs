@@ -34,10 +34,9 @@ public class OrderMapping : IRegister
             .Map(dest => dest.UpdatedDate, src => DateTime.UtcNow);
 
         config.NewConfig<Order, OrderViewDto>()
-            .Map(dest => dest.CourtFileNumber, src => src.OrderRequest.CourtFile.FullFileNo)
-            .Map(dest => dest.PhysicalFileId, src => src.OrderRequest.CourtFile.PhysicalFileId)
-            .Map(dest => dest.CourtClass, src => src.OrderRequest.CourtFile.CourtClassCd)
-            .Map(dest => dest.StyleOfCause, src => src.OrderRequest.CourtFile.StyleOfCause)
+            .Map(dest => dest.CourtFileNumber, src => src.OrderRequest.FullFileNo)
+            .Map(dest => dest.PhysicalFileId, src => src.OrderRequest.PhysicalFileId)
+            .Map(dest => dest.CourtClass, src => src.OrderRequest.CourtClassCd)
             .Map(dest => dest.PackageId, src => src.OrderRequest.Referral.PackageId)
             .Map(dest => dest.PackageDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId)
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))

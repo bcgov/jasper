@@ -32,6 +32,12 @@ const mockOrderService = {
   getOrders: vi.fn(),
 };
 
+const mockNotificationsService = {
+  setHandlerProvider: vi.fn(),
+  start: vi.fn().mockResolvedValue(undefined),
+  stop: vi.fn().mockResolvedValue(undefined),
+};
+
 // Helper functions to generate test data with faker
 const generateJudge = (): PersonSearchItem => ({
   personId: faker.number.int(),
@@ -132,6 +138,7 @@ describe('AppBar.vue', () => {
         provide: {
           orderService: mockOrderService,
           judgeService: mockJudgeService,
+          notificationsService: mockNotificationsService,
         },
       },
       ...options,
@@ -426,6 +433,7 @@ describe('AppBar.vue', () => {
             provide: {
               orderService: undefined,
               judgeService: mockJudgeService,
+              notificationsService: mockNotificationsService,
             },
             stubs: {
               VAppBar: false,
@@ -451,6 +459,33 @@ describe('AppBar.vue', () => {
             provide: {
               orderService: mockOrderService,
               judgeService: undefined,
+              notificationsService: mockNotificationsService,
+            },
+            stubs: {
+              VAppBar: false,
+              VAppBarTitle: false,
+              VTabs: false,
+              VTab: false,
+              VBtn: false,
+              VSpacer: false,
+              VBadge: false,
+              VIcon: false,
+              JudgeSelector: { template: '<div></div>' },
+            },
+          },
+        });
+      }).toThrow('Service is not available!');
+    });
+
+    it('should throw error if notificationsService is not provided', () => {
+      expect(() => {
+        mount(AppBar, {
+          global: {
+            plugins: [router],
+            provide: {
+              orderService: mockOrderService,
+              judgeService: mockJudgeService,
+              notificationsService: undefined,
             },
             stubs: {
               VAppBar: false,

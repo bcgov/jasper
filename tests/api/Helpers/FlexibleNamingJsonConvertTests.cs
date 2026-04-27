@@ -22,10 +22,8 @@ public class FlexibleNamingJsonConverterTests
     public void Deserialize_SnakeCase_TopLevel_And_Nested_Works()
     {
         var json = @"{
-              ""court_file"": {
-                ""court_class_cd"": ""A"",
-                ""physical_file_id"": 123
-              },
+              ""court_class_cd"": ""A"",
+              ""physical_file_id"": 123,
               ""referral"": {
                 ""sent_to_part_id"": 456
               },
@@ -41,9 +39,8 @@ public class FlexibleNamingJsonConverterTests
         var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
-        Assert.NotNull(dto.CourtFile);
-        Assert.Equal("A", dto.CourtFile.CourtClassCd);
-        Assert.Equal(123, dto.CourtFile.PhysicalFileId);
+        Assert.Equal("A", dto.CourtClassCd);
+        Assert.Equal(123, dto.PhysicalFileId);
         Assert.NotNull(dto.Referral);
         Assert.Equal(456, dto.Referral.SentToPartId);
         Assert.NotNull(dto.PackageDocuments);
@@ -58,15 +55,16 @@ public class FlexibleNamingJsonConverterTests
     public void Deserialize_CamelCase_Works()
     {
         var json = @"{
-              ""courtFile"": { ""courtClassCd"": ""C"", ""physicalFileId"": 55 },
+              ""courtClassCd"": ""C"",
+              ""physicalFileId"": 55,
               ""referral"": { ""sentToPartId"": 999 }
             }";
 
         var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
-        Assert.Equal("C", dto.CourtFile.CourtClassCd);
-        Assert.Equal(55, dto.CourtFile.PhysicalFileId);
+        Assert.Equal("C", dto.CourtClassCd);
+        Assert.Equal(55, dto.PhysicalFileId);
         Assert.Equal(999, dto.Referral.SentToPartId);
     }
 
@@ -74,15 +72,16 @@ public class FlexibleNamingJsonConverterTests
     public void Deserialize_PascalCase_Works()
     {
         var json = @"{
-              ""CourtFile"": { ""CourtClassCd"": ""F"", ""PhysicalFileId"": 777 },
+              ""CourtClassCd"": ""F"",
+              ""PhysicalFileId"": 777,
               ""Referral"": { ""SentToPartId"": 42 }
             }";
 
         var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
-        Assert.Equal("F", dto.CourtFile.CourtClassCd);
-        Assert.Equal(777, dto.CourtFile.PhysicalFileId);
+        Assert.Equal("F", dto.CourtClassCd);
+        Assert.Equal(777, dto.PhysicalFileId);
         Assert.Equal(42, dto.Referral.SentToPartId);
     }
 
@@ -90,7 +89,8 @@ public class FlexibleNamingJsonConverterTests
     public void Deserialize_Nested_Array_Items_With_SnakeCase_Works()
     {
         var json = @"{
-              ""court_file"": { ""court_class_cd"": ""A"", ""physical_file_id"": 1 },
+              ""court_class_cd"": ""A"",
+              ""physical_file_id"": 1,
               ""package_documents"": [
                 { ""document_id"": 10, ""document_type_cd"": ""ORD"", ""document_type_desc"": ""Order"", ""order"": true, ""referred_document"": false },
                 { ""document_id"": 11, ""document_type_cd"": ""MOT"", ""document_type_desc"": ""Motion"", ""order"": false, ""referred_document"": true }
@@ -103,8 +103,8 @@ public class FlexibleNamingJsonConverterTests
         var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
-        Assert.Equal("A", dto.CourtFile.CourtClassCd);
-        Assert.Equal(1, dto.CourtFile.PhysicalFileId);
+        Assert.Equal("A", dto.CourtClassCd);
+        Assert.Equal(1, dto.PhysicalFileId);
         Assert.Equal(2, dto.PackageDocuments.Count);
         Assert.Equal(10, dto.PackageDocuments[0].DocumentId);
         Assert.True(dto.PackageDocuments[0].Order);
@@ -127,7 +127,9 @@ public class FlexibleNamingJsonConverterTests
     public void Deserialize_Ignores_Unknown_Properties()
     {
         var json = @"{
-              ""court_file"": { ""court_class_cd"": ""Y"", ""physical_file_id"": 999, ""unknown_prop"": ""ignored"" },
+              ""court_class_cd"": ""Y"",
+              ""physical_file_id"": 999,
+              ""unknown_prop"": ""ignored"",
               ""referral"": { ""sent_to_part_id"": 123, ""extra"": ""ignored"" },
               ""unknown_root"": ""ignored""
             }";
@@ -135,8 +137,8 @@ public class FlexibleNamingJsonConverterTests
         var dto = JsonConvert.DeserializeObject<OrderRequestDto>(json, SettingsWithConverter());
 
         Assert.NotNull(dto);
-        Assert.Equal("Y", dto.CourtFile.CourtClassCd);
-        Assert.Equal(999, dto.CourtFile.PhysicalFileId);
+        Assert.Equal("Y", dto.CourtClassCd);
+        Assert.Equal(999, dto.PhysicalFileId);
         Assert.Equal(123, dto.Referral.SentToPartId);
     }
 }

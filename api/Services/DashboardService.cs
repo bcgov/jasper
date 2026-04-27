@@ -277,7 +277,7 @@ public class DashboardService(
                     ClassCode = a.ActivityClassCode,
                     ClassDescription = a.ActivityClassDescription
                 })
-                .OrderBy(a => a.ClassDescription);
+                .OrderBy(a => a.Description);
 
             return OperationResult<CourtCalendarActivitiesSchedule>.Success(new CourtCalendarActivitiesSchedule
             {

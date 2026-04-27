@@ -1,8 +1,4 @@
-using System;
-using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -12,6 +8,8 @@ using Scv.Api.Models.Order;
 
 namespace Scv.Api.Repositories;
 
+// This will be replaced by the JudicialServicesClient in the future
+// while team is still waiting for the details from the PROD instance of Keycloak.
 public interface ICsoClient
 {
     Task<bool> SendOrderAsync(OrderActionDto order, CancellationToken cancellationToken = default);

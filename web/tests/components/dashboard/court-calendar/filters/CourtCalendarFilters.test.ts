@@ -2,7 +2,7 @@ import ActivityClassFilter from '@/components/dashboard/court-calendar/filters/A
 import CourtCalendarFilters from '@/components/dashboard/court-calendar/filters/CourtCalendarFilters.vue';
 import FilterDropdown from '@/components/dashboard/court-calendar/filters/FilterDropdown.vue';
 import FilterDropdownGrouped from '@/components/dashboard/court-calendar/filters/FilterDropdownGrouped.vue';
-import { Presider } from '@/types';
+import { Activity, Presider } from '@/types';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
@@ -25,6 +25,14 @@ describe('CourtCalendarFilters.vue', () => {
     ...overrides,
   });
 
+  const createActivity = (overrides?: Partial<Activity>): Activity => ({
+    code: faker.string.alpha({ length: 3, casing: 'upper' }),
+    description: faker.lorem.words(3),
+    classCode: faker.string.alpha({ length: 2, casing: 'upper' }),
+    classDescription: faker.lorem.word(),
+    ...overrides,
+  });
+
   const createPresider = (overrides?: Partial<Presider>): Presider => ({
     id: faker.number.int({ min: 1, max: 9999 }),
     name: faker.person.fullName(),
@@ -40,6 +48,7 @@ describe('CourtCalendarFilters.vue', () => {
         isLocationFilterLoading: false,
         locations: [],
         presiders: [],
+        activities: [],
         judgeHomeLocationId: '',
         selectedLocations: [],
         selectedPresiders: [],
@@ -241,6 +250,146 @@ describe('CourtCalendarFilters.vue', () => {
     });
   });
 
+  describe('Activities FilterDropdown', () => {
+    it('does not render the Activities FilterDropdown when isPresidersView is true', () => {
+      const activity = createActivity();
+      const wrapper = mountComponent({
+        activities: [activity],
+        isPresidersView: true,
+      });
+      const dropdowns = wrapper.findAllComponents(FilterDropdown);
+      expect(dropdowns.every((d) => d.props('title') !== 'Activities')).toBe(
+        true
+      );
+    });
+
+    it('does not render the Activities FilterDropdown when activities is empty, even if isPresidersView is false', () => {
+      const wrapper = mountComponent({
+        activities: [],
+        isPresidersView: false,
+      });
+      const dropdowns = wrapper.findAllComponents(FilterDropdown);
+      expect(dropdowns.every((d) => d.props('title') !== 'Activities')).toBe(
+        true
+      );
+    });
+
+    it('renders the Activities FilterDropdown when activities are present and isPresidersView is false', () => {
+      const activity = createActivity();
+      const wrapper = mountComponent({
+        activities: [activity],
+        isPresidersView: false,
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities');
+      expect(activityDropdown).toBeDefined();
+    });
+
+    it('passes title "Activities" to the Activities FilterDropdown', () => {
+      const activity = createActivity();
+      const wrapper = mountComponent({
+        activities: [activity],
+        isPresidersView: false,
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities');
+      expect(activityDropdown!.props('title')).toBe('Activities');
+    });
+
+    it('maps activities to { value: code, text: description, color } items', () => {
+      const act1 = createActivity({
+        code: 'TRL',
+        description: 'Trial',
+        classDescription: 'Criminal',
+      });
+      const act2 = createActivity({
+        code: 'HRG',
+        description: 'Hearing',
+        classDescription: 'Civil',
+      });
+      const wrapper = mountComponent({
+        activities: [act1, act2],
+        isPresidersView: false,
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities')!;
+      expect(activityDropdown.props('items')).toEqual([
+        { value: 'TRL', text: 'Trial', color: 'criminal' },
+        { value: 'HRG', text: 'Hearing', color: 'civil' },
+      ]);
+    });
+
+    it('trims leading and trailing whitespace from classDescription for color', () => {
+      const act = createActivity({
+        code: 'X',
+        description: 'X',
+        classDescription: '  Small Claims  ',
+      });
+      const wrapper = mountComponent({
+        activities: [act],
+        isPresidersView: false,
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities')!;
+      expect(activityDropdown.props('items')[0].color).toBe('small-claims');
+    });
+
+    it('passes showSelectAll=false to the Activities FilterDropdown', () => {
+      const wrapper = mountComponent({
+        activities: [createActivity()],
+        isPresidersView: false,
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities')!;
+      expect(activityDropdown.props('showSelectAll')).toBe(false);
+    });
+
+    it('passes showSearch=false to the Activities FilterDropdown', () => {
+      const wrapper = mountComponent({
+        activities: [createActivity()],
+        isPresidersView: false,
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities')!;
+      expect(activityDropdown.props('showSearch')).toBe(false);
+    });
+
+    it('passes selectedActivities as modelValue to the Activities FilterDropdown', () => {
+      const act = createActivity({ code: 'TRL' });
+      const wrapper = mountComponent({
+        activities: [act],
+        isPresidersView: false,
+        selectedActivities: ['TRL'],
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities')!;
+      expect(activityDropdown.props('modelValue')).toEqual(['TRL']);
+    });
+
+    it('emits update:selectedActivities when Activities FilterDropdown emits update:modelValue', async () => {
+      const act = createActivity({ code: 'TRL' });
+      const wrapper = mountComponent({
+        activities: [act],
+        isPresidersView: false,
+        selectedActivities: [],
+      });
+      const activityDropdown = wrapper
+        .findAllComponents(FilterDropdown)
+        .find((d) => d.props('title') === 'Activities')!;
+      await activityDropdown.vm.$emit('update:modelValue', ['TRL']);
+      expect(wrapper.emitted('update:selectedActivities')?.[0]).toEqual([
+        ['TRL'],
+      ]);
+    });
+  });
+
   describe('Clear All button', () => {
     it('does not render the Clear All button when no locations are selected and activity class is "all"', () => {
       const wrapper = mountComponent({
@@ -255,6 +404,15 @@ describe('CourtCalendarFilters.vue', () => {
       const wrapper = mountComponent({
         locations: [loc],
         selectedLocations: ['LOC1'],
+      });
+      expect(wrapper.find('.clearAll').exists()).toBe(true);
+    });
+
+    it('renders the Clear All button when selectedActivities is not empty', () => {
+      const wrapper = mountComponent({
+        selectedLocations: [],
+        selectedActivities: ['TRL'],
+        selectedActivityClass: 'all',
       });
       expect(wrapper.find('.clearAll').exists()).toBe(true);
     });
@@ -286,6 +444,22 @@ describe('CourtCalendarFilters.vue', () => {
       expect(wrapper.emitted('update:selectedPresiders')?.at(-1)).toEqual([[]]);
       expect(wrapper.emitted('update:selectedActivityClass')?.at(-1)).toEqual([
         'all',
+      ]);
+    });
+
+    it('emits empty array for selectedActivities when Clear All is clicked', async () => {
+      const act = createActivity({ code: 'TRL' });
+      const wrapper = mountComponent({
+        activities: [act],
+        isPresidersView: false,
+        selectedActivities: ['TRL'],
+        selectedLocations: [],
+      });
+
+      await wrapper.find('.clearAll').trigger('click');
+
+      expect(wrapper.emitted('update:selectedActivities')?.at(-1)).toEqual([
+        [],
       ]);
     });
   });

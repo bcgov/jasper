@@ -18,10 +18,10 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models.Order;
+using Scv.Api.Repositories;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
-using Scv.Api.Repositories;
 using Xunit;
 
 namespace tests.api.Services;
@@ -149,7 +149,7 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenInvalidCourtClassCd()
     {
         var orderDto = CreateValidOrderRequestDto();
-        orderDto.CourtFile.CourtClassCd = "INVALID";
+        orderDto.CourtClassCd = "INVALID";
 
         var result = await _orderService.ValidateOrderRequestAsync(orderDto);
 
@@ -161,42 +161,20 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCriminalFileNotFound()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "A";
+        orderRequestDto.CourtClassCd = "A";
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCriminalFilecontentAsync(
+            .Setup(c => c.FilesCriminalGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync((CriminalFileContent)null);
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync((CriminalFileDetailResponse)null);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Criminal file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
-    }
-
-    [Fact]
-    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCriminalFileHasNoAccusedFiles()
-    {
-        var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "A";
-
-        _mockFileServicesClient
-            .Setup(c => c.FilesCriminalFilecontentAsync(
-                _requestAgencyIdentifierId,
-                _requestPartId,
-                _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync(new CriminalFileContent { AccusedFile = [] });
-
-        var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains($"Criminal file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Criminal file with id: {orderRequestDto.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Theory]
@@ -206,33 +184,29 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ValidatesCriminalFile_ForCriminalCourtClasses(string courtClass)
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = courtClass;
+        orderRequestDto.CourtClassCd = courtClass;
         var judgeId = _faker.Random.Int(1, 1000);
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCriminalFilecontentAsync(
+            .Setup(c => c.FilesCriminalGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CriminalFileDetailResponse());
 
         _mockJudgeService
             .Setup(d => d.GetJudges(null, null))
-            .ReturnsAsync([new PersonSearchItem { PersonId = judgeId }]);
-
-        orderRequestDto.Referral.SentToPartId = judgeId;
+            .ReturnsAsync([new PersonSearchItem { PersonId = judgeId, ParticipantId = orderRequestDto.Referral.SentToPartId }]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
-        _mockFileServicesClient.Verify(c => c.FilesCriminalFilecontentAsync(
+        _mockFileServicesClient.Verify(c => c.FilesCriminalGetAsync(
             _requestAgencyIdentifierId,
             _requestPartId,
             _applicationCode,
-            null, null, null, null,
-            orderRequestDto.CourtFile.PhysicalFileId.ToString()), Times.Once);
+            orderRequestDto.PhysicalFileId.ToString()), Times.Once);
     }
 
     #endregion
@@ -243,42 +217,40 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCivilFileNotFound()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "C";
+        orderRequestDto.CourtClassCd = "C";
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCivilFilecontentAsync(
+            .Setup(c => c.FilesCivilGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync((CivilFileContent)null);
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync((CivilFileDetailResponse)null);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Civil file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Civil file with id: {orderRequestDto.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Fact]
-    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCivilFileHasNoCivilFiles()
+    public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenCivilFileHasNoPhysicalFileId()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "F";
+        orderRequestDto.CourtClassCd = "F";
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCivilFilecontentAsync(
+            .Setup(c => c.FilesCivilGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync(new CivilFileContent { CivilFile = [] });
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CivilFileDetailResponse { PhysicalFileId = string.Empty });
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains($"Civil file with id: {orderRequestDto.CourtFile.PhysicalFileId} is not found.", result.Errors);
+        Assert.Contains($"Civil file with id: {orderRequestDto.PhysicalFileId} is not found.", result.Errors);
     }
 
     [Theory]
@@ -289,40 +261,41 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ValidatesCivilFile_ForCivilCourtClasses(string courtClass)
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = courtClass;
+        orderRequestDto.CourtClassCd = courtClass;
         var judgeId = _faker.Random.Int(1, 1000);
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCivilFilecontentAsync(
+            .Setup(c => c.FilesCivilGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync(new CivilFileContent { CivilFile = [new()] });
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(
+                new CivilFileDetailResponse
+                {
+                    SocTxt = _faker.Name.FullName(),
+                    PhysicalFileId = orderRequestDto.PhysicalFileId.ToString()
+                });
 
         _mockJudgeService
             .Setup(d => d.GetJudges(null, null))
-            .ReturnsAsync([new() { PersonId = judgeId }]);
-
-        orderRequestDto.Referral.SentToPartId = judgeId;
+            .ReturnsAsync([new PersonSearchItem { PersonId = judgeId, ParticipantId = orderRequestDto.Referral.SentToPartId }]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
-        _mockFileServicesClient.Verify(c => c.FilesCivilFilecontentAsync(
+        _mockFileServicesClient.Verify(c => c.FilesCivilGetAsync(
             _requestAgencyIdentifierId,
             _requestPartId,
             _applicationCode,
-            null, null, null, null,
-            orderRequestDto.CourtFile.PhysicalFileId.ToString()), Times.Once);
+            orderRequestDto.PhysicalFileId.ToString()), Times.Once);
     }
 
     [Fact]
     public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenUnsupportedCourtClass()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "B";
+        orderRequestDto.CourtClassCd = "B";
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
@@ -338,16 +311,25 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ReturnsFailure_WhenJudgeNotFound()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "A";
+        orderRequestDto.CourtClassCd = "A";
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCriminalFilecontentAsync(
+            .Setup(c => c.FilesCriminalGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CriminalFileDetailResponse
+            {
+                Participant =
+                [
+                    new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+                ]
+            });
 
         _mockJudgeService
             .Setup(d => d.GetJudges(null, null))
@@ -363,21 +345,31 @@ public class OrderServiceTests : ServiceTestBase
     public async Task ValidateOrderRequestAsync_ReturnsSuccess_WhenJudgeExists()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
-        orderRequestDto.CourtFile.CourtClassCd = "A";
-        var judgeId = orderRequestDto.Referral.SentToPartId.GetValueOrDefault();
+        orderRequestDto.CourtClassCd = "A";
+        var participantId = orderRequestDto.Referral.SentToPartId.GetValueOrDefault();
+        var judgeId = _faker.Random.Int(1, 1000);
 
         _mockFileServicesClient
-            .Setup(c => c.FilesCriminalFilecontentAsync(
+            .Setup(c => c.FilesCriminalGetAsync(
                 _requestAgencyIdentifierId,
                 _requestPartId,
                 _applicationCode,
-                null, null, null, null,
-                orderRequestDto.CourtFile.PhysicalFileId.ToString()))
-            .ReturnsAsync(new CriminalFileContent { AccusedFile = [new()] });
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CriminalFileDetailResponse
+            {
+                Participant =
+                [
+                    new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+                ]
+            });
 
         _mockJudgeService
             .Setup(d => d.GetJudges(null, null))
-            .ReturnsAsync([new() { PersonId = judgeId }]);
+            .ReturnsAsync([new PersonSearchItem { PersonId = judgeId, ParticipantId = participantId }]);
 
         var result = await _orderService.ValidateOrderRequestAsync(orderRequestDto);
 
@@ -401,6 +393,41 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.AddAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
+        _mockFileServicesClient
+            .Setup(c => c.FilesCriminalGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CriminalFileDetailResponse
+            {
+                Participant =
+                [
+                    new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+                ]
+            });
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCivilGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CivilFileDetailResponse { SocTxt = "John Doe" });
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([
+                new PersonSearchItem
+                {
+                    PersonId = 1,
+                    ParticipantId = orderRequestDto.Referral.SentToPartId.GetValueOrDefault()
+                }]);
+
         var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
@@ -413,7 +440,7 @@ public class OrderServiceTests : ServiceTestBase
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
-        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderRequestDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.PhysicalFileId = orderRequestDto.PhysicalFileId;
         existingOrder.OrderRequest.Referral.SentToPartId = orderRequestDto.Referral.SentToPartId;
         existingOrder.OrderRequest.Referral.ReferredDocumentId = orderRequestDto.Referral.ReferredDocumentId;
 
@@ -428,6 +455,41 @@ public class OrderServiceTests : ServiceTestBase
         _mockOrderRepo
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
+
+        _mockFileServicesClient
+                    .Setup(c => c.FilesCriminalGetAsync(
+                        _requestAgencyIdentifierId,
+                        _requestPartId,
+                        _applicationCode,
+                        existingOrder.OrderRequest.PhysicalFileId.ToString()))
+                    .ReturnsAsync(new CriminalFileDetailResponse
+                    {
+                        Participant =
+                        [
+                            new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+                        ]
+                    });
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCivilGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                existingOrder.OrderRequest.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CivilFileDetailResponse { SocTxt = "John Doe" });
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([
+                new PersonSearchItem
+                {
+                    PersonId = 1,
+                    ParticipantId = existingOrder.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }]);
 
         var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
@@ -444,7 +506,7 @@ public class OrderServiceTests : ServiceTestBase
         var existingOrderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var existingOrder = CreateOrder();
         existingOrder.Id = existingOrderId;
-        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.PhysicalFileId = orderDto.PhysicalFileId;
         existingOrder.OrderRequest.Referral.SentToPartId = orderDto.Referral.SentToPartId;
         existingOrder.OrderRequest.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
 
@@ -459,6 +521,41 @@ public class OrderServiceTests : ServiceTestBase
         _mockOrderRepo
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCriminalGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                existingOrder.OrderRequest.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CriminalFileDetailResponse
+            {
+                Participant =
+                [
+                    new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+                ]
+            });
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCivilGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                existingOrder.OrderRequest.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CivilFileDetailResponse { SocTxt = "John Doe" });
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([
+                new PersonSearchItem
+                {
+                    PersonId = 1,
+                    ParticipantId = existingOrder.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }]);
 
         var result = await _orderService.ProcessOrderRequestAsync(orderDto);
 
@@ -511,7 +608,7 @@ public class OrderServiceTests : ServiceTestBase
     {
         var orderDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
-        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.PhysicalFileId = orderDto.PhysicalFileId;
         existingOrder.OrderRequest.Referral.SentToPartId = orderDto.Referral.SentToPartId;
         existingOrder.OrderRequest.Referral.ReferredDocumentId = orderDto.Referral.ReferredDocumentId;
 
@@ -573,6 +670,41 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.AddAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
+        _mockFileServicesClient
+           .Setup(c => c.FilesCriminalGetAsync(
+               _requestAgencyIdentifierId,
+               _requestPartId,
+               _applicationCode,
+               orderRequestDto.PhysicalFileId.ToString()))
+           .ReturnsAsync(new CriminalFileDetailResponse
+           {
+               Participant =
+               [
+                   new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+               ]
+           });
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCivilGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CivilFileDetailResponse { SocTxt = "John Doe" });
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([
+                new PersonSearchItem
+                {
+                    PersonId = 1,
+                    ParticipantId = orderRequestDto.Referral.SentToPartId.GetValueOrDefault()
+                }]);
+
         var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         Assert.True(result.Succeeded);
@@ -607,7 +739,7 @@ public class OrderServiceTests : ServiceTestBase
     {
         var orderRequestDto = CreateValidOrderRequestDto();
         var existingOrder = CreateOrder();
-        existingOrder.OrderRequest.CourtFile.PhysicalFileId = orderRequestDto.CourtFile.PhysicalFileId;
+        existingOrder.OrderRequest.PhysicalFileId = orderRequestDto.PhysicalFileId;
         existingOrder.OrderRequest.Referral.SentToPartId = orderRequestDto.Referral.SentToPartId;
         existingOrder.OrderRequest.Referral.ReferredDocumentId = orderRequestDto.Referral.ReferredDocumentId;
 
@@ -622,6 +754,41 @@ public class OrderServiceTests : ServiceTestBase
         _mockOrderRepo
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCriminalGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CriminalFileDetailResponse
+            {
+                Participant =
+                [
+                    new CriminalParticipant()
+                    {
+                        LastNm = "Doe",
+                        GivenNm = "John",
+                    }
+                ]
+            });
+
+        _mockFileServicesClient
+            .Setup(c => c.FilesCivilGetAsync(
+                _requestAgencyIdentifierId,
+                _requestPartId,
+                _applicationCode,
+                orderRequestDto.PhysicalFileId.ToString()))
+            .ReturnsAsync(new CivilFileDetailResponse { SocTxt = "John Doe" });
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([
+                new PersonSearchItem
+                {
+                    PersonId = 1,
+                    ParticipantId = orderRequestDto.Referral.SentToPartId.GetValueOrDefault()
+                }]);
 
         var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
@@ -743,7 +910,7 @@ public class OrderServiceTests : ServiceTestBase
 
         var order = CreateOrder();
         order.Id = orderId;
-        order.OrderRequest.Referral.SentToPartId = judgeId;
+        order.JudgeId = judgeId;
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(orderId))
@@ -864,16 +1031,13 @@ public class OrderServiceTests : ServiceTestBase
     {
         return new OrderRequestDto
         {
-            CourtFile = new CourtFileDto
-            {
-                PhysicalFileId = _faker.Random.Int(1, 10000),
-                CourtDivisionCd = _faker.PickRandom("R", "I"),
-                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                CourtFileNo = _faker.Random.AlphaNumeric(10)
-            },
+            PhysicalFileId = _faker.Random.Int(1, 10000),
+            CourtDivisionCd = _faker.PickRandom("R", "I"),
+            CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+            CourtFileNo = _faker.Random.AlphaNumeric(10),
             Referral = new ReferralDto
             {
-                SentToPartId = _faker.Random.Int(1, 1000),
+                SentToPartId = _faker.Random.Double(1, 1000),
                 ReferredDocumentId = _faker.Random.Int(1, 1000)
             },
             PackageDocuments =
@@ -894,13 +1058,10 @@ public class OrderServiceTests : ServiceTestBase
             Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
             OrderRequest = new OrderRequest
             {
-                CourtFile = new CourtFile
-                {
-                    PhysicalFileId = _faker.Random.Int(1, 10000),
-                    CourtDivisionCd = _faker.PickRandom("R", "I"),
-                    CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
-                    CourtFileNo = _faker.Random.AlphaNumeric(10)
-                },
+                PhysicalFileId = _faker.Random.Int(1, 10000),
+                CourtDivisionCd = _faker.PickRandom("R", "I"),
+                CourtClassCd = _faker.PickRandom("A", "Y", "T", "F", "C", "M", "L"),
+                CourtFileNo = _faker.Random.AlphaNumeric(10),
                 Referral = new Referral
                 {
                     SentToPartId = _faker.Random.Int(1, 1000),

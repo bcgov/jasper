@@ -7,6 +7,12 @@ import svgLoader from 'vite-svg-loader';
 
 const path = require('path');
 const vueSrc = 'src';
+const wsProxyOrigin =
+  process.env.VITE_WS_PROXY_ORIGIN || 'https://localhost:8080';
+const wsProxyInsecure = process.env.VITE_WS_PROXY_INSECURE === 'true';
+
+console.log('[vite] VITE_WS_PROXY_ORIGIN:', wsProxyOrigin);
+console.log('[vite] VITE_WS_PROXY_INSECURE:', wsProxyInsecure);
 
 export default defineConfig(({ mode }) => {
   const isProd = Boolean(process.env.VITE_ENV?.includes('prod'));
@@ -41,7 +47,7 @@ export default defineConfig(({ mode }) => {
   return {
     base:
       process.env.NODE_ENV === 'production' ? '/S2I_INJECT_PUBLIC_PATH/' : '/',
-    plugins,
+    plugins: plugins,
     resolve: {
       alias: {
         '@': path.resolve(__dirname, vueSrc),
@@ -61,8 +67,25 @@ export default defineConfig(({ mode }) => {
       port: 1339,
       https: true,
       proxy: {
-        '^/api': {
+        '/api/notifications': {
           target: 'http://api:5000',
+          changeOrigin: true,
+          ws: true,
+          secure: !wsProxyInsecure,
+          headers: {
+            'X-Forwarded-Host': 'localhost',
+            'X-Forwarded-Port': '8080',
+            'X-Base-Href': '/',
+            Origin: wsProxyOrigin,
+          },
+          configure: (proxy) => {
+            proxy.on('proxyReqWs', (proxyReq) => {
+              proxyReq.setHeader('Origin', wsProxyOrigin);
+            });
+          },
+        },
+        '^/api': {
+          target: 'http://api:5000', //NOSONAR
           changeOrigin: true,
           headers: {
             Connection: 'keep-alive',

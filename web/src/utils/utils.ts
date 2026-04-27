@@ -57,6 +57,8 @@ export const initializeSessionSettings = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.log(error);
+    commonStore.setLoggedInUserInfo(null);
+    commonStore.setUserInfo(null);
     return false;
   } finally {
     commonStore.setIsInitialized(true);
@@ -380,4 +382,35 @@ export const parseQueryStringToString = (
 
 export const isPositiveInteger = (value) => {
   return _.isNumber(value) && value > 0;
+};
+
+/**
+ * Maps a known activity class description to its corresponding CSS class name.
+ * Styles can be found in /public/styles/common.css
+ * @param activityClassDescription The activity class description to map.
+ * @returns The CSS class name for the given description, or an empty string if the description is unknown.
+ */
+export const cleanActivityClassDescription = (
+  activityClassDescription: string | null | undefined
+): string => {
+  switch (activityClassDescription?.trim()) {
+    case 'Civil':
+      return 'civil';
+    case 'Small Claims':
+      return 'small-claims';
+    case 'Criminal':
+      return 'criminal';
+    case 'Family':
+      return 'family';
+    case 'Mixed':
+      return 'mixed';
+    case 'Non-Sitting':
+      return 'non-sitting';
+    case 'Judge-Sitting':
+      return 'judge-sitting';
+    case 'Specialty':
+      return 'specialty';
+    default:
+      return '';
+  }
 };

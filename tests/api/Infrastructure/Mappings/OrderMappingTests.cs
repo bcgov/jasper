@@ -324,6 +324,30 @@ public class OrderMappingTests
     }
 
     [Fact]
+    public void Order_To_OrderViewDto_MapsPriorityType()
+    {
+        var expectedPriorityType = "PRO";
+        var order = CreateOrder();
+        order.OrderRequest.Referral.PriorityType = expectedPriorityType;
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal(expectedPriorityType, result.PriorityType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType()
+    {
+        var expectedCourtListType = "PSC";
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = expectedCourtListType;
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal(expectedCourtListType, result.CourtListType);
+    }
+
+    [Fact]
     public void Order_To_OrderViewDto_FormatsReceivedDateCorrectly()
     {
         var date = new DateTime(2026, 1, 23, 10, 30, 0, DateTimeKind.Utc);

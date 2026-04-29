@@ -32,15 +32,7 @@
       </span>
     </template>
     <template #[`item.courtListType`]="{ item }">
-      <LabelWithTooltip
-        v-if="item.courtListTypeDescription"
-        :values="[item.courtListType, item.courtListTypeDescription || '']"
-        :append-count="false"
-        :location="Anchor.Top"
-      />
-      <span v-else>
-        {{ item.courtListType }}
-      </span>
+      <span>{{ item.courtListType }}</span>
     </template>
   </v-data-table-virtual>
 </template>

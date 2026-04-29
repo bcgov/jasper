@@ -51,8 +51,7 @@ const mockData: Order[] = [
     status: OrderReviewStatus.Pending,
     priorityType: 'TST',
     priorityTypeDescription: 'Test Priority Description',
-    courtListType: 'ING',
-    courtListTypeDescription: 'Test Court List Type Description',
+    courtListType: 'Order',
   },
   {
     id: '2',
@@ -67,7 +66,7 @@ const mockData: Order[] = [
     physicalFileId: 'file-002',
     status: OrderReviewStatus.Approved,
     priorityType: 'IS',
-    courtListType: 'FUN',
+    courtListType: 'Application',
   },
 ];
 
@@ -335,7 +334,7 @@ describe('OrdersDataTable.vue', () => {
     expect(headers[1].key).toBe('courtFileNumber');
   });
 
-  it('renders LabelWithTooltip for priority/type when descriptions are present', () => {
+  it('renders LabelWithTooltip for priorityType when description is present', () => {
     const wrapper = mount(OrdersDataTable, {
       props: {
         data: [mockData[0]],
@@ -351,7 +350,7 @@ describe('OrdersDataTable.vue', () => {
     });
 
     const tooltips = wrapper.findAllComponents(LabelWithTooltipStub);
-    expect(tooltips).toHaveLength(2);
+    expect(tooltips).toHaveLength(1);
 
     expect(tooltips[0].props('values')).toEqual([
       'TST',
@@ -359,16 +358,27 @@ describe('OrdersDataTable.vue', () => {
     ]);
     expect(tooltips[0].props('appendCount')).toBe(false);
     expect(tooltips[0].props('location')).toBe(Anchor.Top);
-
-    expect(tooltips[1].props('values')).toEqual([
-      'ING',
-      'Test Court List Type Description',
-    ]);
-    expect(tooltips[1].props('appendCount')).toBe(false);
-    expect(tooltips[1].props('location')).toBe(Anchor.Top);
   });
 
-  it('renders plain text for priority/type when descriptions are missing', () => {
+  it('renders courtListType as plain text (already mapped to display label)', () => {
+    const wrapper = mount(OrdersDataTable, {
+      props: {
+        data: [mockData[0]],
+        viewOrderDetails: mockViewOrderDetails,
+        viewCaseDetails: mockViewCaseDetails,
+      },
+      global: {
+        stubs: {
+          VDataTableVirtual: VDataTableVirtualStub,
+          LabelWithTooltip: LabelWithTooltipStub,
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain('Order');
+  });
+
+  it('renders plain text for priorityType when description is missing', () => {
     const wrapper = mount(OrdersDataTable, {
       props: {
         data: [mockData[1]],
@@ -386,6 +396,6 @@ describe('OrdersDataTable.vue', () => {
     const tooltips = wrapper.findAllComponents(LabelWithTooltipStub);
     expect(tooltips).toHaveLength(0);
     expect(wrapper.text()).toContain('IS');
-    expect(wrapper.text()).toContain('FUN');
+    expect(wrapper.text()).toContain('Application');
   });
 });

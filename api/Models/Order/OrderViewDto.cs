@@ -17,17 +17,7 @@ public class OrderViewDto : BaseDto
     public string PriorityType { get; set; }
     public string PriorityTypeDescription => GetPriorityTypeDescription(PriorityType);
     public string CourtListType { get; set; }
-    public string CourtListTypeDescription => GetCourtListTypeDescription(CourtListType);
 
-    private static string GetCourtListTypeDescription(string type)
-    {
-        return type switch
-        {
-            "PSM" => "Provincial court desk order",
-            "PSC" => "Small claims court list",
-            _ => string.Empty
-        };
-    }
     private static string GetPriorityTypeDescription(string priorityType)
     {
         return priorityType switch

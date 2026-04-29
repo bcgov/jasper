@@ -336,15 +336,37 @@ public class OrderMappingTests
     }
 
     [Fact]
-    public void Order_To_OrderViewDto_MapsCourtListType()
+    public void Order_To_OrderViewDto_MapsCourtListType_PSM_ToOrder()
     {
-        var expectedCourtListType = "PSC";
         var order = CreateOrder();
-        order.OrderRequest.Referral.CourtListTypeCd = expectedCourtListType;
+        order.OrderRequest.Referral.CourtListTypeCd = "PSM";
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal(expectedCourtListType, result.CourtListType);
+        Assert.Equal("Order", result.CourtListType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_PSC_ToApplication()
+    {
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = "PSC";
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal("Application", result.CourtListType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_UnknownCode_PassesThrough()
+    {
+        var unknownCode = "XYZ";
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = unknownCode;
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal(unknownCode, result.CourtListType);
     }
 
     [Fact]

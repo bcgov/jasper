@@ -39,6 +39,8 @@ public class OrderMapping : IRegister
             .Map(dest => dest.CourtClass, src => src.OrderRequest.CourtClassCd)
             .Map(dest => dest.PackageId, src => src.OrderRequest.Referral.PackageId)
             .Map(dest => dest.PackageDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId)
+            .Map(dest => dest.PriorityType, src => src.OrderRequest.Referral.PriorityType)
+            .Map(dest => dest.CourtListType, src => src.OrderRequest.Referral.CourtListTypeCd)
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))
             .AfterMapping((src, dest) =>
             {

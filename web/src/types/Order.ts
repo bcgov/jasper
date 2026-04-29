@@ -3,6 +3,10 @@ import { OrderReviewStatus } from './common';
 export interface Order {
   id: string;
   packageId: number;
+  priorityType: string;
+  priorityTypeDescription?: string;
+  courtListType: string;
+  courtListTypeDescription?: string;
   packageDocumentId: string;
   packageName: string;
   receivedDate: string;

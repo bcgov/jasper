@@ -22,7 +22,7 @@
     </template>
     <template #[`item.priorityType`]="{ item }">
       <LabelWithTooltip
-      v-if="item.priorityTypeDescription"
+        v-if="item.priorityTypeDescription"
         :values="[item.priorityType, item.priorityTypeDescription || '']"
         :append-count="false"
         :location="Anchor.Top"
@@ -42,7 +42,6 @@
         {{ item.courtListType }}
       </span>
     </template>
-    
   </v-data-table-virtual>
 </template>
 <script setup lang="ts">

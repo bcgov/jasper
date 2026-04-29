@@ -32,6 +32,8 @@ const mockData: Order[] = [
     styleOfCause: 'R v Smith',
     physicalFileId: 'file-001',
     status: OrderReviewStatus.Pending,
+    priorityType: 'TST',
+    courtListType: 'ING'
   },
   {
     id: '2',
@@ -45,6 +47,8 @@ const mockData: Order[] = [
     styleOfCause: 'Jones v Brown',
     physicalFileId: 'file-002',
     status: OrderReviewStatus.Approved,
+    priorityType: 'IS',
+    courtListType: 'FUN'
   },
 ];
 
@@ -66,6 +70,8 @@ describe('OrdersDataTable.vue', () => {
 
     expect(headerTitles).toEqual([
       'PACKAGE #',
+      'PRIORITY',
+      'TYPE',
       'DATE RECEIVED',
       'DIVISION',
       'FILE #',

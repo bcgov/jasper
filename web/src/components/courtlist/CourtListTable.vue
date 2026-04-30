@@ -7,10 +7,11 @@
     :headers
     :search="search"
     :group-by
+    :row-props="getRowProps"
     :return-object="true"
     show-select
     items-per-page="100"
-    class="pb-5"
+    class="pb-5 notes-outside-table"
   >
     <template
       v-slot:[`item.data-table-expand`]="{
@@ -145,12 +146,53 @@
       </v-tooltip>
     </template>
     <template v-slot:[`item.actions`]="{ item }">
-      <TooltipIcon
-        v-if="item.scheduleNoteTxt"
-        location="start"
-        :text="item.scheduleNoteTxt"
-        :icon="mdiNotebookOutline"
-      />
+      <v-tooltip v-if="item.scheduleNoteTxt" location="start">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon
+            variant="text"
+            density="compact"
+            :class="{
+              'notes-trigger--hidden-empty':
+                getNoteCount(item) === 0 && !props.launcherHovered,
+              'notes-trigger-floating': true,
+            }"
+            @click="openNotes(item)"
+          >
+            <v-badge
+              v-if="getNoteCount(item) > 0"
+              :content="getNoteCount(item)"
+              color="primary"
+            >
+              <v-icon :icon="mdiNoteTextOutline" />
+            </v-badge>
+            <v-icon v-else :icon="mdiNoteTextOutline" />
+          </v-btn>
+        </template>
+        <span>{{ item.scheduleNoteTxt }}</span>
+      </v-tooltip>
+      <v-btn
+        v-else
+        icon
+        variant="text"
+        density="compact"
+        :class="{
+          'notes-trigger--hidden-empty':
+            getNoteCount(item) === 0 && !props.launcherHovered,
+          'notes-trigger-floating': true,
+        }"
+        @click="openNotes(item)"
+      >
+        <v-badge
+          v-if="getNoteCount(item) > 0"
+          :content="getNoteCount(item)"
+          color="primary"
+        >
+          <v-icon :icon="mdiNoteTextOutline" />
+        </v-badge>
+        <v-icon v-else :icon="mdiNoteTextOutline" />
+      </v-btn>
     </template>
   </v-data-table-virtual>
   <CourtListTableActionBarGroup
@@ -187,7 +229,7 @@
     mdiChevronUp,
     mdiCircleHalfFull,
     mdiHomeOutline,
-    mdiNotebookOutline,
+    mdiNoteTextOutline,
     mdiTrashCanOutline,
     mdiBank,
   } from '@mdi/js';
@@ -208,6 +250,15 @@
   const props = defineProps<{
     data: CourtListAppearance[];
     search: string;
+    notesByAppearanceId?: Record<
+      string,
+      { text: string; author: string; date: string }[]
+    >;
+    highlightAppearanceId?: string | null;
+    launcherHovered?: boolean;
+  }>();
+  const emit = defineEmits<{
+    (e: 'open-notes', appearance: CourtListAppearance): void;
   }>();
 
   const courtClassOrder = [
@@ -277,7 +328,7 @@
       key: 'caseAgeDays',
       value: (item: CourtListAppearance) => item.caseAgeDays ?? '',
     },
-    { title: 'NOTES', key: 'actions', width: '5%', sortable: false },
+    { title: '', key: 'actions', width: '1', sortable: false },
   ]);
 
   const renderTooltip = (items: any[], additionalItem?: string) => {
@@ -472,4 +523,65 @@
     // Extract the court class name from the sortable key (format: "00-Criminal - Adult")
     return sortableValue.split('-').slice(1).join('-');
   };
+
+  const openNotes = (appearance: CourtListAppearance) => {
+    emit('open-notes', appearance);
+  };
+
+  const getNoteCount = (appearance: CourtListAppearance) =>
+    props.notesByAppearanceId?.[appearance.appearanceId]?.length ?? 0;
+
+  const isHighlighted = (appearanceId: string) =>
+    props.highlightAppearanceId === appearanceId;
+
+  const getRowProps = (row: { item: CourtListAppearance }) => ({
+    class: isHighlighted(row.item.appearanceId) ? 'note-related-row' : '',
+  });
 </script>
+
+<style scoped>
+  :deep(.note-related-row > td) {
+    background: rgba(var(--v-theme-warning), 0.18) !important;
+    transition: background 0.15s ease-in-out;
+  }
+
+  :deep(.notes-outside-table .v-table__wrapper) {
+    padding-right: 0.5rem;
+  }
+
+  :deep(.notes-outside-table thead tr > th:last-child) {
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    padding: 0 !important;
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: rgb(var(--v-theme-surface));
+  }
+
+  :deep(.notes-outside-table tbody tr > td:last-child) {
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    padding: 0 !important;
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: rgb(var(--v-theme-surface));
+  }
+
+  :deep(.notes-trigger-floating) {
+    margin: 0 auto;
+    display: flex;
+  }
+
+  :deep(tbody tr:hover .notes-trigger--hidden-empty) {
+    opacity: 1;
+  }
+
+  :deep(.notes-trigger--hidden-empty) {
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+  }
+</style>

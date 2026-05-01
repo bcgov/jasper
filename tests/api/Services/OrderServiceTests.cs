@@ -70,7 +70,7 @@ public class OrderServiceTests : ServiceTestBase
         _mockJudicialClient = new Mock<IJudicialServicesClient>();
         _mockUserService = new Mock<IUserService>();
 
-        _requestAgencyIdentifierId = _faker.Random.AlphaNumeric(10);
+        _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
         _applicationCode = "SCV";
 
@@ -969,7 +969,7 @@ public class OrderServiceTests : ServiceTestBase
         Assert.False(result.Succeeded);
         Assert.Contains("Failed to map Order to OrderAction.", result.Errors);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
-        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<JudicialAction>()), Times.Never);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
     }
 
     [Fact]
@@ -988,7 +988,7 @@ public class OrderServiceTests : ServiceTestBase
             .Returns(Task.CompletedTask);
 
         _mockJudicialClient
-            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<JudicialAction>()))
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
             .Returns(() => Task.CompletedTask);
 
         _mockJudgeService
@@ -1005,7 +1005,7 @@ public class OrderServiceTests : ServiceTestBase
         var result = await _orderService.SubmitOrder(order.Id);
 
         Assert.True(result.Succeeded);
-        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<JudicialAction>()), Times.Once);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
@@ -1025,14 +1025,14 @@ public class OrderServiceTests : ServiceTestBase
             .Returns(Task.CompletedTask);
 
         _mockJudicialClient
-            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<JudicialAction>()))
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
             .Returns(() => Task.CompletedTask);
 
         var result = await _orderService.SubmitOrder(order.Id);
 
         Assert.False(result.Succeeded);
         Assert.Contains("Failed to map Order to OrderAction.", result.Errors);
-        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<JudicialAction>()), Times.Never);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 

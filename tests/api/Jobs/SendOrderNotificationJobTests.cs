@@ -302,6 +302,7 @@ public class SendOrderNotificationJobTests
         var firstName = _faker.Name.FirstName();
         var lastName = _faker.Name.LastName();
         var courtFileNumber = _faker.Random.AlphaNumeric(10);
+        var styleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}";
         var referralNotes = _faker.Lorem.Sentence();
         var referredBy = _faker.Name.FullName();
 

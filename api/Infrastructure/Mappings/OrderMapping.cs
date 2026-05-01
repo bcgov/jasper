@@ -9,6 +9,9 @@ namespace Scv.Api.Infrastructure.Mappings;
 
 public class OrderMapping : IRegister
 {
+    private readonly const string ORDER_CODE = "PSM";
+    private readonly const string APPLICATION_CODE = "PSC";
+
     public void Register(TypeAdapterConfig config)
     {
         config.NewConfig<Order, OrderDto>()
@@ -40,7 +43,7 @@ public class OrderMapping : IRegister
             .Map(dest => dest.PackageId, src => src.OrderRequest.Referral.PackageId)
             .Map(dest => dest.PackageDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId)
             .Map(dest => dest.PriorityType, src => src.OrderRequest.Referral.PriorityType)
-            .Map(dest => dest.CourtListType, src => src.OrderRequest.Referral.CourtListTypeCd == "PSM" ? "Order" : src.OrderRequest.Referral.CourtListTypeCd == "PSC" ? "Application" : src.OrderRequest.Referral.CourtListTypeCd)
+            .Map(dest => dest.CourtListType, src => MapCourtListType(src.OrderRequest.Referral.CourtListTypeCd))
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))
             .AfterMapping((src, dest) =>
             {
@@ -76,6 +79,14 @@ public class OrderMapping : IRegister
 
     private static string ToBase64OrNull(byte[] data) =>
         data is { Length: > 0 } ? Convert.ToBase64String(data) : null;
+
+    private static string MapCourtListType(string courtListTypeCode) =>
+        courtListTypeCode switch
+        {
+            ORDER_CODE => "Order",
+            APPLICATION_CODE => "Application",
+            _ => courtListTypeCode
+        };
 
     private static byte[] FromBase64OrNull(string value) =>
         string.IsNullOrWhiteSpace(value) ? [] : Convert.FromBase64String(value);

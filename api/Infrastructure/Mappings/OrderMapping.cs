@@ -9,8 +9,8 @@ namespace Scv.Api.Infrastructure.Mappings;
 
 public class OrderMapping : IRegister
 {
-    private readonly const string ORDER_CODE = "PSM";
-    private readonly const string APPLICATION_CODE = "PSC";
+    private const string ORDER_CODE = "PSM";
+    private const string APPLICATION_CODE = "PSC";
 
     public void Register(TypeAdapterConfig config)
     {

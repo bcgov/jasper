@@ -251,7 +251,7 @@ public class CourtListServiceTests : ServiceTestBase
         // Arrange
         var (courtListService, _, _, _) = SetupCourtListService(JasperRole.RAJ);
         var lookAheadWindow = 30;
-        var today = DateTime.Now.ToClientTimezone().Date;
+        var today = DateTime.Now.Date;
         var proceedingDate = today.AddDays(lookAheadWindow + 1);
         var judgeId = _faker.Random.Int();
 
@@ -274,7 +274,7 @@ public class CourtListServiceTests : ServiceTestBase
         // Arrange
         var (courtListService, _, _, mockSearchDateClient) = SetupCourtListService();
         var lookAheadWindow = 30;
-        var today = DateTime.Now.ToClientTimezone().Date;
+        var today = DateTime.Now.Date;
         var proceedingDate = today.AddDays(lookAheadWindow - 1);
         var judgeId = _faker.Random.Int();
         var mockResult = new ActivityClassUsage.ActivityAppearanceResultsCollection

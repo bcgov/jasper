@@ -1,8 +1,5 @@
 # Dockerfile used by Github Action
-
-# Pin to the explicit .NET 10 Ubuntu Noble image variant instead of floating 10.0.
-# This avoids surprises if the default tag changes behavior.
-ARG dotnet_version=10.0-noble
+ARG dotnet_version=10.0
 
 FROM mcr.microsoft.com/dotnet/aspnet:${dotnet_version} AS base
 WORKDIR /app
@@ -30,18 +27,15 @@ ARG RELEASE_VERSION=0.0.0
 
 RUN dotnet build "api/api.csproj" -c Release /p:ReleaseVersion="${RELEASE_VERSION}"
 
+# build
 FROM build AS publish
 
 ARG RELEASE_VERSION=0.0.0
 
-# Note: this runtime should match the base image family.
-# Because this image is Ubuntu/glibc-based, use linux-x64 instead of linux-musl-x64.
 RUN dotnet publish "api/api.csproj" -c Release -o /app/publish \
-    --runtime linux-x64 --no-self-contained /p:ReleaseVersion="${RELEASE_VERSION}"
+    --runtime linux-musl-x64 --no-self-contained /p:ReleaseVersion="${RELEASE_VERSION}"
 
 FROM base AS final
-
-USER root
 
 # Download and install the AWS RDS CA bundle and debugging tools.
 RUN set -eux; \

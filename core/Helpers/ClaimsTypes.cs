@@ -31,6 +31,8 @@ namespace Scv.Core.Helpers
             "preferred_username",
             "groups",
             ClaimTypes.Email,
+            ClaimTypes.GivenName,
+            ClaimTypes.Surname,
             UserGuid,
             ProvjudUserGuid,
             ExternalJudgeId

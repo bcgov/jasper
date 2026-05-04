@@ -28,7 +28,7 @@
     <PackageReference Include="GdPicture.API" Version="14.4.1" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.23" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.7" />
     <PackageReference Include="Microsoft.Graph" Version="5.104.0" />
     <PackageReference Include="nClam" Version="9.0.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.7.0" />

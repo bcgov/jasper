@@ -278,6 +278,32 @@ describe('OrdersStore', () => {
     });
   });
 
+  describe('fetchOrders return value', () => {
+    it('returns orders returned by service', async () => {
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(mockOrders);
+
+      const result = await store.fetchOrders(mockOrderService as OrderService);
+
+      expect(result).toEqual(mockOrders);
+    });
+
+    it('returns empty array when service throws', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      (
+        mockOrderService.getOrders as ReturnType<typeof vi.fn>
+      ).mockRejectedValueOnce(new Error('API Error'));
+
+      const result = await store.fetchOrders(mockOrderService as OrderService);
+
+      expect(result).toEqual([]);
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
   describe('reset', () => {
     it('should reset all state to initial values', () => {
       // Set some data first

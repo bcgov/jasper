@@ -1,22 +1,31 @@
 import { OrderService } from '@/services';
 import {
+  NotificationDto,
   type NotificationHandler,
   type NotificationsService,
 } from '@/signalr/notifications';
+import { OrderReceivedNotificationPayload } from '@/signalr/payloads';
+import { NotificationType } from '@/types/common';
+import { viewOrderDetails } from '@/utils/orderDetails';
+import { getCourtClassLabel } from '@/utils/utils';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useOrdersStore } from './OrdersStore';
-import { NotificationType } from '@/types/common';
+import { useSnackbarStore } from './SnackbarStore';
 
 export const useNotificationsStore = defineStore('notifications', () => {
-  const handlers = ref(new Set<NotificationHandler>());
+  const handlers = ref(new Set<NotificationHandler<unknown>>());
   const isStarted = ref(false);
   const hasOrderHandler = ref(false);
   const startTask = ref<Promise<void> | null>(null);
+  const snackBarStore = useSnackbarStore();
 
-  const registerHandler = (handler: NotificationHandler) => {
-    handlers.value.add(handler);
-    return () => handlers.value.delete(handler);
+  const registerHandler = <TPayload>(
+    handler: NotificationHandler<TPayload>
+  ) => {
+    const widenedHandler = handler as NotificationHandler<unknown>;
+    handlers.value.add(widenedHandler);
+    return () => handlers.value.delete(widenedHandler);
   };
 
   const initialize = async (
@@ -25,11 +34,31 @@ export const useNotificationsStore = defineStore('notifications', () => {
   ) => {
     if (!hasOrderHandler.value) {
       const ordersStore = useOrdersStore();
-      registerHandler((notification) => {
-        if (notification.type === NotificationType.ORDER_RECEIVED) {
-          ordersStore.fetchOrders(orderService);
+      registerHandler(
+        async (
+          notification: NotificationDto<OrderReceivedNotificationPayload>
+        ) => {
+          if (notification.type === NotificationType.ORDER_RECEIVED) {
+            const newOrders = await ordersStore.fetchOrders(orderService);
+            const notificationOrderId = notification.payload?.orderId;
+            const notificationOrder = newOrders?.find(
+              (o) => o.id === notificationOrderId
+            );
+            if (notificationOrder) {
+              snackBarStore.showSnackbar(
+                `Received ${notificationOrder.courtListType} for file ${getCourtClassLabel(notificationOrder.courtClass)} - ${notificationOrder.courtFileNumber} with priority class: ${notificationOrder.priorityTypeDescription}`,
+                '#b4e6ff',
+                'Notification received!',
+                15000,
+                {
+                  label: `View package #${notificationOrder.packageId}`,
+                  onClick: () => viewOrderDetails(notificationOrder),
+                }
+              );
+            }
+          }
         }
-      });
+      );
       hasOrderHandler.value = true;
     }
 

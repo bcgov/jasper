@@ -39,9 +39,10 @@ public partial interface IJudicialServicesClient
     /// <param name="documentApplicationName">Requested documents associated application</param>
     /// <param name="applicationCode">application</param>
     /// <param name="documentFlatten">does the document require flattening. Will it be displayed in the browser? Then use Y</param>
+    /// <param name="userGuid">User GUID</param>
     /// <returns>Judicial document returned</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten);
+    System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten, string userGuid);
 
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
     /// <summary>
@@ -52,9 +53,10 @@ public partial interface IJudicialServicesClient
     /// <param name="documentApplicationName">Requested documents associated application</param>
     /// <param name="applicationCode">application</param>
     /// <param name="documentFlatten">does the document require flattening. Will it be displayed in the browser? Then use Y</param>
+    /// <param name="userGuid">User GUID</param>
     /// <returns>Judicial document returned</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten, System.Threading.CancellationToken cancellationToken);
+    System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten, string userGuid, System.Threading.CancellationToken cancellationToken);
 
     /// <summary>
     /// Save jusdicial action
@@ -134,11 +136,12 @@ public partial class JudicialServicesClient : IJudicialServicesClient
     /// <param name="documentApplicationName">Requested documents associated application</param>
     /// <param name="applicationCode">application</param>
     /// <param name="documentFlatten">does the document require flattening. Will it be displayed in the browser? Then use Y</param>
+    /// <param name="userGuid">User GUID</param>
     /// <returns>Judicial document returned</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten)
+    public virtual System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten, string userGuid)
     {
-        return GetJudicialDocumentAsync(transaction_Id, agencyId, documentId, documentApplicationName, applicationCode, documentFlatten, System.Threading.CancellationToken.None);
+        return GetJudicialDocumentAsync(transaction_Id, agencyId, documentId, documentApplicationName, applicationCode, documentFlatten, userGuid, System.Threading.CancellationToken.None);
     }
 
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -150,9 +153,10 @@ public partial class JudicialServicesClient : IJudicialServicesClient
     /// <param name="documentApplicationName">Requested documents associated application</param>
     /// <param name="applicationCode">application</param>
     /// <param name="documentFlatten">does the document require flattening. Will it be displayed in the browser? Then use Y</param>
+    /// <param name="userGuid">User GUID</param>
     /// <returns>Judicial document returned</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten, System.Threading.CancellationToken cancellationToken)
+    public virtual async System.Threading.Tasks.Task<FileResponse> GetJudicialDocumentAsync(System.Guid transaction_Id, double? agencyId, double documentId, DocumentApplicationName documentApplicationName, string applicationCode, string documentFlatten, string userGuid, System.Threading.CancellationToken cancellationToken)
     {
         if (documentId == null)
             throw new System.ArgumentNullException("documentId");
@@ -165,6 +169,9 @@ public partial class JudicialServicesClient : IJudicialServicesClient
 
         if (documentFlatten == null)
             throw new System.ArgumentNullException("documentFlatten");
+
+        if (userGuid == null)
+            throw new System.ArgumentNullException("userGuid");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -193,6 +200,7 @@ public partial class JudicialServicesClient : IJudicialServicesClient
                 urlBuilder_.Append(System.Uri.EscapeDataString("documentApplicationName")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(documentApplicationName, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                 urlBuilder_.Append(System.Uri.EscapeDataString("applicationCode")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(applicationCode, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                 urlBuilder_.Append(System.Uri.EscapeDataString("documentFlatten")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(documentFlatten, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                urlBuilder_.Append(System.Uri.EscapeDataString("userGuid")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(userGuid, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                 urlBuilder_.Length--;
 
                 PrepareRequest(client_, request_, urlBuilder_);

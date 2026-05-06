@@ -1,31 +1,49 @@
 import { OrderService } from '@/services';
+import { createOrderReceivedHandler } from '@/signalr/handlers/orderReceivedHandler';
 import {
-  NotificationDto,
   type NotificationHandler,
   type NotificationsService,
 } from '@/signalr/notifications';
-import { OrderReceivedNotificationPayload } from '@/signalr/payloads';
 import { NotificationType } from '@/types/common';
 import { viewOrderDetails } from '@/utils/orderDetails';
-import { getCourtClassLabel } from '@/utils/utils';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useOrdersStore } from './OrdersStore';
 import { useSnackbarStore } from './SnackbarStore';
 
 export const useNotificationsStore = defineStore('notifications', () => {
-  const handlers = ref(new Set<NotificationHandler<unknown>>());
+  const handlers = ref(
+    new Map<NotificationType, Set<NotificationHandler<unknown>>>()
+  );
   const isStarted = ref(false);
   const hasOrderHandler = ref(false);
   const startTask = ref<Promise<void> | null>(null);
-  const snackBarStore = useSnackbarStore();
 
   const registerHandler = <TPayload>(
+    notificationType: NotificationType,
     handler: NotificationHandler<TPayload>
   ) => {
     const widenedHandler = handler as NotificationHandler<unknown>;
-    handlers.value.add(widenedHandler);
-    return () => handlers.value.delete(widenedHandler);
+    const existingHandlers = handlers.value.get(notificationType);
+    if (existingHandlers) {
+      existingHandlers.add(widenedHandler);
+    } else {
+      handlers.value.set(notificationType, new Set([widenedHandler]));
+    }
+
+    return () => {
+      const typeHandlers = handlers.value.get(notificationType);
+      if (!typeHandlers) {
+        return false;
+      }
+
+      const deleted = typeHandlers.delete(widenedHandler);
+      if (typeHandlers.size === 0) {
+        handlers.value.delete(notificationType);
+      }
+
+      return deleted;
+    };
   };
 
   const initialize = async (
@@ -34,30 +52,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
   ) => {
     if (!hasOrderHandler.value) {
       const ordersStore = useOrdersStore();
+      const snackbarStore = useSnackbarStore();
       registerHandler(
-        async (
-          notification: NotificationDto<OrderReceivedNotificationPayload>
-        ) => {
-          if (notification.type === NotificationType.ORDER_RECEIVED) {
-            const newOrders = await ordersStore.fetchOrders(orderService);
-            const notificationOrderId = notification.payload?.orderId;
-            const notificationOrder = newOrders?.find(
-              (o) => o.id === notificationOrderId
-            );
-            if (notificationOrder) {
-              snackBarStore.showSnackbar(
-                `Received ${notificationOrder.courtListType} for file ${getCourtClassLabel(notificationOrder.courtClass)} - ${notificationOrder.courtFileNumber} with priority class: ${notificationOrder.priorityTypeDescription}`,
-                '#b4e6ff',
-                'Notification received!',
-                15000,
-                {
-                  label: `View package #${notificationOrder.packageId}`,
-                  onClick: () => viewOrderDetails(notificationOrder),
-                }
-              );
-            }
-          }
-        }
+        NotificationType.ORDER_RECEIVED,
+        createOrderReceivedHandler({
+          orderService,
+          ordersStore,
+          snackbarStore,
+          viewOrderDetails,
+        })
       );
       hasOrderHandler.value = true;
     }
@@ -67,7 +70,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
 
     startTask.value ??= (async () => {
-      notificationsService.setHandlerProvider(() => handlers.value.values());
+      notificationsService.setHandlerProvider(
+        (type) => handlers.value.get(type)?.values() ?? []
+      );
       await notificationsService.start();
       isStarted.value = true;
     })();

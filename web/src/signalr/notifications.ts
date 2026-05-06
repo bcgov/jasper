@@ -22,7 +22,7 @@ export type NotificationHandler<TPayload = unknown> = (
 export class NotificationsService {
   private connection: HubConnection | null = null;
   private handlerProvider:
-    | (() => Iterable<NotificationHandler<unknown>>)
+    | ((type: NotificationType) => Iterable<NotificationHandler<unknown>>)
     | null = null;
   private readonly seenAckGuids = new Set<string>();
   private readonly seenAckQueue: string[] = [];
@@ -63,14 +63,16 @@ export class NotificationsService {
       }
 
       void this.sendAckIfRequired(notification);
-      const handlers = this.handlerProvider?.() ?? [];
+      const handlers = this.handlerProvider?.(notification.type) ?? [];
       for (const handler of handlers) {
         handler(notification);
       }
     });
   }
 
-  setHandlerProvider(provider: () => Iterable<NotificationHandler<unknown>>) {
+  setHandlerProvider(
+    provider: (type: NotificationType) => Iterable<NotificationHandler<unknown>>
+  ) {
     this.handlerProvider = provider;
   }
 

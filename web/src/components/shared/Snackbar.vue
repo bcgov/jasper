@@ -27,8 +27,11 @@
   import { mdiCloseCircle } from '@mdi/js';
   const snackbarStore = useSnackbarStore();
   const runAction = () => {
-    snackbarStore.actionHandler?.();
-    snackbarStore.hideSnackbar();
+    try {
+      snackbarStore.actionHandler?.();
+    } finally {
+      snackbarStore.hideSnackbar();
+    }
   };
   const close = () => {
     snackbarStore.hideSnackbar();

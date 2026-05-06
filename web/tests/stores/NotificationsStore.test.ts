@@ -1,3 +1,5 @@
+import { type OrderService } from '@/services';
+import { NotificationsService } from '@/signalr/notifications';
 import { NotificationType } from '@/types/common';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -45,23 +47,29 @@ describe('NotificationsStore', () => {
 
   it('registers one order handler and starts notifications once', async () => {
     const store = useNotificationsStore();
-    let provider: (() => Iterable<(n: unknown) => unknown>) | undefined;
-    const notificationsService = {
-      setHandlerProvider: vi.fn((p) => {
+    let provider: (
+      type: NotificationType
+    ) => Iterable<(n: unknown) => unknown> = () => [];
+    const notificationsService = new NotificationsService();
+    const setHandlerProviderSpy = vi
+      .spyOn(notificationsService, 'setHandlerProvider')
+      .mockImplementation((p) => {
         provider = p;
-      }),
-      start: vi.fn().mockResolvedValue(undefined),
-    };
+      });
+    const startSpy = vi
+      .spyOn(notificationsService, 'start')
+      .mockResolvedValue(undefined);
 
     await Promise.all([
-      store.initialize(notificationsService as any, {} as any),
-      store.initialize(notificationsService as any, {} as any),
+      store.initialize(notificationsService, {} as OrderService),
+      store.initialize(notificationsService, {} as OrderService),
     ]);
 
-    expect(notificationsService.start).toHaveBeenCalledTimes(1);
-    expect(notificationsService.setHandlerProvider).toHaveBeenCalledTimes(1);
-    expect(provider).toBeDefined();
-    expect(Array.from(provider!())).toHaveLength(1);
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(setHandlerProviderSpy).toHaveBeenCalledTimes(1);
+    expect(Array.from(provider(NotificationType.ORDER_RECEIVED))).toHaveLength(
+      1
+    );
   });
 
   it('shows snackbar with action when received order is found', async () => {
@@ -84,20 +92,21 @@ describe('NotificationsStore', () => {
     fetchOrdersMock.mockResolvedValue([order]);
 
     const store = useNotificationsStore();
-    let provider:
-      | (() => Iterable<(n: any) => Promise<void> | void>)
-      | undefined;
-    const notificationsService = {
-      setHandlerProvider: vi.fn((p) => {
+    let provider: (
+      type: NotificationType
+    ) => Iterable<(n: any) => Promise<void> | void> = () => [];
+    const notificationsService = new NotificationsService();
+    vi.spyOn(notificationsService, 'setHandlerProvider').mockImplementation(
+      (p) => {
         provider = p;
-      }),
-      start: vi.fn().mockResolvedValue(undefined),
-    };
+      }
+    );
+    vi.spyOn(notificationsService, 'start').mockResolvedValue(undefined);
     const orderService = { getOrders: vi.fn() };
 
-    await store.initialize(notificationsService as any, orderService as any);
+    await store.initialize(notificationsService, orderService as OrderService);
 
-    const [handler] = Array.from(provider!());
+    const [handler] = Array.from(provider(NotificationType.ORDER_RECEIVED));
     await handler({
       type: NotificationType.ORDER_RECEIVED,
       timestamp: new Date().toISOString(),
@@ -123,18 +132,19 @@ describe('NotificationsStore', () => {
     fetchOrdersMock.mockResolvedValue([]);
 
     const store = useNotificationsStore();
-    let provider:
-      | (() => Iterable<(n: any) => Promise<void> | void>)
-      | undefined;
-    const notificationsService = {
-      setHandlerProvider: vi.fn((p) => {
+    let provider: (
+      type: NotificationType
+    ) => Iterable<(n: any) => Promise<void> | void> = () => [];
+    const notificationsService = new NotificationsService();
+    vi.spyOn(notificationsService, 'setHandlerProvider').mockImplementation(
+      (p) => {
         provider = p;
-      }),
-      start: vi.fn().mockResolvedValue(undefined),
-    };
+      }
+    );
+    vi.spyOn(notificationsService, 'start').mockResolvedValue(undefined);
 
-    await store.initialize(notificationsService as any, {} as any);
-    const [handler] = Array.from(provider!());
+    await store.initialize(notificationsService, {} as OrderService);
+    const [handler] = Array.from(provider(NotificationType.ORDER_RECEIVED));
 
     await handler({
       type: NotificationType.ORDER_RECEIVED,

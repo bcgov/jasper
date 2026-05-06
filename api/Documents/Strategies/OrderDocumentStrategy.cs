@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
@@ -18,14 +19,16 @@ namespace Scv.Api.Documents.Strategies
     {
         private readonly IJudicialServicesClient _judicialClient;
         private readonly IConfiguration _configuration;
+        private readonly ClaimsPrincipal _currentUser;
 
         public DocumentType Type => DocumentType.Order;
 
-        public OrderDocumentStrategy(IJudicialServicesClient judicialClient, IConfiguration configuration)
+        public OrderDocumentStrategy(IJudicialServicesClient judicialClient, IConfiguration configuration, ClaimsPrincipal currentUser)
         {
             _judicialClient = judicialClient;
             _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _configuration = configuration;
+            _currentUser = currentUser;
         }
 
         public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
@@ -58,7 +61,8 @@ namespace Scv.Api.Documents.Strategies
                 documentId,
                 DocumentApplicationName.CSO,
                 _configuration.GetNonEmptyValue("Request:ApplicationCd"),
-                "Y");
+                "Y",
+                _currentUser.ProvjudUserGuid() ?? _currentUser.IdirUserGuid());
 
             await response.Stream.CopyToAsync(documentResponseStreamCopy);
 

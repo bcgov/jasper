@@ -67,12 +67,14 @@ describe('createOrderReceivedHandler', () => {
     const fetchOrders = vi.fn().mockResolvedValue([order]);
     const showSnackbar = vi.fn();
     const viewOrderDetails = vi.fn();
+    const viewOrders = vi.fn();
 
     const handler = createOrderReceivedHandler({
       orderService,
       ordersStore: { fetchOrders } as any,
       snackbarStore: { showSnackbar } as any,
       viewOrderDetails,
+      viewOrders,
     });
 
     const notification: NotificationDto<OrderReceivedNotificationPayload> = {

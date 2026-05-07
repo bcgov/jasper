@@ -373,7 +373,11 @@ namespace Scv.Api.Services.Files
 
             var csrDocs = PopulateDetailCsrsDocuments([.. fileDetailTask.Result.Appearance.Where(a => documentIds.Contains(a.AppearanceId))]);
 
-            var otherDocs = detail.Document.Where(d => documentIds.Contains(d.CivilDocumentId));
+            // Deduplicate duplicate raw entries coming from file detail payload.
+            var otherDocs = detail.Document
+                .Where(d => documentIds.Contains(d.CivilDocumentId))
+                .GroupBy(d => new { d.CivilDocumentId })
+                .Select(g => g.First());
 
             var binderDocuments = await PopulateDetailDocuments([.. csrDocs.Concat(otherDocs)], detail, fileContentCivilFile, false, false);
 

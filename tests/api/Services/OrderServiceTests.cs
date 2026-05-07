@@ -1024,16 +1024,21 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([new PersonSearchItem { PersonId = order.JudgeId, ParticipantId = order.OrderRequest.Referral.SentToPartId }]);
+
         _mockJudicialClient
             .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
-            .Returns(() => Task.CompletedTask);
+            .ThrowsAsync(new Exception("CSO submission failed"));
 
         var result = await _orderService.SubmitOrder(order.Id);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Failed to map Order to OrderAction.", result.Errors);
-        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
+        _mockJudgeService.Verify(d => d.GetJudges(null, null), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+        Assert.Contains("Failed to submit order to CSO.", result.Errors);
     }
 
     #endregion

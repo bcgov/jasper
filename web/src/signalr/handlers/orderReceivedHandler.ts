@@ -6,9 +6,15 @@ import { NotificationType } from '@/types/common';
 import { getCourtClassLabel } from '@/utils/utils';
 import type { NotificationHandler } from '../notifications';
 import { type OrderReceivedNotificationPayload } from '../payloads';
+import { useRouter } from 'vue-router';
+
+export const priorityText = (order: Order) =>
+  order.priorityTypeDescription
+    ? ` with priority class: ${order.priorityTypeDescription}`
+    : ``;
 
 export const buildOrderReceivedMessage = (order: Order) =>
-  `Received ${order.courtListType} for file ${getCourtClassLabel(order.courtClass)} - ${order.courtFileNumber} with priority class: ${order.priorityTypeDescription}`;
+  `Received ${order.courtListType} for file ${getCourtClassLabel(order.courtClass)} - ${order.courtFileNumber}${priorityText(order)}`;
 
 export const createOrderReceivedHandler = ({
   orderService,
@@ -21,6 +27,7 @@ export const createOrderReceivedHandler = ({
   snackbarStore: ReturnType<typeof useSnackbarStore>;
   viewOrderDetails: (order: Order) => void;
 }): NotificationHandler<OrderReceivedNotificationPayload> => {
+  const router = useRouter();
   return async (notification) => {
     if (notification.type !== NotificationType.ORDER_RECEIVED) {
       return;
@@ -32,13 +39,24 @@ export const createOrderReceivedHandler = ({
     );
 
     if (!order) {
+      // display fallback message if new order matching notification can not be retrieved.
+      snackbarStore.showSnackbar(
+        'Package received requiring signature/action',
+        '#b4e6ff',
+        'Notification received!',
+        15000,
+        {
+          label: `View orders/applications`,
+          onClick: () => router.push('/orders'),
+        }
+      );
       return;
     }
 
     snackbarStore.showSnackbar(
       buildOrderReceivedMessage(order),
       '#b4e6ff',
-      'Notification received!',
+      `${order.courtListType} received!`,
       15000,
       {
         label: `View package #${order.packageId}`,

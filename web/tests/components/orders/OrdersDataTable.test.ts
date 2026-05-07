@@ -1,9 +1,26 @@
 import { Order } from '@/types';
+import { Anchor } from '@/types/common';
 import { OrderReviewStatus } from '@/types/common';
 import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { mount } from '@vue/test-utils';
+import { defineComponent } from 'vue';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
 import { describe, expect, it, vi } from 'vitest';
+
+type TableHeader = {
+  title: string;
+  key: string;
+  value?: (item: Order) => string;
+  sort?: (a: string, b: string) => number;
+};
+
+type OrdersDataTableVm = {
+  headers: TableHeader[];
+  sortBy: { key: string; order: 'asc' | 'desc' }[];
+  data: Order[];
+  viewOrderDetails: (item: Order) => void;
+  viewCaseDetails: (item: Order) => void;
+};
 
 // Mock the utils
 vi.mock('@/utils/utils', () => ({
@@ -32,6 +49,9 @@ const mockData: Order[] = [
     styleOfCause: 'R v Smith',
     physicalFileId: 'file-001',
     status: OrderReviewStatus.Pending,
+    priorityType: 'TST',
+    priorityTypeDescription: 'Test Priority Description',
+    courtListType: 'Order',
   },
   {
     id: '2',
@@ -45,11 +65,51 @@ const mockData: Order[] = [
     styleOfCause: 'Jones v Brown',
     physicalFileId: 'file-002',
     status: OrderReviewStatus.Approved,
+    priorityType: 'IS',
+    courtListType: 'Application',
   },
 ];
 
 const mockViewOrderDetails = vi.fn();
 const mockViewCaseDetails = vi.fn();
+
+const VDataTableVirtualStub = defineComponent({
+  name: 'VDataTableVirtual',
+  props: {
+    items: {
+      type: Array,
+      required: true,
+    },
+  },
+  template: `
+    <div>
+      <slot name="item.priorityType" :item="items[0]" />
+      <slot name="item.courtListType" :item="items[0]" />
+    </div>
+  `,
+});
+
+const LabelWithTooltipStub = defineComponent({
+  name: 'LabelWithTooltip',
+  props: {
+    values: {
+      type: Array,
+      required: true,
+    },
+    appendCount: {
+      type: Boolean,
+      default: true,
+    },
+    location: {
+      type: String,
+      default: undefined,
+    },
+  },
+  template: '<div class="label-with-tooltip-stub"></div>',
+});
+
+const getVm = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.vm as unknown as OrdersDataTableVm;
 
 describe('OrdersDataTable.vue', () => {
   it('renders table with default columns when no columns prop is provided', () => {
@@ -61,11 +121,13 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const headers = (wrapper.vm as any).headers;
-    const headerTitles = headers.map((h: any) => h.title);
+    const headers = getVm(wrapper).headers;
+    const headerTitles = headers.map((h) => h.title);
 
     expect(headerTitles).toEqual([
       'PACKAGE #',
+      'PRIORITY',
+      'TYPE',
       'DATE RECEIVED',
       'DIVISION',
       'FILE #',
@@ -90,8 +152,8 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const headers = (wrapper.vm as any).headers;
-    const headerTitles = headers.map((h: any) => h.title);
+    const headers = getVm(wrapper).headers;
+    const headerTitles = headers.map((h) => h.title);
 
     expect(headerTitles).toEqual([
       'PACKAGE #',
@@ -112,12 +174,13 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const headers = (wrapper.vm as any).headers;
-    const receivedDateHeader = headers.find(
-      (h: any) => h.key === 'receivedDate'
-    );
+    const headers = getVm(wrapper).headers;
+    const receivedDateHeader = headers.find((h) => h.key === 'receivedDate');
 
     expect(receivedDateHeader).toBeDefined();
+    if (!receivedDateHeader?.value) {
+      throw new Error('Expected receivedDateHeader.value to be defined');
+    }
     const formatted = receivedDateHeader.value(mockData[0]);
     expect(formatted).toBe(
       formatDateInstanceToDDMMMYYYY(new Date(mockData[0].receivedDate))
@@ -134,12 +197,13 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const headers = (wrapper.vm as any).headers;
-    const processedDateHeader = headers.find(
-      (h: any) => h.key === 'processedDate'
-    );
+    const headers = getVm(wrapper).headers;
+    const processedDateHeader = headers.find((h) => h.key === 'processedDate');
 
     expect(processedDateHeader).toBeDefined();
+    if (!processedDateHeader?.value) {
+      throw new Error('Expected processedDateHeader.value to be defined');
+    }
     const formatted = processedDateHeader.value(mockData[0]);
     expect(formatted).toBe(
       formatDateInstanceToDDMMMYYYY(new Date(mockData[0].processedDate))
@@ -155,12 +219,13 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const headers = (wrapper.vm as any).headers;
-    const receivedDateHeader = headers.find(
-      (h: any) => h.key === 'receivedDate'
-    );
+    const headers = getVm(wrapper).headers;
+    const receivedDateHeader = headers.find((h) => h.key === 'receivedDate');
 
     expect(receivedDateHeader).toBeDefined();
+    if (!receivedDateHeader?.sort) {
+      throw new Error('Expected receivedDateHeader.sort to be defined');
+    }
     const sortResult = receivedDateHeader.sort(
       mockData[0].receivedDate,
       mockData[1].receivedDate
@@ -180,7 +245,7 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const sortBy = (wrapper.vm as any).sortBy;
+    const sortBy = getVm(wrapper).sortBy;
     expect(sortBy[0].key).toBe('packageId');
     expect(sortBy[0].order).toBe('desc');
   });
@@ -194,7 +259,7 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const sortBy = (wrapper.vm as any).sortBy;
+    const sortBy = getVm(wrapper).sortBy;
     expect(sortBy).toEqual([{ key: 'receivedDate', order: 'asc' }]);
   });
 
@@ -237,7 +302,7 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    expect((wrapper.vm as any).data).toEqual(mockData);
+    expect(getVm(wrapper).data).toEqual(mockData);
   });
 
   it('handles empty data array', () => {
@@ -249,7 +314,7 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    expect((wrapper.vm as any).data).toEqual([]);
+    expect(getVm(wrapper).data).toEqual([]);
     expect(wrapper.exists()).toBe(true);
   });
 
@@ -263,9 +328,74 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    const headers = (wrapper.vm as any).headers;
+    const headers = getVm(wrapper).headers;
     expect(headers).toHaveLength(2);
     expect(headers[0].key).toBe('packageId');
     expect(headers[1].key).toBe('courtFileNumber');
+  });
+
+  it('renders LabelWithTooltip for priorityType when description is present', () => {
+    const wrapper = mount(OrdersDataTable, {
+      props: {
+        data: [mockData[0]],
+        viewOrderDetails: mockViewOrderDetails,
+        viewCaseDetails: mockViewCaseDetails,
+      },
+      global: {
+        stubs: {
+          VDataTableVirtual: VDataTableVirtualStub,
+          LabelWithTooltip: LabelWithTooltipStub,
+        },
+      },
+    });
+
+    const tooltips = wrapper.findAllComponents(LabelWithTooltipStub);
+    expect(tooltips).toHaveLength(1);
+
+    expect(tooltips[0].props('values')).toEqual([
+      'TST',
+      'Test Priority Description',
+    ]);
+    expect(tooltips[0].props('appendCount')).toBe(false);
+    expect(tooltips[0].props('location')).toBe(Anchor.Top);
+  });
+
+  it('renders courtListType as plain text (already mapped to display label)', () => {
+    const wrapper = mount(OrdersDataTable, {
+      props: {
+        data: [mockData[0]],
+        viewOrderDetails: mockViewOrderDetails,
+        viewCaseDetails: mockViewCaseDetails,
+      },
+      global: {
+        stubs: {
+          VDataTableVirtual: VDataTableVirtualStub,
+          LabelWithTooltip: LabelWithTooltipStub,
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain('Order');
+  });
+
+  it('renders plain text for priorityType when description is missing', () => {
+    const wrapper = mount(OrdersDataTable, {
+      props: {
+        data: [mockData[1]],
+        viewOrderDetails: mockViewOrderDetails,
+        viewCaseDetails: mockViewCaseDetails,
+      },
+      global: {
+        stubs: {
+          VDataTableVirtual: VDataTableVirtualStub,
+          LabelWithTooltip: LabelWithTooltipStub,
+        },
+      },
+    });
+
+    const tooltips = wrapper.findAllComponents(LabelWithTooltipStub);
+    expect(tooltips).toHaveLength(0);
+    expect(wrapper.text()).toContain('IS');
+    expect(wrapper.text()).toContain('Application');
   });
 });

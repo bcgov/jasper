@@ -28,11 +28,13 @@ export const useOrdersStore = defineStore('orders', () => {
       const judgeId = judgeIdOverride ?? currentJudgeId.value;
       const ordersData = await orderService.getOrders(judgeId ?? null);
       setOrders(ordersData ?? []);
+      return ordersData;
     } catch {
       console.error('Failed to fetch orders');
     } finally {
       isLoading.value = false;
     }
+    return [];
   };
 
   const initialize = (

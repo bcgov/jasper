@@ -20,36 +20,65 @@
         {{ item.styleOfCause }}
       </a>
     </template>
+    <template #[`item.priorityType`]="{ item }">
+      <LabelWithTooltip
+        v-if="item.priorityTypeDescription"
+        :values="[item.priorityType, item.priorityTypeDescription || '']"
+        :append-count="false"
+        :location="Anchor.Top"
+      />
+      <span v-else>
+        {{ item.priorityType }}
+      </span>
+    </template>
+    <template #[`item.courtListType`]="{ item }">
+      <span>{{ item.courtListType }}</span>
+    </template>
   </v-data-table-virtual>
 </template>
 <script setup lang="ts">
+  import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import { Order } from '@/types';
   import { DataTableHeader } from '@/types/shared';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
   import { computed, ref } from 'vue';
+  import { Anchor } from '@/types/common';
+
+  type ColumnKey =
+    | 'packageId'
+    | 'priorityType'
+    | 'courtListType'
+    | 'receivedDate'
+    | 'processedDate'
+    | 'division'
+    | 'fileNumber'
+    | 'styleOfCause';
 
   const props = defineProps<{
     data: Order[];
     viewOrderDetails: (item: Order) => void;
     viewCaseDetails: (item: Order) => void;
-    columns?: (
-      | 'packageId'
-      | 'receivedDate'
-      | 'processedDate'
-      | 'division'
-      | 'fileNumber'
-      | 'styleOfCause'
-    )[];
+    columns?: ColumnKey[];
     sortBy?: { key: string; order: 'asc' | 'desc' }[];
   }>();
 
-  const sortBy = ref(props.sortBy || [{ key: 'receivedDate', order: 'asc' }]);
+  const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>(
+    props.sortBy ?? [{ key: 'receivedDate', order: 'asc' }]
+  );
 
-  const allColumns: Record<string, DataTableHeader> = {
+  const allColumns: Record<ColumnKey, DataTableHeader> = {
     packageId: {
       title: 'PACKAGE #',
       key: 'packageId',
+    },
+    priorityType: {
+      title: 'PRIORITY',
+      key: 'priorityType',
+    },
+    courtListType: {
+      title: 'TYPE',
+      key: 'courtListType',
     },
     receivedDate: {
       title: 'DATE RECEIVED',
@@ -84,6 +113,8 @@
   const headers = computed<DataTableHeader[]>(() => {
     const columnKeys = props.columns || [
       'packageId',
+      'priorityType',
+      'courtListType',
       'receivedDate',
       'division',
       'fileNumber',

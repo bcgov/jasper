@@ -324,6 +324,52 @@ public class OrderMappingTests
     }
 
     [Fact]
+    public void Order_To_OrderViewDto_MapsPriorityType()
+    {
+        var expectedPriorityType = "PRO";
+        var order = CreateOrder();
+        order.OrderRequest.Referral.PriorityType = expectedPriorityType;
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal(expectedPriorityType, result.PriorityType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_PSM_ToOrder()
+    {
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = "PSM";
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal("Order", result.CourtListType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_PSC_ToApplication()
+    {
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = "PSC";
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal("Application", result.CourtListType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_UnknownCode_PassesThrough()
+    {
+        var unknownCode = "XYZ";
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = unknownCode;
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal(unknownCode, result.CourtListType);
+    }
+
+    [Fact]
     public void Order_To_OrderViewDto_FormatsReceivedDateCorrectly()
     {
         var date = new DateTime(2026, 1, 23, 10, 30, 0, DateTimeKind.Utc);

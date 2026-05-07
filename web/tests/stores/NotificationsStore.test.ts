@@ -118,7 +118,7 @@ describe('NotificationsStore', () => {
     expect(showSnackbarMock).toHaveBeenCalledWith(
       'Received Trial List for file Criminal - 12345-1 with priority class: High',
       '#b4e6ff',
-      'Notification received!',
+      'Trial List received!',
       15000,
       expect.objectContaining({ label: 'View package #12345' })
     );
@@ -128,7 +128,7 @@ describe('NotificationsStore', () => {
     expect(viewOrderDetailsMock).toHaveBeenCalledWith(order);
   });
 
-  it('does not show snackbar when received order is missing', async () => {
+  it('shows fallback snackbar when received order is missing', async () => {
     fetchOrdersMock.mockResolvedValue([]);
 
     const store = useNotificationsStore();
@@ -152,6 +152,12 @@ describe('NotificationsStore', () => {
       payload: { orderId: 'missing-order' },
     });
 
-    expect(showSnackbarMock).not.toHaveBeenCalled();
+    expect(showSnackbarMock).toHaveBeenCalledWith(
+      'Package received requiring signature/action',
+      '#b4e6ff',
+      'Notification received!',
+      15000,
+      expect.objectContaining({ label: 'View orders/applications' })
+    );
   });
 });

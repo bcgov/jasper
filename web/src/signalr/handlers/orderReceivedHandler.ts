@@ -6,7 +6,6 @@ import { NotificationType } from '@/types/common';
 import { getCourtClassLabel } from '@/utils/utils';
 import type { NotificationHandler } from '../notifications';
 import { type OrderReceivedNotificationPayload } from '../payloads';
-import { useRouter } from 'vue-router';
 
 export const priorityText = (order: Order) =>
   order.priorityTypeDescription
@@ -21,13 +20,14 @@ export const createOrderReceivedHandler = ({
   ordersStore,
   snackbarStore,
   viewOrderDetails,
+  viewOrders,
 }: {
   orderService: OrderService;
   ordersStore: ReturnType<typeof useOrdersStore>;
   snackbarStore: ReturnType<typeof useSnackbarStore>;
   viewOrderDetails: (order: Order) => void;
+  viewOrders: () => void;
 }): NotificationHandler<OrderReceivedNotificationPayload> => {
-  const router = useRouter();
   return async (notification) => {
     if (notification.type !== NotificationType.ORDER_RECEIVED) {
       return;
@@ -47,7 +47,7 @@ export const createOrderReceivedHandler = ({
         15000,
         {
           label: `View orders/applications`,
-          onClick: () => router.push('/orders'),
+          onClick: () => viewOrders(),
         }
       );
       return;

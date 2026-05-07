@@ -10,6 +10,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useOrdersStore } from './OrdersStore';
 import { useSnackbarStore } from './SnackbarStore';
+import { useRouter } from 'vue-router';
 
 export const useNotificationsStore = defineStore('notifications', () => {
   const handlers = ref(
@@ -18,6 +19,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const isStarted = ref(false);
   const hasOrderHandler = ref(false);
   const startTask = ref<Promise<void> | null>(null);
+  const router = useRouter();
+  const viewOrders = () => router.push('/orders');
 
   const registerHandler = <TPayload>(
     notificationType: NotificationType,
@@ -60,6 +63,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
           ordersStore,
           snackbarStore,
           viewOrderDetails,
+          viewOrders,
         })
       );
       hasOrderHandler.value = true;

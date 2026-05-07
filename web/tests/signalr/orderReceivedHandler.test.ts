@@ -23,12 +23,14 @@ describe('createOrderReceivedHandler', () => {
     const fetchOrders = vi.fn();
     const showSnackbar = vi.fn();
     const viewOrderDetails = vi.fn();
+    const viewOrders = vi.fn();
 
     const handler = createOrderReceivedHandler({
       orderService: {} as any,
       ordersStore: { fetchOrders } as any,
       snackbarStore: { showSnackbar } as any,
       viewOrderDetails,
+      viewOrders,
     });
 
     const notification: NotificationDto<OrderReceivedNotificationPayload> = {
@@ -85,7 +87,7 @@ describe('createOrderReceivedHandler', () => {
     expect(showSnackbar).toHaveBeenCalledWith(
       'Received Trial List for file Criminal - 12345-1 with priority class: High',
       '#b4e6ff',
-      'Notification received!',
+      'Trial List received!',
       15000,
       expect.objectContaining({ label: 'View package #12345' })
     );
@@ -95,15 +97,17 @@ describe('createOrderReceivedHandler', () => {
     expect(viewOrderDetails).toHaveBeenCalledWith(order);
   });
 
-  it('does nothing when order is not found', async () => {
+  it('shows fallback snackbar when order is not found', async () => {
     const fetchOrders = vi.fn().mockResolvedValue([]);
     const showSnackbar = vi.fn();
+    const viewOrders = vi.fn();
 
     const handler = createOrderReceivedHandler({
       orderService: {} as any,
       ordersStore: { fetchOrders } as any,
       snackbarStore: { showSnackbar } as any,
       viewOrderDetails: vi.fn(),
+      viewOrders,
     });
 
     const notification: NotificationDto<OrderReceivedNotificationPayload> = {
@@ -118,6 +122,16 @@ describe('createOrderReceivedHandler', () => {
 
     await handler(notification);
 
-    expect(showSnackbar).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      'Package received requiring signature/action',
+      '#b4e6ff',
+      'Notification received!',
+      15000,
+      expect.objectContaining({ label: 'View orders/applications' })
+    );
+
+    const action = showSnackbar.mock.calls[0][4];
+    action.onClick();
+    expect(viewOrders).toHaveBeenCalled();
   });
 });

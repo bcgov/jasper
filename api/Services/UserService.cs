@@ -123,16 +123,22 @@ public class UserService(
             return user;
         }
 
-        // Get all role ids from groups
-        var roleIds = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id))).SelectMany(g => g.RoleIds);
-        if (!roleIds.Any())
+        var groups = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id))).Select(g => g.Name).ToList();
+        user.Groups = groups;
+
+        // Find user's roles
+        if (user.RoleIds.Count == 0)
         {
-            this.Logger.LogInformation("User's group(s) does not have any Roles.");
+            this.Logger.LogInformation("User does not have any Roles");
             return user;
         }
 
+        // Get all role names
+        var roles = (await _roleRepo.FindAsync(r => user.RoleIds.Contains(r.Id))).Select(r => r.Name).ToList();
+        user.Roles = roles;
+
         // Get all permission codes
-        var permissionIds = (await _roleRepo.FindAsync(r => roleIds.Contains(r.Id))).SelectMany(r => r.PermissionIds);
+        var permissionIds = (await _roleRepo.FindAsync(r => user.RoleIds.Contains(r.Id))).SelectMany(r => r.PermissionIds);
         if (!permissionIds.Any())
         {
             this.Logger.LogInformation("Role does not have any Permissions.");
@@ -140,9 +146,7 @@ public class UserService(
         }
 
         var permissions = (await _permissionRepo.FindAsync(p => permissionIds.Contains(p.Id))).Select(p => p.Code).ToList();
-        var roles = (await _roleRepo.FindAsync(r => roleIds.Contains(r.Id))).Select(r => r.Name).ToList();
         user.Permissions = permissions;
-        user.Roles = roles;
 
         return user;
     }

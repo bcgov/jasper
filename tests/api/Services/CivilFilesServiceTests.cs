@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using JCCommon.Clients.FileServices;
 using MapsterMapper;
 using Moq;
-using Scv.Api.Models.Civil.Detail;
 using Scv.Api.Services.Files;
+using Scv.Models.Civil.Detail;
 using tests.api.Fixtures;
 using Xunit;
 

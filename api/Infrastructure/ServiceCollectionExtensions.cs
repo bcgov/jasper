@@ -135,6 +135,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<QuickLinkSeeder>();
             services.AddScoped<EmailTemplateSeeder>();
             services.AddScoped<ConstantSeeder>();
+            services.AddScoped<RoleAliasSeeder>();
 
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
@@ -394,6 +395,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderFactory, BinderFactory>();
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddScoped<IGroupService, GroupService>();
+                services.AddScoped<IRoleService, RoleService>();
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IOrderService, OrderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();

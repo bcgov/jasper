@@ -32,6 +32,7 @@ public class AccessControlManagementMapping : IRegister
 
         config.NewConfig<UserDto, User>()
             .Map(dest => dest.GroupIds, src => src.GroupIds.DistinctList())
+            .Map(dest => dest.RoleIds, src => src.RoleIds.DistinctList())
             .AfterMapping((src, dest) =>
             {
                 if (!string.IsNullOrEmpty(src.Email))

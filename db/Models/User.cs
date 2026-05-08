@@ -37,6 +37,14 @@ namespace Scv.Db.Models
         /// </summary>
         public int? JudgeId { get; set; }
 
+        /// <summary>
+        /// Roles specific to the User and not based from the groups they are in. This is populated via sync service if user exists in PCSS when logging in.
+        /// </summary>
+        public List<string> RoleIds { get; set; } = [];
+
+        /// <summary>
+        /// Groups the user belongs to.
+        /// </summary>
         public List<string> GroupIds { get; set; } = [];
 
         public UserReleaseNotes? ReleaseNotes { get; set; }

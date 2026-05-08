@@ -16,6 +16,7 @@ public static class CollectionNameConstants
     public const string PERMISSIONS = "permissions";
     public const string QUICK_LINKS = "quick_links";
     public const string ROLES = "roles";
+    public const string ROLES_ALIASES = "role_aliases";
     public const string TAGS = "tags";
     public const string USERS = "users";
 }

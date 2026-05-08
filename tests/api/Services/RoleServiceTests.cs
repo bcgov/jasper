@@ -24,6 +24,7 @@ public class RoleServiceTests
     private readonly Mock<IRepositoryBase<Role>> _mockRoleRepo;
     private readonly Mock<IPermissionRepository> _mockPermissionRepo;
     private readonly Mock<IRepositoryBase<Group>> _mockGroupRepo;
+    private readonly Mock<IRepositoryBase<RoleAlias>> _mockRoleAliasRepo;
     private readonly RoleService _roleService;
     public RoleServiceTests()
     {
@@ -44,6 +45,7 @@ public class RoleServiceTests
         _mockRoleRepo = new Mock<IRepositoryBase<Role>>();
         _mockPermissionRepo = new Mock<IPermissionRepository>();
         _mockGroupRepo = new Mock<IRepositoryBase<Group>>();
+        _mockRoleAliasRepo = new Mock<IRepositoryBase<RoleAlias>>();
 
         _roleService = new RoleService(
             cachingService,
@@ -51,7 +53,8 @@ public class RoleServiceTests
             logger.Object,
             _mockRoleRepo.Object,
             _mockPermissionRepo.Object,
-            _mockGroupRepo.Object);
+            _mockGroupRepo.Object,
+            _mockRoleAliasRepo.Object);
     }
 
     [Fact]

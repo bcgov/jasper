@@ -401,7 +401,8 @@ public class UserServiceTests : ServiceTestBase
                     FirstName = _faker.Person.FirstName,
                     LastName = _faker.Person.LastName,
                     Email = _faker.Internet.Email(),
-                    GroupIds = [ObjectId.GenerateNewId().ToString()]
+                    GroupIds = [ObjectId.GenerateNewId().ToString()],
+                    RoleIds = [ObjectId.GenerateNewId().ToString()]
                 }
             ]);
         _mockGroupRepo
@@ -421,6 +422,7 @@ public class UserServiceTests : ServiceTestBase
                     Id = ObjectId.GenerateNewId().ToString(),
                     Name = _faker.Lorem.Word(),
                     Description = _faker.Lorem.Paragraph(),
+                    PermissionIds = [ObjectId.GenerateNewId().ToString()]
                 }
             ]);
 
@@ -429,7 +431,7 @@ public class UserServiceTests : ServiceTestBase
         Assert.NotNull(result);
         _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
         _mockGroupRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Once());
-        _mockRoleRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once());
+        _mockRoleRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -443,7 +445,8 @@ public class UserServiceTests : ServiceTestBase
                     FirstName = _faker.Person.FirstName,
                     LastName = _faker.Person.LastName,
                     Email = _faker.Internet.Email(),
-                    GroupIds = [ObjectId.GenerateNewId().ToString()]
+                    GroupIds = [ObjectId.GenerateNewId().ToString()],
+                    RoleIds = [ObjectId.GenerateNewId().ToString()]
                 }
             ]);
         _mockGroupRepo

@@ -10,20 +10,16 @@ public class RoleAlias : EntityBase
     public const string CHIEF_JUDGE_ACJ = "Chief Judge/ACJ";
     public const string CHIEF_JUDGE_ACJ_ALT = "Chief Judge/ACJs";
     public const string JUDGE = "JUDGE";
-    public const string JUDGE_ALT = "JUDGE";
-    public const string JUDGE_JJ_OUTLOOK_INTEGRATION = "OUTLOOK_INTEGRATION";
-    public const string JUDGE_NO_CLDC = "Judge - No CLDC";
-    public const string JUDGE_TRAINING_ROLE = "Judge Training";
-    public const string JUDGE_WITH_COURT_LIST = "Court List Pilot Judge";
+    public const string JUDGE_ALT = "Judge";
+    public const string JUDGE_TRAINING = "Judge Training";
     public const string OCJ_HELP_DESK = "OCJ_HELP_DESK";
     public const string OCJ_HELP_DESK_ALT = "OCJ Help Desk";
+    public const string OCJ_IT = "OCJ_IT";
     public const string PRODUCT_MANAGER = "PRODUCT_MANAGER";
     public const string PRODUCT_MANAGER_ALT = "Product Manager";
-    public const string RAJ_WITH_CC_VIEW = "RAJ with CC view";
     public const string REGIONAL_ADMINISTRATIVE_JUDGE = "REGIONAL_ADMINISTRATIVE_JUDGE";
     public const string REGIONAL_ADMINISTRATIVE_JUDGE_ALT = "Regional Administrative Judge";
     public const string SENIOR_JUDGE = "Senior Judge";
-    public const string SENIOR_JUDGE_COURT_LIST = "Senior Judge - Court List";
     public const string USER_ROLE_ADMIN = "Admin User Edit";
 
     public static readonly List<RoleAlias> ALL_ROLE_ALIASES =
@@ -32,19 +28,15 @@ public class RoleAlias : EntityBase
         new RoleAlias { Name = RoleAlias.CHIEF_JUDGE_ACJ_ALT },
         new RoleAlias { Name = RoleAlias.JUDGE },
         new RoleAlias { Name = RoleAlias.JUDGE_ALT },
-        new RoleAlias { Name = RoleAlias.JUDGE_JJ_OUTLOOK_INTEGRATION },
-        new RoleAlias { Name = RoleAlias.JUDGE_NO_CLDC },
-        new RoleAlias { Name = RoleAlias.JUDGE_TRAINING_ROLE },
-        new RoleAlias { Name = RoleAlias.JUDGE_WITH_COURT_LIST },
+        new RoleAlias { Name = RoleAlias.JUDGE_TRAINING },
         new RoleAlias { Name = RoleAlias.OCJ_HELP_DESK },
         new RoleAlias { Name = RoleAlias.OCJ_HELP_DESK_ALT },
+        new RoleAlias { Name = RoleAlias.OCJ_IT },
         new RoleAlias { Name = RoleAlias.PRODUCT_MANAGER },
         new RoleAlias { Name = RoleAlias.PRODUCT_MANAGER_ALT },
-        new RoleAlias { Name = RoleAlias.RAJ_WITH_CC_VIEW },
         new RoleAlias { Name = RoleAlias.REGIONAL_ADMINISTRATIVE_JUDGE },
         new RoleAlias { Name = RoleAlias.REGIONAL_ADMINISTRATIVE_JUDGE_ALT },
         new RoleAlias { Name = RoleAlias.SENIOR_JUDGE },
-        new RoleAlias { Name = RoleAlias.SENIOR_JUDGE_COURT_LIST },
         new RoleAlias { Name = RoleAlias.USER_ROLE_ADMIN },
     ];
 

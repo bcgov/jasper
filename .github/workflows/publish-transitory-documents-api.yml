@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Build API codebase
         uses: ./.github/workflows/actions/build-transitory-documents-api
@@ -56,7 +56,7 @@ jobs:
           dotnet_version: ${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
 
       - name: Log in to the GHCR
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: Setup Image Metadata
         id: meta
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: |
             ${{ env.GITHUB_IMAGE_REPO }}/${{ env.IMAGE_NAME }}
@@ -77,11 +77,11 @@ jobs:
             type=raw,value=${{ steps.short_sha.outputs.SHORT_SHA }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Build and Push Image to ghcr.io
         id: build_image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v6
         with:
           push: true
           context: .
@@ -92,7 +92,7 @@ jobs:
             dotnet_version=${{ matrix.dotnet-major-version }}.${{ matrix.dotnet-minor-version }}
 
       - name: Checkout tenant gitops repository
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ${{ env.GITOPS_REPOSITORY }}
           ssh-key: ${{ secrets.TENANT_GITOPS_E4161F_DEPLOY_KEY }}
@@ -100,7 +100,7 @@ jobs:
           path: tenant-gitops-e4161f
 
       - name: Update transitory-documents-api dev image reference
-        uses: fjogeleit/yaml-update-action@451fb54614e46f952fc18ffd99e8c93b7b13f85e # v0.15.0
+        uses: fjogeleit/yaml-update-action@dffe9a5223d84653c13374032382f6bb5de8e5ef # v0.17.0
         with:
           workDir: tenant-gitops-e4161f
           valueFile: ${{ env.GITOPS_FILE_PATH }}
@@ -112,12 +112,12 @@ jobs:
           commitChange: false
 
       - name: Load SSH deploy key
-        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.TENANT_GITOPS_E4161F_DEPLOY_KEY }}
 
       - name: Commit and push gitops update
-        uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9
+        uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
         with:
           cwd: tenant-gitops-e4161f
           add: ${{ env.GITOPS_FILE_PATH }}

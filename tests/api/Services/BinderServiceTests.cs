@@ -13,9 +13,11 @@ using Scv.Api.Documents;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Processors;
 using Scv.Api.Services;
+using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
 using Scv.Models.Binder;
 using Xunit;
 
@@ -57,6 +59,84 @@ public class BinderServiceTests
             _mockBinderFactory.Object,
             new Mock<IDocumentMerger>().Object);
     }
+
+    #region GetByLabels Tests
+
+    [Fact]
+    public async Task GetByLabels_WhenMatchingBindersExist_ShouldReturnPayload()
+    {
+        var labels = new Dictionary<string, string>
+        {
+            { LabelConstants.PHYSICAL_FILE_ID, "FILE-123" },
+            { LabelConstants.COURT_CLASS_CD, "C" }
+        };
+
+        var processorMock = new Mock<IBinderProcessor>();
+        processorMock
+            .SetupGet(p => p.Binder)
+            .Returns(new BinderDto { Labels = new Dictionary<string, string>(labels) });
+        processorMock.Setup(p => p.ValidateAsync()).ReturnsAsync(OperationResult.Success());
+        processorMock.Setup(p => p.PreProcessAsync()).Returns(Task.CompletedTask);
+
+        _mockBinderFactory
+            .Setup(f => f.Create(It.IsAny<Dictionary<string, string>>()))
+            .Returns(processorMock.Object);
+
+        var existingBinders = CreateSampleBinders(2);
+        existingBinders[0].Labels[LabelConstants.PHYSICAL_FILE_ID] = "FILE-123";
+        existingBinders[0].Labels[LabelConstants.COURT_CLASS_CD] = "C";
+        existingBinders[1].Labels[LabelConstants.PHYSICAL_FILE_ID] = "FILE-123";
+        existingBinders[1].Labels[LabelConstants.COURT_CLASS_CD] = "C";
+
+        _mockBinderRepo
+            .Setup(r => r.FindAsync(
+                CollectionNameConstants.BINDERS,
+                It.IsAny<FilterDefinition<Binder>>(),
+                It.IsAny<FindOptions>(),
+                It.IsAny<int?>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(existingBinders);
+
+        var result = await _binderService.GetByLabels(labels);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Payload);
+        Assert.Equal(2, result.Payload.Count);
+    }
+
+    [Fact]
+    public async Task GetByLabels_WhenRepositoryThrows_ShouldPropagateException()
+    {
+        var labels = new Dictionary<string, string>
+        {
+            { LabelConstants.PHYSICAL_FILE_ID, "FILE-456" },
+            { LabelConstants.COURT_CLASS_CD, "C" }
+        };
+
+        var processorMock = new Mock<IBinderProcessor>();
+        processorMock
+            .SetupGet(p => p.Binder)
+            .Returns(new BinderDto { Labels = new Dictionary<string, string>(labels) });
+        processorMock.Setup(p => p.ValidateAsync()).ReturnsAsync(OperationResult.Success());
+        processorMock.Setup(p => p.PreProcessAsync()).Returns(Task.CompletedTask);
+
+        _mockBinderFactory
+            .Setup(f => f.Create(It.IsAny<Dictionary<string, string>>()))
+            .Returns(processorMock.Object);
+
+        _mockBinderRepo
+            .Setup(r => r.FindAsync(
+                CollectionNameConstants.BINDERS,
+                It.IsAny<FilterDefinition<Binder>>(),
+                It.IsAny<FindOptions>(),
+                It.IsAny<int?>(),
+                It.IsAny<int?>()))
+            .ThrowsAsync(new Exception("db failure"));
+
+        await Assert.ThrowsAsync<Exception>(() => _binderService.GetByLabels(labels));
+    }
+
+    #endregion
 
     #region SearchBinders Tests
 

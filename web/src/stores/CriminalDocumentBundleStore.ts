@@ -1,18 +1,18 @@
 import { defineStore } from 'pinia';
 import { UUIDTypes } from 'uuid';
 import { Binder } from '@/types/Binder';
-import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { KeyDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
 
-export const useBundleStore = defineStore('BundleStore', {
+export const useCriminalDocumentBundleStore = defineStore('CriminalDocumentBundleStore', {
   persist: true,
   state: () => ({
-    bundles: [] as Bundle[],
-    request: {} as DocumentBundleRequest,
-    appearanceRequests: [] as appearanceRequest[],
+    bundles: [] as KeyDocumentBundle[],
+    request: {} as KeyDocumentBundleRequest,
+    appearanceRequests: [] as KeyDocumentAppearanceRequest[],
   }),
   getters: {
-    getBundle: (state): ((id: UUIDTypes) => Bundle | undefined) => {
+    getBundle: (state): ((id: UUIDTypes) => KeyDocumentBundle | undefined) => {
       return (id: UUIDTypes) => {
         const bundle = state.bundles.find((b) => b.id === id);
         return bundle;
@@ -30,7 +30,7 @@ export const useBundleStore = defineStore('BundleStore', {
         groupKeyTwo: '',
         documentName: '',
         physicalFileId: '',
-        requests: {} as DocumentBundleRequest,
+        requests: {} as KeyDocumentBundleRequest,
       });
     },
     addBinder(binder: Binder, bundleId: UUIDTypes): void {
@@ -42,22 +42,22 @@ export const useBundleStore = defineStore('BundleStore', {
     clearBundles(): void {
       this.bundles.length = 0;
       this.appearanceRequests = [];
-      this.request = {} as DocumentBundleRequest;
+      this.request = {} as KeyDocumentBundleRequest;
     },
   },
 });
 
-export type Bundle = {
+export type KeyDocumentBundle = {
   id: UUIDTypes;
   groupKeyOne: string;
   groupKeyTwo: string;
   physicalFileId: string;
   documentName: string;
-  requests: DocumentBundleRequest;
+  requests: KeyDocumentBundleRequest;
   binders: Binder[];
 };
 
-export type appearanceRequest = {
+export type KeyDocumentAppearanceRequest = {
   appearance: AppearanceDocumentRequest;
   fileNumber: string;
   fullName?: string;

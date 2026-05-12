@@ -24,6 +24,7 @@
     mdiFileDocumentArrowRightOutline,
   } from '@mdi/js';
   import { OrderService } from '@/services';
+  import { PDFViewerStrategy, OutlineItem } from './strategies/PDFViewerTypes';
   import ReviewModal from './ReviewModal.vue';
   import { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
@@ -32,52 +33,6 @@
   // Declare NutrientViewer global
   declare global {
     const NutrientViewer: any;
-  }
-
-  // Base interfaces for the strategy pattern
-  export interface PDFViewerStrategy<
-    TRawData = any,
-    TProcessedData = any,
-    TAPIResponse = any,
-  > {
-    // Check if there's data available to process
-    hasData(): boolean;
-
-    // Get raw data from the store/source
-    getRawData(): TRawData;
-
-    // Process raw data into format needed for API call
-    processDataForAPI(rawData: TRawData): TProcessedData;
-
-    // Make the API call to generate PDF
-    generatePDF(processedData: TProcessedData): Promise<TAPIResponse>;
-
-    // Extract base64 PDF from API response
-    extractBase64PDF(apiResponse: TAPIResponse): string;
-
-    // Extract page ranges from API response (optional)
-    extractPageRanges(
-      apiResponse: TAPIResponse
-    ): Array<{ start: number; end?: number }> | undefined;
-
-    // Create outline structure from raw data and API response
-    createOutline(rawData: TRawData, apiResponse: TAPIResponse): OutlineItem[];
-
-    // Cleanup function
-    cleanup(): void;
-
-    // Shows options related to reviewing order files
-    showOrderReviewOptions?: boolean;
-
-    reviewOrder?(orderReview: OrderReview): Promise<void>;
-  }
-
-  export interface OutlineItem {
-    title: string;
-    pageIndex?: number;
-    children?: OutlineItem[];
-    isExpanded?: boolean;
-    action?: any;
   }
 
   // Props for the generic component

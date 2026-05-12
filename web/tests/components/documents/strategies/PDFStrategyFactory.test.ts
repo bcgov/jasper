@@ -1,5 +1,6 @@
-import { BundlePDFStrategy } from '@/components/documents/strategies/BundlePDFStrategy';
 import { FilePDFStrategy } from '@/components/documents/strategies/FilePDFStrategy';
+import { CriminalDocumentPDFStrategy } from '@/components/documents/strategies/CriminalDocumentPDFStrategy';
+import { JudicialBinderPDFStrategy } from '@/components/documents/strategies/JudicialBinderPDFStrategy';
 import {
     PDFViewerType,
     usePDFStrategy,
@@ -21,13 +22,7 @@ describe('PDFStrategyFactory', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         filesService = {} as MockFilesService;
-
-        vi.mock('@/stores/PDFViewerStore', () => {
-            return {
-                usePDFViewerStore: vi.fn(() => ({})),
-            };
-        });
-        (inject as unknown as vi.mock).mockReturnValue(filesService);
+        (inject as any).mockReturnValue(filesService);
         setActivePinia(createPinia());
     });
 
@@ -35,8 +30,14 @@ describe('PDFStrategyFactory', () => {
     const strategy = usePDFStrategy(PDFViewerType.FILE);
     expect(strategy).toBeInstanceOf(FilePDFStrategy);
   });
-    it('should create BundlePDFStrategy for BUNDLE type', () => {
-    const strategy = usePDFStrategy(PDFViewerType.BUNDLE);
-    expect(strategy).toBeInstanceOf(BundlePDFStrategy);
+
+  it('should create KeyDocumentPDFStrategy for KEY_DOCUMENT type', () => {
+    const strategy = usePDFStrategy(PDFViewerType.KEY_DOCUMENT);
+    expect(strategy).toBeInstanceOf(CriminalDocumentPDFStrategy);
+  });
+
+  it('should create JudicialBinderPDFStrategy for JUDICIAL_BINDER type', () => {
+    const strategy = usePDFStrategy(PDFViewerType.JUDICIAL_BINDER);
+    expect(strategy).toBeInstanceOf(JudicialBinderPDFStrategy);
   });
 });

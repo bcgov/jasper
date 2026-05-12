@@ -24,7 +24,7 @@
             style="letter-spacing: 0rem"
             density="compact"
             data-testid="view-key-documents"
-            @click="() => onViewKeyDocuments(group, [])"
+            @click="() => onViewCriminalDocuments(group, [])"
           >
             View key documents
           </v-btn>
@@ -45,7 +45,7 @@
             density="compact"
             data-testid="view-judicial-binders"
             :disabled="binderLoading || totalBinderCount === 0"
-            @click="onViewJudicialBinders(group)"
+            @click="() => onViewJudicialBinders(group)"
           >
             View judicial binder(s)&nbsp;
             <v-progress-circular
@@ -219,7 +219,7 @@
   const onViewApprCaseDetails = (appearances: CourtListAppearance[]) => {
     emit('view-case-details', appearances);
   };
-  const onViewKeyDocuments = (
+  const onViewCriminalDocuments = (
     appearances: CourtListAppearance[],
     categories: string[]
   ) => {

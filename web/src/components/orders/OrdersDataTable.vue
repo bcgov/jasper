@@ -6,9 +6,14 @@
     fixed-header
   >
     <template #[`item.packageId`]="{ item }">
-      <a href="#" @click.prevent="viewOrderDetails(item)">
+      <a
+        v-if="viewOrderDetails"
+        href="#"
+        @click.prevent="viewOrderDetails(item)"
+      >
         {{ item.packageId }}
       </a>
+      <span v-else>{{ item.packageId }}</span>
     </template>
     <template #[`item.courtClass`]="{ item }">
       <span :class="[getCourtClassStyle(item.courtClass)]">
@@ -39,11 +44,11 @@
 <script setup lang="ts">
   import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import { Order } from '@/types';
+  import { Anchor } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
   import { computed, ref } from 'vue';
-  import { Anchor } from '@/types/common';
 
   type ColumnKey =
     | 'packageId'
@@ -57,7 +62,7 @@
 
   const props = defineProps<{
     data: Order[];
-    viewOrderDetails: (item: Order) => void;
+    viewOrderDetails?: (item: Order) => void;
     viewCaseDetails: (item: Order) => void;
     columns?: ColumnKey[];
     sortBy?: { key: string; order: 'asc' | 'desc' }[];

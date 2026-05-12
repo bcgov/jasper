@@ -44,7 +44,6 @@
           <OrdersDataTable
             :data="completedOrders"
             :viewCaseDetails="viewCaseDetails"
-            :viewOrderDetails="viewOrderDetails"
             :columns="[
               'packageId',
               'priorityType',

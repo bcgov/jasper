@@ -94,6 +94,7 @@ public sealed class KeycloakTokenService(
             Address = tokenEndpoint,
             ClientId = options.ClientId,
             ClientSecret = options.ServiceAccountSecret,
+            Scope = string.IsNullOrWhiteSpace(options.Scope) ? null : options.Scope
         };
 
         if (!string.IsNullOrWhiteSpace(options.Audience))

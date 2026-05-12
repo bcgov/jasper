@@ -11,7 +11,9 @@ export const useJudicialBinderStore = defineStore('JudicialBinderStore', {
     request: {} as BinderDocumentBundleRequest,
   }),
   getters: {
-    getBundle: (state): ((id: UUIDTypes) => JudicialBinderBundle | undefined) => {
+    getBundle: (
+      state
+    ): ((id: UUIDTypes) => JudicialBinderBundle | undefined) => {
       return (id: UUIDTypes) => {
         const bundle = state.bundles.find((b) => b.id === id);
         return bundle;

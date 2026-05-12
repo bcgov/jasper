@@ -1,10 +1,12 @@
-import { usePDFViewerStore, useCriminalDocumentBundleStore, useJudicialBinderStore } from '@/stores';
+import {
+  usePDFViewerStore,
+  useCriminalDocumentBundleStore,
+  useJudicialBinderStore,
+} from '@/stores';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
 import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
-import {
-  CourtRoomsJsonInfoType,
-} from '@/types/common';
+import { CourtRoomsJsonInfoType } from '@/types/common';
 import { CourtListAppearance } from '@/types/courtlist';
 import {
   BinderDocumentBundleRequest,
@@ -225,7 +227,10 @@ export default {
     } as BinderDocumentBundleRequest;
     judicialBinderStore.request = bundleRequest;
 
-    const newWindow = window.open('/file-viewer?type=judicial-binder', '_blank');
+    const newWindow = window.open(
+      '/file-viewer?type=judicial-binder',
+      '_blank'
+    );
     const caseNumbers = Array.from(
       new Set(appearances.map((d) => d.aslCourtFileNumber))
     ).join(', ');

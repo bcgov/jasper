@@ -82,6 +82,9 @@ export class BinderService extends ServiceBase {
       ? bundleRequest
       : bundleRequest.appearances;
 
-    return this.httpService.post<ApiResponse<DocumentBundleResponse>>(url, body);
+    return this.httpService.post<ApiResponse<DocumentBundleResponse>>(
+      url,
+      body
+    );
   }
 }

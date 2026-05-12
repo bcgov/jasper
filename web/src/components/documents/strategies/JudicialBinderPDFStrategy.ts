@@ -34,7 +34,11 @@ export class JudicialBinderPDFStrategy implements PDFViewerStrategy<
 
   hasData(): boolean {
     const request = this.binderStore.getRequests;
-    return !!(request && 'binders' in request && (request as BinderDocumentBundleRequest).binders?.length > 0);
+    return !!(
+      request &&
+      'binders' in request &&
+      (request as BinderDocumentBundleRequest).binders?.length > 0
+    );
   }
 
   getRawData(): JudicialBinderRawData {
@@ -50,9 +54,7 @@ export class JudicialBinderPDFStrategy implements PDFViewerStrategy<
     }));
   }
 
-  processDataForAPI(
-    rawData: JudicialBinderRawData
-  ): BinderLabelContext[] {
+  processDataForAPI(rawData: JudicialBinderRawData): BinderLabelContext[] {
     // Convert to label contexts for API compatibility
     return rawData.map((item) => ({
       physicalFileId: item.binder.physicalFileId,

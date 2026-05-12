@@ -55,6 +55,8 @@ namespace Scv.Api.Documents.Strategies
                 throw new InvalidArgumentException("Invalid document id.");
             }
 
+            var userGuid = _currentUser.ProvjudUserGuid() ?? _currentUser.IdirUserGuid();
+
             using var response = await _judicialClient.GetJudicialDocumentAsync(
                 transactionId,
                 agencyId,
@@ -62,7 +64,7 @@ namespace Scv.Api.Documents.Strategies
                 DocumentApplicationName.CSO,
                 _configuration.GetNonEmptyValue("Request:ApplicationCd"),
                 "Y",
-                _currentUser.ProvjudUserGuid() ?? _currentUser.IdirUserGuid());
+                userGuid?.ToUpper());
 
             await response.Stream.CopyToAsync(documentResponseStreamCopy);
 

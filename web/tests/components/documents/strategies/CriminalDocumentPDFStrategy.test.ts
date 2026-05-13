@@ -4,7 +4,7 @@ import { useCriminalDocumentBundleStore } from '@/stores';
 import { inject } from 'vue';
 import { ApiResponse } from '@/types/ApiResponse';
 import { BinderDocument } from '@/types/BinderDocument';
-import { KeyDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
+import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
 import { BinderService } from '@/services';
 
 vi.mock('@/stores', () => ({
@@ -17,7 +17,7 @@ vi.mock('@/services', () => ({
   BinderService: vi.fn(),
 }));
 
-const mockAppearanceRequests: KeyDocumentAppearanceRequest[] = [
+const mockAppearanceRequests: CriminalDocumentAppearanceRequest[] = [
   {
     fileNumber: 'FN1',
     fullName: 'John Doe',
@@ -25,7 +25,7 @@ const mockAppearanceRequests: KeyDocumentAppearanceRequest[] = [
       physicalFileId: 'F1',
       participantId: 'P1',
       appearanceId: 'APP1',
-      courtClassCd: 'CLS1'
+      courtClassCd: 'CLS1',
     },
   },
   {
@@ -35,7 +35,7 @@ const mockAppearanceRequests: KeyDocumentAppearanceRequest[] = [
       physicalFileId: 'F2',
       participantId: 'P2',
       appearanceId: 'APP2',
-      courtClassCd: 'CLS2'
+      courtClassCd: 'CLS2',
     },
   },
   {
@@ -45,7 +45,7 @@ const mockAppearanceRequests: KeyDocumentAppearanceRequest[] = [
       physicalFileId: 'F3',
       participantId: 'P3',
       appearanceId: 'APP3',
-      courtClassCd: 'CLS3'
+      courtClassCd: 'CLS3',
     },
   },
 ];
@@ -63,11 +63,7 @@ const mockApiResponse: ApiResponse<any> = {
   payload: {
     pdfResponse: {
       base64Pdf: 'base64string',
-      pageRanges: [
-        { start: 1, end: 2 },
-        { start: 3 },
-        { start: 4, end: 5 },
-      ],
+      pageRanges: [{ start: 1, end: 2 }, { start: 3 }, { start: 4, end: 5 }],
     },
     binders: [
       {
@@ -117,7 +113,9 @@ const mockApiResponse: ApiResponse<any> = {
 
 describe('CriminalDocumentPDFStrategy', () => {
   beforeEach(() => {
-    (useCriminalDocumentBundleStore as any).mockReturnValue(mockKeyDocumentStore);
+    (useCriminalDocumentBundleStore as any).mockReturnValue(
+      mockKeyDocumentStore
+    );
     (inject as any).mockImplementation((key: string) => {
       if (key === 'binderService') return mockBinderService;
       return undefined;
@@ -128,7 +126,9 @@ describe('CriminalDocumentPDFStrategy', () => {
 
   it('throws error if BinderService is not injected', () => {
     (inject as any).mockReturnValueOnce(undefined);
-    expect(() => new CriminalDocumentPDFStrategy()).toThrow('BinderService is not available!');
+    expect(() => new CriminalDocumentPDFStrategy()).toThrow(
+      'BinderService is not available!'
+    );
   });
 
   it('hasData returns true if appearance requests exist', () => {
@@ -156,14 +156,17 @@ describe('CriminalDocumentPDFStrategy', () => {
     const strategy = new CriminalDocumentPDFStrategy();
     mockBinderService.generateBinderPDF.mockResolvedValue('pdf');
     const result = await strategy.generatePDF({ appearances: [] });
-    expect(mockBinderService.generateBinderPDF).toHaveBeenCalledWith({ appearances: [] }, []);
+    expect(mockBinderService.generateBinderPDF).toHaveBeenCalledWith(
+      { appearances: [] },
+      []
+    );
     expect(result).toBe('pdf');
   });
 
   it('generatePDF passes categories from URL params', async () => {
     const strategy = new CriminalDocumentPDFStrategy();
     mockBinderService.generateBinderPDF.mockResolvedValue('pdf');
-    
+
     // Mock location.search with category params
     Object.defineProperty(globalThis, 'location', {
       value: { search: '?category=INITIATING,ROP' },

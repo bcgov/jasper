@@ -1,5 +1,8 @@
 import shared from '@/components/shared';
-import { useJudicialBinderStore, useCriminalDocumentBundleStore } from '@/stores';
+import {
+  useJudicialBinderStore,
+  useCriminalDocumentBundleStore,
+} from '@/stores';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtDocumentType } from '@/types/shared';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
@@ -639,13 +642,15 @@ describe('shared.openCourtListKeyDocuments', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockKeyDocumentStore = {
       request: {},
       appearanceRequests: [],
     };
 
-    (useCriminalDocumentBundleStore as any).mockReturnValue(mockKeyDocumentStore);
+    (useCriminalDocumentBundleStore as any).mockReturnValue(
+      mockKeyDocumentStore
+    );
 
     mockWindowOpen = vi.fn(() => ({ focus: vi.fn() }));
     window.open = mockWindowOpen;
@@ -671,7 +676,7 @@ describe('shared.openCourtListKeyDocuments', () => {
       },
     ];
 
-    shared.openCourtListCriminalDocuments(mockAppearances, []);
+    shared.openCourtListCriminalBundle(mockAppearances, []);
 
     expect(mockKeyDocumentStore.appearanceRequests).toHaveLength(1);
     expect(mockKeyDocumentStore.appearanceRequests[0]).toEqual({
@@ -698,7 +703,7 @@ describe('shared.openCourtListKeyDocuments', () => {
       },
     ];
 
-    shared.openCourtListCriminalDocuments(mockAppearances, []);
+    shared.openCourtListCriminalBundle(mockAppearances, []);
 
     expect(mockKeyDocumentStore.request).toEqual({
       appearances: [
@@ -712,7 +717,7 @@ describe('shared.openCourtListKeyDocuments', () => {
     });
   });
 
-  it('should open file-viewer with key-document type', () => {
+  it('should open file-viewer with criminal-bundle type', () => {
     const mockAppearances: any[] = [
       {
         justinNo: 'JUSTIN1',
@@ -724,9 +729,12 @@ describe('shared.openCourtListKeyDocuments', () => {
       },
     ];
 
-    shared.openCourtListCriminalDocuments(mockAppearances, []);
+    shared.openCourtListCriminalBundle(mockAppearances, []);
 
-    expect(mockWindowOpen).toHaveBeenCalledWith('/file-viewer?type=key-document', '_blank');
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=criminal-bundle',
+      '_blank'
+    );
   });
 
   it('should include categories in URL when provided', () => {
@@ -741,13 +749,16 @@ describe('shared.openCourtListKeyDocuments', () => {
       },
     ];
 
-    shared.openCourtListCriminalDocuments(mockAppearances, ['INITIATING', 'ROP']);
+    shared.openCourtListCriminalBundle(mockAppearances, ['INITIATING', 'ROP']);
 
-    expect(mockWindowOpen).toHaveBeenCalledWith('/file-viewer?type=key-document&category=INITIATING,ROP', '_blank');
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=criminal-bundle&category=INITIATING,ROP',
+      '_blank'
+    );
   });
 
   it('should return early if appearances array is empty', () => {
-    shared.openCourtListCriminalDocuments([], []);
+    shared.openCourtListCriminalBundle([], []);
 
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
@@ -760,7 +771,7 @@ describe('shared.openJudicialBinderDocuments', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockJudicialBinderStore = {
       request: {},
     };
@@ -816,7 +827,9 @@ describe('shared.openJudicialBinderDocuments', () => {
 
     shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
 
-    expect(mockJudicialBinderStore.request.binders[0]).not.toHaveProperty('appearanceId');
+    expect(mockJudicialBinderStore.request.binders[0]).not.toHaveProperty(
+      'appearanceId'
+    );
   });
 
   it('should open file-viewer with judicial-binder type', () => {
@@ -831,7 +844,10 @@ describe('shared.openJudicialBinderDocuments', () => {
 
     shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
 
-    expect(mockWindowOpen).toHaveBeenCalledWith('/file-viewer?type=judicial-binder', '_blank');
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=judicial-binder',
+      '_blank'
+    );
   });
 
   it('should call replaceWindowTitle with case numbers', () => {
@@ -846,7 +862,10 @@ describe('shared.openJudicialBinderDocuments', () => {
 
     shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
 
-    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(expect.any(Object), 'FN001');
+    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      'FN001'
+    );
   });
 
   it('should handle multiple appearances with different case numbers', () => {
@@ -868,7 +887,10 @@ describe('shared.openJudicialBinderDocuments', () => {
     shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
 
     expect(mockJudicialBinderStore.request.binders).toHaveLength(2);
-    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(expect.any(Object), 'FN001, FN002');
+    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      'FN001, FN002'
+    );
   });
 
   it('should return early if appearances array is empty', () => {

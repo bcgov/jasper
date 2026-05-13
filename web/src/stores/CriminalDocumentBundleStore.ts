@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { UUIDTypes } from 'uuid';
 import { Binder } from '@/types/Binder';
-import { KeyDocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
 
 export const useCriminalDocumentBundleStore = defineStore(
@@ -9,14 +9,14 @@ export const useCriminalDocumentBundleStore = defineStore(
   {
     persist: true,
     state: () => ({
-      bundles: [] as KeyDocumentBundle[],
-      request: {} as KeyDocumentBundleRequest,
-      appearanceRequests: [] as KeyDocumentAppearanceRequest[],
+      bundles: [] as CriminalDocumentBundle[],
+      request: {} as CriminalDocumentBundleRequest,
+      appearanceRequests: [] as CriminalDocumentAppearanceRequest[],
     }),
     getters: {
       getBundle: (
         state
-      ): ((id: UUIDTypes) => KeyDocumentBundle | undefined) => {
+      ): ((id: UUIDTypes) => CriminalDocumentBundle | undefined) => {
         return (id: UUIDTypes) => {
           const bundle = state.bundles.find((b) => b.id === id);
           return bundle;
@@ -34,7 +34,7 @@ export const useCriminalDocumentBundleStore = defineStore(
           groupKeyTwo: '',
           documentName: '',
           physicalFileId: '',
-          requests: {} as KeyDocumentBundleRequest,
+          requests: {} as CriminalDocumentBundleRequest,
         });
       },
       addBinder(binder: Binder, bundleId: UUIDTypes): void {
@@ -46,23 +46,23 @@ export const useCriminalDocumentBundleStore = defineStore(
       clearBundles(): void {
         this.bundles.length = 0;
         this.appearanceRequests = [];
-        this.request = {} as KeyDocumentBundleRequest;
+        this.request = {} as CriminalDocumentBundleRequest;
       },
     },
   }
 );
 
-export type KeyDocumentBundle = {
+export type CriminalDocumentBundle = {
   id: UUIDTypes;
   groupKeyOne: string;
   groupKeyTwo: string;
   physicalFileId: string;
   documentName: string;
-  requests: KeyDocumentBundleRequest;
+  requests: CriminalDocumentBundleRequest;
   binders: Binder[];
 };
 
-export type KeyDocumentAppearanceRequest = {
+export type CriminalDocumentAppearanceRequest = {
   appearance: AppearanceDocumentRequest;
   fileNumber: string;
   fullName?: string;

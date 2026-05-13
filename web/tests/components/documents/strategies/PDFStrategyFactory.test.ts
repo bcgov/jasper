@@ -2,11 +2,11 @@ import { FilePDFStrategy } from '@/components/documents/strategies/FilePDFStrate
 import { CriminalDocumentPDFStrategy } from '@/components/documents/strategies/CriminalDocumentPDFStrategy';
 import { JudicialBinderPDFStrategy } from '@/components/documents/strategies/JudicialBinderPDFStrategy';
 import {
-    PDFViewerType,
-    usePDFStrategy,
-  } from '@/components/documents/strategies/PDFStrategyFactory';
+  PDFViewerType,
+  usePDFStrategy,
+} from '@/components/documents/strategies/PDFStrategyFactory';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setActivePinia, createPinia } from 'pinia'
+import { setActivePinia, createPinia } from 'pinia';
 import { inject } from 'vue';
 
 vi.mock('vue', () => ({
@@ -17,14 +17,14 @@ class MockFilesService {
   generatePdf = vi.fn();
 }
 describe('PDFStrategyFactory', () => {
-    let filesService: any;
+  let filesService: any;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        filesService = {} as MockFilesService;
-        (inject as any).mockReturnValue(filesService);
-        setActivePinia(createPinia());
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    filesService = {} as MockFilesService;
+    (inject as any).mockReturnValue(filesService);
+    setActivePinia(createPinia());
+  });
 
   it('should create FilePDFStrategy for FILE type', () => {
     const strategy = usePDFStrategy(PDFViewerType.FILE);
@@ -32,7 +32,7 @@ describe('PDFStrategyFactory', () => {
   });
 
   it('should create KeyDocumentPDFStrategy for KEY_DOCUMENT type', () => {
-    const strategy = usePDFStrategy(PDFViewerType.KEY_DOCUMENT);
+    const strategy = usePDFStrategy(PDFViewerType.CRIMINAL_BUNDLE);
     expect(strategy).toBeInstanceOf(CriminalDocumentPDFStrategy);
   });
 

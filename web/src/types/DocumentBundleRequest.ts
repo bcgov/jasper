@@ -1,7 +1,7 @@
 import { AppearanceDocumentRequest } from './AppearanceDocumentRequest';
 import { BinderDocumentRequest } from './BinderDocumentRequest';
 
-export interface KeyDocumentBundleRequest {
+export interface CriminalDocumentBundleRequest {
   appearances: AppearanceDocumentRequest[];
 }
 

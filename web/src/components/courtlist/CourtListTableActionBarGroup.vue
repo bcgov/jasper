@@ -24,7 +24,7 @@
             style="letter-spacing: 0rem"
             density="compact"
             data-testid="view-key-documents"
-            @click="() => onViewCriminalDocuments(group, [])"
+            @click="() => onViewKeyDocuments(group, [])"
           >
             View key documents
           </v-btn>
@@ -219,7 +219,7 @@
   const onViewApprCaseDetails = (appearances: CourtListAppearance[]) => {
     emit('view-case-details', appearances);
   };
-  const onViewCriminalDocuments = (
+  const onViewKeyDocuments = (
     appearances: CourtListAppearance[],
     categories: string[]
   ) => {

@@ -10,7 +10,7 @@ import { CourtRoomsJsonInfoType } from '@/types/common';
 import { CourtListAppearance } from '@/types/courtlist';
 import {
   BinderDocumentBundleRequest,
-  KeyDocumentBundleRequest,
+  CriminalDocumentBundleRequest,
 } from '@/types/DocumentBundleRequest';
 import {
   CourtDocumentType,
@@ -175,7 +175,7 @@ export default {
 
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
-  openCourtListCriminalDocuments(
+  openCourtListCriminalBundle(
     appearances: CourtListAppearance[],
     categories: string[]
   ): void {
@@ -193,13 +193,13 @@ export default {
     }));
     const bundleRequest = {
       appearances: appearanceRequests.map((app) => app.appearance),
-    } as KeyDocumentBundleRequest;
+    } as CriminalDocumentBundleRequest;
     criminalDocumentStore.request = bundleRequest;
     criminalDocumentStore.appearanceRequests = appearanceRequests;
 
     const categoryParams =
       categories.length > 0 ? '&category=' + categories.join(',') : '';
-    const url = '/file-viewer?type=key-document' + categoryParams;
+    const url = '/file-viewer?type=criminal-bundle' + categoryParams;
     const newWindow = window.open(url, '_blank');
     const caseNumbers = Array.from(
       new Set(appearances.map((d) => d.aslCourtFileNumber))

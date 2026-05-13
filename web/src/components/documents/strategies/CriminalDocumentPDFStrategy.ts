@@ -1,16 +1,16 @@
 import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
 import { BinderService } from '@/services';
 import { useCriminalDocumentBundleStore } from '@/stores';
-import { KeyDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
+import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
 import { ApiResponse } from '@/types/ApiResponse';
 import { BinderDocument } from '@/types/BinderDocument';
-import { KeyDocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 import { inject } from 'vue';
 
 export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
-  Record<string, Record<string, KeyDocumentAppearanceRequest[]>>,
-  KeyDocumentBundleRequest,
+  Record<string, Record<string, CriminalDocumentAppearanceRequest[]>>,
+  CriminalDocumentBundleRequest,
   ApiResponse<DocumentBundleResponse>
 > {
   private readonly bundleStore = useCriminalDocumentBundleStore();
@@ -29,11 +29,14 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
     return !!this.bundleStore.getAppearanceRequests;
   }
 
-  getRawData(): Record<string, Record<string, KeyDocumentAppearanceRequest[]>> {
+  getRawData(): Record<
+    string,
+    Record<string, CriminalDocumentAppearanceRequest[]>
+  > {
     const appearanceRequests = this.bundleStore.getAppearanceRequests;
     const groupedRequests: Record<
       string,
-      Record<string, KeyDocumentAppearanceRequest[]>
+      Record<string, CriminalDocumentAppearanceRequest[]>
     > = {};
 
     appearanceRequests.forEach((req) => {
@@ -53,8 +56,8 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
   }
 
   processDataForAPI(
-    rawData: Record<string, Record<string, KeyDocumentAppearanceRequest[]>>
-  ): KeyDocumentBundleRequest {
+    rawData: Record<string, Record<string, CriminalDocumentAppearanceRequest[]>>
+  ): CriminalDocumentBundleRequest {
     const groupedAppearances = Object.values(rawData).flatMap((fileGroup) =>
       Object.values(fileGroup).flatMap((appearances) =>
         appearances.map((a) => a.appearance)
@@ -63,7 +66,7 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
 
     return {
       appearances: groupedAppearances,
-    } as unknown as KeyDocumentBundleRequest;
+    } as unknown as CriminalDocumentBundleRequest;
   }
 
   /**
@@ -73,7 +76,7 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
    * @returns pdf including retrieved or newly created binders
    */
   async generatePDF(
-    processedData: KeyDocumentBundleRequest
+    processedData: CriminalDocumentBundleRequest
   ): Promise<ApiResponse<DocumentBundleResponse>> {
     const urlParams = new URLSearchParams(globalThis.location.search);
     const documentCategories = urlParams.get('category')?.split(',') || [];
@@ -94,7 +97,10 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
   }
 
   createOutline(
-    rawData: Record<string, Record<string, KeyDocumentAppearanceRequest[]>>,
+    rawData: Record<
+      string,
+      Record<string, CriminalDocumentAppearanceRequest[]>
+    >,
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
     this.count = 0;
@@ -115,7 +121,7 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
 
   private makeFirstGroup(
     groupKey: string,
-    userGroup: Record<string, KeyDocumentAppearanceRequest[]>,
+    userGroup: Record<string, CriminalDocumentAppearanceRequest[]>,
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem {
     const children: OutlineItem[] = [];
@@ -143,7 +149,7 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
 
   private makeSecondGroup(
     memberName: string,
-    docs: KeyDocumentAppearanceRequest[],
+    docs: CriminalDocumentAppearanceRequest[],
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem | null {
     const fileIds = docs.map((d) => d.appearance.physicalFileId);

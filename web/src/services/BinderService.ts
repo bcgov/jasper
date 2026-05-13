@@ -2,11 +2,11 @@ import { Binder } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { IHttpService } from './HttpService';
 import { ServiceBase } from './ServiceBase';
-import { KeyDocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 
 type BinderBundleContexts = Record<string, string>[];
-type BinderBundleRequest = KeyDocumentBundleRequest | BinderBundleContexts;
+type BinderBundleRequest = CriminalDocumentBundleRequest | BinderBundleContexts;
 
 export class BinderService extends ServiceBase {
   constructor(httpService: IHttpService) {

@@ -10,7 +10,7 @@ export enum PDFViewerType {
   FILE = 'file',
   ORDER = 'order',
   TRANSITORY_BUNDLE = 'transitory-bundle',
-  KEY_DOCUMENT = 'key-document',
+  CRIMINAL_BUNDLE = 'criminal-bundle',
   JUDICIAL_BINDER = 'judicial-binder',
 }
 
@@ -23,7 +23,7 @@ export class PDFStrategyFactory {
     switch (type) {
       case PDFViewerType.FILE:
         return new FilePDFStrategy();
-      case PDFViewerType.KEY_DOCUMENT:
+      case PDFViewerType.CRIMINAL_BUNDLE:
         return new CriminalDocumentPDFStrategy();
       case PDFViewerType.JUDICIAL_BINDER:
         return new JudicialBinderPDFStrategy();

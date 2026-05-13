@@ -156,8 +156,8 @@
   <CourtListTableActionBarGroup
     :selected
     @view-case-details="viewCaseDetails"
-    @view-key-documents="viewCriminalDocuments"
-    @view-informations="viewCriminalDocuments"
+    @view-key-documents="viewCriminalBundle"
+    @view-informations="viewCriminalBundle"
     @view-judicial-binders="handleViewJudicialBinders"
   />
 </template>
@@ -387,7 +387,7 @@
     return [];
   };
 
-  const viewCriminalDocuments = async (
+  const viewCriminalBundle = async (
     appearances: CourtListAppearance[],
     categories: string[]
   ) => {
@@ -395,7 +395,7 @@
       return;
     }
 
-    shared.openCourtListCriminalDocuments(appearances, categories);
+    shared.openCourtListCriminalBundle(appearances, categories);
   };
 
   const handleViewJudicialBinders = (appearances: CourtListAppearance[]) => {

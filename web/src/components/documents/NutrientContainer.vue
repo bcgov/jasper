@@ -22,8 +22,8 @@
       const queryType = route.query.type as string;
       switch (queryType.toLowerCase()) {
         case 'bundle':
-        case 'key-document':
-          return usePDFStrategy(PDFViewerType.KEY_DOCUMENT);
+        case 'criminal-bundle':
+          return usePDFStrategy(PDFViewerType.CRIMINAL_BUNDLE);
         case 'judicial-binder':
           return usePDFStrategy(PDFViewerType.JUDICIAL_BINDER);
         case 'order':

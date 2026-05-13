@@ -18,7 +18,6 @@ using Scv.Core.ContractResolver;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
-using Scv.Cso;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Order;
@@ -427,7 +426,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
         else
         {
-            actionDto.RejectedDate = default;
+            actionDto.RejectedDate = null;
         }
 
         if (orderDto.Signed && orderDto.ProcessedDate.HasValue)
@@ -436,7 +435,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
         else
         {
-            actionDto.SignedDate = default;
+            actionDto.SignedDate = null;
         }
 
         return actionDto;

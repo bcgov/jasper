@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": ".NET Core Docker Attach",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickRemoteProcess}",
+      "pipeTransport": {
+        "pipeProgram": "docker",
+        "pipeArgs": ["exec", "-i", "jasper-api-1"],
+        "debuggerPath": "/vsdbg/vsdbg",
+        "pipeCwd": "${workspaceRoot}",
+        "quoteArgs": false
+      },
+      "sourceFileMap": {
+        "/opt/app-root/src": "${workspaceRoot}/"
+      }
+    }
+  ]
+}

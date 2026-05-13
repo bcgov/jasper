@@ -65,8 +65,7 @@ public partial class JudicialAction
 {
 
     [Newtonsoft.Json.JsonProperty("actionDate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-    [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
-    public System.DateTimeOffset ActionDate { get; set; }
+    public System.DateTime ActionDate { get; set; }
 
     [Newtonsoft.Json.JsonProperty("description", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public string Description { get; set; }
@@ -81,12 +80,10 @@ public partial class JudicialAction
     public bool SignatureApplied { get; set; }
 
     [Newtonsoft.Json.JsonProperty("rejectedDate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-    [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
-    public System.DateTimeOffset RejectedDate { get; set; }
+    public System.DateTime? RejectedDate { get; set; }
 
     [Newtonsoft.Json.JsonProperty("signedDate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-    [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
-    public System.DateTimeOffset SignedDate { get; set; }
+    public System.DateTime? SignedDate { get; set; }
 
     [Newtonsoft.Json.JsonProperty("comment", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public string Comment { get; set; }

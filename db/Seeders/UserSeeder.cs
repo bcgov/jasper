@@ -39,6 +39,9 @@ namespace Scv.Db.Seeders
                         IsActive = true,
                         IsPendingRegistration = false,
                         GroupIds = [groups.First(g => g.Name == userObj["Group"]).Id],
+                        JudgeId = userObj.TryGetValue("JudgeId", out var judgeIdStr) && int.TryParse(judgeIdStr, out var judgeId)
+                            ? judgeId
+                            : null
                     };
                     users.Add(newUser);
                 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -12,21 +13,28 @@ using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Services;
 
+public interface IRoleService
+{
+    Task<OperationResult<IEnumerable<RoleDto>>> GetRolesByAliases(IEnumerable<string> aliases);
+}
+
 public class RoleService(
     IAppCache cache,
     IMapper mapper,
     ILogger<RoleService> logger,
     IRepositoryBase<Role> roleRepo,
     IPermissionRepository permissionRepo,
-    IRepositoryBase<Group> groupRepo
+    IRepositoryBase<Group> groupRepo,
+    IRepositoryBase<RoleAlias> roleAliasRepo
     ) : CrudServiceBase<IRepositoryBase<Role>, Role, RoleDto>(
         cache,
         mapper,
         logger,
-        roleRepo)
+        roleRepo), IRoleService
 {
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
     private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
+    private readonly IRepositoryBase<RoleAlias> _roleAliasRepo = roleAliasRepo;
 
     public override string CacheName => "GetRolesAsync";
 
@@ -86,5 +94,30 @@ public class RoleService(
             this.Logger.LogError(ex, "Error deleting data: {message}", ex.Message);
             return OperationResult.Failure("Error when deleting data.");
         }
+    }
+
+    public async Task<OperationResult<IEnumerable<RoleDto>>> GetRolesByAliases(IEnumerable<string> aliases)
+    {
+        var errors = new List<string>();
+        var roleAliases = await _roleAliasRepo.FindAsync(ra => aliases.Contains(ra.Name));
+        Logger.LogDebug("Found {RoleAliases} in JASPER based on input aliases: {Aliases}", JsonConvert.SerializeObject(roleAliases), aliases);
+
+        if (!roleAliases.Any())
+        {
+            errors.Add("Role alias not found.");
+        }
+        else
+        {
+            var roleIds = roleAliases.Select(ra => ra.RoleId).Distinct().Where(r => r != null).ToArray();
+            var roles = await this.Repo.FindAsync(r => roleIds.Contains(r.Id));
+
+            if (roleIds.Count() != roles.Count())
+            {
+                Logger.LogError("One or more role aliases do not have a corresponding role.");
+            }
+
+            return OperationResult<IEnumerable<RoleDto>>.Success(this.Mapper.Map<IEnumerable<RoleDto>>(roles));
+        }
+        return OperationResult<IEnumerable<RoleDto>>.Failure([.. errors]);
     }
 }

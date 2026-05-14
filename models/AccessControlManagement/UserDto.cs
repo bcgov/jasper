@@ -21,9 +21,12 @@ public class UserDto : BaseDto
     /// Id used as parameter for external systems backend APIs. This is going to be mapped manually for now.
     /// </summary>
     public int? JudgeId { get; set; }
-    public List<string> GroupIds { get; set; } = [];
     public UserReleaseNotesDto? ReleaseNotes { get; set; }
-    public List<string> Permissions { get; set; } = [];
+
+    public List<string> GroupIds { get; set; } = [];
+    public List<string> Groups { get; set; } = [];
+    public List<string> RoleIds { get; set; } = [];
     public List<string> Roles { get; set; } = [];
+    public List<string> Permissions { get; set; } = [];
 }
 

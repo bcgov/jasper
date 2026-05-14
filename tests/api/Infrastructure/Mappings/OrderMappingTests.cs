@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using Bogus;
+using CSOCommon.Models;
 using Mapster;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Db.Models;
@@ -427,6 +428,183 @@ public class OrderMappingTests
         var result = order.Adapt<OrderViewDto>(_config);
 
         Assert.Equal(expectedId, result.Id);
+    }
+
+    #endregion
+
+    #region OrderDto -> JudicialAction Mapping Tests
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_MapsDocumentData_WhenDocumentDataIsPresent()
+    {
+        var expectedBytes = _faker.Random.Bytes(64);
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = Convert.ToBase64String(expectedBytes);
+        orderDto.SupportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64));
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedBytes, result.Document);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_FallsBackToSupportingDocumentData_WhenDocumentDataIsNull()
+    {
+        var expectedBytes = _faker.Random.Bytes(64);
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = null;
+        orderDto.SupportingDocumentData = Convert.ToBase64String(expectedBytes);
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedBytes, result.Document);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_FallsBackToSupportingDocumentData_WhenDocumentDataIsEmpty()
+    {
+        var expectedBytes = _faker.Random.Bytes(64);
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = string.Empty;
+        orderDto.SupportingDocumentData = Convert.ToBase64String(expectedBytes);
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedBytes, result.Document);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_Throws_WhenBothDocumentDataAndSupportingDocumentDataAreNull()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = null;
+        orderDto.SupportingDocumentData = null;
+
+        Assert.Throws<InvalidOperationException>(() => orderDto.Adapt<JudicialAction>(_config));
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_Throws_WhenDocumentDataIsInvalidBase64()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = "not-valid-base64!!!";
+
+        Assert.Throws<InvalidOperationException>(() => orderDto.Adapt<JudicialAction>(_config));
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_Throws_WhenSupportingDocumentDataIsInvalidBase64()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = null;
+        orderDto.SupportingDocumentData = "not-valid-base64!!!";
+
+        Assert.Throws<InvalidOperationException>(() => orderDto.Adapt<JudicialAction>(_config));
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_MapsSignatureAppliedFromSigned()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.Signed = true;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.True(result.SignatureApplied);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_MapsCommentFromComments()
+    {
+        var expectedComment = _faker.Lorem.Sentence();
+        var orderDto = CreateOrderDto();
+        orderDto.Comments = expectedComment;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedComment, result.Comment);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_SetsEmptyOrderTerms()
+    {
+        var orderDto = CreateOrderDto();
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.NotNull(result.OrderTerms);
+        Assert.Empty(result.OrderTerms);
+    }
+
+    [Theory]
+    [InlineData(OrderStatus.Approved, "APPR")]
+    [InlineData(OrderStatus.Unapproved, "NAPP")]
+    [InlineData(OrderStatus.AwaitingDocumentation, "AFDC")]
+    public void OrderDto_To_JudicialAction_MapsDecisionCode(OrderStatus status, string expectedCode)
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.Status = status;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedCode, result.DecisionCode);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_SetsNullDecisionCode_ForUnmappedStatus()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.Status = OrderStatus.Pending;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Null(result.DecisionCode);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_SetsActionDateFromProcessedDate_WhenNotNull()
+    {
+        var expectedDate = _faker.Date.Recent();
+        var orderDto = CreateOrderDto();
+        orderDto.ProcessedDate = expectedDate;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedDate, result.ActionDate);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_SetsDefaultActionDate_WhenProcessedDateIsNull()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.ProcessedDate = null;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(default, result.ActionDate);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_SetsNullRejectedDate_WhenApproved()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.Status = OrderStatus.Approved;
+        orderDto.ProcessedDate = _faker.Date.Recent();
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Null(result.RejectedDate);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_SetsNullSignedDate_WhenNotSigned()
+    {
+        var orderDto = CreateOrderDto();
+        orderDto.Signed = false;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Null(result.SignedDate);
     }
 
     #endregion

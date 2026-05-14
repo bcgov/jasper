@@ -68,6 +68,10 @@ namespace Scv.Api.Tests.Services
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
 
+            var roles = new List<RoleDto>();
+            _roleServiceMock.Setup(x => x.GetRolesByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<RoleDto>>.Success(roles));
+
             var judges = new List<PersonSearchItem> { new() { UserId = 123, PersonId = 456 } };
             _judgeServiceMock.Setup(x => x.GetJudges(null, null))
                 .ReturnsAsync(judges);
@@ -96,6 +100,10 @@ namespace Scv.Api.Tests.Services
             var groups = new List<GroupDto> { new() { Id = "group1" } };
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            var roles = new List<RoleDto>();
+            _roleServiceMock.Setup(x => x.GetRolesByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<RoleDto>>.Success(roles));
 
             var judges = new List<PersonSearchItem> { new() { UserId = 123, PersonId = 456 } };
             _judgeServiceMock.Setup(x => x.GetJudges(null, null))
@@ -173,6 +181,58 @@ namespace Scv.Api.Tests.Services
 
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Failure("error"));
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenGetRolesByAliasesFails()
+        {
+            // Arrange
+            var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
+            _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
+                .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(["role"]));
+
+            var groups = new List<GroupDto> { new() { Id = "group1" } };
+            _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            _roleServiceMock.Setup(x => x.GetRolesByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<RoleDto>>.Failure("error"));
+
+            // Act
+            var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task UpdateUserFromPcss_ShouldReturnFalse_WhenGetRolesByAliasesReturnsNull()
+        {
+            // Arrange
+            var userDto = new UserDto { Email = "test@test.com", NativeGuid = "guid" };
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
+            _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", false))
+                .ReturnsAsync(pcssUser);
+
+            _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
+                .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(["role"]));
+
+            var groups = new List<GroupDto> { new() { Id = "group1" } };
+            _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            _roleServiceMock.Setup(x => x.GetRolesByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync((OperationResult<IEnumerable<RoleDto>>)null);
 
             // Act
             var result = await _pcssSyncService.UpdateUserFromPcss(userDto);
@@ -276,6 +336,7 @@ namespace Scv.Api.Tests.Services
                 JudgeId = 456,
                 IsActive = true,
                 GroupIds = ["group1"],
+                RoleIds = [],
                 FirstName = "John",
                 LastName = "Doe"
             };
@@ -289,6 +350,10 @@ namespace Scv.Api.Tests.Services
             var groups = new List<GroupDto> { new() { Id = "group1" } };
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+
+            var roles = new List<RoleDto>();
+            _roleServiceMock.Setup(x => x.GetRolesByAliases(It.IsAny<IEnumerable<string>>()))
+                .ReturnsAsync(OperationResult<IEnumerable<RoleDto>>.Success(roles));
 
             var judges = new List<PersonSearchItem> { new() { UserId = 123, PersonId = 456 } };
             _judgeServiceMock.Setup(x => x.GetJudges(null, null))

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bogus;
@@ -365,5 +366,100 @@ public class RoleServiceTests
         _mockRoleRepo.Verify(r => r.DeleteAsync(It.IsAny<Role>()), Times.Once);
         _mockGroupRepo.Verify(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Once);
         _mockGroupRepo.Verify(g => g.UpdateAsync(It.IsAny<Group>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRolesByAliases_ShouldReturnMappedRoles_WhenAliasesMatch()
+    {
+        var fakeAlias = _faker.Random.AlphaNumeric(10);
+        var fakeRoleId = _faker.Random.AlphaNumeric(10);
+        var fakeRoleName = _faker.Random.AlphaNumeric(10);
+
+        _mockRoleAliasRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync([new RoleAlias { Name = fakeAlias, RoleId = fakeRoleId }]);
+
+        _mockRoleRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync([new Role { Id = fakeRoleId, Name = fakeRoleName, Description = _faker.Lorem.Paragraph() }]);
+
+        var result = await _roleService.GetRolesByAliases([fakeAlias]);
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Payload);
+        Assert.Equal(fakeRoleId, result.Payload.First().Id);
+        _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
+        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRolesByAliases_ShouldReturnFailure_WhenNoAliasesMatch()
+    {
+        var fakeAlias = _faker.Random.AlphaNumeric(10);
+
+        _mockRoleAliasRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync([]);
+
+        var result = await _roleService.GetRolesByAliases([fakeAlias]);
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Role alias not found.", result.Errors[0]);
+        _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
+        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetRolesByAliases_ShouldReturnEmptyPayload_WhenAliasHasNoMatchingRole()
+    {
+        var fakeAlias = _faker.Random.AlphaNumeric(10);
+        var fakeRoleId = _faker.Random.AlphaNumeric(10);
+
+        _mockRoleAliasRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync([new RoleAlias { Name = fakeAlias, RoleId = fakeRoleId }]);
+
+        _mockRoleRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync([]);
+
+        var result = await _roleService.GetRolesByAliases([fakeAlias]);
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Empty(result.Payload);
+        _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
+        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRolesByAliases_ShouldDeduplicateRoles_WhenMultipleAliasesMapToSameRole()
+    {
+        var fakeAlias1 = _faker.Random.AlphaNumeric(10);
+        var fakeAlias2 = _faker.Random.AlphaNumeric(10);
+        var fakeRoleId = _faker.Random.AlphaNumeric(10);
+        var fakeRoleName = _faker.Random.AlphaNumeric(10);
+
+        _mockRoleAliasRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync([
+                new RoleAlias { Name = fakeAlias1, RoleId = fakeRoleId },
+                new RoleAlias { Name = fakeAlias2, RoleId = fakeRoleId }
+            ]);
+
+        _mockRoleRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync([new Role { Id = fakeRoleId, Name = fakeRoleName, Description = _faker.Lorem.Paragraph() }]);
+
+        var result = await _roleService.GetRolesByAliases([fakeAlias1, fakeAlias2]);
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Payload);
+        _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
+        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once);
     }
 }

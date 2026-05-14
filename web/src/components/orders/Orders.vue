@@ -16,12 +16,14 @@
         <v-expansion-panel-title class="px-3">
           <h5 class="m-0">
             For signing
-            {{ pendingOrders.length > 0 ? `(${pendingOrders.length})` : '' }}
+            {{
+              forSigningOrders.length > 0 ? `(${forSigningOrders.length})` : ''
+            }}
           </h5>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <OrdersDataTable
-            :data="pendingOrders"
+            :data="forSigningOrders"
             :viewCaseDetails="viewCaseDetails"
             :viewOrderDetails="viewOrderDetails"
             :columns="[
@@ -44,7 +46,6 @@
           <OrdersDataTable
             :data="completedOrders"
             :viewCaseDetails="viewCaseDetails"
-            :viewOrderDetails="viewOrderDetails"
             :columns="[
               'packageId',
               'priorityType',
@@ -92,10 +93,12 @@
     ordersStore.initialize(orderService, judgeId);
   });
 
-  const pendingOrders = computed(
+  const forSigningOrders = computed(
     () =>
       ordersStore?.orders?.filter(
-        (order) => order.status === OrderReviewStatus.Pending
+        (order) =>
+          order.status === OrderReviewStatus.Pending ||
+          order.status === OrderReviewStatus.AwaitingDocumentation
       ) ?? []
   );
 

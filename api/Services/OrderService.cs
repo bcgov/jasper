@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using CSOCommon.Clients.JudicialServices;
+using CSOCommon.Models;
 using Hangfire;
 using JCCommon.Clients.FileServices;
 using LazyCache;
@@ -17,7 +18,6 @@ using Scv.Core.ContractResolver;
 using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
-using Scv.Cso;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Order;
@@ -42,8 +42,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly string _requestAgencyIdentifierId;
     private readonly string _requestPartId;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ICsoClient _csoClient;
-    private readonly IUserService _userService;
+    private readonly IJudicialServicesClient _judicialClient;
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -57,8 +56,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IJudgeService judgeService,
         IBackgroundJobClient backgroundJobClient,
         IHttpContextAccessor httpContextAccessor,
-        ICsoClient csoClient,
-        IUserService userService
+        IJudicialServicesClient judicialClient
     ) : base(
             cache,
             mapper,
@@ -74,8 +72,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
         _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
         _httpContextAccessor = httpContextAccessor;
-        _csoClient = csoClient;
-        _userService = userService;
+        _judicialClient = judicialClient;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -134,7 +131,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             var existingOrders = await this.Repo
                 .FindAsync(o => o.OrderRequest.PhysicalFileId == fileId
                     && o.OrderRequest.Referral.SentToPartId.Equals(dto.Referral.SentToPartId)
-                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
+                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId
+                    && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.AwaitingDocumentation));
 
             var existingOrder = existingOrders?.FirstOrDefault();
             OrderDto orderDto;
@@ -278,6 +276,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         orderDto.SubmitAttempts = order.SubmitAttempts.HasValue
             ? order.SubmitAttempts.Value + 1
             : 1;
+        var correlationId = Guid.NewGuid();
+
         try
         {
             var actionDto = await MapToOrderAction(orderDto);
@@ -292,19 +292,12 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 return OperationResult.Failure("Failed to map Order to OrderAction.");
             }
 
-            var success = await _csoClient.SendOrderAsync(actionDto, default);
-            if (!success)
-            {
-                this.Logger.LogWarning("Order {OrderId} submission to CSO failed.", id);
-                orderDto.SubmitStatus = SubmitStatus.Error;
-                var failedStatusResult = await UpdateAsync(orderDto);
-                if (!failedStatusResult.Succeeded)
-                {
-                    return failedStatusResult;
-                }
+            double documentId = orderDto.OrderRequest?.Referral?.ReferredDocumentId.GetValueOrDefault() ?? 0;
 
-                return OperationResult.Failure("Failed to submit order to CSO.");
-            }
+            await _judicialClient.SaveJudicialActionAsync(
+                correlationId,
+                documentId,
+                actionDto);
 
             // Cleanup the successful, submitted order to remove potentially private document data and comments.
             orderDto.DocumentData = null;
@@ -392,7 +385,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         return OperationResult<OrderDto>.Success(orderDto);
     }
 
-    private async Task<OrderActionDto> MapToOrderAction(OrderDto orderDto)
+    private async Task<JudicialAction> MapToOrderAction(OrderDto orderDto)
     {
         var referral = orderDto.OrderRequest?.Referral;
         if (referral?.ReferredDocumentId == null)
@@ -401,44 +394,51 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return null;
         }
 
-        var userGuid = _httpContextAccessor.HttpContext?.User?.ProvjudUserGuid();
-        if (string.IsNullOrWhiteSpace(userGuid))
+        var judges = await _judgeService.GetJudges();
+        var judge = judges.FirstOrDefault(j => j.PersonId == orderDto.JudgeId);
+        if (judge == null)
         {
-            if (!referral.SentToPartId.HasValue)
-            {
-                this.Logger.LogError("Order {OrderId} is missing SentToPartId for submitter lookup.", orderDto.Id);
-                return null;
-            }
-
-            var user = await _userService.GetByJudgeIdAsync(orderDto.JudgeId);
-            userGuid = user?.NativeGuid;
-        }
-
-        if (string.IsNullOrWhiteSpace(userGuid))
-        {
-            this.Logger.LogError("Order {OrderId} is missing a submitter user guid.", orderDto.Id);
+            this.Logger.LogError("Judge with id: {JudgeId} is not found for Order {OrderId}.", orderDto.JudgeId, orderDto.Id);
             return null;
         }
 
-        var actionDto = Mapper.Map<OrderActionDto>(orderDto);
-        actionDto.UserGuid = userGuid;
+        var isValidAgencyId = double.TryParse(_requestAgencyIdentifierId, out var agencyId);
+        if (!isValidAgencyId)
+        {
+            this.Logger.LogError("Invalid AgencyIdentifierId configuration value: {AgencyIdentifierId}.", _requestAgencyIdentifierId);
+            return null;
+        }
+
+        if (judge.ParticipantId is null or 0)
+        {
+            this.Logger.LogError("Invalid ParticipantId for Judge with id: {JudgeId}.", orderDto.JudgeId);
+            return null;
+        }
+
+        var actionDto = Mapper.Map<JudicialAction>(orderDto);
         actionDto.OrderTerms ??= [];
+        actionDto.ReviewedBy = new Reviewer
+        {
+            AgencyId = agencyId,
+            PaasSeqNo = orderDto.OrderRequest?.Referral?.ReferredByPaasSeqNo.GetValueOrDefault() ?? 0,
+            PartId = judge.ParticipantId.Value
+        };
         if (orderDto.Status == OrderStatus.Unapproved && orderDto.ProcessedDate.HasValue)
         {
-            actionDto.RejectedDt = orderDto.ProcessedDate.Value.ToString(CultureInfo.InvariantCulture);
+            actionDto.RejectedDate = orderDto.ProcessedDate.Value;
         }
         else
         {
-            actionDto.RejectedDt = null;
+            actionDto.RejectedDate = null;
         }
 
         if (orderDto.Signed && orderDto.ProcessedDate.HasValue)
         {
-            actionDto.SignedDt = orderDto.ProcessedDate.Value.ToString(CultureInfo.InvariantCulture);
+            actionDto.SignedDate = orderDto.ProcessedDate.Value;
         }
         else
         {
-            actionDto.SignedDt = null;
+            actionDto.SignedDate = null;
         }
 
         return actionDto;

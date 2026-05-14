@@ -44,7 +44,6 @@ using Scv.Api.SignalR.Notifications;
 using Scv.Core.Exceptions;
 using Scv.Core.Handler;
 using Scv.Core.Helpers.Extensions;
-using Scv.Cso;
 using Scv.Cso.Infrastructure.Options;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;
@@ -91,6 +90,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentStrategy, CourtSummaryReportStrategy>();
             services.AddScoped<IDocumentStrategy, TranscriptStrategy>();
             services.AddScoped<IDocumentStrategy, TransitoryDocumentStrategy>();
+            services.AddScoped<IDocumentStrategy, OrderDocumentStrategy>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)
@@ -256,13 +256,6 @@ namespace Scv.Api.Infrastructure
                 .Bind(configuration.GetSection("CsoClientKeycloak"))
                 .ValidateDataAnnotations();
 
-            services
-                .AddHttpClient<ICsoClient, CsoClient>((sp, client) =>
-                {
-                    var options = sp.GetRequiredService<IOptions<CsoOptions>>().Value;
-                    client.BaseAddress = new Uri(options.BaseUrl.EnsureEndingForwardSlash());
-                })
-                .AddHttpMessageHandler<CsoBearerTokenHandler>();
             services
                 .AddHttpClient<CSOJudicialServices.IJudicialServicesClient, CSOJudicialServices.JudicialServicesClient>((sp, client) =>
                 {

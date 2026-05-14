@@ -1,7 +1,11 @@
 ﻿using System;
 using System.IO;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
+using CSOCommon.Models;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using Nutrient.NativeSDK.API.Exceptions;
@@ -15,14 +19,16 @@ namespace Scv.Api.Documents.Strategies
     {
         private readonly IJudicialServicesClient _judicialClient;
         private readonly IConfiguration _configuration;
+        private readonly ClaimsPrincipal _currentUser;
 
         public DocumentType Type => DocumentType.Order;
 
-        public OrderDocumentStrategy(IJudicialServicesClient judicialClient, IConfiguration configuration)
+        public OrderDocumentStrategy(IJudicialServicesClient judicialClient, IConfiguration configuration, ClaimsPrincipal currentUser)
         {
             _judicialClient = judicialClient;
             _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _configuration = configuration;
+            _currentUser = currentUser;
         }
 
         public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
@@ -37,11 +43,19 @@ namespace Scv.Api.Documents.Strategies
                 throw new InvalidArgumentException("Invalid agency id");
             }
 
-            var isValidDocumentId = double.TryParse(documentRequest.DocumentId, out var documentId);
+            if (string.IsNullOrWhiteSpace(documentRequest.DocumentId))
+            {
+                throw new InvalidArgumentException("Invalid document id.");
+            }
+
+            var decodedDocumentId = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(documentRequest.DocumentId));
+            var isValidDocumentId = double.TryParse(decodedDocumentId, out var documentId);
             if (!isValidDocumentId)
             {
-                throw new InvalidArgumentException("Invalid document id");
+                throw new InvalidArgumentException("Invalid document id.");
             }
+
+            var userGuid = _currentUser.ProvjudUserGuid() ?? _currentUser.IdirUserGuid();
 
             using var response = await _judicialClient.GetJudicialDocumentAsync(
                 transactionId,
@@ -49,7 +63,8 @@ namespace Scv.Api.Documents.Strategies
                 documentId,
                 DocumentApplicationName.CSO,
                 _configuration.GetNonEmptyValue("Request:ApplicationCd"),
-                "Y");
+                "Y",
+                userGuid?.ToUpper());
 
             await response.Stream.CopyToAsync(documentResponseStreamCopy);
 

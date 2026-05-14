@@ -5,6 +5,8 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Bogus;
+using CSOCommon.Clients.JudicialServices;
+using CSOCommon.Models;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using LazyCache.Providers;
@@ -18,7 +20,6 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
-using Scv.Cso;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Order;
@@ -36,8 +37,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<ILogger<OrderService>> _mockLogger;
     private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
-    private readonly Mock<ICsoClient> _mockCsoClient;
-    private readonly Mock<IUserService> _mockUserService;
+    private readonly Mock<IJudicialServicesClient> _mockJudicialClient;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -65,10 +65,9 @@ public class OrderServiceTests : ServiceTestBase
         _mockConfiguration = new Mock<IConfiguration>();
         _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-        _mockCsoClient = new Mock<ICsoClient>();
-        _mockUserService = new Mock<IUserService>();
+        _mockJudicialClient = new Mock<IJudicialServicesClient>();
 
-        _requestAgencyIdentifierId = _faker.Random.AlphaNumeric(10);
+        _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
         _applicationCode = "SCV";
 
@@ -86,8 +85,7 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
             _mockHttpContextAccessor.Object,
-            _mockCsoClient.Object,
-            _mockUserService.Object);
+            _mockJudicialClient.Object);
     }
 
     private void SetupConfiguration()
@@ -967,7 +965,7 @@ public class OrderServiceTests : ServiceTestBase
         Assert.False(result.Succeeded);
         Assert.Contains("Failed to map Order to OrderAction.", result.Errors);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
-        _mockCsoClient.Verify(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default), Times.Never);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
     }
 
     [Fact]
@@ -985,14 +983,25 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        _mockCsoClient
-            .Setup(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default))
-            .ReturnsAsync(true);
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
 
         var result = await _orderService.SubmitOrder(order.Id);
 
         Assert.True(result.Succeeded);
-        _mockCsoClient.Verify(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default), Times.Once);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
@@ -1011,16 +1020,21 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
             .Returns(Task.CompletedTask);
 
-        _mockCsoClient
-            .Setup(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default))
-            .ReturnsAsync(false);
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([new PersonSearchItem { PersonId = order.JudgeId, ParticipantId = order.OrderRequest.Referral.SentToPartId }]);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .ThrowsAsync(new Exception("CSO submission failed"));
 
         var result = await _orderService.SubmitOrder(order.Id);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Failed to submit order to CSO.", result.Errors);
-        _mockCsoClient.Verify(c => c.SendOrderAsync(It.IsAny<OrderActionDto>(), default), Times.Once);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
+        _mockJudgeService.Verify(d => d.GetJudges(null, null), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+        Assert.Contains("Failed to submit order to CSO.", result.Errors);
     }
 
     #endregion
@@ -1075,7 +1089,8 @@ public class OrderServiceTests : ServiceTestBase
                         DocumentTypeCd = _faker.Lorem.Word()
                     }
                 ]
-            }
+            },
+            JudgeId = _faker.Random.Int(1, 100),
         };
     }
 

@@ -20,7 +20,6 @@ using Moq;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
-using Scv.Cso;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Order;
@@ -39,7 +38,6 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly Mock<IJudicialServicesClient> _mockJudicialClient;
-    private readonly Mock<IUserService> _mockUserService;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -68,7 +66,6 @@ public class OrderServiceTests : ServiceTestBase
         _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         _mockJudicialClient = new Mock<IJudicialServicesClient>();
-        _mockUserService = new Mock<IUserService>();
 
         _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -88,8 +85,7 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
             _mockHttpContextAccessor.Object,
-            _mockJudicialClient.Object,
-            _mockUserService.Object);
+            _mockJudicialClient.Object);
     }
 
     private void SetupConfiguration()

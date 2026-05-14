@@ -37,6 +37,7 @@
       density="compact"
       rounded="pill"
       v-if="canToggleView"
+      data-testid="toggleView"
       class="ml-auto mx-2 border border-secondary"
     >
       <v-btn :value="true">Presiders</v-btn>
@@ -54,11 +55,10 @@
   import FilterDropdown from './FilterDropdown.vue';
   import FilterDropdownGrouped from './FilterDropdownGrouped.vue';
 
-  // Temporarily show for admins only until JASPER-792 is implemented.
   const allowedRolesForViewToggle = [
-    // RolesEnum.Raj,
-    // RolesEnum.AcjChiefJudge,
-    // RolesEnum.PoManager,
+    RolesEnum.Raj,
+    RolesEnum.AcjChiefJudge,
+    RolesEnum.PoManager,
     RolesEnum.Admin,
   ];
 

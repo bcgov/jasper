@@ -11,10 +11,15 @@ resource "aws_api_gateway_deployment" "apigw_deployment" {
   rest_api_id = aws_api_gateway_rest_api.apigw.id
 
   triggers = {
-    redeployment = sha1(jsonencode({
-      binary_media_types = aws_api_gateway_rest_api.apigw.binary_media_types
-      body               = aws_api_gateway_rest_api.apigw.body
-    }))
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_rest_api.apigw.binary_media_types,
+      aws_api_gateway_rest_api_policy.apigw_rest_api_policy.policy,
+      aws_api_gateway_resource.root_resource.id,
+      aws_api_gateway_method.root_method.id,
+      aws_api_gateway_integration.lambda_integration.id,
+      aws_api_gateway_authorizer.authorizer.id,
+      aws_api_gateway_authorizer.authorizer.authorizer_uri,
+    ]))
   }
   lifecycle {
     create_before_destroy = true

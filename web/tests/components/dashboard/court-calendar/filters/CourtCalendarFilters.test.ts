@@ -2,7 +2,9 @@ import ActivityClassFilter from '@/components/dashboard/court-calendar/filters/A
 import CourtCalendarFilters from '@/components/dashboard/court-calendar/filters/CourtCalendarFilters.vue';
 import FilterDropdown from '@/components/dashboard/court-calendar/filters/FilterDropdown.vue';
 import FilterDropdownGrouped from '@/components/dashboard/court-calendar/filters/FilterDropdownGrouped.vue';
+import { useCommonStore } from '@/stores';
 import { Activity, Presider } from '@/types';
+import { RolesEnum, UserInfo } from '@/types/common';
 import { LocationInfo } from '@/types/courtlist';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
@@ -484,6 +486,52 @@ describe('CourtCalendarFilters.vue', () => {
 
       const emitted = wrapper.emitted('update:selectedPresiders');
       expect(emitted).toBeUndefined();
+    });
+  });
+
+  describe('canToggleView', () => {
+    const setUserRoles = (roles: RolesEnum[]) => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = {
+        roles,
+        userType: 'Staff',
+        enableArchive: false,
+        subRole: '',
+        isSupremeUser: 'false',
+        isActive: true,
+        agencyCode: 'TST',
+        userId: faker.string.uuid(),
+        judgeId: faker.number.int({ min: 1, max: 9999 }),
+        judgeHomeLocationId: faker.number.int({ min: 1, max: 100 }),
+        email: faker.internet.email(),
+        userTitle: '',
+      } satisfies UserInfo;
+    };
+
+    it('hides the view toggle when the user has no allowed role', () => {
+      setUserRoles([RolesEnum.Judge]);
+      const wrapper = mountComponent();
+      expect(wrapper.find('[data-testid="toggleView"]').exists()).toBe(false);
+    });
+
+    it.each([
+      [RolesEnum.Raj],
+      [RolesEnum.AcjChiefJudge],
+      [RolesEnum.PoManager],
+      [RolesEnum.Admin],
+    ])('shows the view toggle for role %s', (role) => {
+      setUserRoles([role]);
+      const wrapper = mountComponent();
+      expect(wrapper.find('[data-testid="toggleView"]').exists()).toBe(true);
+    });
+
+    it('shows the Presiders and Activities buttons inside the toggle', () => {
+      setUserRoles([RolesEnum.Admin]);
+      const wrapper = mountComponent();
+      const toggle = wrapper.find('[data-testid="toggleView"]');
+
+      expect(toggle.text()).toContain('Presiders');
+      expect(toggle.text()).toContain('Activities');
     });
   });
 });

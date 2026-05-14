@@ -25,6 +25,7 @@ public class RoleAliasSeeder(ILogger<RoleAliasSeeder> logger) : SeederBase<Jaspe
             [RoleAlias.JUDGE_ALT] = Role.JUDGE,
             [RoleAlias.JUDGE_TRAINING] = Role.ADMIN,
             [RoleAlias.OCJ_HELP_DESK] = Role.OCJ_SERVICE_DESK,
+            [RoleAlias.OCJ_HELP_DESK_ALT] = Role.OCJ_SERVICE_DESK,
             [RoleAlias.OCJ_IT] = Role.OCJ_SERVICE_DESK,
             [RoleAlias.PRODUCT_MANAGER] = Role.PO_MANAGER,
             [RoleAlias.PRODUCT_MANAGER_ALT] = Role.PO_MANAGER,

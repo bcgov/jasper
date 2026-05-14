@@ -103,9 +103,8 @@ describe('Orders.vue', () => {
 
     mockOrderService.getOrders.mockResolvedValue([]);
 
-    const { useOrdersStore, useCourtFileSearchStore } = await import(
-      '@/stores'
-    );
+    const { useOrdersStore, useCourtFileSearchStore } =
+      await import('@/stores');
     vi.mocked(useOrdersStore).mockReturnValue(mockOrdersStore);
     vi.mocked(useCourtFileSearchStore).mockReturnValue(
       mockCourtFileSearchStore
@@ -162,9 +161,9 @@ describe('Orders.vue', () => {
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
-    expect(vm.pendingOrders).toHaveLength(1);
-    expect(vm.pendingOrders[0].id).toBe(mockPendingOrder.id);
-    expect(vm.pendingOrders[0].status).toBe(OrderReviewStatus.Pending);
+    expect(vm.forSigningOrders).toHaveLength(1);
+    expect(vm.forSigningOrders[0].id).toBe(mockPendingOrder.id);
+    expect(vm.forSigningOrders[0].status).toBe(OrderReviewStatus.Pending);
   });
 
   it('filters completed orders correctly', () => {
@@ -182,7 +181,7 @@ describe('Orders.vue', () => {
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
-    expect(vm.pendingOrders).toHaveLength(0);
+    expect(vm.forSigningOrders).toHaveLength(0);
     expect(vm.completedOrders).toHaveLength(0);
   });
 
@@ -192,15 +191,14 @@ describe('Orders.vue', () => {
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
-    expect(vm.pendingOrders).toHaveLength(0);
+    expect(vm.forSigningOrders).toHaveLength(0);
     expect(vm.completedOrders).toHaveLength(0);
   });
 
   describe('viewCaseDetails', () => {
     it('opens criminal file in new window for criminal court class', async () => {
-      const { getCourtClassLabel, isCourtClassLabelCriminal } = await import(
-        '@/utils/utils'
-      );
+      const { getCourtClassLabel, isCourtClassLabelCriminal } =
+        await import('@/utils/utils');
       vi.mocked(getCourtClassLabel).mockReturnValue('Criminal');
       vi.mocked(isCourtClassLabelCriminal).mockReturnValue(true);
 
@@ -233,9 +231,8 @@ describe('Orders.vue', () => {
     });
 
     it('opens civil file in new window for non-criminal court class', async () => {
-      const { getCourtClassLabel, isCourtClassLabelCriminal } = await import(
-        '@/utils/utils'
-      );
+      const { getCourtClassLabel, isCourtClassLabelCriminal } =
+        await import('@/utils/utils');
       vi.mocked(getCourtClassLabel).mockReturnValue('Civil');
       vi.mocked(isCourtClassLabelCriminal).mockReturnValue(false);
 

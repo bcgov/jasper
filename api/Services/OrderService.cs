@@ -42,7 +42,6 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly string _requestAgencyIdentifierId;
     private readonly string _requestPartId;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IUserService _userService;
     private readonly IJudicialServicesClient _judicialClient;
 
     public override string CacheName => "GetOrdersAsync";
@@ -57,8 +56,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IJudgeService judgeService,
         IBackgroundJobClient backgroundJobClient,
         IHttpContextAccessor httpContextAccessor,
-        IJudicialServicesClient judicialClient,
-        IUserService userService
+        IJudicialServicesClient judicialClient
     ) : base(
             cache,
             mapper,
@@ -74,7 +72,6 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
         _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
         _httpContextAccessor = httpContextAccessor;
-        _userService = userService;
         _judicialClient = judicialClient;
     }
 
@@ -412,13 +409,19 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return null;
         }
 
+        if (judge.ParticipantId is null or 0)
+        {
+            this.Logger.LogError("Invalid ParticipantId for Judge with id: {JudgeId}.", orderDto.JudgeId);
+            return null;
+        }
+
         var actionDto = Mapper.Map<JudicialAction>(orderDto);
         actionDto.OrderTerms ??= [];
         actionDto.ReviewedBy = new Reviewer
         {
             AgencyId = agencyId,
             PaasSeqNo = orderDto.OrderRequest?.Referral?.ReferredByPaasSeqNo.GetValueOrDefault() ?? 0,
-            PartId = judge.ParticipantId.GetValueOrDefault(),
+            PartId = judge.ParticipantId.Value
         };
         if (orderDto.Status == OrderStatus.Unapproved && orderDto.ProcessedDate.HasValue)
         {

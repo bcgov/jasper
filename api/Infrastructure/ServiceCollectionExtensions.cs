@@ -44,7 +44,6 @@ using Scv.Api.SignalR.Notifications;
 using Scv.Core.Exceptions;
 using Scv.Core.Handler;
 using Scv.Core.Helpers.Extensions;
-using Scv.Cso;
 using Scv.Cso.Infrastructure.Options;
 using Scv.Db.Contexts;
 using Scv.Db.Repositories;

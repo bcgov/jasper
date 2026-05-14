@@ -54,8 +54,10 @@ public class OrderMapping : IRegister
         config.NewConfig<OrderDto, JudicialAction>()
             .Map(dest => dest.SignatureApplied, src => src.Signed)
             .Map(dest => dest.Comment, src => src.Comments)
-            .Map(dest => dest.Document, src => FromBase64OrNull(
-                !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData)).Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
+            .Map(dest => dest.Document, src => FromBase64OrThrow(
+                !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData,
+                nameof(src.DocumentData)))
+            .Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
             .AfterMapping((src, dest) =>
             {
                 dest.ActionDate = src.ProcessedDate.HasValue ? src.ProcessedDate.Value : default;
@@ -87,4 +89,21 @@ public class OrderMapping : IRegister
 
     private static byte[] FromBase64OrNull(string value) =>
         string.IsNullOrWhiteSpace(value) ? [] : Convert.FromBase64String(value);
+
+    private static byte[] FromBase64OrThrow(string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"'{fieldName}' is required for order submission but was null or empty.");
+        }
+
+        try
+        {
+            return Convert.FromBase64String(value);
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidOperationException($"'{fieldName}' contains invalid base64 content and cannot be decoded.", ex);
+        }
+    }
 }

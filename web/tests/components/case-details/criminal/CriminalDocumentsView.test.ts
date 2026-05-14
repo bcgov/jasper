@@ -142,14 +142,12 @@ describe('CriminalDocumentsView.vue', () => {
   });
 
   it('computes unfilteredDocuments correctly', async () => {
-    wrapper.vm.selectedCategory = 'ROP';
-
     const unfilteredDocuments = wrapper.vm.unfilteredDocuments;
     expect(unfilteredDocuments).toHaveLength(2);
   });
 
   it('filters documents by category', async () => {
-    wrapper.vm.selectedCategory = 'bail';
+    wrapper.vm.selectedCategories = ['bail'];
 
     const documents = wrapper.vm.documents;
     expect(documents).toHaveLength(1);
@@ -173,7 +171,7 @@ describe('CriminalDocumentsView.vue', () => {
       },
     });
 
-    (wrapper.vm as any).selectedCategory = 'bail';
+    (wrapper.vm as any).selectedCategories = ['bail'];
     await nextTick();
 
     const documents = (wrapper.vm as any).documents;
@@ -554,7 +552,7 @@ describe('CriminalDocumentsView.vue', () => {
     });
 
     it('displays original category name when no special formatting applies', async () => {
-      wrapper.vm.selectedCategory = 'bail';
+      wrapper.vm.selectedCategories = ['bail'];
       await nextTick();
 
       const sections = wrapper.findAll('v-card-text .text-h5');
@@ -648,7 +646,7 @@ describe('CriminalDocumentsView.vue', () => {
       expect(documentIds[2]).toContain('145');
 
       // Filter to only show transcripts
-      wrapper.vm.selectedCategory = 'Transcript';
+      wrapper.vm.selectedCategories = ['Transcript'];
       await nextTick();
 
       const filteredDocuments = wrapper.vm.documents;
@@ -704,5 +702,36 @@ describe('CriminalDocumentsView.vue', () => {
       expect(documentIds[0]).toContain('IMG-001');
       expect(documentIds[1]).toContain('IMG-002');
     });
+  });
+
+  it('removes stale selected categories that are no longer valid', async () => {
+    wrapper.vm.selectedCategories = ['bail'];
+
+    await wrapper.setProps({
+      participants: [
+        {
+          fullName: 'New Person',
+          lastNm: 'Person',
+          givenNm: 'New',
+          profSeqNo: 99,
+          keyDocuments: [],
+          document: [
+            {
+              issueDate: '2023-09-01',
+              documentTypeDescription: 'Only Transcript',
+              category: 'Transcript',
+              documentPageCount: 1,
+              imageId: '999',
+              docmDispositionDsc: 'Disposition',
+            },
+          ],
+        },
+      ],
+    });
+
+    await nextTick();
+
+    expect(wrapper.vm.selectedCategories).toEqual([]);
+    expect(wrapper.vm.documentsSectionTitle).toBe('All Documents');
   });
 });

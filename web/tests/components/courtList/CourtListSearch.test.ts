@@ -7,7 +7,14 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
-vi.mock('@/stores');
+vi.mock('@/stores', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/stores')>();
+  return {
+    ...actual,
+    useCommonStore: vi.fn(),
+    useCourtListStore: vi.fn(),
+  };
+});
 vi.mock('@/services');
 
 describe('CourtListSearch.vue', () => {

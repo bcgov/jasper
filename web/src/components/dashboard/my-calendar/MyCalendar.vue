@@ -33,6 +33,7 @@
   </template>
 </template>
 <script setup lang="ts">
+  import { useAutoRefresh } from '@/composables/useAutoRefresh';
   import { DashboardService } from '@/services';
   import { CalendarDay } from '@/types';
   import { ActivityClassEnum } from '@/types/common';
@@ -41,7 +42,15 @@
   import dayGridPlugin from '@fullcalendar/daygrid';
   import FullCalendar from '@fullcalendar/vue3';
   import { mdiListBoxOutline } from '@mdi/js';
-  import { computed, inject, onMounted, ref, watch, watchEffect } from 'vue';
+  import {
+    computed,
+    inject,
+    onMounted,
+    onUnmounted,
+    ref,
+    watch,
+    watchEffect,
+  } from 'vue';
   import MyCalendarDay from './MyCalendarDay.vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
@@ -64,6 +73,11 @@
   const calendarData = ref<CalendarDay[]>([]);
   const expandedDate = ref<string | null>(null);
   const calendarRef = ref();
+  const { setupAutoRefresh } = useAutoRefresh(
+    () => !!selectedDate.value,
+    () => loadCalendarData(),
+    () => !!isCalendarLoading.value
+  );
 
   let startDay = new Date(
     selectedDate.value.getFullYear(),
@@ -77,8 +91,20 @@
   );
 
   onMounted(async () => {
+    globalThis.addEventListener('online', handleOnline);
     await loadCalendarData();
   });
+
+  onUnmounted(() => {
+    globalThis.removeEventListener('online', handleOnline);
+  });
+
+  const handleOnline = async () => {
+    isCalendarLoading.value = false;
+    if (selectedDate.value) {
+      await loadCalendarData();
+    }
+  };
 
   watch(selectedDate, async (newDate) => {
     if (newDate) {
@@ -108,6 +134,7 @@
       console.error('Failed to load calendar data:', error);
     } finally {
       isCalendarLoading.value = false;
+      setupAutoRefresh();
     }
   };
 

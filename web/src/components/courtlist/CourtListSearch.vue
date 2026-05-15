@@ -88,10 +88,10 @@
 </template>
 
 <script setup lang="ts">
+  import { useAutoRefresh } from '@/composables/useAutoRefresh';
   import { LocationService } from '@/services';
   import { CourtListService } from '@/services/CourtListService';
   import { useCommonStore } from '@/stores';
-  import { useSnackbarStore } from '@/stores/SnackbarStore';
   import { ApiResponse } from '@/types/ApiResponse';
   import { CourtListSearchResult, LocationInfo } from '@/types/courtlist';
   import { mdiClose } from '@mdi/js';
@@ -127,14 +127,8 @@
   const selectedCourtRoom = ref();
   const formSubmit = ref(false);
   const judgeId = ref(commonStore.userInfo?.judgeId);
-  const TEN_MINUTES = 600000;
-  const NINE_MINUTES = 540000;
-  const ONE_MINUTE = 60000;
   const MY_SCHEDULE = 'my_schedule';
   const ROOM_SCHEDULE = 'room_schedule';
-  const courtRefreshInterval = TEN_MINUTES;
-  const warningRefreshInterval = NINE_MINUTES;
-  const warningTime = ONE_MINUTE;
   const schedule = ref(MY_SCHEDULE);
   const shortHandDate = computed(() =>
     date.value ? date.value.toISOString().substring(0, 10) : ''
@@ -147,9 +141,11 @@
   const courtListService = inject<CourtListService>('courtListService');
   const locationsAndCourtRooms = ref<LocationInfo[]>();
   const locationsService = inject<LocationService>('locationService');
-  const snackBarStore = useSnackbarStore();
-  let searchInterval: NodeJS.Timeout;
-  let warningInterval: NodeJS.Timeout;
+  const { setupAutoRefresh } = useAutoRefresh(
+    () => !!appliedDate.value,
+    () => searchForCourtList(true),
+    () => !!isSearching.value
+  );
 
   watch(schedule, () => scheduleChanged());
   watch(
@@ -177,12 +173,23 @@
     setupAutoRefresh()
   );
 
+  const handleOnline = () => {
+    isSearching.value = false;
+    searchAllowed.value = true;
+    if (appliedDate.value) {
+      searchForCourtList();
+    }
+  };
+
   onMounted(() => {
     searchForCourtList();
     getListOfAvailableCourts();
+    globalThis.addEventListener('online', handleOnline);
   });
 
-  onUnmounted(() => clearTimers());
+  onUnmounted(() => {
+    globalThis.removeEventListener('online', handleOnline);
+  });
 
   const getListOfAvailableCourts = async () => {
     locationsAndCourtRooms.value = await locationsService?.getLocations(true);
@@ -219,19 +226,17 @@
         shortHandDate.value,
         judgeId.value!
       );
-      emit('courtListSearched', courtListResp);
-    } catch (error: CustomAPIError<ApiResponse<CourtListSearchResult>>) {
-      courtListResp = error.originalError.response.data;
+    } catch (error) {
+      console.error('Failed to fetch court list:', error);
     } finally {
       emit('courtListSearched', courtListResp);
+      isMounted.value = true;
+      searchAllowed.value = true;
+      isDataReady.value = true;
+      isSearching.value = false;
+      formSubmit.value = false;
+      setupAutoRefresh();
     }
-
-    isMounted.value = true;
-    searchAllowed.value = true;
-    isDataReady.value = true;
-    isSearching.value = false;
-    formSubmit.value = false;
-    setupAutoRefresh();
   };
   const scheduleChanged = () => {
     selectedCourtLocation.value = getJudgeHomeLocation();
@@ -259,34 +264,5 @@
     searchAllowed.value = false;
     appliedDate.value = date.value ?? null;
     getCourtListDetails();
-  };
-
-  const setupAutoRefresh = () => {
-    clearTimers();
-    searchInterval = setInterval(() => {
-      if (appliedDate.value) {
-        searchForCourtList(true);
-      }
-    }, courtRefreshInterval);
-    warningInterval = setInterval(() => {
-      if (appliedDate.value && !isSearching.value) {
-        showWarning();
-      }
-    }, warningRefreshInterval);
-  };
-
-  const showWarning = () => {
-    snackBarStore.showSnackbar(
-      'This page will refresh in 1 minute to ensure you see the latest updates.',
-      '#b4e6ff',
-      '🔄 Heads-up!',
-      warningTime
-    );
-  };
-
-  const clearTimers = () => {
-    clearInterval(searchInterval);
-    clearInterval(warningInterval);
-    snackBarStore.hideSnackbar();
   };
 </script>

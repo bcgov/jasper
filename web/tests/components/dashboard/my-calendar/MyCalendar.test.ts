@@ -7,6 +7,7 @@ import {
 } from '@/types';
 import { faker } from '@faker-js/faker';
 import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
@@ -52,6 +53,7 @@ describe('MyCalendar.vue', () => {
   });
 
   beforeEach(() => {
+    setActivePinia(createPinia());
     dashboardService = {
       getMySchedule: vi.fn().mockResolvedValue({ payload: [] }),
     };

@@ -170,13 +170,6 @@ export enum CalendarViewEnum {
   WeekView = 'dayGridWeek',
 }
 
-export interface AppearanceDocumentRequest {
-  physicalFileId: string;
-  appearanceId: string;
-  participantId: string;
-  courtClassCd: string;
-}
-
 export interface DocumentBundleResponse {
   binders: Binder[];
   pdfResponse: GeneratePdfResponse;

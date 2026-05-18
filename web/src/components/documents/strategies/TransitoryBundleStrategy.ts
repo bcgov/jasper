@@ -1,7 +1,4 @@
-import {
-  OutlineItem,
-  PDFViewerStrategy,
-} from '@/components/documents/FileViewer.vue';
+import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
 import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
 import {
   FileMetadataDto,

@@ -22,7 +22,10 @@
       const queryType = route.query.type as string;
       switch (queryType.toLowerCase()) {
         case 'bundle':
-          return usePDFStrategy(PDFViewerType.BUNDLE);
+        case 'criminal-bundle':
+          return usePDFStrategy(PDFViewerType.CRIMINAL_BUNDLE);
+        case 'judicial-binder':
+          return usePDFStrategy(PDFViewerType.JUDICIAL_BINDER);
         case 'order':
           return usePDFStrategy(PDFViewerType.ORDER);
         case 'transitory-bundle':

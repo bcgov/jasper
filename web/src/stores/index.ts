@@ -11,13 +11,14 @@ export function registerPinia(app: App) {
 
 export default pinia;
 
-export { useBundleStore } from './BundleStore';
 export { useCivilFileStore } from './CivilFileStore';
 export { useCommonStore } from './CommonStore';
 export { useCourtFileSearchStore } from './CourtFileSearchStore';
 export { useCourtListStore } from './CourtListStore';
 export { useCriminalFileStore } from './CriminalFileStore';
 export { useDarsStore } from './DarsStore';
+export { useJudicialBinderStore } from './JudicialBinderStore';
+export { useCriminalDocumentBundleStore } from './CriminalDocumentBundleStore';
 export { useOrdersStore } from './OrdersStore';
 export { usePDFViewerStore } from './PDFViewerStore';
 export { useSnackbarStore } from './SnackbarStore';

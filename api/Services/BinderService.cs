@@ -27,6 +27,7 @@ public interface IBinderService : ICrudService<BinderDto>
 {
     Task<OperationResult<List<BinderDto>>> GetByLabels(Dictionary<string, string> labels);
     Task<OperationResult<DocumentBundleResponse>> CreateDocumentBundle(List<Dictionary<string, string>> contexts, Dictionary<string, List<string>> filters = null);
+    Task<OperationResult<DocumentBundleResponse>> ViewDocumentBundle(List<Dictionary<string, string>> contexts, Dictionary<string, List<string>> filters = null);
     Task<List<BinderDto>> SearchBinders(SearchBindersCriteria criteria = null);
     Task<OperationResult<BinderDto>> InternalUpdateAsync(BinderDto dto);
 }
@@ -89,6 +90,23 @@ public class BinderService(
             if (!processorValidation.Succeeded)
             {
                 return OperationResult<BinderDto>.Failure([.. processorValidation.Errors]);
+            }
+
+            var labels = binderProcessor.Binder?.Labels;
+            if (labels == null || labels.Count == 0)
+            {
+                return OperationResult<BinderDto>.Failure("Binder labels are required.");
+            }
+
+            var existingBindersResult = await GetByLabels(labels);
+            if (!existingBindersResult.Succeeded)
+            {
+                return OperationResult<BinderDto>.Failure([.. existingBindersResult.Errors]);
+            }
+
+            if (existingBindersResult.Payload.Count > 0)
+            {
+                return OperationResult<BinderDto>.Failure("A binder with the same labels already exists.");
             }
 
             var processResult = await binderProcessor.ProcessAsync();
@@ -161,14 +179,27 @@ public class BinderService(
         throw new NotImplementedException("Binder validations are executed via BinderProcessors");
     }
 
+    public async Task<OperationResult<DocumentBundleResponse>> ViewDocumentBundle(List<Dictionary<string, string>> contexts, Dictionary<string, List<string>> filters = null)
+    {
+        return await BuildDocumentBundle(contexts, ViewBinders, filters);
+    }
+
     public async Task<OperationResult<DocumentBundleResponse>> CreateDocumentBundle(List<Dictionary<string, string>> contexts, Dictionary<string, List<string>> filters = null)
+    {
+        return await BuildDocumentBundle(contexts, InitializeBinders, filters);
+    }
+
+    private async Task<OperationResult<DocumentBundleResponse>> BuildDocumentBundle(
+        List<Dictionary<string, string>> contexts,
+        Func<List<Dictionary<string, string>>, Task<List<BinderDto>>> binderProvider,
+        Dictionary<string, List<string>> filters = null)
     {
         var correlationId = Guid.NewGuid();
         Logger.LogInformation("Starting document bundling/merging process. CorrelationId: {CorrelationId}", correlationId);
 
         try
         {
-            var binders = await InitializeBinders(contexts);
+            var binders = await binderProvider(contexts);
 
             if (binders.Count == 0)
             {
@@ -258,6 +289,33 @@ public class BinderService(
         DocumentCategories.REPORT => 3,
         _ => 4
     };
+
+    private async Task<List<BinderDto>> ViewBinders(List<Dictionary<string, string>> contexts)
+    {
+        var binders = new List<BinderDto>();
+        foreach (var context in contexts)
+        {
+            // See if binder(s) already exists for the given context
+            var bindersResult = await GetByLabels(context);
+            if (!bindersResult.Succeeded)
+            {
+                Logger.LogWarning("Failed to get binder(s) for the current context: {Error}", string.Join(",", bindersResult.Errors));
+
+                throw new InvalidOperationException("Failed to get binder(s) for the current context.");
+            }
+
+            if (bindersResult.Payload.Count == 0)
+            {
+                Logger.LogWarning("Binder missing for the current context: {Context}", string.Join(",", context));
+                throw new InvalidOperationException("Binder missing for the current context.");
+            }
+            else
+            {
+                binders.AddRange(await this.ProcessExistingBinders(bindersResult.Payload));
+            }
+        }
+        return binders;
+    }
 
     private async Task<List<BinderDto>> InitializeBinders(List<Dictionary<string, string>> contexts)
     {

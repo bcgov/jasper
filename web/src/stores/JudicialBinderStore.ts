@@ -1,25 +1,25 @@
 import { defineStore } from 'pinia';
 import { UUIDTypes } from 'uuid';
 import { Binder } from '@/types/Binder';
-import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
-import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
+import { BinderDocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
 
-export const useBundleStore = defineStore('BundleStore', {
+export const useJudicialBinderStore = defineStore('JudicialBinderStore', {
   persist: true,
   state: () => ({
-    bundles: [] as Bundle[],
-    request: {} as DocumentBundleRequest,
-    appearanceRequests: [] as appearanceRequest[],
+    bundles: [] as JudicialBinderBundle[],
+    request: {} as BinderDocumentBundleRequest,
   }),
   getters: {
-    getBundle: (state): ((id: UUIDTypes) => Bundle | undefined) => {
+    getBundle: (
+      state
+    ): ((id: UUIDTypes) => JudicialBinderBundle | undefined) => {
       return (id: UUIDTypes) => {
         const bundle = state.bundles.find((b) => b.id === id);
         return bundle;
       };
     },
     getRequests: (state) => state.request,
-    getAppearanceRequests: (state) => state.appearanceRequests,
   },
   actions: {
     addBundle(id: UUIDTypes): void {
@@ -30,7 +30,7 @@ export const useBundleStore = defineStore('BundleStore', {
         groupKeyTwo: '',
         documentName: '',
         physicalFileId: '',
-        requests: {} as DocumentBundleRequest,
+        requests: {} as BinderDocumentBundleRequest,
       });
     },
     addBinder(binder: Binder, bundleId: UUIDTypes): void {
@@ -41,24 +41,22 @@ export const useBundleStore = defineStore('BundleStore', {
     },
     clearBundles(): void {
       this.bundles.length = 0;
-      this.appearanceRequests = [];
-      this.request = {} as DocumentBundleRequest;
+      this.request = {} as BinderDocumentBundleRequest;
     },
   },
 });
 
-export type Bundle = {
+export type JudicialBinderBundle = {
   id: UUIDTypes;
   groupKeyOne: string;
   groupKeyTwo: string;
   physicalFileId: string;
   documentName: string;
-  requests: DocumentBundleRequest;
+  requests: BinderDocumentBundleRequest;
   binders: Binder[];
 };
 
-export type appearanceRequest = {
-  appearance: AppearanceDocumentRequest;
+export type JudicialBinderDocumentRequest = {
+  binder: BinderDocumentRequest;
   fileNumber: string;
-  fullName?: string;
 };

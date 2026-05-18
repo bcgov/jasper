@@ -1,7 +1,4 @@
-import {
-  OutlineItem,
-  PDFViewerStrategy,
-} from '@/components/documents/FileViewer.vue';
+import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { FilesService } from '@/services/FilesService';
 import { usePDFViewerStore } from '@/stores';

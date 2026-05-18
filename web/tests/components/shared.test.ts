@@ -1,11 +1,29 @@
 import shared from '@/components/shared';
+import {
+  useJudicialBinderStore,
+  useCriminalDocumentBundleStore,
+} from '@/stores';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtDocumentType } from '@/types/shared';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/documents/DocumentUtils', () => ({
   prepareCivilDocumentData: vi.fn(),
   getCivilDocumentType: vi.fn(),
+}));
+
+vi.mock('@/stores', () => ({
+  useCriminalDocumentBundleStore: vi.fn(),
+  useJudicialBinderStore: vi.fn(),
+  usePDFViewerStore: vi.fn(),
+  useCommonStore: vi.fn(),
+  useCivilFileStore: vi.fn(),
+  useCourtFileSearchStore: vi.fn(),
+  useCourtListStore: vi.fn(),
+  useCriminalFileStore: vi.fn(),
+  useDarsStore: vi.fn(),
+  useOrdersStore: vi.fn(),
+  useSnackbarStore: vi.fn(),
 }));
 
 describe('shared.openCivilDocument', () => {
@@ -614,5 +632,270 @@ describe('shared.getDocumentDisplayName', () => {
     );
 
     expect(documentName).toBe('Application for an Order - CFCSA');
+  });
+});
+
+describe('shared.openCourtListKeyDocuments', () => {
+  let mockKeyDocumentStore: any;
+  let mockWindowOpen: any;
+  let replaceWindowTitleSpy: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockKeyDocumentStore = {
+      request: {},
+      appearanceRequests: [],
+    };
+
+    (useCriminalDocumentBundleStore as any).mockReturnValue(
+      mockKeyDocumentStore
+    );
+
+    mockWindowOpen = vi.fn(() => ({ focus: vi.fn() }));
+    window.open = mockWindowOpen;
+
+    replaceWindowTitleSpy = vi
+      .spyOn(shared, 'replaceWindowTitle')
+      .mockImplementation((newWindow) => newWindow);
+  });
+
+  afterEach(() => {
+    replaceWindowTitleSpy.mockRestore();
+  });
+
+  it('should populate store with appearance requests from court list appearances', () => {
+    const mockAppearances: any[] = [
+      {
+        justinNo: 'JUSTIN1',
+        appearanceId: 'APP1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+        accusedNm: 'John Doe',
+      },
+    ];
+
+    shared.openCourtListCriminalBundle(mockAppearances, []);
+
+    expect(mockKeyDocumentStore.appearanceRequests).toHaveLength(1);
+    expect(mockKeyDocumentStore.appearanceRequests[0]).toEqual({
+      appearance: {
+        physicalFileId: 'JUSTIN1',
+        appearanceId: 'APP1',
+        participantId: 'PART1',
+        courtClassCd: 'CLS1',
+      },
+      fileNumber: 'FN001',
+      fullName: 'John Doe',
+    });
+  });
+
+  it('should set request with appearances array', () => {
+    const mockAppearances: any[] = [
+      {
+        justinNo: 'JUSTIN1',
+        appearanceId: 'APP1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+        accusedNm: 'John Doe',
+      },
+    ];
+
+    shared.openCourtListCriminalBundle(mockAppearances, []);
+
+    expect(mockKeyDocumentStore.request).toEqual({
+      appearances: [
+        {
+          physicalFileId: 'JUSTIN1',
+          appearanceId: 'APP1',
+          participantId: 'PART1',
+          courtClassCd: 'CLS1',
+        },
+      ],
+    });
+  });
+
+  it('should open file-viewer with criminal-bundle type', () => {
+    const mockAppearances: any[] = [
+      {
+        justinNo: 'JUSTIN1',
+        appearanceId: 'APP1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+        accusedNm: 'John Doe',
+      },
+    ];
+
+    shared.openCourtListCriminalBundle(mockAppearances, []);
+
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=criminal-bundle',
+      '_blank'
+    );
+  });
+
+  it('should include categories in URL when provided', () => {
+    const mockAppearances: any[] = [
+      {
+        justinNo: 'JUSTIN1',
+        appearanceId: 'APP1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+        accusedNm: 'John Doe',
+      },
+    ];
+
+    shared.openCourtListCriminalBundle(mockAppearances, ['INITIATING', 'ROP']);
+
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=criminal-bundle&category=INITIATING,ROP',
+      '_blank'
+    );
+  });
+
+  it('should return early if appearances array is empty', () => {
+    shared.openCourtListCriminalBundle([], []);
+
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+  });
+});
+
+describe('shared.openJudicialBinderDocuments', () => {
+  let mockJudicialBinderStore: any;
+  let mockWindowOpen: any;
+  let replaceWindowTitleSpy: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockJudicialBinderStore = {
+      request: {},
+    };
+
+    (useJudicialBinderStore as any).mockReturnValue(mockJudicialBinderStore);
+
+    mockWindowOpen = vi.fn(() => ({ focus: vi.fn() }));
+    window.open = mockWindowOpen;
+
+    replaceWindowTitleSpy = vi
+      .spyOn(shared, 'replaceWindowTitle')
+      .mockImplementation((newWindow) => newWindow);
+  });
+
+  afterEach(() => {
+    replaceWindowTitleSpy.mockRestore();
+  });
+
+  it('should populate store with binder document requests without appearance IDs', () => {
+    const mockAppearances: any[] = [
+      {
+        physicalFileId: 'PHYS1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+      },
+    ];
+
+    shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
+
+    expect(mockJudicialBinderStore.request).toEqual({
+      binders: [
+        {
+          physicalFileId: 'PHYS1',
+          participantId: 'PART1',
+          courtClassCd: 'CLS1',
+          judgeId: 'JUDGE1',
+        },
+      ],
+    });
+  });
+
+  it('should NOT include appearance IDs in binder requests', () => {
+    const mockAppearances: any[] = [
+      {
+        physicalFileId: 'PHYS1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+        appearanceId: 'APP1', // This should NOT be in the binder request
+      },
+    ];
+
+    shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
+
+    expect(mockJudicialBinderStore.request.binders[0]).not.toHaveProperty(
+      'appearanceId'
+    );
+  });
+
+  it('should open file-viewer with judicial-binder type', () => {
+    const mockAppearances: any[] = [
+      {
+        physicalFileId: 'PHYS1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+      },
+    ];
+
+    shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
+
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=judicial-binder',
+      '_blank'
+    );
+  });
+
+  it('should call replaceWindowTitle with case numbers', () => {
+    const mockAppearances: any[] = [
+      {
+        physicalFileId: 'PHYS1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+      },
+    ];
+
+    shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
+
+    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      'FN001'
+    );
+  });
+
+  it('should handle multiple appearances with different case numbers', () => {
+    const mockAppearances: any[] = [
+      {
+        physicalFileId: 'PHYS1',
+        profPartId: 'PART1',
+        courtClassCd: 'CLS1',
+        aslCourtFileNumber: 'FN001',
+      },
+      {
+        physicalFileId: 'PHYS2',
+        profPartId: 'PART2',
+        courtClassCd: 'CLS2',
+        aslCourtFileNumber: 'FN002',
+      },
+    ];
+
+    shared.openJudicialBinderDocuments(mockAppearances, 'JUDGE1');
+
+    expect(mockJudicialBinderStore.request.binders).toHaveLength(2);
+    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      'FN001, FN002'
+    );
+  });
+
+  it('should return early if appearances array is empty', () => {
+    shared.openJudicialBinderDocuments([], 'JUDGE1');
+
+    expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 });

@@ -65,6 +65,28 @@ public class BindersController(IBinderService binderService) : ControllerBase
     }
 
     [HttpPost]
+    [Route("bundle/view")]
+    public async Task<IActionResult> ViewDocumentBundlePost([FromBody] List<Dictionary<string, string>> request, [FromQuery] Dictionary<string, List<string>> filters = null)
+    {
+        if (request == null || request.Count == 0)
+        {
+            return BadRequest("Invalid request.");
+        }
+
+        var result = await _binderService.ViewDocumentBundle(request, filters);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { error = result.Errors });
+        }
+        else if (result.Payload.Binders.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPost]
     [Route("bundle")]
     public async Task<IActionResult> CreateDocumentBundle([FromBody] List<Dictionary<string, string>> request, [FromQuery] Dictionary<string, List<string>> filters = null)
     {

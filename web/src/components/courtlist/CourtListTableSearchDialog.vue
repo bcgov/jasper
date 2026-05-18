@@ -37,7 +37,7 @@
 <script setup lang="ts">
   import { mdiClose } from '@mdi/js';
   import { ref } from 'vue';
-  import { VForm } from 'vuetify/components';
+  import type { VForm } from 'vuetify/components';
 
   const showDialog = defineModel<boolean>('showDialog');
   const isFormValid = ref(false);

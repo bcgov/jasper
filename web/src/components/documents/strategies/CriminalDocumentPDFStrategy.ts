@@ -1,22 +1,19 @@
-import {
-  OutlineItem,
-  PDFViewerStrategy,
-} from '@/components/documents/FileViewer.vue';
+import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
 import { BinderService } from '@/services';
-import { useBundleStore } from '@/stores';
-import { appearanceRequest } from '@/stores/BundleStore';
+import { useCriminalDocumentBundleStore } from '@/stores';
+import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
 import { ApiResponse } from '@/types/ApiResponse';
 import { BinderDocument } from '@/types/BinderDocument';
-import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 import { inject } from 'vue';
 
-export class BundlePDFStrategy implements PDFViewerStrategy<
-  Record<string, Record<string, appearanceRequest[]>>,
-  DocumentBundleRequest,
+export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
+  Record<string, Record<string, CriminalDocumentAppearanceRequest[]>>,
+  CriminalDocumentBundleRequest,
   ApiResponse<DocumentBundleResponse>
 > {
-  private readonly bundleStore = useBundleStore();
+  private readonly bundleStore = useCriminalDocumentBundleStore();
   private readonly binderService: BinderService;
   private count = 0;
 
@@ -32,11 +29,14 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
     return !!this.bundleStore.getAppearanceRequests;
   }
 
-  getRawData(): Record<string, Record<string, appearanceRequest[]>> {
+  getRawData(): Record<
+    string,
+    Record<string, CriminalDocumentAppearanceRequest[]>
+  > {
     const appearanceRequests = this.bundleStore.getAppearanceRequests;
     const groupedRequests: Record<
       string,
-      Record<string, appearanceRequest[]>
+      Record<string, CriminalDocumentAppearanceRequest[]>
     > = {};
 
     appearanceRequests.forEach((req) => {
@@ -56,8 +56,8 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
   }
 
   processDataForAPI(
-    rawData: Record<string, Record<string, appearanceRequest[]>>
-  ): DocumentBundleRequest {
+    rawData: Record<string, Record<string, CriminalDocumentAppearanceRequest[]>>
+  ): CriminalDocumentBundleRequest {
     const groupedAppearances = Object.values(rawData).flatMap((fileGroup) =>
       Object.values(fileGroup).flatMap((appearances) =>
         appearances.map((a) => a.appearance)
@@ -66,11 +66,17 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
 
     return {
       appearances: groupedAppearances,
-    } as unknown as DocumentBundleRequest;
+    } as unknown as CriminalDocumentBundleRequest;
   }
 
+  /**
+   * Retrieves or creates new binder(s) with all bundled documents.
+   * For criminal key documents, we use generatePDF to create/view binders.
+   * @param processedData
+   * @returns pdf including retrieved or newly created binders
+   */
   async generatePDF(
-    processedData: DocumentBundleRequest
+    processedData: CriminalDocumentBundleRequest
   ): Promise<ApiResponse<DocumentBundleResponse>> {
     const urlParams = new URLSearchParams(globalThis.location.search);
     const documentCategories = urlParams.get('category')?.split(',') || [];
@@ -91,7 +97,10 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
   }
 
   createOutline(
-    rawData: Record<string, Record<string, appearanceRequest[]>>,
+    rawData: Record<
+      string,
+      Record<string, CriminalDocumentAppearanceRequest[]>
+    >,
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
     this.count = 0;
@@ -112,7 +121,7 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
 
   private makeFirstGroup(
     groupKey: string,
-    userGroup: Record<string, appearanceRequest[]>,
+    userGroup: Record<string, CriminalDocumentAppearanceRequest[]>,
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem {
     const children: OutlineItem[] = [];
@@ -140,7 +149,7 @@ export class BundlePDFStrategy implements PDFViewerStrategy<
 
   private makeSecondGroup(
     memberName: string,
-    docs: appearanceRequest[],
+    docs: CriminalDocumentAppearanceRequest[],
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem | null {
     const fileIds = docs.map((d) => d.appearance.physicalFileId);

@@ -307,7 +307,6 @@ public class BinderService(
             if (bindersResult.Payload.Count == 0)
             {
                 Logger.LogWarning("Binder missing for the current context: {Context}", string.Join(",", context));
-                throw new InvalidOperationException("Binder missing for the current context.");
             }
             else
             {

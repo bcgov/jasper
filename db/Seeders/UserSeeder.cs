@@ -25,6 +25,8 @@ namespace Scv.Db.Seeders
                 var groups = await context.Groups.ToListAsync();
                 var roles = await context.Roles.ToListAsync();
 
+                var adminRole = roles.FirstOrDefault(r => r.Name == Role.ADMIN);
+
                 // Get default users from env variable
                 var defaultUsersJson = _config["DEFAULT_USERS"];
                 Console.WriteLine(defaultUsersJson);
@@ -40,7 +42,10 @@ namespace Scv.Db.Seeders
                         IsActive = true,
                         IsPendingRegistration = false,
                         GroupIds = [groups.First(g => g.Name == userObj["Group"]).Id],
-                        RoleIds = [roles.First(r => r.Name == userObj["Role"]).Id]
+                        RoleIds = [
+                            userObj.TryGetValue("Role", out var roleName)
+                            ? roles.First(r => r.Name == roleName).Id
+                            : adminRole.Id]
                     };
                     users.Add(newUser);
                 }

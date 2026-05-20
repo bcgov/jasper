@@ -123,8 +123,16 @@ public class UserService(
             return user;
         }
 
-        var groups = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id))).Select(g => g.Name).ToList();
-        user.Groups = groups;
+        var groups = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id)));
+        user.Groups = [.. groups.Select(g => g.Name)];
+
+        // Get all role ids from user's groups
+        var groupRoleIds = groups.SelectMany(g => g.RoleIds).ToList();
+        if (groupRoleIds.Count != 0)
+        {
+            // Combine role ids from user's groups and user. Existing role ids, may have been assigned by the sync service when the user logged-in.
+            user.RoleIds = [.. user.RoleIds.Union(groupRoleIds, StringComparer.OrdinalIgnoreCase)];
+        }
 
         // Find user's roles
         if (user.RoleIds.Count == 0)

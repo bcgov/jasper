@@ -361,6 +361,45 @@ public class UserServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task GetWithPermissions_ShouldReturnEarly_WhenUserAndGroupsHaveNoRoleIds()
+    {
+        var groupName = _faker.Lorem.Word();
+
+        _mockUserRepo
+            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = ObjectId.GenerateNewId().ToString(),
+                FirstName = _faker.Person.FirstName,
+                LastName = _faker.Person.LastName,
+                Email = _faker.Internet.Email(),
+                GroupIds = [ObjectId.GenerateNewId().ToString()],
+                RoleIds = []
+            }
+            ]);
+        _mockGroupRepo
+            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = groupName,
+                Description = _faker.Lorem.Paragraph(),
+                RoleIds = []
+            }
+            ]);
+
+        var result = await _userService.GetWithPermissionsAsync(_faker.Internet.Email());
+
+        Assert.NotNull(result);
+        Assert.Contains(groupName, result.Groups);
+        Assert.Empty(result.RoleIds);
+        Assert.Empty(result.Roles ?? []);
+        Assert.Empty(result.Permissions ?? []);
+        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Never);
+        _mockPermissionRepo.Verify(p => p.FindAsync(It.IsAny<Expression<Func<Permission, bool>>>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetWithPermissions_ShouldReturnUserWithoutPermissions_WhenRoleIdsIsEmpty()
     {
         var groupName = _faker.Lorem.Word();
@@ -957,5 +996,87 @@ public class UserServiceTests : ServiceTestBase
         Assert.Single(result.Errors);
         Assert.Equal("Error updating release notes.", result.Errors[0]);
         _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetWithPermissions_ShouldPopulateRolesFromGroup_WhenUserHasNoRoleIds()
+    {
+        var groupRoleId = ObjectId.GenerateNewId().ToString();
+        var roleName = _faker.Lorem.Word();
+
+        _mockUserRepo
+            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = ObjectId.GenerateNewId().ToString(),
+                FirstName = _faker.Person.FirstName,
+                LastName = _faker.Person.LastName,
+                Email = _faker.Internet.Email(),
+                GroupIds = [ObjectId.GenerateNewId().ToString()],
+                RoleIds = []
+            }
+            ]);
+        _mockGroupRepo
+            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = _faker.Lorem.Word(),
+                Description = _faker.Lorem.Paragraph(),
+                RoleIds = [groupRoleId]
+            }
+            ]);
+        _mockRoleRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = groupRoleId,
+                Name = roleName,
+                Description = _faker.Lorem.Paragraph()
+            }
+            ]);
+
+        var result = await _userService.GetWithPermissionsAsync(_faker.Internet.Email());
+
+        Assert.NotNull(result);
+        Assert.Contains(roleName, result.Roles);
+        Assert.Contains(groupRoleId, result.RoleIds);
+    }
+
+    [Fact]
+    public async Task GetWithPermissions_ShouldDeduplicateRoleIds_WhenUserAndGroupShareSameRoleId()
+    {
+        var sharedRoleId = ObjectId.GenerateNewId().ToString();
+
+        _mockUserRepo
+            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = ObjectId.GenerateNewId().ToString(),
+                FirstName = _faker.Person.FirstName,
+                LastName = _faker.Person.LastName,
+                Email = _faker.Internet.Email(),
+                GroupIds = [ObjectId.GenerateNewId().ToString()],
+                RoleIds = [sharedRoleId.ToUpperInvariant()]
+            }
+            ]);
+        _mockGroupRepo
+            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            .ReturnsAsync([
+                new() {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = _faker.Lorem.Word(),
+                Description = _faker.Lorem.Paragraph(),
+                RoleIds = [sharedRoleId.ToLowerInvariant()]
+            }
+            ]);
+        _mockRoleRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync([]);
+
+        var result = await _userService.GetWithPermissionsAsync(_faker.Internet.Email());
+
+        Assert.NotNull(result);
+        Assert.Single(result.RoleIds);
     }
 }

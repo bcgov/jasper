@@ -26,6 +26,11 @@ namespace Scv.Db.Seeders
                 var roles = await context.Roles.ToListAsync();
 
                 var adminRole = roles.FirstOrDefault(r => r.Name == Role.ADMIN);
+                if (adminRole == null)
+                {
+                    this.Logger.LogError("Admin role not found, cannot seed users without it.");
+                    return;
+                }
 
                 // Get default users from env variable
                 var defaultUsersJson = _config["DEFAULT_USERS"];
@@ -42,8 +47,7 @@ namespace Scv.Db.Seeders
                         IsActive = true,
                         IsPendingRegistration = false,
                         GroupIds = [groups.First(g => g.Name == userObj["Group"]).Id],
-                        RoleIds = [
-                            userObj.TryGetValue("Role", out var roleName)
+                        RoleIds = [userObj.TryGetValue("Role", out var roleName)
                             ? roles.First(r => r.Name == roleName).Id
                             : adminRole.Id]
                     };

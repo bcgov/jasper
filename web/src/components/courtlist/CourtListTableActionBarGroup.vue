@@ -45,7 +45,7 @@
             density="compact"
             data-testid="view-judicial-binders"
             :disabled="binderLoading || totalBinderCount === 0"
-            @click="onViewJudicialBinders(group)"
+            @click="() => onViewJudicialBinders(group)"
           >
             View judicial binder(s)&nbsp;
             <v-progress-circular

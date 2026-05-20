@@ -2,8 +2,11 @@ import { Binder } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { IHttpService } from './HttpService';
 import { ServiceBase } from './ServiceBase';
-import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
+
+type BinderBundleContexts = Record<string, string>[];
+type BinderBundleRequest = CriminalDocumentBundleRequest | BinderBundleContexts;
 
 export class BinderService extends ServiceBase {
   constructor(httpService: IHttpService) {
@@ -50,18 +53,38 @@ export class BinderService extends ServiceBase {
     });
   }
 
-  async generateBinderPDF(
-    bundleRequest: DocumentBundleRequest,
+  async viewBinderPDF(
+    bundleRequest: BinderBundleRequest,
     categories: string[]
   ): Promise<ApiResponse<DocumentBundleResponse>> {
     const categoryParams = categories.length
       ? '?category=' + categories.join(',')
       : '';
-    const url = 'api/binders/bundle' + categoryParams;
+    const url = 'api/binders/bundle/view' + categoryParams;
 
     return this.httpService.post<ApiResponse<DocumentBundleResponse>>(
       url,
-      bundleRequest.appearances
+      bundleRequest
+    );
+  }
+
+  async generateBinderPDF(
+    bundleRequest: BinderBundleRequest,
+    categories: string[]
+  ): Promise<ApiResponse<DocumentBundleResponse>> {
+    const categoryParams = categories.length
+      ? '?category=' + categories.join(',')
+      : '';
+
+    const url = 'api/binders/bundle' + categoryParams;
+
+    const body = Array.isArray(bundleRequest)
+      ? bundleRequest
+      : bundleRequest.appearances;
+
+    return this.httpService.post<ApiResponse<DocumentBundleResponse>>(
+      url,
+      body
     );
   }
 }

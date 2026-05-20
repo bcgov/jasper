@@ -156,8 +156,8 @@
   <CourtListTableActionBarGroup
     :selected
     @view-case-details="viewCaseDetails"
-    @view-key-documents="viewKeyDocuments"
-    @view-informations="viewKeyDocuments"
+    @view-key-documents="viewCriminalBundle"
+    @view-informations="viewCriminalBundle"
     @view-judicial-binders="handleViewJudicialBinders"
   />
 </template>
@@ -170,7 +170,6 @@
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
   import { useCourtFileSearchStore, useCommonStore } from '@/stores';
-  import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
   import {
     CourtLevelEnum,
     CourtClassEnum,
@@ -388,7 +387,7 @@
     return [];
   };
 
-  const viewKeyDocuments = async (
+  const viewCriminalBundle = async (
     appearances: CourtListAppearance[],
     categories: string[]
   ) => {
@@ -396,33 +395,13 @@
       return;
     }
 
-    appearances.map(
-      (app) =>
-        ({
-          physicalFileId: app.justinNo,
-          appearanceId: app.appearanceId,
-          participantId: app.profPartId,
-          courtClassCd: app.courtClassCd,
-        }) as AppearanceDocumentRequest
-    );
-
-    shared.openCourtListKeyDocuments(appearances, categories);
+    shared.openCourtListCriminalBundle(appearances, categories);
   };
 
   const handleViewJudicialBinders = (appearances: CourtListAppearance[]) => {
     if (appearances.length === 0) {
       return;
     }
-
-    appearances.map(
-      (app) =>
-        ({
-          physicalFileId: app.physicalFileId,
-          appearanceId: app.appearanceId,
-          participantId: app.profPartId,
-          courtClassCd: app.courtClassCd,
-        }) as AppearanceDocumentRequest
-    );
 
     shared.openJudicialBinderDocuments(
       appearances,

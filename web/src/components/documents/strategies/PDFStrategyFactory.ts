@@ -1,12 +1,14 @@
+import { PDFViewerStrategy } from './PDFViewerTypes';
 import { FilePDFStrategy } from './FilePDFStrategy';
-import { BundlePDFStrategy } from './BundlePDFStrategy';
-import { PDFViewerStrategy } from '@/components/documents/FileViewer.vue';
 import { OrderPDFStrategy } from './OrderPDFStrategy';
+import { CriminalDocumentPDFStrategy } from './CriminalDocumentPDFStrategy';
+import { JudicialBinderPDFStrategy } from './JudicialBinderPDFStrategy';
 
 export enum PDFViewerType {
   FILE = 'file',
-  BUNDLE = 'bundle',
   ORDER = 'order',
+  CRIMINAL_BUNDLE = 'criminal-bundle',
+  JUDICIAL_BINDER = 'judicial-binder',
 }
 
 export class PDFStrategyFactory {
@@ -14,8 +16,10 @@ export class PDFStrategyFactory {
     switch (type) {
       case PDFViewerType.FILE:
         return new FilePDFStrategy();
-      case PDFViewerType.BUNDLE:
-        return new BundlePDFStrategy();
+      case PDFViewerType.CRIMINAL_BUNDLE:
+        return new CriminalDocumentPDFStrategy();
+      case PDFViewerType.JUDICIAL_BINDER:
+        return new JudicialBinderPDFStrategy();
       case PDFViewerType.ORDER:
         return new OrderPDFStrategy();
       default:

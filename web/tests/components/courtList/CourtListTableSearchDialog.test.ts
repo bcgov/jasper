@@ -1,24 +1,36 @@
 import CourtListTableSearchDialog from '@/components/courtlist/CourtListTableSearchDialog.vue';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { defineComponent, nextTick } from 'vue';
 import { createVuetify } from 'vuetify';
 
 const vuetify = createVuetify();
 
 describe('CourtListTableSearchDialog', () => {
   const mockOnGenerate = vi.fn();
-  const mountOptions = {
+  const createMountOptions = (isValid = true) => ({
     props: {
       onGenerate: mockOnGenerate,
     },
     global: {
       plugins: [vuetify],
+      stubs: {
+        VForm: defineComponent({
+          name: 'VForm',
+          setup(_, { expose, slots }) {
+            expose({
+              validate: async () => ({ valid: isValid }),
+            });
+
+            return () => slots.default?.();
+          },
+        }),
+      },
     },
-  };
+  });
 
   it('modelValue is set to true when dialog is shown', async () => {
-    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
+    const wrapper: any = mount(CourtListTableSearchDialog, createMountOptions());
 
     (wrapper.vm as unknown as { showDialog: boolean }).showDialog = true;
 
@@ -33,7 +45,7 @@ describe('CourtListTableSearchDialog', () => {
   });
 
   it(`modelValue is set to false when dialog not shown`, async () => {
-    const wrapper = mount(CourtListTableSearchDialog, mountOptions);
+    const wrapper = mount(CourtListTableSearchDialog, createMountOptions());
 
     (wrapper.vm as unknown as { showDialog: boolean }).showDialog = false;
 
@@ -45,7 +57,8 @@ describe('CourtListTableSearchDialog', () => {
   });
 
   it(`generateReport should validate and call onGenerate`, async () => {
-    const wrapper = mount(CourtListTableSearchDialog, mountOptions);
+    const wrapper = mount(CourtListTableSearchDialog, createMountOptions(true));
+
     const button = wrapper.find('v-btn-tertiary');
     button.trigger('click');
     await nextTick();
@@ -54,7 +67,10 @@ describe('CourtListTableSearchDialog', () => {
   });
 
   it(`clicking Print with no selectedReportType should not call onGenerate`, async () => {
-    const wrapper: any = mount(CourtListTableSearchDialog, mountOptions);
+    const wrapper: any = mount(
+      CourtListTableSearchDialog,
+      createMountOptions(false)
+    );
     wrapper.vm.selectedReportType = null;
 
     await nextTick();

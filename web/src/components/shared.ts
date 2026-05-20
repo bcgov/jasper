@@ -1,9 +1,17 @@
-import { useBundleStore, usePDFViewerStore } from '@/stores';
+import {
+  usePDFViewerStore,
+  useCriminalDocumentBundleStore,
+  useJudicialBinderStore,
+} from '@/stores';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
+import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtRoomsJsonInfoType } from '@/types/common';
 import { CourtListAppearance } from '@/types/courtlist';
-import { DocumentBundleRequest } from '@/types/DocumentBundleRequest';
+import {
+  BinderDocumentBundleRequest,
+  CriminalDocumentBundleRequest,
+} from '@/types/DocumentBundleRequest';
 import {
   CourtDocumentType,
   DataTableHeader,
@@ -167,12 +175,12 @@ export default {
 
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
-  openCourtListKeyDocuments(
+  openCourtListCriminalBundle(
     appearances: CourtListAppearance[],
     categories: string[]
   ): void {
     if (!appearances.length) return;
-    const bundleStore = useBundleStore();
+    const criminalDocumentStore = useCriminalDocumentBundleStore();
     const appearanceRequests = appearances.map((app) => ({
       appearance: {
         physicalFileId: app.justinNo,
@@ -185,13 +193,13 @@ export default {
     }));
     const bundleRequest = {
       appearances: appearanceRequests.map((app) => app.appearance),
-    } as DocumentBundleRequest;
-    bundleStore.request = bundleRequest;
-    bundleStore.appearanceRequests = appearanceRequests;
+    } as CriminalDocumentBundleRequest;
+    criminalDocumentStore.request = bundleRequest;
+    criminalDocumentStore.appearanceRequests = appearanceRequests;
 
     const categoryParams =
       categories.length > 0 ? '&category=' + categories.join(',') : '';
-    const url = '/file-viewer?type=bundle' + categoryParams;
+    const url = '/file-viewer?type=criminal-bundle' + categoryParams;
     const newWindow = window.open(url, '_blank');
     const caseNumbers = Array.from(
       new Set(appearances.map((d) => d.aslCourtFileNumber))
@@ -204,29 +212,31 @@ export default {
     judgeId: string
   ): void {
     if (!appearances.length) return;
-    const bundleStore = useBundleStore();
-    const appearanceRequests = appearances.map((app) => ({
-      appearance: {
+    const judicialBinderStore = useJudicialBinderStore();
+    const binderRequests = appearances.map((app) => ({
+      binder: {
         physicalFileId: app.physicalFileId,
-        appearanceId: app.appearanceId,
         participantId: app.profPartId,
         courtClassCd: app.courtClassCd,
-        judgeId,
-      } as AppearanceDocumentRequest,
+        judgeId: judgeId,
+      } as BinderDocumentRequest,
       fileNumber: app.aslCourtFileNumber,
     }));
     const bundleRequest = {
-      appearances: appearanceRequests.map((app) => app.appearance),
-    } as DocumentBundleRequest;
-    bundleStore.request = bundleRequest;
-    bundleStore.appearanceRequests = appearanceRequests;
+      binders: binderRequests.map((app) => app.binder),
+    } as BinderDocumentBundleRequest;
+    judicialBinderStore.request = bundleRequest;
 
-    const newWindow = window.open('/file-viewer?type=bundle', '_blank');
+    const newWindow = window.open(
+      '/file-viewer?type=judicial-binder',
+      '_blank'
+    );
     const caseNumbers = Array.from(
       new Set(appearances.map((d) => d.aslCourtFileNumber))
     ).join(', ');
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
+
   openOrderDocuments(documentData: DocumentData): void {
     if (!documentData) {
       return;

@@ -11,19 +11,19 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Moq;
 using Scv.Api.Documents;
+using Scv.Api.Infrastructure;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Models;
 using Scv.Api.Models.Binder;
 using Scv.Api.Processors;
 using Scv.Api.Services;
-using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
-using Scv.Models;
 using Xunit;
 
 namespace tests.api.Services;
+
 public class BinderServiceTests
 {
     private readonly Bogus.Faker _faker;

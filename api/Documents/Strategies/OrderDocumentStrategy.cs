@@ -19,7 +19,6 @@ namespace Scv.Api.Documents.Strategies
     {
         private readonly IJudicialServicesClient _judicialClient;
         private readonly IConfiguration _configuration;
-        private readonly ClaimsPrincipal _currentUser;
 
         public DocumentType Type => DocumentType.Order;
 
@@ -28,7 +27,6 @@ namespace Scv.Api.Documents.Strategies
             _judicialClient = judicialClient;
             _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _configuration = configuration;
-            _currentUser = currentUser;
         }
 
         public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
@@ -55,16 +53,13 @@ namespace Scv.Api.Documents.Strategies
                 throw new InvalidArgumentException("Invalid document id.");
             }
 
-            var userGuid = _currentUser.ProvjudUserGuid() ?? _currentUser.IdirUserGuid();
-
             using var response = await _judicialClient.GetJudicialDocumentAsync(
                 transactionId,
                 agencyId,
                 documentId,
                 DocumentApplicationName.CSO,
                 _configuration.GetNonEmptyValue("Request:ApplicationCd"),
-                "Y",
-                userGuid?.ToUpper());
+                "Y");
 
             await response.Stream.CopyToAsync(documentResponseStreamCopy);
 

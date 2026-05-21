@@ -85,7 +85,6 @@ public class OrderDocumentStrategyTest : ServiceTestBase
                 It.IsAny<double>(),
                 It.IsAny<DocumentApplicationName>(),
                 It.IsAny<string>(),
-                It.IsAny<string>(),
                 It.IsAny<string>()))
             .ReturnsAsync(fakeResponse);
     }
@@ -188,33 +187,5 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             BuildUser());
 
         await Assert.ThrowsAsync<InvalidArgumentException>(() => strategy.Invoke(BuildRequest()));
-    }
-
-    [Fact]
-    public async Task Invoke_UsesProvjudGuid_WhenAvailable()
-    {
-        SetupJudicialClientResponse();
-
-        // ProvjudUserGuid extension decodes from base64, so encode a fake GUID bytes
-        var fakeGuidBytes = System.Guid.NewGuid().ToByteArray();
-        var base64Guid = System.Convert.ToBase64String(fakeGuidBytes);
-        var expectedHex = System.Convert.ToHexStringLower(fakeGuidBytes);
-
-        var user = BuildUser(provjudGuid: base64Guid);
-        var strategy = new OrderDocumentStrategy(
-            _mockJudicialClient.Object,
-            _mockConfiguration.Object,
-            user);
-
-        await strategy.Invoke(BuildRequest());
-
-        _mockJudicialClient.Verify(c => c.GetJudicialDocumentAsync(
-            It.IsAny<System.Guid>(),
-            It.IsAny<double?>(),
-            It.IsAny<double>(),
-            It.IsAny<DocumentApplicationName>(),
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            expectedHex.ToUpper()), Times.Once);
     }
 }

@@ -166,6 +166,7 @@
           ({
             civilDocumentId: doc.documentId,
             category: doc.category,
+            documentTypeCd: doc.category,
             imageId: doc.imageId,
             documentTypeDescription: doc.fileName,
             fileSeqNo: doc.fileSeqNo,

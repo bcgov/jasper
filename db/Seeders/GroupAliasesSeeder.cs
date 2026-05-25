@@ -8,7 +8,7 @@ using Scv.Db.Models;
 
 namespace Scv.Db.Seeders
 {
-    public class GroupAliasSeeder(ILogger<GroupSeeder> logger) : SeederBase<JasperDbContext>(logger)
+    public class GroupAliasSeeder(ILogger<GroupAliasSeeder> logger) : SeederBase<JasperDbContext>(logger)
     {
         public override int Order => 6;
 

@@ -80,11 +80,18 @@ public class JudicialBinderProcessor : BinderProcessorBase
 
             // Retrieve the full document details for the documents in the binder
             var fileDocuments = await _civilFilesService.GetDocumentsByIds(fileId, binderDocumentIds);
+            var transcriptDocuments = this.Binder.Documents
+                .Where(d => d.DocumentType == Scv.Models.Document.DocumentType.Transcript)
+                .Select(d =>
+                {
+                    d.Category = Scv.Models.Document.DocumentType.Transcript.ToString();
+                    return d;
+                });
 
             var mappedDocuments = _mapper.Map<List<BinderDocumentDto>>(fileDocuments);
 
             // Apply the original ordering
-            this.Binder.Documents = [.. mappedDocuments.OrderBy(d => documentOrder.TryGetValue(d.DocumentId, out var index) ? index : int.MaxValue)];
+            this.Binder.Documents = [.. mappedDocuments.OrderBy(d => documentOrder.TryGetValue(d.DocumentId, out var index) ? index : int.MaxValue), .. transcriptDocuments];
 
             return OperationResult.Success();
         }

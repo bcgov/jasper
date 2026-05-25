@@ -167,7 +167,9 @@
             civilDocumentId: doc.documentId,
             category: doc.category,
             documentTypeCd: doc.category,
-            imageId: doc.imageId,
+            imageId:
+              doc.documentType == 'Transcript' ? doc.documentId : doc.imageId,
+            transcriptOrderId: doc.orderId,
             documentTypeDescription: doc.fileName,
             fileSeqNo: doc.fileSeqNo,
             filedBy: doc.filedBy,

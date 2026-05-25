@@ -198,6 +198,8 @@ public class JudicialBinderProcessorTests
         var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
 
         SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategories.BAIL);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategories.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -505,6 +507,70 @@ public class JudicialBinderProcessorTests
         Assert.True(result.Succeeded);
         Assert.Single(processor.Binder.Documents);
         Assert.Equal("ref-1", processor.Binder.Documents[0].DocumentId);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_Should_Set_Transcript_Category_From_DocumentType()
+    {
+        // Arrange
+        var fileDetail = new CivilFileDetailResponse
+        {
+            Appearance = [],
+            Document = [],
+            ReferenceDocument = []
+        };
+
+        var fileContent = new CivilFileContent
+        {
+            CivilFile =
+            [
+                new CvfcCivilFile
+                {
+                    PhysicalFileID = _fileId
+                }
+            ]
+        };
+
+        var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
+
+        SetupFileClientMocks(fileDetail, fileContent);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategories.BAIL);
+
+        _mockMapper
+            .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
+            .Returns(redactedDetail);
+
+        _mockMapper
+            .Setup(x => x.Map<List<BinderDocumentDto>>(It.IsAny<IEnumerable<CivilDocument>>()))
+            .Returns([]);
+
+        var dto = new BinderDto
+        {
+            Labels = new Dictionary<string, string>
+            {
+                { LabelConstants.PHYSICAL_FILE_ID, _fileId }
+            },
+            Documents =
+            [
+                new BinderDocumentDto
+                {
+                    DocumentId = "transcript-1",
+                    DocumentType = DocumentType.Transcript,
+                    Order = 0,
+                    OrderId = "123"
+                }
+            ]
+        };
+
+        var processor = CreateProcessor(dto);
+
+        // Act
+        var result = await processor.ProcessAsync();
+
+        // Assert
+        Assert.True(result.Succeeded);
+        Assert.Single(processor.Binder.Documents);
+        Assert.Equal(DocumentType.Transcript.ToString(), processor.Binder.Documents[0].Category);
     }
 
     [Fact]

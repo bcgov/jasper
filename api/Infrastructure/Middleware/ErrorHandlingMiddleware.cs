@@ -4,6 +4,8 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CSOCommon.Clients.JudicialServices;
+using CSOCommon.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Scv.Core.Exceptions;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
@@ -146,6 +149,12 @@ namespace Scv.Api.Infrastructure.Middleware
                     message = exception.Message;
                     _logger.LogError(ex, "{Message}", ex.Message);
                     break;
+
+                case ApiException<APIError> exception:
+                    code = (HttpStatusCode)exception.StatusCode;
+                    _logger.LogError(ex, "CSO Client Failed with status: {Status} with detailed error: {Error}", exception.StatusCode, JsonSerializer.Serialize(exception.Result));
+                    break;
+
 
                 case JCCommon.Clients.LocationServices.ApiException:
                 case JCCommon.Clients.LookupCodeServices.ApiException:

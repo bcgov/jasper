@@ -420,25 +420,36 @@ public class BinderService(
                 .Where(d => d.DocumentType != DocumentType.File || d.ImageId != null)
                 // Default ordering is dictated by category, then the document's Order property
                 .OrderBy(d => GetCategoryOrder(d.Category))
-                .Select(d => new PdfDocumentRequest
+                .Select(d =>
                 {
-                    Type = d.DocumentType,
-                    Data = new PdfDocumentRequestDetails
+                    var documentId = d.DocumentId;
+                    if (d.DocumentType == DocumentType.File)
                     {
-                        PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
-                        ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
-                        CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
-                        CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
-                        FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
-                        AppearanceId = isCriminal
-                            ? binder.Labels.GetValue(LabelConstants.APPEARANCE_ID)
-                            : d.DocumentId,
-                        IsCriminal = isCriminal,
-                        CorrelationId = correlationId.ToString(),
-                        DocumentId = d.DocumentType == DocumentType.File
-                            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(d.DocumentId))
-                            : d.DocumentId
+                        if (d.Category == "REF")
+                        {
+                            documentId = d.ImageId;
+                        }
+                        documentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(documentId));
                     }
+
+                    return new PdfDocumentRequest
+                    {
+                        Type = d.DocumentType,
+                        Data = new PdfDocumentRequestDetails
+                        {
+                            PartId = binder.Labels.GetValue(LabelConstants.PARTICIPANT_ID),
+                            ProfSeqNo = binder.Labels.GetValue(LabelConstants.PROF_SEQ_NUMBER),
+                            CourtLevelCd = binder.Labels.GetValue(LabelConstants.COURT_LEVEL_CD),
+                            CourtClassCd = binder.Labels.GetValue(LabelConstants.COURT_CLASS_CD),
+                            FileId = binder.Labels.GetValue(LabelConstants.PHYSICAL_FILE_ID),
+                            AppearanceId = isCriminal
+                                ? binder.Labels.GetValue(LabelConstants.APPEARANCE_ID)
+                                : d.DocumentId,
+                            IsCriminal = isCriminal,
+                            CorrelationId = correlationId.ToString(),
+                            DocumentId = documentId
+                        }
+                    };
                 });
             bundleRequests.AddRange(binderDocRequests);
         }

@@ -435,16 +435,45 @@ public class OrderMappingTests
     #region OrderDto -> JudicialAction Mapping Tests
 
     [Fact]
-    public void OrderDto_To_JudicialAction_MapsDocumentData_WhenDocumentDataIsPresent()
+    public void OrderDto_To_JudicialAction_MapsDocumentData_WhenStatusIsApproved()
     {
         var expectedBytes = _faker.Random.Bytes(64);
         var orderDto = CreateOrderDto();
         orderDto.DocumentData = Convert.ToBase64String(expectedBytes);
         orderDto.SupportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64));
+        orderDto.Status = OrderStatus.Approved;
 
         var result = orderDto.Adapt<JudicialAction>(_config);
 
         Assert.Equal(expectedBytes, result.Document);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_DoesNotMapDocument_WhenStatusIsNotApproved()
+    {
+        var expectedBytes = _faker.Random.Bytes(64);
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = Convert.ToBase64String(expectedBytes);
+        orderDto.SupportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64));
+        orderDto.Status = OrderStatus.Unapproved;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Null(result.Document);
+    }
+
+    [Fact]
+    public void OrderDto_To_JudicialAction_DoesNotMapDocument_WhenStatusIsAwaitingDocumentation()
+    {
+        var expectedBytes = _faker.Random.Bytes(64);
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = Convert.ToBase64String(expectedBytes);
+        orderDto.SupportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64));
+        orderDto.Status = OrderStatus.AwaitingDocumentation;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Null(result.Document);
     }
 
     [Fact]
@@ -454,6 +483,7 @@ public class OrderMappingTests
         var orderDto = CreateOrderDto();
         orderDto.DocumentData = null;
         orderDto.SupportingDocumentData = Convert.ToBase64String(expectedBytes);
+        orderDto.Status = OrderStatus.Approved;
 
         var result = orderDto.Adapt<JudicialAction>(_config);
 
@@ -467,6 +497,7 @@ public class OrderMappingTests
         var orderDto = CreateOrderDto();
         orderDto.DocumentData = string.Empty;
         orderDto.SupportingDocumentData = Convert.ToBase64String(expectedBytes);
+        orderDto.Status = OrderStatus.Approved;
 
         var result = orderDto.Adapt<JudicialAction>(_config);
 
@@ -474,11 +505,12 @@ public class OrderMappingTests
     }
 
     [Fact]
-    public void OrderDto_To_JudicialAction_Throws_WhenBothDocumentDataAndSupportingDocumentDataAreNull()
+    public void OrderDto_To_JudicialAction_Throws_WhenBothDocumentDataAndSupportingDocumentDataAreNullAndStatusIsApproved()
     {
         var orderDto = CreateOrderDto();
         orderDto.DocumentData = null;
         orderDto.SupportingDocumentData = null;
+        orderDto.Status = OrderStatus.Approved;
 
         Assert.Throws<InvalidOperationException>(() => orderDto.Adapt<JudicialAction>(_config));
     }
@@ -488,6 +520,7 @@ public class OrderMappingTests
     {
         var orderDto = CreateOrderDto();
         orderDto.DocumentData = "not-valid-base64!!!";
+        orderDto.Status = OrderStatus.Approved;
 
         Assert.Throws<InvalidOperationException>(() => orderDto.Adapt<JudicialAction>(_config));
     }
@@ -498,6 +531,7 @@ public class OrderMappingTests
         var orderDto = CreateOrderDto();
         orderDto.DocumentData = null;
         orderDto.SupportingDocumentData = "not-valid-base64!!!";
+        orderDto.Status = OrderStatus.Approved;
 
         Assert.Throws<InvalidOperationException>(() => orderDto.Adapt<JudicialAction>(_config));
     }

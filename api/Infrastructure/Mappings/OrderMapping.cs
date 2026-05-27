@@ -54,9 +54,7 @@ public class OrderMapping : IRegister
         config.NewConfig<OrderDto, JudicialAction>()
             .Map(dest => dest.SignatureApplied, src => src.Signed)
             .Map(dest => dest.Comment, src => src.Comments)
-            .Map(dest => dest.Document, src => FromBase64OrThrow(
-                !string.IsNullOrWhiteSpace(src.DocumentData) ? src.DocumentData : src.SupportingDocumentData,
-                nameof(src.DocumentData)))
+            .Map(dest => dest.Document, src => GetDocumentData(src))
             .Map(dest => dest.OrderTerms, _ => Array.Empty<OrderTerm>())
             .AfterMapping((src, dest) =>
             {
@@ -105,5 +103,19 @@ public class OrderMapping : IRegister
         {
             throw new InvalidOperationException($"'{fieldName}' contains invalid base64 content and cannot be decoded.", ex);
         }
+    }
+
+    private static byte[] GetDocumentData(OrderDto src)
+    {
+        if (src.Status != OrderStatus.Approved)
+        {
+            return null;
+        }
+
+        var data = !string.IsNullOrWhiteSpace(src.DocumentData)
+            ? src.DocumentData
+            : src.SupportingDocumentData;
+
+        return FromBase64OrThrow(data, nameof(src.DocumentData));
     }
 }

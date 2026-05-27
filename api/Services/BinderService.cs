@@ -228,7 +228,7 @@ public class BinderService(
                 }
 
                 // Exclude documents that does not have ImageId because there is no document to view, and sort by category
-                binder.Documents = [.. binder.Documents.Where(d => d.ImageId != null).OrderBy(d => GetCategoryOrder(d.Category))];
+                binder.Documents = [.. binder.Documents.Where(d => d.ImageId != null || d.OrderId != null).OrderBy(d => GetCategoryOrder(d.Category))];
             }
 
             return OperationResult<DocumentBundleResponse>.Success(new DocumentBundleResponse
@@ -447,7 +447,8 @@ public class BinderService(
                                 : d.DocumentId,
                             IsCriminal = isCriminal,
                             CorrelationId = correlationId.ToString(),
-                            DocumentId = documentId
+                            DocumentId = documentId,
+                            OrderId = d.OrderId
                         }
                     };
                 });

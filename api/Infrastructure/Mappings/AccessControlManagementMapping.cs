@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using System.Collections.Generic;
+using Mapster;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Models.AccessControlManagement;
@@ -28,7 +29,8 @@ public class AccessControlManagementMapping : IRegister
             .Map(dest => dest.RoleIds, src => src.RoleIds.DistinctList())
             .IgnoreNullValues(true);
 
-        config.NewConfig<User, UserDto>();
+        config.NewConfig<User, UserDto>()
+            .Map(dest => dest.RoleIds, src => src.RoleIds ?? new List<string>());
 
         config.NewConfig<UserDto, User>()
             .Map(dest => dest.GroupIds, src => src.GroupIds.DistinctList())

@@ -302,7 +302,6 @@ public class SendOrderNotificationJobTests
         var firstName = _faker.Name.FirstName();
         var lastName = _faker.Name.LastName();
         var courtFileNumber = _faker.Random.AlphaNumeric(10);
-        var styleOfCause = $"{_faker.Name.LastName()} vs {_faker.Name.LastName()}";
         var referralNotes = _faker.Lorem.Sentence();
         var referredBy = _faker.Name.FullName();
 
@@ -328,7 +327,8 @@ public class SendOrderNotificationJobTests
             new PersonName
                 {
                     FirstName = firstName,
-                    LastName = lastName
+                    LastName = lastName,
+                    EffDate = DateTime.Today.AddDays(-1)
                 }
         ]
         };
@@ -408,6 +408,73 @@ public class SendOrderNotificationJobTests
         Assert.NotNull(capturedEmailData);
         var emailDataType = capturedEmailData.GetType();
         Assert.Equal("Judge", emailDataType.GetProperty("JudgeName").GetValue(capturedEmailData));
+    }
+
+    [Fact]
+    public async Task Execute_UsesEffectiveJudgeName_AndFormatsWithoutExtraSpaces()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderRequestDto = CreateValidOrderRequestDto();
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+
+        var judge = new Scv.Models.Person
+        {
+            Id = judgeId,
+            Names =
+            [
+                new PersonName
+                {
+                    FirstName = "Expired",
+                    LastName = "Name",
+                    EffDate = DateTime.Today.AddDays(-10),
+                    ExpDate = DateTime.Today.AddDays(-1)
+                },
+                new PersonName
+                {
+                    FirstName = "",
+                    LastName = "Current",
+                    EffDate = DateTime.Today.AddDays(-2),
+                    ExpDate = null
+                }
+            ],
+            Statuses =
+            [
+                new PersonStatus
+                {
+                    StatusDescription = "Active",
+                    EffDate = DateTime.Now.AddMonths(-1)
+                }
+            ]
+        };
+
+        var databaseUser = new UserDto
+        {
+            Id = _faker.Random.AlphaNumeric(24),
+            Email = judgeEmail,
+            JudgeId = judgeId
+        };
+
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
+            .ReturnsAsync(judge);
+
+        _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
+            .ReturnsAsync(databaseUser);
+
+        object capturedEmailData = null;
+        _mockEmailTemplateService.Setup(s => s.SendEmailTemplateAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<object>()))
+            .Callback<string, string, object>((template, email, data) => capturedEmailData = data)
+            .Returns(Task.CompletedTask);
+
+        await _job.Execute(orderDto);
+
+        Assert.NotNull(capturedEmailData);
+        var emailDataType = capturedEmailData.GetType();
+        Assert.Equal("Current", emailDataType.GetProperty("JudgeName").GetValue(capturedEmailData));
+        Assert.Equal("Current", emailDataType.GetProperty("LastName").GetValue(capturedEmailData));
     }
 
     [Fact]
@@ -536,7 +603,8 @@ public class SendOrderNotificationJobTests
                 new PersonName
                 {
                     FirstName = _faker.Name.FirstName(),
-                    LastName = _faker.Name.LastName()
+                    LastName = _faker.Name.LastName(),
+                    EffDate = DateTime.Today.AddDays(-1)
                 }
             ],
             Statuses =
@@ -560,7 +628,8 @@ public class SendOrderNotificationJobTests
                 new PersonName
                 {
                     FirstName = _faker.Name.FirstName(),
-                    LastName = _faker.Name.LastName()
+                    LastName = _faker.Name.LastName(),
+                    EffDate = DateTime.Today.AddDays(-1)
                 }
             ],
             Statuses =

@@ -87,11 +87,16 @@ public class SendOrderNotificationJob(
             return;
         }
 
+        var effectiveJudgeName = GetEffectiveJudgeName(judge);
+        var formattedJudgeName = effectiveJudgeName == null
+            ? "Judge"
+            : FormatJudgeFullName(effectiveJudgeName);
+
         // Send notification email
         var emailData = new
         {
-            JudgeName = GetJudgeName(judge),
-            LastName = judge.Names?.FirstOrDefault()?.LastName ?? "",
+            JudgeName = formattedJudgeName,
+            LastName = effectiveJudgeName?.LastName ?? "",
             CaseFileNumber = order.OrderRequest?.CourtFileNo,
             ReferralNotes = order.OrderRequest?.Referral?.ReferralNotesTxt,
             ReferredBy = order.OrderRequest?.Referral?.ReferredByName,
@@ -107,12 +112,58 @@ public class SendOrderNotificationJob(
             judgeId, order.OrderRequest.PhysicalFileId);
     }
 
-    private static string GetJudgeName(Person judge)
+    private static PersonName GetEffectiveJudgeName(Person judge)
     {
-        var latestName = judge.Names?.FirstOrDefault();
-        if (latestName == null)
-            return "Judge";
+        var today = DateTime.Today;
 
-        return $"{latestName.FirstName} {latestName.LastName}".Trim();
+        return judge.Names?
+            .Where(name =>
+            {
+                var effectiveDate = GetNameEffectiveDate(name);
+                var expiryDate = GetNameExpiryDate(name);
+
+                return effectiveDate.HasValue
+                    && effectiveDate.Value.Date < today
+                    && (!expiryDate.HasValue || expiryDate.Value.Date > today);
+            })
+            .OrderByDescending(name => GetNameEffectiveDate(name))
+            .FirstOrDefault();
+    }
+
+    private static string FormatJudgeFullName(PersonName judgeName)
+    {
+        return string.Join(" ", new[] { judgeName.FirstName, judgeName.LastName }
+            .Where(namePart => !string.IsNullOrWhiteSpace(namePart)));
+    }
+
+    private static DateTime? GetNameEffectiveDate(PersonName name)
+    {
+        if (name.EffDate.HasValue)
+        {
+            return name.EffDate.Value;
+        }
+
+        return DateTime.TryParse(name.EffectiveDate, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var effectiveDate)
+            ? effectiveDate
+            : null;
+    }
+
+    private static DateTime? GetNameExpiryDate(PersonName name)
+    {
+        if (name.ExpDate.HasValue)
+        {
+            return name.ExpDate.Value;
+        }
+
+        if (string.IsNullOrWhiteSpace(name.ExpiryDate))
+        {
+            return null;
+        }
+
+        return DateTime.TryParse(name.ExpiryDate, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var expiryDate)
+            ? expiryDate
+            : null;
     }
 }

@@ -1,5 +1,5 @@
 export interface OrderReceivedNotificationPayload {
   orderId: string;
-  phsyicalFileId: string;
+  physicalFileId: string;
   message: string;
 }

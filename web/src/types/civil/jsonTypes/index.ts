@@ -98,6 +98,7 @@ export interface civilDocumentType {
   issue: civilDocumentIssueType[];
   civilDocumentId: string;
   imageId: string;
+  transcriptOrderId: string;
   fileSeqNo: string;
   documentTypeCd: string;
   affidavitNo: string;

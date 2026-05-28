@@ -166,7 +166,10 @@
           ({
             civilDocumentId: doc.documentId,
             category: doc.category,
-            imageId: doc.imageId,
+            documentTypeCd: doc.category,
+            imageId:
+              doc.documentType == 'Transcript' ? doc.documentId : doc.imageId,
+            transcriptOrderId: doc.orderId,
             documentTypeDescription: doc.fileName,
             fileSeqNo: doc.fileSeqNo,
             filedBy: doc.filedBy,

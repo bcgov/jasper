@@ -1,7 +1,7 @@
 import {
-  usePDFViewerStore,
   useCriminalDocumentBundleStore,
   useJudicialBinderStore,
+  usePDFViewerStore,
 } from '@/stores';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
 import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
@@ -468,6 +468,11 @@ export default {
     )?.name;
 
     const documentType = getCivilDocumentType(document);
+    if (documentType === CourtDocumentType.Transcript) {
+      document.category ??= CourtDocumentType[CourtDocumentType.Transcript]; // backwards compatibility with older judicial binders.
+      documentData.documentId = document.imageId;
+      documentData.orderId = document.transcriptOrderId;
+    }
     this.openDocumentsPdf(documentType, documentData);
   },
 };

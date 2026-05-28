@@ -60,6 +60,7 @@ export const prepareCivilDocumentData = (data: civilDocumentType) => {
   const civilFileStore = useCivilFileStore();
   const isLitigantDocument =
     data.category?.toLowerCase() === 'reference' ||
+    data.category?.toLowerCase() === 'ref' || // TODO: fix for civil binder documents having the documentTypeCd saving to the category on the backend (see BinderMapping).
     data.category?.toLowerCase() === 'litigant';
   const documentData: DocumentData = {
     appearanceDate: beautifyDate(data.lastAppearanceDt),

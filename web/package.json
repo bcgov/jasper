@@ -42,7 +42,7 @@
     "underscore": "^1.13.8",
     "uuid": "^14.0.0",
     "vue": "^3.5.32",
-    "vue-router": "^5.0.5",
+    "vue-router": "^5.0.6",
     "vue3-snapshot-serializer": "^2.13.2",
     "vuedraggable": "^4.1.0",
     "vuetify": "3.11.8"

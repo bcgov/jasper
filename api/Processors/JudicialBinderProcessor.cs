@@ -87,10 +87,10 @@ public class JudicialBinderProcessor : BinderProcessorBase
             // Retrieve the full document details for the documents in the binder
             var fileDocuments = await _civilFilesService.GetDocumentsByIds(fileId, binderDocumentIds);
             var transcriptDocuments = this.Binder.Documents
-                .Where(d => d.DocumentType == Scv.Models.Document.DocumentType.Transcript)
+                .Where(d => d.DocumentType == DocumentType.Transcript)
                 .Select(d =>
                 {
-                    d.Category = Scv.Models.Document.DocumentType.Transcript.ToString();
+                    d.Category = DocumentType.Transcript.ToString();
                     return d;
                 });
 

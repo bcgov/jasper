@@ -203,8 +203,8 @@ public class JudicialBinderProcessorTests
         var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
 
         SetupFileClientMocks(fileDetail, fileContent);
-        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategories.BAIL);
-        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategories.BAIL);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))
@@ -539,7 +539,7 @@ public class JudicialBinderProcessorTests
         var redactedDetail = new RedactedCivilFileDetailResponse { Document = [] };
 
         SetupFileClientMocks(fileDetail, fileContent);
-        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategories.BAIL);
+        SetupFileServiceMocks(fileDetail, fileContent, DocumentCategory.BAIL);
 
         _mockMapper
             .Setup(x => x.Map<RedactedCivilFileDetailResponse>(It.IsAny<CivilFileDetailResponse>()))

@@ -20,6 +20,7 @@ export function useAutoRefresh(
   const snackBarStore = useSnackbarStore();
   let searchInterval: ReturnType<typeof setInterval>;
   let warningInterval: ReturnType<typeof setInterval>;
+  let isWarningShown = false;
 
   const showWarning = () => {
     snackBarStore.showSnackbar(
@@ -28,19 +29,31 @@ export function useAutoRefresh(
       '🔄 Heads-up!',
       ONE_MINUTE
     );
+    isWarningShown = true;
   };
 
   const clearTimers = () => {
     clearInterval(searchInterval);
     clearInterval(warningInterval);
-    snackBarStore.hideSnackbar();
+    if (isWarningShown) {
+      snackBarStore.hideSnackbar();
+      isWarningShown = false;
+    }
+  };
+
+  const safeRefresh = async () => {
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error('Auto-refresh callback failed:', error);
+    }
   };
 
   const setupAutoRefresh = () => {
     clearTimers();
     searchInterval = setInterval(() => {
-      if (canRefresh()) {
-        onRefresh();
+      if (canRefresh() && !isLoading()) {
+        safeRefresh();
       }
     }, TEN_MINUTES);
     warningInterval = setInterval(() => {

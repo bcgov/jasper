@@ -6,6 +6,10 @@ export type SnackbarAction = {
   onClick: () => void;
 };
 
+/**
+ * Used in many places across the app. Consider adding keys so each caller
+ * can show and dismiss its own snackbar without interfering with others.
+ */
 export const useSnackbarStore = defineStore('snackbar', () => {
   const isVisible = ref(false);
   const message = ref('');

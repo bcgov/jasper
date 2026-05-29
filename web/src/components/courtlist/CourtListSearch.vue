@@ -92,9 +92,10 @@
   import { LocationService } from '@/services';
   import { CourtListService } from '@/services/CourtListService';
   import { useCommonStore } from '@/stores';
-  import { ApiResponse } from '@/types/ApiResponse';
+  import { ApiResponse, CustomAPIError } from '@/types/ApiResponse';
   import { CourtListSearchResult, LocationInfo } from '@/types/courtlist';
   import { mdiClose } from '@mdi/js';
+  import axios, { AxiosError } from 'axios';
   import {
     computed,
     inject,
@@ -174,11 +175,13 @@
   );
 
   const handleOnline = () => {
+    if (isSearching.value || !appliedDate.value) {
+      return;
+    }
+
     isSearching.value = false;
     searchAllowed.value = true;
-    if (appliedDate.value) {
-      searchForCourtList();
-    }
+    searchForCourtList();
   };
 
   onMounted(() => {
@@ -228,6 +231,16 @@
       );
     } catch (error) {
       console.error('Failed to fetch court list:', error);
+      if (
+        error instanceof CustomAPIError &&
+        axios.isAxiosError((error as CustomAPIError<AxiosError>).originalError)
+      ) {
+        courtListResp = (
+          error as CustomAPIError<
+            AxiosError<ApiResponse<CourtListSearchResult>>
+          >
+        ).originalError.response?.data;
+      }
     } finally {
       emit('courtListSearched', courtListResp);
       isMounted.value = true;

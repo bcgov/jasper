@@ -100,10 +100,12 @@
   });
 
   const handleOnline = async () => {
-    isCalendarLoading.value = false;
-    if (selectedDate.value) {
-      await loadCalendarData();
+    if (isCalendarLoading.value || !selectedDate.value) {
+      return;
     }
+
+    isCalendarLoading.value = false;
+    await loadCalendarData();
   };
 
   watch(selectedDate, async (newDate) => {

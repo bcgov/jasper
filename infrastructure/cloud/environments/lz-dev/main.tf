@@ -262,12 +262,6 @@ module "ecs_web_td" {
   log_group_name         = module.ecs_web_td_log_group.log_group.name
   cpu                    = var.web_ecs_config.cpu
   memory_size            = var.web_ecs_config.memory_size
-  env_variables = [
-    {
-      name  = "ENABLE_SNOWPLOW"
-      value = "true"
-    }
-  ]
 }
 
 # SNS Topic for ECS Alerts

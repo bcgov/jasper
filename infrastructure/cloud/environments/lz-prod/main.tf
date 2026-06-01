@@ -114,14 +114,14 @@ module "tg_web" {
 }
 
 module "tg_api" {
-  source            = "../../modules/TargetGroup"
-  environment       = var.environment
-  app_name          = var.app_name
-  name              = "api"
-  port              = 5000
-  health_check_path = "/api/test/headers"
-  vpc_id            = data.aws_vpc.vpc.id
-  protocol          = "HTTP"
+  source                     = "../../modules/TargetGroup"
+  environment                = var.environment
+  app_name                   = var.app_name
+  name                       = "api"
+  port                       = 5000
+  health_check_path          = "/api/test/headers"
+  vpc_id                     = data.aws_vpc.vpc.id
+  protocol                   = "HTTP"
   stickiness_enabled         = true
   stickiness_cookie_duration = 36000
 }
@@ -262,6 +262,12 @@ module "ecs_web_td" {
   log_group_name         = module.ecs_web_td_log_group.log_group.name
   cpu                    = var.web_ecs_config.cpu
   memory_size            = var.web_ecs_config.memory_size
+  env_variables = [
+    {
+      name  = "ENABLE_SNOWPLOW"
+      value = "true"
+    }
+  ]
 }
 
 # SNS Topic for ECS Alerts

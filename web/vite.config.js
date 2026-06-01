@@ -15,34 +15,31 @@ console.log('[vite] VITE_WS_PROXY_ORIGIN:', wsProxyOrigin);
 console.log('[vite] VITE_WS_PROXY_INSECURE:', wsProxyInsecure);
 
 export default defineConfig(({ mode }) => {
-  const isProd = Boolean(process.env.VITE_ENV?.includes('prod'));
-
-  // Base plugins array
-  const plugins = [vue(), svgLoader(), Components({}), basicSsl()];
-
-  // Conditionally static copy prod-only files
-  if (isProd) {
-    plugins.push(
-      viteStaticCopy({
-        targets: [
-          {
-            src: path.resolve(__dirname, 'snowplow.js'),
-            dest: '.',
-          },
-        ],
-      }),
-      // Inject snowplow script tag in HTML for prod builds
-      {
-        name: 'inject-snowplow',
-        transformIndexHtml(html) {
-          return html.replace(
-            '</head>',
-            '    <script src="/snowplow.js" charset="UTF-8"></script>\n  </head>'
-          );
+  const plugins = [
+    vue(),
+    svgLoader(),
+    Components({}),
+    basicSsl(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: path.resolve(__dirname, 'snowplow.js'),
+          dest: '.',
         },
-      }
-    );
-  }
+      ],
+    }),
+    // Inject a placeholder for the Snowplow script, which will be replaced by the backend with the actual script tag.
+    // This allows us to load the Snowplow script from a dynamic URL, which is necessary for S2I.
+    {
+      name: 'inject-snowplow-placeholder',
+      transformIndexHtml(html) {
+        return html.replace(
+          '</head>',
+          '    <!-- S2I_INJECT_SNOWPLOW -->\n  </head>'
+        );
+      },
+    },
+  ];
 
   return {
     base:

@@ -66,7 +66,6 @@ FROM registry.access.redhat.com/ubi9/nodejs-${NODE_VERSION} AS artifacts
 ARG NODE_VERSION
 ARG WEB_SRC
 ARG NPM_INSTALL_ARGS
-ARG VITE_ENV
 
 USER root
 WORKDIR /opt/app-root/src
@@ -79,9 +78,6 @@ RUN npm ci ${NPM_INSTALL_ARGS} --ignore-scripts
 
 # Copy the rest of the code
 COPY ${WEB_SRC} .
-
-# Set VITE_ENV as an environment variable for the build
-ENV VITE_ENV=${VITE_ENV}
 
 RUN npm run build 
 

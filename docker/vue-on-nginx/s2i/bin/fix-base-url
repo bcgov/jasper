@@ -13,4 +13,17 @@ do
 	printf "%s" "$tmp" > "$f";
 done
 
+# Conditionally inject the Snowplow analytics <script> tag into index.html.
+# The vite build always emits the "<!-- S2I_INJECT_SNOWPLOW -->" placeholder
+# and always ships snowplow.js in the bundle. The runtime wires up the
+# script only when ENABLE_SNOWPLOW=true; otherwise the placeholder is stripped.
+if [ "${ENABLE_SNOWPLOW}" = "true" ]; then
+    SNOWPLOW_TAG='<script src="/snowplow.js" charset="UTF-8"></script>'
+    echo "---> ENABLE_SNOWPLOW=true: injecting snowplow.js into index.html..."
+else
+    SNOWPLOW_TAG=''
+    echo "---> ENABLE_SNOWPLOW!=true: stripping snowplow placeholder from index.html..."
+fi
+sed -i "s|<!-- S2I_INJECT_SNOWPLOW -->|${SNOWPLOW_TAG}|" /tmp/app/dist/index.html
+
 /usr/libexec/s2i/run

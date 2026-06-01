@@ -18,12 +18,12 @@
     "@types/qs": "^6.14.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.8",
     "dotenv": "^17.3.1",
     "esbuild": "^0.27.3",
     "eslint": "^10.0.2",
     "eslint-define-config": "^2.1.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.31.0",

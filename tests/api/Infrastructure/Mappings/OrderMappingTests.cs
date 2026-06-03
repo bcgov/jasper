@@ -337,10 +337,21 @@ public class OrderMappingTests
     }
 
     [Fact]
-    public void Order_To_OrderViewDto_MapsCourtListType_PSM_ToOrder()
+    public void Order_To_OrderViewDto_MapsCourtListType_PSM_To_Order()
     {
         var order = CreateOrder();
         order.OrderRequest.Referral.CourtListTypeCd = "PSM";
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal("Desk Order", result.CourtListType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_PSC_To_DeskOrder()
+    {
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = "PSC";
 
         var result = order.Adapt<OrderViewDto>(_config);
 
@@ -348,14 +359,25 @@ public class OrderMappingTests
     }
 
     [Fact]
-    public void Order_To_OrderViewDto_MapsCourtListType_PSC_ToApplication()
+    public void Order_To_OrderViewDto_MapsCourtListType_PFA_To_Order()
     {
         var order = CreateOrder();
-        order.OrderRequest.Referral.CourtListTypeCd = "PSC";
+        order.OrderRequest.Referral.CourtListTypeCd = "PFA";
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal("Application", result.CourtListType);
+        Assert.Equal("Order", result.CourtListType);
+    }
+
+    [Fact]
+    public void Order_To_OrderViewDto_MapsCourtListType_PFM_To_DeskOrder()
+    {
+        var order = CreateOrder();
+        order.OrderRequest.Referral.CourtListTypeCd = "PFM";
+
+        var result = order.Adapt<OrderViewDto>(_config);
+
+        Assert.Equal("Desk Order", result.CourtListType);
     }
 
     [Fact]

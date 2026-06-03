@@ -182,6 +182,12 @@ export enum OrderReviewStatus {
   AwaitingDocumentation = 'AwaitingDocumentation',
 }
 
+export enum OrderPriorityEnum {
+  ProtectionOrders = 'PRO',
+  CourtDirected = 'CRTD',
+  Other = 'OTHR',
+}
+
 export enum RolesEnum {
   Admin = 'System Administrator',
   Trainer = 'Trainer',

@@ -15,6 +15,7 @@ public class OrderViewDto : BaseDto
     public string PriorityType { get; set; }
     public string PriorityTypeDescription => GetPriorityTypeDescription(PriorityType);
     public string CourtListType { get; set; }
+    public string ReferralNotes { get; set; }
 
     private static string GetPriorityTypeDescription(string priorityType)
     {
@@ -22,7 +23,7 @@ public class OrderViewDto : BaseDto
         {
             "PRO" => "Protection Orders",
             "CRTD" => "Court Directed",
-            "OTH" => "Other",
+            "OTHR" => "Other",
             _ => string.Empty
         };
     }

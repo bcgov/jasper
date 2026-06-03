@@ -132,6 +132,7 @@ describe('OrdersDataTable.vue', () => {
       'DIVISION',
       'FILE #',
       'ACCUSED / PARTIES',
+      'NOTES',
     ]);
   });
 

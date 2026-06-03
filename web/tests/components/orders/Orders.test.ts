@@ -52,13 +52,14 @@ const mockOrderService = {
 // Helper function to generate test orders
 const generateOrder = (
   status: OrderReviewStatus,
-  courtClass: 'Criminal' | 'Civil' = 'Criminal'
+  courtClass: 'Criminal' | 'Civil' = 'Criminal',
+  receivedDate?: string
 ): Order => ({
   id: faker.string.uuid(),
   packageId: faker.number.int({ min: 10000, max: 99999 }),
   packageDocumentId: faker.string.uuid(),
   packageName: faker.lorem.word(),
-  receivedDate: faker.date.past().toISOString().split('T')[0],
+  receivedDate: receivedDate || faker.date.past().toISOString().split('T')[0],
   processedDate:
     status === OrderReviewStatus.Approved
       ? faker.date.recent().toISOString().split('T')[0]
@@ -71,13 +72,14 @@ const generateOrder = (
       : `${faker.person.lastName()} v ${faker.person.lastName()}`,
   physicalFileId: `file-${faker.string.alphanumeric(3)}`,
   status,
+  priorityType: '',
+  courtListType: '',
 });
 
 describe('Orders.vue', () => {
   let pinia: any;
   let mockOrdersStore: any;
   let mockCourtFileSearchStore: any;
-  let mockCommonStore: any;
   const mockPendingOrder: Order = generateOrder(
     OrderReviewStatus.Pending,
     'Criminal'
@@ -167,12 +169,46 @@ describe('Orders.vue', () => {
   });
 
   it('filters completed orders correctly', () => {
+    // Override with an approved order received within the last 30 days
+    const recentApprovedOrder = generateOrder(
+      OrderReviewStatus.Approved,
+      'Civil',
+      new Date().toISOString().split('T')[0]
+    );
+    mockOrdersStore.orders = [mockPendingOrder, recentApprovedOrder];
+
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
     expect(vm.completedOrders).toHaveLength(1);
-    expect(vm.completedOrders[0].id).toBe(mockApprovedOrder.id);
+    expect(vm.completedOrders[0].id).toBe(recentApprovedOrder.id);
     expect(vm.completedOrders[0].status).toBe(OrderReviewStatus.Approved);
+  });
+
+  it('excludes completed orders received more than 30 days ago', () => {
+    const daysAgo = (days: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d.toISOString().split('T')[0];
+    };
+
+    const recentApprovedOrder = generateOrder(
+      OrderReviewStatus.Approved,
+      'Civil',
+      daysAgo(5)
+    );
+    const oldApprovedOrder = generateOrder(
+      OrderReviewStatus.Approved,
+      'Civil',
+      daysAgo(31)
+    );
+    mockOrdersStore.orders = [recentApprovedOrder, oldApprovedOrder];
+
+    const wrapper = createWrapper();
+
+    const vm = wrapper.vm as any;
+    expect(vm.completedOrders).toHaveLength(1);
+    expect(vm.completedOrders[0].id).toBe(recentApprovedOrder.id);
   });
 
   it('handles empty orders array', () => {

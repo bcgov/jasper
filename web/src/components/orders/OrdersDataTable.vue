@@ -3,6 +3,8 @@
     :headers="headers"
     :items="data"
     :sort-by="sortBy"
+    :row-props="getRowProps"
+    :style="maxHeight ? { maxHeight: `${maxHeight}px` } : undefined"
     fixed-header
   >
     <template #[`item.packageId`]="{ item }">
@@ -48,6 +50,7 @@
   import { DataTableHeader } from '@/types/shared';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
+  import { DateTime } from 'luxon';
   import { computed, ref } from 'vue';
 
   type ColumnKey =
@@ -58,7 +61,8 @@
     | 'processedDate'
     | 'division'
     | 'fileNumber'
-    | 'styleOfCause';
+    | 'styleOfCause'
+    | 'referralNotes';
 
   const props = defineProps<{
     data: Order[];
@@ -66,11 +70,31 @@
     viewCaseDetails: (item: Order) => void;
     columns?: ColumnKey[];
     sortBy?: { key: string; order: 'asc' | 'desc' }[];
+    highlightAgedOrders?: boolean;
+    agedOrdersThresholdDays?: number;
+    maxHeight?: number;
   }>();
 
   const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>(
     props.sortBy ?? [{ key: 'receivedDate', order: 'asc' }]
   );
+
+  const isAgedOrder = (order: Order): boolean => {
+    if (!props.highlightAgedOrders) {
+      return false;
+    }
+    const thresholdDays = props.agedOrdersThresholdDays ?? 5;
+    const received = DateTime.fromJSDate(new Date(order.receivedDate));
+    if (!received.isValid) {
+      return false;
+    }
+    const ageDays = DateTime.now().diff(received, 'days').days;
+    return ageDays > thresholdDays;
+  };
+
+  const getRowProps = ({ item }: { item: Order }) => ({
+    class: isAgedOrder(item) ? 'aged-row' : undefined,
+  });
 
   const allColumns: Record<ColumnKey, DataTableHeader> = {
     packageId: {
@@ -79,7 +103,7 @@
     },
     priorityType: {
       title: 'PRIORITY',
-      key: 'priorityType',
+      key: 'priorityTypeDescription',
     },
     courtListType: {
       title: 'TYPE',
@@ -113,6 +137,10 @@
       title: 'ACCUSED / PARTIES',
       key: 'styleOfCause',
     },
+    referralNotes: {
+      title: 'NOTES',
+      key: 'referralNotes',
+    },
   };
 
   const headers = computed<DataTableHeader[]>(() => {
@@ -124,7 +152,19 @@
       'division',
       'fileNumber',
       'styleOfCause',
+      'referralNotes',
     ];
     return columnKeys.map((key) => allColumns[key]);
   });
 </script>
+
+<style scoped>
+  :deep(tr.aged-row),
+  :deep(tr.aged-row > td) {
+    background-color: var(--bg-yellow-500);
+  }
+  :deep(tr.aged-row:hover),
+  :deep(tr.aged-row:hover > td) {
+    background-color: var(--bg-yellow-500);
+  }
+</style>

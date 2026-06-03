@@ -34,7 +34,10 @@
               'division',
               'fileNumber',
               'styleOfCause',
+              'referralNotes',
             ]"
+            highlight-aged-orders
+            :max-height="400"
           />
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -55,8 +58,10 @@
               'division',
               'fileNumber',
               'styleOfCause',
+              'referralNotes',
             ]"
             :sortBy="[{ key: 'processedDate', order: 'desc' }]"
+            :max-height="400"
           />
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -74,12 +79,16 @@
   import { KeyValueInfo, OrderReviewStatus } from '@/types/common';
   import { viewOrderDetails } from '@/utils/orderDetails';
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
+  import { DateTime } from 'luxon';
   import { computed, inject, onMounted } from 'vue';
 
   const ordersStore = useOrdersStore();
   const courtFileSearchStore = useCourtFileSearchStore();
   const commonStore = useCommonStore();
   const orderService = inject<OrderService>('orderService');
+
+  // Only show orders that was completed within the last 30 days.
+  const COMPLETED_ORDERS_CUTOFF_DAYS = 30;
 
   if (!orderService) {
     throw new Error('Service is not available!');
@@ -102,12 +111,18 @@
       ) ?? []
   );
 
-  const completedOrders = computed(
-    () =>
+  const completedOrders = computed(() => {
+    const cutoff = DateTime.now()
+      .minus({ days: COMPLETED_ORDERS_CUTOFF_DAYS })
+      .startOf('day');
+    return (
       ordersStore?.orders?.filter(
-        (order) => order.status === OrderReviewStatus.Approved
+        (order) =>
+          order.status === OrderReviewStatus.Approved &&
+          DateTime.fromJSDate(new Date(order.receivedDate)) >= cutoff
       ) ?? []
-  );
+    );
+  });
 
   const viewCaseDetails = (item: Order) => {
     const courtClassLabel = getCourtClassLabel(item.courtClass);
@@ -142,8 +157,6 @@
 
   .v-expansion-panel-text {
     background-color: var(--bg-white-500) !important;
-    max-height: 400px;
-    overflow-y: auto;
   }
 
   :deep(.v-expansion-panel-text__wrapper) {

@@ -17,26 +17,27 @@
 </template>
 
 <script setup lang="ts">
+  import type { OrderService } from '@/services';
   import { useCommonStore } from '@/stores';
-  import { onMounted, onUnmounted, ref, inject } from 'vue';
-  import {
-    mdiNotebookOutline,
-    mdiFileDocumentArrowRightOutline,
-  } from '@mdi/js';
-  import { OrderService } from '@/services';
-  import { PDFViewerStrategy, OutlineItem } from './strategies/PDFViewerTypes';
-  import ReviewModal from './ReviewModal.vue';
-  import { OrderReview } from '@/types';
+  import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-
-  // Declare NutrientViewer global
-  declare global {
-    const NutrientViewer: any;
-  }
+  import {
+    mdiFileDocumentArrowRightOutline,
+    mdiNotebookOutline,
+  } from '@mdi/js';
+  import { inject, onMounted, onUnmounted, ref } from 'vue';
+  import ReviewModal from './ReviewModal.vue';
+  import type { AnyPDFViewerStrategy } from './strategies/PDFStrategyFactory';
+  import type {
+    EmbeddedOutlineAwarePDFViewerStrategy,
+    OutlineItem,
+  } from './strategies/PDFViewerTypes';
 
   // Props for the generic component
-  interface Props<TStrategy extends PDFViewerStrategy = PDFViewerStrategy> {
+  interface Props<
+    TStrategy extends AnyPDFViewerStrategy = AnyPDFViewerStrategy,
+  > {
     strategy: TStrategy;
   }
 
@@ -46,6 +47,7 @@
   const emptyStore = ref(false);
   const showReviewModal = ref(false);
   const canApprove = ref<boolean>(false);
+  const nutrientViewer = globalThis.NutrientViewer as any;
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
@@ -93,11 +95,7 @@
 
       loading.value = false;
 
-      // Create outline and load PDF viewer
-      const outline = props.strategy.createOutline(rawData, apiResponse);
       const base64Pdf = props.strategy.extractBase64PDF(apiResponse);
-
-      const nutrientOutline = createNutrientOutline(outline);
 
       const openInfoItem = {
         type: 'custom',
@@ -107,18 +105,20 @@
         onPress: () => {
           let firstPhysicalFileId: string | undefined;
           let isCriminal: boolean | undefined;
-          Object.values(rawData).forEach((personDocuments) => {
-            Object.values(personDocuments as any)
-              .flat()
-              .forEach((doc: any) => {
-                if (doc?.physicalFileId) {
-                  firstPhysicalFileId ??= doc.physicalFileId;
-                }
-                if (doc?.request?.data?.isCriminal !== undefined) {
-                  isCriminal ??= doc.request.data.isCriminal;
-                }
-              });
-          });
+          Object.values(rawData as Record<string, unknown>).forEach(
+            (personDocuments) => {
+              Object.values(personDocuments as any)
+                .flat()
+                .forEach((doc: any) => {
+                  if (doc?.physicalFileId) {
+                    firstPhysicalFileId ??= doc.physicalFileId;
+                  }
+                  if (doc?.request?.data?.isCriminal !== undefined) {
+                    isCriminal ??= doc.request.data.isCriminal;
+                  }
+                });
+            }
+          );
 
           window.open(
             `${isCriminal ? 'criminal-file/' : 'civil-file/'}${firstPhysicalFileId}`,
@@ -137,16 +137,33 @@
         },
       };
 
-      instance = await NutrientViewer.load({
+      instance = await nutrientViewer.load({
         ...configuration,
         document: `data:application/pdf;base64,${base64Pdf}`,
       });
 
-      instance.setDocumentOutline(nutrientOutline);
+      if (supportsEmbeddedOutline(props.strategy)) {
+        const outline = props.strategy.createOutlineWithEmbeddedOutline(
+          rawData,
+          apiResponse,
+          await getEmbeddedOutline()
+        );
+
+        if (outline?.length) {
+          const nutrientOutline = createNutrientOutline(outline);
+          instance.setDocumentOutline(nutrientOutline);
+        }
+      } else {
+        const outline =
+          props.strategy.createOutline(rawData, apiResponse) ?? [];
+        const nutrientOutline = createNutrientOutline(outline);
+        instance.setDocumentOutline(nutrientOutline);
+      }
+
       instance.setViewState((viewState) =>
         viewState.set(
           'sidebarMode',
-          NutrientViewer.SidebarMode.DOCUMENT_OUTLINE
+          nutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
       instance.setToolbarItems((items: any) => {
@@ -171,31 +188,95 @@
   };
 
   const createNutrientOutline = (outlineData: OutlineItem[]): any => {
-    return NutrientViewer.Immutable.List(
+    return nutrientViewer.Immutable.List(
       outlineData.map((item) => createOutlineElement(item))
     );
+  };
+
+  const supportsEmbeddedOutline = (
+    strategy: AnyPDFViewerStrategy
+  ): strategy is AnyPDFViewerStrategy &
+    EmbeddedOutlineAwarePDFViewerStrategy<unknown, unknown> => {
+    return (
+      typeof (strategy as { createOutlineWithEmbeddedOutline?: unknown })
+        .createOutlineWithEmbeddedOutline === 'function'
+    );
+  };
+
+  const getEmbeddedOutline = async (): Promise<OutlineItem[] | undefined> => {
+    if (typeof instance.getDocumentOutline !== 'function') {
+      console.warn(
+        'Embedded outline API is unavailable; continuing without embedded outline.'
+      );
+      return undefined;
+    }
+
+    try {
+      const embeddedOutline = await instance.getDocumentOutline();
+      const outlineItems = convertOutlineListToItems(embeddedOutline);
+
+      return outlineItems.length > 0 ? outlineItems : undefined;
+    } catch (error) {
+      console.warn(
+        'Failed to extract embedded outline; continuing without embedded outline.',
+        error
+      );
+      return undefined;
+    }
+  };
+
+  const convertOutlineListToItems = (outlineList: any): OutlineItem[] => {
+    const outlineElements = Array.isArray(outlineList)
+      ? outlineList
+      : (outlineList?.toArray?.() ?? Array.from(outlineList ?? []));
+
+    return outlineElements.map((element: any) =>
+      convertOutlineElementToItem(element)
+    );
+  };
+
+  const convertOutlineElementToItem = (element: any): OutlineItem => {
+    if (!element || typeof element.title !== 'string') {
+      throw new TypeError('Embedded outline element is malformed.');
+    }
+
+    const childItems = convertOutlineListToItems(element.children);
+    const actionPageIndex = element.action?.pageIndex;
+
+    return {
+      title: element.title,
+      pageIndex:
+        typeof actionPageIndex === 'number' ? actionPageIndex : undefined,
+      isExpanded: element.isExpanded,
+      children: childItems.length > 0 ? childItems : undefined,
+    };
   };
 
   const createOutlineElement = (item: OutlineItem): any => {
     const baseElement = {
       title: item.title,
-      action:
-        item.pageIndex !== undefined
-          ? new NutrientViewer.Actions.GoToAction({ pageIndex: item.pageIndex })
-          : undefined,
+      action: createOutlineAction(item.pageIndex),
     };
 
     if (item.children?.length) {
-      return new NutrientViewer.OutlineElement({
+      return new nutrientViewer.OutlineElement({
         ...baseElement,
         isExpanded: item.isExpanded ?? true,
-        children: NutrientViewer.Immutable.List(
+        children: nutrientViewer.Immutable.List(
           item.children.map((child) => createOutlineElement(child))
         ),
       });
     }
 
-    return new NutrientViewer.OutlineElement(baseElement);
+    return new nutrientViewer.OutlineElement(baseElement);
+  };
+
+  const createOutlineAction = (pageIndex: number | undefined): any => {
+    if (pageIndex === undefined) {
+      return undefined;
+    }
+
+    return new nutrientViewer.Actions.GoToAction({ pageIndex });
   };
 
   const reviewOrder = async (orderReview: OrderReview) => {
@@ -224,8 +305,8 @@
   });
 
   onUnmounted(() => {
-    if (NutrientViewer) {
-      NutrientViewer.unload('.pdf-container');
+    if (nutrientViewer) {
+      nutrientViewer.unload('.pdf-container');
     }
     if (props.strategy.cleanup) {
       props.strategy.cleanup();

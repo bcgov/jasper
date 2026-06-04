@@ -1,21 +1,22 @@
-import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
-import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
+import type { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
 import {
-  FileMetadataDto,
-  TransitoryMergeContext,
-  TransitoryViewerPayload,
+  type EmbeddedOutlineAwarePDFViewerStrategy,
+  type FileMetadataDto,
+  type TransitoryMergeContext,
+  type TransitoryViewerPayload,
 } from '@/types/transitory-documents';
+import type { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
 
 interface MergedPdfResponse {
   base64Pdf: string;
   pageRanges: Array<{ start: number; end?: number }>;
 }
 
-export class TransitoryBundleStrategy implements PDFViewerStrategy<
-  FileMetadataDto[],
-  FileMetadataDto[],
-  MergedPdfResponse
-> {
+export class TransitoryBundleStrategy
+  implements
+    PDFViewerStrategy<FileMetadataDto[], FileMetadataDto[], MergedPdfResponse>,
+    EmbeddedOutlineAwarePDFViewerStrategy<FileMetadataDto[], MergedPdfResponse>
+{
   private readonly transitoryDocumentsService: TransitoryDocumentsService;
   private readonly storageKey: string;
   private documentsData: FileMetadataDto[] = [];
@@ -96,12 +97,89 @@ export class TransitoryBundleStrategy implements PDFViewerStrategy<
   createOutline(
     rawData: FileMetadataDto[],
     apiResponse: MergedPdfResponse
+  ): OutlineItem[] | undefined {
+    return this.createOutlineWithEmbeddedOutline(rawData, apiResponse);
+  }
+
+  createOutlineWithEmbeddedOutline(
+    rawData: FileMetadataDto[],
+    apiResponse: MergedPdfResponse,
+    embeddedOutline?: OutlineItem[]
+  ): OutlineItem[] | undefined {
+    return rawData.map((doc, index) => {
+      const pageRange = apiResponse.pageRanges?.[index];
+      const pageStart = pageRange?.start;
+      const pageEnd =
+        pageRange?.end ?? apiResponse.pageRanges?.[index + 1]?.start;
+
+      return {
+        title: doc.fileName,
+        pageIndex: pageStart,
+        isExpanded: true,
+        children: this.filterEmbeddedOutlineForRange(
+          embeddedOutline,
+          pageStart,
+          pageEnd
+        ),
+      };
+    });
+  }
+
+  private filterEmbeddedOutlineForRange(
+    embeddedOutline: OutlineItem[] | undefined,
+    pageStart: number | undefined,
+    pageEnd: number | undefined
+  ): OutlineItem[] | undefined {
+    if (!embeddedOutline?.length || pageStart === undefined) {
+      return undefined;
+    }
+
+    const matchingItems = embeddedOutline.flatMap((item) =>
+      this.filterOutlineItemForRange(item, pageStart, pageEnd)
+    );
+
+    return matchingItems.length > 0 ? matchingItems : undefined;
+  }
+
+  private filterOutlineItemForRange(
+    item: OutlineItem,
+    pageStart: number,
+    pageEnd: number | undefined
   ): OutlineItem[] {
-    return rawData.map((doc, index) => ({
-      title: doc.fileName,
-      pageIndex: apiResponse.pageRanges?.[index]?.start || index * 10,
-      isExpanded: false,
-    }));
+    const filteredChildren = item.children?.flatMap((child) =>
+      this.filterOutlineItemForRange(child, pageStart, pageEnd)
+    );
+    const hasPageTarget = item.pageIndex !== undefined;
+    const isInRange =
+      hasPageTarget &&
+      item.pageIndex >= pageStart &&
+      (pageEnd === undefined || item.pageIndex < pageEnd);
+
+    if (isInRange) {
+      return [
+        {
+          ...item,
+          isExpanded: true,
+          children: filteredChildren?.length ? filteredChildren : undefined,
+        },
+      ];
+    }
+
+    if (!filteredChildren?.length) {
+      return [];
+    }
+
+    if (hasPageTarget) {
+      return filteredChildren;
+    }
+
+    return [
+      {
+        ...item,
+        isExpanded: true,
+        children: filteredChildren,
+      },
+    ];
   }
 
   cleanup(): void {

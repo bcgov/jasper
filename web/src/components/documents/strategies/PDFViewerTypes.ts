@@ -5,6 +5,14 @@ export type OutlineItem = {
   children?: OutlineItem[];
 };
 
+export interface EmbeddedOutlineAwarePDFViewerStrategy<TRawData, TApiResponse> {
+  createOutlineWithEmbeddedOutline(
+    rawData: TRawData,
+    apiResponse: TApiResponse,
+    embeddedOutline?: OutlineItem[]
+  ): OutlineItem[] | undefined;
+}
+
 export interface PDFViewerStrategy<TRawData, TProcessedData, TApiResponse> {
   showOrderReviewOptions?: boolean;
 
@@ -22,7 +30,10 @@ export interface PDFViewerStrategy<TRawData, TProcessedData, TApiResponse> {
     apiResponse: TApiResponse
   ): Array<{ start: number; end?: number }> | undefined;
 
-  createOutline(rawData: TRawData, apiResponse: TApiResponse): OutlineItem[];
+  createOutline(
+    rawData: TRawData,
+    apiResponse: TApiResponse
+  ): OutlineItem[] | undefined;
 
   reviewOrder?(orderReview: unknown): Promise<void>;
 

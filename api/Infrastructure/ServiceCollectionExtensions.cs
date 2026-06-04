@@ -85,6 +85,9 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentMerger, DocumentMerger>();
             services.AddScoped<IDocumentRetriever, DocumentRetriever>();
             services.AddScoped<IDocumentConverter, DocumentConverter>();
+            services.AddScoped<IPdfMergePreparationStrategyResolver, PdfMergePreparationStrategyResolver>();
+            services.AddScoped<IPdfMergePreparationStrategy, TransitoryDocumentPdfMergePreparationStrategy>();
+            services.AddScoped<IPdfMergePreparationStrategy, DefaultPdfMergePreparationStrategy>();
             services.AddScoped<IDocumentStrategy, FileStrategy>();
             services.AddScoped<IDocumentStrategy, ROPStrategy>();
             services.AddScoped<IDocumentStrategy, ReportStrategy>();

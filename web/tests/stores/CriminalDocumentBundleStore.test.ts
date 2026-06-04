@@ -1,146 +1,81 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { setActivePinia, createPinia } from 'pinia';
 import { useCriminalDocumentBundleStore } from '@/stores/CriminalDocumentBundleStore';
-import { v4 as uuidv4 } from 'uuid';
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+const createAppearanceRequest = (fileNumber: string) => ({
+  fileNumber,
+  fullName: `${fileNumber} Doe`,
+  groupKeyOne: fileNumber,
+  groupKeyTwo: `${fileNumber} Person`,
+  documentName: `${fileNumber} Person`,
+  physicalFileId: `${fileNumber}-file`,
+  participantId: `${fileNumber}-participant`,
+  appearance: {
+    physicalFileId: `${fileNumber}-file`,
+    participantId: `${fileNumber}-participant`,
+    appearanceId: `${fileNumber}-appearance`,
+    courtClassCd: 'CLS',
+  },
+});
 
 describe('CriminalDocumentBundleStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });
 
-  it('initializes with empty bundles and appearance requests', () => {
+  it('initializes with empty session-backed state', () => {
     const store = useCriminalDocumentBundleStore();
-    expect(store.bundles).toEqual([]);
+
     expect(store.sessions).toEqual({});
     expect(store.activeSessionId).toBeNull();
-    expect(store.getAppearanceRequests).toEqual([]);
     expect(store.getPdfItems()).toEqual([]);
     expect(store.hasPdfData()).toBe(false);
-    expect(store.request).toEqual({});
   });
 
-  it('getBundle returns bundle by id', () => {
+  it('returns data for an explicit session instead of the active session', () => {
     const store = useCriminalDocumentBundleStore();
-    const bundleId = uuidv4();
 
-    store.addBundle(bundleId);
-    const bundle = store.getBundle(bundleId);
+    store.setPdfItems([createAppearanceRequest('FN1')] as any, 'session-1');
+    store.setPdfItems([createAppearanceRequest('FN2')] as any, 'session-2');
 
-    expect(bundle).toBeDefined();
-    expect(bundle?.id).toBe(bundleId);
+    expect(store.activeSessionId).toBe('session-2');
+    expect(store.getPdfItems('session-1')).toEqual([
+      createAppearanceRequest('FN1'),
+    ]);
+    expect(store.hasPdfData('session-1')).toBe(true);
   });
 
-  it('getBundle returns undefined for non-existent bundle', () => {
+  it('clearBundles clears only the requested session', () => {
     const store = useCriminalDocumentBundleStore();
-    const nonExistentId = uuidv4();
 
-    const bundle = store.getBundle(nonExistentId);
-    expect(bundle).toBeUndefined();
+    store.setPdfItems([createAppearanceRequest('FN1')] as any, 'session-1');
+    store.setPdfItems([createAppearanceRequest('FN2')] as any, 'session-2');
+
+    store.clearBundles('session-1');
+
+    expect(store.getPdfItems('session-1')).toEqual([]);
+    expect(store.getPdfItems('session-2')).toEqual([
+      createAppearanceRequest('FN2'),
+    ]);
+    expect(store.activeSessionId).toBe('session-2');
   });
 
-  it('getRequests returns the request object', () => {
+  it('clearAllSessions resets all session state', () => {
     const store = useCriminalDocumentBundleStore();
-    const mockRequest = { appearances: [] };
-    store.request = mockRequest as any;
 
-    expect(store.getRequests).toEqual(mockRequest);
-  });
+    store.setPdfItems([createAppearanceRequest('FN1')] as any, 'session-1');
+    store.setPdfItems([createAppearanceRequest('FN2')] as any, 'session-2');
 
-  it('getAppearanceRequests returns appearance requests', () => {
-    const store = useCriminalDocumentBundleStore();
-    const mockRequests = [
-      {
-        fileNumber: 'FN1',
-        fullName: 'John Doe',
-        appearance: {
-          physicalFileId: 'F1',
-          participantId: 'P1',
-          appearanceId: 'APP1',
-          courtClassCd: 'CLS1',
-        },
-      },
-    ];
-    store.setPdfItems(mockRequests as any, 'session-1');
+    store.clearAllSessions();
 
-    expect(store.getAppearanceRequests).toEqual(mockRequests);
-  });
-
-  it('addBundle creates a new bundle and adds it to bundles array', () => {
-    const store = useCriminalDocumentBundleStore();
-    const bundleId = uuidv4();
-
-    store.addBundle(bundleId);
-
-    expect(store.bundles).toHaveLength(1);
-    expect(store.bundles[0].id).toBe(bundleId);
-    expect(store.bundles[0].binders).toEqual([]);
-  });
-
-  it('addBinder adds binder to specific bundle', () => {
-    const store = useCriminalDocumentBundleStore();
-    const bundleId = uuidv4();
-    const mockBinder = {
-      id: uuidv4(),
-      labels: { physicalFileId: 'F1' },
-    };
-
-    store.addBundle(bundleId);
-    store.addBinder(mockBinder as any, bundleId);
-
-    const bundle = store.getBundle(bundleId);
-    expect(bundle?.binders).toHaveLength(1);
-    expect(bundle?.binders[0]).toEqual(mockBinder);
-  });
-
-  it('addBinder does nothing if bundle does not exist', () => {
-    const store = useCriminalDocumentBundleStore();
-    const nonExistentBundleId = uuidv4();
-    const mockBinder = {
-      id: uuidv4(),
-      labels: { physicalFileId: 'F1' },
-    };
-
-    // Should not throw and should not add to any bundle
-    store.addBinder(mockBinder as any, nonExistentBundleId);
-
-    expect(store.bundles).toHaveLength(0);
-  });
-
-  it('clearBundles resets all state', () => {
-    const store = useCriminalDocumentBundleStore();
-    const bundleId = uuidv4();
-
-    store.addBundle(bundleId);
-    store.setPdfItems(
-      [
-        {
-          fileNumber: 'FN1',
-          fullName: 'John Doe',
-          appearance: {
-            physicalFileId: 'F1',
-            participantId: 'P1',
-            appearanceId: 'APP1',
-            courtClassCd: 'CLS1',
-          },
-        },
-      ] as any,
-      'session-1'
-    );
-
-    store.clearBundles();
-
-    expect(store.bundles).toEqual([]);
     expect(store.sessions).toEqual({});
     expect(store.activeSessionId).toBeNull();
-    expect(store.getAppearanceRequests).toEqual([]);
     expect(store.getPdfItems()).toEqual([]);
-    expect(store.request).toEqual({});
+    expect(store.hasPdfData()).toBe(false);
   });
 
   it('supports persistence when persist option is enabled', () => {
-    // This test ensures the store is created with persist: true
     const store = useCriminalDocumentBundleStore();
-    // Check that the store has the persist plugin applied by seeing if it's tracked
     expect(store).toBeDefined();
   });
 });

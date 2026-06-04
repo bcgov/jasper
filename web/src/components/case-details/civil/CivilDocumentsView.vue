@@ -207,6 +207,52 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
+  const createBinderDocument = (
+    document: civilDocumentType,
+    order: number
+  ): BinderDocument => {
+    const resolvedCivilDocumentType = getCivilDocumentType(document);
+    let resolvedDocumentType = DocumentRequestType.File;
+
+    if (resolvedCivilDocumentType === CourtDocumentType.CSR) {
+      resolvedDocumentType = DocumentRequestType.CourtSummary;
+    } else if (resolvedCivilDocumentType === CourtDocumentType.Transcript) {
+      resolvedDocumentType = DocumentRequestType.Transcript;
+    }
+
+    const binderDocument: BinderDocument = {
+      documentId: document.civilDocumentId,
+      category: document.category ?? '',
+      imageId: document.imageId ?? '',
+      fileName: document.documentTypeDescription ?? '',
+      order,
+      documentType: resolvedDocumentType,
+      documentPageCount: null,
+      fileSeqNo: document.fileSeqNo ?? '',
+      swornByNm: document.swornByNm ?? '',
+      filedDt: document.filedDt ?? '',
+      dateGranted: (document as any).dateGranted ?? document.DateGranted ?? '',
+      issues: (document.issue ?? []).map((issue) => ({
+        issueNumber: issue.issueNo ?? '',
+        issueDsc: issue.issueTypeDesc ?? issue.issueDsc ?? '',
+      })),
+      filedBy: (document.filedBy ?? []).map((filedBy) => ({
+        filedByName: filedBy.filedByName ?? '',
+        roleTypeCode: filedBy.roleTypeCode ?? '',
+      })),
+      documentSupport: (document.documentSupport ?? []).map((support) => ({
+        actCd: support.actCd ?? '',
+        actDsc: support.actDsc ?? '',
+      })),
+      orderId:
+        document.category === 'Transcript' && (document as any).transcriptOrderId
+          ? (document as any).transcriptOrderId.toString()
+          : undefined,
+    };
+
+    return binderDocument;
+  };
+
   const getCategoryDisplayTitle = (category: string): string => {
     const categoryMap: Record<string, string> = {
       Affidavits: AFF_FIN_STMT,
@@ -309,8 +355,7 @@
       prepareCivilDocumentData(data)
     );
 
-  // Todo, parts of these binder operation methods should be moved to a
-  // shared binder space, that way the code is not repeated
+  // Binder operations are still local here until the shared binder workflow is consolidated.
   const openMergedDocuments = (items: civilDocumentType[] = []) => {
     const documents: {
       documentType: DocumentRequestType;
@@ -350,25 +395,12 @@
   };
 
   const addDocumentToBinder = async (document: civilDocumentType) => {
-    const binderDoc = {
-      documentId: document.civilDocumentId,
-      order: currentBinder.value?.documents.length ?? 0,
-      documentType:
-        document.category === 'Transcript'
-          ? DocumentRequestType.Transcript
-          : DocumentRequestType.File,
-      fileName: document.documentTypeDescription,
-    } as BinderDocument;
+    const binderDoc = createBinderDocument(
+      document,
+      currentBinder.value?.documents.length ?? 0
+    );
 
-    // Add orderId for transcript documents
-    if (
-      document.category === 'Transcript' &&
-      (document as any).transcriptOrderId
-    ) {
-      binderDoc.orderId = (document as any).transcriptOrderId.toString();
-    }
-
-    currentBinder.value?.documents.push(binderDoc as BinderDocument);
+    currentBinder.value?.documents.push(binderDoc);
 
     await saveBinder();
   };
@@ -379,9 +411,7 @@
     }
     currentBinder.value.documents = currentBinder.value?.documents.filter(
       (d) =>
-        !selectedBinderItems.value.find(
-          (item) => item.civilDocumentId === d.documentId
-        )
+        !selectedBinderItems.value.some((item) => item.civilDocumentId === d.documentId)
     );
     selectedBinderItems.value = [];
     await saveBinder();
@@ -447,24 +477,12 @@
     }
 
     newDocuments.forEach((d) => {
-      const binderDoc = {
-        documentId: d.civilDocumentId,
-        order: currentBinder.value?.documents.length ?? 0,
-        documentType:
-          getCivilDocumentType(d) === CourtDocumentType.CSR
-            ? DocumentRequestType.CourtSummary
-            : getCivilDocumentType(d) === CourtDocumentType.Transcript
-              ? DocumentRequestType.Transcript
-              : DocumentRequestType.File,
-        fileName: d.documentTypeDescription,
-      } as BinderDocument;
+      const binderDoc = createBinderDocument(
+        d,
+        currentBinder.value?.documents.length ?? 0
+      );
 
-      // Add orderId for transcript documents
-      if (d.category === 'Transcript' && (d as any).transcriptOrderId) {
-        binderDoc.orderId = (d as any).transcriptOrderId.toString();
-      }
-
-      currentBinder.value?.documents.push(binderDoc as BinderDocument);
+      currentBinder.value?.documents.push(binderDoc);
     });
 
     selectedItems.value = [];

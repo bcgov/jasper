@@ -31,7 +31,8 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
   }
 
   processDataForAPI(
-    rawData: JudicialBinderDocumentRequest[]
+    rawData: JudicialBinderDocumentRequest[],
+    _sessionId?: string
   ): BinderLabelContext[] {
     const labelContexts = new Map<string, BinderLabelContext>();
 
@@ -76,7 +77,8 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
 
   createOutline(
     rawData: JudicialBinderDocumentRequest[],
-    apiResponse: ApiResponse<DocumentBundleResponse>
+    apiResponse: ApiResponse<DocumentBundleResponse>,
+    _sessionId?: string
   ): OutlineItem[] {
     const pageIndexByDocumentKey = this.buildPageIndexMap(apiResponse);
 
@@ -112,6 +114,8 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
     const pageIndexByDocumentKey = new Map<string, number>();
     let pageRangeIndex = 0;
 
+    // Backend binder responses currently preserve the same document order used
+    // to build pdfResponse.pageRanges, so positional correlation is intentional.
     apiResponse.payload.binders.forEach((binder) => {
       binder.documents
         .filter((document) => document.documentId)

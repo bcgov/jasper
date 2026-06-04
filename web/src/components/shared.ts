@@ -2,8 +2,8 @@ import {
   useCriminalDocumentBundleStore,
   useJudicialBinderStore,
   usePDFViewerStore,
+  useSnackbarStore,
 } from '@/stores';
-import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
 import { BinderDocument } from '@/types/BinderDocument';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtRoomsJsonInfoType } from '@/types/common';
@@ -123,6 +123,7 @@ export default {
     binder: BinderRequest,
     binderDocument: BinderDocument
   ): JudicialBinderDocumentRequest {
+    const labels = this.compactBinderLabels(binder.labels);
     const documentType =
       this.getJudicialBinderCourtDocumentType(binderDocument);
     const documentData = this.buildJudicialBinderDocumentData(
@@ -135,15 +136,25 @@ export default {
     );
 
     return {
-      labels: binder.labels,
+      labels,
       fileNumber: binder.fileNumber,
       groupKeyOne: groupedMetadata.groupKeyOne,
       groupKeyTwo: groupedMetadata.groupKeyTwo,
-      physicalFileId: binder.labels['physicalFileId'] ?? '',
-      participantId: binder.labels['participantId'] ?? '',
+      physicalFileId: labels['physicalFileId'] ?? '',
+      participantId: labels['participantId'] ?? '',
       documentName: groupedMetadata.documentName,
       documentId: binderDocument.documentId,
     };
+  },
+
+  compactBinderLabels(
+    labels: BinderRequest['labels']
+  ): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(labels).filter(
+        ([, value]) => typeof value === 'string' && value !== ''
+      )
+    );
   },
 
   convertToBase64Url(inputText: string): string {
@@ -237,10 +248,10 @@ export default {
     documentType: CourtDocumentType,
     documentData: DocumentData
   ): void {
-    const fileName = this.generateFileName(documentType, documentData).replace(
-      /\//g,
-      '_'
-    );
+    const fileName = this.generateFileName(
+      documentType,
+      documentData
+    ).replaceAll('/', '_');
 
     const sessionId = this.addDocumentsToPdfStore([
       this.createMergedDocumentEntry(
@@ -338,7 +349,7 @@ export default {
           appearanceId: appearance.appearanceId,
           participantId: appearance.profPartId,
           courtClassCd: appearance.courtClassCd,
-        } as AppearanceDocumentRequest,
+        },
 
         groupKeyOne: appearance.aslCourtFileNumber,
         groupKeyTwo: appearance.accusedNm ?? '',
@@ -367,7 +378,14 @@ export default {
   },
 
   openJudicialBinderDocuments(binders: BinderRequest[]): void {
+    const snackbarStore = useSnackbarStore();
+
     if (!binders.length) {
+      snackbarStore.showSnackbar(
+        'No viewable documents are available in this binder.',
+        'warning',
+        'Nothing to open'
+      );
       return;
     }
 
@@ -382,6 +400,11 @@ export default {
     );
 
     if (!binderRequests.length) {
+      snackbarStore.showSnackbar(
+        'No viewable documents are available in this binder.',
+        'warning',
+        'Nothing to open'
+      );
       return;
     }
 

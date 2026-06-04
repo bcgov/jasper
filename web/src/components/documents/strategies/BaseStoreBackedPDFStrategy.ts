@@ -16,7 +16,10 @@ export abstract class BaseStoreBackedPDFStrategy<
     return this.store.getPdfItems(sessionId);
   }
 
-  abstract processDataForAPI(rawData: TItem[]): TProcessedData;
+  abstract processDataForAPI(
+    rawData: TItem[],
+    sessionId?: string
+  ): TProcessedData;
 
   abstract generatePDF(processedData: TProcessedData): Promise<TApiResponse>;
 
@@ -28,7 +31,8 @@ export abstract class BaseStoreBackedPDFStrategy<
 
   abstract createOutline(
     rawData: TItem[],
-    apiResponse: TApiResponse
+    apiResponse: TApiResponse,
+    sessionId?: string
   ): OutlineItem[];
 
   cleanup(sessionId?: string): void {

@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CriminalDocumentPDFStrategy } from '@/components/documents/strategies/CriminalDocumentPDFStrategy';
 import { useCriminalDocumentBundleStore } from '@/stores';
-import { inject } from 'vue';
-import { ApiResponse } from '@/types/ApiResponse';
 import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
-import { BinderService } from '@/services';
+import { ApiResponse } from '@/types/ApiResponse';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { inject } from 'vue';
 
 vi.mock('@/stores', () => ({
   useCriminalDocumentBundleStore: vi.fn(),
@@ -233,5 +232,17 @@ describe('CriminalDocumentPDFStrategy', () => {
     const strategy = new CriminalDocumentPDFStrategy();
     strategy.cleanup();
     expect(mockKeyDocumentStore.clearPdfItems).toHaveBeenCalled();
+  });
+
+  it('maps page ranges by backend document identity instead of rawData position', () => {
+    const strategy = new CriminalDocumentPDFStrategy();
+    const rawData = [mockAppearanceRequests[2], mockAppearanceRequests[0]];
+
+    const outline = strategy.createOutline(rawData, mockApiResponse);
+
+    expect(outline[0]?.title).toBe('FN2');
+    expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(4);
+    expect(outline[1]?.title).toBe('FN1');
+    expect(outline[1]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
   });
 });

@@ -1,11 +1,12 @@
 import shared from '@/components/shared';
 import {
-  useJudicialBinderStore,
   useCriminalDocumentBundleStore,
+  useJudicialBinderStore,
+  useSnackbarStore,
 } from '@/stores';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtDocumentType } from '@/types/shared';
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/documents/DocumentUtils', () => ({
   prepareCivilDocumentData: vi.fn(),
@@ -613,12 +614,15 @@ describe('shared.getDocumentDisplayName', () => {
       CourtDocumentType.Civil,
       {
         isCriminal: false,
+        fileSeqNo: '12',
         documentDescription: 'Application for an Order - CFCSA',
-        dateFiled: '01-Jun-2024',
+        dateFiled: '2024-06-01',
       } as any
     );
 
-    expect(documentName).toBe('Application for an Order - CFCSA - 01-Jun-2024');
+    expect(documentName).toBe(
+      '12 - Application for an Order - CFCSA - 01-Jun-2024'
+    );
   });
 
   it('falls back to document description when civil filed date is missing', () => {
@@ -771,6 +775,7 @@ describe('shared.openCourtListKeyDocuments', () => {
 
 describe('shared.openJudicialBinderDocuments', () => {
   let mockJudicialBinderStore: any;
+  let mockSnackbarStore: any;
   let mockWindowOpen: any;
   let replaceWindowTitleSpy: any;
 
@@ -781,8 +786,12 @@ describe('shared.openJudicialBinderDocuments', () => {
       clearBundles: vi.fn(),
       addBundle: vi.fn(),
     };
+    mockSnackbarStore = {
+      showSnackbar: vi.fn(),
+    };
 
     (useJudicialBinderStore as any).mockReturnValue(mockJudicialBinderStore);
+    (useSnackbarStore as any).mockReturnValue(mockSnackbarStore);
 
     mockWindowOpen = vi.fn(() => ({ focus: vi.fn() }));
     window.open = mockWindowOpen;
@@ -826,11 +835,15 @@ describe('shared.openJudicialBinderDocuments', () => {
         id: expect.any(String),
         binders: [
           expect.objectContaining({
-            binder: mockBinders[0],
+            labels: {
+              physicalFileId: 'PHYS1',
+              participantId: 'PART1',
+              courtClassCd: 'CLS1',
+            },
             fileNumber: 'FN001',
             groupKeyOne: 'FN001',
             groupKeyTwo: '',
-            documentName: '12 - Application for an Order - CFCSA - 01-Jun-2024',
+            documentName: '12 - Application for an Order - CFCSA',
             physicalFileId: 'PHYS1',
             participantId: 'PART1',
             documentId: 'DOC1',
@@ -988,5 +1001,36 @@ describe('shared.openJudicialBinderDocuments', () => {
     shared.openJudicialBinderDocuments([]);
 
     expect(mockWindowOpen).not.toHaveBeenCalled();
+    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+      'No viewable documents are available in this binder.',
+      'warning',
+      'Nothing to open'
+    );
+  });
+
+  it('should show feedback and not open viewer when binders have no viewable documents', () => {
+    shared.openJudicialBinderDocuments([
+      {
+        id: 'binder-1',
+        fileNumber: 'FN001',
+        labels: {
+          physicalFileId: 'PHYS1',
+        },
+        documents: [
+          {
+            documentId: '',
+            documentType: CourtDocumentType.Civil,
+            fileName: 'Hidden',
+          },
+        ],
+      },
+    ] as any);
+
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+      'No viewable documents are available in this binder.',
+      'warning',
+      'Nothing to open'
+    );
   });
 });

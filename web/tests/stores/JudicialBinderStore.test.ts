@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { setActivePinia, createPinia } from 'pinia';
 import { useJudicialBinderStore } from '@/stores/JudicialBinderStore';
+import { createPinia, setActivePinia } from 'pinia';
 import { v4 as uuidv4 } from 'uuid';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 const createBundle = (id = uuidv4()) => ({
   id,
@@ -77,6 +77,21 @@ describe('JudicialBinderStore', () => {
     expect(store.getPdfItems()).toEqual(bundle.binders);
   });
 
+  it('returns items for an explicit session instead of the active session', () => {
+    const store = useJudicialBinderStore();
+    const firstBundle = createBundle('session-1');
+    const secondBundle = createBundle('session-2');
+
+    secondBundle.binders[0].documentId = 'DOC2';
+
+    store.addBundle(firstBundle);
+    store.addBundle(secondBundle);
+
+    expect(store.activeSessionId).toBe('session-2');
+    expect(store.getPdfItems('session-1')).toEqual(firstBundle.binders);
+    expect(store.hasPdfData('session-1')).toBe(true);
+  });
+
   it('addBinder adds binder to specific bundle', () => {
     const store = useJudicialBinderStore();
     const bundleId = uuidv4();
@@ -128,18 +143,19 @@ describe('JudicialBinderStore', () => {
     expect(store.getPdfItems()).toEqual([]);
   });
 
-  it('clearBundles resets all state', () => {
+  it('clearBundles clears only the requested session', () => {
     const store = useJudicialBinderStore();
-    const bundle = createBundle();
+    const firstBundle = createBundle('session-1');
+    const secondBundle = createBundle('session-2');
 
-    store.addBundle(bundle);
+    store.addBundle(firstBundle);
+    store.addBundle(secondBundle);
 
-    store.clearBundles();
+    store.clearBundles('session-1');
 
-    expect(store.sessions).toEqual({});
-    expect(store.activeSessionId).toBeNull();
-    expect(store.getBundles).toEqual([]);
-    expect(store.getPdfItems()).toEqual([]);
+    expect(store.getPdfItems('session-1')).toEqual([]);
+    expect(store.getPdfItems('session-2')).toEqual(secondBundle.binders);
+    expect(store.activeSessionId).toBe('session-2');
   });
 
   it('supports bundles with multiple binders', () => {

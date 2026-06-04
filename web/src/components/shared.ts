@@ -4,14 +4,14 @@ import {
   usePDFViewerStore,
 } from '@/stores';
 import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
-import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
+import { BinderDocument } from '@/types/BinderDocument';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtRoomsJsonInfoType } from '@/types/common';
 import { CourtListAppearance } from '@/types/courtlist';
-import {
-  BinderDocumentBundleRequest,
-  CriminalDocumentBundleRequest,
-} from '@/types/DocumentBundleRequest';
+import { BinderRequest } from '@/types/DocumentBundleRequest';
+import { JudicialBinderDocumentRequest } from '@/stores/JudicialBinderStore';
+import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
+import { StoreDocument } from '@/stores/PDFViewerStore';
 import {
   CourtDocumentType,
   DataTableHeader,
@@ -26,9 +26,129 @@ import {
   prepareCivilDocumentData,
 } from './documents/DocumentUtils';
 
+type MergedDocumentEntry = {
+  documentType: DocumentRequestType;
+  documentData: DocumentData;
+  groupKeyOne: string;
+  groupKeyTwo: string;
+  documentName: string;
+  physicalFileId: string;
+};
+
+type PdfViewerType = 'file' | 'order' | 'criminal-bundle' | 'judicial-binder';
+
 export default {
+  getDocumentRequestType(documentType: CourtDocumentType): DocumentRequestType {
+    if (documentType === CourtDocumentType.ROP) {
+      return DocumentRequestType.ROP;
+    }
+
+    if (documentType === CourtDocumentType.CSR) {
+      return DocumentRequestType.CourtSummary;
+    }
+
+    if (documentType === CourtDocumentType.Transcript) {
+      return DocumentRequestType.Transcript;
+    }
+
+    if (documentType === CourtDocumentType.Order) {
+      return DocumentRequestType.Order;
+    }
+
+    return DocumentRequestType.File;
+  },
+
+  buildGroupedDocumentMetadata(
+    documentType: CourtDocumentType,
+    documentData: DocumentData
+  ): {
+    groupKeyOne: string;
+    groupKeyTwo: string;
+    documentName: string;
+  } {
+    return {
+      groupKeyOne:
+        documentData.aslCourtFileNumber ?? documentData.fileNumberText ?? '',
+      groupKeyTwo: this.getGroupKeyTwo(documentType, documentData),
+      documentName: this.getDocumentDisplayName(documentType, documentData),
+    };
+  },
+
+  createMergedDocumentEntry(
+    documentType: CourtDocumentType,
+    documentData: DocumentData,
+    physicalFileId = ''
+  ): MergedDocumentEntry {
+    return {
+      documentType: this.getDocumentRequestType(documentType),
+      documentData,
+      ...this.buildGroupedDocumentMetadata(documentType, documentData),
+      physicalFileId,
+    };
+  },
+
+  getJudicialBinderCourtDocumentType(
+    binderDocument: BinderDocument
+  ): CourtDocumentType {
+    if (binderDocument.documentType === DocumentRequestType.CourtSummary) {
+      return CourtDocumentType.CSR;
+    }
+
+    if (binderDocument.documentType === DocumentRequestType.Transcript) {
+      return CourtDocumentType.Transcript;
+    }
+
+    return CourtDocumentType.Civil;
+  },
+
+  buildJudicialBinderDocumentData(
+    binder: BinderRequest,
+    binderDocument: BinderDocument
+  ): DocumentData {
+    return {
+      fileNumberText: binder.fileNumber,
+      aslCourtFileNumber: binder.fileNumber,
+      fileId: binder.labels['physicalFileId'] ?? '',
+      documentDescription:
+        binderDocument.fileName ?? String(binderDocument.documentType),
+      fileSeqNo: binderDocument.fileSeqNo,
+      dateFiled: binderDocument.filedDt,
+      orderId: binderDocument.orderId,
+      documentId: binderDocument.documentId,
+      isCriminal: false,
+    };
+  },
+
+  createJudicialBinderDocumentEntry(
+    binder: BinderRequest,
+    binderDocument: BinderDocument
+  ): JudicialBinderDocumentRequest {
+    const documentType =
+      this.getJudicialBinderCourtDocumentType(binderDocument);
+    const documentData = this.buildJudicialBinderDocumentData(
+      binder,
+      binderDocument
+    );
+    const groupedMetadata = this.buildGroupedDocumentMetadata(
+      documentType,
+      documentData
+    );
+
+    return {
+      labels: binder.labels,
+      fileNumber: binder.fileNumber,
+      groupKeyOne: groupedMetadata.groupKeyOne,
+      groupKeyTwo: groupedMetadata.groupKeyTwo,
+      physicalFileId: binder.labels['physicalFileId'] ?? '',
+      participantId: binder.labels['participantId'] ?? '',
+      documentName: groupedMetadata.documentName,
+      documentId: binderDocument.documentId,
+    };
+  },
+
   convertToBase64Url(inputText: string): string {
     const base64 = btoa(inputText);
+
     return base64.replace(/[+/=]/g, (char) => {
       switch (char) {
         case '+':
@@ -42,6 +162,7 @@ export default {
       }
     });
   },
+
   renderDocumentUrl(
     documentType: CourtDocumentType,
     documentData: DocumentData,
@@ -58,6 +179,7 @@ export default {
         return `${import.meta.env.BASE_URL}api/files/civil/court-summary-report/${
           documentData.appearanceId
         }/${encodeURIComponent(fileName)}?vcCivilFileId=${documentData.fileId}`;
+
       case CourtDocumentType.ROP:
         return `${
           import.meta.env.BASE_URL
@@ -68,6 +190,7 @@ export default {
         }&courtLevelCode=${documentData.courtLevel}&courtClassCode=${
           documentData.courtClass
         }`;
+
       default:
         return `${
           import.meta.env.BASE_URL
@@ -78,6 +201,38 @@ export default {
         }&CorrelationId=${correlationId}`;
     }
   },
+
+  buildFileViewerUrl(
+    type: PdfViewerType,
+    sessionId: string,
+    params: Record<string, string | string[] | undefined> = {}
+  ): string {
+    const searchParams = new URLSearchParams();
+
+    searchParams.set('type', type);
+    searchParams.set('sessionId', sessionId);
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined) {
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          searchParams.set(key, value.join(','));
+        }
+
+        return;
+      }
+
+      if (value) {
+        searchParams.set(key, value);
+      }
+    });
+
+    return `/file-viewer?${searchParams.toString()}`;
+  },
+
   openDocumentsPdf(
     documentType: CourtDocumentType,
     documentData: DocumentData
@@ -86,33 +241,23 @@ export default {
       /\//g,
       '_'
     );
-    let type = DocumentRequestType.File;
-    if (documentType === CourtDocumentType.ROP) {
-      type = DocumentRequestType.ROP;
-    } else if (documentType === CourtDocumentType.CSR) {
-      type = DocumentRequestType.CourtSummary;
-    } else if (documentType === CourtDocumentType.Transcript) {
-      type = DocumentRequestType.Transcript;
-    } else if (documentType === CourtDocumentType.Order) {
-      type = DocumentRequestType.Order;
-    }
 
-    this.addDocumentsToPdfStore([
-      {
-        documentType: type,
-        documentData: documentData,
-        groupKeyOne:
-          documentData.aslCourtFileNumber ?? documentData.fileNumberText ?? '',
-        groupKeyTwo: this.getGroupKeyTwo(documentType, documentData),
-        documentName: this.getDocumentDisplayName(documentType, documentData),
-        physicalFileId: documentData.fileId || '',
-      },
+    const sessionId = this.addDocumentsToPdfStore([
+      this.createMergedDocumentEntry(
+        documentType,
+        documentData,
+        documentData.fileId || ''
+      ),
     ]);
 
-    const newWindow = window.open('/file-viewer?type=file', '_blank');
+    const newWindow = window.open(
+      this.buildFileViewerUrl('file', sessionId),
+      '_blank'
+    );
 
     this.replaceWindowTitle(newWindow, fileName);
   },
+
   getGroupKeyTwo(
     documentType: CourtDocumentType,
     documentData: DocumentData
@@ -131,6 +276,7 @@ export default {
 
     return documentData.partyName ?? '';
   },
+
   getDocumentDisplayName(
     documentType: CourtDocumentType,
     documentData: DocumentData
@@ -147,7 +293,7 @@ export default {
       return [
         documentData.fileSeqNo,
         documentData.documentDescription,
-        documentData.dateFiled,
+        formatDateToDDMMMYYYY(documentData.dateFiled ?? ''),
       ]
         .filter((value): value is string => !!value)
         .join(' - ');
@@ -155,85 +301,108 @@ export default {
 
     return documentData.documentDescription ?? 'Document';
   },
-  openMergedDocuments(
-    documents?: {
-      documentType: DocumentRequestType;
-      documentData: DocumentData;
-      groupKeyOne: string;
-      groupKeyTwo: string;
-      documentName: string;
-      physicalFileId: string;
-    }[]
-  ): void {
-    if (!documents || documents.length === 0) return;
-    this.addDocumentsToPdfStore(documents);
+
+  openMergedDocuments(documents?: MergedDocumentEntry[]): void {
+    if (!documents || documents.length === 0) {
+      return;
+    }
+
+    const sessionId = this.addDocumentsToPdfStore(documents);
 
     const caseNumbers = Array.from(
-      new Set(documents.map((d) => d.groupKeyOne))
+      new Set(documents.map((document) => document.groupKeyOne))
     ).join(', ');
-    const newWindow = window.open('/file-viewer?type=file', '_blank');
+
+    const newWindow = window.open(
+      this.buildFileViewerUrl('file', sessionId),
+      '_blank'
+    );
 
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
+
   openCourtListCriminalBundle(
     appearances: CourtListAppearance[],
     categories: string[]
   ): void {
-    if (!appearances.length) return;
-    const criminalDocumentStore = useCriminalDocumentBundleStore();
-    const appearanceRequests = appearances.map((app) => ({
-      appearance: {
-        physicalFileId: app.justinNo,
-        appearanceId: app.appearanceId,
-        participantId: app.profPartId,
-        courtClassCd: app.courtClassCd,
-      } as AppearanceDocumentRequest,
-      fileNumber: app.aslCourtFileNumber,
-      fullName: app.accusedNm,
-    }));
-    const bundleRequest = {
-      appearances: appearanceRequests.map((app) => app.appearance),
-    } as CriminalDocumentBundleRequest;
-    criminalDocumentStore.request = bundleRequest;
-    criminalDocumentStore.appearanceRequests = appearanceRequests;
+    if (!appearances.length) {
+      return;
+    }
 
-    const categoryParams =
-      categories.length > 0 ? '&category=' + categories.join(',') : '';
-    const url = '/file-viewer?type=criminal-bundle' + categoryParams;
-    const newWindow = window.open(url, '_blank');
+    const criminalDocumentStore = useCriminalDocumentBundleStore();
+
+    const appearanceRequests: CriminalDocumentAppearanceRequest[] =
+      appearances.map((appearance) => ({
+        appearance: {
+          physicalFileId: appearance.justinNo,
+          appearanceId: appearance.appearanceId,
+          participantId: appearance.profPartId,
+          courtClassCd: appearance.courtClassCd,
+        } as AppearanceDocumentRequest,
+
+        groupKeyOne: appearance.aslCourtFileNumber,
+        groupKeyTwo: appearance.accusedNm ?? '',
+        documentName: appearance.accusedNm ?? appearance.aslCourtFileNumber,
+
+        fileNumber: appearance.aslCourtFileNumber,
+        fullName: appearance.accusedNm,
+        physicalFileId: appearance.justinNo,
+        participantId: appearance.profPartId,
+      }));
+
+    const sessionId = criminalDocumentStore.setPdfItems(appearanceRequests);
+
+    const newWindow = window.open(
+      this.buildFileViewerUrl('criminal-bundle', sessionId, {
+        category: categories,
+      }),
+      '_blank'
+    );
+
     const caseNumbers = Array.from(
-      new Set(appearances.map((d) => d.aslCourtFileNumber))
+      new Set(appearances.map((appearance) => appearance.aslCourtFileNumber))
     ).join(', ');
+
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
 
-  openJudicialBinderDocuments(
-    appearances: CourtListAppearance[],
-    judgeId: string
-  ): void {
-    if (!appearances.length) return;
+  openJudicialBinderDocuments(binders: BinderRequest[]): void {
+    if (!binders.length) {
+      return;
+    }
+
     const judicialBinderStore = useJudicialBinderStore();
-    const binderRequests = appearances.map((app) => ({
-      binder: {
-        physicalFileId: app.physicalFileId,
-        participantId: app.profPartId,
-        courtClassCd: app.courtClassCd,
-        judgeId: judgeId,
-      } as BinderDocumentRequest,
-      fileNumber: app.aslCourtFileNumber,
-    }));
-    const bundleRequest = {
-      binders: binderRequests.map((app) => app.binder),
-    } as BinderDocumentBundleRequest;
-    judicialBinderStore.request = bundleRequest;
+
+    const binderRequests = binders.flatMap((binder) =>
+      (binder.documents ?? [])
+        .filter((binderDocument) => binderDocument.documentId)
+        .map((binderDocument) =>
+          this.createJudicialBinderDocumentEntry(binder, binderDocument)
+        )
+    );
+
+    if (!binderRequests.length) {
+      return;
+    }
+
+    judicialBinderStore.clearBundles();
+
+    const sessionId = uuidv4();
+
+    judicialBinderStore.addBundle({
+      id: sessionId,
+      binders: binderRequests,
+    });
 
     const newWindow = window.open(
-      '/file-viewer?type=judicial-binder',
+      this.buildFileViewerUrl('judicial-binder', sessionId),
       '_blank'
     );
+
     const caseNumbers = Array.from(
-      new Set(appearances.map((d) => d.aslCourtFileNumber))
+      new Set(binderRequests.map((request) => request.fileNumber))
     ).join(', ');
+
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
 
@@ -242,19 +411,21 @@ export default {
       return;
     }
 
-    this.addDocumentsToPdfStore([
+    const sessionId = this.addDocumentsToPdfStore([
       {
-        documentType: DocumentRequestType.File,
-        documentData: documentData,
+        documentType: DocumentRequestType.Order,
+        documentData,
         groupKeyOne: documentData.fileNumberText ?? '',
         groupKeyTwo: '',
-        documentName: documentData.documentDescription ?? 'Document',
+        documentName: documentData.documentDescription ?? 'Order',
         physicalFileId: documentData.fileId || '',
       },
     ]);
 
     const newWindow = window.open(
-      `/file-viewer?type=order&id=${documentData.orderId}`,
+      this.buildFileViewerUrl('order', sessionId, {
+        id: documentData.orderId,
+      }),
       '_blank'
     );
 
@@ -263,52 +434,64 @@ export default {
       documentData.documentDescription || 'Order'
     );
   },
-  addDocumentsToPdfStore(
-    documents: {
-      documentType: DocumentRequestType;
-      documentData: DocumentData;
-      groupKeyOne: string;
-      groupKeyTwo: string;
-      documentName: string;
-      physicalFileId: string;
-    }[]
-  ): void {
+
+  addDocumentsToPdfStore(documents: MergedDocumentEntry[]): string {
     const pdfStore = usePDFViewerStore();
-    pdfStore.clearDocuments();
-    documents.forEach((doc) => {
-      pdfStore.addDocument({
-        request: {
-          type: doc.documentType,
-          data: {
-            partId: doc.documentData.partId || '',
-            profSeqNo: doc.documentData.profSeqNo || '',
-            courtLevelCd: doc.documentData.courtLevel || '',
-            courtClassCd: doc.documentData.courtClass || '',
-            appearanceId: doc.documentData.appearanceId || '',
-            documentId: doc.documentData.documentId
-              ? doc.documentType === DocumentRequestType.Transcript
-                ? doc.documentData.documentId
-                : this.convertToBase64Url(doc.documentData.documentId)
-              : doc.documentData.documentId || '',
-            fileId: doc.documentData.fileId || '',
-            isCriminal: doc.documentData.isCriminal || false,
-            correlationId: uuidv4(),
-            courtDivisionCd: doc.documentData.courtDivisionCd || '',
-            date: doc.documentData.date,
-            locationId: doc.documentData.locationId,
-            roomCode: doc.documentData.roomCode || '',
-            reportType: doc.documentData.reportType || '',
-            additionsList: doc.documentData.additionsList || '',
-            orderId: doc.documentData.orderId || '',
-          },
+    const getEncodedDocumentId = (
+      documentType: DocumentRequestType,
+      documentData: DocumentData
+    ) => {
+      if (!documentData.documentId) {
+        return documentData.documentId || '';
+      }
+
+      if (documentType === DocumentRequestType.Transcript) {
+        return documentData.documentId;
+      }
+
+      return this.convertToBase64Url(documentData.documentId);
+    };
+
+    const storeDocuments: StoreDocument[] = documents.map((document) => ({
+      request: {
+        type: document.documentType,
+        data: {
+          partId: document.documentData.partId || '',
+          profSeqNo: document.documentData.profSeqNo || '',
+          courtLevelCd: document.documentData.courtLevel || '',
+          courtClassCd: document.documentData.courtClass || '',
+          appearanceId: document.documentData.appearanceId || '',
+          documentId: getEncodedDocumentId(
+            document.documentType,
+            document.documentData
+          ),
+          fileId: document.documentData.fileId || '',
+          isCriminal: document.documentData.isCriminal || false,
+          correlationId: uuidv4(),
+          courtDivisionCd: document.documentData.courtDivisionCd || '',
+          date: document.documentData.date,
+          locationId: document.documentData.locationId,
+          roomCode: document.documentData.roomCode || '',
+          reportType: document.documentData.reportType || '',
+          additionsList: document.documentData.additionsList || '',
+          orderId: document.documentData.orderId || '',
         },
-        groupKeyOne: doc.groupKeyOne,
-        groupKeyTwo: doc.groupKeyTwo,
-        documentName: doc.documentName,
-        physicalFileId: doc.physicalFileId,
-      });
-    });
+      },
+      groupKeyOne: document.groupKeyOne,
+      groupKeyTwo: document.groupKeyTwo,
+      documentName: document.documentName,
+      physicalFileId: document.physicalFileId,
+      documentId: document.documentData.documentId,
+      participantId: (
+        document.documentData as DocumentData & {
+          participantId?: string;
+        }
+      ).participantId,
+    }));
+
+    return pdfStore.setPdfItems(storeDocuments);
   },
+
   generateFileName(
     documentType: CourtDocumentType,
     documentData: DocumentData
@@ -316,77 +499,96 @@ export default {
     const locationAbbreviation = (
       documentData.location?.match(/[A-Z]/g) || []
     ).join('');
+
     switch (documentType) {
       case CourtDocumentType.Civil:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.dateFiled}-${documentData.documentId}.pdf`;
+
       case CourtDocumentType.ProvidedCivil:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.appearanceDate}-${documentData.partyName}.pdf`;
+
       case CourtDocumentType.CSR:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.appearanceDate}.pdf`;
+
       case CourtDocumentType.Criminal:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.courtClass}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.dateFiled}-${documentData.documentId}.pdf`;
+
       case CourtDocumentType.ROP:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.courtClass}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.partId}.pdf`;
+
       case CourtDocumentType.CivilZip:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-documents.zip`;
+
       case CourtDocumentType.CriminalZip:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.courtClass}-${documentData.fileNumberText}-documents.zip`;
+
       case CourtDocumentType.Transcript:
         return `${locationAbbreviation}-${documentData.courtLevel}-${documentData.fileNumberText}-${documentData.documentDescription}-${documentData.dateFiled}.pdf`;
+
       default:
         throw new Error(`No file structure for type: ${documentType}`);
     }
   },
 
-  openRequestedTab(url, fileName, correlationId) {
+  openRequestedTab(
+    url: string,
+    fileName: string,
+    correlationId: string
+  ): Window | null {
     const start = new Date();
     const startStr = start.toLocaleString('en-US', {
       timeZone: 'America/Vancouver',
     });
+
     const startMsg = `Request Tracking - Frontend request to API - CorrelationId: ${correlationId} Start time: ${startStr}`;
-    //console.log(startMsg);
     splunkLog(startMsg);
 
     const windowObjectReference = window.open(url);
+
     if (windowObjectReference !== null) {
       const end = new Date();
-      const endStr = start.toLocaleString('en-US', {
+      const endStr = end.toLocaleString('en-US', {
         timeZone: 'America/Vancouver',
       });
 
       const duration = (end.getTime() - start.getTime()) / 1000;
       const endMsg = `Request Tracking - API response received - CorrelationId: ${correlationId} End time: ${endStr} Duration: ${duration}s`;
 
-      // eslint-disable-next-line
-      windowObjectReference.onload = (event) => {
+      windowObjectReference.onload = () => {
         if (windowObjectReference.document.readyState === 'complete') {
-          //console.log(endMsg);
           splunkLog(endMsg);
         }
       };
+
       this.replaceWindowTitle(windowObjectReference, fileName);
     }
+
+    return windowObjectReference;
   },
 
-  replaceWindowTitle(newWindow: Window | null, title: string) {
+  replaceWindowTitle(newWindow: Window | null, title: string): Window | null {
     if (newWindow === null) {
       return null;
     }
+
     try {
       newWindow.addEventListener('load', function () {
         setTimeout(function () {
           newWindow.document.title = title;
         }, 1000);
+
         setTimeout(function () {
           newWindow.document.title = title;
         }, 3000);
+
         setTimeout(function () {
           newWindow.document.title = title;
         }, 5000);
       });
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
+
     return newWindow;
   },
 
@@ -460,6 +662,7 @@ export default {
     locations: CourtRoomsJsonInfoType[]
   ): void {
     const documentData = prepareCivilDocumentData(document);
+
     documentData.fileId = fileId;
     documentData.fileNumberText ||= fileNumberTxt;
     documentData.courtLevel ||= courtLevel;

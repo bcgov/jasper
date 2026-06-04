@@ -169,7 +169,7 @@
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
-  import { useCourtFileSearchStore, useCommonStore } from '@/stores';
+  import { useCourtFileSearchStore } from '@/stores';
   import {
     CourtLevelEnum,
     CourtClassEnum,
@@ -178,6 +178,7 @@
     KeyValueInfo,
   } from '@/types/common';
   import { CourtListAppearance, PcssCounsel } from '@/types/courtlist';
+  import { BinderRequest } from '@/types/DocumentBundleRequest';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
   import { getCourtClassLabel, getEnumName } from '@/utils/utils';
   import {
@@ -192,7 +193,6 @@
   } from '@mdi/js';
   import { computed, ref } from 'vue';
 
-  const commonStore = useCommonStore();
   const selected = ref<CourtListAppearance[]>([]);
   const sortBy = ref([
     { key: 'appearanceSequenceNumber', order: 'asc' },
@@ -398,15 +398,12 @@
     shared.openCourtListCriminalBundle(appearances, categories);
   };
 
-  const handleViewJudicialBinders = (appearances: CourtListAppearance[]) => {
-    if (appearances.length === 0) {
+  const handleViewJudicialBinders = (binders: BinderRequest[]) => {
+    if (binders.length === 0) {
       return;
     }
 
-    shared.openJudicialBinderDocuments(
-      appearances,
-      commonStore.userInfo?.userId || ''
-    );
+    shared.openJudicialBinderDocuments(binders);
   };
 
   const viewCaseDetails = (selectedItems: CourtListAppearance[]) => {

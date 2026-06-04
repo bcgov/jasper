@@ -11,17 +11,21 @@ describe('CriminalDocumentBundleStore', () => {
   it('initializes with empty bundles and appearance requests', () => {
     const store = useCriminalDocumentBundleStore();
     expect(store.bundles).toEqual([]);
-    expect(store.appearanceRequests).toEqual([]);
+    expect(store.sessions).toEqual({});
+    expect(store.activeSessionId).toBeNull();
+    expect(store.getAppearanceRequests).toEqual([]);
+    expect(store.getPdfItems()).toEqual([]);
+    expect(store.hasPdfData()).toBe(false);
     expect(store.request).toEqual({});
   });
 
   it('getBundle returns bundle by id', () => {
     const store = useCriminalDocumentBundleStore();
     const bundleId = uuidv4();
-    
+
     store.addBundle(bundleId);
     const bundle = store.getBundle(bundleId);
-    
+
     expect(bundle).toBeDefined();
     expect(bundle?.id).toBe(bundleId);
   });
@@ -29,7 +33,7 @@ describe('CriminalDocumentBundleStore', () => {
   it('getBundle returns undefined for non-existent bundle', () => {
     const store = useCriminalDocumentBundleStore();
     const nonExistentId = uuidv4();
-    
+
     const bundle = store.getBundle(nonExistentId);
     expect(bundle).toBeUndefined();
   });
@@ -38,7 +42,7 @@ describe('CriminalDocumentBundleStore', () => {
     const store = useCriminalDocumentBundleStore();
     const mockRequest = { appearances: [] };
     store.request = mockRequest as any;
-    
+
     expect(store.getRequests).toEqual(mockRequest);
   });
 
@@ -56,17 +60,17 @@ describe('CriminalDocumentBundleStore', () => {
         },
       },
     ];
-    store.appearanceRequests = mockRequests as any;
-    
+    store.setPdfItems(mockRequests as any, 'session-1');
+
     expect(store.getAppearanceRequests).toEqual(mockRequests);
   });
 
   it('addBundle creates a new bundle and adds it to bundles array', () => {
     const store = useCriminalDocumentBundleStore();
     const bundleId = uuidv4();
-    
+
     store.addBundle(bundleId);
-    
+
     expect(store.bundles).toHaveLength(1);
     expect(store.bundles[0].id).toBe(bundleId);
     expect(store.bundles[0].binders).toEqual([]);
@@ -79,10 +83,10 @@ describe('CriminalDocumentBundleStore', () => {
       id: uuidv4(),
       labels: { physicalFileId: 'F1' },
     };
-    
+
     store.addBundle(bundleId);
     store.addBinder(mockBinder as any, bundleId);
-    
+
     const bundle = store.getBundle(bundleId);
     expect(bundle?.binders).toHaveLength(1);
     expect(bundle?.binders[0]).toEqual(mockBinder);
@@ -95,36 +99,41 @@ describe('CriminalDocumentBundleStore', () => {
       id: uuidv4(),
       labels: { physicalFileId: 'F1' },
     };
-    
+
     // Should not throw and should not add to any bundle
     store.addBinder(mockBinder as any, nonExistentBundleId);
-    
+
     expect(store.bundles).toHaveLength(0);
   });
 
   it('clearBundles resets all state', () => {
     const store = useCriminalDocumentBundleStore();
     const bundleId = uuidv4();
-    
+
     store.addBundle(bundleId);
-    store.appearanceRequests = [
-      {
-        fileNumber: 'FN1',
-        fullName: 'John Doe',
-        appearance: {
-          physicalFileId: 'F1',
-          participantId: 'P1',
-          appearanceId: 'APP1',
-          courtClassCd: 'CLS1',
+    store.setPdfItems(
+      [
+        {
+          fileNumber: 'FN1',
+          fullName: 'John Doe',
+          appearance: {
+            physicalFileId: 'F1',
+            participantId: 'P1',
+            appearanceId: 'APP1',
+            courtClassCd: 'CLS1',
+          },
         },
-      },
-    ] as any;
-    store.request = { appearances: [] } as any;
-    
+      ] as any,
+      'session-1'
+    );
+
     store.clearBundles();
-    
+
     expect(store.bundles).toEqual([]);
-    expect(store.appearanceRequests).toEqual([]);
+    expect(store.sessions).toEqual({});
+    expect(store.activeSessionId).toBeNull();
+    expect(store.getAppearanceRequests).toEqual([]);
+    expect(store.getPdfItems()).toEqual([]);
     expect(store.request).toEqual({});
   });
 

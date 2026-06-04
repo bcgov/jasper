@@ -1,26 +1,18 @@
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { OrderPDFStrategy } from '@/components/documents/strategies/OrderPDFStrategy';
-import { useCommonStore, usePDFViewerStore } from '@/stores';
+import { useCommonStore, usePDFViewerStore, useSnackbarStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
-import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { DocumentRequestType } from '@/types/shared';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { inject } from 'vue';
 
-// Create mock snackbar store before mocking the module
-const mockSnackbarStore = {
-  showSnackbar: vi.fn(),
-};
-
 vi.mock('@/stores', () => ({
   usePDFViewerStore: vi.fn(),
+  useSnackbarStore: vi.fn(),
   useCommonStore: vi.fn(),
-  useSnackbarStore: vi.fn(() => mockSnackbarStore),
-}));
-vi.mock('@/stores/SnackbarStore', () => ({
-  useSnackbarStore: vi.fn(() => mockSnackbarStore),
 }));
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue')>();
@@ -31,11 +23,16 @@ vi.mock('vue', async (importOriginal) => {
 });
 
 const mockedUsePDFViewerStore = usePDFViewerStore as unknown as Mock;
-const mockedUseCommonStore = useCommonStore as unknown as Mock;
 const mockedUseSnackbarStore = useSnackbarStore as unknown as Mock;
+const mockedUseCommonStore = useCommonStore as unknown as Mock;
 const mockedInject = inject as unknown as Mock;
 
-const createMockDocument = (id: string, name: string): StoreDocument => ({
+const createMockDocument = (
+  id: string,
+  name: string,
+  groupKeyOne: string,
+  groupKeyTwo = ''
+): StoreDocument => ({
   documentName: name,
   request: {
     type: DocumentRequestType.File,
@@ -52,36 +49,21 @@ const createMockDocument = (id: string, name: string): StoreDocument => ({
       correlationId: '',
     },
   },
-  groupKeyOne: '',
-  groupKeyTwo: '',
+  groupKeyOne,
+  groupKeyTwo,
   physicalFileId: '',
 });
 
 const mockStoreDocuments: StoreDocument[] = [
-  createMockDocument('1', 'Doc1.pdf'),
-  createMockDocument('2', 'Doc2.pdf'),
-  createMockDocument('3', 'Doc3.pdf'),
+  createMockDocument('1', 'Doc1.pdf', 'Group 1', 'John Doe'),
+  createMockDocument('2', 'Doc2.pdf', 'Group 1', 'Jane Doe'),
+  createMockDocument('3', 'Doc3.pdf', 'Group 2'),
 ];
 
-const mockGroupedDocuments: Record<string, Record<string, StoreDocument[]>> = {
-  'Group 1': {
-    'John Doe': [mockStoreDocuments[0]],
-    'Jane Doe': [mockStoreDocuments[1]],
-  },
-  'Group 2': {
-    '': [mockStoreDocuments[2]], // Empty string for ungrouped
-  },
-};
-
 const mockPDFViewerStore = {
-  documents: mockStoreDocuments,
-  groupedDocuments: mockGroupedDocuments,
-  clearDocuments: vi.fn(),
-};
-
-const mockCommonStore = {
-  userInfo: { judgeId: 'judge-1' },
-  loggedInUserInfo: { judgeId: 'judge-1' },
+  hasPdfData: vi.fn(() => true),
+  getPdfItems: vi.fn(() => mockStoreDocuments),
+  clearPdfItems: vi.fn(),
 };
 
 const mockFilesService = {
@@ -90,6 +72,15 @@ const mockFilesService = {
 
 const mockOrderService = {
   review: vi.fn(),
+};
+
+const mockSnackbarStore = {
+  showSnackbar: vi.fn(),
+};
+
+const mockCommonStore = {
+  userInfo: { judgeId: 11 },
+  loggedInUserInfo: { judgeId: 11 },
 };
 
 const mockApiResponse: GeneratePdfResponse = {
@@ -105,23 +96,36 @@ describe('OrderPDFStrategy', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     mockedUsePDFViewerStore.mockReturnValue(mockPDFViewerStore);
-    mockedUseCommonStore.mockReturnValue(mockCommonStore);
     mockedUseSnackbarStore.mockReturnValue(mockSnackbarStore);
+    mockedUseCommonStore.mockReturnValue(mockCommonStore);
     mockedInject.mockClear();
     mockedInject.mockImplementation((key: string) => {
       if (key === 'filesService') return mockFilesService;
       if (key === 'orderService') return mockOrderService;
       return undefined;
     });
-    mockPDFViewerStore.clearDocuments.mockClear();
+
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?id=123' },
+      writable: true,
+      configurable: true,
+    });
+
+    mockPDFViewerStore.hasPdfData.mockImplementation(() => true);
+    mockPDFViewerStore.getPdfItems.mockImplementation(() => mockStoreDocuments);
+    mockPDFViewerStore.clearPdfItems.mockClear();
     mockFilesService.generatePdf.mockClear();
     mockOrderService.review.mockClear();
     mockSnackbarStore.showSnackbar.mockClear();
-    // Reset window.location.search
-    Object.defineProperty(window, 'location', {
-      value: { search: '?id=test-order-123' },
-      writable: true,
+  });
+
+  it('throws if OrderService is not injected', () => {
+    mockedInject.mockImplementation((key: string) => {
+      if (key === 'filesService') return mockFilesService;
+      return undefined;
     });
+
+    expect(() => new OrderPDFStrategy()).toThrow('Service(s) is undefined.');
   });
 
   it('hasData returns true if documents exist', () => {
@@ -132,31 +136,33 @@ describe('OrderPDFStrategy', () => {
   it('hasData returns false if no documents exist', () => {
     mockedUsePDFViewerStore.mockReturnValueOnce({
       ...mockPDFViewerStore,
-      documents: [],
+      hasPdfData: vi.fn(() => false),
+      getPdfItems: vi.fn(() => []),
+      clearPdfItems: vi.fn(),
     });
+
     const strategy = new OrderPDFStrategy();
     expect(strategy.hasData()).toBe(false);
   });
 
-  it('getRawData returns grouped documents from store', () => {
+  it('getRawData returns documents from store', () => {
     const strategy = new OrderPDFStrategy();
-    const rawData = strategy.getRawData();
-    expect(rawData).toEqual(mockGroupedDocuments);
+    expect(strategy.getRawData()).toEqual(mockStoreDocuments);
   });
 
-  it('processDataForAPI flattens all documents', () => {
+  it('processDataForAPI returns raw documents unchanged', () => {
     const strategy = new OrderPDFStrategy();
-    const result = strategy.processDataForAPI(mockGroupedDocuments);
-    expect(result.length).toBe(3);
-    expect(result[0]).toEqual(mockStoreDocuments[0]);
-    expect(result[1]).toEqual(mockStoreDocuments[1]);
-    expect(result[2]).toEqual(mockStoreDocuments[2]);
+    expect(strategy.processDataForAPI(mockStoreDocuments)).toEqual(
+      mockStoreDocuments
+    );
   });
 
   it('generatePDF calls filesService.generatePdf with mapped requests', async () => {
     const strategy = new OrderPDFStrategy();
     mockFilesService.generatePdf.mockResolvedValue(mockApiResponse);
+
     const result = await strategy.generatePDF(mockStoreDocuments);
+
     expect(mockFilesService.generatePdf).toHaveBeenCalledWith(
       mockStoreDocuments.map((doc) => doc.request)
     );
@@ -165,207 +171,157 @@ describe('OrderPDFStrategy', () => {
 
   it('extractBase64PDF returns base64Pdf from response', () => {
     const strategy = new OrderPDFStrategy();
-    const base64 = strategy.extractBase64PDF(mockApiResponse);
-    expect(base64).toBe('base64string');
+    expect(strategy.extractBase64PDF(mockApiResponse)).toBe('base64string');
   });
 
   it('extractPageRanges returns pageRanges from response', () => {
     const strategy = new OrderPDFStrategy();
-    const ranges = strategy.extractPageRanges(mockApiResponse);
-    expect(ranges).toEqual([
+    expect(strategy.extractPageRanges(mockApiResponse)).toEqual([
       { start: 1, end: 2 },
       { start: 3, end: 4 },
       { start: 5, end: 5 },
     ]);
   });
 
-  it('createOutline creates outline structure from rawData and apiResponse', () => {
+  it('createOutline groups documents by outline keys', () => {
     const strategy = new OrderPDFStrategy();
-    const outline = strategy.createOutline(
-      mockGroupedDocuments,
-      mockApiResponse
-    );
-    expect(outline.length).toBe(2); // Group 1 and Group 2
-    expect(outline[0].title).toBe('Group 1');
-    expect(outline[0].pageIndex).toBe(1); // First page
-    expect(outline[0]!.children!.length).toBe(2); // John Doe, Jane Doe
-    expect(outline[0]!.children![0]!.title).toBe('John Doe');
-    expect(outline[0]!.children![0]!.children![0]!.title).toBe('Doc1.pdf');
-    expect(outline[0]!.children![1]!.title).toBe('Jane Doe');
-    expect(outline[0]!.children![1]!.children![0]!.title).toBe('Doc2.pdf');
-    expect(outline[1].title).toBe('Group 2');
-    expect(outline[1]!.children!.length).toBe(1); // One ungrouped document
-    expect(outline[1]!.children![0]!.title).toBe('Doc3.pdf');
+    const outline = strategy.createOutline(mockStoreDocuments, mockApiResponse);
+
+    expect(outline).toHaveLength(2);
+    expect(outline[0]).toMatchObject({ title: 'Group 1' });
+    expect(outline[0]?.children).toHaveLength(2);
+    expect(outline[0]?.children?.[0]).toMatchObject({ title: 'John Doe' });
+    expect(outline[0]?.children?.[0]?.children?.[0]).toMatchObject({
+      title: 'Doc1.pdf',
+      pageIndex: 1,
+    });
+    expect(outline[0]?.children?.[1]?.children?.[0]).toMatchObject({
+      title: 'Doc2.pdf',
+      pageIndex: 3,
+    });
+    expect(outline[1]).toMatchObject({ title: 'Group 2' });
+    expect(outline[1]?.children?.[0]).toMatchObject({
+      title: 'Doc3.pdf',
+      pageIndex: 5,
+    });
   });
 
-  it('createOutline handles empty string keys correctly', () => {
+  it('createOutline starts page indexing from the first range on each call', () => {
     const strategy = new OrderPDFStrategy();
-    const outline = strategy.createOutline(
-      mockGroupedDocuments,
+    const firstOutline = strategy.createOutline(
+      mockStoreDocuments,
       mockApiResponse
     );
-    // Group 2 has empty string key, so documents should be added directly as children
-    expect(outline[1]!.children![0]!.title).toBe('Doc3.pdf');
-    expect(outline[1]!.children![0]!.pageIndex).toBe(5);
+    const secondOutline = strategy.createOutline(
+      mockStoreDocuments,
+      mockApiResponse
+    );
+
+    expect(firstOutline[0]?.pageIndex).toBeUndefined();
+    expect(firstOutline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
+    expect(secondOutline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
+  });
+
+  it('cleanup calls the session-backed clearPdfItems store method', () => {
+    const strategy = new OrderPDFStrategy();
+    strategy.cleanup();
+    expect(mockPDFViewerStore.clearPdfItems).toHaveBeenCalled();
   });
 
   it('showOrderReviewOptions is true when judge IDs match', () => {
     const strategy = new OrderPDFStrategy();
+
     expect(strategy.showOrderReviewOptions).toBe(true);
   });
 
   it('showOrderReviewOptions is false when judge IDs do not match', () => {
     mockedUseCommonStore.mockReturnValueOnce({
-      userInfo: { judgeId: 'judge-1' },
-      loggedInUserInfo: { judgeId: 'judge-2' },
+      userInfo: { judgeId: 11 },
+      loggedInUserInfo: { judgeId: 12 },
     });
+
     const strategy = new OrderPDFStrategy();
+
     expect(strategy.showOrderReviewOptions).toBe(false);
   });
 
-  it('cleanup calls pdfStore.clearDocuments', () => {
+  it('approves order successfully and shows success snackbar', async () => {
     const strategy = new OrderPDFStrategy();
-    strategy.cleanup();
-    expect(mockPDFViewerStore.clearDocuments).toHaveBeenCalled();
-  });
-
-  it('makeDocElement returns correct OutlineItem', () => {
-    const strategy = new OrderPDFStrategy();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (strategy as any).pageIndex = 1;
-    const doc: StoreDocument = createMockDocument('123', 'TestDoc.pdf');
-    const apiResponse: GeneratePdfResponse = {
-      base64Pdf: '',
-      pageRanges: [
-        { start: 10, end: 10 },
-        { start: 20, end: 20 },
-      ],
+    const review: OrderReview = {
+      comments: 'approved',
+      signed: true,
+      status: OrderReviewStatus.Approved,
+      documentData: 'pdf-data',
+      supportingDocumentData: '',
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const item = (strategy as any).makeDocElement(doc, apiResponse);
-    expect(item.title).toBe('TestDoc.pdf');
-    expect(item.pageIndex).toBe(20);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((strategy as any).pageIndex).toBe(2); // Should increment
+
+    await strategy.reviewOrder(review);
+
+    expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
+    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+      'The order has been approved.',
+      'rgb(46, 139, 43)',
+      'Approved!'
+    );
   });
 
-  it('pageIndex is reset when createOutline is called', () => {
+  it('rejects order successfully and shows rejection snackbar', async () => {
     const strategy = new OrderPDFStrategy();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (strategy as any).pageIndex = 99; // Set to some value
-    strategy.createOutline(mockGroupedDocuments, mockApiResponse);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((strategy as any).pageIndex).toBeGreaterThanOrEqual(0); // Should have been reset and used
+    const review: OrderReview = {
+      comments: 'rejected',
+      signed: false,
+      status: OrderReviewStatus.Unapproved,
+      documentData: '',
+      supportingDocumentData: '',
+    };
+
+    await strategy.reviewOrder(review);
+
+    expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
+    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+      'The order has been rejected.',
+      'rgb(46, 139, 43)',
+      'Rejected'
+    );
   });
 
-  describe('reviewOrder', () => {
-    it('approves order successfully and shows success snackbar', async () => {
-      const strategy = new OrderPDFStrategy();
-      mockOrderService.review.mockResolvedValue(undefined);
+  it('sets order to pending and shows pending snackbar', async () => {
+    const strategy = new OrderPDFStrategy();
+    const review: OrderReview = {
+      comments: 'pending',
+      signed: false,
+      status: OrderReviewStatus.AwaitingDocumentation,
+      documentData: '',
+      supportingDocumentData: 'supporting-doc',
+    };
 
-      await strategy.reviewOrder({
-        comments: 'Looks good',
-        signed: true,
-        status: OrderReviewStatus.Approved,
-        documentData: 'base64pdf',
-      });
+    await strategy.reviewOrder(review);
 
-      expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
-        comments: 'Looks good',
-        signed: true,
-        status: OrderReviewStatus.Approved,
-        documentData: 'base64pdf',
-      });
-      expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-        'The order has been approved.',
-        'rgb(46, 139, 43)',
-        '✅ Approved!'
-      );
+    expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
+    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+      'The order review is awaiting documentation.',
+      'rgb(46, 139, 43)',
+      'Pending'
+    );
+  });
+
+  it('throws error if order ID is not in URL', async () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '' },
+      writable: true,
+      configurable: true,
     });
 
-    it('rejects order successfully and shows rejection snackbar', async () => {
-      const strategy = new OrderPDFStrategy();
-      mockOrderService.review.mockResolvedValue(undefined);
+    const strategy = new OrderPDFStrategy();
 
-      await strategy.reviewOrder({
-        comments: 'Needs changes',
+    await expect(
+      strategy.reviewOrder({
+        comments: '',
         signed: false,
         status: OrderReviewStatus.Unapproved,
-        documentData: 'base64pdf',
-      });
-
-      expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
-        comments: 'Needs changes',
-        signed: false,
-        status: OrderReviewStatus.Unapproved,
-        documentData: 'base64pdf',
-      });
-      expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-        'The order has been rejected.',
-        'rgb(46, 139, 43)',
-        '📋 Rejected'
-      );
-    });
-
-    it('sets order to pending and shows pending snackbar', async () => {
-      const strategy = new OrderPDFStrategy();
-      mockOrderService.review.mockResolvedValue(undefined);
-
-      await strategy.reviewOrder({
-        comments: 'Needs more info',
-        signed: false,
-        status: OrderReviewStatus.AwaitingDocumentation,
-        documentData: 'base64pdf',
-      });
-
-      expect(mockOrderService.review).toHaveBeenCalledWith('test-order-123', {
-        comments: 'Needs more info',
-        signed: false,
-        status: OrderReviewStatus.AwaitingDocumentation,
-        documentData: 'base64pdf',
-      });
-      expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-        'The order review is awaiting documentation.',
-        'rgb(46, 139, 43)',
-        '⏳ Pending'
-      );
-    });
-
-    it('throws error if order ID is not in URL', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { search: '' },
-        writable: true,
-      });
-      const strategy = new OrderPDFStrategy();
-
-      await expect(
-        strategy.reviewOrder({
-          comments: 'Test',
-          signed: true,
-          status: OrderReviewStatus.Approved,
-          documentData: 'base64pdf',
-        })
-      ).rejects.toThrow('Order ID not found in URL');
-
-      expect(mockOrderService.review).not.toHaveBeenCalled();
-      expect(mockSnackbarStore.showSnackbar).not.toHaveBeenCalled();
-    });
-
-    it('throws error if order ID parameter is null', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { search: '?otherparam=value' },
-        writable: true,
-      });
-      const strategy = new OrderPDFStrategy();
-
-      await expect(
-        strategy.reviewOrder({
-          comments: 'Test',
-          signed: true,
-          status: OrderReviewStatus.Approved,
-          documentData: 'base64pdf',
-        })
-      ).rejects.toThrow('Order ID not found in URL');
-    });
+        documentData: '',
+        supportingDocumentData: '',
+      })
+    ).rejects.toThrow('Order ID not found in URL');
   });
 });

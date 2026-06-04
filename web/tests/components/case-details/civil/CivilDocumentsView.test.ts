@@ -31,6 +31,10 @@ const mockBinderService = {
   deleteBinder: vi.fn(),
 } as unknown as BinderService;
 
+const mockLookupService = {
+  getRoles: vi.fn().mockResolvedValue([]),
+};
+
 describe('CivilDocumentsView.vue', () => {
   let wrapper: any;
   let commonStore: any;
@@ -88,19 +92,30 @@ describe('CivilDocumentsView.vue', () => {
       imageId: '456',
     },
   ];
-  beforeEach(() => {
-    wrapper = shallowMount(CivilDocumentsView, {
-      props: { documents: mockDocuments },
+  const mountView = (documents = mockDocuments) => {
+    return shallowMount(CivilDocumentsView, {
+      props: {
+        documents,
+        courtClassCd: 'F',
+        fileId: 'PF-123',
+      },
       global: {
         provide: {
           binderService: mockBinderService,
+          lookupService: mockLookupService,
         },
       },
     });
+  };
+
+  beforeEach(() => {
     commonStore = {
+      roles: [],
       setRoles: vi.fn(),
     };
     (useCommonStore as any).mockReturnValue(commonStore);
+    mockLookupService.getRoles.mockResolvedValue([]);
+    wrapper = mountView();
   });
 
   it('renders the component correctly', () => {
@@ -354,14 +369,7 @@ describe('CivilDocumentsView.vue', () => {
         payload: mockBinders,
       });
 
-      wrapper = shallowMount(CivilDocumentsView, {
-        props: { documents: mockDocuments },
-        global: {
-          provide: {
-            binderService: mockBinderService,
-          },
-        },
-      });
+      wrapper = mountView();
 
       await nextTick();
     });
@@ -424,18 +432,7 @@ describe('CivilDocumentsView.vue', () => {
     ];
 
     beforeEach(async () => {
-      wrapper = shallowMount(CivilDocumentsView, {
-        props: {
-          documents: duplicateDocuments,
-          courtClassCd: 'F',
-          fileId: 'PF-123',
-        },
-        global: {
-          provide: {
-            binderService: mockBinderService,
-          },
-        },
-      });
+      wrapper = mountView(duplicateDocuments as any);
 
       await nextTick();
     });

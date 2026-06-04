@@ -3,8 +3,6 @@ import { JudicialBinderPDFStrategy } from '@/components/documents/strategies/Jud
 import { useJudicialBinderStore } from '@/stores';
 import { inject } from 'vue';
 import { ApiResponse } from '@/types/ApiResponse';
-import { BinderDocument } from '@/types/BinderDocument';
-import { BinderDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 
 vi.mock('@/stores', () => ({
   useJudicialBinderStore: vi.fn(),
@@ -16,23 +14,101 @@ vi.mock('@/services', () => ({
   BinderService: vi.fn(),
 }));
 
-const mockBinderRequest: BinderDocumentBundleRequest = {
-  binders: [
-    {
-      physicalFileId: 'F1',
-      participantId: 'P1',
-      courtClassCd: 'CLS1',
-    },
-    {
-      physicalFileId: 'F2',
-      participantId: 'P2',
-      courtClassCd: 'CLS2',
-    },
-  ],
-};
+const mockBundles = [
+  {
+    id: 'bundle-1',
+    binders: [
+      {
+        binder: {
+          id: 'binder-1',
+          labels: {
+            physicalFileId: 'F1',
+            participantId: 'P1',
+            courtClassCd: 'CLS1',
+          },
+          documents: [
+            {
+              documentId: '101',
+              fileName: 'JudicialDoc1.pdf',
+              documentType: 'PDF',
+            },
+            {
+              documentId: '102',
+              fileName: 'JudicialDoc2.pdf',
+              documentType: 'PDF',
+            },
+          ],
+        },
+        fileNumber: 'F1',
+        groupKeyOne: 'F1',
+        groupKeyTwo: '',
+        documentName: '1 - JudicialDoc1 - 01-Jun-2024',
+        physicalFileId: 'F1',
+        participantId: 'P1',
+        documentId: '101',
+      },
+      {
+        binder: {
+          id: 'binder-1',
+          labels: {
+            physicalFileId: 'F1',
+            participantId: 'P1',
+            courtClassCd: 'CLS1',
+          },
+          documents: [
+            {
+              documentId: '101',
+              fileName: 'JudicialDoc1.pdf',
+              documentType: 'PDF',
+            },
+            {
+              documentId: '102',
+              fileName: 'JudicialDoc2.pdf',
+              documentType: 'PDF',
+            },
+          ],
+        },
+        fileNumber: 'F1',
+        groupKeyOne: 'F1',
+        groupKeyTwo: '',
+        documentName: '2 - JudicialDoc2 - 02-Jun-2024',
+        physicalFileId: 'F1',
+        participantId: 'P1',
+        documentId: '102',
+      },
+      {
+        binder: {
+          id: 'binder-2',
+          labels: {
+            physicalFileId: 'F2',
+            participantId: 'P2',
+            courtClassCd: 'CLS2',
+          },
+          documents: [
+            {
+              documentId: '201',
+              fileName: 'JudicialDoc3.pdf',
+              documentType: 'PDF',
+            },
+          ],
+        },
+        fileNumber: 'F2',
+        groupKeyOne: 'F2',
+        groupKeyTwo: '',
+        documentName: '3 - JudicialDoc3 - 03-Jun-2024',
+        physicalFileId: 'F2',
+        participantId: 'P2',
+        documentId: '201',
+      },
+    ],
+  },
+];
 
 const mockJudicialBinderStore = {
-  getRequests: mockBinderRequest,
+  hasPdfData: vi.fn(() => true),
+  getPdfItems: vi.fn(() => mockBundles[0].binders),
+  getBundles: mockBundles,
+  clearPdfItems: vi.fn(),
   clearBundles: vi.fn(),
 };
 
@@ -41,7 +117,7 @@ const mockBinderService = {
 };
 
 const mockApiResponse: ApiResponse<any> = {
-  errors:[],
+  errors: [],
   succeeded: true,
   payload: {
     pdfResponse: {
@@ -95,49 +171,58 @@ describe('JudicialBinderPDFStrategy', () => {
       return undefined;
     });
     mockJudicialBinderStore.clearBundles.mockClear();
+    mockJudicialBinderStore.clearPdfItems.mockClear();
+    mockJudicialBinderStore.getPdfItems.mockImplementation(
+      () => mockBundles[0].binders
+    );
+    mockJudicialBinderStore.hasPdfData.mockImplementation(() => true);
     mockBinderService.viewBinderPDF.mockClear();
   });
 
   it('throws error if BinderService is not injected', () => {
     (inject as any).mockReturnValueOnce(undefined);
-    expect(() => new JudicialBinderPDFStrategy()).toThrow('BinderService is not available!');
+    expect(() => new JudicialBinderPDFStrategy()).toThrow(
+      'BinderService is not available!'
+    );
   });
 
-  it('hasData returns true if binders exist in request', () => {
+  it('hasData returns true if binder documents exist in the active session', () => {
     const strategy = new JudicialBinderPDFStrategy();
     expect(strategy.hasData()).toBe(true);
   });
 
-  it('hasData returns false if request is empty', () => {
+  it('hasData returns false if bundles are empty', () => {
     (useJudicialBinderStore as any).mockReturnValue({
-      getRequests: { binders: [] },
+      hasPdfData: vi.fn(() => false),
+      getPdfItems: vi.fn(() => []),
+      clearPdfItems: vi.fn(),
       clearBundles: vi.fn(),
     });
     const strategy = new JudicialBinderPDFStrategy();
     expect(strategy.hasData()).toBe(false);
   });
 
-  it('getRawData returns binder requests without grouping', () => {
+  it('getRawData returns the stored binder document entries', () => {
     const strategy = new JudicialBinderPDFStrategy();
     const rawData = strategy.getRawData();
-    expect(rawData.length).toBe(2);
-    expect(rawData[0].binder).toEqual(mockBinderRequest.binders[0]);
-    expect(rawData[0].fileNumber).toBe('F1');
-    expect(rawData[1].binder).toEqual(mockBinderRequest.binders[1]);
-    expect(rawData[1].fileNumber).toBe('F2');
+    expect(rawData).toEqual(mockBundles[0].binders);
+    expect(rawData).toHaveLength(3);
+    expect(rawData[0].documentId).toBe('101');
   });
 
-  it('processDataForAPI returns binder label contexts', () => {
+  it('processDataForAPI returns unique binder label contexts', () => {
     const strategy = new JudicialBinderPDFStrategy();
     const rawData = strategy.getRawData();
     const result = strategy.processDataForAPI(rawData);
     expect(result).toEqual([
       {
         physicalFileId: 'F1',
+        participantId: 'P1',
         courtClassCd: 'CLS1',
       },
       {
         physicalFileId: 'F2',
+        participantId: 'P2',
         courtClassCd: 'CLS2',
       },
     ]);
@@ -156,10 +241,10 @@ describe('JudicialBinderPDFStrategy', () => {
     const strategy = new JudicialBinderPDFStrategy();
     mockBinderService.viewBinderPDF.mockResolvedValue(mockApiResponse);
     const contexts = [{ physicalFileId: 'F1', courtClassCd: 'CLS1' }];
-    
+
     const getPdfSpy = vi.spyOn(strategy, 'getPdf');
     const result = await strategy.generatePDF(contexts);
-    
+
     expect(getPdfSpy).toHaveBeenCalledWith(contexts);
     expect(result).toBe(mockApiResponse);
   });
@@ -167,7 +252,7 @@ describe('JudicialBinderPDFStrategy', () => {
   it('generatePDF passes categories from URL params to getPdf', async () => {
     const strategy = new JudicialBinderPDFStrategy();
     mockBinderService.viewBinderPDF.mockResolvedValue(mockApiResponse);
-    
+
     // Mock location.search with category params
     Object.defineProperty(globalThis, 'location', {
       value: { search: '?category=INITIATING,BAIL' },
@@ -176,10 +261,10 @@ describe('JudicialBinderPDFStrategy', () => {
 
     const contexts = [{ physicalFileId: 'F1', courtClassCd: 'CLS1' }];
     await strategy.generatePDF(contexts);
-    expect(mockBinderService.viewBinderPDF).toHaveBeenCalledWith(
-      contexts,
-      ['INITIATING', 'BAIL']
-    );
+    expect(mockBinderService.viewBinderPDF).toHaveBeenCalledWith(contexts, [
+      'INITIATING',
+      'BAIL',
+    ]);
   });
 
   it('extractBase64PDF returns base64Pdf from response', () => {
@@ -197,19 +282,27 @@ describe('JudicialBinderPDFStrategy', () => {
     ]);
   });
 
-  it('createOutline creates simple outline by file number (no appearance grouping)', () => {
+  it('createOutline uses grouped bundle metadata for titles and page indexes', () => {
     const strategy = new JudicialBinderPDFStrategy();
     const rawData = strategy.getRawData();
     const outline = strategy.createOutline(rawData, mockApiResponse);
-    
+
     expect(outline.length).toBe(2); // Two file numbers
     expect(outline[0].title).toBe('F1');
     expect(outline[0]?.children?.length).toBe(2); // Two documents in F1
     expect(outline[1].title).toBe('F2');
     expect(outline[1]?.children?.length).toBe(1); // One document in F2
-    expect(outline[0]?.children?.[0]?.title).toBe('JudicialDoc1.pdf');
-    expect(outline[0]?.children?.[1]?.title).toBe('JudicialDoc2.pdf');
-    expect(outline[1]?.children?.[0]?.title).toBe('JudicialDoc3.pdf');
+    expect(outline[0]?.children?.[0]?.title).toBe(
+      '1 - JudicialDoc1 - 01-Jun-2024'
+    );
+    expect(outline[0]?.children?.[1]?.title).toBe(
+      '2 - JudicialDoc2 - 02-Jun-2024'
+    );
+    expect(outline[1]?.children?.[0]?.title).toBe(
+      '3 - JudicialDoc3 - 03-Jun-2024'
+    );
+    expect(outline[0]?.children?.[0]?.pageIndex).toBe(1);
+    expect(outline[0]?.children?.[1]?.pageIndex).toBe(4);
   });
 
   it('cleanup calls binderStore.clearBundles', () => {
@@ -218,23 +311,19 @@ describe('JudicialBinderPDFStrategy', () => {
     expect(mockJudicialBinderStore.clearBundles).toHaveBeenCalled();
   });
 
-  it('makeDocElement returns correct OutlineItem', () => {
+  it('createOutline leaves page index undefined when no matching document is returned', () => {
     const strategy = new JudicialBinderPDFStrategy();
-    (strategy as any).count = 1;
-    const doc: BinderDocument = {
-      documentId: '999',
-      fileName: 'TestJudicialDoc.pdf',
-      documentType: 'PDF',
-    };
-    const apiResponse = {
-      payload: {
-        pdfResponse: {
-          pageRanges: [{ start: 100 }, { start: 200 }],
-        },
+    const rawData = [
+      {
+        ...mockBundles[0].binders[0],
+        documentId: 'missing-doc',
       },
-    };
-    const item = (strategy as any).makeDocElement(doc, apiResponse);
-    expect(item.title).toBe('TestJudicialDoc.pdf');
-    expect(item.pageIndex).toBe(200);
+    ] as any;
+
+    const outline = strategy.createOutline(rawData, mockApiResponse);
+    expect(outline[0]?.children?.[0]?.title).toBe(
+      '1 - JudicialDoc1 - 01-Jun-2024'
+    );
+    expect(outline[0]?.children?.[0]?.pageIndex).toBeUndefined();
   });
 });

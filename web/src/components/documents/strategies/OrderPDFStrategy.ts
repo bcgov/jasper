@@ -1,42 +1,47 @@
-import { OrderService } from '@/services/OrderService';
+import { OrderService } from '@/services';
 import { useCommonStore, useSnackbarStore } from '@/stores';
+import { StoreDocument } from '@/stores/PDFViewerStore';
+import { OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
-import { OrderReview } from '@/types/OrderReview';
 import { inject } from 'vue';
-import { BasePDFStrategy } from './BasePDFStrategy';
+import { FilePDFStrategy } from './FilePDFStrategy';
 
-export class OrderPDFStrategy extends BasePDFStrategy {
+export class OrderPDFStrategy extends FilePDFStrategy {
   showOrderReviewOptions = true;
-  defaultDocumentName = 'Order';
+
   private readonly snackBarStore = useSnackbarStore();
   private readonly commonStore = useCommonStore();
   private readonly orderService: OrderService;
 
   constructor() {
     super();
+
     const orderService = inject<OrderService>('orderService');
+
     if (!orderService) {
       throw new Error('Service(s) is undefined.');
     }
-    this.orderService = orderService;
 
-    // Only show review options if the logged-in user is viewing their own data
+    this.orderService = orderService;
     this.showOrderReviewOptions =
       this.commonStore.userInfo?.judgeId ===
       this.commonStore.loggedInUserInfo?.judgeId;
   }
 
+  protected override getOutlineDocumentTitle(document: StoreDocument): string {
+    return document.documentName || 'Order';
+  }
+
   async reviewOrder(review: OrderReview): Promise<void> {
-    // Get order ID from URL query parameter
     const urlParams = new URLSearchParams(globalThis.location.search);
     const orderId = urlParams.get('id');
+
     if (!orderId) {
       throw new Error('Order ID not found in URL');
     }
 
     await this.orderService.review(orderId, review);
 
-    // Show appropriate snackbar based on status
     switch (review.status) {
       case OrderReviewStatus.Approved:
         this.snackBarStore.showSnackbar(
@@ -52,6 +57,7 @@ export class OrderPDFStrategy extends BasePDFStrategy {
           '📋 Rejected'
         );
         break;
+      case OrderReviewStatus.Pending:
       case OrderReviewStatus.AwaitingDocumentation:
         this.snackBarStore.showSnackbar(
           'The order review is awaiting documentation.',

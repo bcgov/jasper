@@ -1,85 +1,54 @@
-import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
+import { BaseStoreBackedPDFStrategy } from './BaseStoreBackedPDFStrategy';
+import { OutlineItem } from './PDFViewerTypes';
+import {
+  buildGroupedEntriesOutline,
+  GroupedOutlineEntry,
+} from './OutlineBuilder';
 import { BinderService } from '@/services';
 import { useCriminalDocumentBundleStore } from '@/stores';
 import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
 import { ApiResponse } from '@/types/ApiResponse';
-import { BinderDocument } from '@/types/BinderDocument';
 import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
 import { inject } from 'vue';
 
-export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
-  Record<string, Record<string, CriminalDocumentAppearanceRequest[]>>,
+export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
+  CriminalDocumentAppearanceRequest,
   CriminalDocumentBundleRequest,
   ApiResponse<DocumentBundleResponse>
 > {
-  private readonly bundleStore = useCriminalDocumentBundleStore();
+  protected readonly store = useCriminalDocumentBundleStore();
   private readonly binderService: BinderService;
-  private count = 0;
 
   constructor() {
+    super();
+
     const service = inject<BinderService>('binderService');
+
     if (!service) {
       throw new Error('BinderService is not available!');
     }
+
     this.binderService = service;
   }
 
-  hasData(): boolean {
-    return !!this.bundleStore.getAppearanceRequests;
-  }
-
-  getRawData(): Record<
-    string,
-    Record<string, CriminalDocumentAppearanceRequest[]>
-  > {
-    const appearanceRequests = this.bundleStore.getAppearanceRequests;
-    const groupedRequests: Record<
-      string,
-      Record<string, CriminalDocumentAppearanceRequest[]>
-    > = {};
-
-    appearanceRequests.forEach((req) => {
-      const fileNumber = req.fileNumber;
-      const fullName = req.fullName ?? '';
-
-      if (!groupedRequests[fileNumber]) {
-        groupedRequests[fileNumber] = {};
-      }
-      if (!groupedRequests[fileNumber][fullName]) {
-        groupedRequests[fileNumber][fullName] = [];
-      }
-      groupedRequests[fileNumber][fullName].push(req);
-    });
-
-    return groupedRequests;
-  }
-
   processDataForAPI(
-    rawData: Record<string, Record<string, CriminalDocumentAppearanceRequest[]>>
+    rawData: CriminalDocumentAppearanceRequest[]
   ): CriminalDocumentBundleRequest {
-    const groupedAppearances = Object.values(rawData).flatMap((fileGroup) =>
-      Object.values(fileGroup).flatMap((appearances) =>
-        appearances.map((a) => a.appearance)
-      )
-    );
-
     return {
-      appearances: groupedAppearances,
-    } as unknown as CriminalDocumentBundleRequest;
+      appearances: rawData.map((item) => item.appearance),
+    };
   }
 
   /**
-   * Retrieves or creates new binder(s) with all bundled documents.
-   * For criminal key documents, we use generatePDF to create/view binders.
-   * @param processedData
-   * @returns pdf including retrieved or newly created binders
+   * Retrieves or creates binder(s) with all bundled documents.
+   * For criminal key documents, this intentionally uses generateBinderPDF.
    */
   async generatePDF(
     processedData: CriminalDocumentBundleRequest
   ): Promise<ApiResponse<DocumentBundleResponse>> {
-    const urlParams = new URLSearchParams(globalThis.location.search);
-    const documentCategories = urlParams.get('category')?.split(',') || [];
+    const documentCategories = this.getDocumentCategoriesFromUrl();
+
     return await this.binderService.generateBinderPDF(
       processedData,
       documentCategories
@@ -97,102 +66,103 @@ export class CriminalDocumentPDFStrategy implements PDFViewerStrategy<
   }
 
   createOutline(
-    rawData: Record<
-      string,
-      Record<string, CriminalDocumentAppearanceRequest[]>
-    >,
+    rawData: CriminalDocumentAppearanceRequest[],
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
-    this.count = 0;
-    const binderFileIds = new Set(
-      apiResponse.payload.binders.map((b) => b.labels.physicalFileId)
-    );
+    const pageIndexByDocumentKey = this.buildPageIndexMap(apiResponse);
 
-    return Object.entries(rawData)
-      .filter(([, userGroup]) =>
-        Object.values(userGroup)
-          .flat()
-          .some((req) => binderFileIds.has(req.appearance.physicalFileId))
+    return buildGroupedEntriesOutline(
+      rawData.flatMap((item) =>
+        this.getMatchingOutlineEntries(
+          item,
+          pageIndexByDocumentKey,
+          apiResponse
+        )
       )
-      .map(([groupKey, userGroup]) =>
-        this.makeFirstGroup(groupKey, userGroup, apiResponse)
-      );
+    );
   }
 
-  private makeFirstGroup(
-    groupKey: string,
-    userGroup: Record<string, CriminalDocumentAppearanceRequest[]>,
+  private getMatchingOutlineEntries(
+    item: CriminalDocumentAppearanceRequest,
+    pageIndexByDocumentKey: Map<string, number>,
     apiResponse: ApiResponse<DocumentBundleResponse>
-  ): OutlineItem {
-    const children: OutlineItem[] = [];
-
-    Object.entries(userGroup).forEach(([name, docs]) => {
-      const secondGroup = this.makeSecondGroup(name, docs, apiResponse);
-      if (!secondGroup) {
-        return;
-      }
-      if (name) {
-        // Keep second grouping if name exists
-        children.push(secondGroup);
-      } else if (secondGroup.children) {
-        // Flatten: add documents directly to first group
-        children.push(...secondGroup.children);
-      }
+  ) {
+    const matchingBinders = apiResponse.payload.binders.filter((binder) => {
+      return (
+        binder.labels?.physicalFileId === item.appearance.physicalFileId &&
+        binder.labels?.participantId === item.appearance.participantId
+      );
     });
 
-    return {
-      title: groupKey,
-      isExpanded: true,
-      children,
-    };
-  }
-
-  private makeSecondGroup(
-    memberName: string,
-    docs: CriminalDocumentAppearanceRequest[],
-    apiResponse: ApiResponse<DocumentBundleResponse>
-  ): OutlineItem | null {
-    const fileIds = docs.map((d) => d.appearance.physicalFileId);
-    const partIds = docs.map((d) => d.appearance.participantId);
-
-    const binders = apiResponse.payload.binders.filter(
-      (b) =>
-        b.labels &&
-        fileIds.some((id) => b.labels.physicalFileId === id) &&
-        partIds.some((pid) => b.labels.participantId === pid)
-    );
-
-    if (!binders) {
-      return null;
-    }
-    const pageIndex =
-      apiResponse.payload.pdfResponse.pageRanges?.[this.count]?.start;
-    const children = binders.flatMap((binder) =>
+    return matchingBinders.flatMap((binder) =>
       binder.documents
-        .filter((doc) => doc.documentId) // Only include documents with valid IDs
-        .map((doc) => this.makeDocElement(doc, apiResponse))
+        .filter((document) => document.documentId)
+        .map((document) => {
+          const documentKey = this.makeDocumentKey(
+            binder.labels.physicalFileId,
+            binder.labels.participantId,
+            document.documentId
+          );
+
+          const pageIndex = pageIndexByDocumentKey.get(documentKey);
+
+          if (pageIndex === undefined) {
+            return undefined;
+          }
+
+          return {
+            groupKeyOne: item.groupKeyOne,
+            groupKeyTwo: item.groupKeyTwo,
+            title:
+              document.fileName ?? String(document.documentType ?? 'Document'),
+            pageIndex,
+          };
+        })
+        .filter((entry): entry is GroupedOutlineEntry => entry !== undefined)
     );
-
-    return {
-      title: memberName,
-      isExpanded: true,
-      children,
-      pageIndex,
-    };
   }
 
-  private makeDocElement(
-    doc: BinderDocument,
+  private buildPageIndexMap(
     apiResponse: ApiResponse<DocumentBundleResponse>
-  ): OutlineItem {
-    return {
-      title: doc.fileName ?? doc.documentType,
-      pageIndex:
-        apiResponse.payload.pdfResponse.pageRanges?.[this.count++]?.start,
-    };
+  ): Map<string, number> {
+    const pageIndexByDocumentKey = new Map<string, number>();
+    let pageRangeIndex = 0;
+
+    apiResponse.payload.binders.forEach((binder) => {
+      binder.documents
+        .filter((document) => document.documentId)
+        .forEach((document) => {
+          const pageIndex =
+            apiResponse.payload.pdfResponse.pageRanges?.[pageRangeIndex++]
+              ?.start;
+
+          if (pageIndex === undefined) {
+            return;
+          }
+
+          const documentKey = this.makeDocumentKey(
+            binder.labels.physicalFileId,
+            binder.labels.participantId,
+            document.documentId
+          );
+
+          pageIndexByDocumentKey.set(documentKey, pageIndex);
+        });
+    });
+
+    return pageIndexByDocumentKey;
   }
 
-  cleanup(): void {
-    this.bundleStore.clearBundles();
+  private makeDocumentKey(
+    physicalFileId: string | undefined,
+    participantId: string | undefined,
+    documentId: string
+  ): string {
+    return [physicalFileId, participantId, documentId].join('|');
+  }
+  private getDocumentCategoriesFromUrl(): string[] {
+    const urlParams = new URLSearchParams(globalThis.location.search);
+
+    return urlParams.get('category')?.split(',').filter(Boolean) ?? [];
   }
 }

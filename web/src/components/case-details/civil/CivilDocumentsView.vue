@@ -318,32 +318,16 @@
       groupKeyOne: string;
       groupKeyTwo: string;
       documentName: string;
+      physicalFileId: string;
     }[] = [];
     items
       .filter((item) => item.imageId)
       .forEach((item) => {
         const civilDocType = getCivilDocumentType(item);
-        let documentType: DocumentRequestType;
-
-        if (civilDocType === CourtDocumentType.CSR) {
-          documentType = DocumentRequestType.CourtSummary;
-        } else if (civilDocType === CourtDocumentType.Transcript) {
-          documentType = DocumentRequestType.Transcript;
-        } else {
-          documentType = DocumentRequestType.File;
-        }
-
         const documentData = prepareCivilDocumentData(item);
-        documents.push({
-          documentType,
-          documentData,
-          groupKeyOne: documentData.fileNumberText!,
-          groupKeyTwo: shared.getGroupKeyTwo(civilDocType, documentData),
-          documentName: shared.getDocumentDisplayName(
-            civilDocType,
-            documentData
-          ),
-        });
+        documents.push(
+          shared.createMergedDocumentEntry(civilDocType, documentData)
+        );
       });
     shared.openMergedDocuments(documents);
   };
@@ -366,7 +350,7 @@
   };
 
   const addDocumentToBinder = async (document: civilDocumentType) => {
-    const binderDoc: BinderDocument = {
+    const binderDoc = {
       documentId: document.civilDocumentId,
       order: currentBinder.value?.documents.length ?? 0,
       documentType:
@@ -374,7 +358,7 @@
           ? DocumentRequestType.Transcript
           : DocumentRequestType.File,
       fileName: document.documentTypeDescription,
-    };
+    } as BinderDocument;
 
     // Add orderId for transcript documents
     if (
@@ -384,7 +368,7 @@
       binderDoc.orderId = (document as any).transcriptOrderId.toString();
     }
 
-    currentBinder.value?.documents.push(binderDoc);
+    currentBinder.value?.documents.push(binderDoc as BinderDocument);
 
     await saveBinder();
   };
@@ -463,7 +447,7 @@
     }
 
     newDocuments.forEach((d) => {
-      const binderDoc: BinderDocument = {
+      const binderDoc = {
         documentId: d.civilDocumentId,
         order: currentBinder.value?.documents.length ?? 0,
         documentType:
@@ -473,14 +457,14 @@
               ? DocumentRequestType.Transcript
               : DocumentRequestType.File,
         fileName: d.documentTypeDescription,
-      };
+      } as BinderDocument;
 
       // Add orderId for transcript documents
       if (d.category === 'Transcript' && (d as any).transcriptOrderId) {
         binderDoc.orderId = (d as any).transcriptOrderId.toString();
       }
 
-      currentBinder.value?.documents.push(binderDoc);
+      currentBinder.value?.documents.push(binderDoc as BinderDocument);
     });
 
     selectedItems.value = [];

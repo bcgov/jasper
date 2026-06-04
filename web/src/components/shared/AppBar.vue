@@ -35,10 +35,16 @@
           offset-y="-10"
         >
           <template #badge>
-            <span class="capsule-half priority">
+            <span
+              class="capsule-half priority"
+              :title="`${priorityPendingOrdersCount} priority orders pending`"
+            >
               {{ priorityPendingOrdersCount }}
             </span>
-            <span class="capsule-half regular">
+            <span
+              class="capsule-half regular"
+              :title="`${regularPendingOrdersCount} regular orders pending`"
+            >
               {{ regularPendingOrdersCount }}
             </span>
           </template>
@@ -48,8 +54,9 @@
           v-else-if="priorityPendingOrdersCount > 0"
           data-testid="order-badge"
           :content="priorityPendingOrdersCount"
-          :class="{ 'badge-pulse': badgePulseActive, 'priority-badge': true }"
+          :class="{ 'badge-pulse': badgePulseActive }"
           color="var(--bg-red-500)"
+          :title="`${priorityPendingOrdersCount} priority orders pending`"
           offset-x="-10"
           offset-y="-10"
         >
@@ -61,6 +68,7 @@
           :content="regularPendingOrdersCount"
           :class="{ 'badge-pulse': badgePulseActive }"
           color="var(--bg-green-500)"
+          :title="`${regularPendingOrdersCount} regular orders pending`"
           offset-x="-10"
           offset-y="-10"
         >
@@ -181,7 +189,7 @@
   );
 
   const canInitializeNotifications = computed(
-    () => !commonStore.isInitialized && !!commonStore.userInfo
+    () => commonStore.isInitialized && !!commonStore.userInfo
   );
 
   const canInitializeOrderFeatures = computed(
@@ -225,12 +233,11 @@
 
   const priorityPendingOrdersCount = computed(
     () =>
-      // ordersStore.orders.filter(
-      //   (o) =>
-      //     o.status === OrderReviewStatus.Pending &&
-      //     priorityOrderTypes.has(o.priorityType)
-      // ).length
-      0
+      ordersStore.orders.filter(
+        (o) =>
+          o.status === OrderReviewStatus.Pending &&
+          priorityOrderTypes.has(o.priorityType)
+      ).length
   );
 
   const regularPendingOrdersCount = computed(
@@ -245,7 +252,10 @@
   const badgePulseActive = ref(false);
 
   const triggerBadgePulse = async () => {
-    if (priorityPendingOrdersCount.value === 0) {
+    if (
+      priorityPendingOrdersCount.value === 0 ||
+      regularPendingOrdersCount.value === 0
+    ) {
       return;
     }
 
@@ -264,11 +274,7 @@
     }
   );
 
-  watch(priorityPendingOrdersCount, (newCount, oldCount) => {
-    if (newCount === oldCount || newCount === 0) {
-      return;
-    }
-
+  watch([priorityPendingOrdersCount, regularPendingOrdersCount], () => {
     void triggerBadgePulse();
   });
 </script>
@@ -324,10 +330,6 @@
   }
 
   .order-combo-badge :deep(.v-badge__badge) .capsule-half.regular {
-    background-color: var(--bg-green-500);
-  }
-
-  .regular-badge {
     background-color: var(--bg-green-500);
   }
 

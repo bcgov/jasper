@@ -5,7 +5,7 @@ import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { mount } from '@vue/test-utils';
 import { defineComponent } from 'vue';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type TableHeader = {
   title: string;
@@ -20,6 +20,8 @@ type OrdersDataTableVm = {
   data: Order[];
   viewOrderDetails: (item: Order) => void;
   viewCaseDetails: (item: Order) => void;
+  isAgedOrder: (order: Order) => boolean;
+  getRowProps: (params: { item: Order }) => { class: string | undefined };
 };
 
 // Mock the utils
@@ -398,5 +400,218 @@ describe('OrdersDataTable.vue', () => {
     expect(tooltips).toHaveLength(0);
     expect(wrapper.text()).toContain('IS');
     expect(wrapper.text()).toContain('Application');
+  });
+
+  describe('isAgedOrder', () => {
+    const buildOrder = (receivedDate: string): Order => ({
+      ...mockData[0],
+      receivedDate,
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      // Fix "now" to 2026-06-04 so date math is deterministic.
+      vi.setSystemTime(new Date('2026-06-04T12:00:00'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('returns false when highlightAgedOrders is not enabled', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+        },
+      });
+
+      // Received 30 days ago - would be "aged" if highlighting were on.
+      const order = buildOrder('05-May-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('returns false when highlightAgedOrders is explicitly false', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: false,
+        },
+      });
+
+      const order = buildOrder('05-May-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('returns false when receivedDate is not in the expected dd-MMM-yyyy format', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      const order = buildOrder('2026-05-05');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('returns false when receivedDate is an empty string', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      const order = buildOrder('');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('returns true when received date exceeds the default 5-day threshold', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      // 6 days before 2026-06-04 => 2026-05-29
+      const order = buildOrder('29-May-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(true);
+    });
+
+    it('returns false when received date equals the default 5-day threshold (strictly greater than)', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      // 5 days before 2026-06-04 => 2026-05-30
+      const order = buildOrder('30-May-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('returns false when received date is within the default 5-day threshold', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      // 1 day before 2026-06-04 => 2026-06-03
+      const order = buildOrder('03-Jun-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('returns false when received date is today', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      const order = buildOrder('04-Jun-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('honours a custom agedOrdersThresholdDays when exceeded', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+          agedOrdersThresholdDays: 10,
+        },
+      });
+
+      // 11 days before 2026-06-04 => 2026-05-24
+      const order = buildOrder('24-May-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(true);
+    });
+
+    it('honours a custom agedOrdersThresholdDays when not exceeded', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+          agedOrdersThresholdDays: 10,
+        },
+      });
+
+      // 9 days before 2026-06-04 => 2026-05-26 (within threshold)
+      const order = buildOrder('26-May-2026');
+      expect(getVm(wrapper).isAgedOrder(order)).toBe(false);
+    });
+
+    it('treats a threshold of 0 as "any past day is aged"', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+          agedOrdersThresholdDays: 0,
+        },
+      });
+
+      const yesterday = buildOrder('03-Jun-2026');
+      const today = buildOrder('04-Jun-2026');
+      expect(getVm(wrapper).isAgedOrder(yesterday)).toBe(true);
+      expect(getVm(wrapper).isAgedOrder(today)).toBe(false);
+    });
+
+    it('getRowProps applies the aged-row class when the order is aged', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      const agedOrder = buildOrder('29-May-2026');
+      expect(getVm(wrapper).getRowProps({ item: agedOrder })).toEqual({
+        class: 'aged-row',
+      });
+    });
+
+    it('getRowProps does not apply the aged-row class when the order is not aged', () => {
+      const wrapper = mount(OrdersDataTable, {
+        props: {
+          data: mockData,
+          viewOrderDetails: mockViewOrderDetails,
+          viewCaseDetails: mockViewCaseDetails,
+          highlightAgedOrders: true,
+        },
+      });
+
+      const freshOrder = buildOrder('03-Jun-2026');
+      expect(getVm(wrapper).getRowProps({ item: freshOrder })).toEqual({
+        class: undefined,
+      });
+    });
   });
 });

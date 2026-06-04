@@ -87,7 +87,7 @@
   const commonStore = useCommonStore();
   const orderService = inject<OrderService>('orderService');
 
-  // Only show orders that was completed within the last 30 days.
+  // Only show completed orders that were received within the last 30 days.
   const COMPLETED_ORDERS_CUTOFF_DAYS = 30;
 
   if (!orderService) {

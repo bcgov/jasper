@@ -84,12 +84,15 @@
       return false;
     }
     const thresholdDays = props.agedOrdersThresholdDays ?? 5;
-    const received = DateTime.fromJSDate(new Date(order.receivedDate));
-    if (!received.isValid) {
+    const received = DateTime.fromFormat(
+      order.receivedDate,
+      'dd-MMM-yyyy'
+    )?.startOf('day');
+    if (!received || !received.isValid) {
       return false;
     }
-    const ageDays = DateTime.now().diff(received, 'days').days;
-    return ageDays > thresholdDays;
+    const today = DateTime.now().startOf('day');
+    return today.diff(received, 'days').days > thresholdDays;
   };
 
   const getRowProps = ({ item }: { item: Order }) => ({

@@ -26,7 +26,7 @@
       <v-tab value="orders" to="/orders" v-if="showOrders">
         <v-badge
           v-if="priorityPendingOrdersCount > 0 && regularPendingOrdersCount > 0"
-          data-testid="order-badge"
+          data-testid="order-combo-badge"
           :class="{
             'badge-pulse': badgePulseActive,
             'order-combo-badge': true,
@@ -52,7 +52,7 @@
         </v-badge>
         <v-badge
           v-else-if="priorityPendingOrdersCount > 0"
-          data-testid="order-badge"
+          data-testid="priority-badge"
           :content="priorityPendingOrdersCount"
           :class="{ 'badge-pulse': badgePulseActive }"
           color="var(--bg-red-500)"
@@ -64,7 +64,7 @@
         </v-badge>
         <v-badge
           v-else-if="regularPendingOrdersCount > 0"
-          data-testid="order-badge"
+          data-testid="regular-badge"
           :content="regularPendingOrdersCount"
           :class="{ 'badge-pulse': badgePulseActive }"
           color="var(--bg-green-500)"
@@ -107,6 +107,8 @@
         </v-btn>
       </div>
     </v-tabs>
+    {{ regularPendingOrdersCount }}
+    {{ priorityPendingOrdersCount }}
   </v-app-bar>
 </template>
 

@@ -107,7 +107,9 @@ describe('CivilDocumentsView.vue', () => {
     (mockBinderService.getBinders as Mock).mockResolvedValue([]);
 
     expect(wrapper.exists()).toBe(true);
-    expect(wrapper.find('v-select').exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'ChipMultiSelect' }).exists()).toBe(
+      true
+    );
     expect(wrapper.findComponent({ name: 'JudicialBinder' }).exists()).toBe(
       true
     );
@@ -115,7 +117,7 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('filters documents by selected type', async () => {
-    wrapper.vm.selectedCategory = 'CSR';
+    wrapper.vm.selectedCategories = ['CSR'];
 
     expect(wrapper.vm.filteredDocuments).toEqual([mockDocuments[0]]);
   });
@@ -167,6 +169,7 @@ describe('CivilDocumentsView.vue', () => {
     expect(wrapper.vm.documentCategories[0]).toEqual({
       title: 'Scheduled',
       value: 'Scheduled',
+      count: 2,
     });
   });
 
@@ -174,6 +177,7 @@ describe('CivilDocumentsView.vue', () => {
     expect(wrapper.vm.documentCategories[1]).toEqual({
       title: 'Court Summary',
       value: 'CSR',
+      count: 1,
     });
   });
 
@@ -181,6 +185,7 @@ describe('CivilDocumentsView.vue', () => {
     expect(wrapper.vm.documentCategories[4]).toEqual({
       title: 'Affidavits/Financial Stmts',
       value: 'Affidavits',
+      count: 1,
     });
   });
 
@@ -367,7 +372,7 @@ describe('CivilDocumentsView.vue', () => {
     });
 
     it('does not filter judicial binder documents by category', async () => {
-      wrapper.vm.selectedCategory = 'CSR';
+      wrapper.vm.selectedCategories = ['CSR'];
       await nextTick();
 
       expect(wrapper.vm.filteredDocuments).toHaveLength(1);
@@ -380,7 +385,7 @@ describe('CivilDocumentsView.vue', () => {
     });
 
     it('filters all documents table by category', async () => {
-      wrapper.vm.selectedCategory = 'ROP';
+      wrapper.vm.selectedCategories = ['ROP'];
       await nextTick();
 
       expect(wrapper.vm.filteredDocuments).toHaveLength(1);
@@ -457,6 +462,31 @@ describe('CivilDocumentsView.vue', () => {
 
     it('uses deduplicated documents for category counts', () => {
       expect(wrapper.vm.categoryCount('CSR')).toBe(1);
+    });
+
+    it('removes stale selected categories that are no longer valid', async () => {
+      wrapper.vm.selectedCategories = ['Scheduled'];
+
+      await wrapper.setProps({
+        documents: [
+          {
+            civilDocumentId: '10',
+            category: 'CSR',
+            documentTypeDescription: 'Civil Document 10',
+            filedDt: '2024-04-01',
+            filedBy: [{ roleTypeCode: 'Role10' }],
+            fileSeqNo: '10',
+            issue: [{ issueTypeDesc: 'Issue10' }],
+            documentSupport: [{ actCd: 'Act10' }],
+            nextAppearanceDt: '',
+          },
+        ],
+      });
+
+      await nextTick();
+
+      expect(wrapper.vm.selectedCategories).toEqual([]);
+      expect(wrapper.vm.allDocumentsSectionTitle).toBe('All Documents');
     });
   });
 });

@@ -4,16 +4,12 @@
     color="var(--bg-gray-500)"
     elevation="0"
     data-testid="all-documents-container"
-    v-if="documents?.length > 0"
+    v-if="documents?.length > 0 || props.hasActiveFilters"
   >
     <v-card-text>
       <v-row align="center" no-gutters>
         <v-col class="text-h5" cols="6">
-          {{
-            props.selectedCategory && props.getCategoryDisplayTitle
-              ? props.getCategoryDisplayTitle(props.selectedCategory)
-              : 'All Documents'
-          }}
+          {{ props.sectionTitle || 'All Documents' }}
           ({{ documents.length }})
         </v-col>
       </v-row>
@@ -53,10 +49,7 @@
       <span v-else>
         {{ item.documentTypeDescription }}
       </span>
-      <span
-        v-if="selectedCategory === 'Scheduled' && item.filedDt"
-        class="text-caption"
-      >
+      <span v-if="isScheduledView && item.filedDt" class="text-caption">
         <br />
         Date Filed: {{ formatDateToDDMMMYYYY(item.filedDt) }}
       </span>
@@ -104,9 +97,10 @@
     baseHeaders: DataTableHeader[];
     binderDocumentIds: string[];
     addDocumentToBinder: (document: civilDocumentType) => void;
-    selectedCategory?: string;
+    hasActiveFilters?: boolean;
+    isScheduledView?: boolean;
+    sectionTitle?: string;
     sortBy?: [{ key: string; order: 'asc' | 'desc' }];
-    getCategoryDisplayTitle?: (category: string) => string;
     openIndividualDocument: (data: civilDocumentType) => void;
   }>();
   const emit =

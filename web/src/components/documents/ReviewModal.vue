@@ -16,12 +16,12 @@
           <v-icon :icon="mdiClose" />
         </v-btn>
       </v-card-title>
-      <v-divider />
+      <v-divider class="my-0" />
 
       <!-- Body -->
-      <v-card-text>
+      <v-card-text class="py-0">
         <!-- Comments Section -->
-        <div class="mb-6">
+        <div>
           <p class="text-body-2 text-medium-emphasis mb-3">
             Add any notes or reasoning for your decision. These comments will be
             saved with the order. <br />
@@ -36,13 +36,17 @@
             auto-grow
             clearable
             variant="outlined"
+            :hide-details="true"
           />
         </div>
 
         <DocumentUpload
+          class="mt-3"
+          v-if="isFamilyDeskOrder"
+          :disabled="!isFamilyDeskOrder"
           v-model:show="show"
           v-model:selectedFile="selectedUpload"
-          :disabled="props.canApprove"
+          text="Attach Desk Order"
         />
       </v-card-text>
 
@@ -53,7 +57,11 @@
           variant="tonal"
           density="comfortable"
         >
-          Document signature or upload is required before Approval.
+          {{
+            isFamilyDeskOrder
+              ? 'Document upload is required before Approval.'
+              : 'Document signature is required before Approval.'
+          }}
         </v-alert>
       </v-card-text>
       <!-- Actions -->
@@ -99,16 +107,18 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
-  import {
-    mdiClose,
-    mdiCheckBold,
-    mdiPencilBoxOutline,
-    mdiAccountClock,
-  } from '@mdi/js';
-  import { OrderReviewStatus } from '@/types/common';
+  import { useOrdersStore } from '@/stores';
   import { OrderReview } from '@/types';
+  import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
+  import {
+    mdiAccountClock,
+    mdiCheckBold,
+    mdiClose,
+    mdiPencilBoxOutline,
+  } from '@mdi/js';
+  import { computed, ref, watch } from 'vue';
+  import { useRoute } from 'vue-router';
   import DocumentUpload from './DocumentUpload.vue';
 
   const props = defineProps<{
@@ -121,8 +131,22 @@
   const comments = ref<string>('');
   const selectedUpload = ref<File | null>(null);
   const canReject = computed<boolean>(() => comments.value?.length > 0);
-  const canApprove = computed<boolean>(
-    () => props.canApprove || selectedUpload.value !== null
+  const canApprove = computed<boolean>(() =>
+    isFamilyDeskOrder.value
+      ? selectedUpload.value !== null
+      : props.canApprove || selectedUpload.value !== null
+  );
+  const orderStore = useOrdersStore();
+  const route = useRoute();
+  const orderId = computed(() => (route.query.id as string) ?? null);
+  const currentOrder = computed(() =>
+    orderId.value
+      ? orderStore.orders.find((o) => o.id === orderId.value)
+      : undefined
+  );
+
+  const isFamilyDeskOrder = computed(
+    () => currentOrder.value?.courtListType === OrderCourtLisTypeEnum.PFM
   );
 
   watch(show, (newVal) => {
@@ -146,6 +170,7 @@
       documentData,
       supportingDocumentData,
     };
+
     emit('reviewOrder', review);
 
     show.value = false;

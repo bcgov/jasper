@@ -294,10 +294,12 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
             double documentId = orderDto.OrderRequest?.Referral?.ReferredDocumentId.GetValueOrDefault() ?? 0;
 
-            await _judicialClient.SaveJudicialActionAsync(
-                correlationId,
-                documentId,
-                actionDto);
+            this.Logger.LogInformation("Submitting order for Order {OrderId} to CSO. CorrelationId: {CorrelationId}. Payload: {@ActionDto}", id, correlationId, actionDto);
+
+            //await _judicialClient.SaveJudicialActionAsync(
+            //    correlationId,
+            //    documentId,
+            //    actionDto);
 
             // Cleanup the successful, submitted order to remove potentially private document data and comments.
             orderDto.DocumentData = null;
@@ -305,12 +307,12 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             orderDto.Comments = null;
             orderDto.SubmitStatus = SubmitStatus.Submitted;
 
-            var cleanupResult = await UpdateAsync(orderDto);
-            if (!cleanupResult.Succeeded)
-            {
-                this.Logger.LogWarning("Failed to clean up order post submission {OrderId}.", id);
-                return cleanupResult;
-            }
+            //var cleanupResult = await UpdateAsync(orderDto);
+            //if (!cleanupResult.Succeeded)
+            //{
+            //    this.Logger.LogWarning("Failed to clean up order post submission {OrderId}.", id);
+            //    return cleanupResult;
+            //}
 
             this.Logger.LogInformation("Order {OrderId} submitted to CSO successfully.", id);
             return OperationResult.Success();

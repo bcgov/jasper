@@ -207,3 +207,10 @@ export enum NotificationType {
   SYSTEM = 'SYSTEM',
   ORDER_RECEIVED = 'ORDER_RECEIVED',
 }
+
+export enum OrderCourtLisTypeEnum {
+  PCS = 'PCS', // Small Claims Court List
+  PFA = 'PFA', // Family Court List
+  PSM = 'PSM', // Provincial Court Desk Order Small Claims
+  PFM = 'PFM', // Provincial Court Desk Order Family List
+}

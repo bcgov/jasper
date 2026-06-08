@@ -3,15 +3,16 @@
     class="px-4 py-3 rounded-lg upload-container"
     :class="{ 'upload-disabled': props.disabled }"
   >
-    <label class="upload-label">
+    <label for="document-upload-checkbox" class="upload-label mb-0">
       <v-checkbox
+        id="document-upload-checkbox"
         v-model="showDocumentUpload"
         density="compact"
-        hide-details
+        :hide-details="true"
         class="upload-checkbox"
         :disabled="props.disabled"
       />
-      <span>Attach supporting document (optional)</span>
+      <span>{{ props.text ?? 'Attach supporting document (optional)' }}</span>
     </label>
     <v-expand-transition>
       <div v-if="showDocumentUpload" class="mt-2">
@@ -50,6 +51,7 @@
   const show = defineModel<boolean>('show', { type: Boolean, required: true });
   const props = defineProps<{
     disabled: boolean;
+    text: string | null;
   }>();
   const selectedFile = defineModel<File | null>('selectedFile', {
     default: null,

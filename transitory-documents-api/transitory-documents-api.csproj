@@ -23,11 +23,11 @@
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.0" />
     <PackageReference Include="NETStandard.Library" Version="2.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.4" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="9.0.4" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="10.2.1" />
     <PackageReference Include="SMBLibrary" Version="1.5.3" />
     <PackageReference Include="Polly" Version="8.2.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />

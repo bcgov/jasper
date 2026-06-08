@@ -12,6 +12,7 @@
     <PackageReference Include="Mapster" Version="10.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Authorization.Policy" Version="2.3.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.10" />
   </ItemGroup>
 
   <ItemGroup>

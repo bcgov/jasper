@@ -19,7 +19,7 @@ namespace Scv.Api.Services;
 public interface ICaseService : ICrudService<CaseDto>
 {
     Task<OperationResult<CaseResponse>> GetAssignedCasesAsync(int judgeId);
-    Task<OperationResult> ReplaceAllAsync(List<string> existingIds, List<CaseDto> newCases);
+    Task<OperationResult> ReplaceAllAssignedCasesAsync(List<CaseDto> replacementCases);
 }
 
 public class CaseService(
@@ -33,6 +33,8 @@ public class CaseService(
         logger,
         judgementRepo), ICaseService
 {
+    private const int ReplaceDeleteBatchSize = 500;
+
     private readonly JasperDbContext _dbContext = dbContext;
 
     public override string CacheName => "GetCasesAsync";
@@ -55,31 +57,33 @@ public class CaseService(
     public override Task<OperationResult<CaseDto>> ValidateAsync(CaseDto dto, bool isEdit = false)
         => Task.FromResult(OperationResult<CaseDto>.Success(dto));
 
-    public async Task<OperationResult> ReplaceAllAsync(List<string> existingIds, List<CaseDto> newCases)
+    public async Task<OperationResult> ReplaceAllAssignedCasesAsync(List<CaseDto> replacementCases)
     {
         try
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            var existingIds = await _dbContext.Cases
+                .Select(@case => @case.Id)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToListAsync();
 
-            if (newCases.Count > 0)
-            {
-                var newEntities = this.Mapper.Map<List<Case>>(newCases);
-                await _dbContext.Cases.AddRangeAsync(newEntities);
-            }
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
             if (existingIds.Count > 0)
             {
-                var existingEntities = await _dbContext.Cases
-                    .Where(c => existingIds.Contains(c.Id))
-                    .ToListAsync();
-
-                if (existingEntities.Count > 0)
+                foreach (var batch in existingIds.Chunk(ReplaceDeleteBatchSize))
                 {
-                    _dbContext.Cases.RemoveRange(existingEntities);
+                    _dbContext.Cases.RemoveRange(batch.Select(id => new Case { Id = id }));
+                    await _dbContext.SaveChangesAsync();
                 }
             }
 
-            await _dbContext.SaveChangesAsync();
+            if (replacementCases.Count > 0)
+            {
+                var replacementEntities = this.Mapper.Map<List<Case>>(replacementCases);
+                await _dbContext.Cases.AddRangeAsync(replacementEntities);
+                await _dbContext.SaveChangesAsync();
+            }
+
             await transaction.CommitAsync();
 
             this.InvalidateCache(this.CacheName);

@@ -5,9 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
+using Scv.Db.Contexts;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models;
@@ -17,18 +19,22 @@ namespace Scv.Api.Services;
 public interface ICaseService : ICrudService<CaseDto>
 {
     Task<OperationResult<CaseResponse>> GetAssignedCasesAsync(int judgeId);
+    Task<OperationResult> ReplaceAllAsync(List<string> existingIds, List<CaseDto> newCases);
 }
 
 public class CaseService(
     IAppCache cache,
     IMapper mapper,
     ILogger<CaseService> logger,
-    IRepositoryBase<Case> judgementRepo) : CrudServiceBase<IRepositoryBase<Case>, Case, CaseDto>(
+    IRepositoryBase<Case> judgementRepo,
+    JasperDbContext dbContext) : CrudServiceBase<IRepositoryBase<Case>, Case, CaseDto>(
         cache,
         mapper,
         logger,
         judgementRepo), ICaseService
 {
+    private readonly JasperDbContext _dbContext = dbContext;
+
     public override string CacheName => "GetCasesAsync";
 
     public const string DECISION_APPR_REASON_CD = "DEC";
@@ -48,6 +54,44 @@ public class CaseService(
 
     public override Task<OperationResult<CaseDto>> ValidateAsync(CaseDto dto, bool isEdit = false)
         => Task.FromResult(OperationResult<CaseDto>.Success(dto));
+
+    public async Task<OperationResult> ReplaceAllAsync(List<string> existingIds, List<CaseDto> newCases)
+    {
+        try
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+            if (newCases.Count > 0)
+            {
+                var newEntities = this.Mapper.Map<List<Case>>(newCases);
+                await _dbContext.Cases.AddRangeAsync(newEntities);
+            }
+
+            if (existingIds.Count > 0)
+            {
+                var existingEntities = await _dbContext.Cases
+                    .Where(c => existingIds.Contains(c.Id))
+                    .ToListAsync();
+
+                if (existingEntities.Count > 0)
+                {
+                    _dbContext.Cases.RemoveRange(existingEntities);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            this.InvalidateCache(this.CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error replacing cases: {Message}", ex.Message);
+            return OperationResult.Failure("Error replacing cases.");
+        }
+    }
 
     public async Task<OperationResult<CaseResponse>> GetAssignedCasesAsync(int judgeId)
     {

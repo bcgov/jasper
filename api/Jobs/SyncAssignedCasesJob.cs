@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -56,27 +56,47 @@ public class SyncAssignedCasesJob(
     {
         try
         {
-            // Delete all existing cases before processing new ones.
-            var existingCases = await _caseService.GetAllAsync();
-            await _caseService.DeleteRangeAsync([.. existingCases.Select(rj => rj.Id)]);
+            // Capture the current cases so they can be removed only after the replacement set is stored.
+            var existingCaseIds = (await _caseService.GetAllAsync())
+                .Select(existingCase => existingCase.Id)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
+
+            // Retrieve every replacement case before attempting the transactional swap.
+            var retrievedCases = new List<CaseDto>();
 
             // RJs
-            await this.ProcessReservedJudgements();
+            retrievedCases.AddRange(await this.ProcessReservedJudgements());
 
             // Get appearance reason codes excluding CNT, DEC and ACT.
             var apprReasonCodes = await GetAppearanceReasonCodes(CaseService.ContinuationReasonCodes);
 
             // Get Seized scheduled CNTs, DECs and ACTs.
-            await this.ProcessScheduledCases(string.Join(",", CaseService.ContinuationReasonCodes), CaseService.SEIZED_RESTRICTION_CD);
+            retrievedCases.AddRange(await this.ProcessScheduledCases(
+                string.Join(",", CaseService.ContinuationReasonCodes),
+                CaseService.SEIZED_RESTRICTION_CD));
 
             // Get Other Seized
-            await this.ProcessScheduledCases(apprReasonCodes, CaseService.SEIZED_RESTRICTION_CD);
+            retrievedCases.AddRange(await this.ProcessScheduledCases(
+                apprReasonCodes,
+                CaseService.SEIZED_RESTRICTION_CD));
 
             // Get Future Assigned - CNTs, DECs and ACTs.
-            await this.ProcessScheduledCases(string.Join(",", CaseService.ContinuationReasonCodes), CaseService.ASSIGNED_RESTRICTION_CD);
+            retrievedCases.AddRange(await this.ProcessScheduledCases(
+                string.Join(",", CaseService.ContinuationReasonCodes),
+                CaseService.ASSIGNED_RESTRICTION_CD));
 
             // Get Future Assigned - Others
-            await this.ProcessScheduledCases(apprReasonCodes, CaseService.ASSIGNED_RESTRICTION_CD);
+            retrievedCases.AddRange(await this.ProcessScheduledCases(
+                apprReasonCodes,
+                CaseService.ASSIGNED_RESTRICTION_CD));
+
+            // Store the new set and delete the old rows in one transactional replace operation.
+            var replaceResult = await _caseService.ReplaceAllAsync(existingCaseIds, retrievedCases);
+            if (!replaceResult.Succeeded)
+            {
+                throw new InvalidOperationException("Failed to replace assigned cases.");
+            }
 
             this.Logger.LogInformation("SyncAssignedCasesJob completed successfully.");
         }
@@ -88,7 +108,7 @@ public class SyncAssignedCasesJob(
 
     #region Reserved Judgements Methods
 
-    private async Task ProcessReservedJudgements()
+    private async Task<List<CaseDto>> ProcessReservedJudgements()
     {
         this.Logger.LogInformation("Starting to process today's reserved judgements.");
 
@@ -96,17 +116,18 @@ public class SyncAssignedCasesJob(
         if (newRJs.Length == 0)
         {
             this.Logger.LogInformation("No RJs have been processed");
-            return;
+            return [];
         }
 
         var validRJs = newRJs.Where(rj => rj.AppearanceId != null).ToList();
         var failedCount = newRJs.Length - validRJs.Count;
 
         var newRJsDtos = this.Mapper.Map<List<CaseDto>>(validRJs);
-        await _caseService.AddRangeAsync(newRJsDtos);
 
         this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfully processed {ValidRJsCount}. Failed: {FailedCount}.",
             newRJs.Length, newRJsDtos.Count, failedCount);
+
+        return newRJsDtos;
     }
 
     private async Task<Db.Models.Case[]> GetNewReservedJudgements()
@@ -326,7 +347,7 @@ public class SyncAssignedCasesJob(
 
     #region Scheduled Cases (Decisions and Continuations) Methods
 
-    private async Task ProcessScheduledCases(string apprReasonCodes, string restrictionCode)
+    private async Task<List<CaseDto>> ProcessScheduledCases(string apprReasonCodes, string restrictionCode)
     {
         this.Logger.LogInformation("Starting to retrieve scheduled cases for {ApprReasonCodes} and {RestrictionCode}", apprReasonCodes, restrictionCode);
 
@@ -337,7 +358,7 @@ public class SyncAssignedCasesJob(
                 "No data found for {ApprReasonCodes} and {RestrictionCode}.",
                 apprReasonCodes,
                 restrictionCode);
-            return;
+            return [];
         }
 
         var scheduledData = await PopulateCaseInfoWithThrottling(
@@ -356,14 +377,17 @@ public class SyncAssignedCasesJob(
             c => $"{c.FileNumberTxt} (PhysicalFileId: {c.PhysicalFileId})",
             "case");
 
-        await _caseService.AddRangeAsync([.. scheduledData
-            .Select(c => {
+        var retrievedCases = scheduledData
+            .Select(c =>
+            {
                 c.RestrictionCode = restrictionCode;
                 return c;
             })
-        ]);
+            .ToList();
 
         this.Logger.LogInformation("Processed {ScheduledCasesCount} scheduled cases for {RestrictionCode}", scheduledData.Length, restrictionCode);
+
+        return retrievedCases;
     }
 
     private async Task<ICollection<Case>> GetScheduledCases(string apprReasonCodes, string restrictionCode)
@@ -391,10 +415,8 @@ public class SyncAssignedCasesJob(
 
             return response.Data;
         }
-        else
-        {
-            return await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes, restrictionCode);
-        }
+
+        return await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes, restrictionCode);
     }
 
     private async Task<CaseDto> PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)
@@ -411,11 +433,8 @@ public class SyncAssignedCasesJob(
         {
             CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T
                 => await PopulateCriminalCaseInfo(caseDto, @case),
-
             CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M
                 => await PopulateCivilCaseInfo(caseDto, @case),
-
-
             _ => HandleUnsupportedCourtClass(caseDto, @case)
         };
     }
@@ -494,11 +513,11 @@ public class SyncAssignedCasesJob(
         async Task<ICollection<AppearanceReason>> JustinAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsJustinAsync();
         async Task<ICollection<AppearanceReason>> CeisAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCeisAsync();
 
-        var criminalTask = this.Cache.GetOrAddAsync($"CriminalAppearanceReasons", CriminalAppearanceReasons);
-        var civilTask = this.Cache.GetOrAddAsync($"CivilAppearanceReasons", CivilAppearanceReasons);
-        var familyTask = this.Cache.GetOrAddAsync($"FamilyAppearanceReasons", FamilyAppearanceReasons);
-        var justinTask = this.Cache.GetOrAddAsync($"JustinAppearanceReasons", JustinAppearanceReasons);
-        var ceisTask = this.Cache.GetOrAddAsync($"CeisAppearanceReasons", CeisAppearanceReasons);
+        var criminalTask = this.Cache.GetOrAddAsync("CriminalAppearanceReasons", CriminalAppearanceReasons);
+        var civilTask = this.Cache.GetOrAddAsync("CivilAppearanceReasons", CivilAppearanceReasons);
+        var familyTask = this.Cache.GetOrAddAsync("FamilyAppearanceReasons", FamilyAppearanceReasons);
+        var justinTask = this.Cache.GetOrAddAsync("JustinAppearanceReasons", JustinAppearanceReasons);
+        var ceisTask = this.Cache.GetOrAddAsync("CeisAppearanceReasons", CeisAppearanceReasons);
 
         await Task.WhenAll(criminalTask, civilTask, familyTask, justinTask, ceisTask);
 

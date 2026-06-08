@@ -6,6 +6,7 @@ export interface Order {
   priorityType: string;
   priorityTypeDescription?: string;
   courtListType: string;
+  courtListTypeDescription?: string;
   packageDocumentId: string;
   packageName: string;
   receivedDate: string;

@@ -39,7 +39,7 @@
       </span>
     </template>
     <template #[`item.courtListType`]="{ item }">
-      <span>{{ item.courtListType }}</span>
+      <span>{{ item.courtListTypeDescription }}</span>
     </template>
   </v-data-table-virtual>
 </template>
@@ -110,7 +110,7 @@
     },
     courtListType: {
       title: 'TYPE',
-      key: 'courtListType',
+      key: 'courtListTypeDescription',
     },
     receivedDate: {
       title: 'DATE RECEIVED',

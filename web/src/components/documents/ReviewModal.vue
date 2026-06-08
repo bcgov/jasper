@@ -166,7 +166,7 @@
     const review: OrderReview = {
       comments: comments.value,
       status: status,
-      signed: status === OrderReviewStatus.Approved,
+      signed: status === OrderReviewStatus.Approved && !isFamilyDeskOrder.value, // Approved Family Desk Orders doesn't require signature.
       documentData,
       supportingDocumentData,
     };

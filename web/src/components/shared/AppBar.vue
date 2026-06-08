@@ -108,8 +108,6 @@
         </v-btn>
       </div>
     </v-tabs>
-    {{ regularPendingOrdersCount }}
-    {{ priorityPendingOrdersCount }}
   </v-app-bar>
 </template>
 

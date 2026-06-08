@@ -10,17 +10,6 @@ namespace Scv.Api.Infrastructure.Mappings;
 
 public class OrderMapping : IRegister
 {
-    /// <summary>
-    /// PCS - Small Claims Court List
-    /// PFA - Family Court List
-    /// </summary>
-    private static readonly string[] ORDER_CODES = { "PSC", "PFA" };
-    /// <summary>
-    /// PSM - Provincial Court Desk Order Small Claims
-    /// PFM - Provincial Court Deks Order Family List
-    /// </summary>
-    private static readonly string[] DESK_ORDER_CODES = { "PSM", "PFM" };
-
     public static void Register(TypeAdapterConfig config)
     {
         config.NewConfig<Order, OrderDto>()
@@ -52,7 +41,7 @@ public class OrderMapping : IRegister
             .Map(dest => dest.PackageId, src => src.OrderRequest.Referral.PackageId)
             .Map(dest => dest.PackageDocumentId, src => src.OrderRequest.Referral.ReferredDocumentId)
             .Map(dest => dest.PriorityType, src => src.OrderRequest.Referral.PriorityType)
-            .Map(dest => dest.CourtListType, src => MapCourtListType(src.OrderRequest.Referral.CourtListTypeCd))
+            .Map(dest => dest.CourtListType, src => src.OrderRequest.Referral.CourtListTypeCd)
             .Map(dest => dest.ReferralNotes, src => src.OrderRequest.Referral.ReferralNotesTxt)
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))
             .AfterMapping((src, dest) =>
@@ -85,21 +74,6 @@ public class OrderMapping : IRegister
 
     private static string ToBase64OrNull(byte[] data) =>
         data is { Length: > 0 } ? Convert.ToBase64String(data) : null;
-
-    private static string MapCourtListType(string courtListTypeCode)
-    {
-        if (ORDER_CODES.Contains(courtListTypeCode))
-        {
-            return "Order";
-        }
-
-        if (DESK_ORDER_CODES.Contains(courtListTypeCode))
-        {
-            return "Desk Order";
-        }
-
-        return courtListTypeCode;
-    }
 
     private static byte[] FromBase64OrNull(string value) =>
         string.IsNullOrWhiteSpace(value) ? [] : Convert.FromBase64String(value);

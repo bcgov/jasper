@@ -61,8 +61,8 @@ exit 1
 # -----------------------------------------------------------------------------------------------------------------
 # Default Settings:
 # -----------------------------------------------------------------------------------------------------------------
-RUNTIME_CONTAINERS="db-pg db-mongo clamav api web transitory-documents-api"
-DEBUG_CONTAINERS="db-pg db-mongo clamav api web-dev transitory-documents-api"
+RUNTIME_CONTAINERS="db-pg db-mongo db-mongo-init clamav api web transitory-documents-api"
+DEBUG_CONTAINERS="db-pg db-mongo db-mongo-init clamav api web-dev transitory-documents-api"
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
 # -----------------------------------------------------------------------------------------------------------------

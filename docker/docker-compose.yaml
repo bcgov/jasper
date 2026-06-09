@@ -312,13 +312,52 @@ services:
 
   db-mongo:
     image: mongo:latest
+    command: >
+      bash -c "
+        if [ ! -f /data/configdb/keyfile ]; then
+          openssl rand -base64 756 > /data/configdb/keyfile;
+          chmod 400 /data/configdb/keyfile;
+          chown 999:999 /data/configdb/keyfile;
+        fi;
+        exec mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/keyfile
+      "
     ports:
       - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/tmp-mongo
+      - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/data/db
+      - mongo-keyfile:/data/configdb
+
+  db-mongo-init:
+    image: mongo:latest
+    depends_on:
+      - db-mongo
+    restart: 'no'
+    environment:
+      MONGODB_USER: ${MONGODB_USER}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+    entrypoint: >
+      bash -c '
+        until mongosh --host db-mongo:27017 -u "$${MONGODB_USER}" -p "$${MONGODB_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1;
+        do
+          sleep 2;
+        done;
+
+        mongosh --host db-mongo:27017 -u "$${MONGODB_USER}" -p "$${MONGODB_PASSWORD}" --authenticationDatabase admin --eval "
+          try {
+            rs.status();
+          } catch (e) {
+            rs.initiate({
+              _id: \"rs0\",
+              members: [
+                { _id: 0, host: \"db-mongo:27017\" }
+              ]
+            });
+          }
+        "
+      '
 
   clamav:
     image: clamav/clamav@sha256:c6eb128c7bd57bb0c533491198753a2130b471c517605ad8d289174a56c450a8 # v1.5.2
@@ -338,3 +377,4 @@ volumes:
   clamav-db:
   transitory-documents-api-dev-bin:
   transitory-documents-api-dev-obj:
+  mongo-keyfile:

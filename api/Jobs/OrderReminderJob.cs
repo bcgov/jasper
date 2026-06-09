@@ -103,7 +103,7 @@ public class OrderReminderJob(
             var emailData = CreateEmailData(order, GetJudgeName(judge), supportAccount);
 
             await _emailTemplateService.SendEmailTemplateAsync(
-                "Order Reminder",
+                EmailTemplate.ORDER_REMINDER,
                 user.Email,
                 emailData);
 
@@ -186,7 +186,7 @@ public class OrderReminderJob(
         Logger.LogInformation("Order reassignment email prepared for order {OrderId}", order.Id);
 
         await _emailTemplateService.SendEmailTemplateAsync(
-            "Order Reassignment",
+            EmailTemplate.ORDER_REASSIGNMENT,
             rajUser.Email,
             emailData);
 
@@ -229,7 +229,8 @@ public class OrderReminderJob(
         CaseFileNumber = order.OrderRequest?.CourtFileNo,
         DateReceived = order.Ent_Dtm.ToString("MMMM dd, yyyy"),
         LocationName = order.OrderRequest?.CourtLocationDesc,
-        Priority = order.OrderRequest?.Referral?.PriorityType,
+        IsPriority = PriorityTypeDescriptor.IsPriority(order.OrderRequest?.Referral?.PriorityType),
+        PriorityTypeDesc = PriorityTypeDescriptor.Describe(order.OrderRequest?.Referral?.PriorityType),
         SupportAccount = supportAccount
     };
 

@@ -1,11 +1,10 @@
 import { Order } from '@/types';
-import { Anchor } from '@/types/common';
-import { OrderReviewStatus } from '@/types/common';
+import { Anchor, OrderReviewStatus } from '@/types/common';
 import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { mount } from '@vue/test-utils';
-import { defineComponent } from 'vue';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent } from 'vue';
 
 type TableHeader = {
   title: string;
@@ -52,7 +51,7 @@ const mockData: Order[] = [
     physicalFileId: 'file-001',
     status: OrderReviewStatus.Pending,
     priorityType: 'TST',
-    priorityTypeDescription: 'Test Priority Description',
+    priorityTypeDesc: 'Test Priority Description',
     courtListType: 'Order',
     courtListTypeDescription: 'Order',
   },

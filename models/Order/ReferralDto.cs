@@ -18,5 +18,6 @@ public class ReferralDto
     public string SentToName { get; set; }
     public string PriorityType { get; set; }
     public string CourtListTypeCd { get; set; }
+    public bool IsPriority => PriorityTypeDescriptor.IsPriority(PriorityType);
+    public string PriorityTypeDesc => PriorityTypeDescriptor.Describe(PriorityType);
 }
-

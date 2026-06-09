@@ -54,6 +54,7 @@ const mockData: Order[] = [
     priorityType: 'TST',
     priorityTypeDescription: 'Test Priority Description',
     courtListType: 'Order',
+    courtListTypeDescription: 'Order',
   },
   {
     id: '2',
@@ -68,7 +69,9 @@ const mockData: Order[] = [
     physicalFileId: 'file-002',
     status: OrderReviewStatus.Approved,
     priorityType: 'IS',
+    priorityTypeDescription: 'Important',
     courtListType: 'Application',
+    courtListTypeDescription: 'Application',
   },
 ];
 
@@ -382,9 +385,13 @@ describe('OrdersDataTable.vue', () => {
   });
 
   it('renders plain text for priorityType when description is missing', () => {
+    const orderWithoutDescription: Order = {
+      ...mockData[1],
+      priorityTypeDescription: '',
+    };
     const wrapper = mount(OrdersDataTable, {
       props: {
-        data: [mockData[1]],
+        data: [orderWithoutDescription],
         viewOrderDetails: mockViewOrderDetails,
         viewCaseDetails: mockViewCaseDetails,
       },

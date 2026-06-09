@@ -344,7 +344,7 @@ public class OrderMappingTests
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal("Desk Order", result.CourtListType);
+        Assert.Equal("Desk Order", result.CourtListTypeDescription);
     }
 
     [Fact]
@@ -355,7 +355,7 @@ public class OrderMappingTests
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal("Order", result.CourtListType);
+        Assert.Equal("Order", result.CourtListTypeDescription);
     }
 
     [Fact]
@@ -366,7 +366,7 @@ public class OrderMappingTests
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal("Order", result.CourtListType);
+        Assert.Equal("Order", result.CourtListTypeDescription);
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public class OrderMappingTests
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal("Desk Order", result.CourtListType);
+        Assert.Equal("Desk Order", result.CourtListTypeDescription);
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class OrderMappingTests
 
         var result = order.Adapt<OrderViewDto>(_config);
 
-        Assert.Equal(unknownCode, result.CourtListType);
+        Assert.Equal(unknownCode, result.CourtListTypeDescription);
     }
 
     [Fact]

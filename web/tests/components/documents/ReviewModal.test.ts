@@ -1,16 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import ReviewModal from '@/components/documents/ReviewModal.vue';
+import type { OrderReview } from '@/types';
+
+vi.mock('vue-router', () => ({
+  useRoute: vi.fn(() => ({ query: {} })),
+}));
 
 describe('ReviewModal.vue', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   const createWrapper = (props = {}, modelValue = true) => {
-    return mount(ReviewModal, 
-      {
+    return mount(ReviewModal, {
       props: {
         canApprove: false,
         modelValue,
@@ -42,8 +50,12 @@ describe('ReviewModal.vue', () => {
 
     it('should render instruction text', () => {
       const wrapper = createWrapper();
-      expect(wrapper.text()).toContain('Add any notes or reasoning for your decision');
-      expect(wrapper.text()).toContain('Required for any action other than Approval');
+      expect(wrapper.text()).toContain(
+        'Add any notes or reasoning for your decision'
+      );
+      expect(wrapper.text()).toContain(
+        'Required for any action other than Approval'
+      );
     });
 
     it('should render comments textarea', () => {
@@ -56,12 +68,16 @@ describe('ReviewModal.vue', () => {
   describe('canApprove prop behavior', () => {
     it('should show warning alert when canApprove is false', () => {
       const wrapper = createWrapper({ canApprove: false });
-      expect(wrapper.text()).toContain('Document signature or upload is required before Approval');
+      expect(wrapper.text()).toContain(
+        'Document signature is required before Approval'
+      );
     });
 
     it('should not show warning alert when canApprove is true', () => {
       const wrapper = createWrapper({ canApprove: true });
-      expect(wrapper.text()).not.toContain('Document signature or upload is required before Approval');
+      expect(wrapper.text()).not.toContain(
+        'Document signature is required before Approval'
+      );
     });
   });
 
@@ -143,7 +159,9 @@ describe('ReviewModal.vue', () => {
       await approveButton!.trigger('click');
       await flushPromises();
 
-      const emitted = wrapper.emitted('reviewOrder');
+      const emitted = wrapper.emitted('reviewOrder') as
+        | OrderReview[][]
+        | undefined;
       expect(emitted).toBeTruthy();
       expect(emitted?.[0]?.[0]?.documentData).toBe('');
       expect(emitted?.[0]?.[0]?.supportingDocumentData).toBe('');

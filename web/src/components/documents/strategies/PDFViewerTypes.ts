@@ -17,6 +17,7 @@ export interface PDFViewerStrategy<
   cleanup(): void;
   showOrderReviewOptions?: boolean;
   reviewOrder?(orderReview: OrderReview): Promise<void>;
+  setToolbarItems?(items: any): any[];
 }
 
 export interface OutlineItem {

@@ -4,7 +4,7 @@
       <!-- Header -->
       <v-card-title class="d-flex align-center">
         <v-icon class="me-2" :icon="mdiPencilBoxOutline" />
-        Review Order
+        {{ submitted ? 'Review Submitted' : 'Review Order' }}
         <v-spacer />
         <v-btn
           icon
@@ -18,90 +18,122 @@
       </v-card-title>
       <v-divider class="my-0" />
 
-      <!-- Body -->
-      <v-card-text class="py-0">
-        <!-- Comments Section -->
-        <div>
-          <p class="text-body-2 text-medium-emphasis mb-3">
-            Add any notes or reasoning for your decision. These comments will be
-            saved with the order. <br />
-            <strong>Required</strong> for any action other than Approval.
+      <!-- Submitted confirmation -->
+      <template v-if="submitted">
+        <v-card-text class="text-center py-8">
+          <v-icon
+            size="56"
+            color="success"
+            :icon="mdiCheckCircleOutline"
+            class="mb-4"
+          />
+          <p>Your review has been submitted.</p>
+          <p>
+            Return to the <strong>Orders dashboard</strong> tab to continue
+            processing.
           </p>
 
-          <v-textarea
-            ref="commentsRef"
-            v-model="comments"
-            label="Review comments"
-            rows="4"
-            auto-grow
-            clearable
-            variant="outlined"
-            :hide-details="true"
+          <v-alert
+            v-if="autoCloseSeconds > 0"
+            type="info"
+            variant="tonal"
+            density="comfortable"
+            class="mt-6 d-inline-flex"
+          >
+            This tab will close in {{ autoCloseSeconds }} second{{
+              autoCloseSeconds === 1 ? '' : 's'
+            }}.
+          </v-alert>
+        </v-card-text>
+      </template>
+
+      <!-- Review form -->
+      <template v-else>
+        <!-- Body -->
+        <v-card-text class="py-0">
+          <!-- Comments Section -->
+          <div>
+            <p class="text-body-2 text-medium-emphasis mb-3">
+              Add any notes or reasoning for your decision. These comments will
+              be saved with the order. <br />
+              <strong>Required</strong> for any action other than Approval.
+            </p>
+
+            <v-textarea
+              ref="commentsRef"
+              v-model="comments"
+              label="Review comments"
+              rows="4"
+              auto-grow
+              clearable
+              variant="outlined"
+              :hide-details="true"
+            />
+          </div>
+
+          <DocumentUpload
+            class="mt-3"
+            v-if="isFamilyDeskOrder"
+            :disabled="!isFamilyDeskOrder"
+            v-model:show="show"
+            v-model:selectedFile="selectedUpload"
+            text="Attach Desk Order"
           />
-        </div>
+        </v-card-text>
 
-        <DocumentUpload
-          class="mt-3"
-          v-if="isFamilyDeskOrder"
-          :disabled="!isFamilyDeskOrder"
-          v-model:show="show"
-          v-model:selectedFile="selectedUpload"
-          text="Attach Desk Order"
-        />
-      </v-card-text>
-
-      <v-card-text>
-        <v-alert
-          v-if="!canApprove"
-          type="warning"
-          variant="tonal"
-          density="comfortable"
-        >
-          {{
-            isFamilyDeskOrder
-              ? 'Document upload is required before Approval.'
-              : 'Document signature is required before Approval.'
-          }}
-        </v-alert>
-      </v-card-text>
-      <!-- Actions -->
-      <v-card-actions class="px-6 py-4">
-        <!-- Left (destructive / secondary) -->
-        <div class="d-flex ga-2">
-          <v-btn
-            color="error"
-            variant="text"
-            :prepend-icon="mdiClose"
-            :disabled="!canReject"
-            @click="reviewOrder(OrderReviewStatus.Unapproved)"
+        <v-card-text>
+          <v-alert
+            v-if="!canApprove"
+            type="warning"
+            variant="tonal"
+            density="comfortable"
           >
-            Reject
-          </v-btn>
+            {{
+              isFamilyDeskOrder
+                ? 'Document upload is required before Approval.'
+                : 'Document signature is required before Approval.'
+            }}
+          </v-alert>
+        </v-card-text>
+        <!-- Actions -->
+        <v-card-actions class="px-6 py-4">
+          <!-- Left (destructive / secondary) -->
+          <div class="d-flex ga-2">
+            <v-btn
+              color="error"
+              variant="text"
+              :prepend-icon="mdiClose"
+              :disabled="!canReject"
+              @click="reviewOrder(OrderReviewStatus.Unapproved)"
+            >
+              Reject
+            </v-btn>
 
+            <v-btn
+              color="warning"
+              variant="outlined"
+              :prepend-icon="mdiAccountClock"
+              :disabled="!canReject"
+              @click="reviewOrder(OrderReviewStatus.AwaitingDocumentation)"
+            >
+              Awaiting documentation
+            </v-btn>
+          </div>
+
+          <v-spacer />
+
+          <!-- Primary -->
           <v-btn
-            color="warning"
-            variant="outlined"
-            :prepend-icon="mdiAccountClock"
-            :disabled="!canReject"
-            @click="reviewOrder(OrderReviewStatus.AwaitingDocumentation)"
+            color="success"
+            size="large"
+            :prepend-icon="mdiCheckBold"
+            :disabled="!canApprove"
+            @click="reviewOrder(OrderReviewStatus.Approved)"
           >
-            Awaiting documentation
+            Approve
           </v-btn>
-        </div>
-
-        <v-spacer />
-
-        <!-- Primary -->
-        <v-btn
-          color="success"
-          size="large"
-          :prepend-icon="mdiCheckBold"
-          :disabled="!canApprove"
-          @click="reviewOrder(OrderReviewStatus.Approved)"
-        >
-          Approve
-        </v-btn>
-      </v-card-actions>
+        </v-card-actions>
+      </template>
     </v-card>
   </v-dialog>
 </template>
@@ -114,12 +146,15 @@
   import {
     mdiAccountClock,
     mdiCheckBold,
+    mdiCheckCircleOutline,
     mdiClose,
     mdiPencilBoxOutline,
   } from '@mdi/js';
-  import { computed, ref, watch } from 'vue';
+  import { computed, onBeforeUnmount, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import DocumentUpload from './DocumentUpload.vue';
+
+  const AUTO_CLOSE_SECONDS = 15;
 
   const props = defineProps<{
     canApprove: boolean;
@@ -130,6 +165,9 @@
 
   const comments = ref<string>('');
   const selectedUpload = ref<File | null>(null);
+  const submitted = ref<boolean>(false);
+  const autoCloseSeconds = ref<number>(0);
+  let autoCloseTimer: ReturnType<typeof setInterval> | null = null;
   const canReject = computed<boolean>(() => comments.value?.length > 0);
   const canApprove = computed<boolean>(() =>
     isFamilyDeskOrder.value
@@ -152,6 +190,9 @@
   watch(show, (newVal) => {
     if (!newVal) {
       selectedUpload.value = null;
+      comments.value = '';
+      submitted.value = false;
+      cancelAutoClose();
     }
   });
 
@@ -173,6 +214,33 @@
 
     emit('reviewOrder', review);
 
-    show.value = false;
+    submitted.value = true;
+    startAutoClose();
   };
+
+  const startAutoClose = () => {
+    autoCloseSeconds.value = AUTO_CLOSE_SECONDS;
+    autoCloseTimer = setInterval(() => {
+      autoCloseSeconds.value -= 1;
+      if (autoCloseSeconds.value <= 0) {
+        cancelAutoClose();
+        closeTab();
+      }
+    }, 1000);
+  };
+
+  const cancelAutoClose = () => {
+    autoCloseSeconds.value = 0;
+    if (autoCloseTimer) {
+      clearInterval(autoCloseTimer);
+      autoCloseTimer = null;
+    }
+  };
+
+  const closeTab = () => {
+    cancelAutoClose();
+    window.close();
+  };
+
+  onBeforeUnmount(cancelAutoClose);
 </script>

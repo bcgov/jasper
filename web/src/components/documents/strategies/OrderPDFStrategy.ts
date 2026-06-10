@@ -61,4 +61,24 @@ export class OrderPDFStrategy extends BasePDFStrategy {
         break;
     }
   }
+
+  setToolbarItems(items: any[]): any[] {
+    const toRemove = new Set(['note', 'print', 'callout', 'image']);
+    const base = items.filter((item) => !toRemove.has(item.type));
+
+    // Icons rendered after the linearized-download-indicator or at the end
+    const extras = [
+      { type: 'spacer' },
+      items.find((item) => item.id === 'open-information'),
+      items.find((item) => item.type === 'image'),
+      items.find((item) => item.id === 'open-document-review'),
+    ].filter(Boolean);
+
+    const anchor = base.findIndex(
+      (item) => item.type === 'linearized-download-indicator'
+    );
+    const insertAt = anchor === -1 ? base.length : anchor + 1;
+
+    return [...base.slice(0, insertAt), ...extras, ...base.slice(insertAt)];
+  }
 }

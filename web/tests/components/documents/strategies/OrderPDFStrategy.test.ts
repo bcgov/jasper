@@ -368,4 +368,152 @@ describe('OrderPDFStrategy', () => {
       ).rejects.toThrow('Order ID not found in URL');
     });
   });
+
+  describe('setToolbarItems', () => {
+    it('removes note, print, callout, and image items from the toolbar', () => {
+      const strategy = new OrderPDFStrategy();
+      const items = [
+        { type: 'pan' },
+        { type: 'note' },
+        { type: 'print' },
+        { type: 'callout' },
+        { type: 'image' },
+        { type: 'zoom-in' },
+      ];
+
+      const result = strategy.setToolbarItems(items);
+
+      expect(result.some((item) => item.type === 'note')).toBe(false);
+      expect(result.some((item) => item.type === 'print')).toBe(false);
+      expect(result.some((item) => item.type === 'callout')).toBe(false);
+      expect(result.some((item) => item.type === 'pan')).toBe(true);
+      expect(result.some((item) => item.type === 'zoom-in')).toBe(true);
+
+      const panIndex = result.findIndex((item) => item.type === 'pan');
+      const zoomIndex = result.findIndex((item) => item.type === 'zoom-in');
+      expect(panIndex).toBeLessThan(zoomIndex);
+    });
+
+    it('inserts extras immediately after the linearized-download-indicator anchor', () => {
+      const strategy = new OrderPDFStrategy();
+      const items = [
+        { type: 'pan' },
+        { type: 'linearized-download-indicator' },
+        { type: 'zoom-in' },
+        { id: 'open-information', type: 'custom' },
+        { id: 'open-document-review', type: 'custom' },
+      ];
+
+      const result = strategy.setToolbarItems(items);
+
+      const anchorIndex = result.findIndex(
+        (item) => item.type === 'linearized-download-indicator'
+      );
+      expect(anchorIndex).toBeGreaterThanOrEqual(0);
+      expect(result[anchorIndex + 1].type).toBe('spacer');
+      expect(result[anchorIndex + 2].id).toBe('open-information');
+      expect(result[anchorIndex + 3].id).toBe('open-document-review');
+    });
+
+    it('appends extras at the end when no linearized-download-indicator exists', () => {
+      const strategy = new OrderPDFStrategy();
+      const items = [
+        { type: 'pan' },
+        { type: 'zoom-in' },
+        { id: 'open-information', type: 'custom' },
+        { id: 'open-document-review', type: 'custom' },
+      ];
+
+      const result = strategy.setToolbarItems(items);
+
+      const spacerIndex = result.findIndex((item) => item.type === 'spacer');
+      expect(spacerIndex).toBe(result.length - 3);
+      expect(result[result.length - 2].id).toBe('open-information');
+      expect(result[result.length - 1].id).toBe('open-document-review');
+    });
+
+    it('filters out missing extra items (undefined)', () => {
+      const strategy = new OrderPDFStrategy();
+      const items = [{ type: 'pan' }, { type: 'zoom-in' }];
+
+      const result = strategy.setToolbarItems(items);
+
+      expect(result.some((item) => item === undefined)).toBe(false);
+      expect(result.filter((item) => item.type === 'spacer').length).toBe(1);
+      expect(result.some((item) => item.id === 'open-information')).toBe(false);
+      expect(result.some((item) => item.id === 'open-document-review')).toBe(
+        false
+      );
+    });
+
+    it('preserves the image extra when it has an id, even though plain image items are removed', () => {
+      const strategy = new OrderPDFStrategy();
+      const imageWithId = { id: 'custom-image', type: 'image' };
+      const items = [
+        { type: 'pan' },
+        { type: 'linearized-download-indicator' },
+        imageWithId,
+      ];
+
+      const result = strategy.setToolbarItems(items);
+
+      const anchorIndex = result.findIndex(
+        (item) => item.type === 'linearized-download-indicator'
+      );
+      expect(result[anchorIndex + 1].type).toBe('spacer');
+      expect(result[anchorIndex + 2]).toBe(imageWithId);
+    });
+
+    it('returns an empty array when given an empty items array', () => {
+      const strategy = new OrderPDFStrategy();
+
+      const result = strategy.setToolbarItems([]);
+
+      expect(result).toEqual([{ type: 'spacer' }]);
+    });
+
+    it('preserves the relative order of non-removed base items', () => {
+      const strategy = new OrderPDFStrategy();
+      const items = [
+        { type: 'pan' },
+        { type: 'note' },
+        { type: 'zoom-in' },
+        { type: 'print' },
+        { type: 'zoom-out' },
+      ];
+
+      const result = strategy.setToolbarItems(items);
+      const baseTypes = result
+        .filter((item) => item.type !== 'spacer')
+        .map((item) => item.type);
+
+      expect(baseTypes).toEqual(['pan', 'zoom-in', 'zoom-out']);
+    });
+
+    it('inserts extras in the expected order: spacer, open-information, image, open-document-review', () => {
+      const strategy = new OrderPDFStrategy();
+      const openInformation = { id: 'open-information', type: 'custom' };
+      const imageItem = { id: 'custom-image', type: 'image' };
+      const openDocumentReview = {
+        id: 'open-document-review',
+        type: 'custom',
+      };
+      const items = [
+        { type: 'linearized-download-indicator' },
+        openInformation,
+        imageItem,
+        openDocumentReview,
+      ];
+
+      const result = strategy.setToolbarItems(items);
+
+      const anchorIndex = result.findIndex(
+        (item) => item.type === 'linearized-download-indicator'
+      );
+      expect(result[anchorIndex + 1].type).toBe('spacer');
+      expect(result[anchorIndex + 2]).toBe(openInformation);
+      expect(result[anchorIndex + 3]).toBe(imageItem);
+      expect(result[anchorIndex + 4]).toBe(openDocumentReview);
+    });
+  });
 });

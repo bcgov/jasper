@@ -108,6 +108,4 @@ public class OrderMapping : IRegister
 
         return FromBase64OrThrow(data, nameof(src.DocumentData));
     }
-
-
 }

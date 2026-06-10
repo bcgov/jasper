@@ -1,5 +1,5 @@
 import { Order } from '@/types';
-import { Anchor, OrderReviewStatus } from '@/types/common';
+import { OrderReviewStatus } from '@/types/common';
 import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { mount } from '@vue/test-utils';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
@@ -68,7 +68,7 @@ const mockData: Order[] = [
     physicalFileId: 'file-002',
     status: OrderReviewStatus.Approved,
     priorityType: 'IS',
-    priorityTypeDescription: 'Important',
+    priorityTypeDesc: 'Important',
     courtListType: 'Application',
     courtListTypeDescription: 'Application',
   },
@@ -87,29 +87,10 @@ const VDataTableVirtualStub = defineComponent({
   },
   template: `
     <div>
-      <slot name="item.priorityType" :item="items[0]" />
+      <slot name="item.priorityTypeDesc" :item="items[0]" />
       <slot name="item.courtListType" :item="items[0]" />
     </div>
   `,
-});
-
-const LabelWithTooltipStub = defineComponent({
-  name: 'LabelWithTooltip',
-  props: {
-    values: {
-      type: Array,
-      required: true,
-    },
-    appendCount: {
-      type: Boolean,
-      default: true,
-    },
-    location: {
-      type: String,
-      default: undefined,
-    },
-  },
-  template: '<div class="label-with-tooltip-stub"></div>',
 });
 
 const getVm = (wrapper: ReturnType<typeof mount>) =>
@@ -339,7 +320,7 @@ describe('OrdersDataTable.vue', () => {
     expect(headers[1].key).toBe('courtFileNumber');
   });
 
-  it('renders LabelWithTooltip for priorityType when description is present', () => {
+  it('renders priorityTypeDesc as plain text in the priority cell', () => {
     const wrapper = mount(OrdersDataTable, {
       props: {
         data: [mockData[0]],
@@ -349,20 +330,11 @@ describe('OrdersDataTable.vue', () => {
       global: {
         stubs: {
           VDataTableVirtual: VDataTableVirtualStub,
-          LabelWithTooltip: LabelWithTooltipStub,
         },
       },
     });
 
-    const tooltips = wrapper.findAllComponents(LabelWithTooltipStub);
-    expect(tooltips).toHaveLength(1);
-
-    expect(tooltips[0].props('values')).toEqual([
-      'TST',
-      'Test Priority Description',
-    ]);
-    expect(tooltips[0].props('appendCount')).toBe(false);
-    expect(tooltips[0].props('location')).toBe(Anchor.Top);
+    expect(wrapper.text()).toContain('Test Priority Description');
   });
 
   it('renders courtListType as plain text (already mapped to display label)', () => {
@@ -375,7 +347,6 @@ describe('OrdersDataTable.vue', () => {
       global: {
         stubs: {
           VDataTableVirtual: VDataTableVirtualStub,
-          LabelWithTooltip: LabelWithTooltipStub,
         },
       },
     });
@@ -383,10 +354,10 @@ describe('OrdersDataTable.vue', () => {
     expect(wrapper.text()).toContain('Order');
   });
 
-  it('renders plain text for priorityType when description is missing', () => {
+  it('renders an empty priority cell when priorityTypeDesc is missing', () => {
     const orderWithoutDescription: Order = {
       ...mockData[1],
-      priorityTypeDescription: '',
+      priorityTypeDesc: undefined,
     };
     const wrapper = mount(OrdersDataTable, {
       props: {
@@ -397,14 +368,13 @@ describe('OrdersDataTable.vue', () => {
       global: {
         stubs: {
           VDataTableVirtual: VDataTableVirtualStub,
-          LabelWithTooltip: LabelWithTooltipStub,
         },
       },
     });
 
-    const tooltips = wrapper.findAllComponents(LabelWithTooltipStub);
-    expect(tooltips).toHaveLength(0);
-    expect(wrapper.text()).toContain('IS');
+    // priorityTypeDesc is the only thing rendered in the priority cell now,
+    // so the raw code 'IS' should not appear when the description is missing.
+    expect(wrapper.text()).not.toContain('IS');
     expect(wrapper.text()).toContain('Application');
   });
 

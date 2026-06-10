@@ -230,14 +230,15 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockEmailTemplateService.Verify(
             e => e.SendEmailTemplateAsync(
-                "Order Reminder",
+                EmailTemplate.ORDER_REMINDER,
                 user.Email,
                 It.Is<object>(obj =>
                     obj.GetType().GetProperty("JudgeName") != null &&
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("DateReceived") != null &&
                     obj.GetType().GetProperty("LocationName") != null &&
-                    obj.GetType().GetProperty("Priority") != null &&
+                    obj.GetType().GetProperty("PriorityTypeDesc") != null &&
+                    obj.GetType().GetProperty("IsPriority") != null &&
                     obj.GetType().GetProperty("SupportAccount") != null
                 )),
             Times.Once
@@ -462,12 +463,12 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var reminderDate = DateTime.UtcNow.AddDays(-6);
-        var expectedPriority = "Urgent";
+        var expectedPriority = "Protection Orders";
         var expectedCaseNumber = "TEST-123";
         var expectedLocation = "Test City";
 
         var participantId = 123.45;
-        var order = CreateTestOrder(judgeId, participantId, reminderDate, expectedPriority);
+        var order = CreateTestOrder(judgeId, participantId, reminderDate, PriorityTypeDescriptor.PROTECTION_ORDER_TYPE);
         order.OrderRequest.CourtFileNo = expectedCaseNumber;
         order.OrderRequest.CourtLocationDesc = expectedLocation;
 
@@ -509,13 +510,15 @@ public class OrderReminderJobTests : ServiceTestBase
         var caseFileNumberProp = dataType.GetProperty("CaseFileNumber");
         var dateReceivedProp = dataType.GetProperty("DateReceived");
         var locationNameProp = dataType.GetProperty("LocationName");
-        var priorityProp = dataType.GetProperty("Priority");
+        var isPriorityProp = dataType.GetProperty("IsPriority");
+        var priorityTypeDescProp = dataType.GetProperty("PriorityTypeDesc");
         var supportAccountProp = dataType.GetProperty("SupportAccount");
 
         Assert.Equal(expectedJudgeName, judgeNameProp?.GetValue(capturedEmailData));
         Assert.Equal(expectedCaseNumber, caseFileNumberProp?.GetValue(capturedEmailData));
         Assert.Equal(expectedLocation, locationNameProp?.GetValue(capturedEmailData));
-        Assert.Equal(expectedPriority, priorityProp?.GetValue(capturedEmailData));
+        Assert.True((bool)(isPriorityProp?.GetValue(capturedEmailData)));
+        Assert.Equal(expectedPriority, priorityTypeDescProp?.GetValue(capturedEmailData));
         Assert.NotNull(dateReceivedProp?.GetValue(capturedEmailData));
         Assert.NotNull(supportAccountProp?.GetValue(capturedEmailData));
     }
@@ -661,15 +664,16 @@ public class OrderReminderJobTests : ServiceTestBase
 
         _mockEmailTemplateService.Verify(
             e => e.SendEmailTemplateAsync(
-                "Order Reassignment",
+                EmailTemplate.ORDER_REASSIGNMENT,
                 rajUser.Email,
                 It.Is<object>(obj =>
                     obj.GetType().GetProperty("JudgeName") != null &&
                     obj.GetType().GetProperty("CaseFileNumber") != null &&
                     obj.GetType().GetProperty("LocationName") != null &&
                     obj.GetType().GetProperty("DateReceived") != null &&
-                    obj.GetType().GetProperty("Priority") != null &&
-                    obj.GetType().GetProperty("SupportAccount") != null
+                    obj.GetType().GetProperty("SupportAccount") != null &&
+                    obj.GetType().GetProperty("IsPriority") != null &&
+                    obj.GetType().GetProperty("PriorityTypeDesc") != null
                 )),
             Times.Once
         );

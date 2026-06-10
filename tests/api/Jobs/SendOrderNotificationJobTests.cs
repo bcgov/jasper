@@ -101,6 +101,34 @@ public class SendOrderNotificationJobTests
     }
 
     [Fact]
+    public async Task Execute_LogsInformation_AndSkips_WhenOrderIsNotPriority()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var physicalFileId = _faker.Random.Int(1, 9999);
+        var orderRequestDto = CreateValidOrderRequestDto(priorityType: null);
+        orderRequestDto.PhysicalFileId = physicalFileId;
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+
+        await _job.Execute(orderDto);
+
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains($"Order for file {physicalFileId} is not marked as priority - skipping notification")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Once);
+
+        _mockJudgeService.Verify(s => s.GetJudge(It.IsAny<int>()), Times.Never);
+        _mockUserService.Verify(s => s.GetByJudgeIdAsync(It.IsAny<int>()), Times.Never);
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Execute_LogsWarning_WhenJudgeIdIsNull()
     {
         var orderRequestDto = CreateValidOrderRequestDto();
@@ -313,7 +341,8 @@ public class SendOrderNotificationJobTests
             {
                 SentToPartId = judgeId,
                 ReferralNotesTxt = referralNotes,
-                ReferredByName = referredBy
+                ReferredByName = referredBy,
+                PriorityType = PriorityTypeDescriptor.PROTECTION_ORDER_TYPE
             }
         };
 
@@ -567,7 +596,7 @@ public class SendOrderNotificationJobTests
             Times.Once);
     }
 
-    private OrderRequestDto CreateValidOrderRequestDto()
+    private OrderRequestDto CreateValidOrderRequestDto(string priorityType = PriorityTypeDescriptor.PROTECTION_ORDER_TYPE)
     {
         return new OrderRequestDto
         {
@@ -579,6 +608,7 @@ public class SendOrderNotificationJobTests
                 SentToPartId = _faker.Random.Double(),
                 ReferralNotesTxt = _faker.Lorem.Sentence(),
                 ReferredByName = _faker.Name.FullName(),
+                PriorityType = priorityType
             },
         };
     }

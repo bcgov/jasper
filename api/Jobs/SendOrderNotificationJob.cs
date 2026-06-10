@@ -35,7 +35,7 @@ public class SendOrderNotificationJob(
             _logger.LogInformation("Processing order notification job for file {FileId}",
                 order.OrderRequest.PhysicalFileId);
 
-            if (order?.OrderRequest?.Referral?.IsPriority != true)
+            if (order.OrderRequest?.Referral?.IsPriority != true)
             {
                 _logger.LogInformation("Order for file {FileId} is not marked as priority - skipping notification",
                     order.OrderRequest.PhysicalFileId);

@@ -39,7 +39,7 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_REMINDER,
-            Subject = @"{{ if is_priority }}Priority Order({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is still waiting to be processed.",
+            Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is still waiting to be processed.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete {{ location_name }} {{ case_file_number }} as soon as possible.<br /><br />
                      Regards,<br />
@@ -49,7 +49,7 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_REASSIGNMENT,
-            Subject = @"{{ if is_priority }}Priority Order({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is overdue and has been assigned to you.",
+            Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is overdue and has been assigned to you.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete {{ location_name }} {{ case_file_number }} as soon as possible.<br /><br />
                      Regards,<br />

@@ -372,8 +372,6 @@ describe('OrdersDataTable.vue', () => {
       },
     });
 
-    // priorityTypeDesc is the only thing rendered in the priority cell now,
-    // so the raw code 'IS' should not appear when the description is missing.
     expect(wrapper.text()).not.toContain('IS');
     expect(wrapper.text()).toContain('Application');
   });

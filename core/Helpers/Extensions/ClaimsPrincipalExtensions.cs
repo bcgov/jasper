@@ -137,7 +137,7 @@ namespace Scv.Core.Helpers.Extensions
                 : claimsPrincipal?.FirstName() + " " + claimsPrincipal?.LastName();
 
         public static string? LastName(this ClaimsPrincipal claimsPrincipal) =>
-            claimsPrincipal?.FindFirstValue("family_name");
+            claimsPrincipal?.FindFirstValue(ClaimTypes.Surname);
 
         public static bool HasPermissions(
             this ClaimsPrincipal claimsPrincipal,

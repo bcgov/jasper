@@ -50,7 +50,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@mdi/js": "^7.4.47",
-    "@typescript-eslint/parser": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.3",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/test-utils": "^2.4.10",

@@ -163,6 +163,37 @@ describe('CivilDocumentsView.vue', () => {
     expect(wrapper.vm.selectedBinderItems).toEqual([]);
   });
 
+  it('removeDocumentFromBinder should remove deleted documents from selected binder items', async () => {
+    wrapper.vm.currentBinder = {
+      id: 'binder-1',
+      labels: {},
+      documents: [
+        {
+          documentId: '1',
+          order: 0,
+          documentType: DocumentRequestType.CourtSummary,
+          fileName: 'Civil Document 1',
+        },
+        {
+          documentId: '2',
+          order: 1,
+          documentType: DocumentRequestType.File,
+          fileName: 'Civil Document 2',
+        },
+      ],
+    };
+    wrapper.vm.selectedBinderItems = [mockDocuments[0]];
+    (mockBinderService.updateBinder as Mock).mockResolvedValue({
+      succeeded: true,
+      payload: wrapper.vm.currentBinder,
+    });
+
+    await wrapper.vm.removeDocumentFromBinder('1');
+    await nextTick();
+
+    expect(wrapper.vm.selectedBinderItems).toEqual([]);
+  });
+
   it('inserts "Scheduled" option when a document has a next appearance date', async () => {
     expect(wrapper.vm.documentCategories[0]).toEqual({
       title: 'Scheduled',

@@ -126,7 +126,7 @@
     mdiNotebookOutline,
     mdiNotebookRemoveOutline,
   } from '@mdi/js';
-  import { computed, inject, onMounted, ref } from 'vue';
+  import { computed, inject, onMounted, ref, watch } from 'vue';
   import AllDocuments from './documents/AllDocuments.vue';
   import JudicialBinder from './documents/JudicialBinder.vue';
 
@@ -272,6 +272,20 @@
       .map((id) => documentsMaps.get(id))
       .filter((item): item is civilDocumentType => item !== undefined);
   });
+
+  watch(
+    binderDocuments,
+    (documents) => {
+      const binderDocumentIds = new Set(
+        documents.map((document) => document.civilDocumentId)
+      );
+
+      selectedBinderItems.value = selectedBinderItems.value.filter((item) =>
+        binderDocumentIds.has(item.civilDocumentId)
+      );
+    },
+    { immediate: true }
+  );
 
   const categoryCount = (category: string): number => {
     if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {

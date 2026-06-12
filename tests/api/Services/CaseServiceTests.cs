@@ -9,10 +9,12 @@ using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
+using Scv.Db.Contexts;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Xunit;
@@ -35,9 +37,10 @@ public class CaseServiceTests
         config.Apply(new AccessControlManagementMapping());
         var mapper = new Mapper(config);
         var logger = new Mock<ILogger<CaseService>>();
+        var dbContext = new JasperDbContext(new DbContextOptionsBuilder<JasperDbContext>().Options);
 
         _mockRepo = new Mock<IRepositoryBase<Case>>();
-        _caseService = new CaseService(cachingService, mapper, logger.Object, _mockRepo.Object);
+        _caseService = new CaseService(cachingService, mapper, logger.Object, _mockRepo.Object, dbContext);
 
         _testJudgeId = _faker.Random.Int();
     }

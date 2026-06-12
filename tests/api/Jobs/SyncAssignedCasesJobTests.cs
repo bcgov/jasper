@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Bogus;
+using Hangfire;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
@@ -150,34 +152,46 @@ public class SyncAssignedCasesJobTests
     }
 
     [Fact]
-    public async Task Execute_DeletesExistingCases_BeforeProcessing()
+    public async Task Execute_ReplacesExistingCases_AfterSavingRetrievedCases()
     {
         SetupBasicMocks();
-        var existingCases = new List<CaseDto>
-        {
-            new() { Id = _faker.Random.AlphaNumeric(24) },
-            new() { Id = _faker.Random.AlphaNumeric(24) }
-        };
+        SetupNoReservedJudgements();
 
-        _mockCaseService.Setup(s => s.GetAllAsync()).ReturnsAsync(existingCases);
-        _mockCaseService.Setup(s => s.DeleteRangeAsync(It.IsAny<List<string>>()))
-            .ReturnsAsync(OperationResult.Success);
-
-        _mockEmailService
-            .Setup(s => s.GetFilteredEmailsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>()))
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync([CreateScheduledCase(CaseService.DECISION_APPR_REASON_CD)])
+            .ReturnsAsync([])
+            .ReturnsAsync([])
             .ReturnsAsync([]);
+
+        _mockCaseService.Setup(s => s.ReplaceAllAssignedCasesAsync(
+                It.Is<List<CaseDto>>(cases =>
+                cases.Count == 1
+                && cases[0].RestrictionCode == CaseService.SEIZED_RESTRICTION_CD
+                && cases[0].Reason == CaseService.DECISION_APPR_REASON_CD)))
+            .ReturnsAsync(OperationResult.Success());
+
+
+        await _job.Execute();
+
+        _mockCaseService.Verify(s => s.ReplaceAllAssignedCasesAsync(It.Is<List<CaseDto>>(cases =>
+            cases.Count == 1
+            && cases[0].RestrictionCode == CaseService.SEIZED_RESTRICTION_CD
+            && cases[0].Reason == CaseService.DECISION_APPR_REASON_CD)), Times.Once);
+        _mockCaseService.Verify(s => s.GetAllAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_ReplacesExistingCases_WhenRetrievalSucceedsWithNoNewCases()
+    {
+        SetupBasicMocks();
+        SetupNoReservedJudgements();
 
         _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync([]);
 
         await _job.Execute();
 
-        _mockCaseService.Verify(s => s.DeleteRangeAsync(It.Is<List<string>>(ids =>
-            ids.Count == 2)), Times.Once);
+        _mockCaseService.Verify(s => s.ReplaceAllAssignedCasesAsync(It.Is<List<CaseDto>>(cases => cases.Count == 0)), Times.Once);
     }
 
     [Fact]
@@ -221,9 +235,6 @@ public class SyncAssignedCasesJobTests
 
         _mockJudgeService.Setup(s => s.GetJudges(null, null))
             .ReturnsAsync([]);
-
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
 
         _mockJcServiceClient.Setup(c => c
             .GetUpcomingSeizedAssignedCasesAsync(
@@ -280,7 +291,10 @@ public class SyncAssignedCasesJobTests
                 It.IsAny<bool>()))
             .ReturnsAsync([]);
 
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([])
             .ReturnsAsync([]);
 
         await _job.Execute();
@@ -328,8 +342,11 @@ public class SyncAssignedCasesJobTests
             }
         };
 
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(scheduledCases)
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([]);
 
         await _job.Execute();
 
@@ -340,7 +357,7 @@ public class SyncAssignedCasesJobTests
                 It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Unsupported CourtClass value")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Exactly(4));
+            Times.Once);
     }
 
     [Fact]
@@ -380,8 +397,11 @@ public class SyncAssignedCasesJobTests
             }
         };
 
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(scheduledCases)
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([]);
 
         // Mock court list but appearance won't be found, so participant logic is used
         _courtListServiceFixture.MockCourtListService
@@ -392,9 +412,9 @@ public class SyncAssignedCasesJobTests
             });
 
         List<CaseDto> capturedCases = null;
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
+        _mockCaseService.Setup(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()))
             .Callback<List<CaseDto>>(cases => capturedCases = cases)
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
+            .ReturnsAsync(OperationResult.Success());
 
         await _job.Execute();
 
@@ -439,8 +459,11 @@ public class SyncAssignedCasesJobTests
             }
         };
 
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(scheduledCases)
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([]);
 
         _courtListServiceFixture.MockCourtListService
             .Setup(c => c.GetJudgeCourtListAppearances(It.IsAny<int>(), It.IsAny<DateTime>()))
@@ -450,9 +473,9 @@ public class SyncAssignedCasesJobTests
             });
 
         List<CaseDto> capturedCases = null;
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
+        _mockCaseService.Setup(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()))
             .Callback<List<CaseDto>>(cases => capturedCases = cases)
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
+            .ReturnsAsync(OperationResult.Success());
 
         await _job.Execute();
 
@@ -494,8 +517,11 @@ public class SyncAssignedCasesJobTests
             }
         };
 
-        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(scheduledCases);
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(scheduledCases)
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([]);
 
         _courtListServiceFixture.MockCourtListService
             .Setup(c => c.GetJudgeCourtListAppearances(It.IsAny<int>(), It.IsAny<DateTime>()))
@@ -503,9 +529,6 @@ public class SyncAssignedCasesJobTests
             {
                 Items = []
             });
-
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
 
         await _job.Execute();
 
@@ -516,18 +539,74 @@ public class SyncAssignedCasesJobTests
                 It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("No participants found")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Exactly(4));
+            Times.Once);
     }
 
     [Fact]
     public async Task Execute_ThrowsException_WhenErrorOccurs()
     {
         SetupBasicMocks();
+        var existingCaseId = _faker.Random.AlphaNumeric(24);
 
-        _mockCaseService.Setup(s => s.DeleteRangeAsync(It.IsAny<List<string>>()))
+        SetupNoReservedJudgements();
+
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync([CreateScheduledCase(CaseService.DECISION_APPR_REASON_CD)])
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([]);
+
+        _mockCaseService.Setup(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()))
             .ThrowsAsync(new Exception("Database error"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotDeleteExistingScheduledCases_WhenRetrievalFails()
+    {
+        SetupBasicMocks();
+
+        SetupNoReservedJudgements();
+
+        _mockJcServiceClient.Setup(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ThrowsAsync(new Exception("Downstream failure"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
+
+        _mockCaseService.Verify(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotDeletePreExistingCases_WhenSaveFails()
+    {
+        SetupBasicMocks();
+
+        SetupNoReservedJudgements();
+
+        _mockJcServiceClient.SetupSequence(c => c.GetUpcomingSeizedAssignedCasesAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync([CreateScheduledCase(CaseService.DECISION_APPR_REASON_CD)])
+            .ReturnsAsync([])
+            .ReturnsAsync([])
+            .ReturnsAsync([]);
+
+        _mockCaseService.Setup(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()))
+            .ReturnsAsync(OperationResult.Failure("Save failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
+
+        _mockCaseService.Verify(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()), Times.Once);
+    }
+
+    [Fact]
+    public void Execute_HasDisableConcurrentExecutionAttribute()
+    {
+        var method = typeof(SyncAssignedCasesJob).GetMethod(nameof(SyncAssignedCasesJob.Execute));
+
+        var attribute = method?.GetCustomAttribute<DisableConcurrentExecutionAttribute>();
+
+        Assert.NotNull(attribute);
+        Assert.Equal(3600, attribute.TimeoutSec);
     }
 
     [Fact]
@@ -623,9 +702,6 @@ public class SyncAssignedCasesJobTests
             .Setup(c => c.GetJudgeCourtListAppearances(judgeId, appearanceDate))
             .ReturnsAsync(courtList);
 
-        _mockCaseService.Setup(s => s.AddRangeAsync(It.IsAny<List<CaseDto>>()))
-            .ReturnsAsync(OperationResult<CaseDto>.Success(new()));
-
         await _job.Execute();
 
         _mockLambdaInvokerService.Verify(s => s
@@ -673,7 +749,7 @@ public class SyncAssignedCasesJobTests
                 It.IsAny<TimeSpan?>()))
             .ReturnsAsync(lambdaResponse);
 
-        await _job.Execute();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
 
         _mockLogger.Verify(
             x => x.Log(
@@ -682,18 +758,42 @@ public class SyncAssignedCasesJobTests
                 It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Failed to retrieve scheduled cases from Lambda")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Exactly(4));
+            Times.Once);
+
+        _mockCaseService.Verify(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotReplaceExistingCases_WhenAppearanceReasonCodesAreUnavailable()
+    {
+        SetupBasicMocks();
+        SetupNoReservedJudgements();
+
+        _mockLookupServiceClient
+            .Setup(l => l.GetAppearanceReasonsCriminalAsync())
+            .ReturnsAsync([
+                new AppearanceReason { Code = CaseService.DECISION_APPR_REASON_CD },
+                new AppearanceReason { Code = CaseService.CONTINUATION_APPR_REASON_CD },
+                new AppearanceReason { Code = CaseService.ADDTL_CNT_TIME_APPR_REASON_CD },
+                new AppearanceReason { Code = CaseService.SENTENCE_HEARING_APPR_REASON_CD }
+            ]);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
+
+        _mockCaseService.Verify(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()), Times.Never);
     }
 
     private void SetupBasicMocks()
     {
         _mockCaseService.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
-        _mockCaseService.Setup(s => s.DeleteRangeAsync(It.IsAny<List<string>>()))
+        _mockCaseService.Setup(s => s.ReplaceAllAssignedCasesAsync(It.IsAny<List<CaseDto>>()))
             .ReturnsAsync(OperationResult.Success());
 
         _mockLookupServiceClient
             .Setup(l => l.GetAppearanceReasonsCriminalAsync())
-            .ReturnsAsync([]);
+            .ReturnsAsync([
+                new AppearanceReason { Code = "OTH" }
+            ]);
         _mockLookupServiceClient
             .Setup(l => l.GetAppearanceReasonsCivilAsync())
             .ReturnsAsync([]);
@@ -706,5 +806,35 @@ public class SyncAssignedCasesJobTests
         _mockLookupServiceClient
             .Setup(l => l.GetAppearanceReasonsCeisAsync())
             .ReturnsAsync([]);
+    }
+
+    private void SetupNoReservedJudgements()
+    {
+        _mockEmailService.Setup(s => s
+            .GetFilteredEmailsAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<bool>()))
+            .ReturnsAsync([]);
+    }
+
+    private Case CreateScheduledCase(string reason)
+    {
+        var appearanceDate = DateTime.Today.AddDays(1);
+
+        return new Case
+        {
+            NextApprId = _faker.Random.Double(1, 9999),
+            PhysicalFileId = _faker.Random.Double(1, 9999),
+            LastApprDt = appearanceDate.AddDays(-1).ToString("dd-MMM-yyyy"),
+            NextApprDt = appearanceDate.ToString("dd-MMM-yyyy"),
+            CourtClassCd = "Z",
+            FileNumberTxt = _faker.Random.AlphaNumeric(10),
+            NextApprReason = reason,
+            StyleOfCause = _faker.Random.Words(3),
+            JudgeId = _faker.Random.Int(1, 1000),
+            Participants = []
+        };
     }
 }

@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Hangfire;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using MapsterMapper;
@@ -36,6 +37,13 @@ public class SyncAssignedCasesJob(
     ILambdaInvokerService lambdaInvokerService = null)
     : RecurringJobBase<SyncAssignedCasesJob>(configuration, cache, mapper, logger)
 {
+    private const string ReservedJudgementsSourceName = "ReservedJudgements";
+    private const string AppearanceReasonCodesSourceName = "AppearanceReasonCodes";
+    private const string SeizedContinuationCasesSourceName = "ScheduledCasesSeizedContinuations";
+    private const string SeizedOtherCasesSourceName = "ScheduledCasesSeizedOthers";
+    private const string AssignedContinuationCasesSourceName = "ScheduledCasesAssignedContinuations";
+    private const string AssignedOtherCasesSourceName = "ScheduledCasesAssignedOthers";
+
     private readonly IEmailService _emailService = emailService;
     private readonly ICsvParser _csvParser = csvParser;
     private readonly IJudgeService _judgeService = judgeService;
@@ -52,31 +60,70 @@ public class SyncAssignedCasesJob(
     public override string CronSchedule =>
         this.Configuration.GetValue<string>("JOBS:SYNC_ASSIGNED_CASES_SCHEDULE") ?? base.CronSchedule;
 
+    [DisableConcurrentExecution(timeoutInSeconds: 3600)]
     public override async Task Execute()
     {
         try
         {
-            // Delete all existing cases before processing new ones.
-            var existingCases = await _caseService.GetAllAsync();
-            await _caseService.DeleteRangeAsync([.. existingCases.Select(rj => rj.Id)]);
+            var retrievalResults = new List<IRetrievalStepResult>();
 
             // RJs
-            await this.ProcessReservedJudgements();
+            var reservedJudgementsResult = await this.ProcessReservedJudgements();
+            reservedJudgementsResult.ThrowIfFailed(this.Logger);
+            retrievalResults.Add(reservedJudgementsResult);
 
             // Get appearance reason codes excluding CNT, DEC and ACT.
-            var apprReasonCodes = await GetAppearanceReasonCodes(CaseService.ContinuationReasonCodes);
+            var appearanceReasonCodesResult = await GetAppearanceReasonCodes(CaseService.ContinuationReasonCodes);
+            var apprReasonCodes = appearanceReasonCodesResult.GetRequiredPayload(this.Logger);
+            retrievalResults.Add(appearanceReasonCodesResult);
 
             // Get Seized scheduled CNTs, DECs and ACTs.
-            await this.ProcessScheduledCases(string.Join(",", CaseService.ContinuationReasonCodes), CaseService.SEIZED_RESTRICTION_CD);
+            var seizedContinuationCasesResult = await this.ProcessScheduledCases(
+                SeizedContinuationCasesSourceName,
+                string.Join(",", CaseService.ContinuationReasonCodes),
+                CaseService.SEIZED_RESTRICTION_CD);
+            seizedContinuationCasesResult.ThrowIfFailed(this.Logger);
+            retrievalResults.Add(seizedContinuationCasesResult);
 
             // Get Other Seized
-            await this.ProcessScheduledCases(apprReasonCodes, CaseService.SEIZED_RESTRICTION_CD);
+            var seizedOtherCasesResult = await this.ProcessScheduledCases(
+                SeizedOtherCasesSourceName,
+                apprReasonCodes,
+                CaseService.SEIZED_RESTRICTION_CD);
+            seizedOtherCasesResult.ThrowIfFailed(this.Logger);
+            retrievalResults.Add(seizedOtherCasesResult);
 
             // Get Future Assigned - CNTs, DECs and ACTs.
-            await this.ProcessScheduledCases(string.Join(",", CaseService.ContinuationReasonCodes), CaseService.ASSIGNED_RESTRICTION_CD);
+            var assignedContinuationCasesResult = await this.ProcessScheduledCases(
+                AssignedContinuationCasesSourceName,
+                string.Join(",", CaseService.ContinuationReasonCodes),
+                CaseService.ASSIGNED_RESTRICTION_CD);
+            assignedContinuationCasesResult.ThrowIfFailed(this.Logger);
+            retrievalResults.Add(assignedContinuationCasesResult);
 
             // Get Future Assigned - Others
-            await this.ProcessScheduledCases(apprReasonCodes, CaseService.ASSIGNED_RESTRICTION_CD);
+            var assignedOtherCasesResult = await this.ProcessScheduledCases(
+                AssignedOtherCasesSourceName,
+                apprReasonCodes,
+                CaseService.ASSIGNED_RESTRICTION_CD);
+            assignedOtherCasesResult.ThrowIfFailed(this.Logger);
+            retrievalResults.Add(assignedOtherCasesResult);
+
+            LogRetrievalCounts(retrievalResults);
+
+            var retrievedCases = reservedJudgementsResult.Payload
+                .Concat(seizedContinuationCasesResult.Payload)
+                .Concat(seizedOtherCasesResult.Payload)
+                .Concat(assignedContinuationCasesResult.Payload)
+                .Concat(assignedOtherCasesResult.Payload)
+                .ToList();
+
+            // Store the new set and delete the old rows in one transactional replace operation.
+            var replaceResult = await _caseService.ReplaceAllAssignedCasesAsync(retrievedCases);
+            if (!replaceResult.Succeeded)
+            {
+                throw new InvalidOperationException("Failed to replace assigned cases.");
+            }
 
             this.Logger.LogInformation("SyncAssignedCasesJob completed successfully.");
         }
@@ -88,25 +135,35 @@ public class SyncAssignedCasesJob(
 
     #region Reserved Judgements Methods
 
-    private async Task ProcessReservedJudgements()
+    private async Task<RetrievalStepResult<List<CaseDto>>> ProcessReservedJudgements()
     {
+        const string sourceName = ReservedJudgementsSourceName;
+
         this.Logger.LogInformation("Starting to process today's reserved judgements.");
 
-        var newRJs = await GetNewReservedJudgements();
-        if (newRJs.Length == 0)
+        try
         {
-            this.Logger.LogInformation("No RJs have been processed");
-            return;
+            var newRJs = await GetNewReservedJudgements();
+            if (newRJs.Length == 0)
+            {
+                this.Logger.LogInformation("No RJs have been processed");
+                return RetrievalStepResult<List<CaseDto>>.Success(sourceName, [], 0);
+            }
+
+            var validRJs = newRJs.Where(rj => rj.AppearanceId != null).ToList();
+            var failedCount = newRJs.Length - validRJs.Count;
+
+            var newRJsDtos = this.Mapper.Map<List<CaseDto>>(validRJs);
+
+            this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfully processed {ValidRJsCount}. Failed: {FailedCount}.",
+                newRJs.Length, newRJsDtos.Count, failedCount);
+
+            return RetrievalStepResult<List<CaseDto>>.Success(sourceName, newRJsDtos, newRJsDtos.Count);
         }
-
-        var validRJs = newRJs.Where(rj => rj.AppearanceId != null).ToList();
-        var failedCount = newRJs.Length - validRJs.Count;
-
-        var newRJsDtos = this.Mapper.Map<List<CaseDto>>(validRJs);
-        await _caseService.AddRangeAsync(newRJsDtos);
-
-        this.Logger.LogInformation("Received {AllRJsCount} RJs. Successfully processed {ValidRJsCount}. Failed: {FailedCount}.",
-            newRJs.Length, newRJsDtos.Count, failedCount);
+        catch (Exception ex)
+        {
+            return RetrievalStepResult<List<CaseDto>>.Failure(sourceName, ex.Message);
+        }
     }
 
     private async Task<Db.Models.Case[]> GetNewReservedJudgements()
@@ -128,8 +185,7 @@ public class SyncAssignedCasesJob(
         var attachments = await _emailService.GetAttachmentsAsStreamsAsync(mailbox, recentMessage.Id, filename);
         if (attachments.Count == 0 || !attachments.ContainsKey(filename))
         {
-            this.Logger.LogWarning("No attachment found with filename: {Filename}", filename);
-            return [];
+            throw new InvalidOperationException($"Reserved judgements attachment {filename} was not found.");
         }
 
         this.Logger.LogInformation("Parsing the CSV file content.");
@@ -326,47 +382,57 @@ public class SyncAssignedCasesJob(
 
     #region Scheduled Cases (Decisions and Continuations) Methods
 
-    private async Task ProcessScheduledCases(string apprReasonCodes, string restrictionCode)
+    private async Task<RetrievalStepResult<List<CaseDto>>> ProcessScheduledCases(string sourceName, string apprReasonCodes, string restrictionCode)
     {
-        this.Logger.LogInformation("Starting to retrieve scheduled cases for {ApprReasonCodes} and {RestrictionCode}", apprReasonCodes, restrictionCode);
-
-        var scheduledCases = await this.GetScheduledCases(apprReasonCodes, restrictionCode);
-        if (scheduledCases.Count == 0)
+        try
         {
-            this.Logger.LogInformation(
-                "No data found for {ApprReasonCodes} and {RestrictionCode}.",
-                apprReasonCodes,
-                restrictionCode);
-            return;
-        }
+            this.Logger.LogInformation("Starting to retrieve scheduled cases for {ApprReasonCodes} and {RestrictionCode}", apprReasonCodes, restrictionCode);
 
-        var scheduledData = await PopulateCaseInfoWithThrottling(
-            scheduledCases,
-            async c =>
+            var scheduledCases = await this.GetScheduledCases(sourceName, apprReasonCodes, restrictionCode);
+            if (scheduledCases.Count == 0)
             {
-                try
-                {
-                    return await PopulateMissingInfoForScheduledCase(c);
-                }
-                catch
-                {
-                    return PopulateScheduledCaseWithDefaults(c);
-                }
-            },
-            c => $"{c.FileNumberTxt} (PhysicalFileId: {c.PhysicalFileId})",
-            "case");
+                this.Logger.LogInformation(
+                    "No data found for {ApprReasonCodes} and {RestrictionCode}.",
+                    apprReasonCodes,
+                    restrictionCode);
+                return RetrievalStepResult<List<CaseDto>>.Success(sourceName, [], 0);
+            }
 
-        await _caseService.AddRangeAsync([.. scheduledData
-            .Select(c => {
-                c.RestrictionCode = restrictionCode;
-                return c;
-            })
-        ]);
+            var scheduledData = await PopulateCaseInfoWithThrottling(
+                scheduledCases,
+                async c =>
+                {
+                    try
+                    {
+                        return await PopulateMissingInfoForScheduledCase(c);
+                    }
+                    catch
+                    {
+                        return PopulateScheduledCaseWithDefaults(c);
+                    }
+                },
+                c => $"{c.FileNumberTxt} (PhysicalFileId: {c.PhysicalFileId})",
+                "case");
 
-        this.Logger.LogInformation("Processed {ScheduledCasesCount} scheduled cases for {RestrictionCode}", scheduledData.Length, restrictionCode);
+            var retrievedCases = scheduledData
+                .Select(c =>
+                {
+                    c.RestrictionCode = restrictionCode;
+                    return c;
+                })
+                .ToList();
+
+            this.Logger.LogInformation("Processed {ScheduledCasesCount} scheduled cases for {RestrictionCode}", scheduledData.Length, restrictionCode);
+
+            return RetrievalStepResult<List<CaseDto>>.Success(sourceName, retrievedCases, retrievedCases.Count);
+        }
+        catch (Exception ex)
+        {
+            return RetrievalStepResult<List<CaseDto>>.Failure(sourceName, ex.Message);
+        }
     }
 
-    private async Task<ICollection<Case>> GetScheduledCases(string apprReasonCodes, string restrictionCode)
+    private async Task<ICollection<Case>> GetScheduledCases(string sourceName, string apprReasonCodes, string restrictionCode)
     {
         // Retrieve the Scheduled Cases by invoking a lambda function to avoid API Gateway's timeout.
         // The endpoint is expected to take a while to get the data specially in PROD.
@@ -385,16 +451,26 @@ public class SyncAssignedCasesJob(
 
             if (response == null || !response.Success)
             {
-                this.Logger.LogError("Failed to retrieve scheduled cases from Lambda: {Error}", response?.Error);
-                return Array.Empty<Case>();
+                var errorMessage = response?.Error ?? "No response was returned.";
+                this.Logger.LogError("Failed to retrieve scheduled cases from Lambda for source {SourceName}: {Error}", sourceName, errorMessage);
+                throw new InvalidOperationException($"Failed to retrieve scheduled cases for source {sourceName}: {errorMessage}");
+            }
+
+            if (response.Data == null)
+            {
+                throw new InvalidOperationException($"Scheduled cases response for source {sourceName} did not contain data.");
             }
 
             return response.Data;
         }
-        else
+
+        var scheduledCases = await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes, restrictionCode);
+        if (scheduledCases == null)
         {
-            return await _jcServiceClient.GetUpcomingSeizedAssignedCasesAsync(apprReasonCodes, restrictionCode);
+            throw new InvalidOperationException($"Scheduled cases source {sourceName} returned null.");
         }
+
+        return scheduledCases;
     }
 
     private async Task<CaseDto> PopulateMissingInfoForScheduledCase(PCSSCommon.Models.Case @case)
@@ -411,11 +487,8 @@ public class SyncAssignedCasesJob(
         {
             CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T
                 => await PopulateCriminalCaseInfo(caseDto, @case),
-
             CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M
                 => await PopulateCivilCaseInfo(caseDto, @case),
-
-
             _ => HandleUnsupportedCourtClass(caseDto, @case)
         };
     }
@@ -486,32 +559,107 @@ public class SyncAssignedCasesJob(
         return caseDto;
     }
 
-    private async Task<string> GetAppearanceReasonCodes(IEnumerable<string> excludeApprCodes)
+    private async Task<RetrievalStepResult<string>> GetAppearanceReasonCodes(IEnumerable<string> excludeApprCodes)
     {
-        async Task<ICollection<AppearanceReason>> CriminalAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCriminalAsync();
-        async Task<ICollection<AppearanceReason>> CivilAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCivilAsync();
-        async Task<ICollection<AppearanceReason>> FamilyAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsFamilyAsync();
-        async Task<ICollection<AppearanceReason>> JustinAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsJustinAsync();
-        async Task<ICollection<AppearanceReason>> CeisAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCeisAsync();
+        const string sourceName = AppearanceReasonCodesSourceName;
 
-        var criminalTask = this.Cache.GetOrAddAsync($"CriminalAppearanceReasons", CriminalAppearanceReasons);
-        var civilTask = this.Cache.GetOrAddAsync($"CivilAppearanceReasons", CivilAppearanceReasons);
-        var familyTask = this.Cache.GetOrAddAsync($"FamilyAppearanceReasons", FamilyAppearanceReasons);
-        var justinTask = this.Cache.GetOrAddAsync($"JustinAppearanceReasons", JustinAppearanceReasons);
-        var ceisTask = this.Cache.GetOrAddAsync($"CeisAppearanceReasons", CeisAppearanceReasons);
+        try
+        {
+            async Task<ICollection<AppearanceReason>> CriminalAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCriminalAsync();
+            async Task<ICollection<AppearanceReason>> CivilAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCivilAsync();
+            async Task<ICollection<AppearanceReason>> FamilyAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsFamilyAsync();
+            async Task<ICollection<AppearanceReason>> JustinAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsJustinAsync();
+            async Task<ICollection<AppearanceReason>> CeisAppearanceReasons() => await _lookupServicesClient.GetAppearanceReasonsCeisAsync();
 
-        await Task.WhenAll(criminalTask, civilTask, familyTask, justinTask, ceisTask);
+            var criminalTask = this.Cache.GetOrAddAsync("CriminalAppearanceReasons", CriminalAppearanceReasons);
+            var civilTask = this.Cache.GetOrAddAsync("CivilAppearanceReasons", CivilAppearanceReasons);
+            var familyTask = this.Cache.GetOrAddAsync("FamilyAppearanceReasons", FamilyAppearanceReasons);
+            var justinTask = this.Cache.GetOrAddAsync("JustinAppearanceReasons", JustinAppearanceReasons);
+            var ceisTask = this.Cache.GetOrAddAsync("CeisAppearanceReasons", CeisAppearanceReasons);
 
-        var appearanceReasons = criminalTask.Result
-            .Concat(civilTask.Result)
-            .Concat(familyTask.Result)
-            .Concat(justinTask.Result)
-            .Concat(ceisTask.Result)
-            .OrderBy(a => a.Code);
+            await Task.WhenAll(criminalTask, civilTask, familyTask, justinTask, ceisTask);
 
-        var commaDelimitedCodes = string.Join(",", appearanceReasons.Select(a => a.Code).Except(excludeApprCodes).Distinct());
+            var appearanceReasonCodes = criminalTask.Result
+                .Concat(civilTask.Result)
+                .Concat(familyTask.Result)
+                .Concat(justinTask.Result)
+                .Concat(ceisTask.Result)
+                .Select(a => a.Code)
+                .Except(excludeApprCodes)
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Distinct()
+                .OrderBy(code => code)
+                .ToList();
 
-        return commaDelimitedCodes;
+            if (appearanceReasonCodes.Count == 0)
+            {
+                return RetrievalStepResult<string>.Failure(sourceName, "No appearance reason codes were returned for the required scheduled-case sources.");
+            }
+
+            return RetrievalStepResult<string>.Success(sourceName, string.Join(",", appearanceReasonCodes), appearanceReasonCodes.Count);
+        }
+        catch (Exception ex)
+        {
+            return RetrievalStepResult<string>.Failure(sourceName, ex.Message);
+        }
+    }
+
+    private void LogRetrievalCounts(IEnumerable<IRetrievalStepResult> retrievalResults)
+    {
+        foreach (var retrievalResult in retrievalResults)
+        {
+            this.Logger.LogInformation(
+                "Retrieval source {SourceName} completed successfully with {ItemCount} item(s).",
+                retrievalResult.SourceName,
+                retrievalResult.Count);
+        }
+    }
+
+    private interface IRetrievalStepResult
+    {
+        string SourceName { get; }
+
+        bool Succeeded { get; }
+
+        int Count { get; }
+
+        string ErrorMessage { get; }
+    }
+
+    private sealed record RetrievalStepResult<TPayload>(
+        string SourceName,
+        bool Succeeded,
+        int Count,
+        TPayload Payload,
+        string ErrorMessage = null) : IRetrievalStepResult
+    {
+        public TPayload GetRequiredPayload(ILogger logger)
+        {
+            ThrowIfFailed(logger);
+            return this.Payload;
+        }
+
+        public void ThrowIfFailed(ILogger logger)
+        {
+            if (this.Succeeded)
+            {
+                return;
+            }
+
+            logger.LogError(
+                "Assigned case retrieval failed for source {SourceName}: {ErrorMessage}",
+                this.SourceName,
+                this.ErrorMessage);
+
+            throw new InvalidOperationException(
+                $"Assigned case retrieval failed for source {this.SourceName}: {this.ErrorMessage}");
+        }
+
+        public static RetrievalStepResult<TPayload> Success(string sourceName, TPayload payload, int count)
+            => new(sourceName, true, count, payload);
+
+        public static RetrievalStepResult<TPayload> Failure(string sourceName, string errorMessage)
+            => new(sourceName, false, 0, default, errorMessage);
     }
 
     #endregion Scheduled Cases

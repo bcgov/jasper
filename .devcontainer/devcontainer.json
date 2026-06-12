@@ -49,5 +49,13 @@
   "containerEnv": {
     "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
   },
+  "runArgs": [
+    "--network",
+    "jasper_default",
+    "--network-alias",
+    "scv-web-devcontainer",
+    "--add-host",
+    "host.docker.internal:host-gateway"
+  ],
   "forwardPorts": [9006]
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Scv.Api.Services;
 using Scv.Api.SignalR.Notifications;
 using Scv.Core.Helpers;
+using Scv.Db.Models;
 using Scv.Models;
 using Scv.Models.Order;
 
@@ -33,6 +34,13 @@ public class SendOrderNotificationJob(
         {
             _logger.LogInformation("Processing order notification job for file {FileId}",
                 order.OrderRequest.PhysicalFileId);
+
+            if (order.OrderRequest?.Referral?.IsPriority != true)
+            {
+                _logger.LogInformation("Order for file {FileId} is not marked as priority - skipping notification",
+                    order.OrderRequest.PhysicalFileId);
+                return;
+            }
 
             await NotifyJudgeOfNewOrderAsync(order);
 
@@ -103,10 +111,12 @@ public class SendOrderNotificationJob(
             LocationShortname = order.OrderRequest?.CourtLocationDesc,
             LocationName = order.OrderRequest?.CourtLocationDesc,
             Priority = order.OrderRequest?.Referral?.PriorityType,
+            IsPriority = order.OrderRequest?.Referral?.IsPriority,
+            PriorityTypeDesc = order.OrderRequest?.Referral?.PriorityTypeDesc,
             DateReceived = DateTime.UtcNow.ToString("MMMM dd, yyyy"),
         };
 
-        await _emailTemplateService.SendEmailTemplateAsync("Order Received", judgeEmail, emailData);
+        await _emailTemplateService.SendEmailTemplateAsync(EmailTemplate.ORDER_RECEIVED, judgeEmail, emailData);
 
         _logger.LogInformation("Notification sent to judge {JudgeId} for order on file {FileId}",
             judgeId, order.OrderRequest.PhysicalFileId);

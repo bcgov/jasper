@@ -4,7 +4,7 @@ export interface Order {
   id: string;
   packageId: number;
   priorityType: string;
-  priorityTypeDescription?: string;
+  priorityTypeDesc?: string;
   courtListType: string;
   courtListTypeDescription?: string;
   packageDocumentId: string;

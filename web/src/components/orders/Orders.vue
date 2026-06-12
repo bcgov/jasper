@@ -28,7 +28,7 @@
             :viewOrderDetails="viewOrderDetails"
             :columns="[
               'packageId',
-              'priorityType',
+              'priorityTypeDesc',
               'courtListType',
               'receivedDate',
               'division',
@@ -51,7 +51,7 @@
             :viewCaseDetails="viewCaseDetails"
             :columns="[
               'packageId',
-              'priorityType',
+              'priorityTypeDesc',
               'courtListType',
               'receivedDate',
               'processedDate',

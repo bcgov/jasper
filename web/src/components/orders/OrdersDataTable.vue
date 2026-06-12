@@ -27,16 +27,8 @@
         {{ item.styleOfCause }}
       </a>
     </template>
-    <template #[`item.priorityType`]="{ item }">
-      <LabelWithTooltip
-        v-if="item.priorityTypeDescription"
-        :values="[item.priorityType, item.priorityTypeDescription || '']"
-        :append-count="false"
-        :location="Anchor.Top"
-      />
-      <span v-else>
-        {{ item.priorityType }}
-      </span>
+    <template #[`item.priorityTypeDesc`]="{ item }">
+      <span>{{ item.priorityTypeDesc }}</span>
     </template>
     <template #[`item.courtListType`]="{ item }">
       <span>{{ item.courtListTypeDescription }}</span>
@@ -44,9 +36,7 @@
   </v-data-table-virtual>
 </template>
 <script setup lang="ts">
-  import LabelWithTooltip from '@/components/shared/LabelWithTooltip.vue';
   import { Order } from '@/types';
-  import { Anchor } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
@@ -55,7 +45,7 @@
 
   type ColumnKey =
     | 'packageId'
-    | 'priorityType'
+    | 'priorityTypeDesc'
     | 'courtListType'
     | 'receivedDate'
     | 'processedDate'
@@ -104,9 +94,9 @@
       title: 'PACKAGE #',
       key: 'packageId',
     },
-    priorityType: {
+    priorityTypeDesc: {
       title: 'PRIORITY',
-      key: 'priorityTypeDescription',
+      key: 'priorityTypeDesc',
     },
     courtListType: {
       title: 'TYPE',
@@ -149,7 +139,7 @@
   const headers = computed<DataTableHeader[]>(() => {
     const columnKeys = props.columns || [
       'packageId',
-      'priorityType',
+      'priorityTypeDesc',
       'courtListType',
       'receivedDate',
       'division',

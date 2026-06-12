@@ -18,17 +18,12 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_RECEIVED,
-            Subject = @"<{{ priority }}> Order Received for {{ location_shortname }} {{ case_file_number }}",
+            Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) Received{{ else }}Order Received{{ end }} for {{ location_shortname }} {{ case_file_number }}",
             Body = @"Dear Judge <b>{{ last_name }}</b>,<br /><br />
-                     You have received an order for <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> on {{ date_received }}. <br /><br />
-                     Other pending orders for your review:<br />
-                     <ul id='orders'>
-                        {{ for order in orders }}
-                        <li><a href='{{ order.order_url }}'>{{ order.case_file_number }}</a></li>
-                        {{ end }}
-                     </ul>
+                     You have received an order for {{ location_name }} {{ case_file_number }} on {{ date_received }}. <br /><br />
                      Regards,<br />
-                     JASPER Support Team"
+                     JASPER Support Team<br /><br />
+                     <i>Please note: This is an automated message. Please do not reply directly to this email.</i>"
         },
         new EmailTemplate
         {
@@ -44,22 +39,22 @@ public class EmailTemplate : EntityBase
         new EmailTemplate
         {
             TemplateName = ORDER_REMINDER,
-            Subject = @"<{{ priority }}> Order {{ location_name }} {{ case_file_number }} is still waiting to be processed.",
+            Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is still waiting to be processed.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
-                     The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
-                     Please select the link above to review the order.<br /><br />
+                     The following order was received on {{ date_received }} and has not yet been completed. Please review and complete {{ location_name }} {{ case_file_number }} as soon as possible.<br /><br />
                      Regards,<br />
-                     JASPER Support Team"
+                     JASPER Support Team<br /><br />
+                     <i>Please note: This is an automated message. Please do not reply directly to this email.</i>"
         },
         new EmailTemplate
         {
             TemplateName = ORDER_REASSIGNMENT,
-            Subject = @"<{{ priority }}> Order {{ location_name }} {{ case_file_number }} is overdue and has been assigned to you.",
+            Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is overdue and has been assigned to you.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
-                     The following order was received on {{ date_received }} and has not yet been completed. Please review and complete <a href='{{ url }}'>{{ location_name }} {{ case_file_number }}</a> as soon as possible.<br /><br />
-                     Please select the link above to review the order.<br /><br />
+                     The following order was received on {{ date_received }} and has not yet been completed. Please review and complete {{ location_name }} {{ case_file_number }} as soon as possible.<br /><br />
                      Regards,<br />
-                     JASPER Support Team",
+                     JASPER Support Team<br /><br />
+                     <i>Please note: This is an automated message. Please do not reply directly to this email.</i>",
             Cc = "{{ support_account }}"
         }
     ];

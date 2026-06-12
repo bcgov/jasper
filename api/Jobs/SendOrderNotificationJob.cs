@@ -111,8 +111,8 @@ public class SendOrderNotificationJob(
             LocationShortname = order.OrderRequest?.CourtLocationDesc,
             LocationName = order.OrderRequest?.CourtLocationDesc,
             Priority = order.OrderRequest?.Referral?.PriorityType,
-            order.OrderRequest?.Referral?.IsPriority,
-            order.OrderRequest?.Referral?.PriorityTypeDesc,
+            IsPriority = order.OrderRequest?.Referral?.IsPriority,
+            PriorityTypeDesc = order.OrderRequest?.Referral?.PriorityTypeDesc,
             DateReceived = DateTime.UtcNow.ToString("MMMM dd, yyyy"),
         };
 

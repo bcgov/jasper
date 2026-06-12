@@ -1,20 +1,66 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { nextTick } from 'vue';
 import ReviewModal from '@/components/documents/ReviewModal.vue';
 import type { OrderReview } from '@/types';
+import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
 
+const mockRoute: { query: Record<string, string | undefined> } = { query: {} };
 vi.mock('vue-router', () => ({
-  useRoute: vi.fn(() => ({ query: {} })),
+  useRoute: vi.fn(() => mockRoute),
 }));
+
+const mockOrdersStore: {
+  orders: Array<{ id: string; courtListType: OrderCourtLisTypeEnum }>;
+} = { orders: [] };
+vi.mock('@/stores', async () => {
+  const actual = await vi.importActual<typeof import('@/stores')>('@/stores');
+  return {
+    ...actual,
+    useOrdersStore: vi.fn(() => mockOrdersStore),
+  };
+});
+
+vi.mock('@/components/documents/DocumentUpload.vue', () => ({
+  default: {
+    name: 'DocumentUpload',
+    props: ['disabled', 'show', 'selectedFile', 'text'],
+    emits: ['update:show', 'update:selectedFile'],
+    template: '<div data-testid="document-upload">' + '<slot />' + '</div>',
+  },
+}));
+
+const ORDER_ID = 'order-123';
+
+const setRouteId = (id: string | undefined) => {
+  mockRoute.query = id ? { id } : {};
+};
+
+const setOrders = (
+  orders: Array<{ id: string; courtListType: OrderCourtLisTypeEnum }>
+) => {
+  mockOrdersStore.orders = orders;
+};
+
+const createFamilyDeskOrder = () => [
+  { id: ORDER_ID, courtListType: OrderCourtLisTypeEnum.PFM },
+];
+
+const createNonFamilyDeskOrder = () => [
+  { id: ORDER_ID, courtListType: OrderCourtLisTypeEnum.PCS },
+];
 
 describe('ReviewModal.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    setRouteId(ORDER_ID);
+    setOrders(createNonFamilyDeskOrder());
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   const createWrapper = (props = {}, modelValue = true) => {
@@ -65,8 +111,8 @@ describe('ReviewModal.vue', () => {
     });
   });
 
-  describe('canApprove prop behavior', () => {
-    it('should show warning alert when canApprove is false', () => {
+  describe('canApprove prop behavior (non-Family Desk order)', () => {
+    it('should show signature warning alert when canApprove is false', () => {
       const wrapper = createWrapper({ canApprove: false });
       expect(wrapper.text()).toContain(
         'Document signature is required before Approval'
@@ -78,6 +124,70 @@ describe('ReviewModal.vue', () => {
       expect(wrapper.text()).not.toContain(
         'Document signature is required before Approval'
       );
+    });
+  });
+
+  describe('Family Desk Order (PFM) behavior', () => {
+    beforeEach(() => {
+      setOrders(createFamilyDeskOrder());
+    });
+
+    it('should render the DocumentUpload component', () => {
+      const wrapper = createWrapper({ canApprove: true });
+      expect(wrapper.find('[data-testid="document-upload"]').exists()).toBe(
+        true
+      );
+    });
+
+    it('should show the upload-required warning instead of the signature warning', () => {
+      const wrapper = createWrapper({ canApprove: true });
+      expect(wrapper.text()).toContain(
+        'Document upload is required before Approval'
+      );
+      expect(wrapper.text()).not.toContain(
+        'Document signature is required before Approval'
+      );
+    });
+
+    it('should disable Approve until a supporting document has been selected', async () => {
+      const wrapper = createWrapper({ canApprove: true });
+      const approveButton = wrapper.find('[color="success"]');
+      expect(approveButton.attributes('disabled')).toBe('true');
+
+      const upload = wrapper.findComponent({ name: 'DocumentUpload' });
+      const fakeFile = new File(['data'], 'order.pdf', {
+        type: 'application/pdf',
+      });
+      upload.vm.$emit('update:selectedFile', fakeFile);
+      await nextTick();
+
+      expect(wrapper.find('[color="success"]').attributes('disabled')).toBe(
+        'false'
+      );
+    });
+
+    it('should emit signed=false on Approve for a Family Desk order', async () => {
+      const wrapper = createWrapper({ canApprove: true });
+      const upload = wrapper.findComponent({ name: 'DocumentUpload' });
+      const fakeFile = new File(['data'], 'order.pdf', {
+        type: 'application/pdf',
+      });
+      upload.vm.$emit('update:selectedFile', fakeFile);
+      await nextTick();
+
+      const approveButton = wrapper.find('[color="success"]');
+      await approveButton.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder') as
+        | OrderReview[][]
+        | undefined;
+      expect(emitted).toBeTruthy();
+      const review = emitted![0][0];
+      expect(review.status).toBe(OrderReviewStatus.Approved);
+      expect(review.signed).toBe(false);
+      expect(review.documentData).toBe('');
+      expect(review.supportingDocumentData).not.toBe('');
     });
   });
 
@@ -102,6 +212,16 @@ describe('ReviewModal.vue', () => {
       expect(pendingButton.exists()).toBe(true);
       expect(pendingButton.text()).toContain('Awaiting documentation');
     });
+
+    it('should disable Reject and Awaiting documentation when comments are empty', () => {
+      const wrapper = createWrapper();
+      expect(
+        wrapper.find('[color="error"]').attributes('disabled')
+      ).toBeDefined();
+      expect(
+        wrapper.find('[color="warning"]').attributes('disabled')
+      ).toBeDefined();
+    });
   });
 
   describe('Approve functionality', () => {
@@ -123,6 +243,23 @@ describe('ReviewModal.vue', () => {
       const wrapper = createWrapper({ canApprove: false });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.attributes('disabled')).toBeDefined();
+    });
+
+    it('should emit a fully-formed review payload with signed=true on Approve for non-Family Desk orders', async () => {
+      const wrapper = createWrapper({ canApprove: true });
+      const approveButton = wrapper.find('[color="success"]');
+      await approveButton.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder') as
+        | OrderReview[][]
+        | undefined;
+      expect(emitted).toBeTruthy();
+      const review = emitted![0][0];
+      expect(review.status).toBe(OrderReviewStatus.Approved);
+      expect(review.signed).toBe(true);
+      expect(review.documentData).toBe('');
+      expect(review.supportingDocumentData).toBe('');
     });
   });
 
@@ -165,6 +302,141 @@ describe('ReviewModal.vue', () => {
       expect(emitted).toBeTruthy();
       expect(emitted?.[0]?.[0]?.documentData).toBe('');
       expect(emitted?.[0]?.[0]?.supportingDocumentData).toBe('');
+    });
+  });
+
+  describe('Submitted confirmation + auto-close', () => {
+    it('should swap to the "Review Submitted" view after a successful Approve', async () => {
+      const wrapper = createWrapper({ canApprove: true });
+      const approveButton = wrapper.find('[color="success"]');
+      await approveButton.trigger('click');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('Review Submitted');
+      expect(wrapper.text()).toContain('Your review has been submitted.');
+      expect(wrapper.text()).toContain('Orders dashboard');
+    });
+
+    it('should display the auto-close countdown after submission', async () => {
+      vi.useFakeTimers();
+      const wrapper = createWrapper({ canApprove: true });
+
+      await wrapper.find('[color="success"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.text()).toMatch(/This tab will close in 15 seconds\./);
+    });
+
+    it('should decrement the countdown each second', async () => {
+      vi.useFakeTimers();
+      const wrapper = createWrapper({ canApprove: true });
+
+      await wrapper.find('[color="success"]').trigger('click');
+      await flushPromises();
+
+      vi.advanceTimersByTime(1000);
+      await nextTick();
+      expect(wrapper.text()).toMatch(/This tab will close in 14 seconds\./);
+
+      vi.advanceTimersByTime(13_000);
+      await nextTick();
+      expect(wrapper.text()).toMatch(/This tab will close in 1 second\./);
+    });
+
+    it('should call window.close once the countdown reaches zero', async () => {
+      vi.useFakeTimers();
+      const closeSpy = vi.fn();
+      vi.stubGlobal('close', closeSpy);
+
+      const wrapper = createWrapper({ canApprove: true });
+      await wrapper.find('[color="success"]').trigger('click');
+      await flushPromises();
+
+      vi.advanceTimersByTime(15_000);
+      await nextTick();
+
+      expect(closeSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reset submitted state and clear comments when the dialog is closed', async () => {
+      const wrapper = createWrapper({ canApprove: true });
+      await wrapper.find('[color="success"]').trigger('click');
+      await flushPromises();
+      expect(wrapper.text()).toContain('Review Submitted');
+
+      await wrapper.setProps({ modelValue: false });
+      await wrapper.setProps({ modelValue: true });
+      await flushPromises();
+
+      expect(wrapper.text()).not.toContain('Review Submitted');
+      expect(wrapper.text()).toContain('Review Order');
+    });
+  });
+
+  describe('Reject and Awaiting documentation submissions', () => {
+    const createCommentsWrapper = (canApprove = false) =>
+      mount(ReviewModal, {
+        props: {
+          canApprove,
+          modelValue: true,
+        },
+        global: {
+          stubs: {
+            'v-textarea': {
+              props: ['modelValue'],
+              emits: ['update:modelValue'],
+              template:
+                '<textarea :value="modelValue" ' +
+                '@input="$emit(\'update:modelValue\', $event.target.value)" />',
+            },
+          },
+        },
+      });
+
+    const writeComment = async (
+      wrapper: ReturnType<typeof createCommentsWrapper>,
+      text: string
+    ) => {
+      const textarea = wrapper.find('textarea');
+      await textarea.setValue(text);
+    };
+
+    it('should emit a Rejected review when the Reject button is clicked', async () => {
+      const wrapper = createCommentsWrapper();
+      await writeComment(wrapper, 'Needs work');
+
+      const rejectButton = wrapper.find('[color="error"]');
+      expect(rejectButton.attributes('disabled')).toBe('false');
+      await rejectButton.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder') as
+        | OrderReview[][]
+        | undefined;
+      expect(emitted).toBeTruthy();
+      expect(emitted![0][0].status).toBe(OrderReviewStatus.Unapproved);
+      expect(emitted![0][0].signed).toBe(false);
+      expect(emitted![0][0].comments).toBe('Needs work');
+    });
+
+    it('should emit an AwaitingDocumentation review when that button is clicked', async () => {
+      const wrapper = createCommentsWrapper();
+      await writeComment(wrapper, 'Awaiting evidence');
+
+      const pendingButton = wrapper.find('[color="warning"]');
+      expect(pendingButton.attributes('disabled')).toBe('false');
+      await pendingButton.trigger('click');
+      await flushPromises();
+
+      const emitted = wrapper.emitted('reviewOrder') as
+        | OrderReview[][]
+        | undefined;
+      expect(emitted).toBeTruthy();
+      expect(emitted![0][0].status).toBe(
+        OrderReviewStatus.AwaitingDocumentation
+      );
+      expect(emitted![0][0].signed).toBe(false);
+      expect(emitted![0][0].comments).toBe('Awaiting evidence');
     });
   });
 });

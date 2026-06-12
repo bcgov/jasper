@@ -12,23 +12,22 @@
     :can-approve="canApprove"
     @reviewOrder="reviewOrder"
   />
-
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
 
 <script setup lang="ts">
-  import { useCommonStore } from '@/stores';
-  import { onMounted, onUnmounted, ref, inject } from 'vue';
-  import {
-    mdiNotebookOutline,
-    mdiFileDocumentArrowRightOutline,
-  } from '@mdi/js';
   import { OrderService } from '@/services';
-  import { PDFViewerStrategy, OutlineItem } from './strategies/PDFViewerTypes';
-  import ReviewModal from './ReviewModal.vue';
+  import { useCommonStore } from '@/stores';
   import { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
+  import {
+    mdiFileDocumentArrowRightOutline,
+    mdiNotebookOutline,
+  } from '@mdi/js';
+  import { inject, onMounted, onUnmounted, ref } from 'vue';
+  import ReviewModal from './ReviewModal.vue';
+  import { OutlineItem, PDFViewerStrategy } from './strategies/PDFViewerTypes';
 
   // Declare NutrientViewer global
   declare global {
@@ -102,7 +101,7 @@
       const openInfoItem = {
         type: 'custom',
         id: 'open-information',
-        title: 'Supporting information',
+        title: 'Case details',
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
           let firstPhysicalFileId: string | undefined;
@@ -130,7 +129,7 @@
       const reviewItem = {
         type: 'custom',
         id: 'open-document-review',
-        title: 'Open document review',
+        title: 'Submit',
         icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
         onPress: () => {
           showReviewModal.value = true;
@@ -153,6 +152,11 @@
         if (props.strategy.showOrderReviewOptions) {
           items.push(openInfoItem, reviewItem);
         }
+
+        if (props.strategy.setToolbarItems) {
+          items = props.strategy.setToolbarItems(items);
+        }
+
         return items;
       });
 
@@ -199,7 +203,6 @@
   };
 
   const reviewOrder = async (orderReview: OrderReview) => {
-    showReviewModal.value = false;
     if (!props.strategy.reviewOrder) {
       return;
     }

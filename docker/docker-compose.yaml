@@ -292,7 +292,7 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-..}/jc-interface-client/:/opt/app-root/src/jc-interface-client
       - transitory-documents-api-dev-bin:/opt/app-root/src/transitory-documents-api/bin
       - transitory-documents-api-dev-obj:/opt/app-root/src/transitory-documents-api/obj
-      - /mnt/smb:/mnt/smb:ro
+      - smb-storage:/mnt/smb:ro
 
     command: >
       /bin/bash -c "
@@ -338,3 +338,4 @@ volumes:
   clamav-db:
   transitory-documents-api-dev-bin:
   transitory-documents-api-dev-obj:
+  smb-storage:

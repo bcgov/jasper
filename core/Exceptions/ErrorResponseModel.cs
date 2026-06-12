@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Scv.Core.Helpers.Extensions;
 using Microsoft.Extensions.Hosting;
-using Scv.Core.Helpers.Extensions;
 
 namespace Scv.Core.Exceptions
 {
@@ -51,7 +50,7 @@ namespace Scv.Core.Exceptions
         /// <param name="ex"></param>
         /// <param name="message"></param>
         /// <param name="details"></param>
-        public ErrorResponseModel(IWebHostEnvironment environment, Exception ex, string? message = null, string? details = null)
+        public ErrorResponseModel(IHostEnvironment environment, Exception ex, string? message = null, string? details = null)
         {
             var showError = !environment.IsProduction();
             this.Error = showError ? ex.Message : message;

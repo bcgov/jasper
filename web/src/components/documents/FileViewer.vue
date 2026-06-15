@@ -10,7 +10,7 @@
   <ReviewModal
     v-model="showReviewModal"
     :can-approve="canApprove"
-    @reviewOrder="reviewOrder"
+    :review-order="reviewOrder"
   />
   <div v-show="!loading" ref="pdf-container" class="pdf-container" />
 </template>
@@ -25,6 +25,7 @@
     mdiFileDocumentArrowRightOutline,
     mdiNotebookOutline,
   } from '@mdi/js';
+  import type { ToolbarItem } from '@nutrient-sdk/viewer';
   import { inject, onMounted, onUnmounted, ref } from 'vue';
   import ReviewModal from './ReviewModal.vue';
   import { OutlineItem, PDFViewerStrategy } from './strategies/PDFViewerTypes';
@@ -98,7 +99,7 @@
 
       const nutrientOutline = createNutrientOutline(outline);
 
-      const openInfoItem = {
+      const openInfoItem: ToolbarItem = {
         type: 'custom',
         id: 'open-information',
         title: 'Case details',
@@ -126,7 +127,7 @@
         },
       };
 
-      const reviewItem = {
+      const reviewItem: ToolbarItem = {
         type: 'custom',
         id: 'open-document-review',
         title: 'Submit',
@@ -148,7 +149,7 @@
           NutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
-      instance.setToolbarItems((items: any) => {
+      instance.setToolbarItems((items: ToolbarItem[]) => {
         if (props.strategy.showOrderReviewOptions) {
           items.push(openInfoItem, reviewItem);
         }
@@ -206,20 +207,15 @@
     if (!props.strategy.reviewOrder) {
       return;
     }
-    // Check if strategy supports order review
-    try {
-      // If the user approved the Order and did not upload a supporting document, export the flattened PDF
-      if (
-        orderReview.status === OrderReviewStatus.Approved &&
-        !orderReview.supportingDocumentData
-      ) {
-        const arrayBuffer = await instance.exportPDF({ flatten: true });
-        orderReview.documentData = arrayBufferToBase64(arrayBuffer);
-      }
-      await props.strategy.reviewOrder(orderReview);
-    } catch (error) {
-      console.error('Error reviewing order:', error);
+    // If the user approved the Order and did not upload a supporting document, export the flattened PDF
+    if (
+      orderReview.status === OrderReviewStatus.Approved &&
+      !orderReview.supportingDocumentData
+    ) {
+      const arrayBuffer = await instance.exportPDF({ flatten: true });
+      orderReview.documentData = arrayBufferToBase64(arrayBuffer);
     }
+    await props.strategy.reviewOrder(orderReview);
   };
 
   onMounted(() => {

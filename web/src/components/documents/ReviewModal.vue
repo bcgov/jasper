@@ -10,6 +10,7 @@
           icon
           variant="text"
           density="comfortable"
+          :disabled="submitting"
           @click="show = false"
           aria-label="Close dialog"
         >
@@ -43,6 +44,17 @@
             This tab will close in {{ autoCloseSeconds }} second{{
               autoCloseSeconds === 1 ? '' : 's'
             }}.
+          </v-alert>
+
+          <v-alert
+            v-if="closeBlocked"
+            type="warning"
+            variant="tonal"
+            density="comfortable"
+            class="mt-6 d-inline-flex text-start"
+          >
+            This tab couldn't be closed automatically. Please close it manually
+            to return to the Orders dashboard.
           </v-alert>
         </v-card-text>
       </template>
@@ -103,8 +115,11 @@
               color="error"
               variant="text"
               :prepend-icon="mdiClose"
-              :disabled="!canReject"
-              @click="reviewOrder(OrderReviewStatus.Unapproved)"
+              :disabled="!canReject || submitting"
+              :loading="
+                submitting && pendingStatus === OrderReviewStatus.Unapproved
+              "
+              @click="submitReview(OrderReviewStatus.Unapproved)"
             >
               Reject
             </v-btn>
@@ -113,8 +128,12 @@
               color="warning"
               variant="outlined"
               :prepend-icon="mdiAccountClock"
-              :disabled="!canReject"
-              @click="reviewOrder(OrderReviewStatus.AwaitingDocumentation)"
+              :disabled="!canReject || submitting"
+              :loading="
+                submitting &&
+                pendingStatus === OrderReviewStatus.AwaitingDocumentation
+              "
+              @click="submitReview(OrderReviewStatus.AwaitingDocumentation)"
             >
               Awaiting documentation
             </v-btn>
@@ -127,8 +146,11 @@
             color="success"
             size="large"
             :prepend-icon="mdiCheckBold"
-            :disabled="!canApprove"
-            @click="reviewOrder(OrderReviewStatus.Approved)"
+            :disabled="!canApprove || submitting"
+            :loading="
+              submitting && pendingStatus === OrderReviewStatus.Approved
+            "
+            @click="submitReview(OrderReviewStatus.Approved)"
           >
             Approve
           </v-btn>
@@ -158,15 +180,18 @@
 
   const props = defineProps<{
     canApprove: boolean;
+    reviewOrder: (review: OrderReview) => Promise<void>;
   }>();
 
-  const emit = defineEmits<(e: 'reviewOrder', review: OrderReview) => void>();
   const show = defineModel<boolean>({ type: Boolean, required: true });
 
   const comments = ref<string>('');
   const selectedUpload = ref<File | null>(null);
   const submitted = ref<boolean>(false);
+  const submitting = ref<boolean>(false);
+  const pendingStatus = ref<OrderReviewStatus | null>(null);
   const autoCloseSeconds = ref<number>(0);
+  const closeBlocked = ref<boolean>(false);
   let autoCloseTimer: ReturnType<typeof setInterval> | null = null;
   const canReject = computed<boolean>(() => comments.value?.length > 0);
   const canApprove = computed<boolean>(() =>
@@ -192,11 +217,16 @@
       selectedUpload.value = null;
       comments.value = '';
       submitted.value = false;
+      submitting.value = false;
+      pendingStatus.value = null;
+      closeBlocked.value = false;
       cancelAutoClose();
     }
   });
 
-  const reviewOrder = async (status: OrderReviewStatus) => {
+  const submitReview = async (status: OrderReviewStatus) => {
+    if (submitting.value) return;
+
     const documentData = '';
     let supportingDocumentData = '';
     if (selectedUpload.value) {
@@ -212,13 +242,22 @@
       supportingDocumentData,
     };
 
-    emit('reviewOrder', review);
-
-    submitted.value = true;
-    startAutoClose();
+    submitting.value = true;
+    pendingStatus.value = status;
+    try {
+      await props.reviewOrder(review);
+      submitted.value = true;
+      startAutoClose();
+    } catch (error) {
+      console.error('Order review submission failed:', error);
+    } finally {
+      submitting.value = false;
+      pendingStatus.value = null;
+    }
   };
 
   const startAutoClose = () => {
+    cancelAutoClose();
     autoCloseSeconds.value = AUTO_CLOSE_SECONDS;
     autoCloseTimer = setInterval(() => {
       autoCloseSeconds.value -= 1;
@@ -240,6 +279,14 @@
   const closeTab = () => {
     cancelAutoClose();
     window.close();
+
+    // In some browsers, window.close() will not work if the tab was not opened via JavaScript.
+    // Show a message to the user to close the tab manually.
+    setTimeout(() => {
+      if (!window.closed) {
+        closeBlocked.value = true;
+      }
+    }, 100);
   };
 
   onBeforeUnmount(cancelAutoClose);

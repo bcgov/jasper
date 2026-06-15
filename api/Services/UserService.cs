@@ -126,12 +126,15 @@ public class UserService(
         var groups = (await _groupRepo.FindAsync(g => user.GroupIds.Contains(g.Id)));
         user.Groups = [.. groups.Select(g => g.Name)];
 
-        // Get all role ids from user's groups
-        var groupRoleIds = groups.SelectMany(g => g.RoleIds).ToList();
-        if (groupRoleIds.Count != 0)
+        // Get user's role ids from groups if user does not have any direct roles assigned. Works for now until current Groups are
+        // narrowed down to be functional. Long term solution should be combining roles from both user and groups.
+        if (user.RoleIds.Count == 0)
         {
-            // Combine role ids from user's groups and user. Existing role ids, may have been assigned by the sync service when the user logged-in.
-            user.RoleIds = [.. user.RoleIds.Union(groupRoleIds, StringComparer.OrdinalIgnoreCase)];
+            var groupRoleIds = groups.SelectMany(g => g.RoleIds).ToList();
+            if (groupRoleIds.Count != 0)
+            {
+                user.RoleIds = groupRoleIds;
+            }
         }
 
         // Find user's roles

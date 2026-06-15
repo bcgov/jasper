@@ -51,11 +51,21 @@ const createNonFamilyDeskOrder = () => [
   { id: ORDER_ID, courtListType: OrderCourtLisTypeEnum.PCS },
 ];
 
+type ReviewOrderMock = ReturnType<typeof vi.fn> &
+  ((review: OrderReview) => Promise<void>);
+
+let reviewOrderMock: ReviewOrderMock;
+
+const getReviewCalls = (
+  mock: ReviewOrderMock = reviewOrderMock
+): OrderReview[][] => mock.mock.calls as OrderReview[][];
+
 describe('ReviewModal.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     setRouteId(ORDER_ID);
     setOrders(createNonFamilyDeskOrder());
+    reviewOrderMock = vi.fn().mockResolvedValue(undefined) as ReviewOrderMock;
   });
 
   afterEach(() => {
@@ -68,6 +78,7 @@ describe('ReviewModal.vue', () => {
       props: {
         canApprove: false,
         modelValue,
+        reviewOrder: reviewOrderMock,
         ...props,
       },
     });
@@ -179,11 +190,9 @@ describe('ReviewModal.vue', () => {
       await approveButton.trigger('click');
       await flushPromises();
 
-      const emitted = wrapper.emitted('reviewOrder') as
-        | OrderReview[][]
-        | undefined;
-      expect(emitted).toBeTruthy();
-      const review = emitted![0][0];
+      const calls = getReviewCalls();
+      expect(calls.length).toBeGreaterThan(0);
+      const review = calls[0][0];
       expect(review.status).toBe(OrderReviewStatus.Approved);
       expect(review.signed).toBe(false);
       expect(review.documentData).toBe('');
@@ -251,11 +260,9 @@ describe('ReviewModal.vue', () => {
       await approveButton.trigger('click');
       await flushPromises();
 
-      const emitted = wrapper.emitted('reviewOrder') as
-        | OrderReview[][]
-        | undefined;
-      expect(emitted).toBeTruthy();
-      const review = emitted![0][0];
+      const calls = getReviewCalls();
+      expect(calls.length).toBeGreaterThan(0);
+      const review = calls[0][0];
       expect(review.status).toBe(OrderReviewStatus.Approved);
       expect(review.signed).toBe(true);
       expect(review.documentData).toBe('');
@@ -269,6 +276,7 @@ describe('ReviewModal.vue', () => {
         props: {
           canApprove: true,
           modelValue: true,
+          reviewOrder: reviewOrderMock,
         },
         global: {
           stubs: {
@@ -296,12 +304,10 @@ describe('ReviewModal.vue', () => {
       await approveButton!.trigger('click');
       await flushPromises();
 
-      const emitted = wrapper.emitted('reviewOrder') as
-        | OrderReview[][]
-        | undefined;
-      expect(emitted).toBeTruthy();
-      expect(emitted?.[0]?.[0]?.documentData).toBe('');
-      expect(emitted?.[0]?.[0]?.supportingDocumentData).toBe('');
+      const calls = getReviewCalls();
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls[0]?.[0]?.documentData).toBe('');
+      expect(calls[0]?.[0]?.supportingDocumentData).toBe('');
     });
   });
 
@@ -379,6 +385,7 @@ describe('ReviewModal.vue', () => {
         props: {
           canApprove,
           modelValue: true,
+          reviewOrder: reviewOrderMock,
         },
         global: {
           stubs: {
@@ -410,13 +417,11 @@ describe('ReviewModal.vue', () => {
       await rejectButton.trigger('click');
       await flushPromises();
 
-      const emitted = wrapper.emitted('reviewOrder') as
-        | OrderReview[][]
-        | undefined;
-      expect(emitted).toBeTruthy();
-      expect(emitted![0][0].status).toBe(OrderReviewStatus.Unapproved);
-      expect(emitted![0][0].signed).toBe(false);
-      expect(emitted![0][0].comments).toBe('Needs work');
+      const calls = getReviewCalls();
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls[0][0].status).toBe(OrderReviewStatus.Unapproved);
+      expect(calls[0][0].signed).toBe(false);
+      expect(calls[0][0].comments).toBe('Needs work');
     });
 
     it('should emit an AwaitingDocumentation review when that button is clicked', async () => {
@@ -428,15 +433,11 @@ describe('ReviewModal.vue', () => {
       await pendingButton.trigger('click');
       await flushPromises();
 
-      const emitted = wrapper.emitted('reviewOrder') as
-        | OrderReview[][]
-        | undefined;
-      expect(emitted).toBeTruthy();
-      expect(emitted![0][0].status).toBe(
-        OrderReviewStatus.AwaitingDocumentation
-      );
-      expect(emitted![0][0].signed).toBe(false);
-      expect(emitted![0][0].comments).toBe('Awaiting evidence');
+      const calls = getReviewCalls();
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls[0][0].status).toBe(OrderReviewStatus.AwaitingDocumentation);
+      expect(calls[0][0].signed).toBe(false);
+      expect(calls[0][0].comments).toBe('Awaiting evidence');
     });
   });
 });

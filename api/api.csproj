@@ -39,7 +39,7 @@
     <PackageReference Include="Microsoft.Graph" Version="5.104.0" />
     <PackageReference Include="nClam" Version="9.0.0" />
     <PackageReference Include="NSwag.Generation.AspNetCore" Version="14.7.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.9" />
     <PackageReference Include="IdentityModel" Version="6.2.0" />
     <PackageReference Include="Mapster" Version="10.0.7" />

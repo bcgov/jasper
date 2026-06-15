@@ -64,7 +64,10 @@ export class OrderPDFStrategy extends BasePDFStrategy {
 
   setToolbarItems(items: any[]): any[] {
     const toRemove = new Set(['note', 'print', 'callout', 'image']);
-    const base = items.filter((item) => !toRemove.has(item.type));
+    const toMove = new Set(['open-information', 'open-document-review']);
+    const base = items.filter(
+      (item) => !toRemove.has(item.type) && !toMove.has(item.id)
+    );
 
     // Icons rendered after the linearized-download-indicator or at the end
     const extras = [

@@ -21,6 +21,7 @@ public class RoleAlias : EntityBase
     public const string REGIONAL_ADMINISTRATIVE_JUDGE_ALT = "Regional Administrative Judge";
     public const string SENIOR_JUDGE = "Senior Judge";
     public const string USER_ROLE_ADMIN = "Admin User Edit";
+    public const string USER_ROLE_ADMIN_ALT = "User Role Admin";
 
     public static readonly List<RoleAlias> ALL_ROLE_ALIASES =
     [
@@ -38,6 +39,7 @@ public class RoleAlias : EntityBase
         new RoleAlias { Name = RoleAlias.REGIONAL_ADMINISTRATIVE_JUDGE_ALT },
         new RoleAlias { Name = RoleAlias.SENIOR_JUDGE },
         new RoleAlias { Name = RoleAlias.USER_ROLE_ADMIN },
+        new RoleAlias { Name = RoleAlias.USER_ROLE_ADMIN_ALT }
     ];
 
     public required string Name { get; set; }

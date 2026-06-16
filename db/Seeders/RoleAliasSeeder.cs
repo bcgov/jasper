@@ -33,6 +33,7 @@ public class RoleAliasSeeder(ILogger<RoleAliasSeeder> logger) : SeederBase<Jaspe
             [RoleAlias.REGIONAL_ADMINISTRATIVE_JUDGE_ALT] = Role.RAJ,
             [RoleAlias.SENIOR_JUDGE] = Role.JUDGE,
             [RoleAlias.USER_ROLE_ADMIN] = Role.ADMIN,
+            [RoleAlias.USER_ROLE_ADMIN_ALT] = Role.ADMIN
         };
 
         foreach (var alias in aliases)

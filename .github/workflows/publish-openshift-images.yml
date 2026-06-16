@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "docker/openshift/**"
-      - "openshift/**"
+      - 'docker/openshift/**'
+      - 'openshift/**'
 
 env:
   GITHUB_IMAGE_REPO: ghcr.io/bcgov/jasper
@@ -26,6 +26,7 @@ jobs:
       matrix:
         dockerfile-image:
           - Dockerfile=./docker/openshift/Dockerfile.sync-secrets,image=sync-secrets
+          - Dockerfile=./docker/openshift/Dockerfile.generate-mongo-tls,image=generate-mongo-tls
           - Dockerfile=./docker/openshift/Dockerfile.update-aws-creds,image=update-aws-creds
 
     steps:

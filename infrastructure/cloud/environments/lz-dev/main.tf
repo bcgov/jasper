@@ -47,6 +47,8 @@ module "secrets_manager" {
   region                = var.region
   kms_key_arn           = module.initial.kms_key_arn
   rotate_key_lambda_arn = module.lambda.lambda_functions["rotate-key"].arn
+  use_existing_mongo_tls_secret = var.use_existing_mongo_tls_secret
+  existing_mongo_tls_secret_name = var.existing_mongo_tls_secret_name
 }
 
 # Create RDS Database

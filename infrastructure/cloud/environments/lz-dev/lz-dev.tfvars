@@ -49,3 +49,6 @@ clamav_config = {
   memory_reservation = 512
   stream_max_length  = "100M"
 }
+
+use_existing_mongo_tls_secret = true
+existing_mongo_tls_secret_name = "external/jasper-mongo-tls-lz-dev"

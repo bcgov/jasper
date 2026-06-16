@@ -1,3 +1,7 @@
+locals {
+  mongo_tls_secret_arn = var.use_existing_mongo_tls_secret ? data.aws_secretsmanager_secret.existing_mongo_tls_secret[0].arn : aws_secretsmanager_secret.mongo_tls_secret[0].arn
+}
+
 output "secrets_arn_list" {
   value = [
     aws_secretsmanager_secret.api_authorizer_secret.arn,
@@ -24,7 +28,8 @@ output "secrets_arn_list" {
     aws_secretsmanager_secret.splunk_secret.arn,
     aws_secretsmanager_secret.user_services_client_secret.arn,
     aws_secretsmanager_secret.keycloak_td_secret.arn,
-    aws_secretsmanager_secret.smb_secret.arn
+    aws_secretsmanager_secret.smb_secret.arn,
+    local.mongo_tls_secret_arn
   ]
 }
 
@@ -87,6 +92,7 @@ output "api_secrets" {
     ["LookupServicesClient__Url", "${aws_secretsmanager_secret.lookup_services_client_secret.arn}:baseUrl::"],
     ["MONGODB_CONNECTION_STRING", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbConnectionString::"],
     ["MONGODB_NAME", "${aws_secretsmanager_secret.database_secret.arn}:mongoDbName::"],
+    ["MONGODB_TLS_PEM", local.mongo_tls_secret_arn],
     ["NUTRIENT_BE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientBeLicenseKey::"],
     ["NUTRIENT_FE_LICENSE_KEY", "${aws_secretsmanager_secret.nutrient_secret.arn}:nutrientFeLicenseKey::"],
     ["ORDER_MAX_REASSIGNMENT_NOTIFICATIONS", "${aws_secretsmanager_secret.order_secret.arn}:maxReassignmentNotifications::"],

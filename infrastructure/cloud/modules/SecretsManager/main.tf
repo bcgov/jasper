@@ -479,19 +479,3 @@ resource "aws_secretsmanager_secret_version" "smb_secret_value" {
     ignore_changes = [secret_string]
   }
 }
-
-resource "aws_secretsmanager_secret" "mongo_tls_secret" {
-  name       = "external/${var.app_name}-mongo-tls-${var.environment}"
-  kms_key_id = var.kms_key_arn
-}
-
-resource "aws_secretsmanager_secret_version" "mongo_tls_secret_value" {
-  secret_id = aws_secretsmanager_secret.mongo_tls_secret.id
-  secret_string = jsonencode({
-    ca  = "",
-    pem = ""
-  })
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
-}

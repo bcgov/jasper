@@ -1,6 +1,6 @@
 ﻿namespace Scv.Models.Order;
 
-public class CourtListTypeDescriptor
+public static class CourtListTypeDescriptor
 {
     public const string SMALL_CLAIMS_COURT_LIST_TYPE = "PSC";
     public const string FAMILY_COURT_LIST_TYPE = "PFA";

@@ -49,7 +49,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 
         if (directionsContent == null
             || directionsContent.Count == 0
-            || string.IsNullOrWhiteSpace(directionsContent.First()))
+            || string.IsNullOrWhiteSpace(directionsContent[0]))
         {
             throw new InvalidDataException("Directions content is empty or whitespace.");
         }
@@ -59,7 +59,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 
         if (orderTermsContent == null
             || orderTermsContent.Count == 0
-            || string.IsNullOrWhiteSpace(orderTermsContent.First()))
+            || string.IsNullOrWhiteSpace(orderTermsContent[0]))
         {
             throw new InvalidDataException("Order terms content is empty or whitespace.");
         }

@@ -27,6 +27,7 @@ using MongoDB.Driver;
 using nClam;
 using PostgreSQL.ListenNotify.DependencyInjection;
 using Scv.Api.Documents;
+using Scv.Api.Documents.Extractors;
 using Scv.Api.Documents.Parsers;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Infrastructure.Authentication;
@@ -94,6 +95,8 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentStrategy, TranscriptStrategy>();
             services.AddScoped<IDocumentStrategy, TransitoryDocumentStrategy>();
             services.AddScoped<IDocumentStrategy, OrderDocumentStrategy>();
+
+            services.AddScoped<IDeskOrderDetailsExtractor, DeskOrderDetailsExtractor>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)

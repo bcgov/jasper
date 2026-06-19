@@ -319,13 +319,23 @@ services:
           chmod 400 /data/configdb/keyfile;
           chown 999:999 /data/configdb/keyfile;
         fi;
-        exec mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/keyfile
+        exec /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/keyfile
       "
     ports:
       - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --host localhost --quiet -u ${MONGODB_USER} -p ${MONGODB_PASSWORD} --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' | grep 1 > /dev/null"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER-.}/tmp-mongo:/data/db
       - mongo-keyfile:/data/configdb
@@ -333,28 +343,36 @@ services:
   db-mongo-init:
     image: mongo:latest
     depends_on:
-      - db-mongo
+      db-mongo:
+        condition: service_healthy
     restart: 'no'
     environment:
       MONGODB_USER: ${MONGODB_USER}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_RS_HOST: ${MONGODB_RS_HOST:-db-mongo:27017}
     entrypoint: >
       bash -c '
-        until mongosh --host db-mongo:27017 -u "$${MONGODB_USER}" -p "$${MONGODB_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1;
+        set -eu;
+
+        until mongosh --host db-mongo:27017 -u "$${MONGODB_USER}" -p "$${MONGODB_PASSWORD}" --authenticationDatabase admin --quiet --eval "db.adminCommand({ ping: 1 }).ok" | grep 1 > /dev/null 2>&1;
         do
           sleep 2;
         done;
 
         mongosh --host db-mongo:27017 -u "$${MONGODB_USER}" -p "$${MONGODB_PASSWORD}" --authenticationDatabase admin --eval "
           try {
-            rs.status();
+            var status = rs.status();
+            if (status.ok === 1) {
+              print(\"Replica set already initialized.\");
+            }
           } catch (e) {
             rs.initiate({
               _id: \"rs0\",
               members: [
-                { _id: 0, host: \"db-mongo:27017\" }
+                { _id: 0, host: \"$${MONGODB_RS_HOST}\" }
               ]
             });
+            print(\"Replica set initialized.\");
           }
         "
       '

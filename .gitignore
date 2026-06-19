@@ -36,6 +36,7 @@ bld/
 api/bin/
 web/bin/
 package-lock.json
+docker/tmp-mongo/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

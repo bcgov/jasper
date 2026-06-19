@@ -67,7 +67,7 @@
   const model = defineModel<boolean>();
   const themeStore = useThemeStore();
   const commonStore = useCommonStore();
-  const appliedThemes = ref(['']);
+  const appliedThemes = ref(themeStore.state.value === 'dark' ? ['dark'] : []);
   const openedGroups = ref(['quick-links']); // Expand Quick links by default
   const showTimebankModal = ref(false);
 
@@ -104,5 +104,10 @@
   .v-list-item-title {
     white-space: normal;
     word-break: break-word;
+  }
+  .v-navigation-drawer__content {
+    flex: 1 1 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 </style>

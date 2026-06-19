@@ -31,7 +31,7 @@
   const themeStore = useThemeStore();
   const darsStore = useDarsStore();
   const commonStore = useCommonStore();
-  const theme = ref(themeStore.state);
+  const theme = themeStore.state;
   const profile = ref(false);
 </script>
 

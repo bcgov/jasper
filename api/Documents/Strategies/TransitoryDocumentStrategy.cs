@@ -22,8 +22,25 @@ public class TransitoryDocumentStrategy(
 
         var fileResponse = await _transitoryDocumentsService.DownloadFile(documentRequest.Path);
 
+        if (fileResponse?.Stream == null)
+        {
+            throw new InvalidOperationException(
+                $"Transitory document response stream is null for Path {documentRequest.Path}");
+        }
+
+        if (fileResponse.Stream.CanSeek)
+        {
+            fileResponse.Stream.Position = 0;
+        }
+
         await fileResponse.Stream.CopyToAsync(documentResponseStreamCopy); // follows existing pattern.
         documentResponseStreamCopy.Position = 0;
+
+        if (documentResponseStreamCopy.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"Transitory document stream is empty for Path {documentRequest.Path}");
+        }
 
         var looksLikePdf = HasPdfSignature(documentResponseStreamCopy);
         var headerHex = ReadHeaderHex(documentResponseStreamCopy);

@@ -47,7 +47,25 @@ public class FileStrategy : IDocumentStrategy
             true,
             documentRequest.CorrelationId);
 
+        if (response?.Stream == null)
+        {
+            throw new InvalidOperationException(
+                $"File document response stream is null for DocumentId {documentId}, FileId {documentRequest.FileId}");
+        }
+
+        if (response.Stream.CanSeek)
+        {
+            response.Stream.Position = 0;
+        }
+
         await response.Stream.CopyToAsync(documentResponseStreamCopy);
+        documentResponseStreamCopy.Position = 0;
+
+        if (documentResponseStreamCopy.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"File document stream is empty for DocumentId {documentId}, FileId {documentRequest.FileId}");
+        }
 
         return documentResponseStreamCopy;
     }

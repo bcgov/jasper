@@ -44,6 +44,11 @@ public class TranscriptStrategy(
 
             var documentStream = new MemoryStream();
 
+            if (response.Stream.CanSeek)
+            {
+                response.Stream.Position = 0;
+            }
+
             // Copy the stream completely before disposing the response
             await response.Stream.CopyToAsync(documentStream);
             response.Dispose();

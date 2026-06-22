@@ -94,6 +94,47 @@ public class FileStrategyTest : ServiceTestBase
     }
 
     [Fact]
+    public async Task Invoke_RewindsSourceStreamBeforeCopying()
+    {
+        var fakeDocumentId = "test-document-id";
+        var encodedDocumentId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(fakeDocumentId));
+        var fakeFileId = "file-id";
+        var fakeCorrelationId = "correlation-id";
+        var sourceStream = new MemoryStream(_fakeContentBytes);
+        sourceStream.Position = sourceStream.Length;
+
+        _mockFileServicesClient.Setup(c => c.FilesDocumentAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<bool>(),
+            It.IsAny<string>()))
+            .ReturnsAsync(new FileResponse(
+                200,
+                new Dictionary<string, IEnumerable<string>>(),
+                sourceStream,
+                null,
+                null
+            ));
+
+        var documentRequest = new PdfDocumentRequestDetails
+        {
+            DocumentId = encodedDocumentId,
+            FileId = fakeFileId,
+            CorrelationId = fakeCorrelationId
+        };
+        var strategy = new FileStrategy(_mockFileServicesClient.Object, _mockUser, _mockConfiguration.Object);
+
+        var resultStream = await strategy.Invoke(documentRequest);
+
+        Assert.NotNull(resultStream);
+        Assert.Equal(_fakeContentBytes, resultStream.ToArray());
+    }
+
+    [Fact]
     public void Type_ReturnsFile()
     {
         var strategy = new FileStrategy(_mockFileServicesClient.Object, _mockUser, _mockConfiguration.Object);

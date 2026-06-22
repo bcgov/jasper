@@ -272,7 +272,7 @@ describe('JudicialBinderPDFStrategy', () => {
     expect(mockJudicialBinderStore.clearBundles).toHaveBeenCalled();
   });
 
-  it('maps page ranges by backend document identity instead of rawData position', () => {
+  it('keeps outline order and assigns page ranges sequentially', () => {
     const strategy = new JudicialBinderPDFStrategy();
     const rawData = [mockBinderRequests[1], mockBinderRequests[0]] as any;
 
@@ -281,11 +281,83 @@ describe('JudicialBinderPDFStrategy', () => {
     expect(outline[0]?.children?.[0]?.title).toBe(
       '2 - JudicialDoc2 - 02-Jun-2024'
     );
-    expect(outline[0]?.children?.[0]?.pageIndex).toBe(4);
+    expect(outline[0]?.children?.[0]?.pageIndex).toBe(1);
     expect(outline[0]?.children?.[1]?.title).toBe(
       '1 - JudicialDoc1 - 01-Jun-2024'
     );
-    expect(outline[0]?.children?.[1]?.pageIndex).toBe(1);
+    expect(outline[0]?.children?.[1]?.pageIndex).toBe(4);
+  });
+
+  it('matches court-list judicial binder documents when participantId is omitted from response labels', () => {
+    const strategy = new JudicialBinderPDFStrategy();
+    const rawData = [
+      {
+        labels: {
+          physicalFileId: '5353',
+          courtClassCd: 'F',
+        },
+        fileNumber: 'F-5353',
+        groupKeyOne: 'F-5353',
+        groupKeyTwo: '',
+        documentName: '12 - Notice of Family Settlement Conference - 11-Mar-2024',
+        physicalFileId: '5353',
+        participantId: '',
+        documentId: '17361',
+      },
+      {
+        labels: {
+          physicalFileId: '5353',
+          courtClassCd: 'F',
+        },
+        fileNumber: 'F-5353',
+        groupKeyOne: 'F-5353',
+        groupKeyTwo: '',
+        documentName: '9 - Summons',
+        physicalFileId: '5353',
+        participantId: '',
+        documentId: '16566',
+      },
+    ];
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
+      payload: {
+        pdfResponse: {
+          base64Pdf: 'base64judicial',
+          pageRanges: [{ start: 0 }, { start: 18 }],
+        },
+        binders: [
+          {
+            labels: {
+              physicalFileId: '5353',
+              courtClassCd: 'F',
+            },
+            documents: [
+              {
+                documentId: '16566',
+                fileName: 'Summons',
+                documentType: 'File',
+                category: 'SUM',
+              },
+              {
+                documentId: '17361',
+                fileName: 'Notice of Family Settlement Conference',
+                documentType: 'File',
+                category: 'NFSC',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const outline = strategy.createOutline(rawData, apiResponse);
+
+    expect(outline[0]?.children?.[0]?.title).toBe(
+      '12 - Notice of Family Settlement Conference - 11-Mar-2024'
+    );
+    expect(outline[0]?.children?.[0]?.pageIndex).toBe(0);
+    expect(outline[0]?.children?.[1]?.title).toBe('9 - Summons');
+    expect(outline[0]?.children?.[1]?.pageIndex).toBe(18);
   });
 
   it('filters out entries when no matching document is returned', () => {

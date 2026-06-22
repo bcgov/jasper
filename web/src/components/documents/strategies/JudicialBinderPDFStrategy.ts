@@ -78,20 +78,10 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
     rawData: JudicialBinderDocumentRequest[],
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
-    const pageIndexByDocumentKey = this.buildPageIndexMap(apiResponse);
-
-    const outlineEntries = rawData
-      .map((item) => this.createOutlineEntry(item, pageIndexByDocumentKey))
-      .filter(
-        (
-          entry
-        ): entry is {
-          groupKeyOne: string;
-          groupKeyTwo: string;
-          title: string;
-          pageIndex: number;
-        } => entry !== undefined
-      );
+    const outlineEntries = this.createOutlineEntriesInOutlineOrder(
+      rawData,
+      apiResponse
+    );
 
     return buildGroupedEntriesOutline(outlineEntries);
   }
@@ -121,13 +111,59 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
     return urlParams.get('category')?.split(',').filter(Boolean) ?? [];
   }
 
-  private buildPageIndexMap(
+  private createOutlineEntriesInOutlineOrder(
+    rawData: JudicialBinderDocumentRequest[],
     apiResponse: ApiResponse<DocumentBundleResponse>
-  ): Map<string, number> {
-    const pageIndexByDocumentKey = new Map<string, number>();
-    let pageRangeIndex = 0;
+  ): Array<{
+    groupKeyOne: string;
+    groupKeyTwo: string;
+    title: string;
+    pageIndex: number;
+  }> {
+    const includedDocumentKeys = this.getIncludedDocumentKeys(apiResponse);
 
+    return rawData
+      .filter((item) =>
+        includedDocumentKeys.has(
+          this.makeDocumentKey(
+            item.physicalFileId,
+            item.participantId,
+            item.documentId
+          )
+        )
+      )
+      .map((item, index) => {
+        const pageIndex = apiResponse.payload.pdfResponse.pageRanges?.[index]
+          ?.start;
+
+        if (pageIndex === undefined) {
+          return undefined;
+        }
+
+        return {
+          groupKeyOne: item.groupKeyOne,
+          groupKeyTwo: item.groupKeyTwo,
+          title: item.documentName || 'Document',
+          pageIndex,
+        };
+      })
+      .filter(
+        (
+          entry
+        ): entry is {
+          groupKeyOne: string;
+          groupKeyTwo: string;
+          title: string;
+          pageIndex: number;
+        } => entry !== undefined
+      );
+  }
+
+  private getIncludedDocumentKeys(
+    apiResponse: ApiResponse<DocumentBundleResponse>
+  ): Set<string> {
     const documentCategories = this.getDocumentCategoriesFromUrl();
+    const includedDocumentKeys = new Set<string>();
 
     apiResponse.payload.binders.forEach((binder) => {
       binder.documents
@@ -136,56 +172,17 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
           this.matchesSelectedCategories(document.category, documentCategories)
         )
         .forEach((document) => {
-          const pageIndex =
-            apiResponse.payload.pdfResponse.pageRanges?.[pageRangeIndex++]
-              ?.start;
-
-          if (pageIndex === undefined) {
-            return;
-          }
-
-          const documentKey = this.makeDocumentKey(
-            binder.labels.physicalFileId,
-            binder.labels.participantId,
-            document.documentId
+          includedDocumentKeys.add(
+            this.makeDocumentKey(
+              binder.labels.physicalFileId,
+              binder.labels.participantId,
+              document.documentId
+            )
           );
-
-          pageIndexByDocumentKey.set(documentKey, pageIndex);
         });
     });
 
-    return pageIndexByDocumentKey;
-  }
-
-  private createOutlineEntry(
-    item: JudicialBinderDocumentRequest,
-    pageIndexByDocumentKey: Map<string, number>
-  ):
-    | {
-        groupKeyOne: string;
-        groupKeyTwo: string;
-        title: string;
-        pageIndex: number;
-      }
-    | undefined {
-    const pageIndex = pageIndexByDocumentKey.get(
-      this.makeDocumentKey(
-        item.physicalFileId,
-        item.participantId,
-        item.documentId
-      )
-    );
-
-    if (pageIndex === undefined) {
-      return undefined;
-    }
-
-    return {
-      groupKeyOne: item.groupKeyOne,
-      groupKeyTwo: item.groupKeyTwo,
-      title: item.documentName || 'Document',
-      pageIndex,
-    };
+    return includedDocumentKeys;
   }
 
   private makeDocumentKey(
@@ -193,7 +190,7 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
     participantId: string | undefined,
     documentId: string
   ): string {
-    return [physicalFileId, participantId, documentId].join('|');
+    return [physicalFileId ?? '', participantId ?? '', documentId].join('|');
   }
 
   private compactLabels(

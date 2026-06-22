@@ -133,8 +133,8 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
         )
       )
       .map((item, index) => {
-        const pageIndex = apiResponse.payload.pdfResponse.pageRanges?.[index]
-          ?.start;
+        const pageIndex =
+          apiResponse.payload.pdfResponse.pageRanges?.[index]?.start;
 
         if (pageIndex === undefined) {
           return undefined;

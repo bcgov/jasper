@@ -24,7 +24,7 @@
           <template v-slot:[`item`]="{ props: itemProps, item }">
             <v-list-item
               v-bind="itemProps"
-              :title="item.raw + ' (' + categoryCount(item.raw) + ')'"
+              :title="item.title + ' (' + categoryCount(item.value) + ')'"
             ></v-list-item>
           </template>
         </v-select>

@@ -1,94 +1,67 @@
-import { OutlineItem, PDFViewerStrategy } from './PDFViewerTypes';
+import { BaseStoreBackedPDFStrategy } from './BaseStoreBackedPDFStrategy';
+import { OutlineItem, PDFViewerInformationContext } from './PDFViewerTypes';
+import { buildGroupedEntriesOutline } from './OutlineBuilder';
 import { BinderService } from '@/services';
 import { useJudicialBinderStore } from '@/stores';
+import { JudicialBinderDocumentRequest } from '@/stores/JudicialBinderStore';
 import { ApiResponse } from '@/types/ApiResponse';
-import { BinderDocument } from '@/types/BinderDocument';
-import { BinderDocumentBundleRequest } from '@/types/DocumentBundleRequest';
 import { DocumentBundleResponse } from '@/types/DocumentBundleResponse';
-import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
 import { inject } from 'vue';
-
-export type JudicialBinderRawData = {
-  binder: BinderDocumentRequest;
-  fileNumber: string;
-}[];
 
 export type BinderLabelContext = Record<string, string>;
 
-export class JudicialBinderPDFStrategy implements PDFViewerStrategy<
-  JudicialBinderRawData,
+export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
+  JudicialBinderDocumentRequest,
   BinderLabelContext[],
   ApiResponse<DocumentBundleResponse>
 > {
-  private readonly binderStore = useJudicialBinderStore();
+  protected readonly store = useJudicialBinderStore();
   private readonly binderService: BinderService;
-  private count = 0;
 
   constructor() {
+    super();
+
     const service = inject<BinderService>('binderService');
+
     if (!service) {
       throw new Error('BinderService is not available!');
     }
+
     this.binderService = service;
   }
 
-  hasData(): boolean {
-    const request = this.binderStore.getRequests;
-    return !!(
-      request &&
-      'binders' in request &&
-      (request as BinderDocumentBundleRequest).binders?.length > 0
-    );
-  }
+  processDataForAPI(
+    rawData: JudicialBinderDocumentRequest[]
+  ): BinderLabelContext[] {
+    const labelContexts = new Map<string, BinderLabelContext>();
 
-  getRawData(): JudicialBinderRawData {
-    const request = this.binderStore.getRequests as BinderDocumentBundleRequest;
-    if (!request.binders) {
-      return [];
+    for (const item of rawData) {
+      const labels = this.compactLabels(item.labels);
+      const entries = Object.entries(labels).sort(([a], [b]) =>
+        a.localeCompare(b)
+      );
+
+      labelContexts.set(JSON.stringify(entries), labels);
     }
 
-    // Return the raw binder requests with file numbers
-    return request.binders.map((binder) => ({
-      binder,
-      fileNumber: binder.physicalFileId,
-    }));
+    return [...labelContexts.values()];
   }
 
-  processDataForAPI(rawData: JudicialBinderRawData): BinderLabelContext[] {
-    // Convert to label contexts for API compatibility
-    return rawData.map((item) => ({
-      physicalFileId: item.binder.physicalFileId,
-      courtClassCd: item.binder.courtClassCd,
-      ...(item.binder.judgeId ? { judgeId: item.binder.judgeId } : {}),
-    }));
+  async generatePDF(
+    processedData: BinderLabelContext[]
+  ): Promise<ApiResponse<DocumentBundleResponse>> {
+    return await this.getPdf(processedData);
   }
 
-  /**
-   * Retrieves existing judicial binder(s) with all bundled documents.
-   * This is a read-only operation for civil judicial binders.
-   * @param processedData
-   * @returns pdf including all retrieved binders, or 404 if no binders are found.
-   */
   async getPdf(
     processedData: BinderLabelContext[]
   ): Promise<ApiResponse<DocumentBundleResponse>> {
-    const urlParams = new URLSearchParams(globalThis.location.search);
-    const documentCategories = urlParams.get('category')?.split(',') || [];
+    const documentCategories = this.getDocumentCategoriesFromUrl();
+
     return await this.binderService.viewBinderPDF(
       processedData,
       documentCategories
     );
-  }
-
-  /**
-   * For judicial binders, generatePDF delegates to getPdf since this is a read-only operation.
-   * @param processedData
-   * @returns pdf including all retrieved binders, or 404 if no binders are found.
-   */
-  async generatePDF(
-    processedData: BinderLabelContext[]
-  ): Promise<ApiResponse<DocumentBundleResponse>> {
-    return this.getPdf(processedData);
   }
 
   extractBase64PDF(apiResponse: ApiResponse<DocumentBundleResponse>): string {
@@ -102,52 +75,145 @@ export class JudicialBinderPDFStrategy implements PDFViewerStrategy<
   }
 
   createOutline(
-    rawData: JudicialBinderRawData,
+    rawData: JudicialBinderDocumentRequest[],
     apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
-    this.count = 0;
-    const binderFileIds = new Set(
-      apiResponse.payload.binders.map((b) => b.labels.physicalFileId)
+    const outlineEntries = this.createOutlineEntriesInOutlineOrder(
+      rawData,
+      apiResponse
     );
+
+    return buildGroupedEntriesOutline(outlineEntries);
+  }
+
+  resolveInformationContext(
+    rawData: JudicialBinderDocumentRequest[]
+  ): PDFViewerInformationContext | undefined {
+    const item = rawData.find((request) => request.physicalFileId);
+
+    if (!item) {
+      return undefined;
+    }
+
+    return {
+      physicalFileId: item.physicalFileId,
+      isCriminal: item.labels.isCriminal?.toLowerCase() === 'true',
+    };
+  }
+
+  override cleanup(sessionId?: string): void {
+    this.store.clearBundles(sessionId);
+  }
+
+  private getDocumentCategoriesFromUrl(): string[] {
+    const urlParams = new URLSearchParams(globalThis.location.search);
+
+    return urlParams.get('category')?.split(',').filter(Boolean) ?? [];
+  }
+
+  private createOutlineEntriesInOutlineOrder(
+    rawData: JudicialBinderDocumentRequest[],
+    apiResponse: ApiResponse<DocumentBundleResponse>
+  ): Array<{
+    groupKeyOne: string;
+    groupKeyTwo: string;
+    title: string;
+    pageIndex: number;
+  }> {
+    const includedDocumentKeys = this.getIncludedDocumentKeys(apiResponse);
 
     return rawData
-      .filter((item) => binderFileIds.has(item.fileNumber))
-      .map((item) => this.makeBinderGroup(item.fileNumber, apiResponse));
+      .filter((item) =>
+        includedDocumentKeys.has(
+          this.makeDocumentKey(
+            item.physicalFileId,
+            item.participantId,
+            item.documentId
+          )
+        )
+      )
+      .map((item, index) => {
+        const pageIndex =
+          apiResponse.payload.pdfResponse.pageRanges?.[index]?.start;
+
+        if (pageIndex === undefined) {
+          return undefined;
+        }
+
+        return {
+          groupKeyOne: item.groupKeyOne,
+          groupKeyTwo: item.groupKeyTwo,
+          title: item.documentName || 'Document',
+          pageIndex,
+        };
+      })
+      .filter(
+        (
+          entry
+        ): entry is {
+          groupKeyOne: string;
+          groupKeyTwo: string;
+          title: string;
+          pageIndex: number;
+        } => entry !== undefined
+      );
   }
 
-  private makeBinderGroup(
-    fileNumber: string,
+  private getIncludedDocumentKeys(
     apiResponse: ApiResponse<DocumentBundleResponse>
-  ): OutlineItem {
-    const binders = apiResponse.payload.binders.filter(
-      (b) => b.labels.physicalFileId === fileNumber
-    );
+  ): Set<string> {
+    const documentCategories = this.getDocumentCategoriesFromUrl();
+    const includedDocumentKeys = new Set<string>();
 
-    const children = binders.flatMap((binder) =>
+    apiResponse.payload.binders.forEach((binder) => {
       binder.documents
-        .filter((doc) => doc.documentId) // Only include documents with valid IDs
-        .map((doc) => this.makeDocElement(doc, apiResponse))
+        .filter((document) => document.documentId)
+        .filter((document) =>
+          this.matchesSelectedCategories(document.category, documentCategories)
+        )
+        .forEach((document) => {
+          includedDocumentKeys.add(
+            this.makeDocumentKey(
+              binder.labels.physicalFileId,
+              binder.labels.participantId,
+              document.documentId
+            )
+          );
+        });
+    });
+
+    return includedDocumentKeys;
+  }
+
+  private makeDocumentKey(
+    physicalFileId: string | undefined,
+    participantId: string | undefined,
+    documentId: string
+  ): string {
+    return [physicalFileId ?? '', participantId ?? '', documentId].join('|');
+  }
+
+  private compactLabels(
+    labels: Record<string, string | undefined>
+  ): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(labels).filter(
+        (entry): entry is [string, string] =>
+          entry[1] !== undefined && entry[1] !== ''
+      )
     );
-
-    return {
-      title: fileNumber,
-      isExpanded: true,
-      children,
-    };
   }
 
-  private makeDocElement(
-    doc: BinderDocument,
-    apiResponse: ApiResponse<DocumentBundleResponse>
-  ): OutlineItem {
-    return {
-      title: doc.fileName ?? doc.documentType,
-      pageIndex:
-        apiResponse.payload.pdfResponse.pageRanges?.[this.count++]?.start,
-    };
-  }
-
-  cleanup(): void {
-    this.binderStore.clearBundles();
+  private matchesSelectedCategories(
+    category: string | undefined,
+    documentCategories: string[]
+  ): boolean {
+    return (
+      documentCategories.length === 0 ||
+      documentCategories.some(
+        (documentCategory) =>
+          documentCategory.toLowerCase() === category?.toLowerCase()
+      )
+    );
   }
 }

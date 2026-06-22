@@ -24,13 +24,16 @@ export const useOrdersStore = defineStore('orders', () => {
     }
 
     isLoading.value = true;
+
     try {
       const judgeId = judgeIdOverride ?? currentJudgeId.value;
       const ordersData = await orderService.getOrders(judgeId ?? null);
+
       setOrders(ordersData ?? []);
       return ordersData;
-    } catch {
-      console.error('Failed to fetch orders');
+    } catch (error) {
+      console.error('Failed to fetch orders', error);
+      setOrders([]);
     } finally {
       isLoading.value = false;
     }
@@ -45,7 +48,6 @@ export const useOrdersStore = defineStore('orders', () => {
       return;
     }
 
-    // Watch the reactive judgeId source and auto-fetch
     watch(
       judgeIdSource,
       async (newJudgeId) => {
@@ -70,6 +72,7 @@ export const useOrdersStore = defineStore('orders', () => {
     orders,
     isLoading,
     lastFetched,
+    currentJudgeId,
     fetchOrders,
     setOrders,
     initialize,

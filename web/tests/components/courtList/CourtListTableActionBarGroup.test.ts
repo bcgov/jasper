@@ -1,5 +1,5 @@
 import { CourtListAppearance } from '@/types/courtlist';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import CourtListTableActionBarGroup from 'CMP/courtlist/CourtListTableActionBarGroup.vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
@@ -17,6 +17,15 @@ vi.mock('@/stores/CommonStore', () => ({
 
 let pinia: any;
 let binderService: any;
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+};
 
 const createWrapper = (props = {}, options: any = {}) => {
   return mount(CourtListTableActionBarGroup, {
@@ -48,24 +57,28 @@ const mockAppearances: CourtListAppearance[] = [
     courtClassCd: 'A',
     physicalFileId: 'file-001',
     participantId: 'part-001',
+    courtFileNumber: 'A-001',
   } as unknown as CourtListAppearance,
   {
     id: 2,
     courtClassCd: 'Y',
     physicalFileId: 'file-002',
     participantId: 'part-002',
+    courtFileNumber: 'Y-002',
   } as unknown as CourtListAppearance,
   {
     id: 3,
     courtClassCd: 'C',
     physicalFileId: 'file-003',
     participantId: 'part-003',
+    courtFileNumber: 'C-003',
   } as unknown as CourtListAppearance,
   {
     id: 4,
     courtClassCd: 'F',
     physicalFileId: 'file-004',
     participantId: 'part-004',
+    courtFileNumber: 'F-004',
   } as unknown as CourtListAppearance,
 ];
 
@@ -194,7 +207,13 @@ describe('CourtListTableActionBarGroup.vue', () => {
   it('emits view-judicial-binders event when button is clicked', async () => {
     binderService.getBinders.mockResolvedValue({
       succeeded: true,
-      payload: [{ id: '1' }],
+      payload: [
+        {
+          id: '1',
+          labels: { physicalFileId: 'file-003' },
+          documents: [],
+        },
+      ],
     });
 
     const civilAppearances = mockAppearances.filter(
@@ -211,9 +230,16 @@ describe('CourtListTableActionBarGroup.vue', () => {
     await judicialBinderButton.trigger('click');
 
     expect(wrapper.emitted('view-judicial-binders')).toBeTruthy();
-    expect(wrapper.emitted('view-judicial-binders')![0][0]).toEqual(
-      civilAppearances
-    );
+    expect(wrapper.emitted('view-judicial-binders')![0][0]).toEqual([
+      {
+        documents: [],
+        id: '1',
+        labels: {
+          physicalFileId: 'file-003',
+        },
+        fileNumber: 'C-003',
+      },
+    ]);
   });
 
   it('emits view-key-documents event when button is clicked', async () => {
@@ -293,5 +319,64 @@ describe('CourtListTableActionBarGroup.vue', () => {
     await nextTick();
 
     expect(wrapper.emitted('unique-civil-file-selected')).toBeFalsy();
+  });
+
+  it('ignores a late binder response after the selected file is deselected', async () => {
+    const firstResponse = deferred<any>();
+    const secondResponse = deferred<any>();
+    binderService.getBinders
+      .mockReturnValueOnce(firstResponse.promise)
+      .mockReturnValueOnce(secondResponse.promise);
+
+    const wrapper = createWrapper({ selected: [mockAppearances[2]] });
+    await nextTick();
+
+    await wrapper.setProps({ selected: [] });
+    firstResponse.resolve({
+      succeeded: true,
+      payload: [{ id: 'stale-1' }, { id: 'stale-2' }],
+    });
+    await flushPromises();
+
+    await wrapper.setProps({ selected: [mockAppearances[3]] });
+    secondResponse.resolve({
+      succeeded: true,
+      payload: [],
+    });
+    await flushPromises();
+
+    const judicialBinderButton = wrapper.find(
+      '[data-testid="view-judicial-binders"]'
+    );
+    expect(judicialBinderButton.attributes('disabled')).toBeDefined();
+    expect(judicialBinderButton.text()).not.toContain('2 / 1');
+  });
+
+  it('ignores a late response for A after selecting B', async () => {
+    const firstResponse = deferred<any>();
+    const secondResponse = deferred<any>();
+    binderService.getBinders
+      .mockReturnValueOnce(firstResponse.promise)
+      .mockReturnValueOnce(secondResponse.promise);
+
+    const wrapper = createWrapper({ selected: [mockAppearances[2]] });
+    await nextTick();
+
+    await wrapper.setProps({ selected: [mockAppearances[3]] });
+    secondResponse.resolve({
+      succeeded: true,
+      payload: [{ id: 'current-binder' }],
+    });
+    firstResponse.resolve({
+      succeeded: true,
+      payload: [{ id: 'stale-1' }, { id: 'stale-2' }],
+    });
+    await flushPromises();
+
+    const judicialBinderButton = wrapper.find(
+      '[data-testid="view-judicial-binders"]'
+    );
+    expect(judicialBinderButton.text()).toContain('1 / 1');
+    expect(judicialBinderButton.text()).not.toContain('3 / 1');
   });
 });

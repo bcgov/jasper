@@ -26,9 +26,14 @@
     mdiNotebookOutline,
   } from '@mdi/js';
   import type { ToolbarItem } from '@nutrient-sdk/viewer';
-  import { inject, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
-  import { OutlineItem, PDFViewerStrategy } from './strategies/PDFViewerTypes';
+  import {
+    OutlineItem,
+    PDFViewerInformationContext,
+    PDFViewerStrategy,
+  } from './strategies/PDFViewerTypes';
 
   // Declare NutrientViewer global
   declare global {
@@ -41,11 +46,17 @@
   }
 
   const props = defineProps<Props>();
+  const route = useRoute();
   const commonStore = useCommonStore();
   const loading = ref(false);
   const emptyStore = ref(false);
   const showReviewModal = ref(false);
   const canApprove = ref<boolean>(false);
+  const sessionId = computed(() => {
+    const value = route.query.sessionId;
+
+    return typeof value === 'string' && value.length > 0 ? value : undefined;
+  });
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
@@ -79,7 +90,7 @@
     loading.value = true;
     emptyStore.value = false;
 
-    if (!props.strategy.hasData()) {
+    if (!props.strategy.hasData(sessionId.value)) {
       loading.value = false;
       emptyStore.value = true;
       return;
@@ -87,7 +98,7 @@
 
     try {
       // Follow the strategy pattern workflow
-      const rawData = props.strategy.getRawData();
+      const rawData = props.strategy.getRawData(sessionId.value);
       const processedData = props.strategy.processDataForAPI(rawData);
       const apiResponse = await props.strategy.generatePDF(processedData);
 
@@ -105,23 +116,17 @@
         title: 'Case details',
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
-          let firstPhysicalFileId: string | undefined;
-          let isCriminal: boolean | undefined;
-          Object.values(rawData).forEach((personDocuments) => {
-            Object.values(personDocuments as any)
-              .flat()
-              .forEach((doc: any) => {
-                if (doc?.physicalFileId) {
-                  firstPhysicalFileId ??= doc.physicalFileId;
-                }
-                if (doc?.request?.data?.isCriminal !== undefined) {
-                  isCriminal ??= doc.request.data.isCriminal;
-                }
-              });
-          });
+          const informationContext = resolveInformationContext(rawData);
+
+          if (!informationContext) {
+            console.warn('Unable to resolve PDF viewer information context.');
+            return;
+          }
 
           window.open(
-            `${isCriminal ? 'criminal-file/' : 'civil-file/'}${firstPhysicalFileId}`,
+            `${
+              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
+            }${informationContext.physicalFileId}`,
             'relatedCaseInfo'
           );
         },
@@ -181,6 +186,98 @@
     );
   };
 
+  const resolveInformationContext = (
+    rawData: unknown
+  ): PDFViewerInformationContext | undefined => {
+    const strategyContext = props.strategy.resolveInformationContext?.(rawData);
+
+    if (strategyContext) {
+      return strategyContext;
+    }
+
+    for (const item of getKnownRawItems(rawData)) {
+      const itemContext = resolveInformationContextFromItem(item);
+
+      if (itemContext) {
+        return itemContext;
+      }
+    }
+
+    return undefined;
+  };
+
+  const getKnownRawItems = (rawData: unknown): unknown[] => {
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+
+    if (!isRecord(rawData)) {
+      return [];
+    }
+
+    return Object.values(rawData).flatMap((value) => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (!isRecord(value)) {
+        return [];
+      }
+
+      return Object.values(value).flatMap((nestedValue) =>
+        Array.isArray(nestedValue) ? nestedValue : []
+      );
+    });
+  };
+
+  const resolveInformationContextFromItem = (
+    item: unknown
+  ): PDFViewerInformationContext | undefined => {
+    if (!isRecord(item)) {
+      return undefined;
+    }
+
+    const physicalFileId = getString(item.physicalFileId);
+    const request = item.request;
+    const requestData = isRecord(request) ? request.data : undefined;
+
+    if (physicalFileId && isRecord(requestData)) {
+      return {
+        physicalFileId,
+        isCriminal: requestData.isCriminal === true,
+      };
+    }
+
+    const appearance = item.appearance;
+    if (isRecord(appearance)) {
+      const appearanceFileId =
+        physicalFileId || getString(appearance.physicalFileId);
+
+      if (appearanceFileId) {
+        return {
+          physicalFileId: appearanceFileId,
+          isCriminal: true,
+        };
+      }
+    }
+
+    const labels = item.labels;
+    if (physicalFileId && isRecord(labels)) {
+      return {
+        physicalFileId,
+        isCriminal: getString(labels.isCriminal)?.toLowerCase() === 'true',
+      };
+    }
+
+    return undefined;
+  };
+
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+  const getString = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.length > 0 ? value : undefined;
+
   const createOutlineElement = (item: OutlineItem): any => {
     const baseElement = {
       title: item.title,
@@ -227,7 +324,7 @@
       NutrientViewer.unload('.pdf-container');
     }
     if (props.strategy.cleanup) {
-      props.strategy.cleanup();
+      props.strategy.cleanup(sessionId.value);
     }
   });
 </script>

@@ -27,7 +27,7 @@
         <template v-slot:item="{ props: itemProps, item }">
           <v-list-item
             v-bind="itemProps"
-            :title="`${item.title} (${categoryCount(item.raw.value)})`"
+            :title="`${item.title} (${categoryCount(item.value)})`"
           ></v-list-item>
         </template>
       </v-select>
@@ -207,6 +207,53 @@
     ['judgeId']: commonStore.userInfo?.userId,
   };
 
+  const createBinderDocument = (
+    document: civilDocumentType,
+    order: number
+  ): BinderDocument => {
+    const resolvedCivilDocumentType = getCivilDocumentType(document);
+    let resolvedDocumentType = DocumentRequestType.File;
+
+    if (resolvedCivilDocumentType === CourtDocumentType.CSR) {
+      resolvedDocumentType = DocumentRequestType.CourtSummary;
+    } else if (resolvedCivilDocumentType === CourtDocumentType.Transcript) {
+      resolvedDocumentType = DocumentRequestType.Transcript;
+    }
+
+    const binderDocument: BinderDocument = {
+      documentId: document.civilDocumentId,
+      category: document.category ?? '',
+      imageId: document.imageId ?? '',
+      fileName: document.documentTypeDescription ?? '',
+      order,
+      documentType: resolvedDocumentType,
+      documentPageCount: null,
+      fileSeqNo: document.fileSeqNo ?? '',
+      swornByNm: document.swornByNm ?? '',
+      filedDt: document.filedDt ?? '',
+      dateGranted: (document as any).dateGranted ?? document.DateGranted ?? '',
+      issues: (document.issue ?? []).map((issue) => ({
+        issueNumber: issue.issueNo ?? '',
+        issueDsc: issue.issueTypeDesc ?? issue.issueDsc ?? '',
+      })),
+      filedBy: (document.filedBy ?? []).map((filedBy) => ({
+        filedByName: filedBy.filedByName ?? '',
+        roleTypeCode: filedBy.roleTypeCode ?? '',
+      })),
+      documentSupport: (document.documentSupport ?? []).map((support) => ({
+        actCd: support.actCd ?? '',
+        actDsc: support.actDsc ?? '',
+      })),
+      orderId:
+        document.category === 'Transcript' &&
+        (document as any).transcriptOrderId
+          ? (document as any).transcriptOrderId.toString()
+          : undefined,
+    };
+
+    return binderDocument;
+  };
+
   const getCategoryDisplayTitle = (category: string): string => {
     const categoryMap: Record<string, string> = {
       Affidavits: AFF_FIN_STMT,
@@ -323,8 +370,7 @@
       prepareCivilDocumentData(data)
     );
 
-  // Todo, parts of these binder operation methods should be moved to a
-  // shared binder space, that way the code is not repeated
+  // Binder operations are still local here until the shared binder workflow is consolidated.
   const openMergedDocuments = (items: civilDocumentType[] = []) => {
     const documents: {
       documentType: DocumentRequestType;
@@ -332,32 +378,16 @@
       groupKeyOne: string;
       groupKeyTwo: string;
       documentName: string;
+      physicalFileId: string;
     }[] = [];
     items
       .filter((item) => item.imageId)
       .forEach((item) => {
         const civilDocType = getCivilDocumentType(item);
-        let documentType: DocumentRequestType;
-
-        if (civilDocType === CourtDocumentType.CSR) {
-          documentType = DocumentRequestType.CourtSummary;
-        } else if (civilDocType === CourtDocumentType.Transcript) {
-          documentType = DocumentRequestType.Transcript;
-        } else {
-          documentType = DocumentRequestType.File;
-        }
-
         const documentData = prepareCivilDocumentData(item);
-        documents.push({
-          documentType,
-          documentData,
-          groupKeyOne: documentData.fileNumberText!,
-          groupKeyTwo: shared.getGroupKeyTwo(civilDocType, documentData),
-          documentName: shared.getDocumentDisplayName(
-            civilDocType,
-            documentData
-          ),
-        });
+        documents.push(
+          shared.createMergedDocumentEntry(civilDocType, documentData)
+        );
       });
     shared.openMergedDocuments(documents);
   };
@@ -380,23 +410,10 @@
   };
 
   const addDocumentToBinder = async (document: civilDocumentType) => {
-    const binderDoc: BinderDocument = {
-      documentId: document.civilDocumentId,
-      order: currentBinder.value?.documents.length ?? 0,
-      documentType:
-        document.category === 'Transcript'
-          ? DocumentRequestType.Transcript
-          : DocumentRequestType.File,
-      fileName: document.documentTypeDescription,
-    };
-
-    // Add orderId for transcript documents
-    if (
-      document.category === 'Transcript' &&
-      (document as any).transcriptOrderId
-    ) {
-      binderDoc.orderId = (document as any).transcriptOrderId.toString();
-    }
+    const binderDoc = createBinderDocument(
+      document,
+      currentBinder.value?.documents.length ?? 0
+    );
 
     currentBinder.value?.documents.push(binderDoc);
 
@@ -409,7 +426,7 @@
     }
     currentBinder.value.documents = currentBinder.value?.documents.filter(
       (d) =>
-        !selectedBinderItems.value.find(
+        !selectedBinderItems.value.some(
           (item) => item.civilDocumentId === d.documentId
         )
     );
@@ -477,22 +494,10 @@
     }
 
     newDocuments.forEach((d) => {
-      const binderDoc: BinderDocument = {
-        documentId: d.civilDocumentId,
-        order: currentBinder.value?.documents.length ?? 0,
-        documentType:
-          getCivilDocumentType(d) === CourtDocumentType.CSR
-            ? DocumentRequestType.CourtSummary
-            : getCivilDocumentType(d) === CourtDocumentType.Transcript
-              ? DocumentRequestType.Transcript
-              : DocumentRequestType.File,
-        fileName: d.documentTypeDescription,
-      };
-
-      // Add orderId for transcript documents
-      if (d.category === 'Transcript' && (d as any).transcriptOrderId) {
-        binderDoc.orderId = (d as any).transcriptOrderId.toString();
-      }
+      const binderDoc = createBinderDocument(
+        d,
+        currentBinder.value?.documents.length ?? 0
+      );
 
       currentBinder.value?.documents.push(binderDoc);
     });

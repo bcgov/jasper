@@ -22,7 +22,14 @@ public class BinderMapping : IRegister
             .Map(dest => dest.UpdatedDate, src => src.Upd_Dtm);
 
         config.NewConfig<BinderDocumentDto, BinderDocument>()
-            .Map(dest => dest.DocumentType, src => (int)src.DocumentType);
+            .Ignore(dest => dest.FileSeqNo)
+            .Map(dest => dest.DocumentType, src => (int)src.DocumentType)
+            .AfterMapping((src, dest) =>
+            {
+                dest.FileSeqNo = int.TryParse(src.FileSeqNo, out var fileSeqNo)
+                    ? fileSeqNo
+                    : null;
+            });
 
         config.NewConfig<BinderDocument, BinderDocumentDto>()
             .Map(dest => dest.DocumentType, src => (DocumentType)src.DocumentType);

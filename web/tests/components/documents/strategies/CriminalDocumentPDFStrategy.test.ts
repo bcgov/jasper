@@ -1,11 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CriminalDocumentPDFStrategy } from '@/components/documents/strategies/CriminalDocumentPDFStrategy';
 import { useCriminalDocumentBundleStore } from '@/stores';
-import { inject } from 'vue';
-import { ApiResponse } from '@/types/ApiResponse';
-import { BinderDocument } from '@/types/BinderDocument';
 import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
-import { BinderService } from '@/services';
+import { ApiResponse } from '@/types/ApiResponse';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { inject } from 'vue';
 
 vi.mock('@/stores', () => ({
   useCriminalDocumentBundleStore: vi.fn(),
@@ -21,6 +19,11 @@ const mockAppearanceRequests: CriminalDocumentAppearanceRequest[] = [
   {
     fileNumber: 'FN1',
     fullName: 'John Doe',
+    groupKeyOne: 'FN1',
+    groupKeyTwo: 'John Doe',
+    documentName: 'John Doe',
+    physicalFileId: 'F1',
+    participantId: 'P1',
     appearance: {
       physicalFileId: 'F1',
       participantId: 'P1',
@@ -31,6 +34,11 @@ const mockAppearanceRequests: CriminalDocumentAppearanceRequest[] = [
   {
     fileNumber: 'FN1',
     fullName: 'Jane Doe',
+    groupKeyOne: 'FN1',
+    groupKeyTwo: 'Jane Doe',
+    documentName: 'Jane Doe',
+    physicalFileId: 'F2',
+    participantId: 'P2',
     appearance: {
       physicalFileId: 'F2',
       participantId: 'P2',
@@ -41,6 +49,11 @@ const mockAppearanceRequests: CriminalDocumentAppearanceRequest[] = [
   {
     fileNumber: 'FN2',
     fullName: 'Alice Smith',
+    groupKeyOne: 'FN2',
+    groupKeyTwo: 'Alice Smith',
+    documentName: 'Alice Smith',
+    physicalFileId: 'F3',
+    participantId: 'P3',
     appearance: {
       physicalFileId: 'F3',
       participantId: 'P3',
@@ -51,7 +64,9 @@ const mockAppearanceRequests: CriminalDocumentAppearanceRequest[] = [
 ];
 
 const mockKeyDocumentStore = {
-  getAppearanceRequests: mockAppearanceRequests,
+  hasPdfData: vi.fn(() => true),
+  getPdfItems: vi.fn(() => mockAppearanceRequests),
+  clearPdfItems: vi.fn(),
   clearBundles: vi.fn(),
 };
 
@@ -113,6 +128,10 @@ const mockApiResponse: ApiResponse<any> = {
 
 describe('CriminalDocumentPDFStrategy', () => {
   beforeEach(() => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '' },
+      writable: true,
+    });
     (useCriminalDocumentBundleStore as any).mockReturnValue(
       mockKeyDocumentStore
     );
@@ -120,6 +139,11 @@ describe('CriminalDocumentPDFStrategy', () => {
       if (key === 'binderService') return mockBinderService;
       return undefined;
     });
+    mockKeyDocumentStore.hasPdfData.mockImplementation(() => true);
+    mockKeyDocumentStore.getPdfItems.mockImplementation(
+      () => mockAppearanceRequests
+    );
+    mockKeyDocumentStore.clearPdfItems.mockClear();
     mockKeyDocumentStore.clearBundles.mockClear();
     mockBinderService.generateBinderPDF.mockClear();
   });
@@ -136,12 +160,10 @@ describe('CriminalDocumentPDFStrategy', () => {
     expect(strategy.hasData()).toBe(true);
   });
 
-  it('getRawData groups appearance requests by fileNumber and fullName', () => {
+  it('getRawData returns appearance requests from the active session', () => {
     const strategy = new CriminalDocumentPDFStrategy();
     const rawData = strategy.getRawData();
-    expect(rawData['FN1']['John Doe'][0]).toEqual(mockAppearanceRequests[0]);
-    expect(rawData['FN1']['Jane Doe'][0]).toEqual(mockAppearanceRequests[1]);
-    expect(rawData['FN2']['Alice Smith'][0]).toEqual(mockAppearanceRequests[2]);
+    expect(rawData).toEqual(mockAppearanceRequests);
   });
 
   it('processDataForAPI flattens appearances', () => {
@@ -213,26 +235,126 @@ describe('CriminalDocumentPDFStrategy', () => {
   it('cleanup calls bundleStore.clearBundles', () => {
     const strategy = new CriminalDocumentPDFStrategy();
     strategy.cleanup();
-    expect(mockKeyDocumentStore.clearBundles).toHaveBeenCalled();
+    expect(mockKeyDocumentStore.clearPdfItems).toHaveBeenCalled();
   });
 
-  it('makeDocElement returns correct OutlineItem', () => {
+  it('maps page ranges by backend document identity instead of rawData position', () => {
     const strategy = new CriminalDocumentPDFStrategy();
-    (strategy as any).count = 1;
-    const doc = {
-      documentId: '123',
-      fileName: 'TestDoc.pdf',
-      documentType: 'File' as any,
-    } as BinderDocument;
-    const apiResponse = {
+    const rawData = [mockAppearanceRequests[2], mockAppearanceRequests[0]];
+
+    const outline = strategy.createOutline(rawData, mockApiResponse);
+
+    expect(outline[0]?.title).toBe('FN2');
+    expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(4);
+    expect(outline[1]?.title).toBe('FN1');
+    expect(outline[1]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
+  });
+
+  it('does not drift page indexes when category filtering removes the first document', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?category=ROP' },
+      writable: true,
+    });
+    const strategy = new CriminalDocumentPDFStrategy();
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
       payload: {
         pdfResponse: {
-          pageRanges: [{ start: 10 }, { start: 20 }],
+          base64Pdf: 'base64string',
+          pageRanges: [{ start: 10, end: 11 }],
         },
+        binders: [
+          {
+            labels: {
+              physicalFileId: 'F1',
+              participantId: 'P1',
+            },
+            documents: [
+              {
+                documentId: 'filtered-out',
+                fileName: 'Filtered.pdf',
+                documentType: 'PDF',
+                category: 'OTHER',
+              },
+              {
+                documentId: '1',
+                fileName: 'Doc1.pdf',
+                documentType: 'PDF',
+                category: 'ROP',
+              },
+            ],
+          },
+        ],
       },
     };
-    const item = (strategy as any).makeDocElement(doc, apiResponse);
-    expect(item.title).toBe('TestDoc.pdf');
-    expect(item.pageIndex).toBe(20);
+
+    const outline = strategy.createOutline(
+      [mockAppearanceRequests[0]],
+      apiResponse
+    );
+
+    expect(outline[0]?.children?.[0]?.children?.[0]?.title).toBe('Doc1.pdf');
+    expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(10);
+  });
+
+  it('does not drift page indexes when category filtering removes a middle document', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?category=INITIATING' },
+      writable: true,
+    });
+    const strategy = new CriminalDocumentPDFStrategy();
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
+      payload: {
+        pdfResponse: {
+          base64Pdf: 'base64string',
+          pageRanges: [{ start: 10 }, { start: 20 }],
+        },
+        binders: [
+          {
+            labels: {
+              physicalFileId: 'F1',
+              participantId: 'P1',
+            },
+            documents: [
+              {
+                documentId: '1',
+                fileName: 'Doc1.pdf',
+                documentType: 'PDF',
+                category: 'INITIATING',
+              },
+              {
+                documentId: 'filtered-out',
+                fileName: 'Filtered.pdf',
+                documentType: 'PDF',
+                category: 'OTHER',
+              },
+            ],
+          },
+          {
+            labels: {
+              physicalFileId: 'F2',
+              participantId: 'P2',
+            },
+            documents: [
+              {
+                documentId: '2',
+                fileName: 'Doc2.pdf',
+                documentType: 'PDF',
+                category: 'INITIATING',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const outline = strategy.createOutline(
+      [mockAppearanceRequests[0], mockAppearanceRequests[1]],
+      apiResponse
+    );
+
+    expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(10);
+    expect(outline[0]?.children?.[1]?.children?.[0]?.pageIndex).toBe(20);
   });
 });

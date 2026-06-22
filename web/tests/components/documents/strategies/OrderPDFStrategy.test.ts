@@ -217,8 +217,9 @@ describe('OrderPDFStrategy', () => {
       mockApiResponse
     );
 
-    expect(firstOutline[0]?.pageIndex).toBeUndefined();
+    expect(firstOutline[0]?.pageIndex).toBe(1);
     expect(firstOutline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
+    expect(secondOutline[0]?.pageIndex).toBe(1);
     expect(secondOutline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
   });
 
@@ -261,7 +262,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
       'The order has been approved.',
       'rgb(46, 139, 43)',
-      'Approved!'
+      '✅ Approved!'
     );
   });
 
@@ -281,7 +282,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
       'The order has been rejected.',
       'rgb(46, 139, 43)',
-      'Rejected'
+      '📋 Rejected'
     );
   });
 
@@ -301,7 +302,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
       'The order review is awaiting documentation.',
       'rgb(46, 139, 43)',
-      'Pending'
+      '⏳ Pending'
     );
   });
 

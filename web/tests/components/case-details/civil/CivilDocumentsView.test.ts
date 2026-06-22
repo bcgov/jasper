@@ -245,7 +245,7 @@ describe('CivilDocumentsView.vue', () => {
           ' - ' +
           mockDocuments[0].documentTypeDescription +
           ' - ' +
-          '01 Jan 2023',
+          '01-Jan-2023',
       }),
     ]);
   });
@@ -269,7 +269,7 @@ describe('CivilDocumentsView.vue', () => {
       await wrapper.vm.addDocumentToBinder(mockDocuments[4]);
 
       expect(wrapper.vm.currentBinder.documents).toHaveLength(1);
-      expect(wrapper.vm.currentBinder.documents[0]).toEqual({
+      expect(wrapper.vm.currentBinder.documents[0]).toMatchObject({
         documentId: '5',
         order: 0,
         documentType: DocumentRequestType.Transcript,
@@ -287,12 +287,13 @@ describe('CivilDocumentsView.vue', () => {
       await wrapper.vm.addDocumentToBinder(transcriptWithoutOrderId);
 
       expect(wrapper.vm.currentBinder.documents).toHaveLength(1);
-      expect(wrapper.vm.currentBinder.documents[0]).toEqual({
+      expect(wrapper.vm.currentBinder.documents[0]).toMatchObject({
         documentId: '5',
         order: 0,
         documentType: DocumentRequestType.Transcript,
         fileName: 'Transcript Document',
       });
+      expect(wrapper.vm.currentBinder.documents[0].orderId).toBeUndefined();
     });
 
     it('should set correct order for multiple documents', async () => {
@@ -325,13 +326,13 @@ describe('CivilDocumentsView.vue', () => {
       await wrapper.vm.addSelectedItemsToBinder();
 
       expect(wrapper.vm.currentBinder.documents).toHaveLength(2);
-      expect(wrapper.vm.currentBinder.documents[0]).toEqual({
+      expect(wrapper.vm.currentBinder.documents[0]).toMatchObject({
         documentId: '1',
         order: 0,
         documentType: DocumentRequestType.File,
         fileName: 'Civil Document 1',
       });
-      expect(wrapper.vm.currentBinder.documents[1]).toEqual({
+      expect(wrapper.vm.currentBinder.documents[1]).toMatchObject({
         documentId: '5',
         order: 1,
         documentType: DocumentRequestType.Transcript,

@@ -31,8 +31,7 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
   }
 
   processDataForAPI(
-    rawData: JudicialBinderDocumentRequest[],
-    _sessionId?: string
+    rawData: JudicialBinderDocumentRequest[]
   ): BinderLabelContext[] {
     const labelContexts = new Map<string, BinderLabelContext>();
 
@@ -77,8 +76,7 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
 
   createOutline(
     rawData: JudicialBinderDocumentRequest[],
-    apiResponse: ApiResponse<DocumentBundleResponse>,
-    _sessionId?: string
+    apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
     const pageIndexByDocumentKey = this.buildPageIndexMap(apiResponse);
 
@@ -185,7 +183,8 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
   ): Record<string, string> {
     return Object.fromEntries(
       Object.entries(labels).filter(
-        ([, value]) => value !== undefined && value !== ''
+        (entry): entry is [string, string] =>
+          entry[1] !== undefined && entry[1] !== ''
       )
     );
   }

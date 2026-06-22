@@ -27,10 +27,7 @@ export class FilePDFStrategy extends BaseStoreBackedPDFStrategy<
     this.filesService = service;
   }
 
-  processDataForAPI(
-    rawData: StoreDocument[],
-    _sessionId?: string
-  ): StoreDocument[] {
+  processDataForAPI(rawData: StoreDocument[]): StoreDocument[] {
     return rawData;
   }
 
@@ -54,8 +51,7 @@ export class FilePDFStrategy extends BaseStoreBackedPDFStrategy<
 
   createOutline(
     rawData: StoreDocument[],
-    apiResponse: GeneratePdfResponse,
-    _sessionId?: string
+    apiResponse: GeneratePdfResponse
   ): OutlineItem[] {
     return buildGroupedEntriesOutline(
       rawData.map((document, index) => ({

@@ -33,8 +33,7 @@ export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
   }
 
   processDataForAPI(
-    rawData: CriminalDocumentAppearanceRequest[],
-    _sessionId?: string
+    rawData: CriminalDocumentAppearanceRequest[]
   ): CriminalDocumentBundleRequest {
     return {
       appearances: rawData.map((item) => item.appearance),
@@ -68,8 +67,7 @@ export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
 
   createOutline(
     rawData: CriminalDocumentAppearanceRequest[],
-    apiResponse: ApiResponse<DocumentBundleResponse>,
-    _sessionId?: string
+    apiResponse: ApiResponse<DocumentBundleResponse>
   ): OutlineItem[] {
     const pageIndexByDocumentKey = this.buildPageIndexMap(apiResponse);
 
@@ -99,7 +97,7 @@ export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
     return matchingBinders.flatMap((binder) =>
       binder.documents
         .filter((document) => document.documentId)
-        .map((document) => {
+        .map((document): GroupedOutlineEntry | undefined => {
           const documentKey = this.makeDocumentKey(
             binder.labels.physicalFileId,
             binder.labels.participantId,

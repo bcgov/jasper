@@ -26,7 +26,8 @@
     mdiNotebookOutline,
   } from '@mdi/js';
   import type { ToolbarItem } from '@nutrient-sdk/viewer';
-  import { inject, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
   import { OutlineItem, PDFViewerStrategy } from './strategies/PDFViewerTypes';
 
@@ -41,11 +42,17 @@
   }
 
   const props = defineProps<Props>();
+  const route = useRoute();
   const commonStore = useCommonStore();
   const loading = ref(false);
   const emptyStore = ref(false);
   const showReviewModal = ref(false);
   const canApprove = ref<boolean>(false);
+  const sessionId = computed(() => {
+    const value = route.query.sessionId;
+
+    return typeof value === 'string' && value.length > 0 ? value : undefined;
+  });
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
@@ -79,7 +86,7 @@
     loading.value = true;
     emptyStore.value = false;
 
-    if (!props.strategy.hasData()) {
+    if (!props.strategy.hasData(sessionId.value)) {
       loading.value = false;
       emptyStore.value = true;
       return;
@@ -87,7 +94,7 @@
 
     try {
       // Follow the strategy pattern workflow
-      const rawData = props.strategy.getRawData();
+      const rawData = props.strategy.getRawData(sessionId.value);
       const processedData = props.strategy.processDataForAPI(rawData);
       const apiResponse = await props.strategy.generatePDF(processedData);
 
@@ -107,8 +114,12 @@
         onPress: () => {
           let firstPhysicalFileId: string | undefined;
           let isCriminal: boolean | undefined;
-          Object.values(rawData).forEach((personDocuments) => {
-            Object.values(personDocuments as any)
+          const rawItems = Array.isArray(rawData)
+            ? rawData
+            : Object.values(rawData as Record<string, unknown>);
+
+          rawItems.forEach((personDocuments) => {
+            Object.values(personDocuments as Record<string, unknown>)
               .flat()
               .forEach((doc: any) => {
                 if (doc?.physicalFileId) {
@@ -227,7 +238,7 @@
       NutrientViewer.unload('.pdf-container');
     }
     if (props.strategy.cleanup) {
-      props.strategy.cleanup();
+      props.strategy.cleanup(sessionId.value);
     }
   });
 </script>

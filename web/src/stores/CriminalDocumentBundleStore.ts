@@ -35,7 +35,6 @@ export const useCriminalDocumentBundleStore = defineStore(
 
           return (state.sessions[resolvedSessionId] ?? []).length > 0;
         },
-
     },
 
     actions: {

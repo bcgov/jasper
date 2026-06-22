@@ -147,9 +147,7 @@ export default {
     };
   },
 
-  compactBinderLabels(
-    labels: BinderRequest['labels']
-  ): Record<string, string> {
+  compactBinderLabels(labels: BinderRequest['labels']): Record<string, string> {
     return Object.fromEntries(
       Object.entries(labels).filter(
         ([, value]) => typeof value === 'string' && value !== ''

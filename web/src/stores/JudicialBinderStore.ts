@@ -1,62 +1,133 @@
 import { defineStore } from 'pinia';
-import { UUIDTypes } from 'uuid';
-import { Binder } from '@/types/Binder';
-import { BinderDocumentBundleRequest } from '@/types/DocumentBundleRequest';
-import { BinderDocumentRequest } from '@/types/BinderDocumentRequest';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useJudicialBinderStore = defineStore('JudicialBinderStore', {
   persist: true,
+
   state: () => ({
-    bundles: [] as JudicialBinderBundle[],
-    request: {} as BinderDocumentBundleRequest,
+    activeSessionId: null as string | null,
+    sessions: {} as Record<string, JudicialBinderDocumentRequest[]>,
   }),
+
   getters: {
-    getBundle: (
-      state
-    ): ((id: UUIDTypes) => JudicialBinderBundle | undefined) => {
-      return (id: UUIDTypes) => {
-        const bundle = state.bundles.find((b) => b.id === id);
-        return bundle;
-      };
+    getPdfItems:
+      (state) =>
+      (sessionId?: string): JudicialBinderDocumentRequest[] => {
+        const resolvedSessionId = sessionId ?? state.activeSessionId;
+
+        if (!resolvedSessionId) {
+          return [];
+        }
+
+        return state.sessions[resolvedSessionId] ?? [];
+      },
+
+    hasPdfData:
+      (state) =>
+      (sessionId?: string): boolean => {
+        const resolvedSessionId = sessionId ?? state.activeSessionId;
+
+        if (!resolvedSessionId) {
+          return false;
+        }
+
+        return (state.sessions[resolvedSessionId] ?? []).length > 0;
+      },
+
+    getBundles: (state): JudicialBinderBundle[] => {
+      return Object.entries(state.sessions).map(([id, binders]) => ({
+        id,
+        binders,
+      }));
     },
-    getRequests: (state) => state.request,
+
+    getBundle:
+      (state) =>
+      (id: string): JudicialBinderBundle | undefined => {
+        const binders = state.sessions[id];
+
+        if (!binders) {
+          return undefined;
+        }
+
+        return {
+          id,
+          binders,
+        };
+      },
   },
+
   actions: {
-    addBundle(id: UUIDTypes): void {
-      this.bundles.push({
-        id: id,
-        binders: [] as Binder[],
-        groupKeyOne: '',
-        groupKeyTwo: '',
-        documentName: '',
-        physicalFileId: '',
-        requests: {} as BinderDocumentBundleRequest,
-      });
+    setPdfItems(
+      items: JudicialBinderDocumentRequest[],
+      sessionId = uuidv4()
+    ): string {
+      this.sessions[sessionId] = [...items];
+      this.activeSessionId = sessionId;
+
+      return sessionId;
     },
-    addBinder(binder: Binder, bundleId: UUIDTypes): void {
-      const bundle = this.bundles.find((b) => b.id === bundleId);
-      if (bundle) {
-        bundle.binders.push(binder);
+
+    addBundle(bundle: JudicialBinderBundle): string {
+      this.sessions[bundle.id] = [...bundle.binders];
+      this.activeSessionId = bundle.id;
+
+      return bundle.id;
+    },
+
+    addBinder(
+      binder: JudicialBinderDocumentRequest,
+      sessionId?: string
+    ): string {
+      const resolvedSessionId = sessionId ?? this.activeSessionId;
+
+      if (!resolvedSessionId || !this.sessions[resolvedSessionId]) {
+        return resolvedSessionId ?? '';
+      }
+
+      this.sessions[resolvedSessionId].push(binder);
+      this.activeSessionId = resolvedSessionId;
+
+      return resolvedSessionId;
+    },
+
+    clearPdfItems(sessionId?: string): void {
+      const resolvedSessionId = sessionId ?? this.activeSessionId;
+
+      if (!resolvedSessionId) {
+        return;
+      }
+
+      delete this.sessions[resolvedSessionId];
+
+      if (this.activeSessionId === resolvedSessionId) {
+        this.activeSessionId = null;
       }
     },
-    clearBundles(): void {
-      this.bundles.length = 0;
-      this.request = {} as BinderDocumentBundleRequest;
+
+    clearBundles(sessionId?: string): void {
+      this.clearPdfItems(sessionId);
+    },
+
+    clearAllSessions(): void {
+      this.sessions = {};
+      this.activeSessionId = null;
     },
   },
 });
 
 export type JudicialBinderBundle = {
-  id: UUIDTypes;
-  groupKeyOne: string;
-  groupKeyTwo: string;
-  physicalFileId: string;
-  documentName: string;
-  requests: BinderDocumentBundleRequest;
-  binders: Binder[];
+  id: string;
+  binders: JudicialBinderDocumentRequest[];
 };
 
 export type JudicialBinderDocumentRequest = {
-  binder: BinderDocumentRequest;
+  labels: Record<string, string>;
   fileNumber: string;
+  groupKeyOne: string;
+  groupKeyTwo: string;
+  physicalFileId: string;
+  participantId: string;
+  documentName: string;
+  documentId: string;
 };

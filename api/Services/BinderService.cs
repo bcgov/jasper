@@ -70,6 +70,7 @@ public class BinderService(
             var key = $"Labels.{label.Key}";
             filter &= filterBuilder.Eq(key, label.Value);
         }
+        Logger.LogDebug("Getting binders with labels: {Labels}", JsonConvert.SerializeObject(filter));
 
         var entities = await this.Repo.FindAsync(CollectionNameConstants.BINDERS, filter);
 

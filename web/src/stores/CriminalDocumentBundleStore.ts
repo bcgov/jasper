@@ -1,69 +1,94 @@
 import { defineStore } from 'pinia';
-import { UUIDTypes } from 'uuid';
-import { Binder } from '@/types/Binder';
-import { CriminalDocumentBundleRequest } from '@/types/DocumentBundleRequest';
-import { AppearanceDocumentRequest } from '@/types/AppearanceDocumentRequest';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useCriminalDocumentBundleStore = defineStore(
   'CriminalDocumentBundleStore',
   {
     persist: true,
-    state: () => ({
-      bundles: [] as CriminalDocumentBundle[],
-      request: {} as CriminalDocumentBundleRequest,
-      appearanceRequests: [] as CriminalDocumentAppearanceRequest[],
+
+    state: (): CriminalDocumentBundleStoreState => ({
+      activeSessionId: null,
+      sessions: {},
     }),
+
     getters: {
-      getBundle: (
-        state
-      ): ((id: UUIDTypes) => CriminalDocumentBundle | undefined) => {
-        return (id: UUIDTypes) => {
-          const bundle = state.bundles.find((b) => b.id === id);
-          return bundle;
-        };
-      },
-      getRequests: (state) => state.request,
-      getAppearanceRequests: (state) => state.appearanceRequests,
+      getPdfItems:
+        (state) =>
+        (sessionId?: string): CriminalDocumentAppearanceRequest[] => {
+          const resolvedSessionId = sessionId ?? state.activeSessionId;
+
+          if (!resolvedSessionId) {
+            return [];
+          }
+
+          return state.sessions[resolvedSessionId] ?? [];
+        },
+
+      hasPdfData:
+        (state) =>
+        (sessionId?: string): boolean => {
+          const resolvedSessionId = sessionId ?? state.activeSessionId;
+
+          if (!resolvedSessionId) {
+            return false;
+          }
+
+          return (state.sessions[resolvedSessionId] ?? []).length > 0;
+        },
+
     },
+
     actions: {
-      addBundle(id: UUIDTypes): void {
-        this.bundles.push({
-          id: id,
-          binders: [] as Binder[],
-          groupKeyOne: '',
-          groupKeyTwo: '',
-          documentName: '',
-          physicalFileId: '',
-          requests: {} as CriminalDocumentBundleRequest,
-        });
+      setPdfItems(
+        items: CriminalDocumentAppearanceRequest[],
+        sessionId = uuidv4()
+      ): string {
+        this.sessions[sessionId] = [...items];
+        this.activeSessionId = sessionId;
+
+        return sessionId;
       },
-      addBinder(binder: Binder, bundleId: UUIDTypes): void {
-        const bundle = this.bundles.find((b) => b.id === bundleId);
-        if (bundle) {
-          bundle.binders.push(binder);
+
+      clearPdfItems(sessionId?: string): void {
+        const resolvedSessionId = sessionId ?? this.activeSessionId;
+
+        if (!resolvedSessionId) {
+          return;
+        }
+
+        delete this.sessions[resolvedSessionId];
+
+        if (this.activeSessionId === resolvedSessionId) {
+          this.activeSessionId = null;
         }
       },
-      clearBundles(): void {
-        this.bundles.length = 0;
-        this.appearanceRequests = [];
-        this.request = {} as CriminalDocumentBundleRequest;
+
+      clearBundles(sessionId?: string): void {
+        this.clearPdfItems(sessionId);
+      },
+
+      clearAllSessions(): void {
+        this.sessions = {};
+        this.activeSessionId = null;
       },
     },
   }
 );
 
-export type CriminalDocumentBundle = {
-  id: UUIDTypes;
-  groupKeyOne: string;
-  groupKeyTwo: string;
-  physicalFileId: string;
-  documentName: string;
-  requests: CriminalDocumentBundleRequest;
-  binders: Binder[];
+type CriminalDocumentBundleStoreState = {
+  activeSessionId: string | null;
+  sessions: Record<string, CriminalDocumentAppearanceRequest[]>;
 };
 
 export type CriminalDocumentAppearanceRequest = {
   appearance: AppearanceDocumentRequest;
+
+  groupKeyOne: string;
+  groupKeyTwo: string;
+  documentName: string;
+
   fileNumber: string;
   fullName?: string;
+  physicalFileId: string;
+  participantId?: string;
 };

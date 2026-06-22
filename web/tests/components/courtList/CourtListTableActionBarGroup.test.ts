@@ -48,24 +48,28 @@ const mockAppearances: CourtListAppearance[] = [
     courtClassCd: 'A',
     physicalFileId: 'file-001',
     participantId: 'part-001',
+    courtFileNumber: 'A-001',
   } as unknown as CourtListAppearance,
   {
     id: 2,
     courtClassCd: 'Y',
     physicalFileId: 'file-002',
     participantId: 'part-002',
+    courtFileNumber: 'Y-002',
   } as unknown as CourtListAppearance,
   {
     id: 3,
     courtClassCd: 'C',
     physicalFileId: 'file-003',
     participantId: 'part-003',
+    courtFileNumber: 'C-003',
   } as unknown as CourtListAppearance,
   {
     id: 4,
     courtClassCd: 'F',
     physicalFileId: 'file-004',
     participantId: 'part-004',
+    courtFileNumber: 'F-004',
   } as unknown as CourtListAppearance,
 ];
 
@@ -194,7 +198,13 @@ describe('CourtListTableActionBarGroup.vue', () => {
   it('emits view-judicial-binders event when button is clicked', async () => {
     binderService.getBinders.mockResolvedValue({
       succeeded: true,
-      payload: [{ id: '1' }],
+      payload: [
+        {
+          id: '1',
+          labels: { physicalFileId: 'file-003' },
+          documents: [],
+        },
+      ],
     });
 
     const civilAppearances = mockAppearances.filter(
@@ -211,9 +221,16 @@ describe('CourtListTableActionBarGroup.vue', () => {
     await judicialBinderButton.trigger('click');
 
     expect(wrapper.emitted('view-judicial-binders')).toBeTruthy();
-    expect(wrapper.emitted('view-judicial-binders')![0][0]).toEqual(
-      civilAppearances
-    );
+    expect(wrapper.emitted('view-judicial-binders')![0][0]).toEqual([
+      {
+        documents: [],
+        id: '1',
+        labels: {
+          physicalFileId: 'file-003',
+        },
+        fileNumber: 'C-003',
+      },
+    ]);
   });
 
   it('emits view-key-documents event when button is clicked', async () => {

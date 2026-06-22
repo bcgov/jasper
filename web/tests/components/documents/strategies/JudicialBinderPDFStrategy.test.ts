@@ -121,6 +121,10 @@ const mockApiResponse: ApiResponse<any> = {
 
 describe('JudicialBinderPDFStrategy', () => {
   beforeEach(() => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '' },
+      writable: true,
+    });
     (useJudicialBinderStore as any).mockReturnValue(mockJudicialBinderStore);
     (inject as any).mockImplementation((key: string) => {
       if (key === 'binderService') return mockBinderService;
@@ -295,5 +299,104 @@ describe('JudicialBinderPDFStrategy', () => {
 
     const outline = strategy.createOutline(rawData, mockApiResponse);
     expect(outline).toEqual([]);
+  });
+
+  it('does not drift page indexes when category filtering removes the first document', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?category=APPLICATION' },
+      writable: true,
+    });
+    const strategy = new JudicialBinderPDFStrategy();
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
+      payload: {
+        pdfResponse: {
+          base64Pdf: 'base64judicial',
+          pageRanges: [{ start: 11, end: 12 }],
+        },
+        binders: [
+          {
+            labels: {
+              physicalFileId: 'F1',
+              participantId: 'P1',
+            },
+            documents: [
+              {
+                documentId: 'filtered-out',
+                fileName: 'Filtered.pdf',
+                documentType: 'PDF',
+                category: 'OTHER',
+              },
+              {
+                documentId: '101',
+                fileName: 'JudicialDoc1.pdf',
+                documentType: 'PDF',
+                category: 'APPLICATION',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const outline = strategy.createOutline(
+      [mockBinderRequests[0]] as any,
+      apiResponse
+    );
+
+    expect(outline[0]?.children?.[0]?.pageIndex).toBe(11);
+  });
+
+  it('does not drift page indexes when category filtering removes a middle document', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?category=APPLICATION' },
+      writable: true,
+    });
+    const strategy = new JudicialBinderPDFStrategy();
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
+      payload: {
+        pdfResponse: {
+          base64Pdf: 'base64judicial',
+          pageRanges: [{ start: 11 }, { start: 22 }],
+        },
+        binders: [
+          {
+            labels: {
+              physicalFileId: 'F1',
+              participantId: 'P1',
+            },
+            documents: [
+              {
+                documentId: '101',
+                fileName: 'JudicialDoc1.pdf',
+                documentType: 'PDF',
+                category: 'APPLICATION',
+              },
+              {
+                documentId: 'filtered-out',
+                fileName: 'Filtered.pdf',
+                documentType: 'PDF',
+                category: 'OTHER',
+              },
+              {
+                documentId: '102',
+                fileName: 'JudicialDoc2.pdf',
+                documentType: 'PDF',
+                category: 'APPLICATION',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const outline = strategy.createOutline(
+      [mockBinderRequests[0], mockBinderRequests[1]] as any,
+      apiResponse
+    );
+
+    expect(outline[0]?.children?.[0]?.pageIndex).toBe(11);
+    expect(outline[0]?.children?.[1]?.pageIndex).toBe(22);
   });
 });

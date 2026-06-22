@@ -34,11 +34,15 @@ const routes: RouteRecordRaw[] = [
 
 describe('FileViewer.vue', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  let toolbarItems: any[] = [];
   const mockInstance = {
     getDocumentOutline: vi.fn(),
     setDocumentOutline: vi.fn(),
     setViewState: vi.fn((callback) => callback({ set: vi.fn() })),
-    setToolbarItems: vi.fn((callback) => callback([])),
+    setToolbarItems: vi.fn((callback) => {
+      toolbarItems = callback([]);
+      return toolbarItems;
+    }),
     addEventListener: vi.fn(),
     getAnnotations: vi.fn().mockResolvedValue({
       filter: () => ({ size: 0 }),
@@ -103,6 +107,8 @@ describe('FileViewer.vue', () => {
     mockInstance.getDocumentOutline.mockReset();
     mockInstance.getDocumentOutline.mockResolvedValue([]);
     warnSpy.mockClear();
+    toolbarItems = [];
+    vi.spyOn(window, 'open').mockImplementation(() => null);
 
     globalWithNutrientViewer.NutrientViewer = {
       load: vi.fn().mockResolvedValue(mockInstance),
@@ -234,6 +240,81 @@ describe('FileViewer.vue', () => {
     expect(createOutline).toHaveBeenCalledWith(
       [{ fileName: 'normal-document.pdf' }],
       { base64Pdf: 'base64pdf', pageRanges: [{ start: 0, end: 2 }] }
+    );
+  });
+
+  it('opens information using context from flat StoreDocument raw data', async () => {
+    const rawData = [
+      {
+        physicalFileId: 'civil-file-123',
+        request: {
+          data: {
+            isCriminal: false,
+          },
+        },
+      },
+    ];
+    const strategy = {
+      showOrderReviewOptions: true,
+      hasData: () => true,
+      getRawData: () => rawData,
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 1 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 1 }],
+      createOutline: () => [],
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    toolbarItems
+      .find((item) => item.id === 'open-information')
+      ?.onPress();
+
+    expect(window.open).toHaveBeenCalledWith(
+      'civil-file/civil-file-123',
+      'relatedCaseInfo'
+    );
+  });
+
+  it('opens information using context from criminal bundle raw data', async () => {
+    const rawData = [
+      {
+        appearance: {
+          physicalFileId: 'criminal-file-123',
+        },
+      },
+    ];
+    const strategy = {
+      showOrderReviewOptions: true,
+      hasData: () => true,
+      getRawData: () => rawData,
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 1 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 1 }],
+      createOutline: () => [],
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    toolbarItems
+      .find((item) => item.id === 'open-information')
+      ?.onPress();
+
+    expect(window.open).toHaveBeenCalledWith(
+      'criminal-file/criminal-file-123',
+      'relatedCaseInfo'
     );
   });
 });

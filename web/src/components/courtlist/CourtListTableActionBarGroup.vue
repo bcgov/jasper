@@ -123,8 +123,9 @@
   const fetchBinderCountForAppearance = async (
     appearance: CourtListAppearance
   ) => {
+    const physicalFileId = appearance.physicalFileId;
     const labels = {
-      physicalFileId: appearance.physicalFileId,
+      physicalFileId,
       courtClassCd: appearance.courtClassCd,
       judgeId: commonStore.userInfo?.userId,
     };
@@ -133,7 +134,15 @@
       const request = binderService
         .getBinders(labels)
         .then((response) => {
-          fileBinders.value[appearance.physicalFileId] =
+          const currentCivilFileIds = new Set(
+            getCivilFiles(props.selected).map((file) => file.physicalFileId)
+          );
+
+          if (!currentCivilFileIds.has(physicalFileId)) {
+            return;
+          }
+
+          fileBinders.value[physicalFileId] =
             response.succeeded && response.payload ? response.payload : [];
         })
         .finally(() => {
@@ -144,7 +153,13 @@
       binderRequests.value.push(request);
     } catch (error) {
       console.error('Error fetching binders:', error);
-      fileBinders.value[appearance.physicalFileId] = [];
+      if (
+        getCivilFiles(props.selected).some(
+          (file) => file.physicalFileId === physicalFileId
+        )
+      ) {
+        fileBinders.value[physicalFileId] = [];
+      }
     }
   };
 
@@ -167,7 +182,9 @@
     () => props.selected,
     async (newSelected, oldSelected) => {
       const civilFiles = getCivilFiles(newSelected);
-      const isSelection = newSelected.length > (oldSelected?.length || 0);
+      const currentFileIds = new Set(
+        civilFiles.map((file) => file.physicalFileId)
+      );
 
       if (civilFiles.length === 0) {
         fileBinders.value = {};
@@ -175,19 +192,11 @@
         return;
       }
 
-      if (!isSelection) {
-        const currentFileIds = new Set(civilFiles.map((f) => f.physicalFileId));
-        fileBinders.value = Object.fromEntries(
-          Object.entries(fileBinders.value).filter(([fileId]) =>
-            currentFileIds.has(fileId)
-          )
-        );
-
-        // Update previousCivilFileIds to match current selection
-        previousCivilFileIds.clear();
-        currentFileIds.forEach((id) => previousCivilFileIds.add(id));
-        return;
-      }
+      fileBinders.value = Object.fromEntries(
+        Object.entries(fileBinders.value).filter(([fileId]) =>
+          currentFileIds.has(fileId)
+        )
+      );
 
       // Find newly added items
       const oldFileIds = new Set(
@@ -201,10 +210,12 @@
       for (const appearance of newlySelected) {
         if (!previousCivilFileIds.has(appearance.physicalFileId)) {
           emit('unique-civil-file-selected', appearance);
-          previousCivilFileIds.add(appearance.physicalFileId);
           await fetchBinderCountForAppearance(appearance);
         }
       }
+
+      previousCivilFileIds.clear();
+      currentFileIds.forEach((id) => previousCivilFileIds.add(id));
     },
     { immediate: true }
   );

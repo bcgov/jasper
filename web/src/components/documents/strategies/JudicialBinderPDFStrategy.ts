@@ -1,5 +1,5 @@
 import { BaseStoreBackedPDFStrategy } from './BaseStoreBackedPDFStrategy';
-import { OutlineItem } from './PDFViewerTypes';
+import { OutlineItem, PDFViewerInformationContext } from './PDFViewerTypes';
 import { buildGroupedEntriesOutline } from './OutlineBuilder';
 import { BinderService } from '@/services';
 import { useJudicialBinderStore } from '@/stores';
@@ -96,6 +96,21 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
     return buildGroupedEntriesOutline(outlineEntries);
   }
 
+  resolveInformationContext(
+    rawData: JudicialBinderDocumentRequest[]
+  ): PDFViewerInformationContext | undefined {
+    const item = rawData.find((request) => request.physicalFileId);
+
+    if (!item) {
+      return undefined;
+    }
+
+    return {
+      physicalFileId: item.physicalFileId,
+      isCriminal: item.labels.isCriminal?.toLowerCase() === 'true',
+    };
+  }
+
   override cleanup(sessionId?: string): void {
     this.store.clearBundles(sessionId);
   }
@@ -112,11 +127,14 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
     const pageIndexByDocumentKey = new Map<string, number>();
     let pageRangeIndex = 0;
 
-    // Backend binder responses currently preserve the same document order used
-    // to build pdfResponse.pageRanges, so positional correlation is intentional.
+    const documentCategories = this.getDocumentCategoriesFromUrl();
+
     apiResponse.payload.binders.forEach((binder) => {
       binder.documents
         .filter((document) => document.documentId)
+        .filter((document) =>
+          this.matchesSelectedCategories(document.category, documentCategories)
+        )
         .forEach((document) => {
           const pageIndex =
             apiResponse.payload.pdfResponse.pageRanges?.[pageRangeIndex++]
@@ -185,6 +203,19 @@ export class JudicialBinderPDFStrategy extends BaseStoreBackedPDFStrategy<
       Object.entries(labels).filter(
         (entry): entry is [string, string] =>
           entry[1] !== undefined && entry[1] !== ''
+      )
+    );
+  }
+
+  private matchesSelectedCategories(
+    category: string | undefined,
+    documentCategories: string[]
+  ): boolean {
+    return (
+      documentCategories.length === 0 ||
+      documentCategories.some(
+        (documentCategory) =>
+          documentCategory.toLowerCase() === category?.toLowerCase()
       )
     );
   }

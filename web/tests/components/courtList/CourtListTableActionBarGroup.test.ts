@@ -1,5 +1,5 @@
 import { CourtListAppearance } from '@/types/courtlist';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import CourtListTableActionBarGroup from 'CMP/courtlist/CourtListTableActionBarGroup.vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
@@ -17,6 +17,15 @@ vi.mock('@/stores/CommonStore', () => ({
 
 let pinia: any;
 let binderService: any;
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+};
 
 const createWrapper = (props = {}, options: any = {}) => {
   return mount(CourtListTableActionBarGroup, {
@@ -310,5 +319,64 @@ describe('CourtListTableActionBarGroup.vue', () => {
     await nextTick();
 
     expect(wrapper.emitted('unique-civil-file-selected')).toBeFalsy();
+  });
+
+  it('ignores a late binder response after the selected file is deselected', async () => {
+    const firstResponse = deferred<any>();
+    const secondResponse = deferred<any>();
+    binderService.getBinders
+      .mockReturnValueOnce(firstResponse.promise)
+      .mockReturnValueOnce(secondResponse.promise);
+
+    const wrapper = createWrapper({ selected: [mockAppearances[2]] });
+    await nextTick();
+
+    await wrapper.setProps({ selected: [] });
+    firstResponse.resolve({
+      succeeded: true,
+      payload: [{ id: 'stale-1' }, { id: 'stale-2' }],
+    });
+    await flushPromises();
+
+    await wrapper.setProps({ selected: [mockAppearances[3]] });
+    secondResponse.resolve({
+      succeeded: true,
+      payload: [],
+    });
+    await flushPromises();
+
+    const judicialBinderButton = wrapper.find(
+      '[data-testid="view-judicial-binders"]'
+    );
+    expect(judicialBinderButton.attributes('disabled')).toBeDefined();
+    expect(judicialBinderButton.text()).not.toContain('2 / 1');
+  });
+
+  it('ignores a late response for A after selecting B', async () => {
+    const firstResponse = deferred<any>();
+    const secondResponse = deferred<any>();
+    binderService.getBinders
+      .mockReturnValueOnce(firstResponse.promise)
+      .mockReturnValueOnce(secondResponse.promise);
+
+    const wrapper = createWrapper({ selected: [mockAppearances[2]] });
+    await nextTick();
+
+    await wrapper.setProps({ selected: [mockAppearances[3]] });
+    secondResponse.resolve({
+      succeeded: true,
+      payload: [{ id: 'current-binder' }],
+    });
+    firstResponse.resolve({
+      succeeded: true,
+      payload: [{ id: 'stale-1' }, { id: 'stale-2' }],
+    });
+    await flushPromises();
+
+    const judicialBinderButton = wrapper.find(
+      '[data-testid="view-judicial-binders"]'
+    );
+    expect(judicialBinderButton.text()).toContain('1 / 1');
+    expect(judicialBinderButton.text()).not.toContain('3 / 1');
   });
 });

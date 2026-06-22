@@ -92,6 +92,23 @@ describe('JudicialBinderStore', () => {
     expect(store.hasPdfData('session-1')).toBe(true);
   });
 
+  it('keeps an existing session when another judicial binder session is opened', () => {
+    const store = useJudicialBinderStore();
+    const firstBundle = createBundle('session-a');
+    const secondBundle = createBundle('session-b');
+
+    secondBundle.binders[0].documentId = 'DOC2';
+
+    store.addBundle(firstBundle);
+    store.addBundle(secondBundle);
+
+    expect(store.getBundle('session-a')?.binders).toEqual(firstBundle.binders);
+    expect(store.getBundle('session-b')?.binders).toEqual(
+      secondBundle.binders
+    );
+    expect(store.getBundles).toHaveLength(2);
+  });
+
   it('addBinder adds binder to specific bundle', () => {
     const store = useJudicialBinderStore();
     const bundleId = uuidv4();

@@ -29,7 +29,11 @@
   import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
   import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
-  import { OutlineItem, PDFViewerStrategy } from './strategies/PDFViewerTypes';
+  import {
+    OutlineItem,
+    PDFViewerInformationContext,
+    PDFViewerStrategy,
+  } from './strategies/PDFViewerTypes';
 
   // Declare NutrientViewer global
   declare global {
@@ -112,27 +116,17 @@
         title: 'Case details',
         icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
         onPress: () => {
-          let firstPhysicalFileId: string | undefined;
-          let isCriminal: boolean | undefined;
-          const rawItems = Array.isArray(rawData)
-            ? rawData
-            : Object.values(rawData as Record<string, unknown>);
+          const informationContext = resolveInformationContext(rawData);
 
-          rawItems.forEach((personDocuments) => {
-            Object.values(personDocuments as Record<string, unknown>)
-              .flat()
-              .forEach((doc: any) => {
-                if (doc?.physicalFileId) {
-                  firstPhysicalFileId ??= doc.physicalFileId;
-                }
-                if (doc?.request?.data?.isCriminal !== undefined) {
-                  isCriminal ??= doc.request.data.isCriminal;
-                }
-              });
-          });
+          if (!informationContext) {
+            console.warn('Unable to resolve PDF viewer information context.');
+            return;
+          }
 
           window.open(
-            `${isCriminal ? 'criminal-file/' : 'civil-file/'}${firstPhysicalFileId}`,
+            `${
+              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
+            }${informationContext.physicalFileId}`,
             'relatedCaseInfo'
           );
         },
@@ -191,6 +185,98 @@
       outlineData.map((item) => createOutlineElement(item))
     );
   };
+
+  const resolveInformationContext = (
+    rawData: unknown
+  ): PDFViewerInformationContext | undefined => {
+    const strategyContext = props.strategy.resolveInformationContext?.(rawData);
+
+    if (strategyContext) {
+      return strategyContext;
+    }
+
+    for (const item of getKnownRawItems(rawData)) {
+      const itemContext = resolveInformationContextFromItem(item);
+
+      if (itemContext) {
+        return itemContext;
+      }
+    }
+
+    return undefined;
+  };
+
+  const getKnownRawItems = (rawData: unknown): unknown[] => {
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+
+    if (!isRecord(rawData)) {
+      return [];
+    }
+
+    return Object.values(rawData).flatMap((value) => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (!isRecord(value)) {
+        return [];
+      }
+
+      return Object.values(value).flatMap((nestedValue) =>
+        Array.isArray(nestedValue) ? nestedValue : []
+      );
+    });
+  };
+
+  const resolveInformationContextFromItem = (
+    item: unknown
+  ): PDFViewerInformationContext | undefined => {
+    if (!isRecord(item)) {
+      return undefined;
+    }
+
+    const physicalFileId = getString(item.physicalFileId);
+    const request = item.request;
+    const requestData = isRecord(request) ? request.data : undefined;
+
+    if (physicalFileId && isRecord(requestData)) {
+      return {
+        physicalFileId,
+        isCriminal: requestData.isCriminal === true,
+      };
+    }
+
+    const appearance = item.appearance;
+    if (isRecord(appearance)) {
+      const appearanceFileId =
+        physicalFileId || getString(appearance.physicalFileId);
+
+      if (appearanceFileId) {
+        return {
+          physicalFileId: appearanceFileId,
+          isCriminal: true,
+        };
+      }
+    }
+
+    const labels = item.labels;
+    if (physicalFileId && isRecord(labels)) {
+      return {
+        physicalFileId,
+        isCriminal: getString(labels.isCriminal)?.toLowerCase() === 'true',
+      };
+    }
+
+    return undefined;
+  };
+
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+  const getString = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.length > 0 ? value : undefined;
 
   const createOutlineElement = (item: OutlineItem): any => {
     const baseElement = {

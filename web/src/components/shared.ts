@@ -406,8 +406,6 @@ export default {
       return;
     }
 
-    judicialBinderStore.clearBundles();
-
     const sessionId = uuidv4();
 
     judicialBinderStore.addBundle({

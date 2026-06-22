@@ -26,9 +26,9 @@ public class BinderMapping : IRegister
             .Map(dest => dest.DocumentType, src => (int)src.DocumentType)
             .AfterMapping((src, dest) =>
             {
-                dest.FileSeqNo = string.IsNullOrWhiteSpace(src.FileSeqNo)
-                    ? null
-                    : int.Parse(src.FileSeqNo);
+                dest.FileSeqNo = int.TryParse(src.FileSeqNo, out var fileSeqNo)
+                    ? fileSeqNo
+                    : null;
             });
 
         config.NewConfig<BinderDocument, BinderDocumentDto>()

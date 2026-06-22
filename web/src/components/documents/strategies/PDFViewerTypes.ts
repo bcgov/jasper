@@ -24,6 +24,10 @@ export interface PDFViewerStrategy<
 
   createOutline(rawData: TRawData, apiResponse: TApiResponse): OutlineItem[];
 
+  resolveInformationContext?(
+    rawData: TRawData
+  ): PDFViewerInformationContext | undefined;
+
   reviewOrder?(orderReview: OrderReview): Promise<void>;
 
   setToolbarItems?(items: ToolbarItem[]): ToolbarItem[];
@@ -36,4 +40,9 @@ export type OutlineItem = {
   pageIndex?: number;
   isExpanded?: boolean;
   children?: OutlineItem[];
+};
+
+export type PDFViewerInformationContext = {
+  physicalFileId: string;
+  isCriminal: boolean;
 };

@@ -151,6 +151,25 @@ public class BinderMappingTests
         Assert.Equal(expectedInt, result.DocumentType);
     }
 
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("   ", null)]
+    [InlineData("12", 12)]
+    [InlineData("ABC", null)]
+    public void BinderDocumentDto_To_BinderDocument_Should_Safely_Map_FileSeqNo(string fileSeqNo, int? expected)
+    {
+        var documentDto = new BinderDocumentDto
+        {
+            DocumentId = "doc-1",
+            DocumentType = DocumentType.File,
+            FileSeqNo = fileSeqNo
+        };
+
+        var result = documentDto.Adapt<BinderDocument>(_config);
+
+        Assert.Equal(expected, result.FileSeqNo);
+    }
+
     #endregion
 
     #region BinderDocument to BinderDocumentDto Mapping Tests

@@ -1,5 +1,5 @@
 import { BaseStoreBackedPDFStrategy } from './BaseStoreBackedPDFStrategy';
-import { OutlineItem } from './PDFViewerTypes';
+import { OutlineItem, PDFViewerInformationContext } from './PDFViewerTypes';
 import { buildGroupedEntriesOutline } from './OutlineBuilder';
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { FilesService } from '@/services/FilesService';
@@ -61,6 +61,21 @@ export class FilePDFStrategy extends BaseStoreBackedPDFStrategy<
         pageIndex: apiResponse.pageRanges?.[index]?.start,
       }))
     );
+  }
+
+  resolveInformationContext(
+    rawData: StoreDocument[]
+  ): PDFViewerInformationContext | undefined {
+    const document = rawData.find((item) => item.physicalFileId);
+
+    if (!document) {
+      return undefined;
+    }
+
+    return {
+      physicalFileId: document.physicalFileId,
+      isCriminal: document.request.data.isCriminal === true,
+    };
   }
 
   protected getOutlineDocumentTitle(document: StoreDocument): string {

@@ -829,7 +829,7 @@ describe('shared.openJudicialBinderDocuments', () => {
 
     shared.openJudicialBinderDocuments(mockBinders);
 
-    expect(mockJudicialBinderStore.clearBundles).toHaveBeenCalled();
+    expect(mockJudicialBinderStore.clearBundles).not.toHaveBeenCalled();
     expect(mockJudicialBinderStore.addBundle).toHaveBeenCalledWith(
       expect.objectContaining({
         id: expect.any(String),
@@ -995,6 +995,55 @@ describe('shared.openJudicialBinderDocuments', () => {
       expect.any(Object),
       'FN001, FN002'
     );
+  });
+
+  it('creates each judicial binder viewer session without clearing previous sessions', () => {
+    const firstBinders: any[] = [
+      {
+        id: 'binder-1',
+        fileNumber: 'FN001',
+        labels: {
+          physicalFileId: 'PHYS1',
+          participantId: 'PART1',
+        },
+        documents: [
+          {
+            documentId: 'DOC1',
+            documentType: CourtDocumentType.Civil,
+            fileName: 'Doc 1',
+          },
+        ],
+      },
+    ];
+    const secondBinders: any[] = [
+      {
+        id: 'binder-2',
+        fileNumber: 'FN002',
+        labels: {
+          physicalFileId: 'PHYS2',
+          participantId: 'PART2',
+        },
+        documents: [
+          {
+            documentId: 'DOC2',
+            documentType: CourtDocumentType.Civil,
+            fileName: 'Doc 2',
+          },
+        ],
+      },
+    ];
+
+    shared.openJudicialBinderDocuments(firstBinders);
+    shared.openJudicialBinderDocuments(secondBinders);
+
+    expect(mockJudicialBinderStore.clearBundles).not.toHaveBeenCalled();
+    expect(mockJudicialBinderStore.addBundle).toHaveBeenCalledTimes(2);
+    expect(
+      mockJudicialBinderStore.addBundle.mock.calls[0][0].binders[0].documentId
+    ).toBe('DOC1');
+    expect(
+      mockJudicialBinderStore.addBundle.mock.calls[1][0].binders[0].documentId
+    ).toBe('DOC2');
   });
 
   it('should return early if binders array is empty', () => {

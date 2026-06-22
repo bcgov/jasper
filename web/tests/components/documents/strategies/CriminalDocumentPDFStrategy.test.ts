@@ -128,6 +128,10 @@ const mockApiResponse: ApiResponse<any> = {
 
 describe('CriminalDocumentPDFStrategy', () => {
   beforeEach(() => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '' },
+      writable: true,
+    });
     (useCriminalDocumentBundleStore as any).mockReturnValue(
       mockKeyDocumentStore
     );
@@ -244,5 +248,113 @@ describe('CriminalDocumentPDFStrategy', () => {
     expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(4);
     expect(outline[1]?.title).toBe('FN1');
     expect(outline[1]?.children?.[0]?.children?.[0]?.pageIndex).toBe(1);
+  });
+
+  it('does not drift page indexes when category filtering removes the first document', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?category=ROP' },
+      writable: true,
+    });
+    const strategy = new CriminalDocumentPDFStrategy();
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
+      payload: {
+        pdfResponse: {
+          base64Pdf: 'base64string',
+          pageRanges: [{ start: 10, end: 11 }],
+        },
+        binders: [
+          {
+            labels: {
+              physicalFileId: 'F1',
+              participantId: 'P1',
+            },
+            documents: [
+              {
+                documentId: 'filtered-out',
+                fileName: 'Filtered.pdf',
+                documentType: 'PDF',
+                category: 'OTHER',
+              },
+              {
+                documentId: '1',
+                fileName: 'Doc1.pdf',
+                documentType: 'PDF',
+                category: 'ROP',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const outline = strategy.createOutline(
+      [mockAppearanceRequests[0]],
+      apiResponse
+    );
+
+    expect(outline[0]?.children?.[0]?.children?.[0]?.title).toBe('Doc1.pdf');
+    expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(10);
+  });
+
+  it('does not drift page indexes when category filtering removes a middle document', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { search: '?category=INITIATING' },
+      writable: true,
+    });
+    const strategy = new CriminalDocumentPDFStrategy();
+    const apiResponse: ApiResponse<any> = {
+      ...mockApiResponse,
+      payload: {
+        pdfResponse: {
+          base64Pdf: 'base64string',
+          pageRanges: [{ start: 10 }, { start: 20 }],
+        },
+        binders: [
+          {
+            labels: {
+              physicalFileId: 'F1',
+              participantId: 'P1',
+            },
+            documents: [
+              {
+                documentId: '1',
+                fileName: 'Doc1.pdf',
+                documentType: 'PDF',
+                category: 'INITIATING',
+              },
+              {
+                documentId: 'filtered-out',
+                fileName: 'Filtered.pdf',
+                documentType: 'PDF',
+                category: 'OTHER',
+              },
+            ],
+          },
+          {
+            labels: {
+              physicalFileId: 'F2',
+              participantId: 'P2',
+            },
+            documents: [
+              {
+                documentId: '2',
+                fileName: 'Doc2.pdf',
+                documentType: 'PDF',
+                category: 'INITIATING',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const outline = strategy.createOutline(
+      [mockAppearanceRequests[0], mockAppearanceRequests[1]],
+      apiResponse
+    );
+
+    expect(outline[0]?.children?.[0]?.children?.[0]?.pageIndex).toBe(10);
+    expect(outline[0]?.children?.[1]?.children?.[0]?.pageIndex).toBe(20);
   });
 });

@@ -1,5 +1,5 @@
 import { BaseStoreBackedPDFStrategy } from './BaseStoreBackedPDFStrategy';
-import { OutlineItem } from './PDFViewerTypes';
+import { OutlineItem, PDFViewerInformationContext } from './PDFViewerTypes';
 import {
   buildGroupedEntriesOutline,
   GroupedOutlineEntry,
@@ -82,6 +82,23 @@ export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
     );
   }
 
+  resolveInformationContext(
+    rawData: CriminalDocumentAppearanceRequest[]
+  ): PDFViewerInformationContext | undefined {
+    const item = rawData.find(
+      (request) => request.physicalFileId || request.appearance.physicalFileId
+    );
+
+    if (!item) {
+      return undefined;
+    }
+
+    return {
+      physicalFileId: item.physicalFileId || item.appearance.physicalFileId,
+      isCriminal: true,
+    };
+  }
+
   private getMatchingOutlineEntries(
     item: CriminalDocumentAppearanceRequest,
     pageIndexByDocumentKey: Map<string, number>,
@@ -128,11 +145,14 @@ export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
     const pageIndexByDocumentKey = new Map<string, number>();
     let pageRangeIndex = 0;
 
-    // Backend binder responses currently preserve the same document order used
-    // to build pdfResponse.pageRanges, so positional correlation is intentional.
+    const documentCategories = this.getDocumentCategoriesFromUrl();
+
     apiResponse.payload.binders.forEach((binder) => {
       binder.documents
         .filter((document) => document.documentId)
+        .filter((document) =>
+          this.matchesSelectedCategories(document.category, documentCategories)
+        )
         .forEach((document) => {
           const pageIndex =
             apiResponse.payload.pdfResponse.pageRanges?.[pageRangeIndex++]
@@ -166,5 +186,18 @@ export class CriminalDocumentPDFStrategy extends BaseStoreBackedPDFStrategy<
     const urlParams = new URLSearchParams(globalThis.location.search);
 
     return urlParams.get('category')?.split(',').filter(Boolean) ?? [];
+  }
+
+  private matchesSelectedCategories(
+    category: string | undefined,
+    documentCategories: string[]
+  ): boolean {
+    return (
+      documentCategories.length === 0 ||
+      documentCategories.some(
+        (documentCategory) =>
+          documentCategory.toLowerCase() === category?.toLowerCase()
+      )
+    );
   }
 }

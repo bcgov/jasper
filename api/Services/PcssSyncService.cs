@@ -79,7 +79,7 @@ namespace Scv.Api.Services
                     var testingGroupId = (await _groupRepo.FindAsync(g => g.Name == Group.TESTING))
                         .FirstOrDefault()
                         ?.Id;
-                    var developerRoleId = (await roleRepo.FindAsync(g => g.Name == Role.DEVELOPER))
+                    var developerRoleId = (await _roleRepo.FindAsync(g => g.Name == Role.DEVELOPER))
                         .FirstOrDefault()
                         ?.Id;
 

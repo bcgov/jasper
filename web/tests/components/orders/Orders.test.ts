@@ -30,6 +30,12 @@ vi.mock('@/stores', () => ({
   }),
 }));
 
+// Mock vue-router's useRoute (Orders.vue derives isDeskOrdersView from route.name)
+const mockRoute = { name: 'Orders' };
+vi.mock('vue-router', () => ({
+  useRoute: () => mockRoute,
+}));
+
 // Mock the utils
 vi.mock('@/utils/utils', () => ({
   getCourtClassLabel: vi.fn((courtClass: string) => courtClass),
@@ -92,6 +98,9 @@ describe('Orders.vue', () => {
   beforeEach(async () => {
     pinia = createPinia();
     setActivePinia(pinia);
+
+    // Reset route to default before each test
+    mockRoute.name = 'Orders';
 
     mockOrdersStore = {
       isLoading: false,
@@ -159,13 +168,76 @@ describe('Orders.vue', () => {
     expect(title).not.toContain('(');
   });
 
+  describe('expansion panel titles', () => {
+    it('renders both pending and completed expansion panel titles', () => {
+      const wrapper = createWrapper();
+
+      const titles = wrapper.findAll('h5');
+      expect(titles).toHaveLength(2);
+      expect(titles[0].text()).toContain('For signing');
+      expect(titles[1].text()).toBe('Completed');
+    });
+
+    it('renders "Completed" title on the second expansion panel', () => {
+      const wrapper = createWrapper();
+
+      const titles = wrapper.findAll('h5');
+      expect(titles[1].text()).toBe('Completed');
+    });
+
+    it('"Completed" title does not include a count', () => {
+      const wrapper = createWrapper();
+
+      const completedTitle = wrapper.findAll('h5')[1].text();
+      expect(completedTitle).toBe('Completed');
+      expect(completedTitle).not.toContain('(');
+    });
+
+    it('renders "Applications" title when on DeskOrders route', () => {
+      mockRoute.name = 'DeskOrders';
+
+      const wrapper = createWrapper();
+
+      const title = wrapper.findAll('h5')[0].text();
+      expect(title).toContain('Applications');
+      expect(title).not.toContain('For signing');
+    });
+
+    it('does not render "For signing" title when on DeskOrders route', () => {
+      mockRoute.name = 'DeskOrders';
+      mockOrdersStore.orders = [];
+
+      const wrapper = createWrapper();
+
+      const title = wrapper.findAll('h5')[0].text();
+      expect(title).toBe('Applications');
+    });
+
+    it('displays count next to "Applications" title when there are pending desk orders', () => {
+      mockRoute.name = 'DeskOrders';
+      // A desk order is identified by courtListTypeDescription === 'Desk Order'
+      // (see isDeskOrder in useOrderCounts).
+      const deskOrder: Order = {
+        ...generateOrder(OrderReviewStatus.Pending, 'Criminal'),
+        courtListTypeDescription: 'Desk Order',
+      };
+      mockOrdersStore.orders = [deskOrder];
+
+      const wrapper = createWrapper();
+
+      const title = wrapper.findAll('h5')[0].text();
+      expect(title).toContain('Applications');
+      expect(title).toContain('(1)');
+    });
+  });
+
   it('filters pending orders correctly', () => {
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
-    expect(vm.forSigningOrders).toHaveLength(1);
-    expect(vm.forSigningOrders[0].id).toBe(mockPendingOrder.id);
-    expect(vm.forSigningOrders[0].status).toBe(OrderReviewStatus.Pending);
+    expect(vm.pendingOrders).toHaveLength(1);
+    expect(vm.pendingOrders[0].id).toBe(mockPendingOrder.id);
+    expect(vm.pendingOrders[0].status).toBe(OrderReviewStatus.Pending);
   });
 
   it('filters completed orders correctly', () => {
@@ -217,7 +289,7 @@ describe('Orders.vue', () => {
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
-    expect(vm.forSigningOrders).toHaveLength(0);
+    expect(vm.pendingOrders).toHaveLength(0);
     expect(vm.completedOrders).toHaveLength(0);
   });
 
@@ -227,7 +299,7 @@ describe('Orders.vue', () => {
     const wrapper = createWrapper();
 
     const vm = wrapper.vm as any;
-    expect(vm.forSigningOrders).toHaveLength(0);
+    expect(vm.pendingOrders).toHaveLength(0);
     expect(vm.completedOrders).toHaveLength(0);
   });
 

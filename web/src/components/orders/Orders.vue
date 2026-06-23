@@ -15,21 +15,18 @@
       <v-expansion-panel>
         <v-expansion-panel-title class="px-3">
           <h5 class="m-0">
-            For signing
-            {{
-              forSigningOrders.length > 0 ? `(${forSigningOrders.length})` : ''
-            }}
+            {{ isDeskOrdersView ? 'Applications' : 'For signing' }}
+            {{ pendingOrders.length > 0 ? `(${pendingOrders.length})` : '' }}
           </h5>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <OrdersDataTable
-            :data="forSigningOrders"
+            :data="pendingOrders"
             :viewCaseDetails="viewCaseDetails"
             :viewOrderDetails="viewOrderDetails"
             :columns="[
               'packageId',
               'priorityTypeDesc',
-              'courtListType',
               'receivedDate',
               'division',
               'fileNumber',
@@ -52,7 +49,6 @@
             :columns="[
               'packageId',
               'priorityTypeDesc',
-              'courtListType',
               'receivedDate',
               'processedDate',
               'division',
@@ -69,6 +65,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+  import { isDeskOrder } from '@/composables/useOrderCounts';
   import { OrderService } from '@/services';
   import {
     useCommonStore,
@@ -81,11 +78,22 @@
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
   import { DateTime } from 'luxon';
   import { computed, inject, onMounted } from 'vue';
+  import { useRoute } from 'vue-router';
 
   const ordersStore = useOrdersStore();
   const courtFileSearchStore = useCourtFileSearchStore();
   const commonStore = useCommonStore();
   const orderService = inject<OrderService>('orderService');
+  const route = useRoute();
+
+  // When the route is /desk-orders show desk orders only; otherwise show non-desk orders.
+  const isDeskOrdersView = computed(() => route.name === 'DeskOrders');
+
+  const filteredOrders = computed(() =>
+    (ordersStore?.orders ?? []).filter((order) =>
+      isDeskOrdersView.value ? isDeskOrder(order) : !isDeskOrder(order)
+    )
+  );
 
   // Only show completed orders that were received within the last 30 days.
   const COMPLETED_ORDERS_CUTOFF_DAYS = 30;
@@ -102,25 +110,22 @@
     ordersStore.initialize(orderService, judgeId);
   });
 
-  const forSigningOrders = computed(
-    () =>
-      ordersStore?.orders?.filter(
-        (order) =>
-          order.status === OrderReviewStatus.Pending ||
-          order.status === OrderReviewStatus.AwaitingDocumentation
-      ) ?? []
+  const pendingOrders = computed(() =>
+    filteredOrders.value.filter(
+      (order) =>
+        order.status === OrderReviewStatus.Pending ||
+        order.status === OrderReviewStatus.AwaitingDocumentation
+    )
   );
 
   const completedOrders = computed(() => {
     const cutoff = DateTime.now()
       .minus({ days: COMPLETED_ORDERS_CUTOFF_DAYS })
       .startOf('day');
-    return (
-      ordersStore?.orders?.filter(
-        (order) =>
-          order.status === OrderReviewStatus.Approved &&
-          DateTime.fromJSDate(new Date(order.receivedDate)) >= cutoff
-      ) ?? []
+    return filteredOrders.value.filter(
+      (order) =>
+        order.status === OrderReviewStatus.Approved &&
+        DateTime.fromJSDate(new Date(order.receivedDate)) >= cutoff
     );
   });
 

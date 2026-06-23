@@ -30,9 +30,6 @@
     <template #[`item.priorityTypeDesc`]="{ item }">
       <span>{{ item.priorityTypeDesc }}</span>
     </template>
-    <template #[`item.courtListType`]="{ item }">
-      <span>{{ item.courtListTypeDescription }}</span>
-    </template>
   </v-data-table-virtual>
 </template>
 <script setup lang="ts">
@@ -46,7 +43,6 @@
   type ColumnKey =
     | 'packageId'
     | 'priorityTypeDesc'
-    | 'courtListType'
     | 'receivedDate'
     | 'processedDate'
     | 'division'
@@ -98,10 +94,6 @@
       title: 'PRIORITY',
       key: 'priorityTypeDesc',
     },
-    courtListType: {
-      title: 'TYPE',
-      key: 'courtListTypeDescription',
-    },
     receivedDate: {
       title: 'DATE RECEIVED',
       key: 'receivedDate',
@@ -140,7 +132,6 @@
     const columnKeys = props.columns || [
       'packageId',
       'priorityTypeDesc',
-      'courtListType',
       'receivedDate',
       'division',
       'fileNumber',

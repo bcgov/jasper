@@ -471,7 +471,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfuly for Order {OrderId}.", orderDto.Id);
 
-        actionDto.Comment = string.Join(". ", new[] { actionDto.Comment, deskOrderDetails.Directions });
+        actionDto.Comment = string.Join(". ", actionDto.Comment, deskOrderDetails.Directions);
         actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
             {
                 SequenceNumber = term.SequenceNumber,

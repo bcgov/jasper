@@ -3,7 +3,11 @@
     class="px-4 py-3 rounded-lg upload-container"
     :class="{ 'upload-disabled': props.disabled }"
   >
-    <label for="document-upload-checkbox" class="upload-label mb-0">
+    <label
+      v-if="props.collapsible"
+      for="document-upload-checkbox"
+      class="upload-label mb-0"
+    >
       <v-checkbox
         id="document-upload-checkbox"
         v-model="showDocumentUpload"
@@ -14,8 +18,11 @@
       />
       <span>{{ props.text ?? 'Attach supporting document (optional)' }}</span>
     </label>
+    <div v-else class="upload-label mb-2">
+      <span>{{ props.text ?? 'Attach supporting document (optional)' }}</span>
+    </div>
     <v-expand-transition>
-      <div v-if="showDocumentUpload" class="mt-2">
+      <div v-if="showUploadArea" :class="{ 'mt-2': props.collapsible }">
         <v-file-upload
           data-testid="review-document-upload"
           title="Upload document"
@@ -49,10 +56,16 @@
   import { computed, ref, watch } from 'vue';
 
   const show = defineModel<boolean>('show', { type: Boolean, required: true });
-  const props = defineProps<{
-    disabled: boolean;
-    text: string | null;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      disabled: boolean;
+      text: string | null;
+      collapsible?: boolean;
+    }>(),
+    {
+      collapsible: true,
+    }
+  );
   const selectedFile = defineModel<File | null>('selectedFile', {
     default: null,
   });
@@ -66,6 +79,10 @@
 
   const showDocumentUpload = ref<boolean>(false);
   const rejectedUploadMessage = ref<string>('');
+
+  const showUploadArea = computed(
+    () => !props.collapsible || showDocumentUpload.value
+  );
 
   const clearUploadState = () => {
     selectedUpload.value = null;

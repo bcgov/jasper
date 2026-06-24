@@ -421,6 +421,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         var actionDto = Mapper.Map<JudicialAction>(orderDto);
+        actionDto.OrderTerms ??= [];
         actionDto.ReviewedBy = new Reviewer
         {
             AgencyId = agencyId,
@@ -456,30 +457,28 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
     private JudicialAction PopulateDeskOrderDetails(OrderDto orderDto, JudicialAction actionDto)
     {
+        // No document will be sent for Desk Orders
+        actionDto.Document = [];
+        if (orderDto.Status != OrderStatus.Approved)
+        {
+            return actionDto;
+        }
+
         var bytes = Convert.FromBase64String(orderDto.SupportingDocumentData);
         using var stream = new MemoryStream(bytes);
 
         var deskOrderDetails = _deskOrderDetailsExtractor.Extract(stream);
 
-        this.Logger.LogInformation(
-            "Extracted desk order details for Order {OrderId}. Directions: {Directions}, Order Terms: {OrderTerms}",
-            orderDto.Id,
-            deskOrderDetails.Directions,
-            string.Join(" ", deskOrderDetails.OrderTerms.Select(term => term.Text)));
+        this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfuly for Order {OrderId}.", orderDto.Id);
 
-        if (orderDto.Status == OrderStatus.Approved)
-        {
-            actionDto.Comment = $"{actionDto.Comment}. {deskOrderDetails.Directions}";
-            actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
+        actionDto.Comment = string.Join(". ", new[] { actionDto.Comment, deskOrderDetails.Directions });
+        actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
             {
                 SequenceNumber = term.SequenceNumber,
                 Text = term.Text,
                 DisplaySortNumber = term.DisplaySortNumber
             })];
-        }
 
-        // No document will be sent for Desk Orders
-        actionDto.Document = [];
         return actionDto;
     }
 

@@ -20,7 +20,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        if (!DocumentHelper.IsWordDocument(stream))
+        if (!DocumentHelper.IsDocXDocument(stream))
         {
             throw new InvalidDataException("Stream is not a valid Word (.docx) document.");
         }

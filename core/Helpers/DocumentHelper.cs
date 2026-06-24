@@ -8,7 +8,7 @@ public static class DocumentHelper
 
     private static readonly byte[][] PdfOrWordSignatures = [PdfSignature, DocSignature, DocxSignature];
 
-    public static bool IsWordDocument(Stream stream) =>
+    public static bool IsDocXDocument(Stream stream) =>
         HasSignature(stream, DocxSignature);
 
     public static bool IsPdfOrWordDocument(Stream stream) =>

@@ -141,7 +141,7 @@ describe('DocumentUpload.vue', () => {
       await nextTick();
 
       expect(vm(wrapper).showDocumentUpload).toBe(false);
-      expect(vm(wrapper).selectedUpload).toBe(null);
+      expect(vm(wrapper).selectedUpload).toBeNull();
       expect(vm(wrapper).rejectedUploadMessage).toBe('');
     });
 
@@ -160,7 +160,7 @@ describe('DocumentUpload.vue', () => {
       await nextTick();
 
       expect(vm(wrapper).rejectedUploadMessage).toBe('');
-      expect(vm(wrapper).selectedUpload).toBe(null);
+      expect(vm(wrapper).selectedUpload).toBeNull();
       expect(wrapper.emitted('update:selectedFile')?.at(-1)).toEqual([null]);
     });
 
@@ -222,7 +222,7 @@ describe('DocumentUpload.vue', () => {
       vm(wrapper).onDocumentSelected(null);
       await nextTick();
 
-      expect(vm(wrapper).selectedUpload).toBe(null);
+      expect(vm(wrapper).selectedUpload).toBeNull();
       expect(wrapper.emitted('update:selectedFile')?.at(-1)).toEqual([null]);
     });
 
@@ -236,7 +236,7 @@ describe('DocumentUpload.vue', () => {
       vm(wrapper).onDocumentSelected(undefined);
       await nextTick();
 
-      expect(vm(wrapper).selectedUpload).toBe(null);
+      expect(vm(wrapper).selectedUpload).toBeNull();
       expect(wrapper.emitted('update:selectedFile')?.at(-1)).toEqual([null]);
     });
 
@@ -246,7 +246,7 @@ describe('DocumentUpload.vue', () => {
       vm(wrapper).onDocumentSelected([]);
       await nextTick();
 
-      expect(vm(wrapper).selectedUpload).toBe(null);
+      expect(vm(wrapper).selectedUpload).toBeNull();
     });
 
     it('clears any previous rejection message when a new file is selected', async () => {
@@ -270,7 +270,7 @@ describe('DocumentUpload.vue', () => {
       vm(wrapper).onDocumentSelected(uploaded);
       await nextTick();
 
-      expect(vm(wrapper).selectedUpload).toBe(null);
+      expect(vm(wrapper).selectedUpload).toBeNull();
       expect(wrapper.emitted('update:selectedFile')).toBeFalsy();
     });
   });

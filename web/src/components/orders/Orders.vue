@@ -37,7 +37,7 @@
               'referralNotes',
             ]"
             highlight-aged-orders
-            :max-height="400"
+            :max-height="600"
           />
         </v-expansion-panel-text>
       </v-expansion-panel>

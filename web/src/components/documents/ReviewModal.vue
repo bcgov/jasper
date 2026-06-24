@@ -74,7 +74,7 @@
             <v-textarea
               ref="commentsRef"
               v-model="comments"
-              label="Review comments"
+              label="Comments for Registry"
               rows="4"
               auto-grow
               clearable
@@ -90,10 +90,11 @@
             v-model:show="show"
             v-model:selectedFile="selectedUpload"
             text="Attach Desk Order"
+            :collapsible="false"
           />
         </v-card-text>
 
-        <v-card-text>
+        <v-card-text class="pb-0">
           <v-alert
             v-if="!canApprove"
             type="warning"

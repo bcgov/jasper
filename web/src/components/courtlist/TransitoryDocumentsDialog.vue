@@ -175,12 +175,6 @@
     { title: 'Extension', key: 'extension', sortable: true },
     { title: 'Created', key: 'createdUtc', sortable: true },
     { title: 'Size', key: 'sizeBytes', sortable: true },
-    {
-      title: 'Actions',
-      key: 'actions',
-      sortable: false,
-      align: 'center' as const,
-    },
   ];
 
   const formatFileSize = (bytes: number): string => {

@@ -11,6 +11,7 @@ using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
 using Xunit;
+using Role = Scv.Db.Models.Role;
 
 namespace Scv.Api.Tests.Services
 {
@@ -21,6 +22,7 @@ namespace Scv.Api.Tests.Services
         private readonly Mock<IJudgeService> _judgeServiceMock;
         private readonly Mock<IRepositoryBase<Group>> _groupRepoMock;
         private readonly Mock<IRoleService> _roleServiceMock;
+        private readonly Mock<IRepositoryBase<Role>> _roleRepoMock;
         private readonly Mock<ILogger<PcssSyncService>> _loggerMock;
         private readonly PcssSyncService _pcssSyncService;
 
@@ -31,6 +33,7 @@ namespace Scv.Api.Tests.Services
             _groupServiceMock = new Mock<IGroupService>();
             _judgeServiceMock = new Mock<IJudgeService>();
             _roleServiceMock = new Mock<IRoleService>();
+            _roleRepoMock = new Mock<IRepositoryBase<Role>>();
             _loggerMock = new Mock<ILogger<PcssSyncService>>();
             _groupRepoMock = new Mock<IRepositoryBase<Group>>();
 
@@ -39,6 +42,7 @@ namespace Scv.Api.Tests.Services
                 _groupServiceMock.Object,
                 _judgeServiceMock.Object,
                 _groupRepoMock.Object,
+                _roleRepoMock.Object,
                 _roleServiceMock.Object,
                 _loggerMock.Object);
         }

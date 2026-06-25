@@ -140,7 +140,7 @@ describe('FileViewer.vue', () => {
       extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
         apiResponse.base64Pdf,
       extractPageRanges: () => [{ start: 1, end: 2 }],
-      createOutline: () => [],
+      createOutline: () => undefined,
       cleanup: vi.fn(),
     };
 
@@ -240,6 +240,147 @@ describe('FileViewer.vue', () => {
     expect(createOutline).toHaveBeenCalledWith(
       [{ fileName: 'normal-document.pdf' }],
       { base64Pdf: 'base64pdf', pageRanges: [{ start: 0, end: 2 }] }
+    );
+  });
+
+  it('does not override embedded outline when embedded-outline-aware strategy returns no custom outline', async () => {
+    const createOutlineWithEmbeddedOutline = vi.fn().mockReturnValue(undefined);
+    const strategy = {
+      hasData: () => true,
+      getRawData: () => [{ fileName: 'embedded-outline.pdf' }],
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 1, end: 2 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 1, end: 2 }],
+      createOutline: vi.fn(),
+      createOutlineWithEmbeddedOutline,
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    expect(createOutlineWithEmbeddedOutline).toHaveBeenCalledOnce();
+    expect(mockInstance.setDocumentOutline).not.toHaveBeenCalled();
+  });
+
+  it('passes embedded Nutrient outline to the strategy before overriding it', async () => {
+    const createOutlineWithEmbeddedOutline = vi
+      .fn()
+      .mockReturnValue([{ title: 'wrapped-document', pageIndex: 0 }]);
+
+    mockInstance.getDocumentOutline.mockResolvedValue([
+      {
+        title: 'existing-outline-item',
+        isExpanded: true,
+        action: { pageIndex: 2 },
+        children: [],
+      },
+    ]);
+
+    const strategy = {
+      hasData: () => true,
+      getRawData: () => [{ fileName: 'embedded-outline.pdf' }],
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 2 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 2 }],
+      createOutline: vi.fn(),
+      createOutlineWithEmbeddedOutline,
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    expect(createOutlineWithEmbeddedOutline).toHaveBeenCalledWith(
+      [{ fileName: 'embedded-outline.pdf' }],
+      { base64Pdf: 'base64pdf', pageRanges: [{ start: 0, end: 2 }] },
+      [
+        {
+          title: 'existing-outline-item',
+          pageIndex: 2,
+          isExpanded: true,
+          children: undefined,
+        },
+      ]
+    );
+    expect(mockInstance.setDocumentOutline).toHaveBeenCalledOnce();
+  });
+
+  it('falls back when embedded outline extraction fails for transitory strategies', async () => {
+    const createOutlineWithEmbeddedOutline = vi.fn().mockReturnValue(undefined);
+
+    mockInstance.getDocumentOutline.mockRejectedValue(
+      new Error('outline load failed')
+    );
+
+    const strategy = {
+      hasData: () => true,
+      getRawData: () => [{ fileName: 'embedded-outline.pdf' }],
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 2 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 2 }],
+      createOutline: vi.fn(),
+      createOutlineWithEmbeddedOutline,
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    expect(createOutlineWithEmbeddedOutline).toHaveBeenCalledWith(
+      [{ fileName: 'embedded-outline.pdf' }],
+      { base64Pdf: 'base64pdf', pageRanges: [{ start: 0, end: 2 }] },
+      undefined
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Failed to extract embedded outline; continuing without embedded outline.',
+      expect.any(Error)
+    );
+  });
+
+  it('falls back when embedded outline data is malformed for transitory strategies', async () => {
+    const createOutlineWithEmbeddedOutline = vi.fn().mockReturnValue(undefined);
+
+    mockInstance.getDocumentOutline.mockResolvedValue([{ title: 123 }]);
+
+    const strategy = {
+      hasData: () => true,
+      getRawData: () => [{ fileName: 'embedded-outline.pdf' }],
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 2 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 2 }],
+      createOutline: vi.fn(),
+      createOutlineWithEmbeddedOutline,
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    expect(createOutlineWithEmbeddedOutline).toHaveBeenCalledWith(
+      [{ fileName: 'embedded-outline.pdf' }],
+      { base64Pdf: 'base64pdf', pageRanges: [{ start: 0, end: 2 }] },
+      undefined
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Failed to extract embedded outline; continuing without embedded outline.',
+      expect.any(TypeError)
     );
   });
 

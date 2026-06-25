@@ -1,6 +1,14 @@
 import { OrderReview } from '@/types';
 import { ToolbarItem } from '@nutrient-sdk/viewer';
 
+export interface EmbeddedOutlineAwarePDFViewerStrategy<TRawData, TApiResponse> {
+  createOutlineWithEmbeddedOutline(
+    rawData: TRawData,
+    apiResponse: TApiResponse,
+    embeddedOutline?: OutlineItem[]
+  ): OutlineItem[] | undefined;
+}
+
 export interface PDFViewerStrategy<
   TRawData = unknown,
   TProcessedData = unknown,
@@ -22,7 +30,10 @@ export interface PDFViewerStrategy<
     apiResponse: TApiResponse
   ): Array<{ start: number; end?: number }> | undefined;
 
-  createOutline(rawData: TRawData, apiResponse: TApiResponse): OutlineItem[];
+  createOutline(
+    rawData: TRawData,
+    apiResponse: TApiResponse
+  ): OutlineItem[] | undefined;
 
   resolveInformationContext?(
     rawData: TRawData

@@ -13,6 +13,7 @@ namespace Scv.Api.Documents;
 
 public class DocumentMerger(
     IDocumentRetriever documentRetriever,
+    IPdfMergePreparationStrategyResolver preparationStrategyResolver,
     ILogger<DocumentMerger> logger,
     IConfiguration configuration) : IDocumentMerger
 {
@@ -20,6 +21,7 @@ public class DocumentMerger(
     private const string RetrieveBatchSizeKey = "DOCUMENT_RETRIEVAL_BATCH_SIZE";
 
     private readonly IDocumentRetriever documentRetriever = documentRetriever;
+    private readonly IPdfMergePreparationStrategyResolver preparationStrategyResolver = preparationStrategyResolver;
     private readonly ILogger<DocumentMerger> logger = logger;
     private readonly IConfiguration configuration = configuration;
 
@@ -129,8 +131,8 @@ public class DocumentMerger(
                 pageRanges.Add(new PageRange { Start = currentPage, End = currentPage + pageCount });
                 currentPage += pageCount;
 
-                FlattenPdfContent(pdf, documentRequests[i], i);
-                streamsForMerge.Add(SaveFlattenedPdfToStream(pdf, documentRequests[i], i));
+                PreparePdfForMerge(pdf, documentRequests[i], i);
+                streamsForMerge.Add(SavePdfToStream(pdf, documentRequests[i], i));
             }
             finally
             {
@@ -138,6 +140,22 @@ public class DocumentMerger(
                 docStream.Dispose();
                 streamsToMerge[i] = null!;
             }
+        }
+    }
+
+    private void PreparePdfForMerge(GdPicturePDF pdf, PdfDocumentRequest documentRequest, int index)
+    {
+        var preparationMode = preparationStrategyResolver.Resolve(documentRequest);
+
+        switch (preparationMode)
+        {
+            case PdfMergePreparationMode.None:
+                return;
+            case PdfMergePreparationMode.Flatten:
+                FlattenPdfContent(pdf, documentRequest, index);
+                return;
+            default:
+                throw new InvalidOperationException($"Unsupported PDF merge preparation mode: {preparationMode}");
         }
     }
 
@@ -262,16 +280,16 @@ public class DocumentMerger(
         }
     }
 
-    private MemoryStream SaveFlattenedPdfToStream(
+    private MemoryStream SavePdfToStream(
         GdPicturePDF pdf,
         PdfDocumentRequest documentRequest,
         int index)
     {
-        var flattenedDocStream = new MemoryStream();
-        var saveStatus = pdf.SaveToStream(flattenedDocStream);
+        var docStream = new MemoryStream();
+        var saveStatus = pdf.SaveToStream(docStream);
         if (saveStatus != GdPictureStatus.OK)
         {
-            flattenedDocStream.Dispose();
+            docStream.Dispose();
             logger.LogError(
                 "GdPicture failed to save flattened stream {Index} (Type: {Type}) with status: {Status}",
                 index, documentRequest.Type, saveStatus);
@@ -279,8 +297,8 @@ public class DocumentMerger(
                 $"Failed to save flattened document stream {index} (Type: {documentRequest.Type}): {saveStatus}");
         }
 
-        flattenedDocStream.Position = 0;
-        return flattenedDocStream;
+        docStream.Position = 0;
+        return docStream;
     }
 
     private MemoryStream MergeStreams(GdPictureDocumentConverter gdpictureConverter, List<MemoryStream> streamsForMerge)

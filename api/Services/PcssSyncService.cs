@@ -22,6 +22,7 @@ namespace Scv.Api.Services
         IGroupService groupService,
         IJudgeService judgeService,
         IRepositoryBase<Group> groupRepo,
+        IRepositoryBase<Role> roleRepo,
         IRoleService roleService,
         ILogger<PcssSyncService> logger) : IPcssSyncService
     {
@@ -29,6 +30,7 @@ namespace Scv.Api.Services
         private readonly IGroupService _groupService = groupService;
         private readonly IJudgeService _judgeService = judgeService;
         private readonly IRepositoryBase<Group> _groupRepo = groupRepo;
+        private readonly IRepositoryBase<Role> _roleRepo = roleRepo;
         private readonly IRoleService _roleService = roleService;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
@@ -77,12 +79,16 @@ namespace Scv.Api.Services
                     var testingGroupId = (await _groupRepo.FindAsync(g => g.Name == Group.TESTING))
                         .FirstOrDefault()
                         ?.Id;
+                    var developerRoleId = (await _roleRepo.FindAsync(g => g.Name == Role.DEVELOPER))
+                        .FirstOrDefault()
+                        ?.Id;
 
-                    if (!string.IsNullOrWhiteSpace(testingGroupId)
+                    if (!string.IsNullOrWhiteSpace(testingGroupId) && !string.IsNullOrWhiteSpace(developerRoleId)
                         && currentGroupIds.Contains(testingGroupId)
                         && !groupIds.Contains(testingGroupId))
                     {
                         groupIds.Add(testingGroupId);
+                        roleIds.Add(developerRoleId);
                     }
                 }
 

@@ -29,7 +29,7 @@
           density="comfortable"
           clearable
           :multiple="false"
-          filter-by-type=".pdf,.doc,.docx"
+          :filter-by-type="props.supportedTypes"
           scrim="primary"
           :disabled="props.disabled"
           @update:model-value="onDocumentSelected"
@@ -61,9 +61,11 @@
       disabled: boolean;
       text: string | null;
       collapsible?: boolean;
+      supportedTypes?: string;
     }>(),
     {
       collapsible: true,
+      supportedTypes: '.pdf,.doc,.docx',
     }
   );
   const selectedFile = defineModel<File | null>('selectedFile', {

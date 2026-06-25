@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
@@ -18,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PCSSCommon.Models;
+using Scv.Api.Documents.Extractors;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Scv.Db.Models;
@@ -38,6 +40,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<Hangfire.IBackgroundJobClient> _mockBackgroundJobClient;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly Mock<IJudicialServicesClient> _mockJudicialClient;
+    private readonly Mock<IDeskOrderDetailsExtractor> _mockDeskOrderDetailsExtractor;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -56,6 +59,7 @@ public class OrderServiceTests : ServiceTestBase
 
         var config = new TypeAdapterConfig();
         config.Apply(new AccessControlManagementMapping());
+        config.Apply(new OrderMapping());
         _mapper = new Mapper(config);
 
         _mockLogger = new Mock<ILogger<OrderService>>();
@@ -66,6 +70,7 @@ public class OrderServiceTests : ServiceTestBase
         _mockBackgroundJobClient = new Mock<Hangfire.IBackgroundJobClient>();
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         _mockJudicialClient = new Mock<IJudicialServicesClient>();
+        _mockDeskOrderDetailsExtractor = new Mock<IDeskOrderDetailsExtractor>();
 
         _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -85,7 +90,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
             _mockHttpContextAccessor.Object,
-            _mockJudicialClient.Object);
+            _mockJudicialClient.Object,
+            _mockDeskOrderDetailsExtractor.Object);
     }
 
     private void SetupConfiguration()
@@ -1002,6 +1008,129 @@ public class OrderServiceTests : ServiceTestBase
 
         Assert.True(result.Succeeded);
         _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitApprovedDeskOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
+    {
+        var fakeComment = _faker.Lorem.Sentence();
+        var fakeDirections = _faker.Lorem.Sentence();
+        var fakeOrderTerm = _faker.Lorem.Sentence();
+
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+        order.SupportingDocumentData = _faker.Random.Bytes(32);
+        order.Status = OrderStatus.Approved;
+        order.Comments = fakeComment;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Returns(new DeskOrderDetailsDto
+            {
+                Directions = fakeDirections,
+                OrderTerms = [new() { Text = fakeOrderTerm }],
+            });
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == $"{fakeComment}. {fakeDirections}"
+                    && ja.OrderTerms.Count == 1
+                    && ja.OrderTerms.First().Text == fakeOrderTerm
+                    && ja.Document.Length == 0
+                )),
+                Times.Once);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitNotApprovedDeskOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
+    {
+        var fakeComment = _faker.Lorem.Sentence();
+        var fakeDirections = _faker.Lorem.Sentence();
+        var fakeOrderTerm = _faker.Lorem.Sentence();
+
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+        order.SupportingDocumentData = _faker.Random.Bytes(32);
+        order.Status = OrderStatus.Unapproved;
+        order.Comments = fakeComment;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Returns(new DeskOrderDetailsDto
+            {
+                Directions = fakeDirections,
+                OrderTerms = [new() { Text = fakeOrderTerm }],
+            });
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == fakeComment
+                    && ja.OrderTerms.Count == 0
+                    && ja.Document.Length == 0
+                )),
+                Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 

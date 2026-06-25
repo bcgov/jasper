@@ -15,16 +15,6 @@ public class OrderViewDto : BaseDto
     public string PriorityType { get; set; }
     public string PriorityTypeDesc => PriorityTypeDescriptor.Describe(PriorityType);
     public string CourtListType { get; set; }
-    public string CourtListTypeDescription => GetCourtListTypeDescription(CourtListType);
+    public string CourtListTypeDescription => CourtListTypeDescriptor.Describe(CourtListType);
     public string ReferralNotes { get; set; }
-
-    private static string GetCourtListTypeDescription(string courtListType)
-    {
-        return courtListType switch
-        {
-            "PSC" or "PFA" => "Order", // PCS - Small Claims Court List | PFA - Family Court List
-            "PSM" or "PFM" => "Desk Order", // PSM - Provincial Court Desk Order Small Claims | PFM - Provincial Court Desk Order Family List
-            _ => courtListType,
-        };
-    }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
 using Scv.Core.ContractResolver;
 using Scv.Core.Helpers;
@@ -43,6 +45,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly string _requestPartId;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IJudicialServicesClient _judicialClient;
+    private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -56,7 +59,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IJudgeService judgeService,
         IBackgroundJobClient backgroundJobClient,
         IHttpContextAccessor httpContextAccessor,
-        IJudicialServicesClient judicialClient
+        IJudicialServicesClient judicialClient,
+        IDeskOrderDetailsExtractor deskOrderDetailsExtractor
     ) : base(
             cache,
             mapper,
@@ -73,6 +77,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
         _httpContextAccessor = httpContextAccessor;
         _judicialClient = judicialClient;
+        _deskOrderDetailsExtractor = deskOrderDetailsExtractor;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -440,6 +445,39 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         {
             actionDto.SignedDate = null;
         }
+
+        if (orderDto.OrderRequest.Referral.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+            || orderDto.OrderRequest.Referral.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE)
+        {
+            actionDto = PopulateDeskOrderDetails(orderDto, actionDto);
+        }
+
+        return actionDto;
+    }
+
+    private JudicialAction PopulateDeskOrderDetails(OrderDto orderDto, JudicialAction actionDto)
+    {
+        // No document will be sent for Desk Orders
+        actionDto.Document = [];
+        if (orderDto.Status != OrderStatus.Approved)
+        {
+            return actionDto;
+        }
+
+        var bytes = Convert.FromBase64String(orderDto.SupportingDocumentData);
+        using var stream = new MemoryStream(bytes);
+
+        var deskOrderDetails = _deskOrderDetailsExtractor.Extract(stream);
+
+        this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfuly for Order {OrderId}.", orderDto.Id);
+
+        actionDto.Comment = string.Join(". ", actionDto.Comment, deskOrderDetails.Directions);
+        actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
+            {
+                SequenceNumber = term.SequenceNumber,
+                Text = term.Text,
+                DisplaySortNumber = term.DisplaySortNumber
+            })];
 
         return actionDto;
     }

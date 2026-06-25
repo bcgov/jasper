@@ -24,6 +24,11 @@ namespace tests.api.Documents;
 
 public class DocumentMergerTest : ServiceTestBase
 {
+    static DocumentMergerTest()
+    {
+        new LicenseManager().RegisterKEY(string.Empty);
+    }
+
     [Fact]
     public async Task MergeDocuments_RetrievesDocumentsInBatches()
     {

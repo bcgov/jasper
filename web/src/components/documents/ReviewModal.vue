@@ -90,6 +90,7 @@
             v-model:show="show"
             v-model:selectedFile="selectedUpload"
             text="Attach Desk Order"
+            :supportedTypes="isFamilyDeskOrder ? '.docx' : ''"
             :collapsible="false"
           />
         </v-card-text>

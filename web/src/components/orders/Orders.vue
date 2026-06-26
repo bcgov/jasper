@@ -65,7 +65,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { isDeskOrder } from '@/composables/useOrderCounts';
+  import { isDeskOrder, isPendingOrder } from '@/composables/useOrderCounts';
   import { OrderService } from '@/services';
   import {
     useCommonStore,
@@ -73,7 +73,7 @@
     useOrdersStore,
   } from '@/stores';
   import { Order } from '@/types';
-  import { KeyValueInfo, OrderReviewStatus } from '@/types/common';
+  import { KeyValueInfo } from '@/types/common';
   import { viewOrderDetails } from '@/utils/orderDetails';
   import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
   import { DateTime } from 'luxon';
@@ -111,11 +111,7 @@
   });
 
   const pendingOrders = computed(() =>
-    filteredOrders.value.filter(
-      (order) =>
-        order.status === OrderReviewStatus.Pending ||
-        order.status === OrderReviewStatus.AwaitingDocumentation
-    )
+    filteredOrders.value.filter((order) => isPendingOrder(order))
   );
 
   const completedOrders = computed(() => {
@@ -124,7 +120,7 @@
       .startOf('day');
     return filteredOrders.value.filter(
       (order) =>
-        order.status === OrderReviewStatus.Approved &&
+        !isPendingOrder(order) &&
         DateTime.fromJSDate(new Date(order.receivedDate)) >= cutoff
     );
   });

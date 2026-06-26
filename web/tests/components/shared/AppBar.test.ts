@@ -3,6 +3,7 @@ import { ApplicationConfigurationKey } from '@/stores/CommonStore';
 import { PersonSearchItem } from '@/types';
 import {
   ApplicationInfo,
+  OrderCourtLisTypeEnum,
   OrderPriorityEnum,
   OrderReviewStatus,
   RolesEnum,
@@ -67,7 +68,7 @@ const generateUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
 const generateOrder = (
   status: OrderReviewStatus,
   priorityType: string = 'NONPRIORITY',
-  courtListTypeDescription: string = 'Daily List'
+  courtListType: string = ''
 ) => ({
   id: faker.string.uuid(),
   status,
@@ -78,8 +79,7 @@ const generateOrder = (
   receivedDate: faker.date.past().toISOString().split('T')[0],
   processedDate: faker.date.past().toISOString().split('T')[0],
   courtClass: faker.helpers.arrayElement(['CC', 'CV']),
-  courtListType: faker.helpers.arrayElement(['Daily', 'Weekly']),
-  courtListTypeDescription,
+  courtListType,
   courtFileNumber: faker.string.alphanumeric({ length: 10 }).toUpperCase(),
   styleOfCause: `${faker.person.lastName()} v ${faker.person.lastName()}`,
   physicalFileId: faker.number.int().toString(),
@@ -87,8 +87,9 @@ const generateOrder = (
 
 const generateDeskOrder = (
   status: OrderReviewStatus,
-  priorityType: string = 'NONPRIORITY'
-) => generateOrder(status, priorityType, 'Desk Order');
+  priorityType: string = 'NONPRIORITY',
+  courtListType: string = OrderCourtLisTypeEnum.PSM
+) => generateOrder(status, priorityType, courtListType);
 
 const generateAppInfo = (overrides: Partial<ApplicationInfo> = {}) => ({
   version: '1.0.0',
@@ -447,6 +448,8 @@ describe('AppBar.vue', () => {
 
       const wrapper = createWrapper();
       await flushPromises();
+
+      console.log(wrapper.html());
 
       expect((wrapper.vm as any).priorityPendingOrdersCount).toBe(1);
       expect((wrapper.vm as any).regularPendingOrdersCount).toBe(1);

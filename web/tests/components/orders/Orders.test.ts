@@ -1,5 +1,10 @@
 import type { Order } from '@/types';
-import { OrderReviewStatus, RolesEnum, UserInfo } from '@/types/common';
+import {
+  OrderCourtLisTypeEnum,
+  OrderReviewStatus,
+  RolesEnum,
+  UserInfo,
+} from '@/types/common';
 import { faker } from '@faker-js/faker';
 import { mount } from '@vue/test-utils';
 import Orders from 'CMP/orders/Orders.vue';
@@ -215,11 +220,11 @@ describe('Orders.vue', () => {
 
     it('displays count next to "Applications" title when there are pending desk orders', () => {
       mockRoute.name = 'DeskOrders';
-      // A desk order is identified by courtListTypeDescription === 'Desk Order'
+      // A desk order is identified by courtListType === 'PFM' | 'PSM'
       // (see isDeskOrder in useOrderCounts).
       const deskOrder: Order = {
         ...generateOrder(OrderReviewStatus.Pending, 'Criminal'),
-        courtListTypeDescription: 'Desk Order',
+        courtListType: OrderCourtLisTypeEnum.PFM,
       };
       mockOrdersStore.orders = [deskOrder];
 

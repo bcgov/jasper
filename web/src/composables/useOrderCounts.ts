@@ -1,10 +1,12 @@
 import type { Order } from '@/types';
-import { OrderPriorityEnum, OrderReviewStatus } from '@/types/common';
+import {
+  OrderCourtLisTypeEnum,
+  OrderPriorityEnum,
+  OrderReviewStatus,
+} from '@/types/common';
 import { computed, type ComputedRef } from 'vue';
 
 const PRIORITY_ORDER_TYPES = new Set<string>(Object.values(OrderPriorityEnum));
-
-export const DESK_ORDER_DESCRIPTION = 'Desk Order';
 
 export const isPendingOrder = (order: Order): boolean =>
   order.status === OrderReviewStatus.Pending;
@@ -13,7 +15,8 @@ export const isPriorityOrder = (order: Order): boolean =>
   PRIORITY_ORDER_TYPES.has(order.priorityType);
 
 export const isDeskOrder = (order: Order): boolean =>
-  order.courtListTypeDescription === DESK_ORDER_DESCRIPTION;
+  order.courtListType === OrderCourtLisTypeEnum.PSM ||
+  order.courtListType === OrderCourtLisTypeEnum.PFM;
 
 export interface PendingOrderCounts {
   priority: ComputedRef<number>;

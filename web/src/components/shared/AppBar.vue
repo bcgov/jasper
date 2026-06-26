@@ -25,6 +25,7 @@
         >DARS</v-btn
       >
       <OrdersTab
+        data-testid="orders-tab"
         v-if="showOrders"
         value="orders"
         title="For Signing"
@@ -34,6 +35,7 @@
         :pulse-active="badgePulseActive"
       />
       <OrdersTab
+        data-testid="desk-orders-tab"
         v-if="showOrders"
         value="desk-orders"
         title="Applications"

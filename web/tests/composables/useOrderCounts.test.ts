@@ -1,12 +1,15 @@
 import {
-  DESK_ORDER_DESCRIPTION,
   isDeskOrder,
   isPendingOrder,
   isPriorityOrder,
   useOrderCounts,
 } from '@/composables/useOrderCounts';
 import type { Order } from '@/types';
-import { OrderPriorityEnum, OrderReviewStatus } from '@/types/common';
+import {
+  OrderCourtLisTypeEnum,
+  OrderPriorityEnum,
+  OrderReviewStatus,
+} from '@/types/common';
 import { describe, expect, it } from 'vitest';
 import { ref } from 'vue';
 
@@ -60,21 +63,22 @@ describe('useOrderCounts', () => {
     });
 
     describe('isDeskOrder', () => {
-      it('returns true when courtListTypeDescription matches DESK_ORDER_DESCRIPTION', () => {
+      it('returns true when courtListType is PFM or PSM', () => {
         expect(
-          isDeskOrder(
-            makeOrder({ courtListTypeDescription: DESK_ORDER_DESCRIPTION })
-          )
+          isDeskOrder(makeOrder({ courtListType: OrderCourtLisTypeEnum.PFM }))
+        ).toBe(true);
+        expect(
+          isDeskOrder(makeOrder({ courtListType: OrderCourtLisTypeEnum.PSM }))
         ).toBe(true);
       });
 
-      it('returns false for any other courtListTypeDescription', () => {
+      it('returns false for any other courtListType', () => {
         expect(
-          isDeskOrder(makeOrder({ courtListTypeDescription: 'Daily List' }))
+          isDeskOrder(makeOrder({ courtListType: OrderCourtLisTypeEnum.PCS }))
         ).toBe(false);
-        expect(isDeskOrder(makeOrder({ courtListTypeDescription: '' }))).toBe(
-          false
-        );
+        expect(
+          isDeskOrder(makeOrder({ courtListType: OrderCourtLisTypeEnum.PFA }))
+        ).toBe(false);
       });
     });
   });
@@ -154,19 +158,19 @@ describe('useOrderCounts', () => {
       const orders: Order[] = [
         makeOrder({
           priorityType: OrderPriorityEnum.ProtectionOrders,
-          courtListTypeDescription: DESK_ORDER_DESCRIPTION,
+          courtListType: OrderCourtLisTypeEnum.PSM,
         }),
         makeOrder({
           priorityType: 'NONPRIORITY',
-          courtListTypeDescription: DESK_ORDER_DESCRIPTION,
+          courtListType: OrderCourtLisTypeEnum.PSM,
         }),
         makeOrder({
           priorityType: OrderPriorityEnum.CourtDirected,
-          courtListTypeDescription: 'Daily List',
+          courtListType: OrderCourtLisTypeEnum.PCS,
         }),
         makeOrder({
           priorityType: 'NONPRIORITY',
-          courtListTypeDescription: 'Daily List',
+          courtListType: OrderCourtLisTypeEnum.PFA,
         }),
       ];
 
@@ -225,10 +229,6 @@ describe('useOrderCounts', () => {
 
       expect(priority.value).toBe(0);
       expect(regular.value).toBe(2);
-    });
-
-    it('exposes DESK_ORDER_DESCRIPTION as the expected literal', () => {
-      expect(DESK_ORDER_DESCRIPTION).toBe('Desk Order');
     });
   });
 });

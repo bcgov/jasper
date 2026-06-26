@@ -112,7 +112,6 @@ describe('OrdersDataTable.vue', () => {
     expect(headerTitles).toEqual([
       'PACKAGE #',
       'PRIORITY',
-      'TYPE',
       'DATE RECEIVED',
       'DIVISION',
       'FILE #',
@@ -335,45 +334,6 @@ describe('OrdersDataTable.vue', () => {
     });
 
     expect(wrapper.text()).toContain('Test Priority Description');
-  });
-
-  it('renders courtListType as plain text (already mapped to display label)', () => {
-    const wrapper = mount(OrdersDataTable, {
-      props: {
-        data: [mockData[0]],
-        viewOrderDetails: mockViewOrderDetails,
-        viewCaseDetails: mockViewCaseDetails,
-      },
-      global: {
-        stubs: {
-          VDataTableVirtual: VDataTableVirtualStub,
-        },
-      },
-    });
-
-    expect(wrapper.text()).toContain('Order');
-  });
-
-  it('renders an empty priority cell when priorityTypeDesc is missing', () => {
-    const orderWithoutDescription: Order = {
-      ...mockData[1],
-      priorityTypeDesc: undefined,
-    };
-    const wrapper = mount(OrdersDataTable, {
-      props: {
-        data: [orderWithoutDescription],
-        viewOrderDetails: mockViewOrderDetails,
-        viewCaseDetails: mockViewCaseDetails,
-      },
-      global: {
-        stubs: {
-          VDataTableVirtual: VDataTableVirtualStub,
-        },
-      },
-    });
-
-    expect(wrapper.text()).not.toContain('IS');
-    expect(wrapper.text()).toContain('Application');
   });
 
   describe('isAgedOrder', () => {

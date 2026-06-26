@@ -3,6 +3,7 @@ import { ApplicationConfigurationKey } from '@/stores/CommonStore';
 import { PersonSearchItem } from '@/types';
 import {
   ApplicationInfo,
+  OrderCourtLisTypeEnum,
   OrderPriorityEnum,
   OrderReviewStatus,
   RolesEnum,
@@ -66,7 +67,8 @@ const generateUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
 
 const generateOrder = (
   status: OrderReviewStatus,
-  priorityType: string = 'NONPRIORITY'
+  priorityType: string = 'NONPRIORITY',
+  courtListType: string = ''
 ) => ({
   id: faker.string.uuid(),
   status,
@@ -77,11 +79,17 @@ const generateOrder = (
   receivedDate: faker.date.past().toISOString().split('T')[0],
   processedDate: faker.date.past().toISOString().split('T')[0],
   courtClass: faker.helpers.arrayElement(['CC', 'CV']),
-  courtListType: faker.helpers.arrayElement(['Daily', 'Weekly']),
+  courtListType,
   courtFileNumber: faker.string.alphanumeric({ length: 10 }).toUpperCase(),
   styleOfCause: `${faker.person.lastName()} v ${faker.person.lastName()}`,
   physicalFileId: faker.number.int().toString(),
 });
+
+const generateDeskOrder = (
+  status: OrderReviewStatus,
+  priorityType: string = 'NONPRIORITY',
+  courtListType: string = OrderCourtLisTypeEnum.PSM
+) => generateOrder(status, priorityType, courtListType);
 
 const generateAppInfo = (overrides: Partial<ApplicationInfo> = {}) => ({
   version: '1.0.0',
@@ -294,6 +302,7 @@ describe('AppBar.vue', () => {
 
       expect((wrapper.vm as any).showOrders).toBe(false);
       expect(wrapper.text()).not.toContain('For Signing');
+      expect(wrapper.text()).not.toContain('Applications');
     });
 
     it('should show Orders tab for admin users', async () => {
@@ -304,6 +313,8 @@ describe('AppBar.vue', () => {
       await wrapper.vm.$nextTick();
 
       expect((wrapper.vm as any).showOrders).toBe(true);
+      expect(wrapper.text()).toContain('For Signing');
+      expect(wrapper.text()).toContain('Applications');
     });
 
     it('should display priority pending orders badge when there are priority pending orders', async () => {
@@ -402,6 +413,144 @@ describe('AppBar.vue', () => {
 
       const comboBadge = wrapper.find('[data-testid="order-combo-badge"]');
       expect(comboBadge.exists()).toBe(true);
+    });
+  });
+
+  describe('Applications tab (desk orders)', () => {
+    it('should split desk orders into desk-order counts and not into For Signing counts', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const mockOrders = [
+        // For Signing: 1 priority, 1 regular
+        generateOrder(
+          OrderReviewStatus.Pending,
+          OrderPriorityEnum.ProtectionOrders
+        ),
+        generateOrder(OrderReviewStatus.Pending),
+        // Applications (desk): 2 priority, 1 regular
+        generateDeskOrder(
+          OrderReviewStatus.Pending,
+          OrderPriorityEnum.ProtectionOrders
+        ),
+        generateDeskOrder(
+          OrderReviewStatus.Pending,
+          OrderPriorityEnum.CourtDirected
+        ),
+        generateDeskOrder(OrderReviewStatus.Pending),
+        // Should be ignored (not pending)
+        generateDeskOrder(OrderReviewStatus.Approved),
+      ];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+      const orderStore = useOrdersStore();
+      orderStore.orders = mockOrders;
+
+      const wrapper = createWrapper();
+      await flushPromises();
+
+      console.log(wrapper.html());
+
+      expect((wrapper.vm as any).priorityPendingOrdersCount).toBe(1);
+      expect((wrapper.vm as any).regularPendingOrdersCount).toBe(1);
+      expect((wrapper.vm as any).priorityPendingDeskOrdersCount).toBe(2);
+      expect((wrapper.vm as any).regularPendingDeskOrdersCount).toBe(1);
+    });
+
+    it('should display priority badge on Applications tab when there are priority pending desk orders', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const mockOrders = [
+        generateDeskOrder(
+          OrderReviewStatus.Pending,
+          OrderPriorityEnum.ProtectionOrders
+        ),
+        generateDeskOrder(
+          OrderReviewStatus.Pending,
+          OrderPriorityEnum.CourtDirected
+        ),
+        generateDeskOrder(OrderReviewStatus.Approved),
+      ];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+      const orderStore = useOrdersStore();
+      orderStore.orders = mockOrders;
+
+      const wrapper = createWrapper();
+      await flushPromises();
+
+      const badge = wrapper.find('[data-testid="priority-badge"]');
+
+      expect(badge.exists()).toBe(true);
+      expect(badge.attributes('content')).toBe('2');
+      expect((wrapper.vm as any).priorityPendingDeskOrdersCount).toBe(2);
+      expect((wrapper.vm as any).priorityPendingOrdersCount).toBe(0);
+    });
+
+    it('should display regular badge on Applications tab when there are non-priority pending desk orders', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const mockOrders = [
+        generateDeskOrder(OrderReviewStatus.Pending),
+        generateDeskOrder(OrderReviewStatus.Pending),
+        generateDeskOrder(OrderReviewStatus.Approved),
+      ];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+      const orderStore = useOrdersStore();
+      orderStore.orders = mockOrders;
+
+      const wrapper = createWrapper();
+      await flushPromises();
+
+      const badge = wrapper.find('[data-testid="regular-badge"]');
+
+      expect(badge.exists()).toBe(true);
+      expect(badge.attributes('content')).toBe('2');
+      expect((wrapper.vm as any).regularPendingDeskOrdersCount).toBe(2);
+      expect((wrapper.vm as any).regularPendingOrdersCount).toBe(0);
+    });
+
+    it('should show order-combo-badge when there are both priority and regular pending desk orders', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const mockOrders = [
+        generateDeskOrder(
+          OrderReviewStatus.Pending,
+          OrderPriorityEnum.ProtectionOrders
+        ),
+        generateDeskOrder(OrderReviewStatus.Pending),
+      ];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+      const orderStore = useOrdersStore();
+      orderStore.orders = mockOrders;
+
+      const wrapper = createWrapper();
+      await flushPromises();
+
+      const comboBadge = wrapper.find('[data-testid="order-combo-badge"]');
+      expect(comboBadge.exists()).toBe(true);
+    });
+
+    it('should not display any desk-order badge when there are no pending desk orders', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const mockOrders = [generateDeskOrder(OrderReviewStatus.Approved)];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+      const orderStore = useOrdersStore();
+      orderStore.orders = mockOrders;
+
+      const wrapper = createWrapper();
+      await flushPromises();
+
+      expect((wrapper.vm as any).priorityPendingDeskOrdersCount).toBe(0);
+      expect((wrapper.vm as any).regularPendingDeskOrdersCount).toBe(0);
     });
   });
 

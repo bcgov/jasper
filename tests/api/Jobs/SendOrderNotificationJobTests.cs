@@ -109,19 +109,34 @@ public class SendOrderNotificationJobTests
         orderRequestDto.PhysicalFileId = physicalFileId;
         var orderDto = CreateOrderDto(judgeId, orderRequestDto);
 
+        var judge = CreateActiveJudge(judgeId);
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
+            .ReturnsAsync(judge);
+
+        var databaseUser = new UserDto
+        {
+            Id = _faker.Random.AlphaNumeric(24),
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+            JudgeId = judgeId
+        };
+
+        _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
+            .ReturnsAsync(databaseUser);
         await _job.Execute(orderDto);
 
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains($"Order for file {physicalFileId} is not marked as priority - skipping notification")),
+                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains($"Order for file {physicalFileId} is not marked as priority - skipping email notification")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
 
-        _mockJudgeService.Verify(s => s.GetJudge(It.IsAny<int>()), Times.Never);
-        _mockUserService.Verify(s => s.GetByJudgeIdAsync(It.IsAny<int>()), Times.Never);
+        _mockJudgeService.Verify(s => s.GetJudge(It.IsAny<int>()), Times.Once);
+        _mockUserService.Verify(s => s.GetByJudgeIdAsync(It.IsAny<int>()), Times.Once);
         _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),

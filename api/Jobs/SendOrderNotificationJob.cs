@@ -35,13 +35,6 @@ public class SendOrderNotificationJob(
             _logger.LogInformation("Processing order notification job for file {FileId}",
                 order.OrderRequest.PhysicalFileId);
 
-            if (order.OrderRequest?.Referral?.IsPriority != true)
-            {
-                _logger.LogInformation("Order for file {FileId} is not marked as priority - skipping notification",
-                    order.OrderRequest.PhysicalFileId);
-                return;
-            }
-
             await NotifyJudgeOfNewOrderAsync(order);
 
             _logger.LogInformation("Order notification job completed for file {FileId}",
@@ -87,6 +80,13 @@ public class SendOrderNotificationJob(
         }
 
         await _orderReceivedAck.SendAsync(order, databaseUser.Id);
+
+        if (order.OrderRequest?.Referral?.IsPriority != true)
+        {
+            _logger.LogInformation("Order for file {FileId} is not marked as priority - skipping email notification",
+                order.OrderRequest.PhysicalFileId);
+            return;
+        }
 
         var judgeEmail = databaseUser.Email;
         if (string.IsNullOrWhiteSpace(judgeEmail))

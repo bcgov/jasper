@@ -24,59 +24,26 @@
         :rounded="false"
         >DARS</v-btn
       >
-      <v-tab value="orders" to="/orders" v-if="showOrders">
-        <v-badge
-          v-if="priorityPendingOrdersCount > 0 && regularPendingOrdersCount > 0"
-          data-testid="order-combo-badge"
-          :class="{
-            'badge-pulse': badgePulseActive,
-            'order-combo-badge': true,
-          }"
-          offset-x="0"
-          offset-y="-10"
-        >
-          <template #badge>
-            <span
-              class="capsule-half priority"
-              :title="`${priorityPendingOrdersCount} priority orders pending`"
-            >
-              {{ priorityPendingOrdersCount }}
-            </span>
-            <span
-              class="capsule-half regular"
-              :title="`${regularPendingOrdersCount} regular orders pending`"
-            >
-              {{ regularPendingOrdersCount }}
-            </span>
-          </template>
-          For Signing
-        </v-badge>
-        <v-badge
-          v-else-if="priorityPendingOrdersCount > 0"
-          data-testid="priority-badge"
-          :content="priorityPendingOrdersCount"
-          :class="{ 'badge-pulse': badgePulseActive }"
-          color="var(--bg-red-500)"
-          :title="`${priorityPendingOrdersCount} priority orders pending`"
-          offset-x="-10"
-          offset-y="-10"
-        >
-          For Signing
-        </v-badge>
-        <v-badge
-          v-else-if="regularPendingOrdersCount > 0"
-          data-testid="regular-badge"
-          :content="regularPendingOrdersCount"
-          :class="{ 'badge-pulse': badgePulseActive }"
-          color="var(--bg-green-500)"
-          :title="`${regularPendingOrdersCount} regular orders pending`"
-          offset-x="-10"
-          offset-y="-10"
-        >
-          For Signing
-        </v-badge>
-        <template v-else>For Signing</template>
-      </v-tab>
+      <OrdersTab
+        data-testid="orders-tab"
+        v-if="showOrders"
+        value="orders"
+        title="For Signing"
+        label="orders"
+        :priority-count="priorityPendingOrdersCount"
+        :regular-count="regularPendingOrdersCount"
+        :pulse-active="badgePulseActive"
+      />
+      <OrdersTab
+        data-testid="desk-orders-tab"
+        v-if="showOrders"
+        value="desk-orders"
+        title="Applications"
+        label="desk orders"
+        :priority-count="priorityPendingDeskOrdersCount"
+        :regular-count="regularPendingDeskOrdersCount"
+        :pulse-active="badgePulseActive"
+      />
       <v-spacer></v-spacer>
       <div class="d-flex align-center">
         <JudgeSelector
@@ -113,6 +80,8 @@
 
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
+  import { useOrderBadgePulse } from '@/composables/useOrderBadgePulse.js';
+  import { isDeskOrder, useOrderCounts } from '@/composables/useOrderCounts';
   import { JudgeService, OrderService } from '@/services';
   import { NotificationsService } from '@/signalr/notifications';
   import { useCommonStore } from '@/stores';
@@ -120,15 +89,12 @@
   import { useNotificationsStore } from '@/stores/NotificationsStore';
   import { useOrdersStore } from '@/stores/OrdersStore';
   import { PersonSearchItem } from '@/types';
-  import {
-    OrderPriorityEnum,
-    OrderReviewStatus,
-    RolesEnum,
-  } from '@/types/common';
+  import { RolesEnum } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
-  import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+  import { computed, inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import JudgeSelector from './JudgeSelector.vue';
+  import OrdersTab from '../orders/OrdersTab.vue';
 
   const emit = defineEmits<(e: 'open-profile') => void>();
 
@@ -147,7 +113,6 @@
   const judges = ref<PersonSearchItem[]>([]);
   // Only users with Admin role can see Orders tab for now.
   const requiredOrderRoles = [RolesEnum.Admin] as const;
-  const priorityOrderTypes = new Set<string>(Object.values(OrderPriorityEnum));
 
   if (!judgeService || !orderService || !notificationsService) {
     throw new Error('Service is not available!');
@@ -232,52 +197,23 @@
       judges.value.length > 0
   );
 
-  const priorityPendingOrdersCount = computed(
-    () =>
-      ordersStore.orders.filter(
-        (o) =>
-          o.status === OrderReviewStatus.Pending &&
-          priorityOrderTypes.has(o.priorityType)
-      ).length
+  // Pending order counts, split by desk vs. non-desk and priority vs. regular.
+  const orderCounts = useOrderCounts(
+    () => ordersStore.orders,
+    (o) => !isDeskOrder(o)
   );
+  const deskOrderCounts = useOrderCounts(() => ordersStore.orders, isDeskOrder);
 
-  const regularPendingOrdersCount = computed(
-    () =>
-      ordersStore.orders.filter(
-        (o) =>
-          o.status === OrderReviewStatus.Pending &&
-          !priorityOrderTypes.has(o.priorityType)
-      ).length
+  // Names retained for backward compatibility with existing tests/templates.
+  const priorityPendingOrdersCount = orderCounts.priority;
+  const regularPendingOrdersCount = orderCounts.regular;
+  const priorityPendingDeskOrdersCount = deskOrderCounts.priority;
+  const regularPendingDeskOrdersCount = deskOrderCounts.regular;
+
+  const { active: badgePulseActive } = useOrderBadgePulse(
+    [orderCounts, deskOrderCounts],
+    [() => ordersStore.lastFetched]
   );
-
-  const badgePulseActive = ref(false);
-
-  const triggerBadgePulse = async () => {
-    if (
-      priorityPendingOrdersCount.value === 0 ||
-      regularPendingOrdersCount.value === 0
-    ) {
-      return;
-    }
-
-    badgePulseActive.value = false;
-    await nextTick();
-    badgePulseActive.value = true;
-    globalThis.setTimeout(() => {
-      badgePulseActive.value = false;
-    }, 1200);
-  };
-
-  watch(
-    () => ordersStore.lastFetched,
-    () => {
-      void triggerBadgePulse();
-    }
-  );
-
-  watch([priorityPendingOrdersCount, regularPendingOrdersCount], () => {
-    void triggerBadgePulse();
-  });
 </script>
 
 <style scoped>
@@ -308,49 +244,5 @@
   .release-notes-emphasis {
     text-decoration: underline;
     text-underline-offset: 2px;
-  }
-
-  .badge-pulse :deep(.v-badge__badge) {
-    animation: badge-pop 0.35s ease-out;
-  }
-
-  .order-combo-badge :deep(.v-badge__badge) {
-    padding: 0;
-    min-width: auto;
-    height: 18px;
-    overflow: hidden;
-    background: transparent;
-  }
-
-  .order-combo-badge :deep(.v-badge__badge) .capsule-half {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 100%;
-    padding: 0 6px;
-    font-size: 0.75rem;
-    line-height: 1;
-    color: var(--bg-white-500);
-  }
-
-  .order-combo-badge :deep(.v-badge__badge) .capsule-half.priority {
-    background-color: var(--bg-red-500);
-  }
-
-  .order-combo-badge :deep(.v-badge__badge) .capsule-half.regular {
-    background-color: var(--bg-green-500);
-  }
-
-  @keyframes badge-pop {
-    0% {
-      transform: scale(1);
-    }
-    45% {
-      transform: scale(1.2);
-    }
-    100% {
-      transform: scale(1);
-    }
   }
 </style>

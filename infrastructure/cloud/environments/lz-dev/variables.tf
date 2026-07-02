@@ -181,3 +181,15 @@ variable "lza_log_archive_account_id" {
   description = "LZA Log Archive Account ID for centralized ALB logging"
   type        = string
 }
+
+variable "use_existing_mongo_tls_secret" {
+  description = "Use an existing Mongo TLS secret instead of creating one"
+  type        = bool
+  default     = false
+}
+
+variable "existing_mongo_tls_secret_name" {
+  description = "Optional existing Mongo TLS secret name"
+  type        = string
+  default     = ""
+}

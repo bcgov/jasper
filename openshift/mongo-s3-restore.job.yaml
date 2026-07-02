@@ -1,0 +1,275 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: mongo-s3-restore
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: mongo-s3-restore
+      namespace: ${NAMESPACE}
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 86400
+      activeDeadlineSeconds: 7200
+      template:
+        metadata:
+          labels:
+            app: mongo-s3-restore
+            DataClass: Medium
+            owner: ${OWNER_LABEL}
+            project: ${PROJECT_LABEL}
+          annotations:
+            vault.hashicorp.com/agent-inject: 'true'
+            vault.hashicorp.com/agent-run-as-init: 'true'
+            vault.hashicorp.com/agent-pre-populate-only: 'true'
+            vault.hashicorp.com/agent-inject-token: 'false'
+            vault.hashicorp.com/namespace: ${VAULT_NAMESPACE}
+            vault.hashicorp.com/auth-path: ${VAULT_AUTH_PATH}
+            vault.hashicorp.com/role: ${VAULT_ROLE}
+            vault.hashicorp.com/agent-configmap: ${VAULT_AGENT_CONFIGMAP}
+            vault.hashicorp.com/agent-inject-secret-jasper-secret: ${VAULT_SECRET_PATH}
+        spec:
+          serviceAccountName: ${SERVICE_ACCOUNT_NAME}
+          automountServiceAccountToken: true
+          restartPolicy: Never
+          containers:
+            - name: restore
+              image: ${RESTORE_IMAGE}
+              imagePullPolicy: Always
+              env:
+                # AWS credentials from existing OpenShift Secret.
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${AWS_SECRET_NAME}
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${AWS_SECRET_NAME}
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: AWS_REGION
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${AWS_SECRET_NAME}
+                      key: AWS_REGION
+                - name: AWS_DEFAULT_REGION
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${AWS_SECRET_NAME}
+                      key: AWS_REGION
+
+                # S3 backup location.
+                - name: S3_BUCKET
+                  value: ${S3_BUCKET}
+
+                # Example:
+                # mongo-migration/emerald/aws-docdb-jasper-20260617T211500Z.archive.gz
+                - name: S3_DUMP_KEY
+                  value: ${S3_DUMP_KEY}
+
+                # Optional. If empty, checksum validation is skipped.
+                # Example:
+                # mongo-migration/emerald/aws-docdb-jasper-20260617T211500Z.archive.gz.sha256
+                - name: S3_CHECKSUM_KEY
+                  value: ${S3_CHECKSUM_KEY}
+
+                # Target MongoDB service.
+                - name: MONGO_HOST
+                  value: ${MONGO_HOST}
+                - name: MONGO_PORT
+                  value: ${MONGO_PORT}
+                - name: MONGO_AUTH_DB
+                  value: ${MONGO_AUTH_DB}
+
+                # Matches the StatefulSet.
+                - name: MONGO_INITDB_ROOT_USERNAME
+                  value: ${MONGO_INITDB_ROOT_USERNAME}
+
+                # Target MongoDB TLS settings.
+                - name: MONGO_TLS_CA_FILE
+                  value: /etc/mongo/tls/ca.crt
+
+                # Set to "true" if rerunning and you want existing collections dropped first.
+                - name: DROP_EXISTING
+                  value: ${DROP_EXISTING}
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  set -eu
+                  set +x
+
+                  log() {
+                    echo "[mongo-s3-restore] $*"
+                  }
+
+                  fail() {
+                    echo "[mongo-s3-restore] ERROR: $*" >&2
+                    exit 1
+                  }
+
+                  DUMP_PATH="/tmp/mongo-dump.archive.gz"
+                  CHECKSUM_PATH="/tmp/mongo-dump.archive.gz.sha256"
+
+                  log "Checking required tools."
+                  command -v aws >/dev/null 2>&1 || fail "aws CLI is required in the image."
+                  command -v mongorestore >/dev/null 2>&1 || fail "mongorestore is required in the image."
+                  command -v sha256sum >/dev/null 2>&1 || fail "sha256sum is required in the image."
+
+                  log "Loading MongoDB credentials from Vault-injected file."
+                  if [ -f "/vault/secrets/jasper-secret" ]; then
+                    . "/vault/secrets/jasper-secret"
+                  else
+                    VAULT_SECRET_FILE="$(ls /vault/secrets/jasper-secret* 2>/dev/null | head -n 1 || true)"
+                    if [ -n "$VAULT_SECRET_FILE" ]; then
+                      . "$VAULT_SECRET_FILE"
+                    else
+                      fail "No Vault-injected jasper secret file found under /vault/secrets."
+                    fi
+                  fi
+
+                  MONGO_USERNAME="${MONGO_INITDB_ROOT_USERNAME:-root}"
+                  MONGO_PASSWORD="${MONGO_INITDB_ROOT_PASSWORD:-}"
+
+                  [ -n "${MONGO_PASSWORD}" ] || fail "MONGO_INITDB_ROOT_PASSWORD was not found after sourcing Vault secret."
+                  [ -n "${S3_BUCKET:-}" ] || fail "S3_BUCKET is required."
+                  [ -n "${S3_DUMP_KEY:-}" ] || fail "S3_DUMP_KEY is required."
+                  [ -f "${MONGO_TLS_CA_FILE}" ] || fail "Mongo TLS CA file not found: ${MONGO_TLS_CA_FILE}"
+
+                  log "Downloading dump from S3: s3://${S3_BUCKET}/${S3_DUMP_KEY}"
+                  aws s3 cp \
+                    "s3://${S3_BUCKET}/${S3_DUMP_KEY}" \
+                    "${DUMP_PATH}" \
+                    --only-show-errors
+
+                  test -s "${DUMP_PATH}" || fail "Downloaded dump is missing or empty."
+
+                  if [ -n "${S3_CHECKSUM_KEY:-}" ]; then
+                    log "Downloading checksum from S3: s3://${S3_BUCKET}/${S3_CHECKSUM_KEY}"
+                    aws s3 cp \
+                      "s3://${S3_BUCKET}/${S3_CHECKSUM_KEY}" \
+                      "${CHECKSUM_PATH}" \
+                      --only-show-errors
+
+                    test -s "${CHECKSUM_PATH}" || fail "Downloaded checksum is missing or empty."
+
+                    log "Verifying checksum."
+                    EXPECTED_SHA="$(awk '{print $1}' "${CHECKSUM_PATH}")"
+                    ACTUAL_SHA="$(sha256sum "${DUMP_PATH}" | awk '{print $1}')"
+
+                    if [ "${EXPECTED_SHA}" != "${ACTUAL_SHA}" ]; then
+                      fail "Checksum mismatch. Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."
+                    fi
+
+                    log "Checksum verified."
+                  else
+                    log "No S3_CHECKSUM_KEY provided; skipping checksum validation."
+                  fi
+
+                  DROP_ARG=""
+                  if [ "${DROP_EXISTING}" = "true" ]; then
+                    DROP_ARG="--drop"
+                  fi
+
+                  log "Restoring archive to MongoDB at ${MONGO_HOST}:${MONGO_PORT}."
+                  mongorestore \
+                    --host "${MONGO_HOST}:${MONGO_PORT}" \
+                    --ssl \
+                    --sslCAFile "${MONGO_TLS_CA_FILE}" \
+                    --sslAllowInvalidHostnames \
+                    --username "${MONGO_USERNAME}" \
+                    --password "${MONGO_PASSWORD}" \
+                    --authenticationDatabase "${MONGO_AUTH_DB}" \
+                    --archive="${DUMP_PATH}" \
+                    --gzip \
+                    ${DROP_ARG}
+
+                  log "MongoDB restore completed successfully."
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: '1'
+                  memory: 1Gi
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+              volumeMounts:
+                - name: mongodb-temp-tls
+                  mountPath: /etc/mongo/tls
+                  readOnly: true
+          volumes:
+            - name: mongodb-temp-tls
+              secret:
+                secretName: ${MONGODB_TLS_SECRET_NAME}
+                items:
+                  - key: ${MONGODB_TLS_CA_KEY}
+                    path: ca.crt
+                defaultMode: 420
+
+parameters:
+  - name: NAMESPACE
+    required: true
+
+  - name: OWNER_LABEL
+    value: platform-team
+
+  - name: PROJECT_LABEL
+    value: application-project
+
+  - name: SERVICE_ACCOUNT_NAME
+    value: e4161f-vault
+
+  - name: RESTORE_IMAGE
+    value: ghcr.io/bcgov/jasper/generate-mongo-tls:latest
+
+  - name: AWS_SECRET_NAME
+    required: true
+
+  - name: S3_BUCKET
+    required: true
+
+  - name: S3_DUMP_KEY
+    required: true
+
+  - name: S3_CHECKSUM_KEY
+    value: ''
+
+  - name: MONGO_HOST
+    required: true
+
+  - name: MONGO_PORT
+    value: '27017'
+
+  - name: MONGO_AUTH_DB
+    value: admin
+
+  - name: MONGO_INITDB_ROOT_USERNAME
+    value: root
+
+  - name: DROP_EXISTING
+    value: 'false'
+
+  - name: MONGODB_TLS_SECRET_NAME
+    value: mongodb-temp-secrets
+
+  - name: MONGODB_TLS_CA_KEY
+    value: crt
+
+  - name: VAULT_NAMESPACE
+    value: platform-services
+
+  - name: VAULT_AUTH_PATH
+    value: auth/k8s-emerald
+
+  - name: VAULT_ROLE
+    value: e4161f-nonprod
+
+  - name: VAULT_AGENT_CONFIGMAP
+    value: mongodb-vault
+
+  - name: VAULT_SECRET_PATH
+    required: true

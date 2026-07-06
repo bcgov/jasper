@@ -1,10 +1,10 @@
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import { VBtn } from 'vuetify/components';
+import { VDateInput } from 'vuetify/components/VDateInput';
+import { VFileUpload } from 'vuetify/components/VFileUpload';
 import * as directives from 'vuetify/directives';
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
-import { VDateInput } from 'vuetify/labs/VDateInput';
-import { VFileUpload } from 'vuetify/labs/VFileUpload';
 import 'vuetify/styles';
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides

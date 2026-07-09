@@ -97,6 +97,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentStrategy, OrderDocumentStrategy>();
 
             services.AddScoped<IDeskOrderDetailsExtractor, DeskOrderDetailsExtractor>();
+            services.AddScoped<ICsoTextSanitizer, CsoTextSanitizer>();
         }
 
         public static IServiceCollection AddMapster(this IServiceCollection services, Action<TypeAdapterConfig> options = null)

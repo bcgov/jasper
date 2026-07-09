@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using Bogus;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using JCCommon.Clients.FileServices;
 using LazyCache;
 using LazyCache.Providers;
@@ -41,6 +44,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly Mock<IJudicialServicesClient> _mockJudicialClient;
     private readonly Mock<IDeskOrderDetailsExtractor> _mockDeskOrderDetailsExtractor;
+    private readonly Mock<ICsoTextSanitizer> _mockCsoTextSanitizer;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -71,6 +75,10 @@ public class OrderServiceTests : ServiceTestBase
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         _mockJudicialClient = new Mock<IJudicialServicesClient>();
         _mockDeskOrderDetailsExtractor = new Mock<IDeskOrderDetailsExtractor>();
+        _mockCsoTextSanitizer = new Mock<ICsoTextSanitizer>();
+        _mockCsoTextSanitizer
+            .Setup(s => s.Sanitize(It.IsAny<string>()))
+            .Returns((string text) => text);
 
         _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -91,7 +99,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockBackgroundJobClient.Object,
             _mockHttpContextAccessor.Object,
             _mockJudicialClient.Object,
-            _mockDeskOrderDetailsExtractor.Object);
+            _mockDeskOrderDetailsExtractor.Object,
+            _mockCsoTextSanitizer.Object);
     }
 
     private void SetupConfiguration()
@@ -1008,6 +1017,7 @@ public class OrderServiceTests : ServiceTestBase
 
         Assert.True(result.Succeeded);
         _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(It.IsAny<string>()), Times.Never);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
@@ -1015,8 +1025,11 @@ public class OrderServiceTests : ServiceTestBase
     public async Task SubmitApprovedDeskOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
     {
         var fakeComment = _faker.Lorem.Sentence();
-        var fakeDirections = _faker.Lorem.Sentence();
-        var fakeOrderTerm = _faker.Lorem.Sentence();
+        var fakeDirections = "Registry “must” review cafés — today…";
+        var fakeOrderTerm = "Pay $50 – then file résumé • exhibit";
+        var sanitizedDirections = "Registry \"must\" review cafes - today...";
+        var sanitizedOrderTerm = "Pay $50 - then file resume * exhibit";
+        var sanitizedComment = $"{fakeComment}. {sanitizedDirections}";
 
         var order = CreateOrder();
         order.SubmitAttempts = 2;
@@ -1055,6 +1068,9 @@ public class OrderServiceTests : ServiceTestBase
                 Directions = fakeDirections,
                 OrderTerms = [new() { Text = fakeOrderTerm }],
             });
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeDirections)).Returns(sanitizedDirections);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeOrderTerm)).Returns(sanitizedOrderTerm);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}")).Returns(sanitizedComment);
 
         var result = await _orderService.SubmitOrder(order.Id);
 
@@ -1064,13 +1080,95 @@ public class OrderServiceTests : ServiceTestBase
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
                 It.IsAny<double>(),
                 It.Is<JudicialAction>(ja =>
-                    ja.Comment == $"{fakeComment}. {fakeDirections}"
+                    ja.Comment == sanitizedComment
                     && ja.OrderTerms.Count == 1
-                    && ja.OrderTerms.First().Text == fakeOrderTerm
+                    && ja.OrderTerms.First().Text == sanitizedOrderTerm
                     && ja.Document.Length == 0
                 )),
                 Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}"), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitApprovedDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
+    {
+        const string comment = "Desk order note";
+        const string extractedDirections = "Registry “must” review cafés — today…";
+        const string extractedOrderTerm = "Pay $50 – then file résumé • exhibit";
+
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+        using var deskOrderDocument = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(extractedDirections));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(extractedOrderTerm));
+            body.AppendChild(SignatureSdt());
+        });
+
+        order.SupportingDocumentData = deskOrderDocument.ToArray();
+        order.Status = OrderStatus.Approved;
+        order.Comments = comment;
+        SetupHttpContextWithGuid();
+
+        var orderService = new OrderService(
+            _cache,
+            _mapper,
+            _mockLogger.Object,
+            _mockOrderRepo.Object,
+            _mockFileServicesClient.Object,
+            _mockConfiguration.Object,
+            _mockJudgeService.Object,
+            _mockBackgroundJobClient.Object,
+            _mockHttpContextAccessor.Object,
+            _mockJudicialClient.Object,
+            new DeskOrderDetailsExtractor(),
+            new CsoTextSanitizer());
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        var result = await orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == "Desk order note. Registry \"must\" review cafes - today..."
+                    && ja.OrderTerms.Count == 1
+                    && ja.OrderTerms.First().Text == "Pay $50 - then file resume * exhibit"
+                    && ja.OrderTerms.First().SequenceNumber == 1
+                    && ja.OrderTerms.First().DisplaySortNumber == 1
+                    && ja.Document.Length == 0
+                )),
+                Times.Once);
     }
 
     [Fact]
@@ -1131,6 +1229,9 @@ public class OrderServiceTests : ServiceTestBase
                     && ja.Document.Length == 0
                 )),
                 Times.Once);
+        _mockDeskOrderDetailsExtractor.Verify(d => d.Extract(It.IsAny<Stream>()), Times.Never);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Never);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Never);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
@@ -1263,6 +1364,29 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(x => x.HttpContext)
             .Returns(httpContext);
     }
+
+    private static MemoryStream BuildDocxStream(Action<Body> configureBody)
+    {
+        var stream = new MemoryStream();
+        using (var doc = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document))
+        {
+            var mainPart = doc.AddMainDocumentPart();
+            mainPart.Document = new Document();
+            var body = mainPart.Document.AppendChild(new Body());
+            configureBody(body);
+        }
+
+        stream.Position = 0;
+        return stream;
+    }
+
+    private static Paragraph ParagraphOf(string text) =>
+        new(new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve }));
+
+    private static SdtBlock SignatureSdt(string tagValue = "Insert Signature") =>
+        new(
+            new SdtProperties(new DocumentFormat.OpenXml.Wordprocessing.Tag { Val = tagValue }),
+            new SdtContentBlock(new Paragraph(new Run(new Text("[signature]")))));
 
     #endregion
 }

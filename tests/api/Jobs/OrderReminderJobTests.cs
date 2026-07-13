@@ -338,6 +338,120 @@ public class OrderReminderJobTests : ServiceTestBase
         });
     }
 
+    [Fact]
+    public async Task Execute_SendsSecondReminder_WhenOrderIs9DaysOldAndOneReminderAlreadySent()
+    {
+        SetupConfiguration("5", "10", maxReminders: "2");
+
+        var judgeId = _faker.Random.Int(min: 1, max: 10);
+        var participantId = _faker.Random.Double();
+        var entryDate = DateTime.UtcNow.Date.AddDays(-9);
+        var order = CreateTestOrder(judgeId, participantId, entryDate);
+        order.ReminderNotificationsSent = 1;
+
+        var judge = CreateTestJudge(judgeId);
+        var user = CreateTestUser(judgeId, _faker.Person.Email);
+
+        _mockOrderRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+        _mockJudgeService.Setup(j => j.GetJudge(judgeId)).ReturnsAsync(judge);
+        _mockUserService.Setup(u => u.GetByJudgeIdAsync(judgeId)).ReturnsAsync(user);
+        _mockEmailTemplateService.Setup(e => e.SendEmailTemplateAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
+            .Returns(Task.CompletedTask);
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+
+        await _job.Execute();
+
+        _mockEmailTemplateService.Verify(e => e.SendEmailTemplateAsync(
+            EmailTemplate.ORDER_REMINDER, user.Email, It.IsAny<object>()), Times.Once);
+        _mockOrderRepo.Verify(
+            r => r.UpdateAsync(It.Is<Order>(o => o.ReminderNotificationsSent == 2)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotSendReminder_WhenOrderIs9DaysOldButNoReminderYetSent()
+    {
+        SetupConfiguration("5", "10", maxReminders: "2");
+
+        var judgeId = _faker.Random.Int(min: 1, max: 10);
+        var participantId = _faker.Random.Double();
+        var entryDate = DateTime.UtcNow.Date.AddDays(-9);
+        var order = CreateTestOrder(judgeId, participantId, entryDate);
+        order.ReminderNotificationsSent = 0;
+
+        _mockOrderRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+
+        await _job.Execute();
+
+        _mockJudgeService.Verify(j => j.GetJudge(It.IsAny<int>()), Times.Never);
+        _mockEmailTemplateService.Verify(e => e.SendEmailTemplateAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotSendReminder_WhenOrderIn1stWindowButReminderAlreadySent()
+    {
+        SetupConfiguration("5", "10", maxReminders: "2");
+
+        var judgeId = _faker.Random.Int(min: 1, max: 10);
+        var participantId = _faker.Random.Double();
+        var entryDate = DateTime.UtcNow.Date.AddDays(-6);
+        var order = CreateTestOrder(judgeId, participantId, entryDate);
+        order.ReminderNotificationsSent = 1;
+
+        _mockOrderRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+
+        await _job.Execute();
+
+        _mockEmailTemplateService.Verify(e => e.SendEmailTemplateAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotSendReminder_ForOrdersPastReassignmentThreshold()
+    {
+        SetupConfiguration("5", "10", maxReminders: "2");
+
+        var judgeId = _faker.Random.Int(min: 1, max: 10);
+        var participantId = _faker.Random.Double();
+        var entryDate = DateTime.UtcNow.Date.AddDays(-11);
+        var order = CreateTestOrder(judgeId, participantId, entryDate);
+        order.ReminderNotificationsSent = 0;
+
+        var judge = CreateTestJudge(judgeId);
+
+        _mockOrderRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+        _mockJudgeService.Setup(j => j.GetJudge(judgeId)).ReturnsAsync(judge);
+        _mockJudgeService.Setup(j => j.GetJudges(It.IsAny<List<string>>(), It.IsAny<List<string>>()))
+            .ReturnsAsync([]);
+
+        await _job.Execute();
+
+        _mockEmailTemplateService.Verify(e => e.SendEmailTemplateAsync(
+            EmailTemplate.ORDER_REMINDER, It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotSendReminder_WhenOrderIsYoungerThanReminderThreshold()
+    {
+        SetupConfiguration("5", "10", maxReminders: "2");
+
+        var order = CreateTestOrder(_faker.Random.Int(min: 1, max: 10), _faker.Random.Double(), DateTime.UtcNow.Date.AddDays(-4));
+        _mockOrderRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+
+        await _job.Execute();
+
+        _mockJudgeService.Verify(j => j.GetJudge(It.IsAny<int>()), Times.Never);
+        _mockEmailTemplateService.Verify(e => e.SendEmailTemplateAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+    }
+
     #endregion
 
     #region SendReminderToJudge Tests

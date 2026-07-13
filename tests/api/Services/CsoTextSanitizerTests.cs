@@ -36,6 +36,7 @@ public class CsoTextSanitizerTests
     [InlineData("continue…", "continue...")]
     [InlineData("• first term", "* first term")]
     [InlineData("café résumé naïve façade", "cafe resume naive facade")]
+    [InlineData("ᑕᓂᓯ / tânisi — SENĆOŦEN — k̓ʷak̓ʷ — Dähdzįį — ᖃᓄᐃᑉᐱᑦ", "tanisi / tanisi - SENCOTEN - kwakw - Dahdzii - qanoippit")]
     public void Sanitize_TransliteratesWordAndUnicodeCharacters(string input, string expected)
     {
         var result = _sanitizer.Sanitize(input);

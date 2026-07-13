@@ -46,6 +46,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IJudicialServicesClient _judicialClient;
     private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
+    private readonly ICsoTextSanitizer _csoTextSanitizer;
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -60,7 +61,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IBackgroundJobClient backgroundJobClient,
         IHttpContextAccessor httpContextAccessor,
         IJudicialServicesClient judicialClient,
-        IDeskOrderDetailsExtractor deskOrderDetailsExtractor
+        IDeskOrderDetailsExtractor deskOrderDetailsExtractor,
+        ICsoTextSanitizer csoTextSanitizer
     ) : base(
             cache,
             mapper,
@@ -78,6 +80,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _httpContextAccessor = httpContextAccessor;
         _judicialClient = judicialClient;
         _deskOrderDetailsExtractor = deskOrderDetailsExtractor;
+        _csoTextSanitizer = csoTextSanitizer;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -469,13 +472,14 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         var deskOrderDetails = _deskOrderDetailsExtractor.Extract(stream);
 
-        this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfuly for Order {OrderId}.", orderDto.Id);
+        this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfully for Order {OrderId}.", orderDto.Id);
 
-        actionDto.Comment = string.Join(". ", actionDto.Comment, deskOrderDetails.Directions);
+        var sanitizedDirections = _csoTextSanitizer.Sanitize(deskOrderDetails.Directions);
+        actionDto.Comment = _csoTextSanitizer.Sanitize(string.Join(". ", actionDto.Comment, sanitizedDirections));
         actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
             {
                 SequenceNumber = term.SequenceNumber,
-                Text = term.Text,
+                Text = _csoTextSanitizer.Sanitize(term.Text),
                 DisplaySortNumber = term.DisplaySortNumber
             })];
 

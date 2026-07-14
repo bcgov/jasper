@@ -129,6 +129,7 @@
             <v-btn
               color="warning"
               variant="outlined"
+              v-if="isCurrentDeskOrder"
               :prepend-icon="mdiAccountClock"
               :disabled="!canReject || submitting"
               :loading="
@@ -163,6 +164,7 @@
 </template>
 
 <script setup lang="ts">
+  import { isDeskOrder } from '@/composables/useOrderCounts.js';
   import { useOrdersStore } from '@/stores';
   import { OrderReview } from '@/types';
   import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
@@ -212,6 +214,10 @@
 
   const isFamilyDeskOrder = computed(
     () => currentOrder.value?.courtListType === OrderCourtLisTypeEnum.PFM
+  );
+
+  const isCurrentDeskOrder = computed(
+    () => !!currentOrder.value && isDeskOrder(currentOrder.value)
   );
 
   watch(show, (newVal) => {

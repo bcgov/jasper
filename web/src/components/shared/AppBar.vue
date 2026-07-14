@@ -93,8 +93,8 @@
   import { mdiAccountCircle } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
-  import JudgeSelector from './JudgeSelector.vue';
   import OrdersTab from '../orders/OrdersTab.vue';
+  import JudgeSelector from './JudgeSelector.vue';
 
   const emit = defineEmits<(e: 'open-profile') => void>();
 
@@ -192,7 +192,8 @@
     () =>
       (selectedTab.value === 'dashboard' ||
         selectedTab.value === 'court-list' ||
-        selectedTab.value === 'orders') &&
+        selectedTab.value === 'orders' ||
+        selectedTab.value === 'desk-orders') &&
       judges.value &&
       judges.value.length > 0
   );

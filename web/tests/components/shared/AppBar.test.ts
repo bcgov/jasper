@@ -14,7 +14,6 @@ import { flushPromises, mount } from '@vue/test-utils';
 import AppBar from 'CMP/shared/AppBar.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
 // Mock the JudgeSelector component
@@ -600,6 +599,39 @@ describe('AppBar.vue', () => {
       expect(judgeSelector.exists()).toBe(true);
     });
 
+    it('should show judge selector on desk-orders tab', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const judges: PersonSearchItem[] = [generateJudge()];
+
+      const wrapper = createWrapper();
+      await flushPromises();
+      (wrapper.vm as any).judges = judges;
+      (wrapper.vm as any).selectedTab = 'desk-orders';
+      await wrapper.vm.$nextTick();
+
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(true);
+      expect((wrapper.vm as any).showJudgeSelector).toBe(true);
+    });
+
+    it('should pass judges to the JudgeSelector when shown', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo();
+
+      const judges: PersonSearchItem[] = [generateJudge(), generateJudge()];
+
+      const wrapper = createWrapper();
+      (wrapper.vm as any).judges = judges;
+      (wrapper.vm as any).selectedTab = 'dashboard';
+      await wrapper.vm.$nextTick();
+
+      const judgeSelector = wrapper.findComponent({ name: 'JudgeSelector' });
+      expect(judgeSelector.exists()).toBe(true);
+      expect(judgeSelector.props('judges')).toEqual(judges);
+    });
+
     it('should not show judge selector when there are no judges', async () => {
       const commonStore = useCommonStore();
       commonStore.userInfo = generateUserInfo();
@@ -626,6 +658,38 @@ describe('AppBar.vue', () => {
 
       const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
       expect(judgeSelector.exists()).toBe(false);
+    });
+
+    it('should not show judge selector on desk-orders tab when there are no judges', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+
+      const wrapper = createWrapper();
+      await flushPromises();
+      (wrapper.vm as any).judges = [];
+      (wrapper.vm as any).selectedTab = 'desk-orders';
+      await wrapper.vm.$nextTick();
+
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(false);
+      expect((wrapper.vm as any).showJudgeSelector).toBe(false);
+    });
+
+    it('should not show judge selector on an unrelated tab even with judges', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo();
+
+      const judges: PersonSearchItem[] = [generateJudge()];
+
+      const wrapper = createWrapper();
+      await flushPromises();
+      (wrapper.vm as any).judges = judges;
+      (wrapper.vm as any).selectedTab = 'some-other-tab';
+      await wrapper.vm.$nextTick();
+
+      const judgeSelector = wrapper.find('[data-testid="judge-selector"]');
+      expect(judgeSelector.exists()).toBe(false);
+      expect((wrapper.vm as any).showJudgeSelector).toBe(false);
     });
   });
 

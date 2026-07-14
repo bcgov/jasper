@@ -18,13 +18,15 @@ export const useSnackbarStore = defineStore('snackbar', () => {
   const timeout = ref<number>();
   const actionLabel = ref('');
   const actionHandler = ref<(() => void) | null>(null);
+  const isCompact = ref(false);
 
   const showSnackbar = (
     msg = '',
     col = 'success',
     ti = '',
     time = 15000,
-    action?: SnackbarAction
+    action?: SnackbarAction,
+    isCompactMode = false
   ) => {
     message.value = msg;
     color.value = col;
@@ -33,6 +35,7 @@ export const useSnackbarStore = defineStore('snackbar', () => {
     timeout.value = time;
     actionLabel.value = action?.label ?? '';
     actionHandler.value = action?.onClick ?? null;
+    isCompact.value = isCompactMode;
   };
 
   const hideSnackbar = () => {
@@ -51,5 +54,6 @@ export const useSnackbarStore = defineStore('snackbar', () => {
     timeout,
     actionLabel,
     actionHandler,
+    isCompact,
   };
 });

@@ -5,6 +5,7 @@
     :color="resolvedSnackbarStyle.color"
     :class="resolvedSnackbarClass"
     location="bottom right"
+    :class="{ 'compact-snackbar': snackbarStore.isCompact }"
   >
     <div class="snackbar-content">
       <div class="snackbar-header">

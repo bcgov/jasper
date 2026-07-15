@@ -20,11 +20,13 @@
           placeholder="All documents"
           hide-details
           :items="documentCategories"
+          item-title="title"
+          item-value="value"
         >
-          <template v-slot:[`item`]="{ props: itemProps, item }">
+          <template v-slot:item="{ props: itemProps, item }">
             <v-list-item
               v-bind="itemProps"
-              :title="item.title + ' (' + categoryCount(item.value) + ')'"
+              :title="`${item.title} (${item.count})`"
             ></v-list-item>
           </template>
         </v-select>
@@ -227,13 +229,21 @@
     return selectedCategory.value ? selectedCategory.value : 'All Documents';
   };
 
-  const documentCategories = computed<string[]>(() => [
-    ...new Set(
-      (unfilteredDocuments.value ?? [])
-        .filter((doc) => doc.category)
-        .map((doc) => doc.category)
-    ),
-  ]);
+  const documentCategories = computed<
+    { title: string; value: string; count: number }[]
+  >(() =>
+    [
+      ...new Set(
+        (unfilteredDocuments.value ?? [])
+          .filter((doc) => doc.category)
+          .map((doc) => doc.category)
+      ),
+    ].map((category) => ({
+      title: category,
+      value: category,
+      count: categoryCount(category),
+    }))
+  );
 
   const groupBy = ref([
     {

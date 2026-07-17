@@ -57,21 +57,34 @@ public class OrderReminderJob(
         var reassignmentThresholdDays = int.TryParse(Configuration.GetNonEmptyValue("ORDER_REASSIGNMENT_THRESHOLD_DAYS"), out var reassignDays)
             ? reassignDays : 10;
         var maxReminderNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REMINDER_NOTIFICATIONS"), out var maxReminders)
-            ? maxReminders : 1;
+            ? maxReminders : 2;
         var maxReassignmentNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"), out var maxReassignments)
             ? maxReassignments : 1;
 
-        var reminderFromNow = DateTime.UtcNow.AddDays(-reminderThresholdDays);
-        var reassignmentFromNow = DateTime.UtcNow.AddDays(-reassignmentThresholdDays);
+        var today = DateTime.UtcNow.Date;
+        var firstReminderCutoff = today.AddDays(-reminderThresholdDays);
+        var secondReminderCutoff = today.AddDays(-(reassignmentThresholdDays - 1));
+        var reassignmentCutoff = today.AddDays(-reassignmentThresholdDays);
 
         var ordersNeedingReminder = unresolvedOrders
-            .Where(o => o.Ent_Dtm <= reminderFromNow &&
-                       o.Ent_Dtm > reassignmentFromNow &&
-                       o.ReminderNotificationsSent < maxReminderNotifications)
+            .Where(o =>
+                o.ReminderNotificationsSent < maxReminderNotifications &&
+                (
+                    // 1st reminder: no reminders sent
+                    (o.Ent_Dtm.Date <= firstReminderCutoff &&
+                     o.Ent_Dtm.Date > secondReminderCutoff &&
+                     o.ReminderNotificationsSent == 0)
+                    ||
+                    // 2nd reminder: a day before reassignment, only 1 reminder sent so far.
+                    (o.Ent_Dtm.Date <= secondReminderCutoff &&
+                     o.Ent_Dtm.Date > reassignmentCutoff &&
+                     o.ReminderNotificationsSent == 1)
+                ))
             .ToList();
+
         var ordersNeedingReassignment = unresolvedOrders
-            .Where(o => o.Ent_Dtm <= reassignmentFromNow &&
-                       o.ReassignmentNotificationsSent < maxReassignmentNotifications)
+            .Where(o => o.Ent_Dtm.Date <= reassignmentCutoff &&
+                        o.ReassignmentNotificationsSent < maxReassignmentNotifications)
             .ToList();
 
         Logger.LogInformation(

@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mount, flushPromises } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
-import { nextTick } from 'vue';
 import ReviewModal from '@/components/documents/ReviewModal.vue';
 import type { OrderReview } from '@/types';
 import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
+import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 
 const mockRoute: { query: Record<string, string | undefined> } = { query: {} };
 vi.mock('vue-router', () => ({
@@ -200,7 +200,11 @@ describe('ReviewModal.vue', () => {
     });
   });
 
-  describe('Action buttons', () => {
+  describe('Action buttons - Applications', () => {
+    beforeEach(() => {
+      setOrders(createFamilyDeskOrder());
+    });
+
     it('should render all three action buttons', () => {
       const wrapper = createWrapper();
       expect(wrapper.text()).toContain('Reject');
@@ -230,6 +234,40 @@ describe('ReviewModal.vue', () => {
       expect(
         wrapper.find('[color="warning"]').attributes('disabled')
       ).toBeDefined();
+    });
+  });
+
+  describe('Action buttons - Orders', () => {
+    beforeEach(() => {
+      setOrders(createNonFamilyDeskOrder());
+    });
+
+    it('should render two action buttons', () => {
+      const wrapper = createWrapper();
+      expect(wrapper.text()).toContain('Reject');
+      expect(wrapper.text()).not.toContain('Awaiting documentation');
+      expect(wrapper.text()).toContain('Approve');
+    });
+
+    it('should render Reject button with proper attributes', () => {
+      const wrapper = createWrapper();
+      const rejectButton = wrapper.find('[color="error"]');
+      expect(rejectButton.exists()).toBe(true);
+      expect(rejectButton.text()).toContain('Reject');
+    });
+
+    it('should not render Awaiting documentation button', () => {
+      const wrapper = createWrapper();
+      const pendingButton = wrapper.find('[color="warning"]');
+      expect(pendingButton.exists()).toBe(false);
+    });
+
+    it('should disable Reject when comments are empty', () => {
+      const wrapper = createWrapper();
+      expect(
+        wrapper.find('[color="error"]').attributes('disabled')
+      ).toBeDefined();
+      expect(wrapper.find('[color="warning"]').exists()).toBe(false);
     });
   });
 
@@ -380,6 +418,8 @@ describe('ReviewModal.vue', () => {
   });
 
   describe('Reject and Awaiting documentation submissions', () => {
+    beforeEach(() => setOrders(createFamilyDeskOrder()));
+
     const createCommentsWrapper = (canApprove = false) =>
       mount(ReviewModal, {
         props: {

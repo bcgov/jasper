@@ -1,0 +1,364 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: mongo-tls-certificate-cronjob-template
+  annotations:
+    description: 'Creates a CronJob that generates MongoDB TLS certificates, updates an OpenShift TLS secret, syncs the certificate payload to AWS Secrets Manager, and restarts the MongoDB StatefulSet.'
+objects:
+  - apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: ${CRONJOB_NAME}
+      labels:
+        app: generate-mongo-tls
+        app.kubernetes.io/name: ${APP_NAME}
+        app.kubernetes.io/instance: ${APP_INSTANCE}
+        app.kubernetes.io/managed-by: openshift-template
+        DataClass: ${DATA_CLASS}
+        role: ${ROLE_LABEL}
+        template: mongo-tls-certificate-cronjob-template
+    spec:
+      schedule: '${SCHEDULE}'
+      concurrencyPolicy: Forbid
+      suspend: ${{SUSPEND}}
+      successfulJobsHistoryLimit: ${{SUCCESSFUL_JOBS_HISTORY_LIMIT}}
+      failedJobsHistoryLimit: ${{FAILED_JOBS_HISTORY_LIMIT}}
+      jobTemplate:
+        spec:
+          activeDeadlineSeconds: ${{ACTIVE_DEADLINE_SECONDS}}
+          backoffLimit: ${{BACKOFF_LIMIT}}
+          ttlSecondsAfterFinished: ${{TTL_SECONDS_AFTER_FINISHED}}
+          template:
+            metadata:
+              labels:
+                app: generate-mongo-tls
+                app.kubernetes.io/name: ${APP_NAME}
+                app.kubernetes.io/instance: ${APP_INSTANCE}
+                DataClass: ${DATA_CLASS}
+                role: ${ROLE_LABEL}
+                template: mongo-tls-certificate-cronjob-template
+            spec:
+              restartPolicy: Never
+              serviceAccountName: ${SERVICE_ACCOUNT_NAME}
+              automountServiceAccountToken: true
+              terminationGracePeriodSeconds: 30
+              dnsPolicy: ClusterFirst
+              securityContext:
+                runAsNonRoot: true
+              containers:
+                - name: generate-mongo-tls
+                  image: ${IMAGE}
+                  imagePullPolicy: ${IMAGE_PULL_POLICY}
+                  resources:
+                    requests:
+                      cpu: ${CPU_REQUEST}
+                      memory: ${MEMORY_REQUEST}
+                    limits:
+                      cpu: ${CPU_LIMIT}
+                      memory: ${MEMORY_LIMIT}
+                  env:
+                    - name: CERT_SUBJECT_ALT_NAME
+                      value: ${CERT_SUBJECT_ALT_NAME}
+
+                    - name: CERT_DAYS
+                      value: '${CERT_DAYS}'
+
+                    - name: OPENSHIFT_SECRET_NAME
+                      value: ${OPENSHIFT_SECRET_NAME}
+
+                    - name: OPENSHIFT_SECRET_NAMESPACE
+                      value: ${OPENSHIFT_SECRET_NAMESPACE}
+
+                    - name: AWS_SECRET_ID
+                      value: ${AWS_SECRET_ID}
+
+                    - name: MONGO_STATEFULSET_SELECTOR
+                      value: ${MONGO_STATEFULSET_SELECTOR}
+
+                    - name: ROLLOUT_TIMEOUT
+                      value: ${ROLLOUT_TIMEOUT}
+
+                    - name: CA_CERT_PATH
+                      value: /ca/ca.crt
+
+                    - name: CA_KEY_PATH
+                      value: /ca/ca.key
+
+                    - name: GENERATED_CERT_KEY
+                      value: ${GENERATED_CERT_KEY}
+
+                    - name: GENERATED_PRIVATE_KEY_KEY
+                      value: ${GENERATED_PRIVATE_KEY_KEY}
+
+                    - name: GENERATED_PEM_KEY
+                      value: ${GENERATED_PEM_KEY}
+
+                    - name: CA_BUNDLE_KEY
+                      value: ${CA_BUNDLE_KEY}
+
+                    - name: AWS_ACCESS_KEY_ID
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${AWS_CREDENTIALS_SECRET_NAME}
+                          key: ${AWS_ACCESS_KEY_ID_KEY}
+
+                    - name: AWS_SECRET_ACCESS_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${AWS_CREDENTIALS_SECRET_NAME}
+                          key: ${AWS_SECRET_ACCESS_KEY_KEY}
+
+                    - name: AWS_REGION
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${AWS_CREDENTIALS_SECRET_NAME}
+                          key: ${AWS_REGION_KEY}
+
+                    - name: HTTP_PROXY
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${PROXY_CONFIG_SECRET_NAME}
+                          key: ${HTTP_PROXY_KEY}
+
+                    - name: HTTPS_PROXY
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${PROXY_CONFIG_SECRET_NAME}
+                          key: ${HTTPS_PROXY_KEY}
+
+                    - name: NO_PROXY
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${PROXY_CONFIG_SECRET_NAME}
+                          key: ${NO_PROXY_KEY}
+
+                    - name: http_proxy
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${PROXY_CONFIG_SECRET_NAME}
+                          key: ${HTTP_PROXY_KEY}
+
+                    - name: https_proxy
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${PROXY_CONFIG_SECRET_NAME}
+                          key: ${HTTPS_PROXY_KEY}
+
+                    - name: no_proxy
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${PROXY_CONFIG_SECRET_NAME}
+                          key: ${NO_PROXY_KEY}
+
+                  securityContext:
+                    capabilities:
+                      drop:
+                        - ALL
+                    allowPrivilegeEscalation: false
+
+                  volumeMounts:
+                    - name: mongo-tls-ca
+                      readOnly: true
+                      mountPath: /ca
+
+                    - name: work
+                      mountPath: /tmp
+
+                  terminationMessagePath: /dev/termination-log
+                  terminationMessagePolicy: File
+
+              volumes:
+                - name: mongo-tls-ca
+                  secret:
+                    secretName: ${CA_SECRET_NAME}
+                    items:
+                      - key: ${CA_CERT_SECRET_KEY}
+                        path: ca.crt
+                      - key: ${CA_KEY_SECRET_KEY}
+                        path: ca.key
+                    defaultMode: 420
+
+                - name: work
+                  emptyDir:
+                    medium: Memory
+                    sizeLimit: ${WORK_VOLUME_SIZE_LIMIT}
+
+parameters:
+  - name: CRONJOB_NAME
+    displayName: CronJob name
+    required: true
+    value: sync-mongo-certificate
+
+  - name: APP_NAME
+    displayName: Application name label
+    required: true
+    value: sync-mongo-certificate
+
+  - name: APP_INSTANCE
+    displayName: Application instance label
+    required: true
+
+  - name: DATA_CLASS
+    displayName: DataClass label
+    required: true
+    value: Medium
+
+  - name: ROLE_LABEL
+    displayName: Role label
+    required: true
+    value: update-aws-creds
+
+  - name: SCHEDULE
+    displayName: Cron schedule
+    required: true
+    value: '0 0 * * 0'
+
+  - name: SUSPEND
+    displayName: Suspend CronJob
+    required: true
+    value: 'false'
+
+  - name: SUCCESSFUL_JOBS_HISTORY_LIMIT
+    required: true
+    value: '3'
+
+  - name: FAILED_JOBS_HISTORY_LIMIT
+    required: true
+    value: '3'
+
+  - name: ACTIVE_DEADLINE_SECONDS
+    required: true
+    value: '600'
+
+  - name: BACKOFF_LIMIT
+    required: true
+    value: '1'
+
+  - name: TTL_SECONDS_AFTER_FINISHED
+    required: true
+    value: '259200'
+
+  - name: SERVICE_ACCOUNT_NAME
+    displayName: ServiceAccount used by the CronJob
+    required: true
+
+  - name: IMAGE
+    displayName: Certificate generation image
+    required: true
+    value: ghcr.io/devinleighsmith/jasper/generate-mongo-tls:latest
+
+  - name: IMAGE_PULL_POLICY
+    required: true
+    value: Always
+
+  - name: CPU_REQUEST
+    required: true
+    value: 50m
+
+  - name: MEMORY_REQUEST
+    required: true
+    value: 64Mi
+
+  - name: CPU_LIMIT
+    required: true
+    value: 250m
+
+  - name: MEMORY_LIMIT
+    required: true
+    value: 256Mi
+
+  - name: CERT_SUBJECT_ALT_NAME
+    displayName: Certificate SANs
+    description: 'Comma-separated SAN list, for example: IP:10.0.0.1,DNS:mongodb-0.mongodb-headless.namespace.svc.cluster.local'
+    required: true
+
+  - name: CERT_DAYS
+    required: true
+    value: '14'
+
+  - name: OPENSHIFT_SECRET_NAME
+    displayName: OpenShift TLS secret name to update
+    required: true
+    value: mongo-tls
+
+  - name: OPENSHIFT_SECRET_NAMESPACE
+    displayName: Namespace containing the OpenShift TLS secret to update
+    required: true
+
+  - name: AWS_SECRET_ID
+    displayName: AWS Secrets Manager secret id
+    required: true
+
+  - name: MONGO_STATEFULSET_SELECTOR
+    displayName: MongoDB StatefulSet selector
+    description: 'Label selector used by the job to find the MongoDB StatefulSet to restart.'
+    required: true
+
+  - name: ROLLOUT_TIMEOUT
+    required: true
+    value: 300s
+
+  - name: GENERATED_CERT_KEY
+    required: true
+    value: tls.crt
+
+  - name: GENERATED_PRIVATE_KEY_KEY
+    required: true
+    value: tls.key
+
+  - name: GENERATED_PEM_KEY
+    required: true
+    value: tls.pem
+
+  - name: CA_BUNDLE_KEY
+    required: true
+    value: ca.crt
+
+  - name: AWS_CREDENTIALS_SECRET_NAME
+    displayName: Secret containing AWS credentials
+    required: true
+
+  - name: AWS_ACCESS_KEY_ID_KEY
+    required: true
+    value: AWS_ACCESS_KEY_ID
+
+  - name: AWS_SECRET_ACCESS_KEY_KEY
+    required: true
+    value: AWS_SECRET_ACCESS_KEY
+
+  - name: AWS_REGION_KEY
+    required: true
+    value: AWS_REGION
+
+  - name: PROXY_CONFIG_SECRET_NAME
+    displayName: Secret containing proxy config
+    required: true
+    value: proxy-config
+
+  - name: HTTP_PROXY_KEY
+    required: true
+    value: HTTP_PROXY
+
+  - name: HTTPS_PROXY_KEY
+    required: true
+    value: HTTPS_PROXY
+
+  - name: NO_PROXY_KEY
+    required: true
+    value: NO_PROXY
+
+  - name: CA_SECRET_NAME
+    displayName: Secret containing the CA certificate and key
+    required: true
+
+  - name: CA_CERT_SECRET_KEY
+    required: true
+    value: ca.crt
+
+  - name: CA_KEY_SECRET_KEY
+    required: true
+    value: ca.key
+
+  - name: WORK_VOLUME_SIZE_LIMIT
+    required: true
+    value: 64Mi

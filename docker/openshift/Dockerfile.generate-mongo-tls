@@ -1,0 +1,20 @@
+FROM alpine:3.20
+
+ARG APP_ROOT=/usr/local/bin
+ARG SRC=./docker/openshift
+
+RUN apk add --no-cache \
+    aws-cli \
+    ca-certificates \
+    jq \
+    kubectl \
+    mongodb-tools \
+    openssl
+
+WORKDIR ${APP_ROOT}
+
+COPY ${SRC}/generate-mongo-tls.sh ${APP_ROOT}/generate-mongo-tls.sh
+
+RUN chmod +x ${APP_ROOT}/generate-mongo-tls.sh
+
+CMD ["./generate-mongo-tls.sh"]

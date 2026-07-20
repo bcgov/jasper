@@ -33,8 +33,9 @@ export const createOrderReceivedHandler = ({
       return;
     }
 
-    const newOrders = await ordersStore.fetchOrders(orderService);
-    const order = newOrders?.find(
+    const fetchedOrders = await ordersStore.fetchOrders(orderService);
+    const candidateOrders = fetchedOrders ?? ordersStore.orders ?? [];
+    const order = candidateOrders.find(
       (o) => o.id === notification.payload?.orderId
     );
 

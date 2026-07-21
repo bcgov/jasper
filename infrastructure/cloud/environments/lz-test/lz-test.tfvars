@@ -44,8 +44,11 @@ lambda_retry_attempts             = 0
 lza_log_archive_account_id        = "897722703828"
 clamav_config = {
   image              = "clamav/clamav@sha256:c6eb128c7bd57bb0c533491198753a2130b471c517605ad8d289174a56c450a8" # v1.5.2
-  host               = "localhost" // ClamAV will run as a sidecar container, so it can be accessed via localhost
+  host               = "localhost"                                                                             // ClamAV will run as a sidecar container, so it can be accessed via localhost
   port               = 3310
   memory_reservation = 512
   stream_max_length  = "100M"
 }
+use_existing_mongo_tls_secret  = true
+existing_mongo_tls_secret_name = "external/jasper-mongo-tls-lz-test"
+use_mongo_tls_pem              = false

@@ -41,13 +41,13 @@ data "aws_security_group" "data_sg" {
 
 # Create Secrets placeholder for Secrets Manager
 module "secrets_manager" {
-  source                = "../../modules/SecretsManager"
-  environment           = var.environment
-  app_name              = var.app_name
-  region                = var.region
-  kms_key_arn           = module.initial.kms_key_arn
-  rotate_key_lambda_arn = module.lambda.lambda_functions["rotate-key"].arn
-  use_existing_mongo_tls_secret = var.use_existing_mongo_tls_secret
+  source                         = "../../modules/SecretsManager"
+  environment                    = var.environment
+  app_name                       = var.app_name
+  region                         = var.region
+  kms_key_arn                    = module.initial.kms_key_arn
+  rotate_key_lambda_arn          = module.lambda.lambda_functions["rotate-key"].arn
+  use_existing_mongo_tls_secret  = var.use_existing_mongo_tls_secret
   existing_mongo_tls_secret_name = var.existing_mongo_tls_secret_name
 }
 
@@ -324,6 +324,10 @@ module "ecs_api_td" {
       {
         name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
         value = var.lambda_retry_attempts
+      },
+      {
+        name  = "MONGODB_USE_TLS_PEM"
+        value = tostring(var.use_mongo_tls_pem)
       },
     ],
     # ClamAV connection settings - only injected when the sidecar is enabled

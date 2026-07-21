@@ -193,3 +193,9 @@ variable "existing_mongo_tls_secret_name" {
   type        = string
   default     = ""
 }
+
+variable "use_mongo_tls_pem" {
+  description = "If true, the provided TLS PEM will be used to connect to MongoDB. If false, the TLS PEM will not be used."
+  type        = bool
+  default     = false
+}

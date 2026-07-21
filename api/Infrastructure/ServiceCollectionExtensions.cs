@@ -120,6 +120,7 @@ namespace Scv.Api.Infrastructure
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             var dbName = configuration.GetValue<string>("MONGODB_NAME");
             var mongoTlsPem = configuration.GetValue<string>("MONGODB_TLS_PEM");
+            var useMongoTlsPem = configuration.GetValue<bool>("MONGODB_USE_TLS_PEM");
 
             if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(dbName))
             {
@@ -131,7 +132,7 @@ namespace Scv.Api.Infrastructure
                 var logger = m.GetRequiredService<ILogger<MongoClient>>();
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
 
-                if (!string.IsNullOrWhiteSpace(mongoTlsPem))
+                if (useMongoTlsPem && !string.IsNullOrWhiteSpace(mongoTlsPem))
                 {
                     var pemValue = mongoTlsPem;
 

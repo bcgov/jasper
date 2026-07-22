@@ -47,21 +47,21 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       case OrderReviewStatus.Approved:
         this.snackBarStore.showSnackbar(
           'The order has been approved.',
-          'rgb(46, 139, 43)',
+          'success',
           '✅ Approved!'
         );
         break;
       case OrderReviewStatus.Unapproved:
         this.snackBarStore.showSnackbar(
           'The order has been rejected.',
-          'rgb(46, 139, 43)',
+          'success',
           '📋 Rejected'
         );
         break;
       case OrderReviewStatus.AwaitingDocumentation:
         this.snackBarStore.showSnackbar(
           'The order review is awaiting documentation.',
-          'rgb(46, 139, 43)',
+          'success',
           '⏳ Pending'
         );
         break;

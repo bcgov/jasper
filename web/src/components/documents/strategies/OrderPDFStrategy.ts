@@ -37,7 +37,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     const urlParams = new URLSearchParams(globalThis.location.search);
     const orderId = urlParams.get('id');
     this.isShowingSupportingDocuments =
-      urlParams.get('isSupportingDocuments') === 'true';
+      urlParams.get('isShowingSupportingDocs') === 'true';
 
     this.currentOrder = this.ordersStore.orders.find((o) => o.id === orderId);
     if (!this.currentOrder) {

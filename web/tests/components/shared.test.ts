@@ -1181,7 +1181,7 @@ describe('shared.openOrderDocuments', () => {
     ]);
   });
 
-  it('should open the file-viewer with order type and default isSupportingDocuments', () => {
+  it('should open the file-viewer with order type and default isShowingSupportingDocs', () => {
     const documentData: any[] = [
       {
         fileNumberText: 'FN001',
@@ -1193,12 +1193,12 @@ describe('shared.openOrderDocuments', () => {
     shared.openOrderDocuments('ORDER1', 'My Order', documentData);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isSupportingDocuments=false',
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isShowingSupportingDocs=false',
       '_blank'
     );
   });
 
-  it('should set isSupportingDocuments to true in the URL when specified', () => {
+  it('should set isShowingSupportingDocs to true in the URL when specified', () => {
     const documentData: any[] = [
       {
         fileNumberText: 'FN001',
@@ -1210,7 +1210,7 @@ describe('shared.openOrderDocuments', () => {
     shared.openOrderDocuments('ORDER1', 'My Order', documentData, true);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isSupportingDocuments=true',
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isShowingSupportingDocs=true',
       '_blank'
     );
   });

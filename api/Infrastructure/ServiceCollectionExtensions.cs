@@ -131,59 +131,59 @@ namespace Scv.Api.Infrastructure
                 var logger = m.GetRequiredService<ILogger<MongoClient>>();
                 var settings = MongoClientSettings.FromConnectionString(connectionString);
 
-                // if (!string.IsNullOrWhiteSpace(mongoTlsPem))
-                // {
-                //     var pemValue = mongoTlsPem;
+                if (!string.IsNullOrWhiteSpace(mongoTlsPem))
+                {
+                    var pemValue = mongoTlsPem;
 
-                //     try
-                //     {
-                //         using var jsonDoc = JsonDocument.Parse(mongoTlsPem);
-                //         if (jsonDoc.RootElement.ValueKind == JsonValueKind.Object)
-                //         {
-                //             if (jsonDoc.RootElement.TryGetProperty("pem", out var pemProperty))
-                //             {
-                //                 pemValue = pemProperty.GetString();
-                //             }
-                //             else if (jsonDoc.RootElement.TryGetProperty("ca", out var caProperty))
-                //             {
-                //                 pemValue = caProperty.GetString();
-                //             }
-                //         }
-                //     }
-                //     catch (JsonException)
-                //     {
-                //         // Secret is not JSON. Treat it as raw PEM text.
-                //     }
+                    try
+                    {
+                        using var jsonDoc = JsonDocument.Parse(mongoTlsPem);
+                        if (jsonDoc.RootElement.ValueKind == JsonValueKind.Object)
+                        {
+                            if (jsonDoc.RootElement.TryGetProperty("pem", out var pemProperty))
+                            {
+                                pemValue = pemProperty.GetString();
+                            }
+                            else if (jsonDoc.RootElement.TryGetProperty("ca", out var caProperty))
+                            {
+                                pemValue = caProperty.GetString();
+                            }
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // Secret is not JSON. Treat it as raw PEM text.
+                    }
 
-                //     var normalizedPem = pemValue?.Replace("\\n", "\n").Trim();
-                //     if (string.IsNullOrWhiteSpace(normalizedPem))
-                //     {
-                //         throw new ConfigurationException("MONGODB_TLS_PEM is set but does not contain a valid PEM value.");
-                //     }
+                    var normalizedPem = pemValue?.Replace("\\n", "\n").Trim();
+                    if (string.IsNullOrWhiteSpace(normalizedPem))
+                    {
+                        throw new ConfigurationException("MONGODB_TLS_PEM is set but does not contain a valid PEM value.");
+                    }
 
-                //     var customRootCa = X509Certificate2.CreateFromPem(normalizedPem);
+                    var customRootCa = X509Certificate2.CreateFromPem(normalizedPem);
 
-                //     settings.SslSettings = new SslSettings
-                //     {
-                //         ServerCertificateValidationCallback = (_, certificate, _, _) =>
-                //         {
-                //             if (certificate is null)
-                //             {
-                //                 return false;
-                //             }
+                    settings.SslSettings = new SslSettings
+                    {
+                        ServerCertificateValidationCallback = (_, certificate, _, _) =>
+                        {
+                            if (certificate is null)
+                            {
+                                return false;
+                            }
 
-                //             using var chain = new X509Chain();
-                //             chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                //             chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                //             chain.ChainPolicy.CustomTrustStore.Add(customRootCa);
+                            using var chain = new X509Chain();
+                            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                            chain.ChainPolicy.CustomTrustStore.Add(customRootCa);
 
-                //             using var serverCertificate = new X509Certificate2(certificate);
-                //             return chain.Build(serverCertificate);
-                //         }
-                //     };
+                            using var serverCertificate = new X509Certificate2(certificate);
+                            return chain.Build(serverCertificate);
+                        }
+                    };
 
-                //     logger.LogInformation("MongoDB TLS custom root certificate configured from MONGODB_TLS_PEM.");
-                // }
+                    logger.LogInformation("MongoDB TLS custom root certificate configured from MONGODB_TLS_PEM.");
+                }
 
                 var client = new MongoClient(settings);
 

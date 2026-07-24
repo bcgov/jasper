@@ -47,8 +47,6 @@ public class OrderDocumentStrategy : IDocumentStrategy
         }
 
         var decodedDocumentId = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(documentRequest.DocumentId));
-
-        // Parse once, to the right type (int? in the DB models).
         if (!int.TryParse(decodedDocumentId, out var documentIdInt))
         {
             throw new InvalidArgumentException("Invalid document id.");

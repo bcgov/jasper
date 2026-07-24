@@ -668,7 +668,7 @@ describe('OrderPDFStrategy', () => {
     });
 
     it('does not add extras when viewing supporting documents', () => {
-      setLocationSearch('?id=123&isSupportingDocuments=true');
+      setLocationSearch('?id=123&isShowingSupportingDocs=true');
 
       const strategy = new OrderPDFStrategy();
       const items = [

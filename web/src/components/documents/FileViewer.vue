@@ -151,13 +151,13 @@
 
         if (outline?.length) {
           const nutrientOutline = createNutrientOutline(outline);
-          instance.setDocumentOutline(nutrientOutline);
+          await instance.setDocumentOutline(nutrientOutline);
         }
       } else {
         const outline =
           props.strategy.createOutline(rawData, apiResponse) ?? [];
         const nutrientOutline = createNutrientOutline(outline);
-        instance.setDocumentOutline(nutrientOutline);
+        await instance.setDocumentOutline(nutrientOutline);
       }
 
       instance.setViewState((viewState) =>
@@ -353,12 +353,12 @@
     const baseElement = {
       title: item.title,
       action: createOutlineAction(item.pageIndex),
+      isExpanded: true,
     };
 
     if (item.children?.length) {
       return new nutrientViewer.OutlineElement({
         ...baseElement,
-        isExpanded: item.isExpanded ?? true,
         children: nutrientViewer.Immutable.List(
           item.children.map((child) => createOutlineElement(child))
         ),

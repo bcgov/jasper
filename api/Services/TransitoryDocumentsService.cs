@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -27,9 +28,9 @@ namespace Scv.Api.Services
         IKeycloakTokenService keycloakTokenService,
         IOptions<TdKeycloakClientOptions> tdKeycloakOptions,
         IConfiguration configuration,
-        IMapper mapper) : ITransitoryDocumentsService
+        IMapper mapper,
+        IAppCache cache) : ITransitoryDocumentsService
     {
-        private static readonly MemoryCache SearchResultsCache = new(new MemoryCacheOptions());
         private readonly ITransitoryDocumentsClientService _tdClient = transitoryDocumentsClientWrapper;
         private readonly ILocationService _locationService = locationService;
         private readonly IKeycloakTokenService _keycloakTokenService = keycloakTokenService;
@@ -38,6 +39,7 @@ namespace Scv.Api.Services
         private readonly int _tdSearchExpiryMinutes = configuration.GetValue<int?>("Caching:TdSearchExpiryMinutes") ?? 480;
         private readonly Lazy<JsonSerializerOptions> _jsonSerializerOptions = new(() => CreateJsonSerializerOptions());
         private readonly ILogger<TransitoryDocumentsService> _logger = logger;
+        private readonly IAppCache _cache = cache;
 
         [GeneratedRegex(@"filename\*?=[""']?(?:UTF-\d+'')?([^""';]+)", RegexOptions.IgnoreCase)]
         private static partial Regex FileNameRegex();
@@ -61,13 +63,15 @@ namespace Scv.Api.Services
         /// <param name="roomCode">The room within the location.</param>
         /// <param name="date">The date to retrieve files.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+        /// <param name="forceRefresh">Force the cache to be ignored for this request.</param>
         /// <returns>The collection of file metadata from the API.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
         public async Task<IEnumerable<Scv.Models.Document.FileMetadataDto>> ListSharedDocuments(
             string locationId,
             string roomCode,
             string date,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            bool forceRefresh = false)
         {
             _logger.LogInformation("Searching for documents in location: {Location}, room: {Room}, date: {Date}", locationId, roomCode, date);
 
@@ -75,12 +79,20 @@ namespace Scv.Api.Services
 
             try
             {
-                return await SearchResultsCache.GetOrCreateAsync(
-                    cacheKey,
-                    async entry =>
-                    {
-                        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_tdSearchExpiryMinutes);
+                if (forceRefresh)
+                {
+                    _cache.Remove(cacheKey);
+                    _logger.LogInformation(
+                        "Refreshing cached transitory document search - Location: {Location}, Room: {Room}, Date: {Date}",
+                        locationId,
+                        roomCode,
+                        date);
+                }
 
+                return await _cache.GetOrAddAsync(
+                    cacheKey,
+                    async _ =>
+                    {
                         var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value, cancellationToken);
                         _tdClient.SetBearerToken(bearer);
 
@@ -125,6 +137,10 @@ namespace Scv.Api.Services
 
                         // Use Mapster to map generated client DTOs to shared model DTOs.
                         return _mapper.Map<IEnumerable<Scv.Models.Document.FileMetadataDto>>(clientResult).ToList();
+                    },
+                    new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_tdSearchExpiryMinutes)
                     });
             }
             catch (ApiException<string> apiEx)

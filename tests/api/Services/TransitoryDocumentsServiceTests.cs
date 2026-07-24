@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
+using LazyCache;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -59,8 +58,6 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
             Scv.Models.Location.Location location = null,
             JCRegion region = null)
     {
-        ClearSearchResultsCache();
-
         var mockTdClient = new Mock<ITransitoryDocumentsClientService>();
         var mockKeycloakTokenService = new Mock<IKeycloakTokenService>();
         var mockLocationService = new Mock<ILocationService>();
@@ -110,20 +107,10 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
             mockKeycloakTokenService.Object,
             keycloakOptions,
             _mockConfig.Object,
-            _mapper);
+            _mapper,
+            new CachingService());
 
         return (service, mockTdClient, mockLocationService, mockKeycloakTokenService);
-    }
-
-    private static void ClearSearchResultsCache()
-    {
-        var cacheField = typeof(TransitoryDocumentsService)
-            .GetField("SearchResultsCache", BindingFlags.NonPublic | BindingFlags.Static);
-
-        if (cacheField?.GetValue(null) is MemoryCache memoryCache)
-        {
-            memoryCache.Compact(1.0);
-        }
     }
 
     #region ListSharedDocuments Tests
@@ -572,6 +559,42 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         mockLocationService.Verify(l => l.GetLocations(It.IsAny<bool>()), Times.Once);
         mockLocationService.Verify(l => l.GetRegion(It.IsAny<string>()), Times.Once);
         mockTdClient.Verify(c => c.SearchAsync(It.IsAny<TransitoryDocumentSearchRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ListSharedDocuments_ShouldRefreshOnlyTheRequestedCachedSearch()
+    {
+        // Arrange
+        var locationId = _faker.Random.AlphaNumeric(5);
+        var roomCode = _faker.Random.AlphaNumeric(3);
+        var date = _faker.Date.Recent().ToString("yyyy-MM-dd");
+        var location = Scv.Models.Location.Location.Create(
+            _faker.Address.City(),
+            locationId,
+            locationId,
+            true,
+            []);
+        location.ShortName = _faker.Random.AlphaNumeric(5);
+        location.AgencyIdentifierCd = _faker.Random.AlphaNumeric(3);
+        var region = new JCRegion
+        {
+            RegionId = _faker.Random.Int(1, 10),
+            RegionName = _faker.Address.State(),
+            RegionLocations = []
+        };
+
+        var (service, mockTdClient, _, _) = SetupService([], location, region);
+
+        // Act
+        await service.ListSharedDocuments(locationId, roomCode, date);
+        await service.ListSharedDocuments(locationId, roomCode, date, forceRefresh: true);
+
+        // Assert
+        mockTdClient.Verify(
+            client => client.SearchAsync(
+                It.IsAny<TransitoryDocumentSearchRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
     }
 
     #endregion

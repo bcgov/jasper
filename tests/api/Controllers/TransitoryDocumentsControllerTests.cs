@@ -177,6 +177,41 @@ public class TransitoryDocumentsControllerTests
     }
 
     [Fact]
+    public async Task GetDocuments_ForcesRefreshWhenRequested()
+    {
+        // Arrange
+        var locationId = _faker.Random.AlphaNumeric(10);
+        var roomCd = _faker.Random.AlphaNumeric(5);
+        var date = DateOnly.FromDateTime(_faker.Date.Recent());
+
+        _mockGetDocumentsValidator
+            .Setup(v => v.ValidateAsync(It.IsAny<GetDocumentsRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+        _mockTransitoryDocumentsService
+            .Setup(s => s.ListSharedDocuments(
+                locationId,
+                roomCd,
+                date.ToString("yyyy-MM-dd"),
+                It.IsAny<CancellationToken>(),
+                true))
+            .ReturnsAsync([]);
+
+        // Act
+        var result = await _controller.DocumentGet(locationId, roomCd, date, true);
+
+        // Assert
+        Assert.IsType<OkObjectResult>(result);
+        _mockTransitoryDocumentsService.Verify(
+            s => s.ListSharedDocuments(
+                locationId,
+                roomCd,
+                date.ToString("yyyy-MM-dd"),
+                It.IsAny<CancellationToken>(),
+                true),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task GetDocuments_FormatsDateCorrectly()
     {
         // Arrange

@@ -1,4 +1,5 @@
 import { useCommonStore } from '@/stores';
+import { PERMISSIONS } from '@/constants/permissions';
 import { callTrackPageView } from '@/utils/snowplowUtils';
 import { initializeSessionSettings, isPositiveInteger } from '@/utils/utils';
 import {
@@ -23,6 +24,14 @@ function authGuard(to: RouteLocationNormalizedGeneric) {
 
   if (to.name === 'RequestAccess') {
     return { path: '/' };
+  }
+
+  const requiredPermission = to.meta?.requiredPermission as string | undefined;
+  if (
+    requiredPermission &&
+    !commonStore.userInfo?.permissions?.includes(requiredPermission)
+  ) {
+    return { path: '/court-list' };
   }
 
   return true;
@@ -71,6 +80,21 @@ const routes: RouteRecordRaw[] = [
     name: 'CourtFileSearchView',
     component: () =>
       import('@/components/courtfilesearch/CourtFileSearchView.vue'),
+  },
+  {
+    path: '/transitory-documents/location/:locationId/room/:roomCd/date/:date',
+    name: 'TransitoryDocuments',
+    component: () =>
+      import('@/components/courtlist/TransitoryDocumentsPage.vue'),
+    props: (route) => ({
+      locationId: route.params.locationId,
+      roomCd: route.params.roomCd,
+      date: route.params.date,
+      location: route.query.location ?? '',
+    }),
+    meta: {
+      requiredPermission: PERMISSIONS.LIST_TRANSITORY_DOCUMENTS,
+    },
   },
   {
     path: '/file-viewer',

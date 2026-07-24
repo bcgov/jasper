@@ -10,13 +10,20 @@ export class TransitoryDocumentsService {
   async searchDocuments(
     locationId: string,
     roomCd: string,
-    date: string
+    date: string,
+    forceRefresh = false
   ): Promise<FileMetadataDto[]> {
-    return this.httpService.get<FileMetadataDto[]>('api/TransitoryDocuments', {
+    const query = {
       locationId,
       roomCd,
       date,
-    });
+      ...(forceRefresh ? { forceRefresh: true } : {}),
+    };
+
+    return this.httpService.get<FileMetadataDto[]>(
+      'api/TransitoryDocuments',
+      query
+    );
   }
 
   async downloadFile(fileMetadata: FileMetadataDto): Promise<void> {

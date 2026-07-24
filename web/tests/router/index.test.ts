@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type RouteResult = { path: string } | boolean | undefined;
-type RouteLike = { path: string; name: string };
+type RouteLike = {
+  path: string;
+  name: string;
+  meta?: { requiredPermission?: string };
+};
 
 interface RouterHooks {
   beforeEach?: (
@@ -17,6 +21,7 @@ interface MockStore {
     roles: string[];
     isActive: boolean;
     judgeId: number | null;
+    permissions?: string[];
   };
 }
 
@@ -134,6 +139,37 @@ describe('router/index', () => {
 
     const result = await hooks.beforeEach?.(
       { path: '/dashboard', name: 'DashboardView' },
+      {}
+    );
+
+    expect(result).toBe(true);
+  });
+
+  it('redirects users without the required permission', async () => {
+    await loadRouter();
+
+    const result = await hooks.beforeEach?.(
+      {
+        path: '/transitory-documents/location/1/room/101/date/2025-11-01',
+        name: 'TransitoryDocuments',
+        meta: { requiredPermission: 'LIST_TRANSITORY_DOCUMENTS' },
+      },
+      {}
+    );
+
+    expect(result).toEqual({ path: '/court-list' });
+  });
+
+  it('allows users with the required permission', async () => {
+    mockStore.userInfo.permissions = ['LIST_TRANSITORY_DOCUMENTS'];
+    await loadRouter();
+
+    const result = await hooks.beforeEach?.(
+      {
+        path: '/transitory-documents/location/1/room/101/date/2025-11-01',
+        name: 'TransitoryDocuments',
+        meta: { requiredPermission: 'LIST_TRANSITORY_DOCUMENTS' },
+      },
       {}
     );
 

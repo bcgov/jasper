@@ -4,17 +4,56 @@ import { DocumentData } from '@/types/shared';
 import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
 
 export const viewOrderDetails = (order: Order): void => {
+  const documentData = getBaseDocumentData(order);
+  const referredDocument = (order.packageDocuments ?? []).find(
+    (pd) =>
+      pd.referredDocument &&
+      pd.documentId?.toString() === order.packageDocumentId.toString()
+  );
+  shared.openOrderDocuments(order.id, order.courtFileNumber, [
+    {
+      ...documentData,
+      documentId: order.packageDocumentId,
+      documentDescription: referredDocument?.documentTypeDesc,
+    },
+  ]);
+};
+
+export const viewOrderSupportingDocuments = (order: Order): void => {
+  const baseDocumentData = getBaseDocumentData(order);
+  const packageDocs = (order.packageDocuments ?? []).filter(
+    (pd) => !pd.referredDocument
+  );
+  const ceisDocs = order.relevantCeisDocuments ?? [];
+
+  const supportingDocumentsData: DocumentData[] = [
+    ...packageDocs.map((doc) => ({
+      ...baseDocumentData,
+      documentId: doc.documentId?.toString(),
+      documentDescription: doc.documentTypeDesc,
+    })),
+    ...ceisDocs.map((doc) => ({
+      ...baseDocumentData,
+      documentId: doc.civilDocumentId?.toString(),
+      documentDescription: doc.documentTypeDesc,
+    })),
+  ];
+  shared.openOrderDocuments(
+    order.id,
+    `${order.courtFileNumber} - Supporting Documents`,
+    supportingDocumentsData,
+    true
+  );
+};
+
+const getBaseDocumentData = (order: Order): DocumentData => {
   const courtClassLabel = getCourtClassLabel(order.courtClass);
   const isCriminal = isCourtClassLabelCriminal(courtClassLabel);
-  const documentData: DocumentData = {
+  return {
     courtClass: order.courtClass,
     fileId: order.physicalFileId,
     fileNumberText: order.courtFileNumber,
-    documentId: order.packageDocumentId,
-    documentDescription: order.packageName,
     isCriminal,
     orderId: order.id,
   };
-
-  shared.openOrderDocuments(documentData);
 };

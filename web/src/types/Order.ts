@@ -16,4 +16,17 @@ export interface Order {
   styleOfCause: string;
   physicalFileId: string;
   status: OrderReviewStatus;
+  packageDocuments: PackageDocument[];
+  relevantCeisDocuments: RelevantCeisDocument[];
+}
+
+export interface PackageDocument {
+  documentId?: number;
+  documentTypeDesc: string;
+  referredDocument: boolean;
+}
+
+export interface RelevantCeisDocument {
+  civilDocumentId?: number;
+  documentTypeDesc: string;
 }

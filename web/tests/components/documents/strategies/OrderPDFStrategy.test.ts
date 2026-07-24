@@ -175,20 +175,32 @@ describe('OrderPDFStrategy', () => {
     expect(() => new OrderPDFStrategy()).toThrow('Service(s) is undefined.');
   });
 
-  it('throws if the current order is not found in the store', () => {
+  it('does not throw and logs an error if the current order is not found in the store', () => {
     mockedUseOrdersStore.mockReturnValueOnce({ orders: [] });
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
-    expect(() => new OrderPDFStrategy()).toThrow(
-      'Current order not found in store.'
+    expect(() => new OrderPDFStrategy()).not.toThrow();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Order with ID 123 not found.'
     );
+
+    consoleErrorSpy.mockRestore();
   });
 
-  it('throws if the order ID is not present in the URL', () => {
+  it('does not throw and logs an error if the order ID is not present in the URL', () => {
     setLocationSearch('');
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
-    expect(() => new OrderPDFStrategy()).toThrow(
-      'Current order not found in store.'
+    expect(() => new OrderPDFStrategy()).not.toThrow();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Order with ID null not found.'
     );
+
+    consoleErrorSpy.mockRestore();
   });
 
   it('hasData returns true if documents exist', () => {
@@ -413,9 +425,7 @@ describe('OrderPDFStrategy', () => {
             packageDocuments: [
               {
                 documentId: 1,
-                documentTypeCd: 'A',
                 documentTypeDesc: 'Doc A',
-                order: 0,
                 referredDocument: false,
               },
             ],
@@ -446,9 +456,7 @@ describe('OrderPDFStrategy', () => {
             packageDocuments: [
               {
                 documentId: 1,
-                documentTypeCd: 'A',
                 documentTypeDesc: 'Doc A',
-                order: 0,
                 referredDocument: true,
               },
             ],
@@ -468,7 +476,6 @@ describe('OrderPDFStrategy', () => {
             relevantCeisDocuments: [
               {
                 documentId: 2,
-                documentTypeCd: 'B',
                 documentTypeDesc: 'Doc B',
               },
             ],
@@ -486,7 +493,6 @@ describe('OrderPDFStrategy', () => {
         relevantCeisDocuments: [
           {
             documentId: 2,
-            documentTypeCd: 'B',
             documentTypeDesc: 'Doc B',
           },
         ],
@@ -633,7 +639,6 @@ describe('OrderPDFStrategy', () => {
             relevantCeisDocuments: [
               {
                 documentId: 2,
-                documentTypeCd: 'B',
                 documentTypeDesc: 'Doc B',
               },
             ],

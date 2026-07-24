@@ -18,13 +18,15 @@ namespace Scv.Api.Services
         /// <param name="roomCode">The room within the location.</param>
         /// <param name="date">The date to retrieve files.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+        /// <param name="forceRefresh">Whether to discard the cached result for this search before retrieving documents.</param>
         /// <returns>The collection of file metadata from the API.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
         Task<IEnumerable<Scv.Models.Document.FileMetadataDto>> ListSharedDocuments(
             string locationId,
             string roomCode,
             string date,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default,
+            bool forceRefresh = false);
 
         /// <summary>
         /// Downloads a file from the Transitory Documents API using the generated client.

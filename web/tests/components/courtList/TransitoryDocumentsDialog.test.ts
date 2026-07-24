@@ -1,4 +1,4 @@
-import TransitoryDocumentsDialog from '@/components/courtlist/TransitoryDocumentsDialog.vue';
+import TransitoryDocumentsTable from '@/components/courtlist/TransitoryDocumentsTable.vue';
 import { useCommonStore } from '@/stores';
 import { FileMetadataDto } from '@/types/transitory-documents';
 import { mount, flushPromises } from '@vue/test-utils';
@@ -53,7 +53,7 @@ const mockRouter = {
   resolve: mockRouterResolve,
 };
 
-type TransitoryDocumentsDialogVm = {
+type TransitoryDocumentsTableVm = {
   loading: boolean;
   error: unknown;
   documents: FileMetadataDto[];
@@ -73,13 +73,14 @@ type TransitoryDocumentsDialogVm = {
   openInNutrient: (item: FileMetadataDto) => Promise<void>;
   downloadFile: (item: FileMetadataDto) => Promise<void>;
   handleViewDocuments: () => Promise<void>;
+  refreshDocuments: () => Promise<void>;
 };
 
 vi.mock('vue-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-describe('TransitoryDocumentsDialog', () => {
+describe('TransitoryDocumentsTable', () => {
   let mockTransitoryDocumentsService: {
     searchDocuments: ReturnType<typeof vi.fn>;
     downloadFile: ReturnType<typeof vi.fn>;
@@ -116,7 +117,7 @@ describe('TransitoryDocumentsDialog', () => {
 
     const pinia = createPiniaWithUser(permissions);
 
-    return mount(TransitoryDocumentsDialog, {
+    return mount(TransitoryDocumentsTable, {
       props: {
         ...defaultProps,
         ...props,
@@ -180,8 +181,8 @@ describe('TransitoryDocumentsDialog', () => {
 
   const getVm = (
     wrapper: ReturnType<typeof createWrapper>
-  ): TransitoryDocumentsDialogVm =>
-    wrapper.vm as unknown as TransitoryDocumentsDialogVm;
+  ): TransitoryDocumentsTableVm =>
+    wrapper.vm as unknown as TransitoryDocumentsTableVm;
 
   const getSessionStorageSetItemMock = () =>
     vi.mocked(window.sessionStorage.setItem);
@@ -230,7 +231,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       const pinia = createPiniaWithUser();
 
-      const wrapper = mount(TransitoryDocumentsDialog, {
+      const wrapper = mount(TransitoryDocumentsTable, {
         props: {
           ...defaultProps,
           modelValue: false,
@@ -265,7 +266,7 @@ describe('TransitoryDocumentsDialog', () => {
 
       const pinia = createPiniaWithUser();
 
-      const wrapper = mount(TransitoryDocumentsDialog, {
+      const wrapper = mount(TransitoryDocumentsTable, {
         props: {
           ...defaultProps,
           modelValue: false,
@@ -345,6 +346,17 @@ describe('TransitoryDocumentsDialog', () => {
       expect(
         mockTransitoryDocumentsService.searchDocuments
       ).toHaveBeenCalledTimes(1);
+    });
+
+    it('refreshes documents without using the cached search result', async () => {
+      const wrapper = createWrapper();
+      const vm = getVm(wrapper);
+
+      await vm.refreshDocuments();
+
+      expect(
+        mockTransitoryDocumentsService.searchDocuments
+      ).toHaveBeenLastCalledWith('1', '101', '2025-11-01', true);
     });
   });
 
@@ -870,7 +882,7 @@ describe('TransitoryDocumentsDialog', () => {
       const vm = getVm(wrapper);
 
       expect(vm.headers).toEqual([
-        { title: 'Room', key: 'matchedRoomFolder', sortable: true },
+        { title: 'Room / Name', key: 'matchedRoomFolder', sortable: true },
         { title: 'File Name', key: 'fileName', sortable: true },
         { title: 'Extension', key: 'extension', sortable: true },
         { title: 'Created', key: 'createdUtc', sortable: true },

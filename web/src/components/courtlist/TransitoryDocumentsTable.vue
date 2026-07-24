@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialogOpen" fullscreen>
+  <v-dialog v-model="dialogOpen" fullscreen :scrim="!props.standalone">
     <v-card>
       <v-toolbar color="primary">
         <v-toolbar-title>
@@ -7,83 +7,87 @@
           {{ props.roomCd }}
         </v-toolbar-title>
         <v-spacer></v-spacer>
+        <v-btn
+          :icon="mdiRefresh"
+          :loading="loading"
+          @click="refreshDocuments"
+          title="Refresh documents"
+        ></v-btn>
         <v-btn :icon="mdiClose" @click="close" title="close"></v-btn>
       </v-toolbar>
 
-      <v-card-text>
-        <v-container>
-          <v-row
-            v-if="documents.length === 0 && !loading"
-            justify="center"
-            class="my-5"
-          >
-            <v-col cols="12" md="6">
-              <v-alert type="info" border="start">
-                No documents found for this location and date.
-              </v-alert>
-            </v-col>
-          </v-row>
+      <v-container>
+        <v-row
+          v-if="documents.length === 0 && !loading"
+          justify="center"
+          class="my-5"
+        >
+          <v-col cols="12" md="6">
+            <v-alert type="info" border="start">
+              No documents found for this location and date.
+            </v-alert>
+          </v-col>
+        </v-row>
 
-          <v-skeleton-loader class="my-1" type="table" :loading="loading">
-            <v-data-table
-              v-if="documents.length > 0"
-              v-model="selectedDocuments"
-              :headers="headers"
-              :items="documents"
-              :sort-by="[{ key: 'matchedRoomFolder', order: 'desc' }]"
-              class="elevation-1"
-              fixed-header
-              height="calc(100vh - 200px)"
-              :show-select="canViewDocuments"
-              return-object
-              :item-value="(item) => item.relativePath"
-              :item-selectable="(item) => canViewDocuments && isPdf(item)"
-              data-testid="documents-table"
-              :items-per-page="-1"
-            >
-              <template v-slot:[`item.fileName`]="{ item }">
-                <a
-                  v-if="canViewDocuments && isSupportedByNutrient(item)"
-                  href="#"
-                  @click.prevent="openInNutrient(item)"
-                  class="text-primary"
-                >
-                  {{ item.fileName }}
-                </a>
-                <span v-else>{{ item.fileName }}</span>
+        <v-skeleton-loader class="my-1" type="table" :loading="loading">
+          <v-data-table
+            v-if="documents.length > 0"
+            v-model="selectedDocuments"
+            :headers="headers"
+            :items="documents"
+            :sort-by="[{ key: 'matchedRoomFolder', order: 'asc' }]"
+            class="elevation-1"
+            fixed-header
+            height="100vh"
+            :show-select="canViewDocuments"
+            return-object
+            :item-value="(item) => item.relativePath"
+            :item-selectable="(item) => canViewDocuments && isPdf(item)"
+            data-testid="documents-table"
+            :items-per-page="-1"
+          >
+            <template v-slot:[`item.fileName`]="{ item }">
+              <a
+                v-if="canViewDocuments && isSupportedByNutrient(item)"
+                href="#"
+                @click.prevent="openInNutrient(item)"
+                class="text-primary"
+              >
+                {{ item.fileName }}
+              </a>
+              <span v-else>{{ item.fileName }}</span>
+            </template>
+            <template v-slot:[`item.actions`]="{ item }">
+              <template v-if="canDownloadDocuments">
+                <v-progress-circular
+                  v-if="
+                    item.relativePath && downloadingFiles[item.relativePath]
+                  "
+                  indeterminate
+                  color="primary"
+                  size="20"
+                  width="2"
+                ></v-progress-circular>
+                <v-btn
+                  v-else
+                  :icon="mdiDownload"
+                  variant="text"
+                  size="small"
+                  data-testid="download-file-btn"
+                  @click="downloadFile(item)"
+                  title="Download file"
+                ></v-btn>
               </template>
-              <template v-slot:[`item.actions`]="{ item }">
-                <template v-if="canDownloadDocuments">
-                  <v-progress-circular
-                    v-if="
-                      item.relativePath && downloadingFiles[item.relativePath]
-                    "
-                    indeterminate
-                    color="primary"
-                    size="20"
-                    width="2"
-                  ></v-progress-circular>
-                  <v-btn
-                    v-else
-                    :icon="mdiDownload"
-                    variant="text"
-                    size="small"
-                    data-testid="download-file-btn"
-                    @click="downloadFile(item)"
-                    title="Download file"
-                  ></v-btn>
-                </template>
-              </template>
-              <template v-slot:[`item.sizeBytes`]="{ item }">
-                {{ formatFileSize(item.sizeBytes) }}
-              </template>
-              <template v-slot:[`item.createdUtc`]="{ item }">
-                {{ formatDate(item.createdUtc) }}
-              </template>
-            </v-data-table>
-          </v-skeleton-loader>
-        </v-container>
-      </v-card-text>
+            </template>
+            <template v-slot:[`item.sizeBytes`]="{ item }">
+              {{ formatFileSize(item.sizeBytes) }}
+            </template>
+            <template v-slot:[`item.createdUtc`]="{ item }">
+              {{ formatDate(item.createdUtc) }}
+            </template>
+          </v-data-table>
+        </v-skeleton-loader>
+      </v-container>
     </v-card>
 
     <ActionBar
@@ -112,13 +116,19 @@
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
   import { useCommonStore } from '@/stores';
   import { FileMetadataDto } from '@/types/transitory-documents';
-  import { mdiClose, mdiDownload, mdiFileDocumentOutline } from '@mdi/js';
+  import {
+    mdiClose,
+    mdiDownload,
+    mdiFileDocumentOutline,
+    mdiRefresh,
+  } from '@mdi/js';
   import { computed, inject, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import { openTransitoryDocumentsInNutrient } from './transitoryViewerLauncher';
 
   const props = defineProps<{
     modelValue: boolean;
+    standalone?: boolean;
     locationId: string;
     roomCd: string;
     date: string;
@@ -170,7 +180,7 @@
   );
 
   const headers = [
-    { title: 'Room', key: 'matchedRoomFolder', sortable: true },
+    { title: 'Room / Name', key: 'matchedRoomFolder', sortable: true },
     { title: 'File Name', key: 'fileName', sortable: true },
     { title: 'Extension', key: 'extension', sortable: true },
     { title: 'Created', key: 'createdUtc', sortable: true },
@@ -190,7 +200,7 @@
     return date.toLocaleString();
   };
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = async (forceRefresh = false) => {
     if (!props.locationId || !props.roomCd || !props.date) return;
 
     const requestId = ++latestFetchRequestId.value;
@@ -199,11 +209,18 @@
     error.value = null;
 
     try {
-      const result = await transitoryDocumentsService?.searchDocuments(
-        props.locationId,
-        props.roomCd,
-        props.date
-      );
+      const result = forceRefresh
+        ? await transitoryDocumentsService?.searchDocuments(
+            props.locationId,
+            props.roomCd,
+            props.date,
+            true
+          )
+        : await transitoryDocumentsService?.searchDocuments(
+            props.locationId,
+            props.roomCd,
+            props.date
+          );
 
       // Ignore stale responses when a newer request has already started.
       if (requestId !== latestFetchRequestId.value || !dialogOpen.value) {
@@ -220,6 +237,10 @@
         loading.value = false;
       }
     }
+  };
+
+  const refreshDocuments = async () => {
+    await fetchDocuments(true);
   };
 
   const close = () => {

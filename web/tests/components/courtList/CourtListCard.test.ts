@@ -3,11 +3,20 @@ import { CourtListCardInfo } from '@/types/courtlist';
 import { mount } from '@vue/test-utils';
 import CourtListCard from 'CMP/courtlist/CourtListCard.vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
+
+const mockRouterResolve = vi.fn();
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ resolve: mockRouterResolve }),
+}));
 
 beforeEach(() => {
   setActivePinia(createPinia());
+  mockRouterResolve.mockReset();
+  mockRouterResolve.mockReturnValue({ href: '/transitory-documents' });
+  window.open = vi.fn();
 });
 
 const setUserPermissions = (permissions: string[] = []) => {
@@ -56,11 +65,6 @@ const createWrapper = (permissions: string[] = []) => {
       cardInfo: card,
       date: '2024-10-11',
     },
-    global: {
-      stubs: {
-        TransitoryDocumentsDialog: true,
-      },
-    },
   });
 };
 
@@ -102,6 +106,27 @@ describe('CourtListCard.vue', () => {
     const wrapper = createWrapper([]);
     expect(wrapper.find('[data-test="view-shared-folder-btn"]').exists()).toBe(
       false
+    );
+  });
+
+  it('opens the shared folder in a new tab', async () => {
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS']);
+
+    await wrapper.find('[data-test="view-shared-folder-btn"]').trigger('click');
+
+    expect(mockRouterResolve).toHaveBeenCalledWith({
+      name: 'TransitoryDocuments',
+      params: {
+        locationId: '1',
+        roomCd: 'Room 101',
+        date: '2024-10-11',
+      },
+      query: { location: 'Court A' },
+    });
+    expect(window.open).toHaveBeenCalledWith(
+      '/transitory-documents',
+      '_blank',
+      'noopener'
     );
   });
 });

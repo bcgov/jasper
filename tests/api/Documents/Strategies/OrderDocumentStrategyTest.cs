@@ -52,7 +52,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         return new PdfDocumentRequestDetails
         {
             DocumentId = encoded,
-            CorrelationId = correlationId
+            CorrelationId = correlationId,
+            OrderId = "12345"
         };
     }
 
@@ -165,6 +166,18 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     public async Task Invoke_ThrowsInvalidArgumentException_WhenDocumentIdIsNull()
     {
         var request = new PdfDocumentRequestDetails { DocumentId = null };
+        var strategy = new OrderDocumentStrategy(
+            _mockJudicialClient.Object,
+            _mockConfiguration.Object,
+            _mockOrderRepo.Object);
+
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => strategy.Invoke(request));
+    }
+
+    [Fact]
+    public async Task Invoke_ThrowsInvalidArgumentException_WhenOrderIdIsNull()
+    {
+        var request = new PdfDocumentRequestDetails { DocumentId = "123", OrderId = null };
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,

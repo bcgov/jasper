@@ -46,16 +46,12 @@ describe('orderDetails', () => {
         packageDocuments: [
           {
             documentId: 100,
-            documentTypeCd: 'ORD',
             documentTypeDesc: 'Order for Custody',
-            order: 1,
             referredDocument: true,
           },
           {
             documentId: 200,
-            documentTypeCd: 'SUP',
             documentTypeDesc: 'Supporting',
-            order: 2,
             referredDocument: false,
           },
         ],
@@ -83,9 +79,7 @@ describe('orderDetails', () => {
         packageDocuments: [
           {
             documentId: 100,
-            documentTypeCd: 'ORD',
             documentTypeDesc: 'Order for Custody',
-            order: 1,
             referredDocument: false,
           },
         ],
@@ -112,9 +106,7 @@ describe('orderDetails', () => {
         packageDocuments: [
           {
             documentId: 100,
-            documentTypeCd: 'ORD',
             documentTypeDesc: 'Matched By Coercion',
-            order: 1,
             referredDocument: true,
           },
         ],
@@ -141,23 +133,18 @@ describe('orderDetails', () => {
         packageDocuments: [
           {
             documentId: 100,
-            documentTypeCd: 'ORD',
             documentTypeDesc: 'Referred Order',
-            order: 1,
             referredDocument: true,
           },
           {
             documentId: 200,
-            documentTypeCd: 'SUP',
             documentTypeDesc: 'Supporting Doc',
-            order: 2,
             referredDocument: false,
           },
         ],
         relevantCeisDocuments: [
           {
-            documentId: 300,
-            documentTypeCd: 'CEIS',
+            civilDocumentId: 300,
             documentTypeDesc: 'CEIS Doc',
           },
         ],
@@ -197,9 +184,7 @@ describe('orderDetails', () => {
         packageDocuments: [
           {
             documentId: 100,
-            documentTypeCd: 'ORD',
             documentTypeDesc: 'Referred Order',
-            order: 1,
             referredDocument: true,
           },
         ],
@@ -237,8 +222,7 @@ describe('orderDetails', () => {
         courtClass: 'Y',
         relevantCeisDocuments: [
           {
-            documentId: 300,
-            documentTypeCd: 'CEIS',
+            civilDocumentId: 300,
             documentTypeDesc: 'CEIS Doc',
           },
         ],

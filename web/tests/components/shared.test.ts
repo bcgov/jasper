@@ -5,7 +5,7 @@ import {
   useSnackbarStore,
 } from '@/stores';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
-import { CourtDocumentType } from '@/types/shared';
+import { CourtDocumentType, DocumentRequestType } from '@/types/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/documents/DocumentUtils', () => ({
@@ -1081,5 +1081,174 @@ describe('shared.openJudicialBinderDocuments', () => {
       'warning',
       'Nothing to open'
     );
+  });
+});
+
+describe('shared.openOrderDocuments', () => {
+  let mockWindowOpen: any;
+  let addDocumentsToPdfStoreSpy: any;
+  let replaceWindowTitleSpy: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockWindowOpen = vi.fn(() => ({ focus: vi.fn() }));
+    window.open = mockWindowOpen;
+
+    addDocumentsToPdfStoreSpy = vi
+      .spyOn(shared, 'addDocumentsToPdfStore')
+      .mockReturnValue('order-session-id');
+
+    replaceWindowTitleSpy = vi
+      .spyOn(shared, 'replaceWindowTitle')
+      .mockImplementation((newWindow) => newWindow);
+  });
+
+  afterEach(() => {
+    addDocumentsToPdfStoreSpy.mockRestore();
+    replaceWindowTitleSpy.mockRestore();
+  });
+
+  it('should map document data into Order merged document entries', () => {
+    const documentData: any[] = [
+      {
+        fileNumberText: 'FN001',
+        documentDescription: 'Order for Custody',
+        fileId: 'FILE1',
+      },
+    ];
+
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData);
+
+    expect(addDocumentsToPdfStoreSpy).toHaveBeenCalledWith([
+      {
+        documentType: DocumentRequestType.Order,
+        documentData: documentData[0],
+        groupKeyOne: 'FN001',
+        groupKeyTwo: '',
+        documentName: 'Order for Custody',
+        physicalFileId: 'FILE1',
+      },
+    ]);
+  });
+
+  it('should map multiple documents into merged entries', () => {
+    const documentData: any[] = [
+      {
+        fileNumberText: 'FN001',
+        documentDescription: 'Order 1',
+        fileId: 'FILE1',
+      },
+      {
+        fileNumberText: 'FN002',
+        documentDescription: 'Order 2',
+        fileId: 'FILE2',
+      },
+    ];
+
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData);
+
+    expect(addDocumentsToPdfStoreSpy).toHaveBeenCalledWith([
+      expect.objectContaining({
+        documentData: documentData[0],
+        groupKeyOne: 'FN001',
+        documentName: 'Order 1',
+        physicalFileId: 'FILE1',
+      }),
+      expect.objectContaining({
+        documentData: documentData[1],
+        groupKeyOne: 'FN002',
+        documentName: 'Order 2',
+        physicalFileId: 'FILE2',
+      }),
+    ]);
+  });
+
+  it('should default documentName, groupKeyOne and physicalFileId when missing', () => {
+    const documentData: any[] = [{}];
+
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData);
+
+    expect(addDocumentsToPdfStoreSpy).toHaveBeenCalledWith([
+      {
+        documentType: DocumentRequestType.Order,
+        documentData: documentData[0],
+        groupKeyOne: '',
+        groupKeyTwo: '',
+        documentName: 'Order',
+        physicalFileId: '',
+      },
+    ]);
+  });
+
+  it('should open the file-viewer with order type and default isSupportingDocuments', () => {
+    const documentData: any[] = [
+      {
+        fileNumberText: 'FN001',
+        documentDescription: 'Order 1',
+        fileId: 'FILE1',
+      },
+    ];
+
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData);
+
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isSupportingDocuments=false',
+      '_blank'
+    );
+  });
+
+  it('should set isSupportingDocuments to true in the URL when specified', () => {
+    const documentData: any[] = [
+      {
+        fileNumberText: 'FN001',
+        documentDescription: 'Order 1',
+        fileId: 'FILE1',
+      },
+    ];
+
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData, true);
+
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isSupportingDocuments=true',
+      '_blank'
+    );
+  });
+
+  it('should call replaceWindowTitle with the provided title', () => {
+    const documentData: any[] = [
+      {
+        fileNumberText: 'FN001',
+        documentDescription: 'Order 1',
+        fileId: 'FILE1',
+      },
+    ];
+
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData);
+
+    expect(replaceWindowTitleSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      'My Order'
+    );
+  });
+
+  it('should return early when documentData is an empty array', () => {
+    shared.openOrderDocuments('ORDER1', 'My Order', []);
+
+    expect(addDocumentsToPdfStoreSpy).not.toHaveBeenCalled();
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+    expect(replaceWindowTitleSpy).not.toHaveBeenCalled();
+  });
+
+  it('should return early when documentData is undefined', () => {
+    shared.openOrderDocuments(
+      'ORDER1',
+      'My Order',
+      undefined as unknown as any[]
+    );
+
+    expect(addDocumentsToPdfStoreSpy).not.toHaveBeenCalled();
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+    expect(replaceWindowTitleSpy).not.toHaveBeenCalled();
   });
 });

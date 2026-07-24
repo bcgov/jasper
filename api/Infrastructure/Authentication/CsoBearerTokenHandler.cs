@@ -32,7 +32,7 @@ namespace Scv.Api.Infrastructure.Authentication
         private static partial Regex GetJudicialDocumentUrlRegex();
 
         private static readonly object UserAccessTokenItemsKey = new();
-        private static readonly Lock UserAccessTokenLock = new();
+        private static readonly object UserAccessTokenLock = new();
         private readonly IKeycloakTokenService _tokenService = tokenService;
         private readonly CsoKeycloakClientOptions _options = options.Value ?? throw new ArgumentNullException(nameof(options));
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;

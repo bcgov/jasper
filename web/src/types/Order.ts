@@ -27,6 +27,6 @@ export interface PackageDocument {
 }
 
 export interface RelevantCeisDocument {
-  documentId: number;
+  civilDocumentId?: number;
   documentTypeDesc: string;
 }

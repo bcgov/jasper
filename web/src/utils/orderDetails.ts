@@ -21,17 +21,23 @@ export const viewOrderDetails = (order: Order): void => {
 
 export const viewOrderSupportingDocuments = (order: Order): void => {
   const baseDocumentData = getBaseDocumentData(order);
-  const allDocuments = [
-    ...order.packageDocuments.filter((pd) => !pd.referredDocument),
-    ...order.relevantCeisDocuments,
+  const packageDocs = (order.packageDocuments ?? []).filter(
+    (pd) => !pd.referredDocument
+  );
+  const ceisDocs = order.relevantCeisDocuments ?? [];
+
+  const supportingDocumentsData: DocumentData[] = [
+    ...packageDocs.map((doc) => ({
+      ...baseDocumentData,
+      documentId: doc.documentId?.toString(),
+      documentDescription: doc.documentTypeDesc,
+    })),
+    ...ceisDocs.map((doc) => ({
+      ...baseDocumentData,
+      documentId: doc.civilDocumentId?.toString(),
+      documentDescription: doc.documentTypeDesc,
+    })),
   ];
-
-  const supportingDocumentsData: DocumentData[] = allDocuments.map((doc) => ({
-    ...baseDocumentData,
-    documentId: doc.documentId?.toString(),
-    documentDescription: doc.documentTypeDesc,
-  }));
-
   shared.openOrderDocuments(
     order.id,
     `${order.courtFileNumber} - Supporting Documents`,

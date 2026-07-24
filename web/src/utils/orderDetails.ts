@@ -5,10 +5,10 @@ import { getCourtClassLabel, isCourtClassLabelCriminal } from '@/utils/utils';
 
 export const viewOrderDetails = (order: Order): void => {
   const documentData = getBaseDocumentData(order);
-  const referredDocument = order.packageDocuments.find(
+  const referredDocument = (order.packageDocuments ?? []).find(
     (pd) =>
-      pd.documentId.toString() === order.packageDocumentId.toString() &&
-      pd.referredDocument
+      pd.referredDocument &&
+      pd.documentId?.toString() === order.packageDocumentId.toString()
   );
   shared.openOrderDocuments(order.id, order.courtFileNumber, [
     {
@@ -28,7 +28,7 @@ export const viewOrderSupportingDocuments = (order: Order): void => {
 
   const supportingDocumentsData: DocumentData[] = allDocuments.map((doc) => ({
     ...baseDocumentData,
-    documentId: doc.documentId.toString(),
+    documentId: doc.documentId?.toString(),
     documentDescription: doc.documentTypeDesc,
   }));
 

@@ -21,15 +21,12 @@ export interface Order {
 }
 
 export interface PackageDocument {
-  documentId: number;
-  documentTypeCd: string;
+  documentId?: number;
   documentTypeDesc: string;
-  order: number;
   referredDocument: boolean;
 }
 
 export interface RelevantCeisDocument {
   documentId: number;
-  documentTypeCd: string;
   documentTypeDesc: string;
 }

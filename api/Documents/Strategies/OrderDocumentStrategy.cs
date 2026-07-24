@@ -46,6 +46,11 @@ public class OrderDocumentStrategy : IDocumentStrategy
             throw new InvalidArgumentException("Invalid agency id");
         }
 
+        if (string.IsNullOrWhiteSpace(documentRequest.OrderId))
+        {
+            throw new InvalidArgumentException("Invalid order id.");
+        }
+
         var decodedDocumentId = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(documentRequest.DocumentId));
         if (!int.TryParse(decodedDocumentId, out var documentIdInt))
         {

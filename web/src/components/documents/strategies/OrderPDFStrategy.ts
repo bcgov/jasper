@@ -18,7 +18,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   private readonly orderService: OrderService;
   private readonly currentOrder: Order | undefined;
   private readonly isShowingSupportingDocuments: boolean;
-  private readonly hasSupportingDocuments: boolean;
+  private readonly hasSupportingDocuments: boolean = false;
 
   constructor() {
     super();
@@ -41,7 +41,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
     this.currentOrder = this.ordersStore.orders.find((o) => o.id === orderId);
     if (!this.currentOrder) {
-      throw new Error('Current order not found in store.');
+      console.error(`Order with ID ${orderId} not found.`);
+      return;
     }
     this.hasSupportingDocuments =
       [

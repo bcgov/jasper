@@ -6,23 +6,20 @@ on:
     branches:
       - master
     paths:
-      - "infrastructure/**"
+      - 'infrastructure/**'
 
   # Manual trigger via GH Actions UI
   workflow_dispatch:
     inputs:
       environment:
-        description: "Select target environment"
+        description: 'Select target environment'
         required: true
-        default: "lz-dev"
+        default: 'lz-dev'
         type: choice
         options:
           - lz-dev
           - lz-test
           - lz-prod
-          - dev
-          - test
-          - prod
 
 env:
   WORKING_DIRECTORY: "./infrastructure/cloud/environments/${{ inputs.environment || 'lz-dev' }}"
@@ -66,7 +63,7 @@ jobs:
         with:
           sarif_file: tfsec.sarif
           working_directory: ${{ env.WORKING_DIRECTORY }}
-          tfsec_args: "--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars"
+          tfsec_args: '--tfvars-file=${{ env.WORKING_DIRECTORY }}/${{ env.environment }}.tfvars'
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
@@ -85,7 +82,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: 1.14.1
+          terraform_version: 1.15.8
 
       - name: Terraform Init
         id: init

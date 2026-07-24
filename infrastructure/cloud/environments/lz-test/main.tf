@@ -41,12 +41,14 @@ data "aws_security_group" "data_sg" {
 
 # Create Secrets placeholder for Secrets Manager
 module "secrets_manager" {
-  source                = "../../modules/SecretsManager"
-  environment           = var.environment
-  app_name              = var.app_name
-  region                = var.region
-  kms_key_arn           = module.initial.kms_key_arn
-  rotate_key_lambda_arn = module.lambda.lambda_functions["rotate-key"].arn
+  source                         = "../../modules/SecretsManager"
+  environment                    = var.environment
+  app_name                       = var.app_name
+  region                         = var.region
+  kms_key_arn                    = module.initial.kms_key_arn
+  rotate_key_lambda_arn          = module.lambda.lambda_functions["rotate-key"].arn
+  use_existing_mongo_tls_secret  = var.use_existing_mongo_tls_secret
+  existing_mongo_tls_secret_name = var.existing_mongo_tls_secret_name
 }
 
 # Create RDS Database
@@ -114,14 +116,14 @@ module "tg_web" {
 }
 
 module "tg_api" {
-  source            = "../../modules/TargetGroup"
-  environment       = var.environment
-  app_name          = var.app_name
-  name              = "api"
-  port              = 5000
-  health_check_path = "/api/test/headers"
-  vpc_id            = data.aws_vpc.vpc.id
-  protocol          = "HTTP"
+  source                     = "../../modules/TargetGroup"
+  environment                = var.environment
+  app_name                   = var.app_name
+  name                       = "api"
+  port                       = 5000
+  health_check_path          = "/api/test/headers"
+  vpc_id                     = data.aws_vpc.vpc.id
+  protocol                   = "HTTP"
   stickiness_enabled         = true
   stickiness_cookie_duration = 36000
 }
@@ -322,6 +324,10 @@ module "ecs_api_td" {
       {
         name  = "AWS_LAMBDA_RETRY_ATTEMPTS"
         value = var.lambda_retry_attempts
+      },
+      {
+        name  = "MONGODB_USE_TLS_PEM"
+        value = tostring(var.use_mongo_tls_pem)
       },
     ],
     # ClamAV connection settings - only injected when the sidecar is enabled

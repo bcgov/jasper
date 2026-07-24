@@ -12,9 +12,6 @@ on:
           - lz-dev
           - lz-test
           - lz-prod
-          - dev
-          - test
-          - prod
 
 env:
   WORKING_DIRECTORY: ./web

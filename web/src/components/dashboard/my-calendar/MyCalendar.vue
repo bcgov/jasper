@@ -4,12 +4,7 @@
     type="date-picker"
     :loading="isCalendarLoading"
   ></v-skeleton-loader>
-  <FullCalendar
-    class="mx-2"
-    v-else
-    :options="calendarOptions"
-    ref="calendarRef"
-  >
+  <FullCalendar class="mx-2" v-else :options="calendarOptions">
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
         :date="event.extendedProps.date"
@@ -54,6 +49,7 @@
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import FullCalendar, {
     CalendarOptions,
+    useCalendarController,
     type DateClickInfo,
     type DayCellInfo,
     type EventClickInfo,
@@ -63,15 +59,7 @@
   import interactionPlugin from '@fullcalendar/vue3/interaction';
   import classicThemePlugin from '@fullcalendar/vue3/themes/classic';
   import { mdiListBoxOutline } from '@mdi/js';
-  import {
-    computed,
-    inject,
-    onMounted,
-    onUnmounted,
-    ref,
-    watch,
-    watchEffect,
-  } from 'vue';
+  import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
 
@@ -81,6 +69,7 @@
 
   const props = defineProps<{
     judgeId: number | undefined;
+    baseCalendarOptions: CalendarOptions;
   }>();
 
   const selectedDate = defineModel<Date>('selectedDate')!;
@@ -92,7 +81,7 @@
 
   const calendarData = ref<CalendarDay[]>([]);
   const expandedDate = ref<string | null>(null);
-  const calendarRef = ref();
+  const controller = useCalendarController();
   const { setupAutoRefresh } = useAutoRefresh(
     () => !!selectedDate.value,
     () => loadCalendarData(),
@@ -132,6 +121,7 @@
     if (newDate) {
       startDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
       endDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+      controller.gotoDate(newDate);
     }
     await loadCalendarData();
   });
@@ -219,44 +209,17 @@
     info.el.prepend(wrapper);
   };
 
-  const calendarOptions: CalendarOptions = {
+  const calendarOptions = computed<CalendarOptions>(() => ({
+    ...props.baseCalendarOptions,
+    controller,
     initialView: 'dayGridMonth',
+    initialDate: selectedDate.value,
     plugins: [classicThemePlugin, dayGridPlugin, interactionPlugin],
-    headerToolbar: false,
-    dayHeaderFormat: { weekday: 'long' },
-    dayHeaderInnerClass: 'day-header',
-    dayMaxEvents: false,
-    dayCellClass: (info) => {
-      const classes = ['day-cell'];
-      if (info.isToday) {
-        classes.push('day-cell-today');
-      }
-      if (info.dow === 0 || info.dow === 6) {
-        classes.push('day-cell-weekend');
-      }
-      return classes.join(' ');
-    },
-    dayCellTopClass: 'day-cell-top',
-    dayCellInnerClass: 'day-cell-inner',
+    events: calendarEvents.value,
     dayCellDidMount: dayCellDidMount,
     dateClick: handleDateClick,
     eventClick: handleEventClick,
-    expandRows: false,
-    contentHeight: 'auto',
-    aspectRatio: 3,
-  };
-
-  watchEffect(() => {
-    const calendarApi = calendarRef.value?.getApi();
-    if (calendarApi) {
-      calendarApi.removeAllEvents();
-
-      calendarEvents.value.forEach((e) => {
-        return calendarApi.addEvent({ ...e });
-      });
-      calendarApi.gotoDate(selectedDate.value);
-    }
-  });
+  }));
 
   const closeExpandedPanel = (e: MouseEvent) => {
     // Determine whether the expanded panel is going to be closed.

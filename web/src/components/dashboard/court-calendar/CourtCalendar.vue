@@ -1,51 +1,54 @@
 <template>
-  <FullCalendar class="mx-2" :options="calendarOptions" ref="calendarRef">
+  <FullCalendar class="mx-2" :options="calendarOptions">
     <template v-slot:eventContent="{ event }">
       <slot name="eventContent" :event="event" />
     </template>
   </FullCalendar>
 </template>
 <script setup lang="ts">
-  import { CalendarOptions } from '@fullcalendar/core';
-  import dayGridPlugin from '@fullcalendar/daygrid';
-  import FullCalendar from '@fullcalendar/vue3';
-  import { ref, watchEffect } from 'vue';
+  import FullCalendar, {
+    CalendarOptions,
+    useCalendarController,
+  } from '@fullcalendar/vue3';
+  import dayGridPlugin from '@fullcalendar/vue3/daygrid';
+  import classicThemePlugin from '@fullcalendar/vue3/themes/classic';
+  import { computed, watch } from 'vue';
 
-  const calendarRef = ref();
+  const controller = useCalendarController();
 
   const props = defineProps<{
     calendarView: string | undefined;
     selectedDate: Date | undefined;
     events: { start: Date; extendedProps: Record<string, unknown> }[];
+    baseCalendarOptions: CalendarOptions;
   }>();
 
-  const calendarOptions: CalendarOptions = {
+  const calendarOptions = computed<CalendarOptions>(() => ({
+    ...props.baseCalendarOptions,
+    controller,
     initialView: props.calendarView,
-    plugins: [dayGridPlugin],
-    headerToolbar: false,
-    dayHeaderFormat: { weekday: 'long' },
-    dayMaxEventRows: true,
-    expandRows: false,
-    contentHeight: 'auto',
+    initialDate: props.selectedDate,
+    plugins: [classicThemePlugin, dayGridPlugin],
+    events: props.events,
     views: {
       dayGridTwoWeek: {
         type: 'dayGrid',
         duration: { weeks: 2 },
       },
     },
-  };
+  }));
 
-  watchEffect(() => {
-    const calendarApi = calendarRef.value?.getApi();
-    if (calendarApi) {
-      calendarApi.removeAllEvents();
-      props.events.forEach((e) => calendarApi.addEvent({ ...e }));
-      calendarApi.gotoDate(props.selectedDate);
+  watch(
+    () => props.selectedDate,
+    (date) => {
+      if (date) {
+        controller.gotoDate(date);
+      }
     }
-  });
+  );
 
   const changeView = (view: string) => {
-    calendarRef.value?.getApi()?.changeView(view);
+    controller.changeView(view);
   };
 
   defineExpose({ changeView });

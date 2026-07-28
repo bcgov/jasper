@@ -6,12 +6,23 @@ import {
   CalendarDayActivity,
 } from '@/types';
 import { faker } from '@faker-js/faker';
-import { flushPromises, mount } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
 vi.mock('@/services');
+
+const { setupAutoRefreshMock, useAutoRefreshMock } = vi.hoisted(() => ({
+  setupAutoRefreshMock: vi.fn(),
+  useAutoRefreshMock: vi.fn(),
+}));
+
+vi.mock('@/composables/useAutoRefresh', () => ({
+  useAutoRefresh: useAutoRefreshMock,
+}));
+
+enableAutoUnmount(afterEach);
 
 describe('MyCalendar.vue', () => {
   let dashboardService: any;
@@ -59,6 +70,9 @@ describe('MyCalendar.vue', () => {
     };
 
     (DashboardService as any).mockReturnValue(dashboardService);
+    useAutoRefreshMock.mockReturnValue({
+      setupAutoRefresh: setupAutoRefreshMock,
+    });
   });
 
   const mountComponent = (props = {}) => {
@@ -67,6 +81,10 @@ describe('MyCalendar.vue', () => {
         judgeId: faker.number.int({ min: 1, max: 100 }),
         selectedDate: new Date(2026, 0, 15),
         isCalendarLoading: true,
+        baseCalendarOptions: {
+          initialView: 'dayGridMonth',
+          headerToolbar: {},
+        },
         ...props,
       },
       global: {
@@ -74,7 +92,11 @@ describe('MyCalendar.vue', () => {
           dashboardService,
         },
         stubs: {
-          MyCalendarDayExpanded: true,
+          MyCalendarDayExpanded: {
+            name: 'MyCalendarDayExpanded',
+            props: ['day', 'expandedDate', 'close'],
+            template: '<div class="my-calendar-day-expanded-stub" />',
+          },
         },
       },
     });
@@ -317,6 +339,97 @@ describe('MyCalendar.vue', () => {
       expect(
         wrapper.findAllComponents({ name: 'MyCalendarDayExpanded' }).length
       ).toBe(2);
+    });
+
+    it('passes the day, expandedDate and close handler to MyCalendarDayExpanded', async () => {
+      const activity = createMockActivity({ activityClassCode: 'TRI' });
+      const day = createMockCalendarDay({
+        date: '15 Jan 2026',
+        activities: [activity],
+      });
+      dashboardService.getMySchedule = vi
+        .fn()
+        .mockResolvedValue({ payload: [day] });
+
+      const wrapper = mountComponent({ isCalendarLoading: false });
+      await flushPromises();
+      await nextTick();
+
+      const expanded = wrapper.findComponent({ name: 'MyCalendarDayExpanded' });
+      expect(expanded.props('day')).toEqual(day);
+      expect(expanded.props('expandedDate')).toBeNull();
+      expect(typeof expanded.props('close')).toBe('function');
+    });
+  });
+
+  describe('Auto-refresh', () => {
+    it('sets up auto-refresh after data loads successfully', async () => {
+      mountComponent();
+      await flushPromises();
+
+      expect(setupAutoRefreshMock).toHaveBeenCalled();
+    });
+
+    it('sets up auto-refresh even when loading fails', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      dashboardService.getMySchedule = vi
+        .fn()
+        .mockRejectedValue(new Error('Network error'));
+
+      mountComponent();
+      await flushPromises();
+
+      expect(setupAutoRefreshMock).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('reloads calendar data when the auto-refresh callback fires', async () => {
+      mountComponent();
+      await flushPromises();
+      dashboardService.getMySchedule.mockClear();
+
+      const onRefresh = useAutoRefreshMock.mock.calls.at(-1)![1] as () => void;
+      await onRefresh();
+
+      expect(dashboardService.getMySchedule).toHaveBeenCalled();
+    });
+  });
+
+  describe('Online reconnection', () => {
+    it('reloads calendar data when the browser comes back online', async () => {
+      mountComponent();
+      await flushPromises();
+      dashboardService.getMySchedule.mockClear();
+
+      globalThis.dispatchEvent(new Event('online'));
+      await flushPromises();
+
+      expect(dashboardService.getMySchedule).toHaveBeenCalled();
+    });
+
+    it('does not reload while a load is already in progress', async () => {
+      // A promise that never resolves keeps the component in a loading state.
+      dashboardService.getMySchedule = vi.fn(() => new Promise(() => {}));
+
+      mountComponent({ isCalendarLoading: true });
+
+      globalThis.dispatchEvent(new Event('online'));
+      await flushPromises();
+
+      expect(dashboardService.getMySchedule).toHaveBeenCalledTimes(1);
+    });
+
+    it('removes the online listener when unmounted', async () => {
+      const removeSpy = vi.spyOn(globalThis, 'removeEventListener');
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      wrapper.unmount();
+
+      expect(removeSpy).toHaveBeenCalledWith('online', expect.any(Function));
+      removeSpy.mockRestore();
     });
   });
 });

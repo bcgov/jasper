@@ -4,7 +4,7 @@
     type="date-picker"
     :loading="isCalendarLoading"
   ></v-skeleton-loader>
-  <FullCalendar class="mx-2" v-else :options="calendarOptions">
+  <FullCalendar class="fc mx-2" v-else :options="calendarOptions">
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
         :date="event.extendedProps.date"

@@ -1,5 +1,5 @@
 <template>
-  <FullCalendar class="mx-2" :options="calendarOptions">
+  <FullCalendar class="fc mx-2" :options="calendarOptions">
     <template v-slot:eventContent="{ event }">
       <slot name="eventContent" :event="event" />
     </template>

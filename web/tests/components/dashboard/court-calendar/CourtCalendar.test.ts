@@ -4,27 +4,28 @@ import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
-// --- mock calendar API (hoisted so the vi.mock factory can reference it) ---
+// --- mock calendar controller (hoisted so the vi.mock factory can reference it) ---
 
-const mockApi = vi.hoisted(() => ({
-  removeAllEvents: vi.fn(),
-  addEvent: vi.fn(),
+const mockController = vi.hoisted(() => ({
   gotoDate: vi.fn(),
   changeView: vi.fn(),
 }));
 
-// Mock the whole @fullcalendar/vue3 module so calendarRef.value.getApi() works
+// Mock @fullcalendar/vue3 so useCalendarController() returns our spies and
+// FullCalendar renders a lightweight stub that still exposes the options prop
+// and forwards the eventContent slot.
 vi.mock('@fullcalendar/vue3', async () => {
   const { defineComponent, h } = await import('vue');
   return {
     default: defineComponent({
       name: 'FullCalendar',
       props: ['options'],
-      setup(_, { expose }) {
-        expose({ getApi: () => mockApi });
-        return () => h('div');
+      setup(_, { slots }) {
+        return () =>
+          h('div', slots.eventContent ? slots.eventContent({ event: {} }) : []);
       },
     }),
+    useCalendarController: () => mockController,
   };
 });
 
@@ -44,8 +45,9 @@ const createEvent = (
 const mountComponent = (
   props: Partial<{
     calendarView: string;
-    selectedDate: Date;
+    selectedDate: Date | undefined;
     events: { start: Date; extendedProps: Record<string, unknown> }[];
+    baseCalendarOptions: Record<string, unknown>;
   }> = {}
 ) =>
   mount(CourtCalendar, {
@@ -53,9 +55,16 @@ const mountComponent = (
       calendarView: 'dayGridMonth',
       selectedDate: new Date('2026-03-31'),
       events: [],
+      baseCalendarOptions: {},
       ...props,
     },
   });
+
+const getOptions = (wrapper: ReturnType<typeof mountComponent>) =>
+  wrapper.findComponent({ name: 'FullCalendar' }).props('options') as Record<
+    string,
+    any
+  >;
 
 // --- tests ---
 
@@ -67,92 +76,54 @@ describe('CourtCalendar.vue', () => {
   describe('calendarOptions', () => {
     it('sets initialView from the calendarView prop', () => {
       const wrapper = mountComponent({ calendarView: 'dayGridWeek' });
-      const options = wrapper
-        .findComponent({ name: 'FullCalendar' })
-        .props('options');
-      expect(options.initialView).toBe('dayGridWeek');
+      expect(getOptions(wrapper).initialView).toBe('dayGridWeek');
     });
 
-    it('disables the header toolbar', () => {
-      const wrapper = mountComponent();
-      const options = wrapper
-        .findComponent({ name: 'FullCalendar' })
-        .props('options');
-      expect(options.headerToolbar).toBe(false);
+    it('sets initialDate from the selectedDate prop', () => {
+      const selectedDate = new Date('2026-03-15');
+      const wrapper = mountComponent({ selectedDate });
+      expect(getOptions(wrapper).initialDate).toBe(selectedDate);
     });
 
-    it('formats day headers as long weekday names', () => {
-      const wrapper = mountComponent();
-      const options = wrapper
-        .findComponent({ name: 'FullCalendar' })
-        .props('options');
-      expect(options.dayHeaderFormat).toEqual({ weekday: 'long' });
+    it('passes the events prop through to the calendar options', () => {
+      const events = [createEvent(), createEvent()];
+      const wrapper = mountComponent({ events });
+      expect(getOptions(wrapper).events).toEqual(events);
     });
 
-    it('enables dayMaxEventRows and auto content height', () => {
+    it('merges baseCalendarOptions into the calendar options', () => {
+      const wrapper = mountComponent({
+        baseCalendarOptions: { editable: true, weekends: false },
+      });
+      const options = getOptions(wrapper);
+      expect(options.editable).toBe(true);
+      expect(options.weekends).toBe(false);
+    });
+
+    it('wires the calendar controller into the options', () => {
       const wrapper = mountComponent();
-      const options = wrapper
-        .findComponent({ name: 'FullCalendar' })
-        .props('options');
-      expect(options.dayMaxEventRows).toBe(true);
-      expect(options.expandRows).toBe(false);
-      expect(options.contentHeight).toBe('auto');
+      expect(getOptions(wrapper).controller).toBe(mockController);
+    });
+
+    it('registers the dayGrid and classic theme plugins', () => {
+      const wrapper = mountComponent();
+      expect(getOptions(wrapper).plugins).toHaveLength(2);
     });
 
     it('defines the dayGridTwoWeek custom view', () => {
       const wrapper = mountComponent();
-      const options = wrapper
-        .findComponent({ name: 'FullCalendar' })
-        .props('options');
-      expect(options.views.dayGridTwoWeek).toEqual({
+      expect(getOptions(wrapper).views.dayGridTwoWeek).toEqual({
         type: 'dayGrid',
         duration: { weeks: 2 },
       });
     });
   });
 
-  describe('watchEffect — initial mount', () => {
-    it('calls removeAllEvents on mount', async () => {
-      mountComponent();
+  describe('selectedDate watcher', () => {
+    it('does not call gotoDate on initial mount', async () => {
+      mountComponent({ selectedDate: new Date('2026-03-15') });
       await nextTick();
-      expect(mockApi.removeAllEvents).toHaveBeenCalledOnce();
-    });
-
-    it('calls addEvent for each event on mount', async () => {
-      const events = [createEvent(), createEvent()];
-      mountComponent({ events });
-      await nextTick();
-      expect(mockApi.addEvent).toHaveBeenCalledTimes(2);
-      expect(mockApi.addEvent).toHaveBeenCalledWith({ ...events[0] });
-      expect(mockApi.addEvent).toHaveBeenCalledWith({ ...events[1] });
-    });
-
-    it('does not call addEvent when events is empty', async () => {
-      mountComponent({ events: [] });
-      await nextTick();
-      expect(mockApi.addEvent).not.toHaveBeenCalled();
-    });
-
-    it('calls gotoDate with selectedDate on mount', async () => {
-      const selectedDate = new Date('2026-03-15');
-      mountComponent({ selectedDate });
-      await nextTick();
-      expect(mockApi.gotoDate).toHaveBeenCalledWith(selectedDate);
-    });
-  });
-
-  describe('watchEffect — reactive updates', () => {
-    it('reloads events when the events prop changes', async () => {
-      const wrapper = mountComponent({ events: [createEvent()] });
-      await nextTick();
-
-      const newEvents = [createEvent(), createEvent(), createEvent()];
-      await wrapper.setProps({ events: newEvents });
-      await nextTick();
-
-      // Second watchEffect run: removeAllEvents called twice total
-      expect(mockApi.removeAllEvents).toHaveBeenCalledTimes(2);
-      expect(mockApi.addEvent).toHaveBeenCalledTimes(4); // 1 + 3
+      expect(mockController.gotoDate).not.toHaveBeenCalled();
     });
 
     it('navigates to the new date when selectedDate prop changes', async () => {
@@ -163,24 +134,41 @@ describe('CourtCalendar.vue', () => {
       await wrapper.setProps({ selectedDate: newDate });
       await nextTick();
 
-      expect(mockApi.gotoDate).toHaveBeenLastCalledWith(newDate);
-      expect(mockApi.gotoDate).toHaveBeenCalledTimes(2);
+      expect(mockController.gotoDate).toHaveBeenCalledOnce();
+      expect(mockController.gotoDate).toHaveBeenCalledWith(newDate);
+    });
+
+    it('does not call gotoDate when selectedDate changes to undefined', async () => {
+      const wrapper = mountComponent({ selectedDate: new Date('2026-01-01') });
+      await nextTick();
+
+      await wrapper.setProps({ selectedDate: undefined });
+      await nextTick();
+
+      expect(mockController.gotoDate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('events reactivity', () => {
+    it('updates the calendar options when the events prop changes', async () => {
+      const wrapper = mountComponent({ events: [createEvent()] });
+      await nextTick();
+
+      const newEvents = [createEvent(), createEvent(), createEvent()];
+      await wrapper.setProps({ events: newEvents });
+      await nextTick();
+
+      expect(getOptions(wrapper).events).toEqual(newEvents);
     });
   });
 
   describe('changeView (exposed method)', () => {
-    it('calls calendarApi.changeView with the given view string', async () => {
+    it('delegates to the controller changeView with the given view string', async () => {
       const wrapper = mountComponent();
       await nextTick();
 
       (wrapper.vm as any).changeView('dayGridTwoWeek');
-      expect(mockApi.changeView).toHaveBeenCalledWith('dayGridTwoWeek');
-    });
-
-    it('does not throw when calendarRef is not yet set', () => {
-      // Before nextTick the ref binding may not have resolved
-      const wrapper = mountComponent();
-      expect(() => (wrapper.vm as any).changeView('dayGridWeek')).not.toThrow();
+      expect(mockController.changeView).toHaveBeenCalledWith('dayGridTwoWeek');
     });
   });
 
@@ -189,15 +177,15 @@ describe('CourtCalendar.vue', () => {
       const wrapper = mount(CourtCalendar, {
         props: {
           calendarView: 'dayGridMonth',
-          selectedDate: new Date(),
+          selectedDate: new Date('2026-03-31'),
           events: [],
+          baseCalendarOptions: {},
         },
         slots: {
           eventContent: '<span data-testid="slot-content">event</span>',
         },
       });
-      // The slot is defined on the component; confirm it doesn't throw and renders
-      expect(wrapper.exists()).toBe(true);
+      expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(true);
     });
   });
 

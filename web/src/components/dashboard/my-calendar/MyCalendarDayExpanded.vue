@@ -1,9 +1,10 @@
 <template>
-  <Teleport
-    :to="`.fc-expand-wrapper[data-date='${day.date}']`"
-    v-if="expandedDate === day.date"
-  >
-    <div class="pa-2 expanded-content" v-click-outside="close">
+  <Teleport to="body" v-if="expandedDate === day.date">
+    <div
+      class="pa-2 expanded-content"
+      :style="{ top: `${position.top}px`, left: `${position.left}px` }"
+      v-click-outside="close"
+    >
       <div class="header d-flex align-center justify-space-between">
         <span>{{ dayNumberText }}</span>
         <RouterLink :to="{ name: 'CourtList', query: { date: day.date } }">
@@ -110,13 +111,13 @@
   </Teleport>
 </template>
 <script setup lang="ts">
-  import { CalendarDay, CalendarDayActivity } from '@/types';
   import { useCourtFileSearchStore } from '@/stores';
+  import { useDarsStore } from '@/stores/DarsStore';
+  import { CalendarDay, CalendarDayActivity } from '@/types';
   import { KeyValueInfo } from '@/types/common';
   import { parseDDMMMYYYYToDate } from '@/utils/dateUtils';
   import { mdiHeadphones, mdiListBoxOutline, mdiVideo } from '@mdi/js';
-  import { computed } from 'vue';
-  import { useDarsStore } from '@/stores/DarsStore';
+  import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
   const props = defineProps<{
     expandedDate: string | null;
@@ -126,6 +127,41 @@
 
   const darsStore = useDarsStore();
   const courtFileSearchStore = useCourtFileSearchStore();
+
+  // Positioned as fixed and teleported to <body> so it floats above the
+  // calendar without being clipped. Coordinates come from the per-cell anchor.
+  const position = ref({ top: 0, left: 0 });
+
+  const updatePosition = () => {
+    const anchor = document.querySelector(
+      `.fc-expand-wrapper[data-date='${props.day.date}']`
+    );
+    if (!anchor) {
+      return;
+    }
+    const rect = anchor.getBoundingClientRect();
+    position.value = { top: rect.top, left: rect.left };
+  };
+
+  watch(
+    () => props.expandedDate,
+    async (value) => {
+      if (value === props.day.date) {
+        await nextTick();
+        updatePosition();
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
+      } else {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      }
+    }
+  );
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('scroll', updatePosition, true);
+    window.removeEventListener('resize', updatePosition);
+  });
 
   const openDarsModal = (locationId: number | undefined, roomCode: string) => {
     // Parse the date from the day.date string (format: DD MMM YYYY)
@@ -188,10 +224,8 @@
 </script>
 <style scoped>
   .expanded-content {
-    position: absolute;
+    position: fixed;
     width: 375px;
-    top: 0;
-    left: 0;
     z-index: 10;
     background: white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);

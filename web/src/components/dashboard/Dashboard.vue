@@ -12,18 +12,21 @@
     v-model:calendarView="calendarView"
     v-model:isCalendarLoading="isCalendarLoading"
     :judgeId="judgeId"
+    :baseCalendarOptions="baseCalendarOptions"
   />
   <MyCalendar
     v-else
     :judgeId="judgeId"
     v-model:selectedDate="selectedDate"
     v-model:isCalendarLoading="isCalendarLoading"
+    :baseCalendarOptions="baseCalendarOptions"
   />
   <DashboardPanels :judgeId="judgeId" />
 </template>
 <script setup lang="ts">
   import { useCommonStore } from '@/stores';
   import { CalendarViewEnum } from '@/types/common';
+  import { CalendarOptions } from '@fullcalendar/vue3';
   import { ref, watch } from 'vue';
   import CalendarToolbar from './CalendarToolbar.vue';
   import CourtCalendarView from './court-calendar/CourtCalendarView.vue';
@@ -37,6 +40,27 @@
   const selectedDate = ref(new Date());
   const calendarView = ref(CalendarViewEnum.MonthView);
   const isCalendarLoading = ref(true);
+  const baseCalendarOptions: CalendarOptions = {
+    headerToolbar: false,
+    dayHeaderFormat: { weekday: 'long' },
+    dayHeaderInnerClass: 'day-header',
+    dayMaxEvents: false,
+    dayCellClass: (info) => {
+      const classes = ['day-cell'];
+      if (info.isToday) {
+        classes.push('day-cell-today');
+      }
+      if (info.dow === 0 || info.dow === 6) {
+        classes.push('day-cell-weekend');
+      }
+      return classes.join(' ');
+    },
+    dayCellTopClass: 'day-cell-top',
+    dayCellInnerClass: 'day-cell-inner',
+    expandRows: false,
+    contentHeight: 'auto',
+    aspectRatio: 3,
+  };
 
   watch(
     () => commonStore.userInfo?.judgeId,

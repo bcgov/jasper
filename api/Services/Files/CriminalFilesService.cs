@@ -333,7 +333,7 @@ namespace Scv.Api.Services.Files
             bans.ForEach(b =>
             {
                 b.PartId = accusedFile.PartId;
-                b.BanStatuteDesc = banStatutes?.FirstOrDefault(bs => bs.Code == b.BanStatuteId)?.LongDesc;
+                b.BanStatuteDesc = banStatutes?.FirstOrDefault(bs => bs.Code == b.BanStatuteId)?.LongDesc ?? b.BanStatuteId;
             });
             return bans;
         }

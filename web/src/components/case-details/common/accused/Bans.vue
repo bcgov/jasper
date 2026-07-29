@@ -23,7 +23,7 @@
               <td>{{ ban.banTypeAct }}</td>
               <td>{{ ban.banTypeSection }}</td>
               <td>{{ ban.banTypeSubSection }}</td>
-              <td>{{ ban.banStatuteDesc ?? ban.banStatuteId }}</td>
+              <td>{{ ban.banStatuteDesc }}</td>
             </tr>
           </tbody>
         </v-table>

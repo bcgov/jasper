@@ -18,6 +18,7 @@ describe('Bans.vue', () => {
     } as banType,
     {
       banStatuteId: '2',
+      banStatuteDesc: 'Statute2',
       banTypeCd: 'Type2',
       banOrderedDate: '2005-06-16 00:00:00.0',
       banTypeAct: 'Act2',
@@ -37,7 +38,7 @@ describe('Bans.vue', () => {
     });
 
     const rows = wrapper.findAll('tbody tr');
-    expect(rows.length).toBe(bansMock.length);
+    expect(rows).toHaveLength(bansMock.length);
   });
 
   it('renders the correct data in the table', () => {
@@ -62,6 +63,6 @@ describe('Bans.vue', () => {
     expect(secondRowCells?.at(2)?.text()).toBe(bansMock[1].banTypeAct);
     expect(secondRowCells?.at(3)?.text()).toBe(bansMock[1].banTypeSection);
     expect(secondRowCells?.at(4)?.text()).toBe(bansMock[1].banTypeSubSection);
-    expect(secondRowCells?.at(5)?.text()).toBe(bansMock[1].banStatuteId);
+    expect(secondRowCells?.at(5)?.text()).toBe(bansMock[1].banStatuteDesc);
   });
 });

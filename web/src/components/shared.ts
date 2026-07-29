@@ -4,14 +4,14 @@ import {
   usePDFViewerStore,
   useSnackbarStore,
 } from '@/stores';
+import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
+import { JudicialBinderDocumentRequest } from '@/stores/JudicialBinderStore';
+import { StoreDocument } from '@/stores/PDFViewerStore';
 import { BinderDocument } from '@/types/BinderDocument';
 import { civilDocumentType } from '@/types/civil/jsonTypes';
 import { CourtRoomsJsonInfoType } from '@/types/common';
 import { CourtListAppearance } from '@/types/courtlist';
 import { BinderRequest } from '@/types/DocumentBundleRequest';
-import { JudicialBinderDocumentRequest } from '@/stores/JudicialBinderStore';
-import { CriminalDocumentAppearanceRequest } from '@/stores/CriminalDocumentBundleStore';
-import { StoreDocument } from '@/stores/PDFViewerStore';
 import {
   CourtDocumentType,
   DataTableHeader,
@@ -425,33 +425,36 @@ export default {
     this.replaceWindowTitle(newWindow, caseNumbers);
   },
 
-  openOrderDocuments(documentData: DocumentData): void {
-    if (!documentData) {
+  openOrderDocuments(
+    orderId: string,
+    title: string,
+    documentData: DocumentData[],
+    isShowingSupportingDocs: boolean = false
+  ): void {
+    if (!documentData || documentData.length === 0) {
       return;
     }
 
-    const sessionId = this.addDocumentsToPdfStore([
-      {
-        documentType: DocumentRequestType.Order,
-        documentData,
-        groupKeyOne: documentData.fileNumberText ?? '',
-        groupKeyTwo: '',
-        documentName: documentData.documentDescription ?? 'Order',
-        physicalFileId: documentData.fileId || '',
-      },
-    ]);
+    const mergedDocuments: MergedDocumentEntry[] = documentData.map((doc) => ({
+      documentType: DocumentRequestType.Order,
+      documentData: doc,
+      groupKeyOne: doc.fileNumberText ?? '',
+      groupKeyTwo: '',
+      documentName: doc.documentDescription ?? 'Order',
+      physicalFileId: doc.fileId || '',
+    }));
+
+    const sessionId = this.addDocumentsToPdfStore(mergedDocuments);
 
     const newWindow = window.open(
       this.buildFileViewerUrl('order', sessionId, {
-        id: documentData.orderId,
+        id: orderId,
+        isShowingSupportingDocs: isShowingSupportingDocs ? 'true' : 'false',
       }),
       '_blank'
     );
 
-    this.replaceWindowTitle(
-      newWindow,
-      documentData.documentDescription || 'Order'
-    );
+    this.replaceWindowTitle(newWindow, title);
   },
 
   addDocumentsToPdfStore(documents: MergedDocumentEntry[]): string {

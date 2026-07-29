@@ -31,6 +31,8 @@ namespace Scv.Api.Infrastructure.Authentication
         [GeneratedRegex(@"/judicial/[^/]+/document/?$", RegexOptions.IgnoreCase)]
         private static partial Regex GetJudicialDocumentUrlRegex();
 
+        private static readonly object UserAccessTokenItemsKey = new();
+        private static readonly object UserAccessTokenLock = new();
         private readonly IKeycloakTokenService _tokenService = tokenService;
         private readonly CsoKeycloakClientOptions _options = options.Value ?? throw new ArgumentNullException(nameof(options));
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
@@ -81,19 +83,39 @@ namespace Scv.Api.Infrastructure.Authentication
         }
 
         /// <summary>
-        /// Retrieves the currently logged-on user's access token
+        /// Retrieves the current user's access token, exchanging it at most once per request.
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>User access token</returns>
-        private async Task<string> GetUserAccessTokenAsync(CancellationToken cancellationToken)
+        private Task<string> GetUserAccessTokenAsync(CancellationToken cancellationToken)
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null)
             {
                 _logger.LogWarning("No HttpContext available; cannot obtain user access token.");
-                return null;
+                return Task.FromResult<string>(null);
             }
 
+            // Reuse a single exchange per request so merging multiple documents doesn't trigger
+            // repeated Keycloak refreshes or cookie re-issues (which would overflow response headers).
+            lock (UserAccessTokenLock)
+            {
+                if (httpContext.Items.TryGetValue(UserAccessTokenItemsKey, out var cached)
+                    && cached is Task<string> cachedTask)
+                {
+                    return cachedTask;
+                }
+
+                var exchangeTask = ExchangeAndPersistUserAccessTokenAsync(httpContext, cancellationToken);
+                httpContext.Items[UserAccessTokenItemsKey] = exchangeTask;
+                return exchangeTask;
+            }
+        }
+
+        private async Task<string> ExchangeAndPersistUserAccessTokenAsync(
+            HttpContext httpContext,
+            CancellationToken cancellationToken)
+        {
             var refreshToken = await httpContext.GetTokenAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, "refresh_token");
             if (string.IsNullOrWhiteSpace(refreshToken))
@@ -121,7 +143,9 @@ namespace Scv.Api.Infrastructure.Authentication
 
             try
             {
-                // Persist the new refresh token and expiry time back to the auth cookie so that subsequent requests can use it.
+                // Persist the rotated refresh token and expiry back to the auth cookie. This runs once
+                // per request (guarded by the HttpContext.Items cache), so the cookie is re-issued a
+                // single time regardless of how many documents are retrieved.
                 var authResult = await httpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 if (authResult.Succeeded && authResult.Properties != null)
                 {

@@ -326,10 +326,15 @@ namespace Scv.Api.Services.Files
 
         private string GetParticipantIdFromDetail(string partId, RedactedCriminalFileDetailResponse detail) => detail.Participant?.FirstOrDefault(p => p != null && p.PartId == partId)?.PartId;
 
-        private List<CriminalBan> PopulateBans(CfcAccusedFile accusedFile)
+        private async Task<List<CriminalBan>> PopulateBans(CfcAccusedFile accusedFile)
         {
+            var banStatutes = await _lookupService.GetCriminalBanStatutesAsync();
             var bans = _mapper.Map<List<CriminalBan>>(accusedFile.Ban.Where(b => b != null));
-            bans.ForEach(b => b.PartId = accusedFile.PartId);
+            bans.ForEach(b =>
+            {
+                b.PartId = accusedFile.PartId;
+                b.BanStatuteDesc = banStatutes?.FirstOrDefault(bs => bs.Code == b.BanStatuteId)?.LongDesc;
+            });
             return bans;
         }
 
@@ -391,7 +396,7 @@ namespace Scv.Api.Services.Files
                 foreach (var accusedFile in (accusedFiles ?? []).Where(af => af?.PartId == participant.PartId))
                 {
                     participant.Count.AddRange(await PopulateCounts(accusedFile, detail));
-                    participant.Ban.AddRange(PopulateBans(accusedFile));
+                    participant.Ban.AddRange(await PopulateBans(accusedFile));
                 }
             }
             return detail.Participant;

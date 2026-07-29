@@ -80,6 +80,7 @@ export interface banType {
   banTypeSection: string;
   banTypeSubSection: string;
   banStatuteId: string;
+  banStatuteDesc: string;
   banCommentText: string;
   banOrderedDate: string;
   banSeqNo: string;

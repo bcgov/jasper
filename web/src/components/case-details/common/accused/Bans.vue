@@ -23,7 +23,7 @@
               <td>{{ ban.banTypeAct }}</td>
               <td>{{ ban.banTypeSection }}</td>
               <td>{{ ban.banTypeSubSection }}</td>
-              <td>{{ ban.banCommentText }}</td>
+              <td>{{ ban.banStatuteDesc ?? ban.banStatuteId }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -36,9 +36,10 @@
 </template>
 
 <script setup lang="ts">
+  import { banType } from '@/types/criminal/jsonTypes';
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
-  defineProps<{ bans: any }>();
+  defineProps<{ bans: banType[] }>();
 
   const show = defineModel<boolean>({ type: Boolean, required: true });
 </script>

@@ -46,10 +46,10 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     }
     this.hasSupportingDocuments =
       [
-        ...this.currentOrder.packageDocuments.filter(
+        ...(this.currentOrder.packageDocuments ?? []).filter(
           (pd) => !pd.referredDocument
         ),
-        ...this.currentOrder.relevantCeisDocuments,
+        ...(this.currentOrder.relevantCeisDocuments ?? []),
       ].length > 0;
   }
 
@@ -58,6 +58,11 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   }
 
   async reviewOrder(review: OrderReview): Promise<void> {
+    if (!this.currentOrder) {
+      console.warn('No current order found. Cannot review order.');
+      return;
+    }
+
     await this.orderService.review(this.currentOrder!.id, review);
 
     switch (review.status) {

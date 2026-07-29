@@ -22,9 +22,11 @@ export const viewOrderDetails = (order: Order): void => {
 export const viewOrderSupportingDocuments = (order: Order): void => {
   const baseDocumentData = getBaseDocumentData(order);
   const packageDocs = (order.packageDocuments ?? []).filter(
-    (pd) => !pd.referredDocument
+    (pd) => !pd.referredDocument && pd.documentId
   );
-  const ceisDocs = order.relevantCeisDocuments ?? [];
+  const ceisDocs = (order.relevantCeisDocuments ?? []).filter(
+    (cd) => cd.civilDocumentId
+  );
 
   const supportingDocumentsData: DocumentData[] = [
     ...packageDocs.map((doc) => ({

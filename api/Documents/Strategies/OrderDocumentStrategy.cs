@@ -63,11 +63,11 @@ public class OrderDocumentStrategy : IDocumentStrategy
         var request = order.OrderRequest;
 
         DocumentApplicationName docAppName;
-        if (request.PackageDocuments.Any(pd => pd.DocumentId == documentIdInt))
+        if (request.PackageDocuments?.Any(pd => pd.DocumentId == documentIdInt) == true)
         {
             docAppName = DocumentApplicationName.CSO;
         }
-        else if (request.RelevantCeisDocuments.Any(rd => rd.CivilDocumentId == documentIdInt))
+        else if (request.RelevantCeisDocuments?.Any(rd => rd.CivilDocumentId == documentIdInt) == true)
         {
             docAppName = DocumentApplicationName.CEIS;
         }

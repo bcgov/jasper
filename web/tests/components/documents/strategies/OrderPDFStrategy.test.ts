@@ -475,7 +475,7 @@ describe('OrderPDFStrategy', () => {
           createMockOrder('123', {
             relevantCeisDocuments: [
               {
-                documentId: 2,
+                civilDocumentId: 2,
                 documentTypeDesc: 'Doc B',
               },
             ],
@@ -492,7 +492,7 @@ describe('OrderPDFStrategy', () => {
       const order = createMockOrder('123', {
         relevantCeisDocuments: [
           {
-            documentId: 2,
+            civilDocumentId: 2,
             documentTypeDesc: 'Doc B',
           },
         ],
@@ -638,7 +638,7 @@ describe('OrderPDFStrategy', () => {
           createMockOrder('123', {
             relevantCeisDocuments: [
               {
-                documentId: 2,
+                civilDocumentId: 2,
                 documentTypeDesc: 'Doc B',
               },
             ],

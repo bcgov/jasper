@@ -22,7 +22,7 @@ export type NotificationHandler<TPayload = unknown> = (
 export class NotificationsService {
   private connection: HubConnection | null = null;
   private handlerProvider:
-    | (() => Iterable<NotificationHandler<unknown>>)
+    | ((type: NotificationType) => Iterable<NotificationHandler<unknown>>)
     | null = null;
   private readonly seenAckGuids = new Set<string>();
   private readonly seenAckQueue: string[] = [];
@@ -46,31 +46,35 @@ export class NotificationsService {
     this.connection.keepAliveIntervalInMilliseconds = 15000;
     this.connection.serverTimeoutInMilliseconds = 120000;
 
-    this.connection.on('sendNotification', (notification: NotificationDto) => {
-      if (notification.ackGuid != null) {
-        if (this.seenAckGuids.has(notification.ackGuid)) {
+    this.connection.on(
+      'sendNotification',
+      async (notification: NotificationDto) => {
+        if (this.isDuplicateAck(notification.ackGuid)) {
           return;
         }
 
-        this.seenAckGuids.add(notification.ackGuid);
-        this.seenAckQueue.push(notification.ackGuid);
-        if (this.seenAckQueue.length > this.maxSeenAckGuids) {
-          const oldest = this.seenAckQueue.shift();
-          if (oldest != null) {
-            this.seenAckGuids.delete(oldest);
+        const handlers = Array.from(
+          this.handlerProvider?.(notification.type) ?? []
+        );
+
+        const results = await Promise.allSettled(
+          handlers.map(async (handler) => await handler(notification))
+        );
+
+        for (const result of results) {
+          if (result.status === 'rejected') {
+            console.error('Notification handler failed', result.reason);
           }
         }
-      }
 
-      void this.sendAckIfRequired(notification);
-      const handlers = this.handlerProvider?.() ?? [];
-      for (const handler of handlers) {
-        handler(notification);
+        void this.sendAckIfRequired(notification);
       }
-    });
+    );
   }
 
-  setHandlerProvider(provider: () => Iterable<NotificationHandler<unknown>>) {
+  setHandlerProvider(
+    provider: (type: NotificationType) => Iterable<NotificationHandler<unknown>>
+  ) {
     this.handlerProvider = provider;
   }
 
@@ -97,6 +101,27 @@ export class NotificationsService {
     ) {
       await this.connection.stop();
     }
+  }
+
+  private isDuplicateAck(ackGuid: string | undefined) {
+    if (ackGuid == null) {
+      return false;
+    }
+
+    if (this.seenAckGuids.has(ackGuid)) {
+      return true;
+    }
+
+    this.seenAckGuids.add(ackGuid);
+    this.seenAckQueue.push(ackGuid);
+    if (this.seenAckQueue.length > this.maxSeenAckGuids) {
+      const oldest = this.seenAckQueue.shift();
+      if (oldest != null) {
+        this.seenAckGuids.delete(oldest);
+      }
+    }
+
+    return false;
   }
 
   private async sendAckIfRequired(notification: NotificationDto) {

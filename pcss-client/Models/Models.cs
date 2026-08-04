@@ -3462,7 +3462,7 @@ public partial class ActivityClassUsage
             public string RemoteLocationNm { get; set; }
 
             [Newtonsoft.Json.JsonProperty("ceisCounsel", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public object CeisCounsel { get; set; }
+            public List<CeisCounsel> CeisCounsel { get; set; }
 
             [Newtonsoft.Json.JsonProperty("justinApprId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
             public string JustinApprId { get; set; }

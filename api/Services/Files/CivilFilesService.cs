@@ -19,6 +19,7 @@ using Scv.Models.Civil.Detail;
 using Scv.Models.Document;
 using Scv.Models.Search;
 using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
+using CounselNameDescriptor = PCSSCommon.Models.CounselNameDescriptor;
 using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 
 namespace Scv.Api.Services.Files
@@ -607,16 +608,14 @@ namespace Scv.Api.Services.Files
             }
 
             // Mirror's PCSS's logic for determining counsel name. JC's counsel is inaccurate, which can mislead users.
-            if (pcssParty.SelfRepresentedYn == "Y")
+            if (CounselNameDescriptor.IsSelfRepresented(pcssParty.SelfRepresentedYn))
             {
-                return [new CvfcCounsel { FullNm = "Self-Represented" }];
+                return [new CvfcCounsel { FullNm = CounselNameDescriptor.SELF_REPRESENTED }];
             }
 
             if (pcssParty.Counsel is { } pcssCounsel)
             {
-                var fullNm = !string.IsNullOrWhiteSpace(pcssCounsel.PrefNm) ? pcssCounsel.PrefNm
-                    : !string.IsNullOrWhiteSpace(pcssCounsel.OrgNm) ? pcssCounsel.OrgNm
-                    : $"{pcssCounsel.GivenNm} {pcssCounsel.LastNm}".Trim();
+                var fullNm = CounselNameDescriptor.FullName(pcssCounsel);
 
                 return string.IsNullOrWhiteSpace(fullNm)
                     ? []
@@ -625,7 +624,7 @@ namespace Scv.Api.Services.Files
 
             if (pcssParty.CeisCounsel is { } ceisCounsel)
             {
-                return [.. ceisCounsel.Select(c => new CvfcCounsel { FullNm = $"CEIS: {c.FullNm}" })];
+                return [.. ceisCounsel.Where(c => c != null).Select(c => new CvfcCounsel { FullNm = $"CEIS: {c.FullNm}" })];
             }
 
             return [];

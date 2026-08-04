@@ -17,6 +17,7 @@ using Scv.Models.Criminal.AppearanceDetail;
 using Scv.Models.Criminal.Appearances;
 using Scv.Models.Criminal.Detail;
 using Scv.Models.Search;
+using CounselNameDescriptor = PCSSCommon.Models.CounselNameDescriptor;
 using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceDetail;
 using CriminalAppearanceMethod = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
 using CriminalParticipant = Scv.Models.Criminal.Detail.CriminalParticipant;
@@ -421,32 +422,19 @@ namespace Scv.Api.Services.Files
                 return;
             }
 
-            // Mirror's PCSS's logic for determining counsel name. JC's counsel is inaccurate, which can mislead users.
             participant.CounselGivenNm = string.Empty;
-            if (pcssParticipant.SelfRepresentedYn == "Y")
+            if (CounselNameDescriptor.IsSelfRepresented(pcssParticipant.SelfRepresentedYn))
             {
-                participant.CounselLastNm = "Self-Represented";
+                participant.CounselLastNm = CounselNameDescriptor.SELF_REPRESENTED;
             }
             else if (pcssParticipant.Counsel is { } counsel)
             {
-                if (!string.IsNullOrWhiteSpace(counsel.PrefNm))
-                {
-                    participant.CounselLastNm = counsel.PrefNm;
-                }
-                else if (!string.IsNullOrWhiteSpace(counsel.OrgNm))
-                {
-                    participant.CounselLastNm = counsel.OrgNm;
-                }
-                else
-                {
-                    participant.CounselLastNm = counsel.LastNm;
-                    participant.CounselGivenNm = counsel.GivenNm;
-                }
+                (participant.CounselGivenNm, participant.CounselLastNm) = CounselNameDescriptor.ResolveName(counsel);
             }
             else if (pcssParticipant.JustinCounsel is { } justinCounsel)
             {
-                participant.CounselLastNm = $"JUSTIN: {justinCounsel.LastNm}";
-                participant.CounselGivenNm = justinCounsel.GivenNm;
+                participant.CounselGivenNm = $"JUSTIN: {justinCounsel.GivenNm}";
+                participant.CounselLastNm = $" {justinCounsel.LastNm}";
             }
         }
 

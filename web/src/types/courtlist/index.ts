@@ -301,6 +301,7 @@ export interface CourtListAppearance {
   otherRepresentedYn: string;
   linkedCounsel?: PcssCounsel;
   aslFeederAdjudicators?: any[];
+  counselNames: string[];
 }
 
 export interface CourtActivityDetail {

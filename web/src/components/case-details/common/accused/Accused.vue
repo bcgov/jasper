@@ -73,16 +73,16 @@
 
 <script setup lang="ts">
   import FileMarkers from '@/components/shared/FileMarkers.vue';
-import { CourtClassEnum, FileMarkerEnum } from '@/types/common';
-import {
-  ClAgeNotice,
-  criminalParticipantType,
-} from '@/types/criminal/jsonTypes';
-import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
-import { getEnumName } from '@/utils/utils';
-import { mdiInformationSlabCircleOutline } from '@mdi/js';
-import { computed, ref } from 'vue';
-import Bans from './Bans.vue';
+  import { CourtClassEnum, FileMarkerEnum } from '@/types/common';
+  import {
+    ClAgeNotice,
+    criminalParticipantType,
+  } from '@/types/criminal/jsonTypes';
+  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+  import { getEnumName } from '@/utils/utils';
+  import { mdiInformationSlabCircleOutline } from '@mdi/js';
+  import { computed, ref } from 'vue';
+  import Bans from './Bans.vue';
 
   const props = defineProps<{
     accused: criminalParticipantType;
@@ -109,7 +109,7 @@ import Bans from './Bans.vue';
       return '';
     }
     return counselGivenNm
-      ? `${counselLastNm}, ${counselGivenNm}`
+      ? `${counselGivenNm} ${counselLastNm}`
       : counselLastNm;
   });
   const groupedBans = computed(() =>

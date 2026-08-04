@@ -111,27 +111,19 @@
         </template>
       </v-tooltip>
     </template>
-    <template v-slot:[`item.counsel`]="{ item, value }">
+    <template v-slot:[`item.counselNames`]="{ item, value }">
       <v-tooltip
-        :disabled="
-          (item.counsel?.length ?? 0) + (item.accusedCounselNm ? 1 : 0) < 2
-        "
+        :disabled="(item.counselNames?.length ?? 0) < 2"
         location="top"
       >
         <template #activator="{ props }">
           <span
             v-bind="props"
-            :class="{
-              'has-tooltip':
-                (item?.accusedCounselNm ? 1 : 0) + (item.counsel?.length ?? 0) >
-                1,
-            }"
+            :class="{ 'has-tooltip': (item.counselNames?.length ?? 0) > 1 }"
             >{{ value }}</span
           >
         </template>
-        <span
-          v-html="renderCounselTooltip(item.accusedCounselNm, item.counsel)"
-        ></span>
+        <span v-html="renderCounselTooltip(item.counselNames)"></span>
       </v-tooltip>
     </template>
     <template v-slot:[`item.crown`]="{ value }">
@@ -171,17 +163,18 @@
   import { bannerClasses } from '@/constants/bannerClasses';
   import { useCourtFileSearchStore } from '@/stores';
   import {
-    CourtLevelEnum,
     CourtClassEnum,
+    CourtLevelEnum,
     DivisionEnum,
     FileMarkerEnum,
     KeyValueInfo,
   } from '@/types/common';
-  import { CourtListAppearance, PcssCounsel } from '@/types/courtlist';
+  import { CourtListAppearance } from '@/types/courtlist';
   import { BinderRequest } from '@/types/DocumentBundleRequest';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
   import { getCourtClassLabel, getEnumName } from '@/utils/utils';
   import {
+    mdiBank,
     mdiCheck,
     mdiChevronDown,
     mdiChevronUp,
@@ -189,7 +182,6 @@
     mdiHomeOutline,
     mdiNotebookOutline,
     mdiTrashCanOutline,
-    mdiBank,
   } from '@mdi/js';
   import { computed, ref } from 'vue';
 
@@ -266,9 +258,9 @@
     { title: 'FILE MARKERS', key: 'fileMarkers', sortable: false },
     {
       title: 'COUNSEL',
-      key: 'counsel',
+      key: 'counselNames',
       value: (item: CourtListAppearance) =>
-        renderName(item.counsel ?? [], item.accusedCounselNm),
+        renderCounselNames(item.counselNames ?? []),
     },
     { title: 'CROWN', key: 'crown' },
     {
@@ -301,10 +293,16 @@
     return count > 1 ? `${name} +${count - 1}` : name;
   };
 
-  const renderCounselTooltip = (
-    accusedCounselNm: string,
-    counsel: PcssCounsel[] | undefined
-  ) => renderTooltip(counsel ?? [], accusedCounselNm);
+  const renderCounselNames = (names: string[]) => {
+    if (!names.length) {
+      return '';
+    }
+    const [first] = names;
+    return names.length > 1 ? `${first} +${names.length - 1}` : first;
+  };
+
+  const renderCounselTooltip = (names: string[] | undefined) =>
+    names?.join('<br/>') ?? '';
 
   const splitNames = (name: string) => {
     const [firstName, lastName] = name.split(' ');

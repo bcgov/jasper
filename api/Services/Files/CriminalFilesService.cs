@@ -21,6 +21,7 @@ using CriminalAppearanceDetail = Scv.Models.Criminal.AppearanceDetail.CriminalAp
 using CriminalAppearanceMethod = Scv.Models.Criminal.AppearanceDetail.CriminalAppearanceMethod;
 using CriminalParticipant = Scv.Models.Criminal.Detail.CriminalParticipant;
 using CriminalWitness = Scv.Models.Criminal.Detail.CriminalWitness;
+using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 
 namespace Scv.Api.Services.Files
 {
@@ -38,13 +39,21 @@ namespace Scv.Api.Services.Files
         private readonly string _requestPartId;
         private readonly ClaimsPrincipal _currentUser;
         private readonly IDocumentConverter _documentConverter;
-
+        private readonly PCSSFileDetailServices.FileDetailClient _pcssFileDetailClient;
         #endregion
 
         #region Constructor
 
-        public CriminalFilesService(IConfiguration configuration, FileServicesClient filesClient, IMapper mapper, LookupService lookupService, LocationService locationService, IAppCache cache,
-            ClaimsPrincipal user, IDocumentConverter documentConverter)
+        public CriminalFilesService(
+            IConfiguration configuration,
+            FileServicesClient filesClient,
+            IMapper mapper,
+            LookupService lookupService,
+            LocationService locationService,
+            IAppCache cache,
+            ClaimsPrincipal user,
+            IDocumentConverter documentConverter,
+            PCSSFileDetailServices.FileDetailClient pcssFileDetailClient)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -57,6 +66,7 @@ namespace Scv.Api.Services.Files
             _cache = cache;
             _currentUser = user;
             _documentConverter = documentConverter;
+            _pcssFileDetailClient = pcssFileDetailClient;
         }
 
         #endregion Constructor
@@ -132,11 +142,11 @@ namespace Scv.Api.Services.Files
                 return null;
 
             var detail = _mapper.Map<RedactedCriminalFileDetailResponse>(fileDetail);
-            var (documents, criminalCourtLists) = await GetDocumentsAndCourtListsAsync(fileDetail, fileContent, appearances);
+            var (documents, criminalCourtLists, pcssCriminalFileDetail) = await GetDocumentsCourtListsAndPcssCaseDetailsAsync(fileDetail, fileContent, appearances);
             detail = await PopulateBaseDetail(detail);
             detail.Appearances = appearances;
             detail.Witness = await PopulateDetailWitnesses(detail);
-            detail.Participant = await PopulateDetailParticipants(detail, documents, fileContent.AccusedFile, criminalCourtLists);
+            detail.Participant = await PopulateDetailParticipants(detail, documents, fileContent.AccusedFile, criminalCourtLists, pcssCriminalFileDetail);
             detail.HearingRestriction = await PopulateDetailHearingRestrictions(detail);
             detail.Crown = PopulateDetailCrown(detail);
             return detail;
@@ -178,8 +188,8 @@ namespace Scv.Api.Services.Files
                 return null;
 
             var detail = _mapper.Map<RedactedCriminalFileDetailResponse>(fileDetail);
-            var (documents, criminalCourtLists) = await GetDocumentsAndCourtListsAsync(fileDetail, fileContent, appearances);
-            detail.Participant = await PopulateDetailParticipants(detail, documents, fileContent.AccusedFile, criminalCourtLists);
+            var (documents, criminalCourtLists, pcssCriminalFileDetail) = await GetDocumentsCourtListsAndPcssCaseDetailsAsync(fileDetail, fileContent, appearances);
+            detail.Participant = await PopulateDetailParticipants(detail, documents, fileContent.AccusedFile, criminalCourtLists, pcssCriminalFileDetail);
 
             return detail.Participant;
         }
@@ -378,7 +388,12 @@ namespace Scv.Api.Services.Files
             return detail.Witness;
         }
 
-        private async Task<ICollection<CriminalParticipant>> PopulateDetailParticipants(RedactedCriminalFileDetailResponse detail, ICollection<CriminalDocument> documents, ICollection<CfcAccusedFile> accusedFiles, IEnumerable<ClCriminalCourtList> courtLists)
+        private async Task<ICollection<CriminalParticipant>> PopulateDetailParticipants(
+            RedactedCriminalFileDetailResponse detail,
+            ICollection<CriminalDocument> documents,
+            ICollection<CfcAccusedFile> accusedFiles,
+            IEnumerable<ClCriminalCourtList> courtLists,
+            PCSSCommon.Models.CriminalFileDetail pcssCriminalFileDetail)
         {
             foreach (var participant in detail.Participant)
             {
@@ -386,8 +401,9 @@ namespace Scv.Api.Services.Files
                     .SelectMany(cl => cl.AgeNotice)
                     .ToList();
                 participant.Document = [.. (documents ?? []).Where(doc => doc.PartId == participant.PartId)];
-                participant.HideJustinCounsel = false;   //TODO tie this to a permission. View Witness List permission
-                //TODO COUNSEL? This would have to come from law society data, which is stored in a CSV file. 
+
+                PopulateParticipantCounsel(pcssCriminalFileDetail, participant);
+
                 foreach (var accusedFile in (accusedFiles ?? []).Where(af => af?.PartId == participant.PartId))
                 {
                     participant.Count.AddRange(await PopulateCounts(accusedFile, detail));
@@ -395,6 +411,43 @@ namespace Scv.Api.Services.Files
                 }
             }
             return detail.Participant;
+        }
+
+        private static void PopulateParticipantCounsel(PCSSCommon.Models.CriminalFileDetail pcssCriminalFileDetail, CriminalParticipant participant)
+        {
+            var pcssParticipant = pcssCriminalFileDetail?.Participant.FirstOrDefault(p => p.PartId == participant.PartId);
+            if (pcssParticipant == null)
+            {
+                return;
+            }
+
+            // Mirror's PCSS's logic for determining counsel name. JC's counsel is inaccurate, which can mislead users.
+            participant.CounselGivenNm = string.Empty;
+            if (pcssParticipant.SelfRepresentedYn == "Y")
+            {
+                participant.CounselLastNm = "Self-Represented";
+            }
+            else if (pcssParticipant.Counsel is { } counsel)
+            {
+                if (!string.IsNullOrWhiteSpace(counsel.PrefNm))
+                {
+                    participant.CounselLastNm = counsel.PrefNm;
+                }
+                else if (!string.IsNullOrWhiteSpace(counsel.OrgNm))
+                {
+                    participant.CounselLastNm = counsel.OrgNm;
+                }
+                else
+                {
+                    participant.CounselLastNm = counsel.LastNm;
+                    participant.CounselGivenNm = counsel.GivenNm;
+                }
+            }
+            else if (pcssParticipant.JustinCounsel is { } justinCounsel)
+            {
+                participant.CounselLastNm = $"JUSTIN: {justinCounsel.LastNm}";
+                participant.CounselGivenNm = justinCounsel.GivenNm;
+            }
         }
 
         private async Task<RedactedCriminalFileDetailResponse> PopulateBaseDetail(RedactedCriminalFileDetailResponse detail)
@@ -517,17 +570,19 @@ namespace Scv.Api.Services.Files
             return (fileDetailTask.Result, fileContentTask.Result, appearancesTask.Result);
         }
 
-        private async Task<(ICollection<CriminalDocument> documents, IEnumerable<ClCriminalCourtList> criminalCourtLists)> GetDocumentsAndCourtListsAsync(
-            CriminalFileDetailResponse fileDetail,
-            CriminalFileContent fileContent,
-            CriminalFileAppearances appearances)
+        private async Task<(ICollection<CriminalDocument> documents, IEnumerable<ClCriminalCourtList> criminalCourtLists, PCSSCommon.Models.CriminalFileDetail pcssCriminalFileDetail)>
+            GetDocumentsCourtListsAndPcssCaseDetailsAsync(
+                CriminalFileDetailResponse fileDetail,
+                CriminalFileContent fileContent,
+                CriminalFileAppearances appearances)
         {
             var documentsTask = PopulateDetailDocuments(fileContent);
             var criminalCourtListsTask = GetCourtListsAsync(fileDetail, appearances);
+            var pcssCriminalFileDetailTask = GetPcssCriminalFileDetailAsync(fileDetail.JustinNo);
 
-            await Task.WhenAll(documentsTask, criminalCourtListsTask);
+            await Task.WhenAll(documentsTask, criminalCourtListsTask, pcssCriminalFileDetailTask);
 
-            return (documentsTask.Result, criminalCourtListsTask.Result);
+            return (documentsTask.Result, criminalCourtListsTask.Result, pcssCriminalFileDetailTask.Result);
         }
 
         private async Task<IEnumerable<ClCriminalCourtList>> GetCourtListsAsync(CriminalFileDetailResponse fileDetail, CriminalFileAppearances appearances)
@@ -546,6 +601,16 @@ namespace Scv.Api.Services.Files
             async Task<CourtList> CourtList() => await _filesClient.FilesCourtlistAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, agencyId, latestAppearance.CourtRoomCd, latestAppearance.AppearanceDt, "CR", fileDetail.FileNumberTxt);
             var courtList = await _cache.GetOrAddAsync($"CriminalCourtList-{agencyId}-{latestAppearance.CourtRoomCd}-{latestAppearance.AppearanceDt}-{fileDetail.FileNumberTxt}-{_requestAgencyIdentifierId}", CourtList);
             return courtList?.CriminalCourtList;
+        }
+
+        private async Task<PCSSCommon.Models.CriminalFileDetail> GetPcssCriminalFileDetailAsync(string justinNo)
+        {
+            if (!int.TryParse(justinNo, out int justinNoInt))
+            {
+                return null;
+            }
+            async Task<PCSSCommon.Models.CriminalFileDetail> PcssCriminalFileDetailAsync() => await _pcssFileDetailClient.GetCriminalFileDetailAsync(justinNoInt);
+            return await _cache.GetOrAddAsync($"{nameof(PcssCriminalFileDetailAsync)}-{justinNoInt}", PcssCriminalFileDetailAsync);
         }
 
         #endregion Criminal Details

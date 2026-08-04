@@ -73,16 +73,16 @@
 
 <script setup lang="ts">
   import FileMarkers from '@/components/shared/FileMarkers.vue';
-  import { CourtClassEnum, FileMarkerEnum } from '@/types/common';
-  import {
-    ClAgeNotice,
-    criminalParticipantType,
-  } from '@/types/criminal/jsonTypes';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
-  import { getEnumName } from '@/utils/utils';
-  import { mdiInformationSlabCircleOutline } from '@mdi/js';
-  import { computed, ref } from 'vue';
-  import Bans from './Bans.vue';
+import { CourtClassEnum, FileMarkerEnum } from '@/types/common';
+import {
+  ClAgeNotice,
+  criminalParticipantType,
+} from '@/types/criminal/jsonTypes';
+import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+import { getEnumName } from '@/utils/utils';
+import { mdiInformationSlabCircleOutline } from '@mdi/js';
+import { computed, ref } from 'vue';
+import Bans from './Bans.vue';
 
   const props = defineProps<{
     accused: criminalParticipantType;
@@ -103,11 +103,15 @@
     return hasNoticeTo && hasProofOfAge ? 'Yes' : 'No';
   });
   const showBanModal = ref(false);
-  const counselName = computed(() =>
-    props.accused.counselLastNm && props.accused.counselGivenNm
-      ? `${props.accused.counselLastNm.toUpperCase()}, ${props.accused.counselGivenNm}`
-      : ''
-  );
+  const counselName = computed(() => {
+    const { counselLastNm, counselGivenNm } = props.accused;
+    if (!counselLastNm) {
+      return '';
+    }
+    return counselGivenNm
+      ? `${counselLastNm}, ${counselGivenNm}`
+      : counselLastNm;
+  });
   const groupedBans = computed(() =>
     props.accused.ban.reduce(
       (acc, ban) => {

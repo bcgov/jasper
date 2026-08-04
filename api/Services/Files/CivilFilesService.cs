@@ -19,6 +19,7 @@ using Scv.Models.Civil.Detail;
 using Scv.Models.Document;
 using Scv.Models.Search;
 using CivilAppearanceMethod = Scv.Models.Civil.AppearanceDetail.CivilAppearanceMethod;
+using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 
 namespace Scv.Api.Services.Files
 {
@@ -37,6 +38,7 @@ namespace Scv.Api.Services.Files
         private readonly string _requestPartId;
         private readonly List<string> _filterOutDocumentTypes;
         private readonly ClaimsPrincipal _currentUser;
+        private readonly PCSSFileDetailServices.FileDetailClient _pcssFileDetailClient;
 
         #endregion Variables
 
@@ -49,12 +51,14 @@ namespace Scv.Api.Services.Files
             LocationService locationService,
             IAppCache cache,
             ClaimsPrincipal user,
-            ILogger<CivilFilesService> logger)
+            ILogger<CivilFilesService> logger,
+            PCSSFileDetailServices.FileDetailClient pcssFileDetailClient)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
             _lookupService = lookupService;
             _locationService = locationService;
+            _pcssFileDetailClient = pcssFileDetailClient;
             _mapper = mapper;
             _cache = cache;
             _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
@@ -194,8 +198,9 @@ namespace Scv.Api.Services.Files
             var fileDetailTask = _cache.GetOrAddAsync($"CivilFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
             var fileContentTask = _cache.GetOrAddAsync($"CivilFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
             var appearancesTask = _cache.GetOrAddAsync($"CivilAppearancesFull-{fileId}-{_requestAgencyIdentifierId}", Appearances);
+            var pcssFileDetailTask = GetPcssCivilFileDetailAsync(fileId);
 
-            await Task.WhenAll(appearancesTask, fileContentTask, fileDetailTask);
+            await Task.WhenAll(appearancesTask, fileContentTask, fileDetailTask, pcssFileDetailTask);
 
             ValidUserHelper.CheckIfValidUser(fileDetailTask.Result.ResponseMessageTxt);
             if (fileDetailTask.Result?.PhysicalFileId == null)
@@ -239,7 +244,7 @@ namespace Scv.Api.Services.Files
             }
 
             var fileContentCivilFile = fileContentTask.Result?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
-            var partyTask = PopulateDetailParties(detail.Party, courtListParties);
+            var partyTask = PopulateDetailParties(detail.Party, courtListParties, pcssFileDetailTask.Result);
             var documentTask = PopulateDetailDocuments(detail.Document, detail, fileContentCivilFile, isVcUser, isStaff);
             var hearingRestrictionTask = PopulateDetailHearingRestrictions(fileDetailTask.Result.HearingRestriction);
 
@@ -525,11 +530,16 @@ namespace Scv.Api.Services.Files
             return documents;
         }
 
-        private async Task<ICollection<CivilParty>> PopulateDetailParties(ICollection<CivilParty> parties, ICollection<ClParty> courtListParties)
+        private async Task<ICollection<CivilParty>> PopulateDetailParties(
+            ICollection<CivilParty> parties,
+            ICollection<ClParty> courtListParties,
+            PCSSCommon.Models.CivilFileDetail pcssCivilFileDetail)
         {
             //Populate extra fields for party.
             foreach (var party in parties)
             {
+                party.Counsel = PopulatePartyCounsel(party, pcssCivilFileDetail);
+
                 var courtListParty = courtListParties.FirstOrDefault(clp => clp.PartyId == party.PartyId);
                 if (courtListParty != null)
                 {
@@ -586,6 +596,49 @@ namespace Scv.Api.Services.Files
                 hearing.HearingRestrictionTypeDsc = hearingRestrictionDescs[idx++];
             }
             return civilHearingRestrictions;
+        }
+
+        private static List<CvfcCounsel> PopulatePartyCounsel(CivilParty party, PCSSCommon.Models.CivilFileDetail pcssCivilFileDetail)
+        {
+            var pcssParty = pcssCivilFileDetail?.Party.FirstOrDefault(p => p.PartyId == party.PartyId);
+            if (pcssParty == null)
+            {
+                return [];
+            }
+
+            // Mirror's PCSS's logic for determining counsel name. JC's counsel is inaccurate, which can mislead users.
+            if (pcssParty.SelfRepresentedYn == "Y")
+            {
+                return [new CvfcCounsel { FullNm = "Self-Represented" }];
+            }
+
+            if (pcssParty.Counsel is { } pcssCounsel)
+            {
+                var fullNm = !string.IsNullOrWhiteSpace(pcssCounsel.PrefNm) ? pcssCounsel.PrefNm
+                    : !string.IsNullOrWhiteSpace(pcssCounsel.OrgNm) ? pcssCounsel.OrgNm
+                    : $"{pcssCounsel.GivenNm} {pcssCounsel.LastNm}".Trim();
+
+                return string.IsNullOrWhiteSpace(fullNm)
+                    ? []
+                    : [new CvfcCounsel { FullNm = fullNm }];
+            }
+
+            if (pcssParty.CeisCounsel is { } ceisCounsel)
+            {
+                return [.. ceisCounsel.Select(c => new CvfcCounsel { FullNm = $"CEIS: {c.FullNm}" })];
+            }
+
+            return [];
+        }
+
+        private async Task<PCSSCommon.Models.CivilFileDetail> GetPcssCivilFileDetailAsync(string fileId)
+        {
+            if (!double.TryParse(fileId, out double physicalFileid))
+            {
+                return null;
+            }
+            async Task<PCSSCommon.Models.CivilFileDetail> PcssCivilFileDetailAsync() => await _pcssFileDetailClient.GetCivilFileDetailAsync(physicalFileid);
+            return await _cache.GetOrAddAsync($"{nameof(PcssCivilFileDetailAsync)}-{physicalFileid}", PcssCivilFileDetailAsync);
         }
 
         #endregion Civil Details

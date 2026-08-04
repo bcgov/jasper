@@ -15,7 +15,7 @@ export interface partyAliasType {
 
 export interface partyCounselType {
   counselId: string;
-  counselFullName: string;
+  fullNm: string;
 }
 
 export interface partyType {

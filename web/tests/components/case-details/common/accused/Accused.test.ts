@@ -6,23 +6,23 @@ import { beforeEach, describe, expect, it } from 'vitest';
 describe('Accused.vue', () => {
   const ageNoticeMock = [
     {
-      eventDate: "2022-08-10 00:00:00.0",
-      eventTypeDsc: "Notice to",
-      noticeTo: "Garrett Green (social worker)",
-      DOB: "",
-      relationship: "",
-      provenBy: "",
-      detailText: ""
+      eventDate: '2022-08-10 00:00:00.0',
+      eventTypeDsc: 'Notice to',
+      noticeTo: 'Garrett Green (social worker)',
+      DOB: '',
+      relationship: '',
+      provenBy: '',
+      detailText: '',
     },
     {
-      eventDate: "2022-08-10 00:00:00.0",
-      eventTypeDsc: "Proof of Age",
-      noticeTo: "",
-      DOB: "2005-02-25 00:00:00.0",
-      relationship: "SOWORKER",
-      provenBy: "Garrett GREEN",
-      detailText: ""
-    }
+      eventDate: '2022-08-10 00:00:00.0',
+      eventTypeDsc: 'Proof of Age',
+      noticeTo: '',
+      DOB: '2005-02-25 00:00:00.0',
+      relationship: 'SOWORKER',
+      provenBy: 'Garrett GREEN',
+      detailText: '',
+    },
   ];
   const accusedMock = {
     lastNm: 'Doe',
@@ -36,7 +36,7 @@ describe('Accused.vue', () => {
     counselLastNm: 'Smith',
     counselGivenNm: 'Jane',
     designatedCounselYN: 'Yes',
-    ageNotice: ageNoticeMock
+    ageNotice: ageNoticeMock,
   } as criminalParticipantType;
 
   const appearancesMock = [{}, {}, {}];
@@ -45,7 +45,11 @@ describe('Accused.vue', () => {
 
   beforeEach(() => {
     wrapper = mount(Accused, {
-      props: { accused: accusedMock, appearances: appearancesMock, courtClassCd: 'A' },
+      props: {
+        accused: accusedMock,
+        appearances: appearancesMock,
+        courtClassCd: 'A',
+      },
     });
   });
 
@@ -76,12 +80,14 @@ describe('Accused.vue', () => {
     expect(dobText).toBe('01-Jan-1990');
   });
 
-  it('renders counsel last name in uppercase', () => {
+  it('renders counsel first and last name', () => {
     const counselText = wrapper
       .findAll('v-row')[4]
       .find('v-col:last-child')
       .text();
-    expect(counselText).toBe('SMITH, Jane');
+    expect(counselText).toBe(
+      `${accusedMock.counselGivenNm} ${accusedMock.counselLastNm}`
+    );
   });
 
   it('renders designated counsel status', () => {
@@ -107,27 +113,39 @@ describe('Accused.vue', () => {
   });
 
   it('does not render Age/Notice when non youth file', () => {
-    const ageNoticeLabel = wrapper.findAll('v-col.data-label').filter(col => col.text() === 'Age/Notice');
+    const ageNoticeLabel = wrapper
+      .findAll('v-col.data-label')
+      .filter((col) => col.text() === 'Age/Notice');
     expect(ageNoticeLabel.length).toBe(0);
   });
 
   it('renders Age/Notice when youth file', () => {
-      wrapper = mount(Accused, {
-        props: { accused: accusedMock, appearances: appearancesMock, courtClassCd: 'Y' },
-      });
-      const ageNoticeLabel = wrapper.findAll('v-col.data-label').filter(col => col.text() === 'Age/Notice');
-      expect(ageNoticeLabel.length).toBe(1);
+    wrapper = mount(Accused, {
+      props: {
+        accused: accusedMock,
+        appearances: appearancesMock,
+        courtClassCd: 'Y',
+      },
+    });
+    const ageNoticeLabel = wrapper
+      .findAll('v-col.data-label')
+      .filter((col) => col.text() === 'Age/Notice');
+    expect(ageNoticeLabel.length).toBe(1);
   });
 
-    it('computes Age/Notice as Yes', () => {
-      expect(wrapper.vm.ageNotice).toEqual('Yes');
-    });
+  it('computes Age/Notice as Yes', () => {
+    expect(wrapper.vm.ageNotice).toEqual('Yes');
+  });
 
-    it('computes Age/Notice as No', () => {
-      ageNoticeMock[0].eventTypeDsc = 'Nope';
-      wrapper = mount(Accused, {
-        props: { accused: accusedMock, appearances: appearancesMock, courtClassCd: 'Y' },
-      });
-      expect(wrapper.vm.ageNotice).toEqual('No');
+  it('computes Age/Notice as No', () => {
+    ageNoticeMock[0].eventTypeDsc = 'Nope';
+    wrapper = mount(Accused, {
+      props: {
+        accused: accusedMock,
+        appearances: appearancesMock,
+        courtClassCd: 'Y',
+      },
     });
+    expect(wrapper.vm.ageNotice).toEqual('No');
+  });
 });

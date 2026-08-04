@@ -28,6 +28,7 @@ using Scv.Models.Archive;
 using Scv.Models.Search;
 using tests.api.Helpers;
 using Xunit;
+using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
@@ -105,7 +106,8 @@ namespace tests.api.Controllers
                 new CachingService(),
                 principal,
                 fileServices.LogFactory,
-                new Mock<IDocumentConverter>().Object);
+                new Mock<IDocumentConverter>().Object,
+                new Mock<PCSSFileDetailServices.FileDetailClient>().Object);
 
             var mockDocumentMerger = new Mock<IDocumentMerger>();
 

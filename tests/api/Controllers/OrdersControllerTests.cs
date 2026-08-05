@@ -509,6 +509,57 @@ public class OrdersControllerTests
 
     #endregion
 
+    #region GetOrder Tests
+
+    [Fact]
+    public async Task GetOrder_ReturnsOk_WithOrder_WhenOrderExists()
+    {
+        var orderId = _faker.Random.AlphaNumeric(24);
+        var order = new OrderViewDto();
+
+        _mockOrderService
+            .Setup(s => s.GetOrderById(orderId, _judgeId))
+            .ReturnsAsync(order);
+
+        var result = await _controller.GetOrder(orderId);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(order, okResult.Value);
+        _mockOrderService.Verify(s => s.GetOrderById(orderId, _judgeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOrder_ReturnsOk_WithNull_WhenOrderDoesNotExist()
+    {
+        var orderId = _faker.Random.AlphaNumeric(24);
+
+        _mockOrderService
+            .Setup(s => s.GetOrderById(orderId, _judgeId))
+            .ReturnsAsync((OrderViewDto)null);
+
+        var result = await _controller.GetOrder(orderId);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Null(okResult.Value);
+        _mockOrderService.Verify(s => s.GetOrderById(orderId, _judgeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOrder_UsesAuthenticatedJudgeId()
+    {
+        var orderId = _faker.Random.AlphaNumeric(24);
+
+        _mockOrderService
+            .Setup(s => s.GetOrderById(It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(new OrderViewDto());
+
+        await _controller.GetOrder(orderId);
+
+        _mockOrderService.Verify(s => s.GetOrderById(orderId, _judgeId), Times.Once);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private OrderRequestDto CreateValidOrderRequestDto()

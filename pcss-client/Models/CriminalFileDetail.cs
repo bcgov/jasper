@@ -5,7 +5,7 @@
 /// </summary>
 public class CriminalFileDetail
 {
-    public List<Participant> Participant { get; set; }
+    public List<Participant> Participant { get; set; } = [];
 }
 
 public partial class Participant

@@ -416,7 +416,9 @@ namespace Scv.Api.Services.Files
 
         private static void PopulateParticipantCounsel(PCSSCommon.Models.CriminalFileDetail pcssCriminalFileDetail, CriminalParticipant participant)
         {
-            var pcssParticipant = pcssCriminalFileDetail?.Participant.FirstOrDefault(p => p.PartId == participant.PartId);
+            var pcssParticipant = pcssCriminalFileDetail?
+                .Participant?
+                .FirstOrDefault(p => p.PartId == participant.PartId);
             if (pcssParticipant == null)
             {
                 return;
@@ -433,8 +435,8 @@ namespace Scv.Api.Services.Files
             }
             else if (pcssParticipant.JustinCounsel is { } justinCounsel)
             {
-                participant.CounselGivenNm = $"JUSTIN: {justinCounsel.GivenNm}";
-                participant.CounselLastNm = $" {justinCounsel.LastNm}";
+                participant.CounselGivenNm = $"JUSTIN: {justinCounsel.GivenNm}".Trim();
+                participant.CounselLastNm = justinCounsel.LastNm?.Trim() ?? string.Empty;
             }
         }
 

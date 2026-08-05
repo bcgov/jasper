@@ -5,7 +5,7 @@
 /// </summary>
 public class CivilFileDetail
 {
-    public List<CivilParty> Party { get; set; }
+    public List<CivilParty> Party { get; set; } = [];
 }
 
 public class CivilParty

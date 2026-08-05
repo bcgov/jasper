@@ -601,13 +601,15 @@ namespace Scv.Api.Services.Files
 
         private static List<CvfcCounsel> PopulatePartyCounsel(CivilParty party, PCSSCommon.Models.CivilFileDetail pcssCivilFileDetail)
         {
-            var pcssParty = pcssCivilFileDetail?.Party.FirstOrDefault(p => p.PartyId == party.PartyId);
+            var pcssParty = pcssCivilFileDetail?
+                .Party?
+                .FirstOrDefault(p => p.PartyId == party.PartyId);
             if (pcssParty == null)
             {
                 return [];
             }
 
-            // Mirror's PCSS's logic for determining counsel name. JC's counsel is inaccurate, which can mislead users.
+            // Mirrors PCSS's logic for determining counsel name. JC's counsel is inaccurate, which can mislead users.
             if (CounselNameDescriptor.IsSelfRepresented(pcssParty.SelfRepresentedYn))
             {
                 return [new CvfcCounsel { FullNm = CounselNameDescriptor.SELF_REPRESENTED }];

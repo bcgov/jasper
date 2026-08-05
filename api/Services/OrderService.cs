@@ -33,6 +33,7 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
     Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
     Task<OperationResult> SubmitOrder(string id);
+    Task<OrderViewDto> GetOrderById(string id, int judgeId);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -303,9 +304,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             double documentId = orderDto.OrderRequest?.Referral?.ReferredDocumentId.GetValueOrDefault() ?? 0;
 
             await _judicialClient.SaveJudicialActionAsync(
-                correlationId,
-                documentId,
-                actionDto);
+               correlationId,
+               documentId,
+               actionDto);
 
             // Cleanup the successful, submitted order to remove potentially private document data and comments.
             orderDto.DocumentData = null;
@@ -332,6 +333,16 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 ? OperationResult.Failure("Failed to submit order to CSO.")
                 : errorResult;
         }
+    }
+
+    public async Task<OrderViewDto> GetOrderById(string id, int judgeId)
+    {
+        var order = await Repo.GetByIdAsync(id);
+        if (order == null || order.JudgeId != judgeId)
+        {
+            return null;
+        }
+        return Mapper.Map<OrderViewDto>(order);
     }
 
     #region Private Methods

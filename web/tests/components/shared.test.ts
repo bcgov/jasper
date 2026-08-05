@@ -1193,7 +1193,7 @@ describe('shared.openOrderDocuments', () => {
     shared.openOrderDocuments('ORDER1', 'My Order', documentData);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isShowingSupportingDocs=false',
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&hasSupportingDocs=false&isShowingSupportingDocs=false',
       '_blank'
     );
   });
@@ -1207,10 +1207,10 @@ describe('shared.openOrderDocuments', () => {
       },
     ];
 
-    shared.openOrderDocuments('ORDER1', 'My Order', documentData, true);
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData, false, true);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isShowingSupportingDocs=true',
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&hasSupportingDocs=false&isShowingSupportingDocs=true',
       '_blank'
     );
   });

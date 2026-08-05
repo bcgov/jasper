@@ -69,17 +69,23 @@ describe('orderDetails', () => {
 
       viewOrderDetails(order);
 
-      expect(openOrderDocumentsMock).toHaveBeenCalledWith('ORDER1', 'FN001', [
-        {
-          courtClass: 'A',
-          fileId: 'PHYS1',
-          fileNumberText: 'FN001',
-          isCriminal: true,
-          orderId: 'ORDER1',
-          documentId: '100',
-          documentDescription: 'Order for Custody',
-        },
-      ]);
+      expect(openOrderDocumentsMock).toHaveBeenCalledWith(
+        'ORDER1',
+        'FN001',
+        [
+          {
+            courtClass: 'A',
+            fileId: 'PHYS1',
+            fileNumberText: 'FN001',
+            isCriminal: true,
+            orderId: 'ORDER1',
+            documentId: '100',
+            documentDescription: 'Order for Custody',
+          },
+        ],
+        true,
+        false
+      );
     });
 
     it('leaves the document description undefined when no referred document matches', () => {
@@ -98,17 +104,23 @@ describe('orderDetails', () => {
 
       viewOrderDetails(order);
 
-      expect(openOrderDocumentsMock).toHaveBeenCalledWith('ORDER1', 'FN001', [
-        {
-          courtClass: 'F',
-          fileId: 'PHYS1',
-          fileNumberText: 'FN001',
-          isCriminal: false,
-          orderId: 'ORDER1',
-          documentId: '100',
-          documentDescription: undefined,
-        },
-      ]);
+      expect(openOrderDocumentsMock).toHaveBeenCalledWith(
+        'ORDER1',
+        'FN001',
+        [
+          {
+            courtClass: 'F',
+            fileId: 'PHYS1',
+            fileNumberText: 'FN001',
+            isCriminal: false,
+            orderId: 'ORDER1',
+            documentId: '100',
+            documentDescription: undefined,
+          },
+        ],
+        true,
+        false
+      );
     });
 
     it('matches package documents by string-coerced document id', () => {
@@ -131,7 +143,9 @@ describe('orderDetails', () => {
           expect.objectContaining({
             documentDescription: 'Matched By Coercion',
           }),
-        ])
+        ]),
+        false,
+        false
       );
     });
 
@@ -254,6 +268,7 @@ describe('orderDetails', () => {
             documentDescription: 'CEIS Doc',
           },
         ],
+        false,
         true
       );
     });
@@ -275,6 +290,7 @@ describe('orderDetails', () => {
         'ORDER1',
         'FN001 - Supporting Documents',
         [],
+        false,
         true
       );
     });
@@ -286,6 +302,7 @@ describe('orderDetails', () => {
         'ORDER1',
         'FN001 - Supporting Documents',
         [],
+        false,
         true
       );
     });
@@ -314,6 +331,7 @@ describe('orderDetails', () => {
             isCriminal: true,
           }),
         ],
+        false,
         true
       );
     });

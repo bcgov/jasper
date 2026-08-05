@@ -38,6 +38,20 @@ public class OrdersController(
     }
 
     /// <summary>
+    /// Retrieves a specific order by its ID for the judge.
+    /// </summary>
+    /// <param name="id">The ID of the order.</param>
+    /// <returns>The order details.</returns>
+    [HttpGet]
+    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
+    [Route("{id}")]
+    public async Task<IActionResult> GetOrder(string id)
+    {
+        var judgeOrders = await _orderService.GetOrderById(id, this.User.JudgeId());
+        return Ok(judgeOrders);
+    }
+
+    /// <summary>
     /// Create/Update an order to notify that there is a document requiring annotation for a judge. This endpoint is used by external systems to create or update orders.
     /// </summary>
     /// <param name="orderRequestDto">The Order payload (supports snake_case, PascalCase, camelCase and case-insensitive)</param>

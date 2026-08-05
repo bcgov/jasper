@@ -123,7 +123,12 @@
             >{{ value }}</span
           >
         </template>
-        <span v-html="renderCounselTooltip(item.counselNames)"></span>
+        <span>
+          <template v-for="(name, i) in item.counselNames" :key="i">
+            {{ name
+            }}<br v-if="i < (item.counselNames?.length ?? 0) - 1" />
+          </template>
+        </span>
       </v-tooltip>
     </template>
     <template v-slot:[`item.crown`]="{ value }">
@@ -133,7 +138,12 @@
             {{ renderName(value) }}
           </span>
         </template>
-        <span v-html="renderTooltip(value)"></span>
+        <span>
+          <template v-for="(person, i) in value" :key="i">
+            {{ person?.lastNm }}, {{ person?.givenNm
+            }}<br v-if="Number(i) < value.length - 1" />
+          </template>
+        </span>
       </v-tooltip>
     </template>
     <template v-slot:[`item.actions`]="{ item }">
@@ -271,16 +281,6 @@
     { title: 'NOTES', key: 'actions', width: '5%', sortable: false },
   ]);
 
-  const renderTooltip = (items: any[], additionalItem?: string) => {
-    let tooltip =
-      items?.map((item) => `${item?.lastNm}, ${item?.givenNm}`).join('<br/>') ||
-      '';
-    if (additionalItem) {
-      tooltip += `${tooltip ? '<br/>' : ''}${splitNames(additionalItem)}`;
-    }
-    return tooltip;
-  };
-
   const renderName = (items: any[], additionalItem?: string) => {
     if (!items?.length && !additionalItem) {
       return '';
@@ -300,9 +300,6 @@
     const [first] = names;
     return names.length > 1 ? `${first} +${names.length - 1}` : first;
   };
-
-  const renderCounselTooltip = (names: string[] | undefined) =>
-    names?.join('<br/>') ?? '';
 
   const splitNames = (name: string) => {
     const [firstName, lastName] = name.split(' ');

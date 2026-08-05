@@ -33,7 +33,7 @@ public static class CounselNameDescriptor
 
 
     /// <summary>
-    // Mirrors PCSS's precedence for determining counsel name: PrefNm -> OrgNm -> person name.
+    /// Mirrors PCSS's precedence for determining counsel name: PrefNm -> OrgNm -> person name.
     /// </summary>
     /// <param name="prefName">The preferred name of the counsel.</param>
     /// <param name="orgName">The organization name of the counsel.</param>

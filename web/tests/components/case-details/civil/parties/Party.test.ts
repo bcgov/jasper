@@ -1,9 +1,5 @@
 import Party from '@/components/case-details/civil/parties/Party.vue';
-import {
-  partyAliasType,
-  partyCounselType,
-  partyType,
-} from '@/types/civil/jsonTypes';
+import { partyAliasType, partyType } from '@/types/civil/jsonTypes';
 import { CourtClassEnum } from '@/types/common';
 import { faker } from '@faker-js/faker';
 import { shallowMount } from '@vue/test-utils';

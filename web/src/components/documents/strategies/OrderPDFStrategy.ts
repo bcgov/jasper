@@ -129,8 +129,9 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
   async viewSupportingDocs(): Promise<void> {
     if (!this.orderId) {
-      console.warn('No order id found. Cannot view supporting documents.');
-      return;
+      throw new Error(
+        'Order ID is not defined. Cannot view supporting documents.'
+      );
     }
 
     const order = await this.orderService.getOrder(this.orderId);

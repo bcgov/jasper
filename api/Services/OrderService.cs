@@ -304,9 +304,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             double documentId = orderDto.OrderRequest?.Referral?.ReferredDocumentId.GetValueOrDefault() ?? 0;
 
             await _judicialClient.SaveJudicialActionAsync(
-               correlationId,
-               documentId,
-               actionDto);
+                correlationId,
+                documentId,
+                actionDto);
 
             // Cleanup the successful, submitted order to remove potentially private document data and comments.
             orderDto.DocumentData = null;

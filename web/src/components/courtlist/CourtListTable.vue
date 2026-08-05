@@ -125,8 +125,7 @@
         </template>
         <span>
           <template v-for="(name, i) in item.counselNames" :key="i">
-            {{ name
-            }}<br v-if="i < (item.counselNames?.length ?? 0) - 1" />
+            {{ name }}<br v-if="i < (item.counselNames?.length ?? 0) - 1" />
           </template>
         </span>
       </v-tooltip>

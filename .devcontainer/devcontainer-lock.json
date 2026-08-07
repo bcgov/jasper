@@ -1,0 +1,34 @@
+{
+  "features": {
+    "ghcr.io/devcontainers-extra/features/aws-cdk:2": {
+      "version": "2.0.16",
+      "resolved": "ghcr.io/devcontainers-extra/features/aws-cdk@sha256:4628acad14164bb226d645154d010283995d2b1b20bcf8e029a195af9377959e",
+      "integrity": "sha256:4628acad14164bb226d645154d010283995d2b1b20bcf8e029a195af9377959e"
+    },
+    "ghcr.io/devcontainers/features/aws-cli:1": {
+      "version": "1.1.4",
+      "resolved": "ghcr.io/devcontainers/features/aws-cli@sha256:1f93c8315b7a6d76982ebb2269f8b0d50413fc0f965c032edf4aee0caceb73ef",
+      "integrity": "sha256:1f93c8315b7a6d76982ebb2269f8b0d50413fc0f965c032edf4aee0caceb73ef"
+    },
+    "ghcr.io/devcontainers/features/docker-from-docker:1.10.0": {
+      "version": "1.10.0",
+      "resolved": "ghcr.io/devcontainers/features/docker-from-docker@sha256:c2c2cf829505ead8e4892c88c31b6594ae94a2bbb209e16e1fac456c1a3a624e",
+      "integrity": "sha256:c2c2cf829505ead8e4892c88c31b6594ae94a2bbb209e16e1fac456c1a3a624e"
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "2.5.0",
+      "resolved": "ghcr.io/devcontainers/features/dotnet@sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093",
+      "integrity": "sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093"
+    },
+    "ghcr.io/devcontainers/features/terraform:1.4.4": {
+      "version": "1.4.4",
+      "resolved": "ghcr.io/devcontainers/features/terraform@sha256:c6a4ed166fb749670db856c549f8858037c0af9ab3aacaf85fcb8634fadf6b05",
+      "integrity": "sha256:c6a4ed166fb749670db856c549f8858037c0af9ab3aacaf85fcb8634fadf6b05"
+    },
+    "ghcr.io/dhoeric/features/tfsec:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/dhoeric/features/tfsec@sha256:b042655e42aeef1425fcaa5b54a76f43dd6dec6ebb76257d2dda74687e021302",
+      "integrity": "sha256:b042655e42aeef1425fcaa5b54a76f43dd6dec6ebb76257d2dda74687e021302"
+    }
+  }
+}

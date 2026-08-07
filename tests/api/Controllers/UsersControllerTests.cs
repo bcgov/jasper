@@ -548,6 +548,24 @@ public class UsersControllerTests
     }
 
     [Fact]
+    public async Task UploadSignature_ReturnsBadRequest_WhenRequestIsNull()
+    {
+        // Arrange
+        var claims = new List<Claim> { new(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()) };
+        var controller = CreateControllerWithContext(claims);
+        FileUploadRequest request = null;
+
+        // Act
+        var result = await controller.UploadSignature(ObjectId.GenerateNewId().ToString(), request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("No file was uploaded.", badRequest.Value);
+        _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+    }
+
+    [Fact]
     public async Task UploadInitials_ReturnsOk_WhenFileIsCleanAndUploadSucceeds()
     {
         // Arrange
@@ -620,6 +638,24 @@ public class UsersControllerTests
         Assert.Equal("No file was uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
         _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadInitials_ReturnsBadRequest_WhenRequestIsNull()
+    {
+        // Arrange
+        var claims = new List<Claim> { new(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()) };
+        var controller = CreateControllerWithContext(claims);
+        FileUploadRequest request = null;
+
+        // Act
+        var result = await controller.UploadInitials(ObjectId.GenerateNewId().ToString(), request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("No file was uploaded.", badRequest.Value);
+        _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
     }
 
     [Fact]

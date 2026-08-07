@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -1078,5 +1081,143 @@ public class UserServiceTests : ServiceTestBase
 
         Assert.NotNull(result);
         Assert.Single(result.RoleIds);
+    }
+
+    private static IFormFile CreateFormFile(byte[] content = null)
+    {
+        content ??= [1, 2, 3, 4];
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.Length).Returns(content.Length);
+        file.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .Returns<Stream, CancellationToken>((stream, _) => stream.WriteAsync(content, 0, content.Length));
+        return file.Object;
+    }
+
+    [Fact]
+    public async Task UploadSignatureAsync_ShouldReturnSuccess_AndSetSignature()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var content = new byte[] { 10, 20, 30 };
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+
+        var result = await _userService.UploadSignatureAsync(fakeId, CreateFormFile(content));
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Equal(content, user.Signature);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadSignatureAsync_ShouldReturnFailure_WhenUserNotFound()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((User)null);
+
+        var result = await _userService.UploadSignatureAsync(fakeId, CreateFormFile());
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("User not found.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadSignatureAsync_ShouldReturnFailure_WhenExceptionIsThrown()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).ThrowsAsync(new InvalidOperationException());
+
+        var result = await _userService.UploadSignatureAsync(fakeId, CreateFormFile());
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Error uploading signature.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadInitialsAsync_ShouldReturnSuccess_AndSetInitials()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var content = new byte[] { 40, 50, 60 };
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+
+        var result = await _userService.UploadInitialsAsync(fakeId, CreateFormFile(content));
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Equal(content, user.Initials);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadInitialsAsync_ShouldReturnFailure_WhenUserNotFound()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((User)null);
+
+        var result = await _userService.UploadInitialsAsync(fakeId, CreateFormFile());
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("User not found.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadInitialsAsync_ShouldReturnFailure_WhenExceptionIsThrown()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).ThrowsAsync(new InvalidOperationException());
+
+        var result = await _userService.UploadInitialsAsync(fakeId, CreateFormFile());
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Error uploading initials.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
     }
 }

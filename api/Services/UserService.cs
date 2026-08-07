@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
@@ -316,4 +318,58 @@ public class UserService(
         return true;
     }
 
+    public async Task<OperationResult> UploadSignatureAsync(string userId, IFormFile file)
+    {
+        var user = await this.Repo.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return OperationResult.Failure("User not found.");
+        }
+
+        try
+        {
+            user.Signature = await ConvertToBytesAsync(file);
+
+            await this.Repo.UpdateAsync(user);
+            InvalidateCache(CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error uploading signature for user {UserId}: {Message}", userId, ex.Message);
+            return OperationResult.Failure("Error uploading signature.");
+        }
+    }
+
+    public async Task<OperationResult> UploadInitialsAsync(string userId, IFormFile file)
+    {
+        var user = await this.Repo.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return OperationResult.Failure("User not found.");
+        }
+
+        try
+        {
+            user.Initials = await ConvertToBytesAsync(file);
+
+            await this.Repo.UpdateAsync(user);
+            InvalidateCache(CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error uploading initials for user {UserId}: {Message}", userId, ex.Message);
+            return OperationResult.Failure("Error uploading initials.");
+        }
+    }
+
+    private static async Task<byte[]> ConvertToBytesAsync(IFormFile file)
+    {
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        return memoryStream.ToArray();
+    }
 }

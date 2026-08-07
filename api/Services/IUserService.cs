@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Scv.Core.Infrastructure;
 using Scv.Models.AccessControlManagement;
 using Scv.Models.Location;
@@ -18,5 +19,7 @@ namespace Scv.Api.Services
         Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
         Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
         Task<OperationResult<UserDto>> MarkReleaseNotesViewedAsync(string userId, string version, DateTime viewedAtUtc);
+        Task<OperationResult> UploadSignatureAsync(string userId, IFormFile file);
+        Task<OperationResult> UploadInitialsAsync(string userId, IFormFile file);
     }
 }

@@ -48,5 +48,15 @@ namespace Scv.Db.Models
         public List<string> GroupIds { get; set; } = [];
 
         public UserReleaseNotes? ReleaseNotes { get; set; }
+
+        /// <summary>
+        /// Signature image stored as raw bytes.
+        /// </summary>
+        public byte[] Signature { get; set; }
+
+        /// <summary>
+        /// Initials image stored as raw bytes.
+        /// </summary>
+        public byte[] Initials { get; set; }
     }
 }

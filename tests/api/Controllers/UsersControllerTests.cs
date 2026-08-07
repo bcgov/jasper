@@ -442,7 +442,7 @@ public class UsersControllerTests
         file.Setup(f => f.FileName).Returns(fileName);
         file.Setup(f => f.ContentType).Returns(contentType);
         file.Setup(f => f.Length).Returns(length);
-        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream(new byte[length]));
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream(new byte[checked((int)length)]));
         return file.Object;
     }
 

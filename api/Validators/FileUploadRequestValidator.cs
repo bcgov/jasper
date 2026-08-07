@@ -25,6 +25,11 @@ public class FileUploadRequestValidator : AbstractValidator<FileUploadRequest>
 
     private static bool BeAnAllowedImage(IFormFile file)
     {
+        if (string.IsNullOrWhiteSpace(file.FileName) || string.IsNullOrWhiteSpace(file.ContentType))
+        {
+            return false;
+        }
+
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
         return AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant())
             && AllowedExtensions.Contains(extension);

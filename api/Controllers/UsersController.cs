@@ -184,7 +184,8 @@ public class UsersController(
         }
 
         var file = request.File;
-        var (isClean, message) = await _antiVirusService.ScanAsync(file.OpenReadStream());
+        await using var stream = file.OpenReadStream();
+        var (isClean, message) = await _antiVirusService.ScanAsync(stream);
         if (!isClean)
         {
             _logger.LogWarning("The uploaded file failed the antivirus scan: {Message}", message);
@@ -192,6 +193,11 @@ public class UsersController(
         }
 
         var result = await uploadAsync(file);
+        if (!result.Succeeded)
+        {
+            return BadRequest(result.Errors);
+        }
+
         return Ok(result);
     }
 }

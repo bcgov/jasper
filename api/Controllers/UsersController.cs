@@ -3,12 +3,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Models.AccessControlManagement;
 
@@ -151,30 +153,8 @@ public class UsersController(
     [HttpPost]
     [Route("{id}/signature")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public async Task<IActionResult> UploadSignature(string id, [FromForm] FileUploadRequest request)
-    {
-        if (request == null)
-        {
-            return BadRequest("No file was uploaded.");
-        }
-
-        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
-        }
-
-        var file = request.File;
-        var (isClean, message) = await _antiVirusService.ScanAsync(file.OpenReadStream());
-        if (!isClean)
-        {
-            _logger.LogWarning("The uploaded file failed the antivirus scan: {Message}", message);
-            return BadRequest("The uploaded file failed the antivirus scan.");
-        }
-
-        var result = await base.Service.UploadSignatureAsync(id, file);
-        return Ok(result);
-    }
+    public Task<IActionResult> UploadSignature(string id, [FromForm] FileUploadRequest request)
+        => UploadImageAsync(request, file => base.Service.UploadSignatureAsync(id, file));
 
     /// <summary>
     /// Uploads initials image for the user with the specified ID. The image is scanned for viruses before being stored.
@@ -185,7 +165,12 @@ public class UsersController(
     [HttpPost]
     [Route("{id}/initials")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public async Task<IActionResult> UploadInitials(string id, [FromForm] FileUploadRequest request)
+    public Task<IActionResult> UploadInitials(string id, [FromForm] FileUploadRequest request)
+        => UploadImageAsync(request, file => base.Service.UploadInitialsAsync(id, file));
+
+    private async Task<IActionResult> UploadImageAsync(
+        FileUploadRequest request,
+        Func<IFormFile, Task<OperationResult>> uploadAsync)
     {
         if (request == null)
         {
@@ -206,7 +191,7 @@ public class UsersController(
             return BadRequest("The uploaded file failed the antivirus scan.");
         }
 
-        var result = await base.Service.UploadInitialsAsync(id, file);
+        var result = await uploadAsync(file);
         return Ok(result);
     }
 }

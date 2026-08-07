@@ -337,7 +337,7 @@ public class UserService(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error uploading signature for user {UserId}: {Message}", userId, ex.Message);
+            this.Logger.LogError(ex, "Error uploading signature: {Message}", ex.Message);
             return OperationResult.Failure("Error uploading signature.");
         }
     }
@@ -361,7 +361,7 @@ public class UserService(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error uploading initials for user {UserId}: {Message}", userId, ex.Message);
+            this.Logger.LogError(ex, "Error uploading initials: {Message}", ex.Message);
             return OperationResult.Failure("Error uploading initials.");
         }
     }

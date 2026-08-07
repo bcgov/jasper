@@ -153,7 +153,12 @@ public class UsersController(
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
     public async Task<IActionResult> UploadSignature(string id, [FromForm] FileUploadRequest request)
     {
-        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request ?? new FileUploadRequest());
+        if (request == null)
+        {
+            return BadRequest("No file was uploaded.");
+        }
+
+        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
             return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
@@ -182,7 +187,12 @@ public class UsersController(
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
     public async Task<IActionResult> UploadInitials(string id, [FromForm] FileUploadRequest request)
     {
-        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request ?? new FileUploadRequest());
+        if (request == null)
+        {
+            return BadRequest("No file was uploaded.");
+        }
+
+        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
             return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());

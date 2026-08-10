@@ -121,13 +121,9 @@ export class OrderPDFStrategy extends FilePDFStrategy {
         id: 'open-supporting-documents',
         title: 'View Supporting Documents',
         icon: `<svg><path d="${mdiFileDocumentMultipleOutline}"/></svg>`,
-        onPress: this.viewSupportingDocs.bind(this),
+        onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
       },
     ];
-  }
-
-  async viewSupportingDocs(): Promise<void> {
-    await viewOrderSupportingDocuments(this.currentOrder!);
   }
 
   async initialize(): Promise<void> {

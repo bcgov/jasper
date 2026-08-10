@@ -1,4 +1,3 @@
-import shared from '@/components/shared';
 import { Order } from '@/types';
 import {
   viewOrderDetails,
@@ -6,13 +5,23 @@ import {
 } from '@/utils/orderDetails';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { openOrderDocumentsMock, getCourtClassLabelMock, isCriminalMock } =
+  vi.hoisted(() => ({
+    openOrderDocumentsMock: vi.fn(),
+    getCourtClassLabelMock: vi.fn(),
+    isCriminalMock: vi.fn(),
+  }));
+
 vi.mock('@/components/shared', () => ({
   default: {
-    openOrderDocuments: vi.fn(),
+    openOrderDocuments: openOrderDocumentsMock,
   },
 }));
 
-const openOrderDocumentsMock = vi.mocked(shared.openOrderDocuments);
+vi.mock('@/utils/utils', () => ({
+  getCourtClassLabel: getCourtClassLabelMock,
+  isCourtClassLabelCriminal: isCriminalMock,
+}));
 
 const createOrder = (overrides: Partial<Order> = {}): Order =>
   ({
@@ -42,7 +51,6 @@ describe('orderDetails', () => {
   describe('viewOrderDetails', () => {
     it('opens the referred package document with its type description', () => {
       const order = createOrder({
-        packageDocumentId: '100',
         packageDocuments: [
           {
             documentId: 100,
@@ -56,6 +64,8 @@ describe('orderDetails', () => {
           },
         ],
       });
+      getCourtClassLabelMock.mockReturnValue('Criminal');
+      isCriminalMock.mockReturnValue(true);
 
       viewOrderDetails(order);
 
@@ -74,7 +84,6 @@ describe('orderDetails', () => {
 
     it('leaves the document description undefined when no referred document matches', () => {
       const order = createOrder({
-        packageDocumentId: '100',
         courtClass: 'F',
         packageDocuments: [
           {
@@ -84,6 +93,8 @@ describe('orderDetails', () => {
           },
         ],
       });
+      getCourtClassLabelMock.mockReturnValue('Civil');
+      isCriminalMock.mockReturnValue(false);
 
       viewOrderDetails(order);
 
@@ -102,7 +113,6 @@ describe('orderDetails', () => {
 
     it('matches package documents by string-coerced document id', () => {
       const order = createOrder({
-        packageDocumentId: '100',
         packageDocuments: [
           {
             documentId: 100,
@@ -120,6 +130,73 @@ describe('orderDetails', () => {
         expect.arrayContaining([
           expect.objectContaining({
             documentDescription: 'Matched By Coercion',
+          }),
+        ])
+      );
+    });
+
+    it('maps order fields and opens order document for criminal files', () => {
+      const order = createOrder({
+        id: 'order-1',
+        packageDocumentId: 'doc-1',
+        packageName: 'Order package',
+        courtClass: 'CC',
+        courtFileNumber: 'CF-1234',
+        physicalFileId: 'file-1',
+        packageDocuments: [
+          {
+            documentId: 'doc-1',
+            documentTypeDesc: 'Order package',
+            referredDocument: true,
+          },
+        ],
+      });
+      getCourtClassLabelMock.mockReturnValue('Criminal');
+      isCriminalMock.mockReturnValue(true);
+
+      viewOrderDetails(order);
+
+      expect(getCourtClassLabelMock).toHaveBeenCalledWith('CC');
+      expect(isCriminalMock).toHaveBeenCalledWith('Criminal');
+      expect(openOrderDocumentsMock).toHaveBeenCalledWith(
+        'order-1',
+        'CF-1234',
+        expect.arrayContaining([
+          expect.objectContaining({
+            courtClass: 'CC',
+            fileId: 'file-1',
+            fileNumberText: 'CF-1234',
+            documentId: 'doc-1',
+            documentDescription: 'Order package',
+            isCriminal: true,
+            orderId: 'order-1',
+          }),
+        ])
+      );
+    });
+
+    it('sets isCriminal to false for non-criminal files', () => {
+      const order = createOrder({
+        id: 'order-2',
+        courtListType: 'Civil List',
+        packageDocumentId: 'doc-2',
+        packageName: 'Civil order package',
+        courtClass: 'CV',
+        courtFileNumber: 'CV-4321',
+        physicalFileId: 'file-2',
+      });
+      getCourtClassLabelMock.mockReturnValue('Civil');
+      isCriminalMock.mockReturnValue(false);
+
+      viewOrderDetails(order);
+
+      expect(openOrderDocumentsMock).toHaveBeenCalledWith(
+        'order-2',
+        'CV-4321',
+        expect.arrayContaining([
+          expect.objectContaining({
+            isCriminal: false,
+            orderId: 'order-2',
           }),
         ])
       );
@@ -149,6 +226,8 @@ describe('orderDetails', () => {
           },
         ],
       });
+      getCourtClassLabelMock.mockReturnValue('Civil');
+      isCriminalMock.mockReturnValue(false);
 
       viewOrderSupportingDocuments(order);
 
@@ -188,7 +267,6 @@ describe('orderDetails', () => {
             referredDocument: true,
           },
         ],
-        relevantCeisDocuments: [],
       });
 
       viewOrderSupportingDocuments(order);
@@ -202,12 +280,7 @@ describe('orderDetails', () => {
     });
 
     it('passes an empty array when there are no supporting documents', () => {
-      const order = createOrder({
-        packageDocuments: [],
-        relevantCeisDocuments: [],
-      });
-
-      viewOrderSupportingDocuments(order);
+      viewOrderSupportingDocuments(createOrder());
 
       expect(openOrderDocumentsMock).toHaveBeenCalledWith(
         'ORDER1',
@@ -227,6 +300,8 @@ describe('orderDetails', () => {
           },
         ],
       });
+      getCourtClassLabelMock.mockReturnValue('Criminal');
+      isCriminalMock.mockReturnValue(true);
 
       viewOrderSupportingDocuments(order);
 

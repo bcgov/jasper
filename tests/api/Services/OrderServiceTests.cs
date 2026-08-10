@@ -1281,7 +1281,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.GetByIdAsync(orderId))
             .ReturnsAsync((Order)null);
 
-        var result = await _orderService.GetOrderById(orderId, judgeId);
+        var result = await _orderService.GetOrderByIdAsync(orderId, judgeId);
 
         Assert.Null(result);
         _mockOrderRepo.Verify(r => r.GetByIdAsync(orderId), Times.Once);
@@ -1298,7 +1298,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.GetByIdAsync(order.Id))
             .ReturnsAsync(order);
 
-        var result = await _orderService.GetOrderById(order.Id, differentJudgeId);
+        var result = await _orderService.GetOrderByIdAsync(order.Id, differentJudgeId);
 
         Assert.Null(result);
         _mockOrderRepo.Verify(r => r.GetByIdAsync(order.Id), Times.Once);
@@ -1314,7 +1314,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(r => r.GetByIdAsync(order.Id))
             .ReturnsAsync(order);
 
-        var result = await _orderService.GetOrderById(order.Id, judgeId);
+        var result = await _orderService.GetOrderByIdAsync(order.Id, judgeId);
 
         Assert.NotNull(result);
         Assert.Equal(order.Id, result.Id);

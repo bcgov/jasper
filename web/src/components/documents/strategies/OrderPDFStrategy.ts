@@ -1,7 +1,7 @@
 import { OrderService } from '@/services';
 import { useCommonStore, useSnackbarStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
-import { OrderReview } from '@/types';
+import { Order, OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import { mdiFileDocumentMultipleOutline } from '@mdi/js';
@@ -17,7 +17,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   private readonly orderService: OrderService;
   private readonly orderId: string | null;
   private readonly isShowingSupportingDocuments: boolean = false;
-  private readonly hasSupportingDocuments: boolean = false;
+  private currentOrder: Order | null = null;
 
   constructor() {
     super();
@@ -41,7 +41,6 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
     this.isShowingSupportingDocuments =
       urlParams.get('isShowingSupportingDocs') === 'true';
-    this.hasSupportingDocuments = urlParams.get('hasSupportingDocs') === 'true';
   }
 
   protected override getOutlineDocumentTitle(document: StoreDocument): string {
@@ -112,7 +111,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   }
 
   additionalToolbarItems(): ToolbarItem[] {
-    if (!this.hasSupportingDocuments) {
+    if (!this.currentOrder?.hasSupportingDocs) {
       return [];
     }
 
@@ -128,17 +127,15 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   }
 
   async viewSupportingDocs(): Promise<void> {
-    if (!this.orderId) {
-      throw new Error(
-        'Order ID is not defined. Cannot view supporting documents.'
-      );
-    }
+    await viewOrderSupportingDocuments(this.currentOrder!);
+  }
 
-    const order = await this.orderService.getOrder(this.orderId);
+  async initialize(): Promise<void> {
+    const order = await this.orderService.getOrder(this.orderId!);
     if (!order) {
       throw new Error(`Order with ID ${this.orderId} not found.`);
     }
 
-    await viewOrderSupportingDocuments(order);
+    this.currentOrder = order;
   }
 }

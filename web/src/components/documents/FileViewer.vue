@@ -99,7 +99,11 @@
       // Follow the strategy pattern workflow
       const rawData = props.strategy.getRawData(sessionId.value);
       const processedData = props.strategy.processDataForAPI(rawData);
-      const apiResponse = await props.strategy.generatePDF(processedData);
+
+      const [apiResponse] = await Promise.all([
+        props.strategy.generatePDF(processedData),
+        props.strategy.initialize?.(),
+      ]);
 
       loading.value = false;
 

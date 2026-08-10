@@ -87,6 +87,7 @@ const createMockOrder = (
   status: OrderReviewStatus.Unapproved,
   packageDocuments: [],
   relevantCeisDocuments: [],
+  hasSupportingDocs: false,
   ...overrides,
 });
 
@@ -334,7 +335,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
     expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
       'The order has been approved.',
-        'success',
+      'success',
       '✅ Approved!'
     );
   });
@@ -354,7 +355,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
     expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
       'The order has been rejected.',
-        'success',
+      'success',
       '📋 Rejected'
     );
   });
@@ -374,7 +375,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
     expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
       'The order review is awaiting documentation.',
-        'success',
+      'success',
       '⏳ Pending'
     );
   });
@@ -399,11 +400,37 @@ describe('OrderPDFStrategy', () => {
     expect(mockOrderService.review).toHaveBeenCalledWith('order-abc', review);
   });
 
-  describe('additionalToolbarItems', () => {
-    it('returns a supporting-documents button when the order has supporting documents', () => {
-      setLocationSearch('?id=123&hasSupportingDocs=true');
+  describe('initialize', () => {
+    it('fetches the order and stores it as the current order', async () => {
+      const order = createMockOrder('123', { hasSupportingDocs: true });
+      mockOrderService.getOrder.mockResolvedValue(order);
 
       const strategy = new OrderPDFStrategy();
+      await strategy.initialize();
+
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123');
+      expect(strategy.additionalToolbarItems()).toHaveLength(1);
+    });
+
+    it('throws when the order cannot be found', async () => {
+      mockOrderService.getOrder.mockResolvedValue(undefined);
+
+      const strategy = new OrderPDFStrategy();
+
+      await expect(strategy.initialize()).rejects.toThrow(
+        'Order with ID 123 not found.'
+      );
+    });
+  });
+
+  describe('additionalToolbarItems', () => {
+    it('returns a supporting-documents button when the order has supporting documents', async () => {
+      mockOrderService.getOrder.mockResolvedValue(
+        createMockOrder('123', { hasSupportingDocs: true })
+      );
+
+      const strategy = new OrderPDFStrategy();
+      await strategy.initialize();
       const extras = strategy.additionalToolbarItems();
 
       expect(extras).toHaveLength(1);
@@ -413,15 +440,26 @@ describe('OrderPDFStrategy', () => {
       });
     });
 
-    it('returns an empty array when the order has no supporting documents', () => {
+    it('returns an empty array when the order has no supporting documents', async () => {
+      mockOrderService.getOrder.mockResolvedValue(
+        createMockOrder('123', { hasSupportingDocs: false })
+      );
+
+      const strategy = new OrderPDFStrategy();
+      await strategy.initialize();
+
+      expect(strategy.additionalToolbarItems()).toEqual([]);
+    });
+
+    it('returns an empty array before the order has been initialized', () => {
       const strategy = new OrderPDFStrategy();
 
       expect(strategy.additionalToolbarItems()).toEqual([]);
     });
 
     it('invokes viewOrderSupportingDocuments when the button is pressed', async () => {
-      setLocationSearch('?id=123&hasSupportingDocs=true');
       const order = createMockOrder('123', {
+        hasSupportingDocs: true,
         relevantCeisDocuments: [
           {
             civilDocumentId: 2,
@@ -432,6 +470,7 @@ describe('OrderPDFStrategy', () => {
       mockOrderService.getOrder.mockResolvedValue(order);
 
       const strategy = new OrderPDFStrategy();
+      await strategy.initialize();
       const [button] = strategy.additionalToolbarItems();
 
       await (button as unknown as { onPress: () => Promise<void> }).onPress();
@@ -565,10 +604,13 @@ describe('OrderPDFStrategy', () => {
       expect(baseTypes).toEqual(['pan', 'zoom-in', 'zoom-out']);
     });
 
-    it('inserts extras in the expected order: spacer, open-supporting-documents, open-information, image, open-document-review', () => {
-      setLocationSearch('?id=123&hasSupportingDocs=true');
+    it('inserts extras in the expected order: spacer, open-supporting-documents, open-information, image, open-document-review', async () => {
+      mockOrderService.getOrder.mockResolvedValue(
+        createMockOrder('123', { hasSupportingDocs: true })
+      );
 
       const strategy = new OrderPDFStrategy();
+      await strategy.initialize();
       const openInformation = { id: 'open-information', type: 'custom' };
       const imageItem = { type: 'image' };
       const openDocumentReview = {

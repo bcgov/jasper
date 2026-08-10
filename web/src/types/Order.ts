@@ -18,6 +18,7 @@ export interface Order {
   status: OrderReviewStatus;
   packageDocuments: PackageDocument[];
   relevantCeisDocuments: RelevantCeisDocument[];
+  hasSupportingDocs: boolean;
 }
 
 export interface PackageDocument {

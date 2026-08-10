@@ -33,7 +33,7 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
     Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
     Task<OperationResult> SubmitOrder(string id);
-    Task<OrderViewDto> GetOrderById(string id, int judgeId);
+    Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -335,7 +335,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
     }
 
-    public async Task<OrderViewDto> GetOrderById(string id, int judgeId)
+    public async Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId)
     {
         var order = await Repo.GetByIdAsync(id);
         if (order == null || order.JudgeId != judgeId)

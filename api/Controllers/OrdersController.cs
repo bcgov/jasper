@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Infrastructure.Validation;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
@@ -45,10 +46,14 @@ public class OrdersController(
     [HttpGet]
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("{id}")]
-    public async Task<IActionResult> GetOrder(string id)
+    public async Task<IActionResult> GetOrder([FromRoute, ObjectId] string id)
     {
-        var judgeOrders = await _orderService.GetOrderById(id, this.User.JudgeId());
-        return Ok(judgeOrders);
+        var judgeOrder = await _orderService.GetOrderByIdAsync(id, this.User.JudgeId());
+        if (judgeOrder == null)
+        {
+            return NotFound("Order not found.");
+        }
+        return Ok(judgeOrder);
     }
 
     /// <summary>
@@ -98,7 +103,9 @@ public class OrdersController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ReviewOrder(string id, [FromBody] OrderReviewDto orderReview)
+    public async Task<IActionResult> ReviewOrder(
+        [FromRoute, ObjectId] string id,
+        [FromBody] OrderReviewDto orderReview)
     {
         var result = await _orderService.ReviewOrder(id, orderReview);
 

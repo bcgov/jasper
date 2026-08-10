@@ -83,8 +83,7 @@ describe('orderDetails', () => {
             documentDescription: 'Order for Custody',
           },
         ],
-        true,
-        false
+        { isShowingSupportingDocs: 'false' }
       );
     });
 
@@ -118,8 +117,7 @@ describe('orderDetails', () => {
             documentDescription: undefined,
           },
         ],
-        true,
-        false
+        { isShowingSupportingDocs: 'false' }
       );
     });
 
@@ -144,8 +142,7 @@ describe('orderDetails', () => {
             documentDescription: 'Matched By Coercion',
           }),
         ]),
-        false,
-        false
+        { isShowingSupportingDocs: 'false' }
       );
     });
 
@@ -159,7 +156,7 @@ describe('orderDetails', () => {
         physicalFileId: 'file-1',
         packageDocuments: [
           {
-            documentId: 'doc-1',
+            documentId: 1,
             documentTypeDesc: 'Order package',
             referredDocument: true,
           },
@@ -185,7 +182,8 @@ describe('orderDetails', () => {
             isCriminal: true,
             orderId: 'order-1',
           }),
-        ])
+        ]),
+        { isShowingSupportingDocs: 'false' }
       );
     });
 
@@ -212,7 +210,8 @@ describe('orderDetails', () => {
             isCriminal: false,
             orderId: 'order-2',
           }),
-        ])
+        ]),
+        { isShowingSupportingDocs: 'false' }
       );
     });
   });
@@ -268,8 +267,7 @@ describe('orderDetails', () => {
             documentDescription: 'CEIS Doc',
           },
         ],
-        false,
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
 
@@ -290,8 +288,7 @@ describe('orderDetails', () => {
         'ORDER1',
         'FN001 - Supporting Documents',
         [],
-        false,
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
 
@@ -302,8 +299,7 @@ describe('orderDetails', () => {
         'ORDER1',
         'FN001 - Supporting Documents',
         [],
-        false,
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
 
@@ -331,8 +327,7 @@ describe('orderDetails', () => {
             isCriminal: true,
           }),
         ],
-        false,
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
   });

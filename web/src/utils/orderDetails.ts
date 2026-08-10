@@ -10,11 +10,6 @@ export const viewOrderDetails = (order: Order): void => {
       pd.referredDocument &&
       pd.documentId?.toString() === order.packageDocumentId.toString()
   );
-  const hasSupportingDocuments =
-    [
-      ...(order.packageDocuments ?? []).filter((pd) => !pd.referredDocument),
-      ...(order.relevantCeisDocuments ?? []),
-    ].length > 0;
   shared.openOrderDocuments(
     order.id,
     order.courtFileNumber,
@@ -25,14 +20,13 @@ export const viewOrderDetails = (order: Order): void => {
         documentDescription: referredDocument?.documentTypeDesc,
       },
     ],
-    hasSupportingDocuments,
-    false
+    {
+      isShowingSupportingDocs: 'false',
+    }
   );
 };
 
-export const viewOrderSupportingDocuments = async (
-  order: Order
-): Promise<void> => {
+export const viewOrderSupportingDocuments = (order: Order): void => {
   const baseDocumentData = getBaseDocumentData(order);
   const packageDocs = (order.packageDocuments ?? []).filter(
     (pd) => !pd.referredDocument && pd.documentId
@@ -57,8 +51,9 @@ export const viewOrderSupportingDocuments = async (
     order.id,
     `${order.courtFileNumber} - Supporting Documents`,
     supportingDocumentsData,
-    false,
-    true
+    {
+      isShowingSupportingDocs: 'true',
+    }
   );
 };
 

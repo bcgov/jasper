@@ -518,30 +518,30 @@ public class OrdersControllerTests
         var order = new OrderViewDto();
 
         _mockOrderService
-            .Setup(s => s.GetOrderById(orderId, _judgeId))
+            .Setup(s => s.GetOrderByIdAsync(orderId, _judgeId))
             .ReturnsAsync(order);
 
         var result = await _controller.GetOrder(orderId);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Same(order, okResult.Value);
-        _mockOrderService.Verify(s => s.GetOrderById(orderId, _judgeId), Times.Once);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, _judgeId), Times.Once);
     }
 
     [Fact]
-    public async Task GetOrder_ReturnsOk_WithNull_WhenOrderDoesNotExist()
+    public async Task GetOrder_ReturnsNotFound_WhenOrderDoesNotExist()
     {
         var orderId = _faker.Random.AlphaNumeric(24);
 
         _mockOrderService
-            .Setup(s => s.GetOrderById(orderId, _judgeId))
+            .Setup(s => s.GetOrderByIdAsync(orderId, _judgeId))
             .ReturnsAsync((OrderViewDto)null);
 
         var result = await _controller.GetOrder(orderId);
 
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Null(okResult.Value);
-        _mockOrderService.Verify(s => s.GetOrderById(orderId, _judgeId), Times.Once);
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.NotNull(notFoundResult.Value);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, _judgeId), Times.Once);
     }
 
     [Fact]
@@ -550,12 +550,12 @@ public class OrdersControllerTests
         var orderId = _faker.Random.AlphaNumeric(24);
 
         _mockOrderService
-            .Setup(s => s.GetOrderById(It.IsAny<string>(), It.IsAny<int>()))
+            .Setup(s => s.GetOrderByIdAsync(It.IsAny<string>(), It.IsAny<int>()))
             .ReturnsAsync(new OrderViewDto());
 
         await _controller.GetOrder(orderId);
 
-        _mockOrderService.Verify(s => s.GetOrderById(orderId, _judgeId), Times.Once);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, _judgeId), Times.Once);
     }
 
     #endregion

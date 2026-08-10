@@ -26,6 +26,8 @@ export interface PDFViewerStrategy<
 
   extractBase64PDF(apiResponse: TApiResponse): string;
 
+  initialize?(): Promise<void>;
+
   extractPageRanges(
     apiResponse: TApiResponse
   ): Array<{ start: number; end?: number }> | undefined;

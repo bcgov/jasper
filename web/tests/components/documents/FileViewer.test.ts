@@ -243,6 +243,84 @@ describe('FileViewer.vue', () => {
     );
   });
 
+  it('expands every level of a custom outline by default', async () => {
+    const strategy = {
+      hasData: () => true,
+      getRawData: () => [{ fileName: 'outline.pdf' }],
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 3 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 3 }],
+      createOutline: () => [
+        {
+          title: 'Level one',
+          children: [
+            {
+              title: 'Level two',
+              children: [{ title: 'Level three', pageIndex: 2 }],
+            },
+          ],
+        },
+      ],
+      cleanup: vi.fn(),
+    };
+
+    await mountViewer(strategy);
+
+    const outline = mockInstance.setDocumentOutline.mock.calls[0][0];
+    expect(outline[0].config.isExpanded).toBe(true);
+    expect(outline[0].config.children[0].config.isExpanded).toBe(true);
+    expect(
+      outline[0].config.children[0].config.children[0].config.isExpanded
+    ).toBe(true);
+  });
+
+  it('expands every level from a collapsed embedded source outline', async () => {
+    const strategy = {
+      hasData: () => true,
+      getRawData: () => [{ fileName: 'source-outline.pdf' }],
+      processDataForAPI: (rawData: unknown) => rawData,
+      generatePDF: vi.fn().mockResolvedValue({
+        base64Pdf: 'base64pdf',
+        pageRanges: [{ start: 0, end: 3 }],
+      }),
+      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+        apiResponse.base64Pdf,
+      extractPageRanges: () => [{ start: 0, end: 3 }],
+      createOutline: vi.fn(),
+      createOutlineWithEmbeddedOutline: vi.fn(
+        (_rawData: unknown, _apiResponse: unknown, embeddedOutline) =>
+          embeddedOutline
+      ),
+      cleanup: vi.fn(),
+    };
+
+    mockInstance.getDocumentOutline.mockResolvedValue([
+      {
+        title: 'Source level one',
+        isExpanded: false,
+        children: [
+          {
+            title: 'Source level two',
+            isExpanded: false,
+            action: { pageIndex: 1 },
+            children: [],
+          },
+        ],
+      },
+    ]);
+
+    await mountViewer(strategy);
+
+    const outline = mockInstance.setDocumentOutline.mock.calls[0][0];
+    expect(outline[0].config.isExpanded).toBe(true);
+    expect(outline[0].config.children[0].config.isExpanded).toBe(true);
+  });
+
   it('does not override embedded outline when embedded-outline-aware strategy returns no custom outline', async () => {
     const createOutlineWithEmbeddedOutline = vi.fn().mockReturnValue(undefined);
     const strategy = {
@@ -413,9 +491,7 @@ describe('FileViewer.vue', () => {
 
     await mountViewer(strategy);
 
-    toolbarItems
-      .find((item) => item.id === 'open-information')
-      ?.onPress();
+    toolbarItems.find((item) => item.id === 'open-information')?.onPress();
 
     expect(window.open).toHaveBeenCalledWith(
       'civil-file/civil-file-123',
@@ -449,9 +525,7 @@ describe('FileViewer.vue', () => {
 
     await mountViewer(strategy);
 
-    toolbarItems
-      .find((item) => item.id === 'open-information')
-      ?.onPress();
+    toolbarItems.find((item) => item.id === 'open-information')?.onPress();
 
     expect(window.open).toHaveBeenCalledWith(
       'criminal-file/criminal-file-123',

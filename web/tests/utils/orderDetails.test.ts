@@ -69,17 +69,22 @@ describe('orderDetails', () => {
 
       viewOrderDetails(order);
 
-      expect(openOrderDocumentsMock).toHaveBeenCalledWith('ORDER1', 'FN001', [
-        {
-          courtClass: 'A',
-          fileId: 'PHYS1',
-          fileNumberText: 'FN001',
-          isCriminal: true,
-          orderId: 'ORDER1',
-          documentId: '100',
-          documentDescription: 'Order for Custody',
-        },
-      ]);
+      expect(openOrderDocumentsMock).toHaveBeenCalledWith(
+        'ORDER1',
+        'FN001',
+        [
+          {
+            courtClass: 'A',
+            fileId: 'PHYS1',
+            fileNumberText: 'FN001',
+            isCriminal: true,
+            orderId: 'ORDER1',
+            documentId: '100',
+            documentDescription: 'Order for Custody',
+          },
+        ],
+        { isShowingSupportingDocs: 'false' }
+      );
     });
 
     it('leaves the document description undefined when no referred document matches', () => {
@@ -98,17 +103,22 @@ describe('orderDetails', () => {
 
       viewOrderDetails(order);
 
-      expect(openOrderDocumentsMock).toHaveBeenCalledWith('ORDER1', 'FN001', [
-        {
-          courtClass: 'F',
-          fileId: 'PHYS1',
-          fileNumberText: 'FN001',
-          isCriminal: false,
-          orderId: 'ORDER1',
-          documentId: '100',
-          documentDescription: undefined,
-        },
-      ]);
+      expect(openOrderDocumentsMock).toHaveBeenCalledWith(
+        'ORDER1',
+        'FN001',
+        [
+          {
+            courtClass: 'F',
+            fileId: 'PHYS1',
+            fileNumberText: 'FN001',
+            isCriminal: false,
+            orderId: 'ORDER1',
+            documentId: '100',
+            documentDescription: undefined,
+          },
+        ],
+        { isShowingSupportingDocs: 'false' }
+      );
     });
 
     it('matches package documents by string-coerced document id', () => {
@@ -131,21 +141,22 @@ describe('orderDetails', () => {
           expect.objectContaining({
             documentDescription: 'Matched By Coercion',
           }),
-        ])
+        ]),
+        { isShowingSupportingDocs: 'false' }
       );
     });
 
     it('maps order fields and opens order document for criminal files', () => {
       const order = createOrder({
         id: 'order-1',
-        packageDocumentId: 'doc-1',
+        packageDocumentId: '1',
         packageName: 'Order package',
         courtClass: 'CC',
         courtFileNumber: 'CF-1234',
         physicalFileId: 'file-1',
         packageDocuments: [
           {
-            documentId: 'doc-1',
+            documentId: 1,
             documentTypeDesc: 'Order package',
             referredDocument: true,
           },
@@ -166,12 +177,13 @@ describe('orderDetails', () => {
             courtClass: 'CC',
             fileId: 'file-1',
             fileNumberText: 'CF-1234',
-            documentId: 'doc-1',
+            documentId: '1',
             documentDescription: 'Order package',
             isCriminal: true,
             orderId: 'order-1',
           }),
-        ])
+        ]),
+        { isShowingSupportingDocs: 'false' }
       );
     });
 
@@ -198,7 +210,8 @@ describe('orderDetails', () => {
             isCriminal: false,
             orderId: 'order-2',
           }),
-        ])
+        ]),
+        { isShowingSupportingDocs: 'false' }
       );
     });
   });
@@ -254,7 +267,7 @@ describe('orderDetails', () => {
             documentDescription: 'CEIS Doc',
           },
         ],
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
 
@@ -275,7 +288,7 @@ describe('orderDetails', () => {
         'ORDER1',
         'FN001 - Supporting Documents',
         [],
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
 
@@ -286,7 +299,7 @@ describe('orderDetails', () => {
         'ORDER1',
         'FN001 - Supporting Documents',
         [],
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
 
@@ -314,7 +327,7 @@ describe('orderDetails', () => {
             isCriminal: true,
           }),
         ],
-        true
+        { isShowingSupportingDocs: 'true' }
       );
     });
   });

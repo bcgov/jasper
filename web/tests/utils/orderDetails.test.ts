@@ -149,7 +149,7 @@ describe('orderDetails', () => {
     it('maps order fields and opens order document for criminal files', () => {
       const order = createOrder({
         id: 'order-1',
-        packageDocumentId: 'doc-1',
+        packageDocumentId: '1',
         packageName: 'Order package',
         courtClass: 'CC',
         courtFileNumber: 'CF-1234',
@@ -177,7 +177,7 @@ describe('orderDetails', () => {
             courtClass: 'CC',
             fileId: 'file-1',
             fileNumberText: 'CF-1234',
-            documentId: 'doc-1',
+            documentId: '1',
             documentDescription: 'Order package',
             isCriminal: true,
             orderId: 'order-1',

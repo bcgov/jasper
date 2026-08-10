@@ -8,5 +8,6 @@ namespace Scv.Models.Criminal.Detail;
 public class CriminalBan : CfcBan
 {
     public string PartId { get; set; }
+    public string BanStatuteDesc { get; set; }
 }
 

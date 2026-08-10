@@ -17,4 +17,6 @@ public class OrderViewDto : BaseDto
     public string CourtListType { get; set; }
     public string CourtListTypeDescription => CourtListTypeDescriptor.Describe(CourtListType);
     public string ReferralNotes { get; set; }
+    public List<PackageDocumentDto> PackageDocuments { get; set; } = [];
+    public List<RelevantCeisDocumentDto> RelevantCeisDocuments { get; set; } = [];
 }

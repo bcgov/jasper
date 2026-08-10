@@ -429,7 +429,7 @@ export default {
     orderId: string,
     title: string,
     documentData: DocumentData[],
-    isShowingSupportingDocs: boolean = false
+    params: Record<string, string | string[] | undefined> = {}
   ): void {
     if (!documentData || documentData.length === 0) {
       return;
@@ -449,7 +449,7 @@ export default {
     const newWindow = window.open(
       this.buildFileViewerUrl('order', sessionId, {
         id: orderId,
-        isShowingSupportingDocs: isShowingSupportingDocs ? 'true' : 'false',
+        ...params,
       }),
       '_blank'
     );

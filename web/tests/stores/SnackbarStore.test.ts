@@ -1,12 +1,12 @@
-import { setActivePinia, createPinia } from 'pinia'
 import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('SnackBarStore', () => {
   let store: ReturnType<typeof useSnackbarStore>;
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createPinia());
     store = useSnackbarStore();
   });
 
@@ -16,6 +16,8 @@ describe('SnackBarStore', () => {
     expect(store.color).toBe('success');
     expect(store.title).toBe('');
     expect(store.timeout).toBe(undefined);
+    expect(store.actionLabel).toBe('');
+    expect(store.actionHandler).toBeNull();
   });
 
   it('shows snackbar with given arguments', () => {
@@ -34,5 +36,32 @@ describe('SnackBarStore', () => {
     expect(store.color).toBe('success');
     expect(store.title).toBe('');
     expect(store.timeout).toBe(15000);
+    expect(store.actionLabel).toBe('');
+    expect(store.actionHandler).toBeNull();
+  });
+
+  it('stores snackbar action when provided', () => {
+    const onClick = () => undefined;
+
+    store.showSnackbar('Message', 'info', 'Title', 5000, {
+      label: 'View package',
+      onClick,
+    });
+
+    expect(store.actionLabel).toBe('View package');
+    expect(store.actionHandler).toBe(onClick);
+  });
+
+  it('clears snackbar action when hidden', () => {
+    store.showSnackbar('Message', 'info', 'Title', 5000, {
+      label: 'View package',
+      onClick: () => undefined,
+    });
+
+    store.hideSnackbar();
+
+    expect(store.isVisible).toBe(false);
+    expect(store.actionLabel).toBe('');
+    expect(store.actionHandler).toBeNull();
   });
 });

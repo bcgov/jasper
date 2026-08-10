@@ -1,5 +1,5 @@
 import { OrderService } from '@/services';
-import { useCommonStore, useOrdersStore, useSnackbarStore } from '@/stores';
+import { useCommonStore, useSnackbarStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
 import { Order, OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
@@ -14,11 +14,10 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
   private readonly snackBarStore = useSnackbarStore();
   private readonly commonStore = useCommonStore();
-  private readonly ordersStore = useOrdersStore();
   private readonly orderService: OrderService;
-  private readonly currentOrder: Order | undefined;
-  private readonly isShowingSupportingDocuments: boolean;
-  private readonly hasSupportingDocuments: boolean = false;
+  private readonly orderId: string | null;
+  private readonly isShowingSupportingDocuments: boolean = false;
+  private currentOrder: Order | null = null;
 
   constructor() {
     super();
@@ -35,22 +34,13 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       this.commonStore.loggedInUserInfo?.judgeId;
 
     const urlParams = new URLSearchParams(globalThis.location.search);
-    const orderId = urlParams.get('id');
+    this.orderId = urlParams.get('id');
+    if (!this.orderId) {
+      throw new Error('Order ID is not defined in the URL parameters.');
+    }
+
     this.isShowingSupportingDocuments =
       urlParams.get('isShowingSupportingDocs') === 'true';
-
-    this.currentOrder = this.ordersStore.orders.find((o) => o.id === orderId);
-    if (!this.currentOrder) {
-      console.error(`Order with ID ${orderId} not found.`);
-      return;
-    }
-    this.hasSupportingDocuments =
-      [
-        ...(this.currentOrder.packageDocuments ?? []).filter(
-          (pd) => !pd.referredDocument
-        ),
-        ...(this.currentOrder.relevantCeisDocuments ?? []),
-      ].length > 0;
   }
 
   protected override getOutlineDocumentTitle(document: StoreDocument): string {
@@ -58,32 +48,31 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   }
 
   async reviewOrder(review: OrderReview): Promise<void> {
-    if (!this.currentOrder) {
-      console.warn('No current order found. Cannot review order.');
-      return;
+    if (!this.orderId) {
+      throw new Error(`Order ID is not defined.`);
     }
 
-    await this.orderService.review(this.currentOrder!.id, review);
+    await this.orderService.review(this.orderId, review);
 
     switch (review.status) {
       case OrderReviewStatus.Approved:
         this.snackBarStore.showSnackbar(
           'The order has been approved.',
-          'rgb(46, 139, 43)',
+          'success',
           '✅ Approved!'
         );
         break;
       case OrderReviewStatus.Unapproved:
         this.snackBarStore.showSnackbar(
           'The order has been rejected.',
-          'rgb(46, 139, 43)',
+          'success',
           '📋 Rejected'
         );
         break;
       case OrderReviewStatus.AwaitingDocumentation:
         this.snackBarStore.showSnackbar(
           'The order review is awaiting documentation.',
-          'rgb(46, 139, 43)',
+          'success',
           '⏳ Pending'
         );
         break;
@@ -122,7 +111,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   }
 
   additionalToolbarItems(): ToolbarItem[] {
-    if (!this.hasSupportingDocuments) {
+    if (!this.currentOrder?.hasSupportingDocs) {
       return [];
     }
 
@@ -135,5 +124,14 @@ export class OrderPDFStrategy extends FilePDFStrategy {
         onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
       },
     ];
+  }
+
+  async initialize(): Promise<void> {
+    const order = await this.orderService.getOrder(this.orderId!);
+    if (!order) {
+      throw new Error(`Order with ID ${this.orderId} not found.`);
+    }
+
+    this.currentOrder = order;
   }
 }

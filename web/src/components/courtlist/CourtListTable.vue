@@ -269,7 +269,7 @@
       title: 'COUNSEL',
       key: 'counselNames',
       value: (item: CourtListAppearance) =>
-        renderCounselNames(item.counselNames ?? []),
+        renderCounselNames(item.counselNames),
     },
     { title: 'CROWN', key: 'crown' },
     {

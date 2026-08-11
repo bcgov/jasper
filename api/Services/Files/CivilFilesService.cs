@@ -199,9 +199,8 @@ namespace Scv.Api.Services.Files
             var fileDetailTask = _cache.GetOrAddAsync($"CivilFileDetail-{fileId}-{_requestAgencyIdentifierId}", FileDetails);
             var fileContentTask = _cache.GetOrAddAsync($"CivilFileContent-{fileId}-{_requestAgencyIdentifierId}", FileContent);
             var appearancesTask = _cache.GetOrAddAsync($"CivilAppearancesFull-{fileId}-{_requestAgencyIdentifierId}", Appearances);
-            var pcssFileDetailTask = GetPcssCivilFileDetailAsync(fileId);
 
-            await Task.WhenAll(appearancesTask, fileContentTask, fileDetailTask, pcssFileDetailTask);
+            await Task.WhenAll(appearancesTask, fileContentTask, fileDetailTask);
 
             ValidUserHelper.CheckIfValidUser(fileDetailTask.Result.ResponseMessageTxt);
             if (fileDetailTask.Result?.PhysicalFileId == null)
@@ -245,7 +244,7 @@ namespace Scv.Api.Services.Files
             }
 
             var fileContentCivilFile = fileContentTask.Result?.CivilFile?.First(cf => cf.PhysicalFileID == fileId);
-            var partyTask = PopulateDetailParties(detail.Party, courtListParties, pcssFileDetailTask.Result);
+            var partyTask = PopulateDetailParties(detail.PhysicalFileId, detail.Party, courtListParties);
             var documentTask = PopulateDetailDocuments(detail.Document, detail, fileContentCivilFile, isVcUser, isStaff);
             var hearingRestrictionTask = PopulateDetailHearingRestrictions(fileDetailTask.Result.HearingRestriction);
 
@@ -532,14 +531,19 @@ namespace Scv.Api.Services.Files
         }
 
         private async Task<ICollection<CivilParty>> PopulateDetailParties(
+            string fileId,
             ICollection<CivilParty> parties,
-            ICollection<ClParty> courtListParties,
-            PCSSCommon.Models.CivilFileDetail pcssCivilFileDetail)
+            ICollection<ClParty> courtListParties)
         {
+            var pcssFileDetail = await GetPcssCivilFileDetailAsync(fileId);
+
             //Populate extra fields for party.
             foreach (var party in parties)
             {
-                party.Counsel = PopulatePartyCounsel(party, pcssCivilFileDetail);
+                if (pcssFileDetail != null)
+                {
+                    party.Counsel = PopulatePartyCounsel(party, pcssFileDetail);
+                }
 
                 var courtListParty = courtListParties.FirstOrDefault(clp => clp.PartyId == party.PartyId);
                 if (courtListParty != null)
@@ -626,7 +630,10 @@ namespace Scv.Api.Services.Files
 
             if (pcssParty.CeisCounsel is { } ceisCounsel)
             {
-                return [.. ceisCounsel.Where(c => c != null).Select(c => new CvfcCounsel { FullNm = $"CEIS: {c.FullNm}" })];
+                return [.. ceisCounsel
+                    .Where(c => c != null
+                        && !string.IsNullOrWhiteSpace(c.FullNm))
+                    .Select(c => new CvfcCounsel { FullNm = $"CEIS: {c.FullNm}" })];
             }
 
             return [];
@@ -634,12 +641,12 @@ namespace Scv.Api.Services.Files
 
         private async Task<PCSSCommon.Models.CivilFileDetail> GetPcssCivilFileDetailAsync(string fileId)
         {
-            if (!double.TryParse(fileId, out double physicalFileid))
+            if (!double.TryParse(fileId, out double physicalFileId))
             {
                 return null;
             }
-            async Task<PCSSCommon.Models.CivilFileDetail> PcssCivilFileDetailAsync() => await _pcssFileDetailClient.GetCivilFileDetailAsync(physicalFileid);
-            return await _cache.GetOrAddAsync($"{nameof(PcssCivilFileDetailAsync)}-{physicalFileid}", PcssCivilFileDetailAsync);
+            async Task<PCSSCommon.Models.CivilFileDetail> PcssCivilFileDetailAsync() => await _pcssFileDetailClient.GetCivilFileDetailAsync(physicalFileId);
+            return await _cache.GetOrAddAsync($"{nameof(PcssCivilFileDetailAsync)}-{physicalFileId}", PcssCivilFileDetailAsync);
         }
 
         #endregion Civil Details

@@ -429,10 +429,10 @@ namespace Scv.Api.Services.Files
                 return;
             }
 
-            participant.CounselGivenNm = string.Empty;
             if (CounselNameDescriptor.IsSelfRepresented(pcssParticipant.SelfRepresentedYn))
             {
                 participant.CounselLastNm = CounselNameDescriptor.SELF_REPRESENTED;
+                participant.CounselGivenNm = string.Empty;
             }
             else if (pcssParticipant.Counsel is { } counsel)
             {

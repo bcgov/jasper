@@ -442,7 +442,8 @@ public class UsersControllerTests
         file.Setup(f => f.FileName).Returns(fileName);
         file.Setup(f => f.ContentType).Returns(contentType);
         file.Setup(f => f.Length).Returns(length);
-        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream(new byte[checked((int)length)]));
+        file.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .Returns<Stream, CancellationToken>((stream, _) => stream.WriteAsync(new byte[checked((int)length)], 0, checked((int)length)));
         return file.Object;
     }
 
@@ -464,7 +465,7 @@ public class UsersControllerTests
             .ReturnsAsync((true, "OK"));
 
         _mockUserService
-            .Setup(s => s.UploadSignatureAsync(userId, It.IsAny<IFormFile>()))
+            .Setup(s => s.UploadSignatureAsync(userId, It.IsAny<byte[]>()))
             .ReturnsAsync(OperationResult.Success());
 
         // Act
@@ -473,7 +474,7 @@ public class UsersControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(userId, request.File), Times.Once);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(userId, It.IsAny<byte[]>()), Times.Once);
     }
 
     [Fact]
@@ -500,7 +501,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
@@ -525,7 +526,7 @@ public class UsersControllerTests
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("The uploaded file failed the antivirus scan.", badRequest.Value);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
@@ -543,7 +544,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file was uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
@@ -564,7 +565,7 @@ public class UsersControllerTests
             .ReturnsAsync((true, "OK"));
 
         _mockUserService
-            .Setup(s => s.UploadInitialsAsync(userId, It.IsAny<IFormFile>()))
+            .Setup(s => s.UploadInitialsAsync(userId, It.IsAny<byte[]>()))
             .ReturnsAsync(OperationResult.Success());
 
         // Act
@@ -573,7 +574,7 @@ public class UsersControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(userId, request.File), Times.Once);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(userId, It.IsAny<byte[]>()), Times.Once);
     }
 
     [Fact]
@@ -600,7 +601,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
@@ -618,7 +619,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file was uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
@@ -643,6 +644,6 @@ public class UsersControllerTests
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("The uploaded file failed the antivirus scan.", badRequest.Value);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<IFormFile>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 }

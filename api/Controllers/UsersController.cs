@@ -1,12 +1,13 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Infrastructure.Validation;
 using Scv.Api.Models;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
@@ -89,8 +90,8 @@ public class UsersController(
         var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request?.Version, DateTime.UtcNow);
         if (!result.Succeeded)
         {
-            var error = result.Errors.FirstOrDefault();
-            if (string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
+            var error = result.Errors.Count > 0 ? result.Errors[0] : null;
+            if (!string.IsNullOrEmpty(error) && string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
             {
                 return NotFound(error);
             }
@@ -153,7 +154,7 @@ public class UsersController(
     [HttpPost]
     [Route("{id}/signature")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public Task<IActionResult> UploadSignature(string id, [FromForm] FileUploadRequest request)
+    public Task<IActionResult> UploadSignature([FromRoute, ObjectId] string id, [FromForm] FileUploadRequest request)
         => UploadImageAsync(request, file => base.Service.UploadSignatureAsync(id, file));
 
     /// <summary>
@@ -165,12 +166,12 @@ public class UsersController(
     [HttpPost]
     [Route("{id}/initials")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public Task<IActionResult> UploadInitials(string id, [FromForm] FileUploadRequest request)
+    public Task<IActionResult> UploadInitials([FromRoute, ObjectId] string id, [FromForm] FileUploadRequest request)
         => UploadImageAsync(request, file => base.Service.UploadInitialsAsync(id, file));
 
     private async Task<IActionResult> UploadImageAsync(
         FileUploadRequest request,
-        Func<IFormFile, Task<OperationResult>> uploadAsync)
+        Func<byte[], Task<OperationResult>> uploadAsync)
     {
         if (request == null)
         {
@@ -184,17 +185,26 @@ public class UsersController(
         }
 
         var file = request.File;
-        await using var stream = file.OpenReadStream();
-        var (isClean, message) = await _antiVirusService.ScanAsync(stream);
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+
+        memoryStream.Position = 0;
+        var (isClean, message) = await _antiVirusService.ScanAsync(memoryStream);
         if (!isClean)
         {
             _logger.LogWarning("The uploaded file failed the antivirus scan: {Message}", message);
             return BadRequest("The uploaded file failed the antivirus scan.");
         }
 
-        var result = await uploadAsync(file);
+        var result = await uploadAsync(memoryStream.ToArray());
         if (!result.Succeeded)
         {
+            var error = result.Errors.Count > 0 ? result.Errors[0] : null;
+            if (!string.IsNullOrEmpty(error) && string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(error);
+            }
+
             return BadRequest(result.Errors);
         }
 

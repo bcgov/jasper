@@ -1083,16 +1083,6 @@ public class UserServiceTests : ServiceTestBase
         Assert.Single(result.RoleIds);
     }
 
-    private static IFormFile CreateFormFile(byte[] content = null)
-    {
-        content ??= [1, 2, 3, 4];
-        var file = new Mock<IFormFile>();
-        file.Setup(f => f.Length).Returns(content.Length);
-        file.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns<Stream, CancellationToken>((stream, _) => stream.WriteAsync(content, 0, content.Length));
-        return file.Object;
-    }
-
     [Fact]
     public async Task UploadSignatureAsync_ShouldReturnSuccess_AndSetSignature()
     {
@@ -1108,7 +1098,7 @@ public class UserServiceTests : ServiceTestBase
         _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
         _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
-        var result = await _userService.UploadSignatureAsync(fakeId, CreateFormFile(content));
+        var result = await _userService.UploadSignatureAsync(fakeId, content);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -1124,7 +1114,7 @@ public class UserServiceTests : ServiceTestBase
 
         _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((User)null);
 
-        var result = await _userService.UploadSignatureAsync(fakeId, CreateFormFile());
+        var result = await _userService.UploadSignatureAsync(fakeId, [1, 2, 3, 4]);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
@@ -1148,7 +1138,7 @@ public class UserServiceTests : ServiceTestBase
         _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
         _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).ThrowsAsync(new InvalidOperationException());
 
-        var result = await _userService.UploadSignatureAsync(fakeId, CreateFormFile());
+        var result = await _userService.UploadSignatureAsync(fakeId, [1, 2, 3, 4]);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
@@ -1172,7 +1162,7 @@ public class UserServiceTests : ServiceTestBase
         _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
         _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
-        var result = await _userService.UploadInitialsAsync(fakeId, CreateFormFile(content));
+        var result = await _userService.UploadInitialsAsync(fakeId, content);
 
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
@@ -1188,7 +1178,7 @@ public class UserServiceTests : ServiceTestBase
 
         _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((User)null);
 
-        var result = await _userService.UploadInitialsAsync(fakeId, CreateFormFile());
+        var result = await _userService.UploadInitialsAsync(fakeId, [1, 2, 3, 4]);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
@@ -1212,7 +1202,7 @@ public class UserServiceTests : ServiceTestBase
         _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
         _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).ThrowsAsync(new InvalidOperationException());
 
-        var result = await _userService.UploadInitialsAsync(fakeId, CreateFormFile());
+        var result = await _userService.UploadInitialsAsync(fakeId, [1, 2, 3, 4]);
 
         Assert.NotNull(result);
         Assert.False(result.Succeeded);

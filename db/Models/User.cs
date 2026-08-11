@@ -52,11 +52,11 @@ namespace Scv.Db.Models
         /// <summary>
         /// Signature image stored as raw bytes.
         /// </summary>
-        public byte[] Signature { get; set; }
+        public byte[]? Signature { get; set; }
 
         /// <summary>
         /// Initials image stored as raw bytes.
         /// </summary>
-        public byte[] Initials { get; set; }
+        public byte[]? Initials { get; set; }
     }
 }

@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
@@ -318,17 +316,28 @@ public class UserService(
         return true;
     }
 
-    public async Task<OperationResult> UploadSignatureAsync(string userId, IFormFile file)
+    public Task<OperationResult> UploadSignatureAsync(string userId, byte[] signature) =>
+        UploadUserImageAsync(userId, signature, (user, image) => user.Signature = image, "signature");
+
+    public Task<OperationResult> UploadInitialsAsync(string userId, byte[] initials) =>
+        UploadUserImageAsync(userId, initials, (user, image) => user.Initials = image, "initials");
+
+    private async Task<OperationResult> UploadUserImageAsync(
+        string userId,
+        byte[] image,
+        Action<User, byte[]> assignImage,
+        string imageType)
     {
         var user = await this.Repo.GetByIdAsync(userId);
         if (user == null)
         {
+            this.Logger.LogWarning("User with id: {UserId} is not found", userId);
             return OperationResult.Failure("User not found.");
         }
 
         try
         {
-            user.Signature = await ConvertToBytesAsync(file);
+            assignImage(user, image);
 
             await this.Repo.UpdateAsync(user);
             InvalidateCache(CacheName);
@@ -337,39 +346,8 @@ public class UserService(
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error uploading signature: {Message}", ex.Message);
-            return OperationResult.Failure("Error uploading signature.");
+            this.Logger.LogError(ex, "Error uploading {ImageType}: {Message}", imageType, ex.Message);
+            return OperationResult.Failure($"Error uploading {imageType}.");
         }
-    }
-
-    public async Task<OperationResult> UploadInitialsAsync(string userId, IFormFile file)
-    {
-        var user = await this.Repo.GetByIdAsync(userId);
-        if (user == null)
-        {
-            return OperationResult.Failure("User not found.");
-        }
-
-        try
-        {
-            user.Initials = await ConvertToBytesAsync(file);
-
-            await this.Repo.UpdateAsync(user);
-            InvalidateCache(CacheName);
-
-            return OperationResult.Success();
-        }
-        catch (Exception ex)
-        {
-            this.Logger.LogError(ex, "Error uploading initials: {Message}", ex.Message);
-            return OperationResult.Failure("Error uploading initials.");
-        }
-    }
-
-    private static async Task<byte[]> ConvertToBytesAsync(IFormFile file)
-    {
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-        return memoryStream.ToArray();
     }
 }

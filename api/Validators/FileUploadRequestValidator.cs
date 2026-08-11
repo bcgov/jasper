@@ -31,7 +31,31 @@ public class FileUploadRequestValidator : AbstractValidator<FileUploadRequest>
         }
 
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        return AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant())
-            && AllowedExtensions.Contains(extension);
+        if (!AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant())
+            || !AllowedExtensions.Contains(extension))
+        {
+            return false;
+        }
+
+        // Verify the actual file bytes so a renamed non-image cannot pass the extension/content-type checks.
+        using var stream = file.OpenReadStream();
+        Span<byte> header = stackalloc byte[8];
+        try
+        {
+            stream.ReadExactly(header);
+        }
+        catch (EndOfStreamException)
+        {
+            return false;
+        }
+
+        return IsPng(header) || IsJpeg(header);
     }
+
+    private static bool IsPng(ReadOnlySpan<byte> header) =>
+        header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47 &&
+        header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A;
+
+    private static bool IsJpeg(ReadOnlySpan<byte> header) =>
+        header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
 }

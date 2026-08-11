@@ -14,7 +14,7 @@ import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import { ToolbarItem } from '@nutrient-sdk/viewer';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-import { inject } from 'vue';
+import { inject, nextTick, reactive } from 'vue';
 
 vi.mock('@/stores', () => ({
   usePDFViewerStore: vi.fn(),
@@ -303,6 +303,24 @@ describe('OrderPDFStrategy', () => {
     expect(mockPDFViewerStore.clearPdfItems).toHaveBeenCalled();
   });
 
+  it('cleanup stops watching for judge ID changes', async () => {
+    const commonStore = reactive({
+      userInfo: { judgeId: 11 },
+      loggedInUserInfo: { judgeId: 11 },
+    });
+    mockedUseCommonStore.mockReturnValueOnce(commonStore);
+    mockOrderService.getOrder.mockResolvedValue(createMockOrder('123'));
+
+    const strategy = new OrderPDFStrategy();
+    strategy.cleanup();
+
+    commonStore.userInfo.judgeId = 99;
+    await nextTick();
+    await strategy.initialize();
+
+    expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
+  });
+
   it('showOrderReviewOptions is true when judge IDs match', () => {
     const strategy = new OrderPDFStrategy();
 
@@ -408,8 +426,24 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       await strategy.initialize();
 
-      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123');
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
       expect(strategy.additionalToolbarItems()).toHaveLength(1);
+    });
+
+    it('passes the updated judge ID to getOrder after the judge changes', async () => {
+      const commonStore = reactive({
+        userInfo: { judgeId: 11 },
+        loggedInUserInfo: { judgeId: 11 },
+      });
+      mockedUseCommonStore.mockReturnValueOnce(commonStore);
+      mockOrderService.getOrder.mockResolvedValue(createMockOrder('123'));
+
+      const strategy = new OrderPDFStrategy();
+      commonStore.userInfo.judgeId = 42;
+      await nextTick();
+      await strategy.initialize();
+
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 42);
     });
 
     it('throws when the order cannot be found', async () => {
@@ -475,7 +509,7 @@ describe('OrderPDFStrategy', () => {
 
       await (button as unknown as { onPress: () => Promise<void> }).onPress();
 
-      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123');
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
       expect(mockedViewOrderSupportingDocuments).toHaveBeenCalledWith(order);
     });
   });

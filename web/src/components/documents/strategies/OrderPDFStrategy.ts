@@ -6,7 +6,7 @@ import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import { mdiFileDocumentMultipleOutline } from '@mdi/js';
 import { ToolbarItem } from '@nutrient-sdk/viewer';
-import { inject } from 'vue';
+import { inject, watch, WatchStopHandle } from 'vue';
 import { FilePDFStrategy } from './FilePDFStrategy';
 
 export class OrderPDFStrategy extends FilePDFStrategy {
@@ -18,6 +18,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   private readonly orderId: string | null;
   private readonly isShowingSupportingDocuments: boolean = false;
   private currentOrder: Order | null = null;
+  private judgeId: number | null = null;
+  private readonly stopJudgeIdWatch: WatchStopHandle;
 
   constructor() {
     super();
@@ -32,6 +34,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     this.showOrderReviewOptions =
       this.commonStore.userInfo?.judgeId ===
       this.commonStore.loggedInUserInfo?.judgeId;
+    this.judgeId = this.commonStore.userInfo?.judgeId ?? null;
 
     const urlParams = new URLSearchParams(globalThis.location.search);
     this.orderId = urlParams.get('id');
@@ -41,6 +44,18 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
     this.isShowingSupportingDocuments =
       urlParams.get('isShowingSupportingDocs') === 'true';
+
+    this.stopJudgeIdWatch = watch(
+      () => this.commonStore.userInfo?.judgeId,
+      (newJudgeId) => {
+        this.judgeId = newJudgeId ?? null;
+      }
+    );
+  }
+
+  override cleanup(sessionId?: string): void {
+    this.stopJudgeIdWatch();
+    super.cleanup(sessionId);
   }
 
   protected override getOutlineDocumentTitle(document: StoreDocument): string {
@@ -127,11 +142,10 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   }
 
   async initialize(): Promise<void> {
-    const order = await this.orderService.getOrder(this.orderId!);
+    const order = await this.orderService.getOrder(this.orderId!, this.judgeId);
     if (!order) {
       throw new Error(`Order with ID ${this.orderId} not found.`);
     }
-
     this.currentOrder = order;
   }
 }

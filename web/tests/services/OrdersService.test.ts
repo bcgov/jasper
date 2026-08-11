@@ -1,6 +1,6 @@
 import { IHttpService } from '@/services/HttpService';
 import { OrderService } from '@/services/OrderService';
-import { Order } from '@/types';
+import { Order, OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
@@ -8,6 +8,7 @@ const mockHttpService = {
   get: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
+  patch: vi.fn(),
   delete: vi.fn(),
 } as unknown as IHttpService;
 
@@ -38,6 +39,11 @@ describe('OrderService', () => {
       styleOfCause: 'R v Smith',
       physicalFileId: 'file-001',
       status: OrderReviewStatus.Pending,
+      priorityType: '',
+      courtListType: '',
+      packageDocuments: [],
+      relevantCeisDocuments: [],
+      hasSupportingDocs: false,
     },
     {
       id: '2',
@@ -51,6 +57,11 @@ describe('OrderService', () => {
       styleOfCause: 'Jones v Brown',
       physicalFileId: 'file-002',
       status: OrderReviewStatus.Approved,
+      priorityType: '',
+      courtListType: '',
+      packageDocuments: [],
+      relevantCeisDocuments: [],
+      hasSupportingDocs: false,
     },
   ];
 
@@ -113,6 +124,86 @@ describe('OrderService', () => {
 
       expect(mockHttpService.get).toHaveBeenCalledWith('api/orders?judgeId=0');
       expect(result).toEqual(mockOrders);
+    });
+  });
+
+  describe('getOrder', () => {
+    it('should fetch a single order with judgeId when provided', async () => {
+      const order = mockOrders[0];
+      (mockHttpService.get as Mock).mockResolvedValueOnce(order);
+
+      const result = await service.getOrder('1', 123);
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'api/orders/1?judgeId=123'
+      );
+      expect(result).toEqual(order);
+    });
+
+    it('should fetch a single order with empty judgeId when null is provided', async () => {
+      const order = mockOrders[0];
+      (mockHttpService.get as Mock).mockResolvedValueOnce(order);
+
+      const result = await service.getOrder('1', null);
+
+      expect(mockHttpService.get).toHaveBeenCalledWith('api/orders/1?judgeId=');
+      expect(result).toEqual(order);
+    });
+
+    it('should fetch a single order with judgeId 0', async () => {
+      const order = mockOrders[0];
+      (mockHttpService.get as Mock).mockResolvedValueOnce(order);
+
+      const result = await service.getOrder('1', 0);
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'api/orders/1?judgeId=0'
+      );
+      expect(result).toEqual(order);
+    });
+
+    it('should handle API errors', async () => {
+      const error = new Error('API Error');
+      (mockHttpService.get as Mock).mockRejectedValueOnce(error);
+
+      await expect(service.getOrder('1', 123)).rejects.toThrow('API Error');
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'api/orders/1?judgeId=123'
+      );
+    });
+  });
+
+  describe('review', () => {
+    const mockReview: OrderReview = {
+      comments: 'Looks good',
+      signed: true,
+      status: OrderReviewStatus.Approved,
+      documentData: 'doc-data',
+      supportingDocumentData: 'supporting-doc-data',
+    };
+
+    it('should patch the order review for the given orderId', async () => {
+      (mockHttpService.patch as Mock).mockResolvedValueOnce(undefined);
+
+      await service.review('1', mockReview);
+
+      expect(mockHttpService.patch).toHaveBeenCalledWith(
+        'api/orders/1/review',
+        mockReview
+      );
+    });
+
+    it('should handle API errors', async () => {
+      const error = new Error('API Error');
+      (mockHttpService.patch as Mock).mockRejectedValueOnce(error);
+
+      await expect(service.review('1', mockReview)).rejects.toThrow(
+        'API Error'
+      );
+      expect(mockHttpService.patch).toHaveBeenCalledWith(
+        'api/orders/1/review',
+        mockReview
+      );
     });
   });
 });

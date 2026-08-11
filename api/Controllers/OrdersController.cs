@@ -42,13 +42,14 @@ public class OrdersController(
     /// Retrieves a specific order by its ID for the judge.
     /// </summary>
     /// <param name="id">The ID of the order.</param>
+    /// <param name="judgeId">The override judge id.</param>
     /// <returns>The order details.</returns>
     [HttpGet]
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("{id}")]
-    public async Task<IActionResult> GetOrder([FromRoute, ObjectId] string id)
+    public async Task<IActionResult> GetOrder([FromRoute, ObjectId] string id, int? judgeId = null)
     {
-        var judgeOrder = await _orderService.GetOrderByIdAsync(id, this.User.JudgeId());
+        var judgeOrder = await _orderService.GetOrderByIdAsync(id, this.User.JudgeId(judgeId));
         if (judgeOrder == null)
         {
             return NotFound("Order not found.");

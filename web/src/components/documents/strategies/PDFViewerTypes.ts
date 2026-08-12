@@ -14,8 +14,6 @@ export interface PDFViewerStrategy<
   TProcessedData = unknown,
   TApiResponse = unknown,
 > {
-  showOrderReviewOptions?: boolean;
-
   hasData(sessionId?: string): boolean;
 
   getRawData(sessionId?: string): TRawData;
@@ -43,7 +41,13 @@ export interface PDFViewerStrategy<
 
   reviewOrder?(orderReview: OrderReview): Promise<void>;
 
-  setToolbarItems?(items: ToolbarItem[]): ToolbarItem[];
+  // Annotation descriptions that must be present to approve; undefined means any image annotation qualifies.
+  getRequiredApprovalAnnotations?(): string[] | undefined;
+
+  setToolbarItems?(
+    items: ToolbarItem[],
+    context: PDFViewerToolbarContext
+  ): ToolbarItem[];
 
   cleanup(sessionId?: string): void;
 }
@@ -59,3 +63,14 @@ export type PDFViewerInformationContext = {
   physicalFileId: string;
   isCriminal: boolean;
 };
+
+export interface PDFViewerToolbarContext {
+  instance: any;
+  nutrientViewer: any;
+  rawData: unknown;
+  resolveInformationContext: (
+    rawData: unknown
+  ) => PDFViewerInformationContext | undefined;
+  openReviewModal: () => void;
+  updateCanApprove: () => Promise<void>;
+}

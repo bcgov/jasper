@@ -1,40 +1,58 @@
-import { OrderService } from '@/services';
+import { OrderService, UserService } from '@/services';
 import { useCommonStore, useSnackbarStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
 import { Order, OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
-import { mdiFileDocumentMultipleOutline } from '@mdi/js';
+import {
+  mdiFileDocumentArrowRightOutline,
+  mdiFileDocumentMultipleOutline,
+  mdiNotebookOutline,
+  mdiSignatureFreehand,
+  mdiSignatureText,
+} from '@mdi/js';
 import { ToolbarItem } from '@nutrient-sdk/viewer';
 import { inject, watch, WatchStopHandle } from 'vue';
 import { FilePDFStrategy } from './FilePDFStrategy';
+import { PDFViewerToolbarContext } from './PDFViewerTypes';
 
 export class OrderPDFStrategy extends FilePDFStrategy {
-  showOrderReviewOptions = true;
-
   private readonly snackBarStore = useSnackbarStore();
   private readonly commonStore = useCommonStore();
   private readonly orderService: OrderService;
+  private readonly userService: UserService;
   private readonly orderId: string | null;
   private readonly isShowingSupportingDocuments: boolean = false;
+  private readonly hasSignature: boolean = false;
+  private readonly hasInitials: boolean = false;
+  private readonly showOrderReviewOptions: boolean = false;
   private currentOrder: Order | null = null;
   private judgeId: number | null = null;
   private readonly stopJudgeIdWatch: WatchStopHandle;
+
+  private static readonly DEFAULT_IMAGE_WIDTH = 150;
+  private static readonly DEFAULT_IMAGE_HEIGHT = 60;
+  private static readonly SIGNATURE_DESCRIPTION = 'Signature';
+  private static readonly INITIALS_DESCRIPTION = 'Initials';
 
   constructor() {
     super();
 
     const orderService = inject<OrderService>('orderService');
+    const userService = inject<UserService>('userService');
 
-    if (!orderService) {
+    if (!orderService || !userService) {
       throw new Error('Service(s) is undefined.');
     }
 
     this.orderService = orderService;
+    this.userService = userService;
     this.showOrderReviewOptions =
       this.commonStore.userInfo?.judgeId ===
       this.commonStore.loggedInUserInfo?.judgeId;
     this.judgeId = this.commonStore.userInfo?.judgeId ?? null;
+    this.hasSignature = this.commonStore.userInfo?.hasSignature ?? false;
+    this.hasInitials = this.commonStore.userInfo?.hasInitials ?? false;
 
     const urlParams = new URLSearchParams(globalThis.location.search);
     this.orderId = urlParams.get('id');
@@ -60,6 +78,18 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
   protected override getOutlineDocumentTitle(document: StoreDocument): string {
     return document.documentName || 'Order';
+  }
+
+  // Retrieves the required "approval" annotations (signature and/or initials) based on its availability.
+  getRequiredApprovalAnnotations(): string[] | undefined {
+    const descriptions: string[] = [];
+    if (this.hasSignature) {
+      descriptions.push(OrderPDFStrategy.SIGNATURE_DESCRIPTION);
+    }
+    if (this.hasInitials) {
+      descriptions.push(OrderPDFStrategy.INITIALS_DESCRIPTION);
+    }
+    return descriptions.length > 0 ? descriptions : undefined;
   }
 
   async reviewOrder(review: OrderReview): Promise<void> {
@@ -94,8 +124,11 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     }
   }
 
-  setToolbarItems(items: ToolbarItem[]): ToolbarItem[] {
-    const allItems = [...items, ...this.additionalToolbarItems()];
+  setToolbarItems(
+    items: ToolbarItem[],
+    context: PDFViewerToolbarContext
+  ): ToolbarItem[] {
+    const allItems = [...items, ...this.addCustomToolbarItems(context)];
     const toRemove = new Set(['note', 'print', 'callout', 'image']);
     const toMove = new Set([
       'open-supporting-documents',
@@ -125,20 +158,85 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     return [...base.slice(0, insertAt), ...extras, ...base.slice(insertAt)];
   }
 
-  additionalToolbarItems(): ToolbarItem[] {
-    if (!this.currentOrder?.hasSupportingDocs) {
-      return [];
+  addCustomToolbarItems(context: PDFViewerToolbarContext): ToolbarItem[] {
+    const additionalToolbarItems: ToolbarItem[] = [];
+
+    // Current user is not the judge assigned to this order
+    // so don't show the order review options.
+    if (!this.showOrderReviewOptions) {
+      return additionalToolbarItems;
     }
 
-    return [
+    additionalToolbarItems.push(
       {
+        type: 'custom',
+        id: 'open-information',
+        title: 'Case details',
+        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
+        onPress: () => {
+          const informationContext = context.resolveInformationContext(
+            context.rawData
+          );
+
+          if (!informationContext) {
+            console.warn('Unable to resolve PDF viewer information context.');
+            return;
+          }
+
+          window.open(
+            `${
+              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
+            }${informationContext.physicalFileId}`,
+            'relatedCaseInfo'
+          );
+        },
+      },
+      {
+        type: 'custom',
+        id: 'open-document-review',
+        title: 'Submit',
+        icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
+        onPress: () => {
+          context.openReviewModal();
+        },
+      }
+    );
+
+    if (this.hasSignature) {
+      additionalToolbarItems.push(
+        this.createImageToolbarItem(context, {
+          id: 'add-signature',
+          title: 'Add Signature',
+          iconPath: mdiSignatureFreehand,
+          fetchImage: () => this.userService.getSignature(),
+          description: OrderPDFStrategy.SIGNATURE_DESCRIPTION,
+        })
+      );
+    }
+
+    if (this.hasInitials) {
+      additionalToolbarItems.push(
+        this.createImageToolbarItem(context, {
+          id: 'add-initials',
+          title: 'Add Initials',
+          iconPath: mdiSignatureText,
+          fetchImage: () => this.userService.getInitials(),
+          description: OrderPDFStrategy.INITIALS_DESCRIPTION,
+        })
+      );
+    }
+
+    if (this.currentOrder?.hasSupportingDocs) {
+      additionalToolbarItems.push({
         type: 'custom',
         id: 'open-supporting-documents',
         title: 'View Supporting Documents',
         icon: `<svg><path d="${mdiFileDocumentMultipleOutline}"/></svg>`,
         onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
-      },
-    ];
+      });
+    }
+
+    return additionalToolbarItems;
   }
 
   async initialize(): Promise<void> {
@@ -147,5 +245,67 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       throw new Error(`Order with ID ${this.orderId} not found.`);
     }
     this.currentOrder = order;
+  }
+
+  private createImageToolbarItem(
+    context: PDFViewerToolbarContext,
+    config: {
+      id: string;
+      title: string;
+      iconPath: string;
+      fetchImage: () => Promise<Blob>;
+      description: string;
+    }
+  ): ToolbarItem {
+    return {
+      type: 'custom',
+      id: config.id,
+      title: config.title,
+      icon: `<svg><path d="${config.iconPath}"/></svg>`,
+      onPress: () =>
+        this.addImageToPage(context, config.fetchImage, config.description),
+    };
+  }
+
+  private async addImageToPage(
+    context: PDFViewerToolbarContext,
+    fetchImage: () => Promise<Blob>,
+    description: string
+  ): Promise<void> {
+    try {
+      const { instance, nutrientViewer } = context;
+      const pageIndex = instance.viewState.currentPageIndex;
+
+      const blob = await fetchImage();
+      const attachmentId = await instance.createAttachment(blob);
+
+      const { width, height } = instance.pageInfoForIndex(pageIndex);
+      const imageWidth = OrderPDFStrategy.DEFAULT_IMAGE_WIDTH;
+      const imageHeight = OrderPDFStrategy.DEFAULT_IMAGE_HEIGHT;
+
+      const annotation = new nutrientViewer.Annotations.ImageAnnotation({
+        pageIndex,
+        contentType: blob.type,
+        imageAttachmentId: attachmentId,
+        description,
+        boundingBox: new nutrientViewer.Geometry.Rect({
+          left: (width - imageWidth) / 2,
+          top: (height - imageHeight) / 2,
+          width: imageWidth,
+          height: imageHeight,
+        }),
+      });
+
+      const result = await instance.create(annotation);
+
+      // Automatically select the newly added signature/initials
+      if (result && result.length > 0) {
+        instance.setSelectedAnnotations(
+          nutrientViewer.Immutable.List([result[0].id])
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to add ${description.toLowerCase()}:`, error);
+    }
   }
 }

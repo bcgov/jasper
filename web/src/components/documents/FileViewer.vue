@@ -21,10 +21,6 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-  import {
-    mdiFileDocumentArrowRightOutline,
-    mdiNotebookOutline,
-  } from '@mdi/js';
   import type { ToolbarItem } from '@nutrient-sdk/viewer';
   import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
   import { useRoute } from 'vue-router';
@@ -34,6 +30,7 @@
     EmbeddedOutlineAwarePDFViewerStrategy,
     OutlineItem,
     PDFViewerInformationContext,
+    PDFViewerToolbarContext,
   } from './strategies/PDFViewerTypes';
 
   // Props for the generic component
@@ -69,14 +66,26 @@
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
   };
 
-  async function hasImageAnnotation(pageIndex: number) {
+  async function hasImageAnnotation(
+    pageIndex: number,
+    requiredDescriptions: string[] | undefined
+  ) {
     const annotations = await instance.getAnnotations(pageIndex);
-    return annotations.filter((a) => a.contentType?.includes('image')).size > 0;
+    return (
+      annotations.filter(
+        (a) =>
+          a.contentType?.includes('image') &&
+          (!requiredDescriptions ||
+            requiredDescriptions.includes(a.description))
+      ).size > 0
+    );
   }
 
   async function checkDocumentForAnnotations() {
+    const requiredDescriptions =
+      props.strategy.getRequiredApprovalAnnotations?.();
     for (let i = 0; i < instance.totalPageCount; i++) {
-      if (await hasImageAnnotation(i)) return true;
+      if (await hasImageAnnotation(i, requiredDescriptions)) return true;
     }
     return false;
   }
@@ -109,38 +118,6 @@
 
       const base64Pdf = props.strategy.extractBase64PDF(apiResponse);
 
-      const openInfoItem: ToolbarItem = {
-        type: 'custom',
-        id: 'open-information',
-        title: 'Case details',
-        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
-        onPress: () => {
-          const informationContext = resolveInformationContext(rawData);
-
-          if (!informationContext) {
-            console.warn('Unable to resolve PDF viewer information context.');
-            return;
-          }
-
-          window.open(
-            `${
-              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
-            }${informationContext.physicalFileId}`,
-            'relatedCaseInfo'
-          );
-        },
-      };
-
-      const reviewItem: ToolbarItem = {
-        type: 'custom',
-        id: 'open-document-review',
-        title: 'Submit',
-        icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
-        onPress: () => {
-          showReviewModal.value = true;
-        },
-      };
-
       instance = await nutrientViewer.load({
         ...configuration,
         document: `data:application/pdf;base64,${base64Pdf}`,
@@ -170,17 +147,8 @@
           nutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
-      instance.setToolbarItems((items: ToolbarItem[]) => {
-        if (props.strategy.showOrderReviewOptions) {
-          items.push(openInfoItem, reviewItem);
-        }
 
-        if (props.strategy.setToolbarItems) {
-          items = props.strategy.setToolbarItems(items);
-        }
-
-        return items;
-      });
+      addCustomToolbarItems(rawData);
 
       // Listen for annotation changes to update canApprove
       instance.addEventListener('annotations.create', updateCanApprove);
@@ -393,6 +361,24 @@
       orderReview.documentData = arrayBufferToBase64(arrayBuffer);
     }
     await props.strategy.reviewOrder(orderReview);
+  };
+
+  const addCustomToolbarItems = (rawData: unknown) => {
+    const context: PDFViewerToolbarContext = {
+      instance,
+      nutrientViewer,
+      rawData,
+      resolveInformationContext,
+      openReviewModal: () => {
+        showReviewModal.value = true;
+      },
+      updateCanApprove,
+    };
+
+    instance.setToolbarItems(
+      (items: ToolbarItem[]) =>
+        props.strategy.setToolbarItems?.(items, context) ?? items
+    );
   };
 
   onMounted(() => {

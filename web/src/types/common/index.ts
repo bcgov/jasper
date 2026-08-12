@@ -104,6 +104,8 @@ export interface UserInfo {
   releaseNotes?: ReleaseNotesInfo | null;
   permissions?: string[];
   groups?: string[];
+  hasSignature: boolean;
+  hasInitials: boolean;
 }
 
 export interface LookupCode {

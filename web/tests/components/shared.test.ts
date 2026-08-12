@@ -1181,7 +1181,7 @@ describe('shared.openOrderDocuments', () => {
     ]);
   });
 
-  it('should open the file-viewer with order type and default isShowingSupportingDocs', () => {
+  it('should open the file-viewer with order type and no extra params by default', () => {
     const documentData: any[] = [
       {
         fileNumberText: 'FN001',
@@ -1193,12 +1193,12 @@ describe('shared.openOrderDocuments', () => {
     shared.openOrderDocuments('ORDER1', 'My Order', documentData);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isShowingSupportingDocs=false',
+      '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1',
       '_blank'
     );
   });
 
-  it('should set isShowingSupportingDocs to true in the URL when specified', () => {
+  it('should include the provided params in the URL', () => {
     const documentData: any[] = [
       {
         fileNumberText: 'FN001',
@@ -1207,7 +1207,9 @@ describe('shared.openOrderDocuments', () => {
       },
     ];
 
-    shared.openOrderDocuments('ORDER1', 'My Order', documentData, true);
+    shared.openOrderDocuments('ORDER1', 'My Order', documentData, {
+      isShowingSupportingDocs: 'true',
+    });
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
       '/file-viewer?type=order&sessionId=order-session-id&id=ORDER1&isShowingSupportingDocs=true',

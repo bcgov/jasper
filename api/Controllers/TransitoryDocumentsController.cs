@@ -46,6 +46,7 @@ namespace Scv.Api.Controllers
         /// <param name="locationId">The location's unique agencyId</param>
         /// <param name="roomCd">The room code within the location</param>
         /// <param name="date">The date of the activity</param>
+        /// <param name="forceRefresh">Whether to refresh this search's cached result</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>List of document metadata found at the location specified by these parameters</returns>
         [HttpGet]
@@ -54,6 +55,7 @@ namespace Scv.Api.Controllers
             [FromQuery] string locationId,
             [FromQuery] string roomCd,
             DateOnly date,
+            [FromQuery] bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
             var sanitizedLocationId = StringSanitizer.Sanitize(locationId);
@@ -86,7 +88,8 @@ namespace Scv.Api.Controllers
                 request.LocationId,
                 request.RoomCd,
                 request.Date.ToString("yyyy-MM-dd"),
-                cancellationToken);
+                cancellationToken,
+                forceRefresh);
 
             logger.LogInformation(
                 "Found {Count} transitory document(s) - LocationId: {LocationId}, RoomCd: {RoomCd}, Date: {Date}",

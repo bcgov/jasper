@@ -10,13 +10,20 @@ export const viewOrderDetails = (order: Order): void => {
       pd.referredDocument &&
       pd.documentId?.toString() === order.packageDocumentId.toString()
   );
-  shared.openOrderDocuments(order.id, order.courtFileNumber, [
+  shared.openOrderDocuments(
+    order.id,
+    order.courtFileNumber,
+    [
+      {
+        ...documentData,
+        documentId: order.packageDocumentId,
+        documentDescription: referredDocument?.documentTypeDesc,
+      },
+    ],
     {
-      ...documentData,
-      documentId: order.packageDocumentId,
-      documentDescription: referredDocument?.documentTypeDesc,
-    },
-  ]);
+      isShowingSupportingDocs: 'false',
+    }
+  );
 };
 
 export const viewOrderSupportingDocuments = (order: Order): void => {
@@ -44,7 +51,9 @@ export const viewOrderSupportingDocuments = (order: Order): void => {
     order.id,
     `${order.courtFileNumber} - Supporting Documents`,
     supportingDocumentsData,
-    true
+    {
+      isShowingSupportingDocs: 'true',
+    }
   );
 };
 

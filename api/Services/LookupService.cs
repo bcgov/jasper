@@ -307,6 +307,12 @@ namespace Scv.Api.Services
                     : null;
         }
 
+        public virtual async Task<CodeLookup> GetCriminalBanStatutesAsync()
+        {
+            return await GetDataFromCache(nameof(GetCriminalBanStatutesAsync),
+                () => _lookupClient.CodesCriminalBanstatutesGetAsync());
+        }
+
         #endregion Lookup Methods
 
         #region Helpers

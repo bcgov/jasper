@@ -1269,6 +1269,60 @@ public class OrderServiceTests : ServiceTestBase
 
     #endregion
 
+    #region GetOrderById Tests
+
+    [Fact]
+    public async Task GetOrderById_ReturnsNull_WhenOrderDoesNotExist()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 100);
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync((Order)null);
+
+        var result = await _orderService.GetOrderByIdAsync(orderId, judgeId);
+
+        Assert.Null(result);
+        _mockOrderRepo.Verify(r => r.GetByIdAsync(orderId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOrderById_ReturnsNull_WhenJudgeIdDoesNotMatch()
+    {
+        var order = CreateOrder();
+        order.JudgeId = _faker.Random.Int(1, 100);
+        var differentJudgeId = order.JudgeId + 1;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(order.Id))
+            .ReturnsAsync(order);
+
+        var result = await _orderService.GetOrderByIdAsync(order.Id, differentJudgeId);
+
+        Assert.Null(result);
+        _mockOrderRepo.Verify(r => r.GetByIdAsync(order.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOrderById_ReturnsMappedOrder_WhenOrderExistsAndJudgeIdMatches()
+    {
+        var order = CreateOrder();
+        var judgeId = order.JudgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(order.Id))
+            .ReturnsAsync(order);
+
+        var result = await _orderService.GetOrderByIdAsync(order.Id, judgeId);
+
+        Assert.NotNull(result);
+        Assert.Equal(order.Id, result.Id);
+        _mockOrderRepo.Verify(r => r.GetByIdAsync(order.Id), Times.Once);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private OrderRequestDto CreateValidOrderRequestDto()

@@ -92,11 +92,12 @@ namespace Scv.Api.Controllers
                 forceRefresh);
 
             logger.LogInformation(
-                "Found {Count} transitory document(s) - LocationId: {LocationId}, RoomCd: {RoomCd}, Date: {Date}",
-                result?.Count() ?? 0,
+                "Found {Count} transitory document(s) - LocationId: {LocationId}, RoomCd: {RoomCd}, Date: {Date}, IsCached: {IsCached}",
+                result.Documents.Count,
                 sanitizedLocationId,
                 sanitizedRoomCd,
-                date);
+                date,
+                result.IsCached);
 
             return Ok(result);
         }
@@ -198,11 +199,12 @@ namespace Scv.Api.Controllers
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
             }
 
-            var searchResults = (await transitoryDocumentsService.ListSharedDocuments(
+            var searchResponse = await transitoryDocumentsService.ListSharedDocuments(
                 request?.LocationId,
                 request?.RoomCd,
                 request?.Date.ToString("yyyy-MM-dd"),
-                cancellationToken))?.ToList() ?? [];
+                cancellationToken);
+            var searchResults = searchResponse.Documents.ToList();
 
             logger.LogInformation(
                 "Transitory merge reconciliation - RequestedFileCount: {RequestedFileCount}, SearchResultCount: {SearchResultCount}, LocationId: {LocationId}, RoomCd: {RoomCd}, Date: {Date}",

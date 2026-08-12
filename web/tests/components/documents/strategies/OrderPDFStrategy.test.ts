@@ -150,35 +150,47 @@ const setLocationSearch = (search: string) => {
 
 const createMockContext = (
   overrides: Partial<PDFViewerToolbarContext> = {}
-): PDFViewerToolbarContext => ({
-  instance: {
-    viewState: { currentPageIndex: 0 },
-    createAttachment: vi.fn().mockResolvedValue('attachment-id'),
-    pageInfoForIndex: vi.fn().mockReturnValue({ width: 600, height: 800 }),
-    create: vi.fn().mockResolvedValue([{ id: 'annotation-id' }]),
-    setSelectedAnnotations: vi.fn(),
-  },
-  nutrientViewer: {
-    Annotations: {
-      ImageAnnotation: vi.fn().mockImplementation(function (config) {
-        return { ...config };
-      }),
+): PDFViewerToolbarContext => {
+  const ImageAnnotation = vi.fn().mockImplementation(function (
+    this: Record<string, unknown>,
+    config: Record<string, unknown>
+  ) {
+    Object.assign(this, config);
+  });
+  const createdAnnotation = new (
+    ImageAnnotation as unknown as {
+      new (config: Record<string, unknown>): { id: string };
+    }
+  )({ id: 'annotation-id' });
+
+  return {
+    instance: {
+      viewState: { currentPageIndex: 0 },
+      createAttachment: vi.fn().mockResolvedValue('attachment-id'),
+      pageInfoForIndex: vi.fn().mockReturnValue({ width: 600, height: 800 }),
+      create: vi.fn().mockResolvedValue([createdAnnotation]),
+      setSelectedAnnotations: vi.fn(),
     },
-    Geometry: {
-      Rect: vi.fn().mockImplementation(function (config) {
-        return { ...config };
-      }),
+    nutrientViewer: {
+      Annotations: {
+        ImageAnnotation,
+      },
+      Geometry: {
+        Rect: vi.fn().mockImplementation(function (config) {
+          return { ...config };
+        }),
+      },
+      Immutable: {
+        List: vi.fn().mockImplementation((arr) => arr),
+      },
     },
-    Immutable: {
-      List: vi.fn().mockImplementation((arr) => arr),
-    },
-  },
-  rawData: mockStoreDocuments,
-  resolveInformationContext: vi.fn(),
-  openReviewModal: vi.fn(),
-  updateCanApprove: vi.fn().mockResolvedValue(undefined),
-  ...overrides,
-});
+    rawData: mockStoreDocuments,
+    resolveInformationContext: vi.fn(),
+    openReviewModal: vi.fn(),
+    updateCanApprove: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  } as unknown as PDFViewerToolbarContext;
+};
 
 const createOrderPDFStrategyForAnotherJudge = (): OrderPDFStrategy => {
   mockedUseCommonStore.mockReturnValueOnce({

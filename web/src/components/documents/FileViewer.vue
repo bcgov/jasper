@@ -21,7 +21,8 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-  import type { ToolbarItem } from '@nutrient-sdk/viewer';
+  import type NutrientViewer from '@nutrient-sdk/viewer';
+  import type { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
   import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
   import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
@@ -52,14 +53,17 @@
 
     return typeof value === 'string' && value.length > 0 ? value : undefined;
   });
-  const nutrientViewer = globalThis.NutrientViewer as any;
+  const nutrientViewer: typeof NutrientViewer = globalThis.NutrientViewer;
+  if (!nutrientViewer) {
+    throw new Error('Nutrient Web SDK is not loaded.');
+  }
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
     throw new Error('Service(s) is undefined.');
   }
 
-  let instance = {} as any;
+  let instance!: Instance;
 
   const configuration = {
     container: '.pdf-container',
@@ -72,12 +76,17 @@
   ) {
     const annotations = await instance.getAnnotations(pageIndex);
     return (
-      annotations.filter(
-        (a) =>
+      annotations.filter((a) => {
+        if (!(a instanceof nutrientViewer.Annotations.ImageAnnotation)) {
+          return false;
+        }
+        return (
           a.contentType?.includes('image') &&
           (!requiredDescriptions ||
-            requiredDescriptions.includes(a.description))
-      ).size > 0
+            (a.description !== null &&
+              requiredDescriptions.includes(a.description)))
+        );
+      }).size > 0
     );
   }
 
@@ -386,8 +395,8 @@
   });
 
   onUnmounted(() => {
-    if (nutrientViewer) {
-      nutrientViewer.unload('.pdf-container');
+    if (instance) {
+      nutrientViewer.unload(instance);
     }
     if (props.strategy.cleanup) {
       props.strategy.cleanup(sessionId.value);

@@ -129,6 +129,13 @@ describe('FileViewer.vue', () => {
       OutlineElement: class {
         constructor(public readonly config: unknown) {}
       },
+      Annotations: {
+        ImageAnnotation: class {
+          constructor(config: Record<string, unknown>) {
+            Object.assign(this, config);
+          }
+        },
+      },
       Immutable: {
         List: (items: unknown[]) => items,
       },
@@ -596,9 +603,11 @@ describe('FileViewer.vue', () => {
     mockInstance.totalPageCount = 1;
     mockInstance.getAnnotations.mockResolvedValue({
       filter: (predicate: (annotation: unknown) => boolean) => ({
-        size: [{ contentType: 'image/png', description: 'Signature' }].filter(
-          predicate
-        ).length,
+        size: [
+          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
+            { contentType: 'image/png', description: 'Signature' }
+          ),
+        ].filter(predicate).length,
       }),
     });
 
@@ -617,9 +626,11 @@ describe('FileViewer.vue', () => {
     mockInstance.totalPageCount = 1;
     mockInstance.getAnnotations.mockResolvedValue({
       filter: (predicate: (annotation: unknown) => boolean) => ({
-        size: [{ contentType: 'image/png', description: 'Initials' }].filter(
-          predicate
-        ).length,
+        size: [
+          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
+            { contentType: 'image/png', description: 'Initials' }
+          ),
+        ].filter(predicate).length,
       }),
     });
 
@@ -638,9 +649,11 @@ describe('FileViewer.vue', () => {
     mockInstance.totalPageCount = 1;
     mockInstance.getAnnotations.mockResolvedValue({
       filter: (predicate: (annotation: unknown) => boolean) => ({
-        size: [{ contentType: 'image/png', description: 'Anything' }].filter(
-          predicate
-        ).length,
+        size: [
+          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
+            { contentType: 'image/png', description: 'Anything' }
+          ),
+        ].filter(predicate).length,
       }),
     });
 

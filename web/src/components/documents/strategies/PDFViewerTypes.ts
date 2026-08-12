@@ -1,5 +1,6 @@
 import { OrderReview } from '@/types';
-import { ToolbarItem } from '@nutrient-sdk/viewer';
+import type NutrientViewer from '@nutrient-sdk/viewer';
+import { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
 
 export interface EmbeddedOutlineAwarePDFViewerStrategy<TRawData, TApiResponse> {
   createOutlineWithEmbeddedOutline(
@@ -65,8 +66,8 @@ export type PDFViewerInformationContext = {
 };
 
 export interface PDFViewerToolbarContext {
-  instance: any;
-  nutrientViewer: any;
+  instance: Instance;
+  nutrientViewer: typeof NutrientViewer;
   rawData: unknown;
   resolveInformationContext: (
     rawData: unknown

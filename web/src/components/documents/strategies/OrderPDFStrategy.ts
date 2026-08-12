@@ -30,8 +30,10 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   private judgeId: number | null = null;
   private readonly stopJudgeIdWatch: WatchStopHandle;
 
-  private static readonly DEFAULT_IMAGE_WIDTH = 150;
-  private static readonly DEFAULT_IMAGE_HEIGHT = 60;
+  private static readonly DEFAULT_SIGN_IMAGE_WIDTH = 210;
+  private static readonly DEFAULT_SIGN_IMAGE_HEIGHT = 95;
+  private static readonly DEFAULT_INITIALS_IMAGE_WIDTH = 55;
+  private static readonly DEFAULT_INITIALS_IMAGE_HEIGHT = 30;
   private static readonly SIGNATURE_DESCRIPTION = 'Signature';
   private static readonly INITIALS_DESCRIPTION = 'Initials';
 
@@ -146,6 +148,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
           allItems.find((item) => item.id === 'open-supporting-documents'),
           allItems.find((item) => item.id === 'open-information'),
           allItems.find((item) => item.type === 'image'),
+          allItems.find((item) => item.id === 'add-signature'),
+          allItems.find((item) => item.id === 'add-initials'),
           allItems.find((item) => item.id === 'open-document-review'),
         ].filter(Boolean) as ToolbarItem[])
       : [];
@@ -210,6 +214,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
           iconPath: mdiSignatureFreehand,
           fetchImage: () => this.userService.getSignature(),
           description: OrderPDFStrategy.SIGNATURE_DESCRIPTION,
+          width: OrderPDFStrategy.DEFAULT_SIGN_IMAGE_WIDTH,
+          height: OrderPDFStrategy.DEFAULT_SIGN_IMAGE_HEIGHT,
         })
       );
     }
@@ -222,6 +228,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
           iconPath: mdiSignatureText,
           fetchImage: () => this.userService.getInitials(),
           description: OrderPDFStrategy.INITIALS_DESCRIPTION,
+          width: OrderPDFStrategy.DEFAULT_INITIALS_IMAGE_WIDTH,
+          height: OrderPDFStrategy.DEFAULT_INITIALS_IMAGE_HEIGHT,
         })
       );
     }
@@ -255,6 +263,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       iconPath: string;
       fetchImage: () => Promise<Blob>;
       description: string;
+      width: number;
+      height: number;
     }
   ): ToolbarItem {
     return {
@@ -263,14 +273,22 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       title: config.title,
       icon: `<svg><path d="${config.iconPath}"/></svg>`,
       onPress: () =>
-        this.addImageToPage(context, config.fetchImage, config.description),
+        this.addImageToPage(
+          context,
+          config.fetchImage,
+          config.description,
+          config.width,
+          config.height
+        ),
     };
   }
 
   private async addImageToPage(
     context: PDFViewerToolbarContext,
     fetchImage: () => Promise<Blob>,
-    description: string
+    description: string,
+    imageWidth: number,
+    imageHeight: number
   ): Promise<void> {
     try {
       const { instance, nutrientViewer } = context;
@@ -279,9 +297,11 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       const blob = await fetchImage();
       const attachmentId = await instance.createAttachment(blob);
 
-      const { width, height } = instance.pageInfoForIndex(pageIndex);
-      const imageWidth = OrderPDFStrategy.DEFAULT_IMAGE_WIDTH;
-      const imageHeight = OrderPDFStrategy.DEFAULT_IMAGE_HEIGHT;
+      const pageInfo = instance.pageInfoForIndex(pageIndex);
+      if (!pageInfo) {
+        throw new Error(`Unable to resolve page info for page ${pageIndex}.`);
+      }
+      const { width, height } = pageInfo;
 
       const annotation = new nutrientViewer.Annotations.ImageAnnotation({
         pageIndex,
@@ -296,12 +316,13 @@ export class OrderPDFStrategy extends FilePDFStrategy {
         }),
       });
 
-      const result = await instance.create(annotation);
+      const newAnnotations = await instance.create(annotation);
 
       // Automatically select the newly added signature/initials
-      if (result && result.length > 0) {
+      const created = newAnnotations[0];
+      if (created instanceof nutrientViewer.Annotations.ImageAnnotation) {
         instance.setSelectedAnnotations(
-          nutrientViewer.Immutable.List([result[0].id])
+          nutrientViewer.Immutable.List([created.id])
         );
       }
     } catch (error) {

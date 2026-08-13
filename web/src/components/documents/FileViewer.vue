@@ -68,6 +68,7 @@
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
+    styleSheets: [`${import.meta.env.BASE_URL}styles/nutrient-toolbar.css`],
   };
 
   async function hasImageAnnotation(

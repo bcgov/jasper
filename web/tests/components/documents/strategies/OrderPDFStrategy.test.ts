@@ -224,6 +224,10 @@ describe('OrderPDFStrategy', () => {
 
     setLocationSearch('?id=123');
 
+    globalThis.createImageBitmap = vi
+      .fn()
+      .mockResolvedValue({ width: 210, height: 95, close: vi.fn() });
+
     mockPDFViewerStore.hasPdfData.mockImplementation(() => true);
     mockPDFViewerStore.getPdfItems.mockImplementation(() => mockStoreDocuments);
     mockPDFViewerStore.clearPdfItems.mockClear();
@@ -844,6 +848,64 @@ describe('OrderPDFStrategy', () => {
       const panIndex = result.findIndex((item) => item.type === 'pan');
       const zoomIndex = result.findIndex((item) => item.type === 'zoom-in');
       expect(panIndex).toBeLessThan(zoomIndex);
+    });
+
+    it('removes stamp and link items from the toolbar', () => {
+      const strategy = createOrderPDFStrategyForAnotherJudge();
+      const items = [
+        { type: 'pan' },
+        { type: 'stamp' },
+        { type: 'link' },
+        { type: 'zoom-in' },
+      ] as unknown as ToolbarItem[];
+
+      const result = strategy.setToolbarItems(items, createMockContext());
+
+      expect(result.some((item) => item.type === 'stamp')).toBe(false);
+      expect(result.some((item) => item.type === 'link')).toBe(false);
+      expect(result.some((item) => item.type === 'pan')).toBe(true);
+      expect(result.some((item) => item.type === 'zoom-in')).toBe(true);
+    });
+
+    it('omits the built-in image tool when the user has a signature or initials', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: false,
+      };
+
+      const strategy = new OrderPDFStrategy();
+      const imageItem = { type: 'image' };
+      const items = [
+        { type: 'linearized-download-indicator' },
+        imageItem,
+      ] as unknown as ToolbarItem[];
+
+      const result = strategy.setToolbarItems(items, createMockContext());
+
+      expect(result.some((item) => item.type === 'image')).toBe(false);
+    });
+
+    it('relocates add-signature and add-initials into the extras section', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: true,
+      };
+
+      const strategy = new OrderPDFStrategy();
+      const items = [
+        { type: 'linearized-download-indicator' },
+      ] as unknown as ToolbarItem[];
+
+      const result = strategy.setToolbarItems(items, createMockContext());
+
+      const anchorIndex = result.findIndex(
+        (item) => item.type === 'linearized-download-indicator'
+      );
+      const afterAnchor = result.slice(anchorIndex + 1).map((item) => item.id);
+      expect(afterAnchor).toContain('add-signature');
+      expect(afterAnchor).toContain('add-initials');
     });
 
     it('inserts extras immediately after the linearized-download-indicator anchor', () => {

@@ -5,11 +5,10 @@ import { Order, OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import {
-  mdiFileDocumentArrowRightOutline,
+  mdiAlphaIBoxOutline,
   mdiFileDocumentMultipleOutline,
+  mdiFountainPenTip,
   mdiNotebookOutline,
-  mdiSignatureFreehand,
-  mdiSignatureText,
 } from '@mdi/js';
 import { ToolbarItem } from '@nutrient-sdk/viewer';
 import { inject, watch, WatchStopHandle } from 'vue';
@@ -36,6 +35,13 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   private static readonly DEFAULT_INITIALS_IMAGE_HEIGHT = 30;
   private static readonly SIGNATURE_DESCRIPTION = 'Signature';
   private static readonly INITIALS_DESCRIPTION = 'Initials';
+
+  // Custom Toolbar Item IDs
+  private static readonly ID_OPEN_INFORMATION = 'open-information';
+  private static readonly ID_OPEN_DOCUMENT_REVIEW = 'open-document-review';
+  private static readonly ID_OPEN_SUPPORTING_DOCS = 'open-supporting-documents';
+  private static readonly ID_ADD_SIGNATURE = 'add-signature';
+  private static readonly ID_ADD_INITIALS = 'add-initials';
 
   constructor() {
     super();
@@ -131,28 +137,46 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     context: PDFViewerToolbarContext
   ): ToolbarItem[] {
     const allItems = [...items, ...this.addCustomToolbarItems(context)];
-    const toRemove = new Set(['note', 'print', 'callout', 'image']);
-    const toMove = new Set([
-      'open-supporting-documents',
-      'open-information',
-      'open-document-review',
+    const toRemove = new Set([
+      'note',
+      'print',
+      'callout',
+      'image',
+      'stamp',
+      'link',
     ]);
+
+    // Custom item ids we relocate
+    const toMove = new Set([
+      OrderPDFStrategy.ID_OPEN_SUPPORTING_DOCS,
+      OrderPDFStrategy.ID_OPEN_INFORMATION,
+      OrderPDFStrategy.ID_OPEN_DOCUMENT_REVIEW,
+      OrderPDFStrategy.ID_ADD_SIGNATURE,
+      OrderPDFStrategy.ID_ADD_INITIALS,
+    ]);
+
     const base = allItems.filter(
       (item) =>
         !toRemove.has(item.type) && (item.id ? !toMove.has(item.id) : true)
     );
 
-    const extras = !this.isShowingSupportingDocuments
-      ? ([
+    const byId = new Map(
+      allItems.filter((item) => item.id).map((item) => [item.id, item])
+    );
+    const imageItem = allItems.find((item) => item.type === 'image');
+
+    const extras = this.isShowingSupportingDocuments
+      ? []
+      : ([
           { type: 'spacer' },
-          allItems.find((item) => item.id === 'open-supporting-documents'),
-          allItems.find((item) => item.id === 'open-information'),
-          allItems.find((item) => item.type === 'image'),
-          allItems.find((item) => item.id === 'add-signature'),
-          allItems.find((item) => item.id === 'add-initials'),
-          allItems.find((item) => item.id === 'open-document-review'),
-        ].filter(Boolean) as ToolbarItem[])
-      : [];
+          byId.get(OrderPDFStrategy.ID_OPEN_SUPPORTING_DOCS),
+          byId.get(OrderPDFStrategy.ID_OPEN_INFORMATION),
+          // Keep the built-in image tool only when there's no signature/initials.
+          !this.hasSignature && !this.hasInitials ? imageItem : null,
+          byId.get(OrderPDFStrategy.ID_ADD_SIGNATURE),
+          byId.get(OrderPDFStrategy.ID_ADD_INITIALS),
+          byId.get(OrderPDFStrategy.ID_OPEN_DOCUMENT_REVIEW),
+        ].filter(Boolean) as ToolbarItem[]);
 
     const anchor = base.findIndex(
       (item) => item.type === 'linearized-download-indicator'
@@ -165,6 +189,22 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   addCustomToolbarItems(context: PDFViewerToolbarContext): ToolbarItem[] {
     const additionalToolbarItems: ToolbarItem[] = [];
 
+    // Current user is not the judge assigned to this order
+    // so don't show the order review options.
+    if (!this.showOrderReviewOptions) {
+      return additionalToolbarItems;
+    }
+
+    additionalToolbarItems.push(
+      {
+        type: 'custom',
+        id: OrderPDFStrategy.ID_OPEN_INFORMATION,
+        title: 'Case details',
+        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
+        onPress: () => {
+          const informationContext = context.resolveInformationContext(
+            context.rawData
+          );
     additionalToolbarItems.push({
       type: 'custom',
       id: 'open-information',
@@ -218,9 +258,9 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     if (this.hasSignature) {
       additionalToolbarItems.push(
         this.createImageToolbarItem(context, {
-          id: 'add-signature',
+          id: OrderPDFStrategy.ID_ADD_SIGNATURE,
           title: 'Add Signature',
-          iconPath: mdiSignatureFreehand,
+          iconPath: mdiFountainPenTip,
           fetchImage: () => this.userService.getSignature(),
           description: OrderPDFStrategy.SIGNATURE_DESCRIPTION,
           width: OrderPDFStrategy.DEFAULT_SIGN_IMAGE_WIDTH,
@@ -232,9 +272,9 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     if (this.hasInitials) {
       additionalToolbarItems.push(
         this.createImageToolbarItem(context, {
-          id: 'add-initials',
+          id: OrderPDFStrategy.ID_ADD_INITIALS,
           title: 'Add Initials',
-          iconPath: mdiSignatureText,
+          iconPath: mdiAlphaIBoxOutline,
           fetchImage: () => this.userService.getInitials(),
           description: OrderPDFStrategy.INITIALS_DESCRIPTION,
           width: OrderPDFStrategy.DEFAULT_INITIALS_IMAGE_WIDTH,
@@ -244,6 +284,14 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     }
 
     return additionalToolbarItems;
+  }
+
+  // Custom items render content from `node`/`icon` only; `title` is just the tooltip.
+  private static createSubmitLabelNode(): HTMLElement {
+    const label = document.createElement('span');
+    label.className = 'jasper-submit-btn__label';
+    label.textContent = 'Submit';
+    return label;
   }
 
   async initialize(): Promise<void> {
@@ -302,16 +350,19 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       }
       const { width, height } = pageInfo;
 
+      const { width: fitWidth, height: fitHeight } =
+        await OrderPDFStrategy.fitToBox(blob, imageWidth, imageHeight);
+
       const annotation = new nutrientViewer.Annotations.ImageAnnotation({
         pageIndex,
         contentType: blob.type,
         imageAttachmentId: attachmentId,
         description,
         boundingBox: new nutrientViewer.Geometry.Rect({
-          left: (width - imageWidth) / 2,
-          top: (height - imageHeight) / 2,
-          width: imageWidth,
-          height: imageHeight,
+          left: (width - fitWidth) / 2,
+          top: (height - fitHeight) / 2,
+          width: fitWidth,
+          height: fitHeight,
         }),
       });
 
@@ -326,6 +377,30 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       }
     } catch (error) {
       console.error(`Failed to add ${description.toLowerCase()}:`, error);
+    }
+  }
+
+  private static async fitToBox(
+    blob: Blob,
+    maxWidth: number,
+    maxHeight: number
+  ): Promise<{ width: number; height: number }> {
+    const bitmap = await createImageBitmap(blob);
+    try {
+      const { width: naturalWidth, height: naturalHeight } = bitmap;
+      if (!naturalWidth || !naturalHeight) {
+        return { width: maxWidth, height: maxHeight };
+      }
+      const scale = Math.min(
+        maxWidth / naturalWidth,
+        maxHeight / naturalHeight
+      );
+      return {
+        width: naturalWidth * scale,
+        height: naturalHeight * scale,
+      };
+    } finally {
+      bitmap.close();
     }
   }
 }

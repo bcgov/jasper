@@ -1,0 +1,17 @@
+.jasper-submit-btn {
+  width: auto !important;
+  padding: 0 12px !important;
+  border-radius: 4px !important;
+  background-color: var(--bg-blue-800) !important;
+  cursor: pointer !important;
+  margin: 0 12px !important;
+}
+
+.jasper-submit-btn:hover {
+  background-color: var(--bg-blue-500) !important;
+}
+
+.jasper-submit-btn__label {
+  color: #ffffff !important;
+  white-space: nowrap;
+}

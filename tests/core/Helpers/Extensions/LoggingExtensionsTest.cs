@@ -91,4 +91,76 @@ public class LoggingExtensionsTests
     {
         Assert.Equal(expected, input.SanitizeForLog());
     }
+
+    [Fact]
+    public void MaskEmailForLog_WithNull_ReturnsMask()
+    {
+        string value = null;
+
+        var result = value.MaskEmailForLog();
+
+        Assert.Equal("***", result);
+    }
+
+    [Fact]
+    public void MaskEmailForLog_WithEmptyString_ReturnsMask()
+    {
+        var result = string.Empty.MaskEmailForLog();
+
+        Assert.Equal("***", result);
+    }
+
+    [Fact]
+    public void MaskEmailForLog_WithWhitespace_ReturnsMask()
+    {
+        var result = "   ".MaskEmailForLog();
+
+        Assert.Equal("***", result);
+    }
+
+    [Fact]
+    public void MaskEmailForLog_MasksLocalPartAndKeepsDomain()
+    {
+        var result = "john.doe@example.com".MaskEmailForLog();
+
+        Assert.Equal("j***@example.com", result);
+    }
+
+    [Fact]
+    public void MaskEmailForLog_DoesNotExposeFullLocalPart()
+    {
+        var result = "john.doe@example.com".MaskEmailForLog();
+
+        Assert.DoesNotContain("john.doe", result);
+    }
+
+    [Fact]
+    public void MaskEmailForLog_SanitizesLineBreaks()
+    {
+        // Attacker attempts to forge a log line via CRLF within the email value.
+        var result = "john\r\ndoe@example.com".MaskEmailForLog();
+
+        Assert.DoesNotContain("\r", result);
+        Assert.DoesNotContain("\n", result);
+        Assert.Equal("j***@example.com", result);
+    }
+
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("@example.com")]
+    [InlineData("john.doe@")]
+    [InlineData("@")]
+    public void MaskEmailForLog_WithInvalidEmailShape_ReturnsMask(string input)
+    {
+        Assert.Equal("***", input.MaskEmailForLog());
+    }
+
+    [Theory]
+    [InlineData("a@b.com", "a***@b.com")]
+    [InlineData("John.Doe@Example.COM", "J***@Example.COM")]
+    [InlineData("user+tag@sub.domain.org", "u***@sub.domain.org")]
+    public void MaskEmailForLog_ReturnsExpected(string input, string expected)
+    {
+        Assert.Equal(expected, input.MaskEmailForLog());
+    }
 }

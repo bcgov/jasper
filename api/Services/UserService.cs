@@ -72,7 +72,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.Email == email);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {Email} is not found", email.SanitizeForLog());
+            this.Logger.LogInformation("User with email: {Email} is not found", email.MaskEmailForLog());
             return null;
         }
 

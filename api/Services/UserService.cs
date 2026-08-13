@@ -72,7 +72,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.Email == email);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {Email} is not found", email.Replace(Environment.NewLine, ""));
+            this.Logger.LogInformation("User with email: {Email} is not found", email.SanitizeForLog());
             return null;
         }
 
@@ -84,7 +84,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.NativeGuid == guid);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.Replace(Environment.NewLine, ""));
+            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.SanitizeForLog());
             return null;
         }
 
@@ -96,7 +96,7 @@ public class UserService(
         var user = await GetByIdAsync(userId);
         if (user == null)
         {
-            this.Logger.LogInformation("User with id: {UserId} is not found", userId);
+            this.Logger.LogInformation("User with id: {UserId} is not found", userId.SanitizeForLog());
             return null;
         }
 
@@ -166,8 +166,8 @@ public class UserService(
     {
         Logger.LogInformation(
             "Marking release notes as viewed. UserId: {UserId}, Version: {Version}, ViewedAtUtc: {ViewedAtUtc}",
-            userId,
-            version,
+            userId.SanitizeForLog(),
+            version.SanitizeForLog(),
             viewedAtUtc);
 
         if (string.IsNullOrWhiteSpace(userId))
@@ -201,7 +201,7 @@ public class UserService(
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error updating release notes for user {UserId}: {Message}", userId, ex.Message);
+            Logger.LogError(ex, "Error updating release notes for user {UserId}: {Message}", userId.SanitizeForLog(), ex.Message);
             return OperationResult<UserDto>.Failure("Error updating release notes.");
         }
     }
@@ -316,4 +316,38 @@ public class UserService(
         return true;
     }
 
+    public Task<OperationResult> UploadSignatureAsync(string userId, byte[] signature) =>
+        UploadUserImageAsync(userId, signature, (user, image) => user.Signature = image, "signature");
+
+    public Task<OperationResult> UploadInitialsAsync(string userId, byte[] initials) =>
+        UploadUserImageAsync(userId, initials, (user, image) => user.Initials = image, "initials");
+
+    private async Task<OperationResult> UploadUserImageAsync(
+        string userId,
+        byte[] image,
+        Action<User, byte[]> assignImage,
+        string imageType)
+    {
+        var user = await this.Repo.GetByIdAsync(userId);
+        if (user == null)
+        {
+            this.Logger.LogWarning("User with id: {UserId} is not found", userId.SanitizeForLog());
+            return OperationResult.Failure("User not found.");
+        }
+
+        try
+        {
+            assignImage(user, image);
+
+            await this.Repo.UpdateAsync(user);
+            InvalidateCache(CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error uploading {ImageType}: {Message}", imageType, ex.Message);
+            return OperationResult.Failure($"Error uploading {imageType}.");
+        }
+    }
 }

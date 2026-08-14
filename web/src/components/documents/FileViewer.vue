@@ -133,6 +133,15 @@
         document: `data:application/pdf;base64,${base64Pdf}`,
       });
 
+      // Default the built-in line tool's stroke color to red instead of blue.
+      instance.setAnnotationPresets((presets) => ({
+        ...presets,
+        line: {
+          ...presets.line,
+          strokeColor: nutrientViewer.Color.RED,
+        },
+      }));
+
       if (supportsEmbeddedOutline(props.strategy)) {
         const outline = props.strategy.createOutlineWithEmbeddedOutline(
           rawData,

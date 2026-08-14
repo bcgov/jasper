@@ -44,6 +44,7 @@ describe('FileViewer.vue', () => {
       toolbarItems = callback([]);
       return toolbarItems;
     }),
+    setAnnotationPresets: vi.fn((callback) => callback({})),
     addEventListener: vi.fn(),
     exportPDF: vi.fn(),
     getAnnotations: vi.fn().mockResolvedValue({
@@ -104,6 +105,7 @@ describe('FileViewer.vue', () => {
     mockInstance.setDocumentOutline.mockClear();
     mockInstance.setViewState.mockClear();
     mockInstance.setToolbarItems.mockClear();
+    mockInstance.setAnnotationPresets.mockClear();
     mockInstance.addEventListener.mockClear();
     mockInstance.getAnnotations.mockClear();
     mockInstance.getAnnotations.mockResolvedValue({
@@ -121,6 +123,7 @@ describe('FileViewer.vue', () => {
       load: vi.fn().mockResolvedValue(mockInstance),
       unload: vi.fn(),
       SidebarMode: { DOCUMENT_OUTLINE: 'DOCUMENT_OUTLINE' },
+      Color: { RED: 'RED' },
       Actions: {
         GoToAction: class {
           constructor(public readonly config: unknown) {}

@@ -7,6 +7,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Scv.Api.Documents.Extractors;
 using Xunit;
+// Alias for the Office 2010 Word namespace (w14 XML prefix); disambiguates checkbox types.
 using W14 = DocumentFormat.OpenXml.Office2010.Word;
 
 namespace tests.api.Documents.Extractors;

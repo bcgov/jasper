@@ -544,7 +544,7 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       await strategy.initialize();
 
-      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123');
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
       // Supporting-documents button only appears once the order is loaded.
       const items = strategy.addCustomToolbarItems(createMockContext());
       expect(
@@ -592,10 +592,12 @@ describe('OrderPDFStrategy', () => {
       ]);
     });
 
-    it('returns an empty array when the current user is not the assigned judge', () => {
+    it('returns open-information toolbar item when the current user is not the assigned judge', () => {
       const strategy = createOrderPDFStrategyForAnotherJudge();
 
-      expect(strategy.addCustomToolbarItems(createMockContext())).toEqual([]);
+      const items = strategy.addCustomToolbarItems(createMockContext());
+
+      expect(items.map((item) => item.id)).toEqual(['open-information']);
     });
 
     it('includes an add-signature item when the user has a signature', () => {
@@ -887,7 +889,7 @@ describe('OrderPDFStrategy', () => {
 
       expect(result.some((item) => item === undefined)).toBe(false);
       expect(result.filter((item) => item.type === 'spacer').length).toBe(1);
-      expect(result.some((item) => item.id === 'open-information')).toBe(false);
+      expect(result.some((item) => item.id === 'open-information')).toBe(true);
       expect(result.some((item) => item.id === 'open-document-review')).toBe(
         false
       );
@@ -908,10 +910,11 @@ describe('OrderPDFStrategy', () => {
         (item) => item.type === 'linearized-download-indicator'
       );
       expect(result[anchorIndex + 1].type).toBe('spacer');
-      expect(result[anchorIndex + 2]).toBe(imageWithId);
+      const imageIndex = result.indexOf(imageWithId);
+      expect(imageIndex).toBeGreaterThan(anchorIndex + 1);
     });
 
-    it('returns only a spacer when given an empty items array for a non-reviewer', () => {
+    it('returns a spacer and the information item for a non-reviewer with empty items', () => {
       const strategy = createOrderPDFStrategyForAnotherJudge();
 
       const result = strategy.setToolbarItems(
@@ -919,7 +922,9 @@ describe('OrderPDFStrategy', () => {
         createMockContext()
       );
 
-      expect(result).toEqual([{ type: 'spacer' }]);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ type: 'spacer' });
+      expect(result[1].id).toBe('open-information');
     });
 
     it('preserves the relative order of non-removed base items', () => {
@@ -934,7 +939,7 @@ describe('OrderPDFStrategy', () => {
 
       const result = strategy.setToolbarItems(items, createMockContext());
       const baseTypes = result
-        .filter((item) => item.type !== 'spacer')
+        .filter((item) => item.type !== 'spacer' && item.type !== 'custom')
         .map((item) => item.type);
 
       expect(baseTypes).toEqual(['pan', 'zoom-in', 'zoom-out']);

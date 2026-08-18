@@ -49,7 +49,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
     private readonly ICsoTextSanitizer _csoTextSanitizer;
 
-    public const string NOTE_TO_APPEND_IF_CLERK_DESIGNATED = "-- NOTE –- Pursuant to PCF rule 169, I designate the Clerk of the Court to sign the order on my behalf.";
+    public const string NOTE_TO_APPEND_IF_CLERK_DESIGNATED = "-- NOTE -- Pursuant to PCF rule 169, I designate the Clerk of the Court to sign the order on my behalf.";
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -306,9 +306,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             double documentId = orderDto.OrderRequest?.Referral?.ReferredDocumentId.GetValueOrDefault() ?? 0;
 
             await _judicialClient.SaveJudicialActionAsync(
-               correlationId,
-               documentId,
-               actionDto);
+                correlationId,
+                documentId,
+                actionDto);
 
             // Cleanup the successful, submitted order to remove potentially private document data and comments.
             orderDto.DocumentData = null;

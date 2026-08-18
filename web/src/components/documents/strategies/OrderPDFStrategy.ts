@@ -56,6 +56,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     this.orderService = orderService;
     this.userService = userService;
     this.showOrderReviewOptions =
+      this.commonStore.userInfo?.judgeId != null &&
       this.commonStore.userInfo?.judgeId ===
       this.commonStore.loggedInUserInfo?.judgeId;
     this.judgeId = this.commonStore.userInfo?.judgeId ?? null;

@@ -4,5 +4,6 @@ public enum JudicialDecisionCd
 {
     APPR,
     NAPP,
-    AFDC
+    AFDC,
+    ORDM
 }

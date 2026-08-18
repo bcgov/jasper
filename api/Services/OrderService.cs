@@ -253,7 +253,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved || orderDto.Status == OrderStatus.AwaitingDocumentation)
+        if (orderDto.Status is OrderStatus.Approved
+            or OrderStatus.Unapproved
+            or OrderStatus.AwaitingDocumentation
+            or OrderStatus.OrderMade)
         {
             _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
         }

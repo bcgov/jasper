@@ -100,9 +100,15 @@ describe('ReviewModal.vue', () => {
   });
 
   describe('Header and UI elements', () => {
-    it('should render dialog title', () => {
+    it('should render dialog title for an order', () => {
       const wrapper = createWrapper();
       expect(wrapper.text()).toContain('Review Order');
+    });
+
+    it('should render dialog title for a desk order application', () => {
+      setOrders(createFamilyDeskOrder());
+      const wrapper = createWrapper();
+      expect(wrapper.text()).toContain('Review Application');
     });
 
     it('should render instruction text', () => {
@@ -111,7 +117,7 @@ describe('ReviewModal.vue', () => {
         'Add any notes or reasoning for your decision'
       );
       expect(wrapper.text()).toContain(
-        'Required for any action other than Approval'
+        'Required for any action other than Submit'
       );
     });
 
@@ -126,14 +132,14 @@ describe('ReviewModal.vue', () => {
     it('should show signature warning alert when canApprove is false', () => {
       const wrapper = createWrapper({ canApprove: false });
       expect(wrapper.text()).toContain(
-        'Document signature is required before Approval'
+        'Document signature is required before submitting'
       );
     });
 
     it('should not show warning alert when canApprove is true', () => {
       const wrapper = createWrapper({ canApprove: true });
       expect(wrapper.text()).not.toContain(
-        'Document signature is required before Approval'
+        'Document signature is required before submitting'
       );
     });
   });
@@ -153,14 +159,14 @@ describe('ReviewModal.vue', () => {
     it('should show the upload-required warning instead of the signature warning', () => {
       const wrapper = createWrapper({ canApprove: true });
       expect(wrapper.text()).toContain(
-        'Document upload is required before Approval'
+        'Document upload is required before submitting the order'
       );
       expect(wrapper.text()).not.toContain(
-        'Document signature is required before Approval'
+        'Document signature is required before submitting'
       );
     });
 
-    it('should disable Approve until a supporting document has been selected', async () => {
+    it('should disable Submit until a supporting document has been selected', async () => {
       const wrapper = createWrapper({ canApprove: true });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.attributes('disabled')).toBe('true');
@@ -177,7 +183,7 @@ describe('ReviewModal.vue', () => {
       );
     });
 
-    it('should emit signed=false on Approve for a Family Desk order', async () => {
+    it('should emit an OrderMade review with signed=false on Submit for a Family Desk order', async () => {
       const wrapper = createWrapper({ canApprove: true });
       const upload = wrapper.findComponent({ name: 'DocumentUpload' });
       const fakeFile = new File(['data'], 'order.pdf', {
@@ -186,14 +192,14 @@ describe('ReviewModal.vue', () => {
       upload.vm.$emit('update:selectedFile', fakeFile);
       await nextTick();
 
-      const approveButton = wrapper.find('[color="success"]');
-      await approveButton.trigger('click');
+      const submitButton = wrapper.find('[color="success"]');
+      await submitButton.trigger('click');
       await flushPromises();
 
       const calls = getReviewCalls();
       expect(calls.length).toBeGreaterThan(0);
       const review = calls[0][0];
-      expect(review.status).toBe(OrderReviewStatus.Approved);
+      expect(review.status).toBe(OrderReviewStatus.OrderMade);
       expect(review.signed).toBe(false);
       expect(review.documentData).toBe('');
       expect(review.supportingDocumentData).not.toBe('');
@@ -205,35 +211,28 @@ describe('ReviewModal.vue', () => {
       setOrders(createFamilyDeskOrder());
     });
 
-    it('should render all three action buttons', () => {
+    it('should render only the Submit button', () => {
       const wrapper = createWrapper();
-      expect(wrapper.text()).toContain('Reject');
-      expect(wrapper.text()).toContain('Awaiting documentation');
-      expect(wrapper.text()).toContain('Approve');
+      expect(wrapper.text()).toContain('Submit');
+      expect(wrapper.text()).not.toContain('Reject');
+      expect(wrapper.text()).not.toContain('Awaiting documentation');
     });
 
-    it('should render Reject button with proper attributes', () => {
+    it('should not render the Reject button for desk orders', () => {
       const wrapper = createWrapper();
-      const rejectButton = wrapper.find('[color="error"]');
-      expect(rejectButton.exists()).toBe(true);
-      expect(rejectButton.text()).toContain('Reject');
+      expect(wrapper.find('[color="error"]').exists()).toBe(false);
     });
 
-    it('should render Awaiting documentation button with proper attributes', () => {
+    it('should not render the Awaiting documentation button', () => {
       const wrapper = createWrapper();
-      const pendingButton = wrapper.find('[color="warning"]');
-      expect(pendingButton.exists()).toBe(true);
-      expect(pendingButton.text()).toContain('Awaiting documentation');
+      expect(wrapper.find('[color="warning"]').exists()).toBe(false);
     });
 
-    it('should disable Reject and Awaiting documentation when comments are empty', () => {
+    it('should not render the required-comments instruction for desk orders', () => {
       const wrapper = createWrapper();
-      expect(
-        wrapper.find('[color="error"]').attributes('disabled')
-      ).toBeDefined();
-      expect(
-        wrapper.find('[color="warning"]').attributes('disabled')
-      ).toBeDefined();
+      expect(wrapper.text()).not.toContain(
+        'Required for any action other than Submit'
+      );
     });
   });
 
@@ -246,7 +245,7 @@ describe('ReviewModal.vue', () => {
       const wrapper = createWrapper();
       expect(wrapper.text()).toContain('Reject');
       expect(wrapper.text()).not.toContain('Awaiting documentation');
-      expect(wrapper.text()).toContain('Approve');
+      expect(wrapper.text()).toContain('Submit');
     });
 
     it('should render Reject button with proper attributes', () => {
@@ -271,28 +270,28 @@ describe('ReviewModal.vue', () => {
     });
   });
 
-  describe('Approve functionality', () => {
-    it('should render Approve button and be enabled when canApprove is true', () => {
+  describe('Submit functionality', () => {
+    it('should render Submit button and be enabled when canApprove is true', () => {
       const wrapper = createWrapper({ canApprove: true });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.exists()).toBe(true);
-      expect(approveButton.text()).toContain('Approve');
+      expect(approveButton.text()).toContain('Submit');
     });
 
-    it('should render Approve button with proper color and text', () => {
+    it('should render Submit button with proper color and text', () => {
       const wrapper = createWrapper({ canApprove: true });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.exists()).toBe(true);
       expect(approveButton.attributes('color')).toBe('success');
     });
 
-    it('should disable approve button when canApprove is false', () => {
+    it('should disable Submit button when canApprove is false', () => {
       const wrapper = createWrapper({ canApprove: false });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.attributes('disabled')).toBeDefined();
     });
 
-    it('should emit a fully-formed review payload with signed=true on Approve for non-Family Desk orders', async () => {
+    it('should emit a fully-formed review payload with signed=true on Submit for non-Family Desk orders', async () => {
       const wrapper = createWrapper({ canApprove: true });
       const approveButton = wrapper.find('[color="success"]');
       await approveButton.trigger('click');
@@ -336,7 +335,7 @@ describe('ReviewModal.vue', () => {
       const wrapper = createUploadWrapper();
       const approveButton = wrapper
         .findAll('button')
-        .find((button) => button.text().includes('Approve'));
+        .find((button) => button.text().includes('Submit'));
 
       expect(approveButton).toBeTruthy();
       await approveButton!.trigger('click');
@@ -417,8 +416,8 @@ describe('ReviewModal.vue', () => {
     });
   });
 
-  describe('Reject and Awaiting documentation submissions', () => {
-    beforeEach(() => setOrders(createFamilyDeskOrder()));
+  describe('Reject submissions', () => {
+    beforeEach(() => setOrders(createNonFamilyDeskOrder()));
 
     const createCommentsWrapper = (canApprove = false) =>
       mount(ReviewModal, {
@@ -462,22 +461,6 @@ describe('ReviewModal.vue', () => {
       expect(calls[0][0].status).toBe(OrderReviewStatus.Unapproved);
       expect(calls[0][0].signed).toBe(false);
       expect(calls[0][0].comments).toBe('Needs work');
-    });
-
-    it('should emit an AwaitingDocumentation review when that button is clicked', async () => {
-      const wrapper = createCommentsWrapper();
-      await writeComment(wrapper, 'Awaiting evidence');
-
-      const pendingButton = wrapper.find('[color="warning"]');
-      expect(pendingButton.attributes('disabled')).toBe('false');
-      await pendingButton.trigger('click');
-      await flushPromises();
-
-      const calls = getReviewCalls();
-      expect(calls.length).toBeGreaterThan(0);
-      expect(calls[0][0].status).toBe(OrderReviewStatus.AwaitingDocumentation);
-      expect(calls[0][0].signed).toBe(false);
-      expect(calls[0][0].comments).toBe('Awaiting evidence');
     });
   });
 });

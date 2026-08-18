@@ -5,6 +5,7 @@ public enum OrderStatus
     Unapproved,
     Pending,
     Approved,
-    AwaitingDocumentation
+    AwaitingDocumentation,
+    OrderMade
 }
 

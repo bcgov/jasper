@@ -941,6 +941,68 @@ public class OrderServiceTests : ServiceTestBase
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Once);
     }
 
+    [Theory]
+    [InlineData(OrderStatus.Approved)]
+    [InlineData(OrderStatus.Unapproved)]
+    [InlineData(OrderStatus.AwaitingDocumentation)]
+    [InlineData(OrderStatus.OrderMade)]
+    public async Task ReviewOrder_EnqueuesSubmitOrderJob_WhenStatusRequiresSubmission(OrderStatus status)
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto { Status = status };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_DoesNotEnqueueSubmitOrderJob_WhenStatusDoesNotRequireSubmission()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto { Status = OrderStatus.Pending };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Never);
+    }
+
     #endregion
 
     #region SubmitOrder Tests

@@ -165,46 +165,55 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   addCustomToolbarItems(context: PDFViewerToolbarContext): ToolbarItem[] {
     const additionalToolbarItems: ToolbarItem[] = [];
 
+    additionalToolbarItems.push({
+      type: 'custom',
+      id: 'open-information',
+      title: 'Case details',
+      icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
+      onPress: () => {
+        const informationContext = context.resolveInformationContext(
+          context.rawData
+        );
+
+        if (!informationContext) {
+          console.warn('Unable to resolve PDF viewer information context.');
+          return;
+        }
+
+        window.open(
+          `${
+            informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
+          }${informationContext.physicalFileId}`,
+          'relatedCaseInfo'
+        );
+      },
+    });
+
+    if (this.currentOrder?.hasSupportingDocs) {
+      additionalToolbarItems.push({
+        type: 'custom',
+        id: 'open-supporting-documents',
+        title: 'View Supporting Documents',
+        icon: `<svg><path d="${mdiFileDocumentMultipleOutline}"/></svg>`,
+        onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
+      });
+    }
+
     // Current user is not the judge assigned to this order
     // so don't show the order review options.
     if (!this.showOrderReviewOptions) {
       return additionalToolbarItems;
     }
 
-    additionalToolbarItems.push(
-      {
-        type: 'custom',
-        id: 'open-information',
-        title: 'Case details',
-        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
-        onPress: () => {
-          const informationContext = context.resolveInformationContext(
-            context.rawData
-          );
-
-          if (!informationContext) {
-            console.warn('Unable to resolve PDF viewer information context.');
-            return;
-          }
-
-          window.open(
-            `${
-              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
-            }${informationContext.physicalFileId}`,
-            'relatedCaseInfo'
-          );
-        },
+    additionalToolbarItems.push({
+      type: 'custom',
+      id: 'open-document-review',
+      title: 'Submit',
+      icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
+      onPress: () => {
+        context.openReviewModal();
       },
-      {
-        type: 'custom',
-        id: 'open-document-review',
-        title: 'Submit',
-        icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
-        onPress: () => {
-          context.openReviewModal();
-        },
-      }
-    );
+    });
 
     if (this.hasSignature) {
       additionalToolbarItems.push(
@@ -232,16 +241,6 @@ export class OrderPDFStrategy extends FilePDFStrategy {
           height: OrderPDFStrategy.DEFAULT_INITIALS_IMAGE_HEIGHT,
         })
       );
-    }
-
-    if (this.currentOrder?.hasSupportingDocs) {
-      additionalToolbarItems.push({
-        type: 'custom',
-        id: 'open-supporting-documents',
-        title: 'View Supporting Documents',
-        icon: `<svg><path d="${mdiFileDocumentMultipleOutline}"/></svg>`,
-        onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
-      });
     }
 
     return additionalToolbarItems;

@@ -816,7 +816,7 @@ describe('OrderPDFStrategy', () => {
       await (item as unknown as { onPress: () => Promise<void> }).onPress();
 
       expect(errorSpy).toHaveBeenCalledWith(
-        'Failed to add initials:',
+        'Failed to add initials.',
         expect.any(Error)
       );
       expect(context.instance.create).not.toHaveBeenCalled();

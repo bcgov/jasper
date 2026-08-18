@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -1302,7 +1299,7 @@ public class UserServiceTests : ServiceTestBase
         var result = await _userService.GetSignatureAsync(fakeId, judgeId);
 
         Assert.False(result.Succeeded);
-        Assert.Equal("User does not have a signature.", result.Errors[0]);
+        Assert.Equal("User does not have signature.", result.Errors[0]);
     }
 
     [Fact]
@@ -1353,6 +1350,6 @@ public class UserServiceTests : ServiceTestBase
         var result = await _userService.GetInitialsAsync(fakeId, judgeId);
 
         Assert.False(result.Succeeded);
-        Assert.Equal("User does not have a initials.", result.Errors[0]);
+        Assert.Equal("User does not have initials.", result.Errors[0]);
     }
 }

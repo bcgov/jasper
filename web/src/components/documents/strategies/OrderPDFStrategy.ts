@@ -376,7 +376,13 @@ export class OrderPDFStrategy extends FilePDFStrategy {
         );
       }
     } catch (error) {
-      console.error(`Failed to add ${description.toLowerCase()}:`, error);
+      const errorMessage = `Failed to add ${description.toLowerCase()}`;
+      this.snackBarStore.showSnackbar(
+        `${errorMessage}. Please try again.`,
+        'error',
+        '❌ Error'
+      );
+      console.error(`${errorMessage}:`, error);
     }
   }
 
@@ -392,6 +398,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
         return { width: maxWidth, height: maxHeight };
       }
       const scale = Math.min(
+        1,
         maxWidth / naturalWidth,
         maxHeight / naturalHeight
       );

@@ -75,6 +75,7 @@ describe('CourtCalendarView.vue', () => {
         selectedDate: new Date(),
         calendarView: CalendarViewEnum.TwoWeekView,
         isCalendarLoading: true,
+        baseCalendarOptions: {},
         ...props,
       },
       global: {

@@ -1,5 +1,8 @@
 import { registerPlugins } from '@/plugins';
 import { callRefreshLinkClickTracking } from '@/utils/snowplowUtils';
+import '@fullcalendar/vue3/skeleton.css';
+import '@fullcalendar/vue3/themes/classic/palette.css';
+import '@fullcalendar/vue3/themes/classic/theme.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'intersection-observer';
 import { createApp } from 'vue';

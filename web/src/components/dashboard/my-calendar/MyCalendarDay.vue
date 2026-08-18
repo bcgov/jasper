@@ -108,6 +108,7 @@
 <style scoped>
   .calendar-day {
     color: var(--text-blue-800) !important;
+    width: 100%;
   }
 
   .period {

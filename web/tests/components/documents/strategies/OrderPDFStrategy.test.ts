@@ -555,12 +555,6 @@ describe('OrderPDFStrategy', () => {
         items.some((item) => item.id === 'open-supporting-documents')
       ).toBe(true);
       expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
-      // Supporting-documents button only appears once the order is loaded.
-      const items = strategy.addCustomToolbarItems(createMockContext());
-      expect(
-        items.some((item) => item.id === 'open-supporting-documents')
-      ).toBe(true);
-      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
     });
 
     it('passes the updated judge ID to getOrder after the judge changes', async () => {

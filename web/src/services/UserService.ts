@@ -22,4 +22,20 @@ export class UserService extends ServiceBase {
       version,
     });
   }
+
+  getSignature(): Promise<Blob> {
+    return this.httpService.get<Blob>(
+      `api/users/me/signature`,
+      {},
+      { responseType: 'blob' }
+    );
+  }
+
+  getInitials(): Promise<Blob> {
+    return this.httpService.get<Blob>(
+      `api/users/me/initials`,
+      {},
+      { responseType: 'blob' }
+    );
+  }
 }

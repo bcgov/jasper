@@ -1,7 +1,7 @@
 namespace Scv.Core.Helpers.Extensions;
 
 /// <summary>
-/// Helpers for safely writing string values such as ids, names, email, etc. to logs.
+/// Helper methods for logging. 
 /// </summary>
 public static class LoggingExtensions
 {

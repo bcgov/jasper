@@ -155,7 +155,7 @@ public class UsersController(
     [Route("{id}/signature")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
     public Task<IActionResult> UploadSignature([FromRoute, ObjectId] string id, [FromForm] FileUploadRequest request)
-        => UploadImageAsync(request, file => base.Service.UploadSignatureAsync(id, file));
+        => UploadImageAsync(request, (file, contentType) => base.Service.UploadSignatureAsync(id, file, contentType));
 
     /// <summary>
     /// Uploads initials image for the user with the specified ID. The image is scanned for viruses before being stored.
@@ -167,11 +167,29 @@ public class UsersController(
     [Route("{id}/initials")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
     public Task<IActionResult> UploadInitials([FromRoute, ObjectId] string id, [FromForm] FileUploadRequest request)
-        => UploadImageAsync(request, file => base.Service.UploadInitialsAsync(id, file));
+        => UploadImageAsync(request, (file, contentType) => base.Service.UploadInitialsAsync(id, file, contentType));
+
+    /// <summary>
+    /// Gets the signature image for the currently logged-in user.
+    /// </summary>
+    /// <returns>The signature image file.</returns>
+    [HttpGet]
+    [Route("me/signature")]
+    public Task<IActionResult> GetMySignature()
+        => GetImageAsync(base.Service.GetSignatureAsync);
+
+    /// <summary>
+    /// Gets the initials image for the currently logged-in user.
+    /// </summary>
+    /// <returns>The initials image file.</returns>
+    [HttpGet]
+    [Route("me/initials")]
+    public Task<IActionResult> GetMyInitials()
+        => GetImageAsync(base.Service.GetInitialsAsync);
 
     private async Task<IActionResult> UploadImageAsync(
         FileUploadRequest request,
-        Func<byte[], Task<OperationResult>> uploadAsync)
+        Func<byte[], string, Task<OperationResult>> uploadAsync)
     {
         if (request == null)
         {
@@ -196,7 +214,7 @@ public class UsersController(
             return BadRequest("The uploaded file failed the antivirus scan.");
         }
 
-        var result = await uploadAsync(memoryStream.ToArray());
+        var result = await uploadAsync(memoryStream.ToArray(), file.ContentType);
         if (!result.Succeeded)
         {
             var error = result.Errors.Count > 0 ? result.Errors[0] : null;
@@ -209,5 +227,29 @@ public class UsersController(
         }
 
         return Ok(result);
+    }
+
+    private async Task<IActionResult> GetImageAsync(Func<string, int, Task<OperationResult<UserImageDto>>> getAsync)
+    {
+        var userId = User.UserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("Invalid user. Please contact the JASPER admin.");
+        }
+
+        var judgeId = User.JudgeId();
+        if (judgeId <= 0)
+        {
+            return BadRequest("Invalid judge. Please contact the JASPER admin.");
+        }
+
+        var result = await getAsync(userId, judgeId);
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.Count > 0 ? result.Errors[0] : null;
+            return NotFound(error);
+        }
+
+        return File(result.Payload.Content, result.Payload.ContentType);
     }
 }

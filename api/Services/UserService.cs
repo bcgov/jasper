@@ -72,7 +72,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.Email == email);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {Email} is not found", email.SanitizeForLog());
+            this.Logger.LogInformation("User with the provided email is not found");
             return null;
         }
 
@@ -316,16 +316,33 @@ public class UserService(
         return true;
     }
 
-    public Task<OperationResult> UploadSignatureAsync(string userId, byte[] signature) =>
-        UploadUserImageAsync(userId, signature, (user, image) => user.Signature = image, "signature");
+    public Task<OperationResult> UploadSignatureAsync(string userId, byte[] signature, string contentType) =>
+        UploadUserImageAsync(userId, signature, contentType, (user, image, type) =>
+        {
+            user.Signature = image;
+            user.SignatureContentType = type;
+        }, "signature");
 
-    public Task<OperationResult> UploadInitialsAsync(string userId, byte[] initials) =>
-        UploadUserImageAsync(userId, initials, (user, image) => user.Initials = image, "initials");
+    public Task<OperationResult> UploadInitialsAsync(string userId, byte[] initials, string contentType) =>
+        UploadUserImageAsync(userId, initials, contentType, (user, image, type) =>
+        {
+            user.Initials = image;
+            user.InitialsContentType = type;
+        }, "initials");
+
+    public Task<OperationResult<UserImageDto>> GetSignatureAsync(string userId, int judgeId) =>
+        GetUserImageAsync(userId, user => (user.Signature, user.SignatureContentType), "signature", judgeId);
+
+    public Task<OperationResult<UserImageDto>> GetInitialsAsync(string userId, int judgeId) =>
+        GetUserImageAsync(userId, user => (user.Initials, user.InitialsContentType), "initials", judgeId);
+
+    #region Private Methods
 
     private async Task<OperationResult> UploadUserImageAsync(
         string userId,
         byte[] image,
-        Action<User, byte[]> assignImage,
+        string contentType,
+        Action<User, byte[], string> assignImage,
         string imageType)
     {
         var user = await this.Repo.GetByIdAsync(userId);
@@ -337,7 +354,7 @@ public class UserService(
 
         try
         {
-            assignImage(user, image);
+            assignImage(user, image, contentType);
 
             await this.Repo.UpdateAsync(user);
             InvalidateCache(CacheName);
@@ -350,4 +367,33 @@ public class UserService(
             return OperationResult.Failure($"Error uploading {imageType}.");
         }
     }
+
+    private async Task<OperationResult<UserImageDto>> GetUserImageAsync(
+        string userId,
+        Func<User, (byte[] Content, string ContentType)> getImage,
+        string imageType,
+        int judgeId)
+    {
+        var user = (await this.Repo.FindAsync(u => u.Id == userId && u.JudgeId == judgeId))?.FirstOrDefault();
+        if (user == null)
+        {
+            this.Logger.LogWarning("User with id: {UserId} is not found", userId.SanitizeForLog());
+            return OperationResult<UserImageDto>.Failure("User not found.");
+        }
+
+        var (content, contentType) = getImage(user);
+        if (content == null || content.Length == 0)
+        {
+            return OperationResult<UserImageDto>.Failure($"User does not have a {imageType}.");
+        }
+
+        return OperationResult<UserImageDto>.Success(new UserImageDto
+        {
+            Content = content,
+            ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType,
+        });
+    }
+
+    #endregion
+
 }

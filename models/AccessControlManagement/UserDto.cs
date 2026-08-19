@@ -22,6 +22,8 @@ public class UserDto : BaseDto
     /// </summary>
     public int? JudgeId { get; set; }
     public UserReleaseNotesDto? ReleaseNotes { get; set; }
+    public bool HasSignature { get; set; }
+    public bool HasInitials { get; set; }
 
     public List<string> GroupIds { get; set; } = [];
     public List<string> Groups { get; set; } = [];

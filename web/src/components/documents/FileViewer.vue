@@ -21,11 +21,8 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-  import {
-    mdiFileDocumentArrowRightOutline,
-    mdiNotebookOutline,
-  } from '@mdi/js';
-  import type { ToolbarItem } from '@nutrient-sdk/viewer';
+  import type NutrientViewer from '@nutrient-sdk/viewer';
+  import type { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
   import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
   import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
@@ -34,6 +31,7 @@
     EmbeddedOutlineAwarePDFViewerStrategy,
     OutlineItem,
     PDFViewerInformationContext,
+    PDFViewerToolbarContext,
   } from './strategies/PDFViewerTypes';
 
   // Props for the generic component
@@ -55,28 +53,48 @@
 
     return typeof value === 'string' && value.length > 0 ? value : undefined;
   });
-  const nutrientViewer = globalThis.NutrientViewer as any;
+  const nutrientViewer: typeof NutrientViewer = globalThis.NutrientViewer;
+  if (!nutrientViewer) {
+    throw new Error('Nutrient Web SDK is not loaded.');
+  }
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
     throw new Error('Service(s) is undefined.');
   }
 
-  let instance = {} as any;
+  let instance!: Instance;
 
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
   };
 
-  async function hasImageAnnotation(pageIndex: number) {
+  async function hasImageAnnotation(
+    pageIndex: number,
+    requiredDescriptions: string[] | undefined
+  ) {
     const annotations = await instance.getAnnotations(pageIndex);
-    return annotations.filter((a) => a.contentType?.includes('image')).size > 0;
+    return (
+      annotations.filter((a) => {
+        if (!(a instanceof nutrientViewer.Annotations.ImageAnnotation)) {
+          return false;
+        }
+        return (
+          a.contentType?.includes('image') &&
+          (!requiredDescriptions ||
+            (a.description !== null &&
+              requiredDescriptions.includes(a.description)))
+        );
+      }).size > 0
+    );
   }
 
   async function checkDocumentForAnnotations() {
+    const requiredDescriptions =
+      props.strategy.getRequiredApprovalAnnotations?.();
     for (let i = 0; i < instance.totalPageCount; i++) {
-      if (await hasImageAnnotation(i)) return true;
+      if (await hasImageAnnotation(i, requiredDescriptions)) return true;
     }
     return false;
   }
@@ -109,38 +127,6 @@
 
       const base64Pdf = props.strategy.extractBase64PDF(apiResponse);
 
-      const openInfoItem: ToolbarItem = {
-        type: 'custom',
-        id: 'open-information',
-        title: 'Case details',
-        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
-        onPress: () => {
-          const informationContext = resolveInformationContext(rawData);
-
-          if (!informationContext) {
-            console.warn('Unable to resolve PDF viewer information context.');
-            return;
-          }
-
-          window.open(
-            `${
-              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
-            }${informationContext.physicalFileId}`,
-            'relatedCaseInfo'
-          );
-        },
-      };
-
-      const reviewItem: ToolbarItem = {
-        type: 'custom',
-        id: 'open-document-review',
-        title: 'Submit',
-        icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
-        onPress: () => {
-          showReviewModal.value = true;
-        },
-      };
-
       instance = await nutrientViewer.load({
         ...configuration,
         document: `data:application/pdf;base64,${base64Pdf}`,
@@ -170,17 +156,8 @@
           nutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
-      instance.setToolbarItems((items: ToolbarItem[]) => {
-        if (props.strategy.showOrderReviewOptions) {
-          items.push(openInfoItem, reviewItem);
-        }
 
-        if (props.strategy.setToolbarItems) {
-          items = props.strategy.setToolbarItems(items);
-        }
-
-        return items;
-      });
+      addCustomToolbarItems(rawData);
 
       // Listen for annotation changes to update canApprove
       instance.addEventListener('annotations.create', updateCanApprove);
@@ -395,13 +372,31 @@
     await props.strategy.reviewOrder(orderReview);
   };
 
+  const addCustomToolbarItems = (rawData: unknown) => {
+    const context: PDFViewerToolbarContext = {
+      instance,
+      nutrientViewer,
+      rawData,
+      resolveInformationContext,
+      openReviewModal: () => {
+        showReviewModal.value = true;
+      },
+      updateCanApprove,
+    };
+
+    instance.setToolbarItems(
+      (items: ToolbarItem[]) =>
+        props.strategy.setToolbarItems?.(items, context) ?? items
+    );
+  };
+
   onMounted(() => {
     loadNutrient();
   });
 
   onUnmounted(() => {
-    if (nutrientViewer) {
-      nutrientViewer.unload('.pdf-container');
+    if (instance) {
+      nutrientViewer.unload(instance);
     }
     if (props.strategy.cleanup) {
       props.strategy.cleanup(sessionId.value);

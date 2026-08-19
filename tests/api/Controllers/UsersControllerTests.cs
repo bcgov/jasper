@@ -465,7 +465,7 @@ public class UsersControllerTests
             .ReturnsAsync((true, "OK"));
 
         _mockUserService
-            .Setup(s => s.UploadSignatureAsync(userId, It.IsAny<byte[]>()))
+            .Setup(s => s.UploadSignatureAsync(userId, It.IsAny<byte[]>(), It.IsAny<string>()))
             .ReturnsAsync(OperationResult.Success());
 
         // Act
@@ -474,7 +474,7 @@ public class UsersControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(userId, It.IsAny<byte[]>()), Times.Once);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(userId, It.IsAny<byte[]>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -501,7 +501,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -526,7 +526,7 @@ public class UsersControllerTests
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("The uploaded file failed the antivirus scan.", badRequest.Value);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -544,7 +544,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file was uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadSignatureAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -565,7 +565,7 @@ public class UsersControllerTests
             .ReturnsAsync((true, "OK"));
 
         _mockUserService
-            .Setup(s => s.UploadInitialsAsync(userId, It.IsAny<byte[]>()))
+            .Setup(s => s.UploadInitialsAsync(userId, It.IsAny<byte[]>(), It.IsAny<string>()))
             .ReturnsAsync(OperationResult.Success());
 
         // Act
@@ -574,7 +574,7 @@ public class UsersControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(userId, It.IsAny<byte[]>()), Times.Once);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(userId, It.IsAny<byte[]>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -601,7 +601,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -619,7 +619,7 @@ public class UsersControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("No file was uploaded.", badRequest.Value);
         _mockAntiVirusService.Verify(s => s.ScanAsync(It.IsAny<Stream>()), Times.Never);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -644,6 +644,168 @@ public class UsersControllerTests
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("The uploaded file failed the antivirus scan.", badRequest.Value);
-        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockUserService.Verify(s => s.UploadInitialsAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetMySignature_ReturnsFile_WhenSignatureExists()
+    {
+        // Arrange
+        var userId = ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1);
+        var claims = new List<Claim>
+        {
+            new(CustomClaimTypes.UserId, userId),
+            new(CustomClaimTypes.JudgeId, judgeId.ToString()),
+        };
+        var controller = CreateControllerWithContext(claims);
+        var content = new byte[] { 1, 2, 3, 4 };
+
+        _mockUserService
+            .Setup(s => s.GetSignatureAsync(userId, judgeId))
+            .ReturnsAsync(OperationResult<UserImageDto>.Success(new UserImageDto
+            {
+                Content = content,
+                ContentType = "image/png",
+            }));
+
+        // Act
+        var result = await controller.GetMySignature();
+
+        // Assert
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal(content, fileResult.FileContents);
+        Assert.Equal("image/png", fileResult.ContentType);
+        _mockUserService.Verify(s => s.GetSignatureAsync(userId, judgeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetMySignature_ReturnsNotFound_WhenServiceFails()
+    {
+        // Arrange
+        var userId = ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1);
+        var claims = new List<Claim>
+        {
+            new(CustomClaimTypes.UserId, userId),
+            new(CustomClaimTypes.JudgeId, judgeId.ToString()),
+        };
+        var controller = CreateControllerWithContext(claims);
+
+        _mockUserService
+            .Setup(s => s.GetSignatureAsync(userId, judgeId))
+            .ReturnsAsync(OperationResult<UserImageDto>.Failure("User does not have a signature."));
+
+        // Act
+        var result = await controller.GetMySignature();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal("User does not have a signature.", notFound.Value);
+    }
+
+    [Fact]
+    public async Task GetMySignature_ReturnsBadRequest_WhenUserIdMissing()
+    {
+        // Arrange
+        var claims = new List<Claim> { new(CustomClaimTypes.JudgeId, _faker.Random.Int(1).ToString()) };
+        var controller = CreateControllerWithContext(claims);
+
+        // Act
+        var result = await controller.GetMySignature();
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
+        _mockUserService.Verify(s => s.GetSignatureAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetMySignature_ReturnsBadRequest_WhenJudgeIdMissing()
+    {
+        // Arrange
+        var claims = new List<Claim> { new(CustomClaimTypes.UserId, ObjectId.GenerateNewId().ToString()) };
+        var controller = CreateControllerWithContext(claims);
+
+        // Act
+        var result = await controller.GetMySignature();
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid judge. Please contact the JASPER admin.", badRequest.Value);
+        _mockUserService.Verify(s => s.GetSignatureAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetMyInitials_ReturnsFile_WhenInitialsExists()
+    {
+        // Arrange
+        var userId = ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1);
+        var claims = new List<Claim>
+        {
+            new(CustomClaimTypes.UserId, userId),
+            new(CustomClaimTypes.JudgeId, judgeId.ToString()),
+        };
+        var controller = CreateControllerWithContext(claims);
+        var content = new byte[] { 5, 6, 7, 8 };
+
+        _mockUserService
+            .Setup(s => s.GetInitialsAsync(userId, judgeId))
+            .ReturnsAsync(OperationResult<UserImageDto>.Success(new UserImageDto
+            {
+                Content = content,
+                ContentType = "image/jpeg",
+            }));
+
+        // Act
+        var result = await controller.GetMyInitials();
+
+        // Assert
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal(content, fileResult.FileContents);
+        Assert.Equal("image/jpeg", fileResult.ContentType);
+        _mockUserService.Verify(s => s.GetInitialsAsync(userId, judgeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetMyInitials_ReturnsNotFound_WhenServiceFails()
+    {
+        // Arrange
+        var userId = ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1);
+        var claims = new List<Claim>
+        {
+            new(CustomClaimTypes.UserId, userId),
+            new(CustomClaimTypes.JudgeId, judgeId.ToString()),
+        };
+        var controller = CreateControllerWithContext(claims);
+
+        _mockUserService
+            .Setup(s => s.GetInitialsAsync(userId, judgeId))
+            .ReturnsAsync(OperationResult<UserImageDto>.Failure("User does not have initials."));
+
+        // Act
+        var result = await controller.GetMyInitials();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal("User does not have initials.", notFound.Value);
+    }
+
+    [Fact]
+    public async Task GetMyInitials_ReturnsBadRequest_WhenUserIdMissing()
+    {
+        // Arrange
+        var claims = new List<Claim> { new(CustomClaimTypes.JudgeId, _faker.Random.Int(1).ToString()) };
+        var controller = CreateControllerWithContext(claims);
+
+        // Act
+        var result = await controller.GetMyInitials();
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
+        _mockUserService.Verify(s => s.GetInitialsAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
     }
 }

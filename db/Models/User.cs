@@ -1,62 +1,84 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using MongoDB.EntityFrameworkCore;
 using Scv.Db.Contants;
 
-namespace Scv.Db.Models
+namespace Scv.Db.Models;
+
+[Collection(CollectionNameConstants.USERS)]
+public class User : EntityBase
 {
-    [Collection(CollectionNameConstants.USERS)]
-    public class User : EntityBase
-    {
-        public required string FirstName { get; set; }
+    public required string FirstName { get; set; }
 
-        public required string LastName { get; set; }
+    public required string LastName { get; set; }
 
-        public required string Email { get; set; }
+    public required string Email { get; set; }
 
-        public bool IsActive { get; set; }
+    public bool IsActive { get; set; }
 
-        public bool? IsPendingRegistration { get; set; } = false;
+    public bool? IsPendingRegistration { get; set; } = false;
 
-        public Guid? ADId { get; set; }
+    public Guid? ADId { get; set; }
 
-        public string ADUsername { get; set; }
+    public string ADUsername { get; set; }
 
-        /// <summary>
-        /// Guid from DIAM
-        /// </summary>
-        public string UserGuid { get; set; }
+    /// <summary>
+    /// Guid from DIAM
+    /// </summary>
+    public string UserGuid { get; set; }
 
-        /// <summary>
-        /// Guid from ProvJud. This is going to be populated manually for now.
-        /// </summary>
-        public string NativeGuid { get; set; }
+    /// <summary>
+    /// Guid from ProvJud. This is going to be populated manually for now.
+    /// </summary>
+    public string NativeGuid { get; set; }
 
-        /// <summary>
-        /// Id used as parameter for external systems backend APIs. This is going to be mapped manually for now.
-        /// </summary>
-        public int? JudgeId { get; set; }
+    /// <summary>
+    /// Id used as parameter for external systems backend APIs. This is going to be mapped manually for now.
+    /// </summary>
+    public int? JudgeId { get; set; }
 
-        /// <summary>
-        /// Roles specific to the User and not based from the groups they are in. This is populated via sync service if user exists in PCSS when logging in.
-        /// </summary>
-        public List<string> RoleIds { get; set; } = [];
+    /// <summary>
+    /// Roles specific to the User and not based from the groups they are in. This is populated via sync service if user exists in PCSS when logging in.
+    /// </summary>
+    public List<string> RoleIds { get; set; } = [];
 
-        /// <summary>
-        /// Groups the user belongs to.
-        /// </summary>
-        public List<string> GroupIds { get; set; } = [];
+    /// <summary>
+    /// Groups the user belongs to.
+    /// </summary>
+    public List<string> GroupIds { get; set; } = [];
 
-        public UserReleaseNotes? ReleaseNotes { get; set; }
+    public UserReleaseNotes? ReleaseNotes { get; set; }
 
-        /// <summary>
-        /// Signature image stored as raw bytes.
-        /// </summary>
-        public byte[]? Signature { get; set; }
+    /// <summary>
+    /// Signature image stored as raw bytes.
+    /// </summary>
+    public byte[]? Signature { get; set; }
 
-        /// <summary>
-        /// Initials image stored as raw bytes.
-        /// </summary>
-        public byte[]? Initials { get; set; }
-    }
+    /// <summary>
+    /// MIME type of the stored signature image (e.g. image/png, image/jpeg).
+    /// </summary>
+    public string? SignatureContentType { get; set; }
+
+    /// <summary>
+    /// Initials image stored as raw bytes.
+    /// </summary>
+    public byte[]? Initials { get; set; }
+
+    /// <summary>
+    /// MIME type of the stored initials image (e.g. image/png, image/jpeg).
+    /// </summary>
+    public string? InitialsContentType { get; set; }
+
+    /// <summary>
+    /// Unmapped property to check if the user has a signature.
+    /// </summary>
+    [NotMapped]
+    public bool HasSignature => Signature is { Length: > 0 } && !string.IsNullOrWhiteSpace(SignatureContentType);
+
+    /// <summary>
+    /// Unmapped property to check if the user has initials.
+    /// </summary>
+    [NotMapped]
+    public bool HasInitials => Initials is { Length: > 0 } && !string.IsNullOrWhiteSpace(InitialsContentType);
 }

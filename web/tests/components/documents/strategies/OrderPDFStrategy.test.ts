@@ -978,7 +978,7 @@ describe('OrderPDFStrategy', () => {
         (item) => item.type === 'linearized-download-indicator'
       );
       expect(result[anchorIndex + 1].type).toBe('spacer');
-      const imageIndex = result.indexOf(imageWithId);
+      const imageIndex = result.indexOf(imageWithId as unknown as ToolbarItem);
       expect(imageIndex).toBeGreaterThan(anchorIndex + 1);
     });
 
@@ -1044,8 +1044,8 @@ describe('OrderPDFStrategy', () => {
         (item) => item.type === 'linearized-download-indicator'
       );
       expect(result[anchorIndex + 1].type).toBe('spacer');
-      expect(result[anchorIndex + 2]).toBe(openSupportingDocuments);
-      expect(result[anchorIndex + 3]).toBe(openInformation);
+      expect(result[anchorIndex + 2].id).toBe('open-supporting-documents');
+      expect(result[anchorIndex + 3].id).toBe('open-information');
       expect(result[anchorIndex + 4]).toBe(imageItem);
       expect(result[anchorIndex + 5]).toBe(openDocumentReview);
     });

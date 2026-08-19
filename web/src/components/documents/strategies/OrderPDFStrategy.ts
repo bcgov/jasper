@@ -6,6 +6,7 @@ import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import {
   mdiAlphaIBoxOutline,
+  mdiFileDocumentArrowRightOutline,
   mdiFileDocumentMultipleOutline,
   mdiFountainPenTip,
   mdiNotebookOutline,
@@ -58,7 +59,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     this.showOrderReviewOptions =
       this.commonStore.userInfo?.judgeId != null &&
       this.commonStore.userInfo?.judgeId ===
-      this.commonStore.loggedInUserInfo?.judgeId;
+        this.commonStore.loggedInUserInfo?.judgeId;
     this.judgeId = this.commonStore.userInfo?.judgeId ?? null;
     this.hasSignature = this.commonStore.userInfo?.hasSignature ?? false;
     this.hasInitials = this.commonStore.userInfo?.hasInitials ?? false;
@@ -190,25 +191,9 @@ export class OrderPDFStrategy extends FilePDFStrategy {
   addCustomToolbarItems(context: PDFViewerToolbarContext): ToolbarItem[] {
     const additionalToolbarItems: ToolbarItem[] = [];
 
-    // Current user is not the judge assigned to this order
-    // so don't show the order review options.
-    if (!this.showOrderReviewOptions) {
-      return additionalToolbarItems;
-    }
-
-    additionalToolbarItems.push(
-      {
-        type: 'custom',
-        id: OrderPDFStrategy.ID_OPEN_INFORMATION,
-        title: 'Case details',
-        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
-        onPress: () => {
-          const informationContext = context.resolveInformationContext(
-            context.rawData
-          );
     additionalToolbarItems.push({
       type: 'custom',
-      id: 'open-information',
+      id: OrderPDFStrategy.ID_OPEN_INFORMATION,
       title: 'Case details',
       icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
       onPress: () => {
@@ -233,7 +218,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     if (this.currentOrder?.hasSupportingDocs) {
       additionalToolbarItems.push({
         type: 'custom',
-        id: 'open-supporting-documents',
+        id: OrderPDFStrategy.ID_OPEN_SUPPORTING_DOCS,
         title: 'View Supporting Documents',
         icon: `<svg><path d="${mdiFileDocumentMultipleOutline}"/></svg>`,
         onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
@@ -248,7 +233,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
     additionalToolbarItems.push({
       type: 'custom',
-      id: 'open-document-review',
+      id: OrderPDFStrategy.ID_OPEN_DOCUMENT_REVIEW,
       title: 'Submit',
       icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
       onPress: () => {

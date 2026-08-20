@@ -516,13 +516,28 @@ describe('FileViewer.vue', () => {
     expect(typeof context.updateCanApprove).toBe('function');
   });
 
-  it('returns toolbar items unchanged when the strategy does not customize them', async () => {
+  it('inserts the default toolbar items when the strategy does not customize them', async () => {
     const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }]);
 
     await mountViewer(strategy);
 
     expect(mockInstance.setToolbarItems).toHaveBeenCalledTimes(1);
-    expect(toolbarItems).toEqual([]);
+    expect(toolbarItems).toEqual([
+      { type: 'line' },
+      { type: 'arrow' },
+      { type: 'rectangle' },
+      { type: 'ellipse' },
+      { type: 'polygon' },
+      { type: 'cloudy-polygon' },
+      { type: 'polyline' },
+      { type: 'ink' },
+      { type: 'highlighter' },
+      { type: 'text-highlighter' },
+      { type: 'ink-eraser' },
+      { type: 'content-editor' },
+      { type: 'search' },
+      { type: 'export-pdf' },
+    ]);
   });
 
   it('opens the review modal when the toolbar context requests it', async () => {

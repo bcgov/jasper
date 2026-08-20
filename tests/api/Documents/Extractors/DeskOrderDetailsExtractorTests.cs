@@ -7,6 +7,8 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Scv.Api.Documents.Extractors;
 using Xunit;
+// Alias for the Office 2010 Word namespace (w14 XML prefix); disambiguates checkbox types.
+using W14 = DocumentFormat.OpenXml.Office2010.Word;
 
 namespace tests.api.Documents.Extractors;
 
@@ -236,6 +238,80 @@ public class DeskOrderDetailsExtractorTests
         Assert.Contains("Unable to extract order terms from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Extract_SetsIsClerkToSign_AccordingToCheckboxState(bool isChecked)
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+            body.AppendChild(ClerkApprovalParagraph(isChecked));
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.Equal(isChecked, result.IsClerkToSign);
+    }
+
+    [Fact]
+    public void Extract_SetsIsClerkToSign_WhenCheckboxCheckedUsingOneValue()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+            body.AppendChild(ClerkApprovalParagraph(W14.OnOffValues.One));
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.True(result.IsClerkToSign);
+    }
+
+    [Fact]
+    public void Extract_SetsIsClerkToSignFalse_WhenClerkApprovalLabelIsMissing()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+            // No clerk approval paragraph present.
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.False(result.IsClerkToSign);
+    }
+
+    [Fact]
+    public void Extract_SetsIsClerkToSignFalse_WhenClerkApprovalLabelPresentButNoCheckbox()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.CLERK_APPROVAL_LABEL));
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.False(result.IsClerkToSign);
+    }
+
     private static MemoryStream BuildDocxStream(Action<Body> configureBody)
     {
         var stream = new MemoryStream();
@@ -269,4 +345,15 @@ public class DeskOrderDetailsExtractorTests
         new(
             new SdtProperties(new Tag { Val = tagValue }),
             new SdtContentBlock(new Paragraph(new Run(new Text("[signature]")))));
+
+    private static Paragraph ClerkApprovalParagraph(bool isChecked) =>
+        ClerkApprovalParagraph(isChecked ? W14.OnOffValues.True : W14.OnOffValues.False);
+
+    private static Paragraph ClerkApprovalParagraph(W14.OnOffValues checkedValue) =>
+        new(
+            new Run(new Text(DeskOrderDetailsExtractor.CLERK_APPROVAL_LABEL) { Space = SpaceProcessingModeValues.Preserve }),
+            new SdtRun(
+                new SdtProperties(
+                    new W14.SdtContentCheckBox(new W14.Checked { Val = checkedValue })),
+                new SdtContentRun(new Run(new Text("[checkbox]")))));
 }

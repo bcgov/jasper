@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Office2010.Word;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Scv.Core.Helpers;
@@ -15,6 +16,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
     public const string DIRECTIONS_LABEL = "Directions:";
     public const string ORDER_TERMS_LABEL = "Terms of Order:";
     public const string SIGNATURE_TAG = "Insert Signature";
+    public const string CLERK_APPROVAL_LABEL = "Pursuant to Provincial Court Family Rule 169, I hereby designate the Clerk of the Court to sign the Order on my behalf.";
 
     public DeskOrderDetailsDto Extract(Stream stream)
     {
@@ -73,7 +75,8 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
                     SequenceNumber = index + 1,
                     DisplaySortNumber = index + 1,
                     Text = text
-                })]
+                })],
+            IsClerkToSign = IsClerkDesignatedToSign(body)
         };
     }
 
@@ -169,4 +172,23 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
             .GetFirstChild<Tag>()?
             .Val?.Value?
             .Contains(SIGNATURE_TAG, StringComparison.OrdinalIgnoreCase) == true;
+
+    private static bool IsClerkDesignatedToSign(Body body)
+    {
+        // Find the paragraph that contains the clerk approval checkbox and label
+        var clerkApprovalParagraph = body.Descendants<Paragraph>()
+            .FirstOrDefault(p => p.InnerText.Contains(CLERK_APPROVAL_LABEL, StringComparison.OrdinalIgnoreCase));
+        if (clerkApprovalParagraph == null)
+        {
+            return false;
+        }
+
+        // Find the checkbox if its checked or not.
+        var checkBox = clerkApprovalParagraph.Descendants<SdtRun>()
+            .Select(sdt => sdt.SdtProperties?.GetFirstChild<SdtContentCheckBox>())
+            .FirstOrDefault(cb => cb is not null);
+
+        var checkedVal = checkBox?.Checked?.Val;
+        return checkedVal?.Value == OnOffValues.True || checkedVal?.Value == OnOffValues.One;
+    }
 }

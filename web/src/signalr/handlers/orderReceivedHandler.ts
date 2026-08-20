@@ -8,12 +8,12 @@ import type { NotificationHandler } from '../notifications';
 import { type OrderReceivedNotificationPayload } from '../payloads';
 
 export const priorityText = (order: Order) =>
-  order.priorityTypeDescription
-    ? ` with priority class: ${order.priorityTypeDescription}`
+  order.priorityTypeDesc
+    ? ` with priority class: ${order.priorityTypeDesc}`
     : ``;
 
 export const buildOrderReceivedMessage = (order: Order) =>
-  `Received ${order.courtListType} for file ${getCourtClassLabel(order.courtClass)} - ${order.courtFileNumber}${priorityText(order)}`;
+  `Received order for file ${getCourtClassLabel(order.courtClass)} - ${order.courtFileNumber}${priorityText(order)}`;
 
 export const createOrderReceivedHandler = ({
   orderService,
@@ -56,13 +56,14 @@ export const createOrderReceivedHandler = ({
 
     snackbarStore.showSnackbar(
       buildOrderReceivedMessage(order),
-      'light',
-      `${order.courtListType} received!`,
+      'success',
+      `🔄 Heads-up!`,
       15000,
       {
         label: `View package #${order.packageId}`,
         onClick: () => viewOrderDetails(order),
-      }
+      },
+      0.7
     );
   };
 };

@@ -4,8 +4,8 @@
     :timeout="snackbarStore.timeout"
     :color="resolvedSnackbarStyle.color"
     :class="resolvedSnackbarClass"
+    :style="{ '--snackbar-opacity': snackbarStore.opacity }"
     location="bottom right"
-    :class="{ 'compact-snackbar': snackbarStore.isCompact }"
   >
     <div class="snackbar-content">
       <div class="snackbar-header">
@@ -80,6 +80,10 @@
 </script>
 
 <style scoped>
+  .snackbar :deep(.v-snackbar__wrapper) {
+    opacity: var(--snackbar-opacity, 1);
+  }
+
   .snackbar-light :deep(.v-snackbar__wrapper) {
     background-color: var(--bg-white-500);
     color: var(--text-black-500);

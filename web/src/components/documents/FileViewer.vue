@@ -389,7 +389,6 @@
       const allItems =
         props.strategy.setToolbarItems?.(items, context) ?? items;
 
-      // Reorder default toolbar items
       return reorderToolbarItems(allItems);
     });
   };

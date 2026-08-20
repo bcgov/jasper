@@ -150,6 +150,7 @@ public class CivilFilesServiceTests(FilesServiceFixture filesServiceFixture)
             _filesServiceFixture.MockLocationService.Object,
             _filesServiceFixture.Cache,
             _filesServiceFixture.Principal,
-            _filesServiceFixture.MockCivilLogger.Object);
+            _filesServiceFixture.MockCivilLogger.Object,
+            _filesServiceFixture.MockPCSSFileDetailClient.Object);
     }
 }

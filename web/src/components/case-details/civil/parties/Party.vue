@@ -53,10 +53,7 @@
     smallClaims.includes(props.courtClassCd) &&
     props.party.aliases &&
     props.party.aliases.length > 0;
-  const counselNames =
-    props.party.selfRepresentedYN === 'Y'
-      ? ['Self-Represented']
-      : (props.party.counsel?.map((c) => c.counselFullName) ?? []);
+  const counselNames = props.party.counsel?.map((c) => c.fullNm) ?? [];
   const aliases =
     props.party.aliases?.map((a) =>
       a.surnameNm && a.firstGivenNm

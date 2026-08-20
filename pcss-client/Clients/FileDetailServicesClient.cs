@@ -61,7 +61,7 @@ public partial class FileDetailClient
 
     /// <returns>OK</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual System.Threading.Tasks.Task<object> GetCriminalFileDetailAsync(int justinNo)
+    public virtual System.Threading.Tasks.Task<CriminalFileDetail> GetCriminalFileDetailAsync(int justinNo)
     {
         return GetCriminalFileDetailAsync(justinNo, System.Threading.CancellationToken.None);
     }
@@ -69,7 +69,7 @@ public partial class FileDetailClient
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
     /// <returns>OK</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async System.Threading.Tasks.Task<object> GetCriminalFileDetailAsync(int justinNo, System.Threading.CancellationToken cancellationToken)
+    public virtual async System.Threading.Tasks.Task<CriminalFileDetail> GetCriminalFileDetailAsync(int justinNo, System.Threading.CancellationToken cancellationToken)
     {
         if (justinNo == null)
             throw new System.ArgumentNullException("justinNo");
@@ -114,7 +114,7 @@ public partial class FileDetailClient
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
                     {
-                        var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                        var objectResponse_ = await ReadObjectResponseAsync<CriminalFileDetail>(response_, headers_, cancellationToken).ConfigureAwait(false);
                         if (objectResponse_.Object == null)
                         {
                             throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -143,7 +143,7 @@ public partial class FileDetailClient
 
     /// <returns>OK</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual System.Threading.Tasks.Task<object> GetCivilFileDetailAsync(double physicalFileId)
+    public virtual System.Threading.Tasks.Task<CivilFileDetail> GetCivilFileDetailAsync(double physicalFileId)
     {
         return GetCivilFileDetailAsync(physicalFileId, System.Threading.CancellationToken.None);
     }
@@ -151,7 +151,7 @@ public partial class FileDetailClient
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
     /// <returns>OK</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async System.Threading.Tasks.Task<object> GetCivilFileDetailAsync(double physicalFileId, System.Threading.CancellationToken cancellationToken)
+    public virtual async System.Threading.Tasks.Task<CivilFileDetail> GetCivilFileDetailAsync(double physicalFileId, System.Threading.CancellationToken cancellationToken)
     {
         if (physicalFileId == null)
             throw new System.ArgumentNullException("physicalFileId");
@@ -196,7 +196,7 @@ public partial class FileDetailClient
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
                     {
-                        var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                        var objectResponse_ = await ReadObjectResponseAsync<CivilFileDetail>(response_, headers_, cancellationToken).ConfigureAwait(false);
                         if (objectResponse_.Object == null)
                         {
                             throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1141,7 +1141,7 @@ public partial class FileDetailClient
         return result == null ? "" : result;
     }
 
-        [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class ApiException : System.Exception
     {
         public int StatusCode { get; private set; }

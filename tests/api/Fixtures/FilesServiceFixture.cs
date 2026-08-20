@@ -16,6 +16,7 @@ using Scv.Api.Documents;
 using Scv.Api.Services;
 using Scv.Api.Services.Files;
 using Scv.Core.Helpers;
+using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 using PCSSLocationServices = PCSSCommon.Clients.LocationServices;
 using PCSSLookupServices = PCSSCommon.Clients.LookupServices;
 
@@ -40,6 +41,7 @@ public class FilesServiceFixture : IDisposable
     public Mock<ILoggerFactory> MockLoggerFactory { get; }
     public Mock<ILogger<CivilFilesService>> MockCivilLogger { get; }
     public Mock<IDocumentConverter> MockDocumentConverter { get; }
+    public Mock<PCSSFileDetailServices.FileDetailClient> MockPCSSFileDetailClient { get; }
     public IAppCache Cache { get; }
     public IMapper Mapper { get; }
     public ClaimsPrincipal Principal { get; private set; }
@@ -95,6 +97,7 @@ public class FilesServiceFixture : IDisposable
         // Client and service mocks
         MockFileServicesClient = new Mock<FileServicesClient>(MockBehavior.Strict, _httpClient);
         MockDocumentConverter = new Mock<IDocumentConverter>();
+        MockPCSSFileDetailClient = new Mock<PCSSFileDetailServices.FileDetailClient>(MockBehavior.Strict, _httpClient);
 
         // Logger setup
         MockLoggerFactory = new Mock<ILoggerFactory>();
@@ -164,7 +167,8 @@ public class FilesServiceFixture : IDisposable
             Cache,
             Principal,
             MockLoggerFactory.Object,
-            MockDocumentConverter.Object);
+            MockDocumentConverter.Object,
+            MockPCSSFileDetailClient.Object);
     }
 
     public FilesServiceFixture WithPrincipal(ClaimsPrincipal principal)

@@ -40,7 +40,7 @@
     child: partyType;
   }>();
 
-  const counselNames = props.child.counsel?.map((c) => c.counselFullName) ?? [];
+  const counselNames = props.child.counsel?.map((c) => c.fullNm) ?? [];
   const name = computed(() => {
     const { lastNm, givenNm, orgNm } = props.child;
     return lastNm ? formatToFullName(lastNm, givenNm) : orgNm;

@@ -68,6 +68,7 @@
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
+    styleSheets: [`${import.meta.env.BASE_URL}styles/nutrient-toolbar.css`],
   };
 
   async function hasImageAnnotation(
@@ -131,6 +132,15 @@
         ...configuration,
         document: `data:application/pdf;base64,${base64Pdf}`,
       });
+
+      // Default the built-in line tool's stroke color to red instead of blue.
+      instance.setAnnotationPresets((presets) => ({
+        ...presets,
+        line: {
+          ...presets.line,
+          strokeColor: nutrientViewer.Color.RED,
+        },
+      }));
 
       if (supportsEmbeddedOutline(props.strategy)) {
         const outline = props.strategy.createOutlineWithEmbeddedOutline(

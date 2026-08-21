@@ -384,7 +384,7 @@ public class UserService(
         var (content, contentType) = getImage(user);
         if (content == null || content.Length == 0)
         {
-            return OperationResult<UserImageDto>.Failure($"User does not have a {imageType}.");
+            return OperationResult<UserImageDto>.Failure($"User does not have {imageType}.");
         }
 
         return OperationResult<UserImageDto>.Success(new UserImageDto

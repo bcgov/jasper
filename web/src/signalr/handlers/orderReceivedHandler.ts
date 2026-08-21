@@ -4,6 +4,7 @@ import { useSnackbarStore } from '@/stores/SnackbarStore';
 import type { Order } from '@/types';
 import { NotificationType } from '@/types/common';
 import { getCourtClassLabel } from '@/utils/utils';
+import { mdiFileSign } from '@mdi/js';
 import type { NotificationHandler } from '../notifications';
 import { type OrderReceivedNotificationPayload } from '../payloads';
 
@@ -57,13 +58,14 @@ export const createOrderReceivedHandler = ({
     snackbarStore.showSnackbar(
       buildOrderReceivedMessage(order),
       'success',
-      `🔔 Heads-up!`,
+      `Heads-up!`,
       15000,
       {
         label: `View package #${order.packageId}`,
         onClick: () => viewOrderDetails(order),
       },
-      0.7
+      0.7,
+      mdiFileSign
     );
   };
 };

@@ -9,7 +9,14 @@
   >
     <div class="snackbar-content">
       <div class="snackbar-header">
-        <h3>{{ snackbarStore.title }}</h3>
+        <h3>
+          <v-icon
+            v-if="snackbarStore.icon"
+            class="snackbar-title-icon"
+            :icon="snackbarStore.icon"
+          />
+          {{ snackbarStore.title }}
+        </h3>
         <v-icon
           class="snackbar-close-icon"
           :icon="mdiCloseCircle"

@@ -3,6 +3,7 @@ import type { NotificationDto } from '@/signalr/notifications';
 import type { OrderReceivedNotificationPayload } from '@/signalr/payloads';
 import type { Order } from '@/types';
 import { NotificationType, OrderReviewStatus } from '@/types/common';
+import { mdiFileDocumentAlertOutline, mdiFileSign } from '@mdi/js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getCourtClassLabelMock } = vi.hoisted(() => ({
@@ -92,10 +93,11 @@ describe('createOrderReceivedHandler', () => {
     expect(showSnackbar).toHaveBeenCalledWith(
       'Received order for file Criminal - 12345-1 with priority class: High',
       'success',
-      `🔔 Heads-up!`,
+      `Heads-up!`,
       15000,
       expect.objectContaining({ label: 'View package #12345' }),
-      0.7
+      0.7,
+      mdiFileSign
     );
 
     const action = showSnackbar.mock.calls[0][4];

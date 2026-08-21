@@ -394,10 +394,13 @@
       updateCanApprove,
     };
 
-    instance.setToolbarItems(
-      (items: ToolbarItem[]) =>
-        props.strategy.setToolbarItems?.(items, context) ?? items
-    );
+    instance.setToolbarItems((items: ToolbarItem[]) => {
+      // Add custom toolbar items based on the strategy and context
+      const allItems =
+        props.strategy.setToolbarItems?.(items, context) ?? items;
+
+      return arrangeToolbarItems(allItems);
+    });
   };
 
   onMounted(() => {
@@ -412,6 +415,47 @@
       props.strategy.cleanup(sessionId.value);
     }
   });
+
+  const arrangeToolbarItems = (allItems: ToolbarItem[]): ToolbarItem[] => {
+    // Desired order of default toolbar items
+    const desiredTypes: ToolbarItem['type'][] = [
+      'line',
+      'arrow',
+      'rectangle',
+      'ellipse',
+      'polygon',
+      'cloudy-polygon',
+      'polyline',
+      'ink',
+      'highlighter',
+      'text-highlighter',
+      'ink-eraser',
+      'content-editor',
+      'search',
+      'export-pdf',
+    ];
+
+    // Create the ordered block, preserving existing items and adding missing ones.
+    const desiredTypeSet = new Set(desiredTypes);
+    const desiredItems: ToolbarItem[] = desiredTypes.map(
+      (type) => allItems.find((item) => item.type === type) ?? { type }
+    );
+
+    // Keep the remaining items (those not part of the block) in their original order.
+    const remainingItems = allItems.filter(
+      (item) => !desiredTypeSet.has(item.type)
+    );
+
+    // Insert the sequence just after the text tool (or append if absent).
+    const textIndex = remainingItems.findIndex((item) => item.type === 'text');
+    const insertAt = textIndex === -1 ? remainingItems.length : textIndex + 1;
+
+    return [
+      ...remainingItems.slice(0, insertAt),
+      ...desiredItems,
+      ...remainingItems.slice(insertAt),
+    ];
+  };
 </script>
 
 <style scoped>

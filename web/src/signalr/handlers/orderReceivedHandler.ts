@@ -57,7 +57,7 @@ export const createOrderReceivedHandler = ({
     snackbarStore.showSnackbar(
       buildOrderReceivedMessage(order),
       'success',
-      `🔄 Heads-up!`,
+      `🔔 Heads-up!`,
       15000,
       {
         label: `View package #${order.packageId}`,

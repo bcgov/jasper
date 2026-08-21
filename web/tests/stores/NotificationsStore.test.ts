@@ -124,7 +124,7 @@ describe('NotificationsStore', () => {
     expect(showSnackbarMock).toHaveBeenCalledWith(
       'Received order for file Criminal - 12345-1 with priority class: High',
       'success',
-      `🔄 Heads-up!`,
+      `🔔 Heads-up!`,
       15000,
       expect.objectContaining({ label: 'View package #12345' }),
       0.7

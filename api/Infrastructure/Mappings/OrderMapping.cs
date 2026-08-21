@@ -64,6 +64,7 @@ public class OrderMapping : IRegister
                     OrderStatus.Approved => nameof(JudicialDecisionCd.APPR),
                     OrderStatus.Unapproved => nameof(JudicialDecisionCd.NAPP),
                     OrderStatus.AwaitingDocumentation => nameof(JudicialDecisionCd.AFDC),
+                    OrderStatus.OrderMade => nameof(JudicialDecisionCd.ORDM),
                     _ => null,
                 };
             });
@@ -99,7 +100,7 @@ public class OrderMapping : IRegister
 
     private static byte[] GetDocumentData(OrderDto src)
     {
-        if (src.Status != OrderStatus.Approved)
+        if (src.Status != OrderStatus.Approved && src.Status != OrderStatus.OrderMade)
         {
             return null;
         }

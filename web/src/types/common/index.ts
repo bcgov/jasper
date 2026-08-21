@@ -182,6 +182,7 @@ export enum OrderReviewStatus {
   Pending = 'Pending',
   Approved = 'Approved',
   AwaitingDocumentation = 'AwaitingDocumentation',
+  OrderMade = 'OrderMade',
 }
 
 export enum OrderPriorityEnum {

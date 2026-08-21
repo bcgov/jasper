@@ -4,7 +4,7 @@
       <!-- Header -->
       <v-card-title class="d-flex align-center">
         <v-icon class="me-2" :icon="mdiPencilBoxOutline" />
-        {{ submitted ? 'Review Submitted' : 'Review Order' }}
+        {{ title }}
         <v-spacer />
         <v-btn
           icon
@@ -68,7 +68,10 @@
             <p class="text-body-2 text-medium-emphasis mb-3">
               Add any notes or reasoning for your decision. These comments will
               be saved with the order. <br />
-              <strong>Required</strong> for any action other than Approval.
+              <span v-if="!isCurrentDeskOrder"
+                ><strong>Required</strong> for any action other than
+                Submit.</span
+              >
             </p>
 
             <v-textarea
@@ -104,58 +107,49 @@
           >
             {{
               isFamilyDeskOrder
-                ? 'Document upload is required before Approval.'
-                : 'Document signature is required before Approval.'
+                ? 'Document upload is required before submitting the order.'
+                : 'Document signature is required before submitting.'
             }}
           </v-alert>
         </v-card-text>
         <!-- Actions -->
         <v-card-actions class="px-6 py-4">
-          <!-- Left (destructive / secondary) -->
-          <div class="d-flex ga-2">
-            <v-btn
-              color="error"
-              variant="text"
-              :prepend-icon="mdiClose"
-              :disabled="!canReject || submitting"
-              :loading="
-                submitting && pendingStatus === OrderReviewStatus.Unapproved
-              "
-              @click="submitReview(OrderReviewStatus.Unapproved)"
-            >
-              Reject
-            </v-btn>
-
-            <v-btn
-              color="warning"
-              variant="outlined"
-              v-if="isCurrentDeskOrder"
-              :prepend-icon="mdiAccountClock"
-              :disabled="!canReject || submitting"
-              :loading="
-                submitting &&
-                pendingStatus === OrderReviewStatus.AwaitingDocumentation
-              "
-              @click="submitReview(OrderReviewStatus.AwaitingDocumentation)"
-            >
-              Awaiting documentation
-            </v-btn>
-          </div>
-
+          <v-btn
+            v-if="!isCurrentDeskOrder"
+            color="error"
+            variant="text"
+            :prepend-icon="mdiClose"
+            :disabled="!canReject || submitting"
+            :loading="
+              submitting && pendingStatus === OrderReviewStatus.Unapproved
+            "
+            @click="submitReview(OrderReviewStatus.Unapproved)"
+          >
+            Reject
+          </v-btn>
           <v-spacer />
-
-          <!-- Primary -->
           <v-btn
             color="success"
             size="large"
             :prepend-icon="mdiCheckBold"
             :disabled="!canApprove || submitting"
             :loading="
-              submitting && pendingStatus === OrderReviewStatus.Approved
+              submitting &&
+              pendingStatus !== null &&
+              [
+                OrderReviewStatus.Approved,
+                OrderReviewStatus.OrderMade,
+              ].includes(pendingStatus)
             "
-            @click="submitReview(OrderReviewStatus.Approved)"
+            @click="
+              submitReview(
+                isCurrentDeskOrder
+                  ? OrderReviewStatus.OrderMade
+                  : OrderReviewStatus.Approved
+              )
+            "
           >
-            Approve
+            Submit
           </v-btn>
         </v-card-actions>
       </template>
@@ -170,7 +164,6 @@
   import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
   import {
-    mdiAccountClock,
     mdiCheckBold,
     mdiCheckCircleOutline,
     mdiClose,
@@ -298,4 +291,11 @@
   };
 
   onBeforeUnmount(cancelAutoClose);
+
+  const title = computed(() => {
+    if (submitted.value) {
+      return 'Review Submitted';
+    }
+    return isCurrentDeskOrder.value ? 'Review Application' : 'Review Order';
+  });
 </script>

@@ -17,6 +17,30 @@
       </v-toolbar>
 
       <v-container>
+        <v-alert
+          v-if="searchResult"
+          :type="searchResult.isCached ? 'warning' : 'info'"
+          border="start"
+          density="compact"
+          class="mb-4"
+          data-testid="search-freshness-banner"
+          :data-cache-status="searchResult.isCached ? 'cached' : 'current'"
+        >
+          {{ searchResult.isCached ? 'Cached results' : 'Results' }} as of
+          {{ formatDate(searchResult.retrievedAtUtc) }}. Click
+          <v-btn
+            variant="outlined"
+            size="small"
+            :loading="loading"
+            :disabled="loading"
+            data-testid="refresh-documents-link"
+            @click="refreshDocuments"
+          >
+            refresh
+          </v-btn>
+          to check for newer results.
+        </v-alert>
+
         <v-row
           v-if="documents.length === 0 && !loading"
           justify="center"
@@ -115,7 +139,10 @@
   import { PERMISSIONS } from '@/constants/permissions';
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
   import { useCommonStore } from '@/stores';
-  import { FileMetadataDto } from '@/types/transitory-documents';
+  import {
+    FileMetadataDto,
+    TransitoryDocumentSearchResponse,
+  } from '@/types/transitory-documents';
   import {
     mdiClose,
     mdiDownload,
@@ -153,6 +180,7 @@
   });
   const loading = ref(false);
   const documents = ref<FileMetadataDto[]>([]);
+  const searchResult = ref<TransitoryDocumentSearchResponse | null>(null);
   const selectedDocuments = ref<FileMetadataDto[]>([]);
   const downloadingFiles = ref<Record<string, boolean>>({});
   const latestFetchRequestId = ref(0);
@@ -206,6 +234,7 @@
     const requestId = ++latestFetchRequestId.value;
     loading.value = true;
     documents.value = [];
+    searchResult.value = null;
     error.value = null;
 
     try {
@@ -227,7 +256,8 @@
         return;
       }
 
-      documents.value = result || [];
+      documents.value = result?.documents || [];
+      searchResult.value = result || null;
     } catch (e) {
       error.value = e;
       console.error('Error fetching transitory documents:', e);
@@ -324,6 +354,7 @@
         latestFetchRequestId.value++;
         loading.value = false;
         selectedDocuments.value = [];
+        searchResult.value = null;
       }
     },
     { immediate: true }

@@ -6,7 +6,6 @@ import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import {
   mdiAlphaIBoxOutline,
-  mdiFileDocumentArrowRightOutline,
   mdiFileDocumentMultipleOutline,
   mdiFountainPenTip,
   mdiNotebookOutline,
@@ -235,7 +234,8 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       type: 'custom',
       id: OrderPDFStrategy.ID_OPEN_DOCUMENT_REVIEW,
       title: 'Submit',
-      icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
+      node: OrderPDFStrategy.createSubmitLabelNode(),
+      className: 'jasper-submit-btn',
       onPress: () => {
         context.openReviewModal();
       },

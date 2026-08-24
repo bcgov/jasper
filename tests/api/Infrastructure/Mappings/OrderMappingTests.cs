@@ -471,6 +471,20 @@ public class OrderMappingTests
     }
 
     [Fact]
+    public void OrderDto_To_JudicialAction_MapsDocumentData_WhenStatusIsOrderMade()
+    {
+        var expectedBytes = _faker.Random.Bytes(64);
+        var orderDto = CreateOrderDto();
+        orderDto.DocumentData = Convert.ToBase64String(expectedBytes);
+        orderDto.SupportingDocumentData = Convert.ToBase64String(_faker.Random.Bytes(64));
+        orderDto.Status = OrderStatus.OrderMade;
+
+        var result = orderDto.Adapt<JudicialAction>(_config);
+
+        Assert.Equal(expectedBytes, result.Document);
+    }
+
+    [Fact]
     public void OrderDto_To_JudicialAction_DoesNotMapDocument_WhenStatusIsNotApproved()
     {
         var expectedBytes = _faker.Random.Bytes(64);
@@ -596,6 +610,7 @@ public class OrderMappingTests
     [InlineData(OrderStatus.Approved, "APPR")]
     [InlineData(OrderStatus.Unapproved, "NAPP")]
     [InlineData(OrderStatus.AwaitingDocumentation, "AFDC")]
+    [InlineData(OrderStatus.OrderMade, "ORDM")]
     public void OrderDto_To_JudicialAction_MapsDecisionCode(OrderStatus status, string expectedCode)
     {
         var orderDto = CreateOrderDto();

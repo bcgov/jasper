@@ -255,7 +255,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved || orderDto.Status == OrderStatus.AwaitingDocumentation)
+        if (orderDto.Status is OrderStatus.Approved
+            or OrderStatus.Unapproved
+            or OrderStatus.AwaitingDocumentation
+            or OrderStatus.OrderMade)
         {
             _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
         }
@@ -475,7 +478,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     {
         // No document will be sent for Desk Orders
         actionDto.Document = [];
-        if (orderDto.Status != OrderStatus.Approved)
+        if (orderDto.Status != OrderStatus.Approved && orderDto.Status != OrderStatus.OrderMade)
         {
             return actionDto;
         }

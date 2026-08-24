@@ -476,7 +476,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     {
         // No document will be sent for Desk Orders
         actionDto.Document = [];
-        if (orderDto.Status != OrderStatus.Approved)
+        if (orderDto.Status != OrderStatus.Approved && orderDto.Status != OrderStatus.OrderMade)
         {
             return actionDto;
         }

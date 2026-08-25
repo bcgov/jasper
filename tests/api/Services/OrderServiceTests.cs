@@ -845,7 +845,7 @@ public class OrderServiceTests : ServiceTestBase
         var judgeId = _faker.Random.Int(1, 1000);
         var order = CreateOrder();
         order.Id = orderId;
-        order.OrderRequest.Referral.SentToPartId = judgeId;
+        order.JudgeId = judgeId;
 
         var orderReview = new OrderReviewDto
         {
@@ -876,7 +876,7 @@ public class OrderServiceTests : ServiceTestBase
         var judgeId = _faker.Random.Int(1, 1000);
         var order = CreateOrder();
         order.Id = orderId;
-        order.OrderRequest.Referral.SentToPartId = judgeId;
+        order.JudgeId = judgeId;
 
         var orderReview = new OrderReviewDto
         {

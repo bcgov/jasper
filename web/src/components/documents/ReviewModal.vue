@@ -228,7 +228,8 @@
 
     const documentData = '';
     let supportingDocumentData = '';
-    if (selectedUpload.value) {
+    // When the order is signable, ignore any uploaded file so submission follows the signed path.
+    if (selectedUpload.value && !props.canApprove) {
       const arrayBuffer = await selectedUpload.value.arrayBuffer();
       supportingDocumentData = arrayBufferToBase64(arrayBuffer);
     }

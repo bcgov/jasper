@@ -220,10 +220,16 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     public async Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview)
     {
         var order = await Repo.GetByIdAsync(id);
-
         if (order is null)
         {
             return OperationResult.Failure("Order not found");
+        }
+
+        var assignedJudgeId = order.JudgeId;
+        var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
+        if (assignedJudgeId != judgeId)
+        {
+            return OperationResult.Failure("Judge is not assigned to review this Order.");
         }
 
         var documentScan = await ScanReviewDocumentAsync(orderReview.DocumentData, "signed");
@@ -238,20 +244,14 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return supportingScan;
         }
 
-        var assignedJudgeId = order.JudgeId;
-        var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
-        if (assignedJudgeId != judgeId)
-        {
-            return OperationResult.Failure("Judge is not assigned to review this Order.");
-        }
-
         var orderDto = Mapper.Map<OrderDto>(order);
-        orderReview.Adapt(orderDto);
 
-        if (orderDto.Status == OrderStatus.Pending)
+        if (orderReview.Status == OrderStatus.Pending)
         {
-            return OperationResult.Failure("Order is still pending and cannot be reviewed.");
+            return OperationResult.Failure("Order review status cannot be set to Pending.");
         }
+
+        orderReview.Adapt(orderDto);
 
         if (orderDto.OrderRequest?.Referral?.CourtListTypeDesc == CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION)
         {
@@ -377,7 +377,17 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult.Success();
         }
 
-        using var stream = new MemoryStream(Convert.FromBase64String(base64Data));
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(base64Data);
+        }
+        catch (FormatException)
+        {
+            return OperationResult.Failure($"The uploaded {documentLabel} document contains invalid base64 content.");
+        }
+
+        using var stream = new MemoryStream(bytes);
         var (isClean, _) = await _antiVirusService.ScanAsync(stream);
         if (!isClean)
         {
@@ -482,41 +492,12 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             PaasSeqNo = orderDto.OrderRequest?.Referral?.ReferredByPaasSeqNo.GetValueOrDefault() ?? 0,
             PartId = judge.ParticipantId.Value
         };
-        if (orderDto.Status == OrderStatus.Unapproved && orderDto.ProcessedDate.HasValue)
-        {
-            actionDto.RejectedDate = orderDto.ProcessedDate.Value;
-        }
-        else
-        {
-            actionDto.RejectedDate = null;
-        }
-
-        if (orderDto.Signed && orderDto.ProcessedDate.HasValue)
-        {
-            actionDto.SignedDate = orderDto.ProcessedDate.Value;
-        }
-        else
-        {
-            actionDto.SignedDate = null;
-        }
+        SetActionReviewDates(orderDto, actionDto);
 
         if (orderDto.OrderRequest?.Referral?.CourtListTypeDesc == CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION)
         {
-            if (orderDto.Status != OrderStatus.OrderMade)
+            if (!IsDeskOrderReadyForSubmission(orderDto))
             {
-                this.Logger.LogError("Desk Order {OrderId} status should be Order Made. Unable to submit.", orderDto.Id);
-                return null;
-            }
-
-            if (orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.DocumentData))
-            {
-                this.Logger.LogError("Desk Order {OrderId} is signed but has no document data. Unable to submit.", orderDto.Id);
-                return null;
-            }
-
-            if (!orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
-            {
-                this.Logger.LogError("Desk Order {OrderId} is not signed but has no supporting document data. Unable to submit.", orderDto.Id);
                 return null;
             }
 
@@ -524,6 +505,40 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         return actionDto;
+    }
+
+    private static void SetActionReviewDates(OrderDto orderDto, JudicialAction actionDto)
+    {
+        actionDto.RejectedDate = orderDto.Status == OrderStatus.Unapproved && orderDto.ProcessedDate.HasValue
+            ? orderDto.ProcessedDate.Value
+            : null;
+
+        actionDto.SignedDate = orderDto.Signed && orderDto.ProcessedDate.HasValue
+            ? orderDto.ProcessedDate.Value
+            : null;
+    }
+
+    private bool IsDeskOrderReadyForSubmission(OrderDto orderDto)
+    {
+        if (orderDto.Status != OrderStatus.OrderMade)
+        {
+            this.Logger.LogError("Desk Order {OrderId} status should be Order Made. Unable to submit.", orderDto.Id);
+            return false;
+        }
+
+        if (orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.DocumentData))
+        {
+            this.Logger.LogError("Desk Order {OrderId} is signed but has no document data. Unable to submit.", orderDto.Id);
+            return false;
+        }
+
+        if (!orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
+        {
+            this.Logger.LogError("Desk Order {OrderId} is not signed but has no supporting document data. Unable to submit.", orderDto.Id);
+            return false;
+        }
+
+        return true;
     }
 
     private JudicialAction PopulateDeskOrderDetails(OrderDto orderDto, JudicialAction actionDto)

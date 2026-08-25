@@ -149,14 +149,14 @@ describe('ReviewModal.vue', () => {
       setOrders(createFamilyDeskOrder());
     });
 
-    it('should render the DocumentUpload component when it can be approved (submitted)', () => {
+    it('should render the DocumentUpload component when the user has not signed (canApprove=false)', () => {
       const wrapper = createWrapper({ canApprove: false });
       expect(wrapper.find('[data-testid="document-upload"]').exists()).toBe(
         true
       );
     });
 
-    it('should not render the DocumentUpload component when it can be approved (submitted)', () => {
+    it('should not render the DocumentUpload component when the user has signed (canApprove=true)', () => {
       const wrapper = createWrapper({ canApprove: true });
       expect(wrapper.find('[data-testid="document-upload"]').exists()).toBe(
         false

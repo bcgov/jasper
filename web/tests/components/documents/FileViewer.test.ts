@@ -16,6 +16,7 @@ vi.mock('@/stores', () => ({
 vi.mock('@/components/documents/ReviewModal.vue', () => ({
   default: {
     name: 'ReviewModal',
+    props: ['modelValue', 'canApprove', 'reviewOrder'],
     template: '<div />',
   },
 }));
@@ -43,7 +44,9 @@ describe('FileViewer.vue', () => {
       toolbarItems = callback([]);
       return toolbarItems;
     }),
+    setAnnotationPresets: vi.fn((callback) => callback({})),
     addEventListener: vi.fn(),
+    exportPDF: vi.fn(),
     getAnnotations: vi.fn().mockResolvedValue({
       filter: () => ({ size: 0 }),
     }),
@@ -102,8 +105,14 @@ describe('FileViewer.vue', () => {
     mockInstance.setDocumentOutline.mockClear();
     mockInstance.setViewState.mockClear();
     mockInstance.setToolbarItems.mockClear();
+    mockInstance.setAnnotationPresets.mockClear();
     mockInstance.addEventListener.mockClear();
     mockInstance.getAnnotations.mockClear();
+    mockInstance.getAnnotations.mockResolvedValue({
+      filter: () => ({ size: 0 }),
+    });
+    mockInstance.exportPDF.mockClear();
+    mockInstance.totalPageCount = 0;
     mockInstance.getDocumentOutline.mockReset();
     mockInstance.getDocumentOutline.mockResolvedValue([]);
     warnSpy.mockClear();
@@ -114,6 +123,7 @@ describe('FileViewer.vue', () => {
       load: vi.fn().mockResolvedValue(mockInstance),
       unload: vi.fn(),
       SidebarMode: { DOCUMENT_OUTLINE: 'DOCUMENT_OUTLINE' },
+      Color: { RED: 'RED' },
       Actions: {
         GoToAction: class {
           constructor(public readonly config: unknown) {}
@@ -121,6 +131,13 @@ describe('FileViewer.vue', () => {
       },
       OutlineElement: class {
         constructor(public readonly config: unknown) {}
+      },
+      Annotations: {
+        ImageAnnotation: class {
+          constructor(config: Record<string, unknown>) {
+            Object.assign(this, config);
+          }
+        },
       },
       Immutable: {
         List: (items: unknown[]) => items,
@@ -462,7 +479,94 @@ describe('FileViewer.vue', () => {
     );
   });
 
-  it('opens information using context from flat StoreDocument raw data', async () => {
+  const createBaseStrategy = (
+    rawData: unknown,
+    overrides: Record<string, unknown> = {}
+  ) => ({
+    hasData: () => true,
+    getRawData: () => rawData,
+    processDataForAPI: (data: unknown) => data,
+    generatePDF: vi.fn().mockResolvedValue({
+      base64Pdf: 'base64pdf',
+      pageRanges: [{ start: 0, end: 1 }],
+    }),
+    extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
+      apiResponse.base64Pdf,
+    extractPageRanges: () => [{ start: 0, end: 1 }],
+    createOutline: () => [],
+    cleanup: vi.fn(),
+    ...overrides,
+  });
+
+  it('delegates toolbar construction to the strategy with a viewer context', async () => {
+    const rawData = [{ fileName: 'doc.pdf' }];
+    const setToolbarItems = vi.fn(
+      (items: unknown[], _context: unknown) => items
+    );
+    const strategy = createBaseStrategy(rawData, { setToolbarItems });
+
+    await mountViewer(strategy);
+
+    expect(setToolbarItems).toHaveBeenCalledTimes(1);
+    const context = setToolbarItems.mock.calls[0][1] as Record<string, unknown>;
+    expect(context.instance).toBe(mockInstance);
+    expect(context.nutrientViewer).toBe(
+      globalWithNutrientViewer.NutrientViewer
+    );
+    expect(context.rawData).toEqual(rawData);
+    expect(typeof context.resolveInformationContext).toBe('function');
+    expect(typeof context.openReviewModal).toBe('function');
+    expect(typeof context.updateCanApprove).toBe('function');
+  });
+
+  it('inserts the default toolbar items when the strategy does not customize them', async () => {
+    const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }]);
+
+    await mountViewer(strategy);
+
+    expect(mockInstance.setToolbarItems).toHaveBeenCalledTimes(1);
+    expect(toolbarItems).toEqual([
+      { type: 'line' },
+      { type: 'arrow' },
+      { type: 'rectangle' },
+      { type: 'ellipse' },
+      { type: 'polygon' },
+      { type: 'cloudy-polygon' },
+      { type: 'polyline' },
+      { type: 'ink' },
+      { type: 'highlighter' },
+      { type: 'text-highlighter' },
+      { type: 'ink-eraser' },
+      { type: 'content-editor' },
+      { type: 'search' },
+      { type: 'export-pdf' },
+    ]);
+  });
+
+  it('opens the review modal when the toolbar context requests it', async () => {
+    let capturedContext: any;
+    const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }], {
+      setToolbarItems: (items: unknown[], context: unknown) => {
+        capturedContext = context;
+        return items;
+      },
+    });
+
+    const wrapper = await mountViewer(strategy);
+
+    expect(
+      wrapper.findComponent({ name: 'ReviewModal' }).props('modelValue')
+    ).toBe(false);
+
+    capturedContext.openReviewModal();
+    await flushPromises();
+
+    expect(
+      wrapper.findComponent({ name: 'ReviewModal' }).props('modelValue')
+    ).toBe(true);
+  });
+
+  it('resolves information context from flat StoreDocument raw data', async () => {
     const rawData = [
       {
         physicalFileId: 'civil-file-123',
@@ -473,33 +577,23 @@ describe('FileViewer.vue', () => {
         },
       },
     ];
-    const strategy = {
-      showOrderReviewOptions: true,
-      hasData: () => true,
-      getRawData: () => rawData,
-      processDataForAPI: (rawData: unknown) => rawData,
-      generatePDF: vi.fn().mockResolvedValue({
-        base64Pdf: 'base64pdf',
-        pageRanges: [{ start: 0, end: 1 }],
-      }),
-      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
-        apiResponse.base64Pdf,
-      extractPageRanges: () => [{ start: 0, end: 1 }],
-      createOutline: () => [],
-      cleanup: vi.fn(),
-    };
+    let capturedContext: any;
+    const strategy = createBaseStrategy(rawData, {
+      setToolbarItems: (items: unknown[], context: unknown) => {
+        capturedContext = context;
+        return items;
+      },
+    });
 
     await mountViewer(strategy);
 
-    toolbarItems.find((item) => item.id === 'open-information')?.onPress();
-
-    expect(window.open).toHaveBeenCalledWith(
-      'civil-file/civil-file-123',
-      'relatedCaseInfo'
-    );
+    expect(capturedContext.resolveInformationContext(rawData)).toEqual({
+      physicalFileId: 'civil-file-123',
+      isCriminal: false,
+    });
   });
 
-  it('opens information using context from criminal bundle raw data', async () => {
+  it('resolves information context from criminal bundle raw data', async () => {
     const rawData = [
       {
         appearance: {
@@ -507,29 +601,105 @@ describe('FileViewer.vue', () => {
         },
       },
     ];
-    const strategy = {
-      showOrderReviewOptions: true,
-      hasData: () => true,
-      getRawData: () => rawData,
-      processDataForAPI: (rawData: unknown) => rawData,
-      generatePDF: vi.fn().mockResolvedValue({
-        base64Pdf: 'base64pdf',
-        pageRanges: [{ start: 0, end: 1 }],
-      }),
-      extractBase64PDF: (apiResponse: { base64Pdf: string }) =>
-        apiResponse.base64Pdf,
-      extractPageRanges: () => [{ start: 0, end: 1 }],
-      createOutline: () => [],
-      cleanup: vi.fn(),
-    };
+    let capturedContext: any;
+    const strategy = createBaseStrategy(rawData, {
+      setToolbarItems: (items: unknown[], context: unknown) => {
+        capturedContext = context;
+        return items;
+      },
+    });
 
     await mountViewer(strategy);
 
-    toolbarItems.find((item) => item.id === 'open-information')?.onPress();
+    expect(capturedContext.resolveInformationContext(rawData)).toEqual({
+      physicalFileId: 'criminal-file-123',
+      isCriminal: true,
+    });
+  });
 
-    expect(window.open).toHaveBeenCalledWith(
-      'criminal-file/criminal-file-123',
-      'relatedCaseInfo'
+  it('can approve when a required approval annotation is present', async () => {
+    mockInstance.totalPageCount = 1;
+    mockInstance.getAnnotations.mockResolvedValue({
+      filter: (predicate: (annotation: unknown) => boolean) => ({
+        size: [
+          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
+            { contentType: 'image/png', description: 'Signature' }
+          ),
+        ].filter(predicate).length,
+      }),
+    });
+
+    const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }], {
+      getRequiredApprovalAnnotations: () => ['Signature'],
+    });
+
+    const wrapper = await mountViewer(strategy);
+
+    expect(
+      wrapper.findComponent({ name: 'ReviewModal' }).props('canApprove')
+    ).toBe(true);
+  });
+
+  it('cannot approve when the annotation does not match a required description', async () => {
+    mockInstance.totalPageCount = 1;
+    mockInstance.getAnnotations.mockResolvedValue({
+      filter: (predicate: (annotation: unknown) => boolean) => ({
+        size: [
+          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
+            { contentType: 'image/png', description: 'Initials' }
+          ),
+        ].filter(predicate).length,
+      }),
+    });
+
+    const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }], {
+      getRequiredApprovalAnnotations: () => ['Signature'],
+    });
+
+    const wrapper = await mountViewer(strategy);
+
+    expect(
+      wrapper.findComponent({ name: 'ReviewModal' }).props('canApprove')
+    ).toBe(false);
+  });
+
+  it('can approve on any image annotation when no descriptions are required', async () => {
+    mockInstance.totalPageCount = 1;
+    mockInstance.getAnnotations.mockResolvedValue({
+      filter: (predicate: (annotation: unknown) => boolean) => ({
+        size: [
+          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
+            { contentType: 'image/png', description: 'Anything' }
+          ),
+        ].filter(predicate).length,
+      }),
+    });
+
+    const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }]);
+
+    const wrapper = await mountViewer(strategy);
+
+    expect(
+      wrapper.findComponent({ name: 'ReviewModal' }).props('canApprove')
+    ).toBe(true);
+  });
+
+  it('registers annotation change listeners to refresh the approval state', async () => {
+    const strategy = createBaseStrategy([{ fileName: 'doc.pdf' }]);
+
+    await mountViewer(strategy);
+
+    expect(mockInstance.addEventListener).toHaveBeenCalledWith(
+      'annotations.create',
+      expect.any(Function)
+    );
+    expect(mockInstance.addEventListener).toHaveBeenCalledWith(
+      'annotations.update',
+      expect.any(Function)
+    );
+    expect(mockInstance.addEventListener).toHaveBeenCalledWith(
+      'annotations.delete',
+      expect.any(Function)
     );
   });
 });

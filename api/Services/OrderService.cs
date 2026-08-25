@@ -49,6 +49,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
     private readonly ICsoTextSanitizer _csoTextSanitizer;
 
+    public const string NOTE_TO_APPEND_IF_CLERK_DESIGNATED = "-- NOTE -- Pursuant to PCF rule 169, I designate the Clerk of the Court to sign the order on my behalf.";
+
     public override string CacheName => "GetOrdersAsync";
 
     public OrderService(
@@ -253,7 +255,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if (orderDto.Status == OrderStatus.Approved || orderDto.Status == OrderStatus.Unapproved || orderDto.Status == OrderStatus.AwaitingDocumentation)
+        if (orderDto.Status is OrderStatus.Approved
+            or OrderStatus.Unapproved
+            or OrderStatus.AwaitingDocumentation
+            or OrderStatus.OrderMade)
         {
             _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
         }
@@ -473,7 +478,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     {
         // No document will be sent for Desk Orders
         actionDto.Document = [];
-        if (orderDto.Status != OrderStatus.Approved)
+        if (orderDto.Status != OrderStatus.Approved && orderDto.Status != OrderStatus.OrderMade)
         {
             return actionDto;
         }
@@ -486,7 +491,15 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfully for Order {OrderId}.", orderDto.Id);
 
         var sanitizedDirections = _csoTextSanitizer.Sanitize(deskOrderDetails.Directions);
-        actionDto.Comment = _csoTextSanitizer.Sanitize(string.Join(". ", actionDto.Comment, sanitizedDirections));
+        var commentParts = new[]
+        {
+            actionDto.Comment,
+            sanitizedDirections,
+            deskOrderDetails.IsClerkToSign ? NOTE_TO_APPEND_IF_CLERK_DESIGNATED : ""
+        };
+
+        actionDto.Comment = _csoTextSanitizer.Sanitize(
+            string.Join(". ", commentParts.Where(p => !string.IsNullOrWhiteSpace(p))));
         actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
             {
                 SequenceNumber = term.SequenceNumber,

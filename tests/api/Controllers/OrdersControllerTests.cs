@@ -558,9 +558,87 @@ public class OrdersControllerTests
         _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, _judgeId), Times.Once);
     }
 
+    [Fact]
+    public async Task GetOrder_UsesOverrideJudgeId_WhenUserCanViewOthersSchedule()
+    {
+        var orderId = _faker.Random.AlphaNumeric(24);
+        var overrideJudgeId = _judgeId + 1;
+        var controller = CreateController(CreatePrincipal(_judgeId, canViewOthersSchedule: true));
+
+        _mockOrderService
+            .Setup(s => s.GetOrderByIdAsync(orderId, overrideJudgeId))
+            .ReturnsAsync(new OrderViewDto());
+
+        var result = await controller.GetOrder(orderId, overrideJudgeId);
+
+        Assert.IsType<OkObjectResult>(result);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, overrideJudgeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOrder_IgnoresOverrideJudgeId_WhenUserCannotViewOthersSchedule()
+    {
+        var orderId = _faker.Random.AlphaNumeric(24);
+        var overrideJudgeId = _judgeId + 1;
+
+        _mockOrderService
+            .Setup(s => s.GetOrderByIdAsync(orderId, _judgeId))
+            .ReturnsAsync(new OrderViewDto());
+
+        var result = await _controller.GetOrder(orderId, overrideJudgeId);
+
+        Assert.IsType<OkObjectResult>(result);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, _judgeId), Times.Once);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, overrideJudgeId), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetOrder_UsesAuthenticatedJudgeId_WhenOverrideIsNull_AndUserCanViewOthersSchedule()
+    {
+        var orderId = _faker.Random.AlphaNumeric(24);
+        var controller = CreateController(CreatePrincipal(_judgeId, canViewOthersSchedule: true));
+
+        _mockOrderService
+            .Setup(s => s.GetOrderByIdAsync(orderId, _judgeId))
+            .ReturnsAsync(new OrderViewDto());
+
+        var result = await controller.GetOrder(orderId, null);
+
+        Assert.IsType<OkObjectResult>(result);
+        _mockOrderService.Verify(s => s.GetOrderByIdAsync(orderId, _judgeId), Times.Once);
+    }
+
     #endregion
 
     #region Helper Methods
+
+    private OrdersController CreateController(ClaimsPrincipal principal) =>
+        new(
+            _mockOrderRequestValidator.Object,
+            _mockOrderService.Object,
+            _mockAntiVirusService.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = principal }
+            }
+        };
+
+    private static ClaimsPrincipal CreatePrincipal(int judgeId, bool canViewOthersSchedule = false)
+    {
+        var claims = new List<Claim>
+        {
+            new(CustomClaimTypes.JudgeId, judgeId.ToString())
+        };
+
+        if (canViewOthersSchedule)
+        {
+            claims.Add(new(CustomClaimTypes.Groups, "jasper-view-others-schedule"));
+        }
+
+        var identity = new ClaimsIdentity(claims, "TestAuthType");
+        return new ClaimsPrincipal(identity);
+    }
 
     private OrderRequestDto CreateValidOrderRequestDto()
     {

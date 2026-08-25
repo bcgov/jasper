@@ -1079,4 +1079,277 @@ public class UserServiceTests : ServiceTestBase
         Assert.NotNull(result);
         Assert.Single(result.RoleIds);
     }
+
+    [Fact]
+    public async Task UploadSignatureAsync_ShouldReturnSuccess_AndSetSignature()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var content = new byte[] { 10, 20, 30 };
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+
+        var result = await _userService.UploadSignatureAsync(fakeId, content, "image/png");
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Equal(content, user.Signature);
+        Assert.Equal("image/png", user.SignatureContentType);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadSignatureAsync_ShouldReturnFailure_WhenUserNotFound()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((User)null);
+
+        var result = await _userService.UploadSignatureAsync(fakeId, [1, 2, 3, 4], "image/png");
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("User not found.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadSignatureAsync_ShouldReturnFailure_WhenExceptionIsThrown()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).ThrowsAsync(new InvalidOperationException());
+
+        var result = await _userService.UploadSignatureAsync(fakeId, [1, 2, 3, 4], "image/png");
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Error uploading signature.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadInitialsAsync_ShouldReturnSuccess_AndSetInitials()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var content = new byte[] { 40, 50, 60 };
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+
+        var result = await _userService.UploadInitialsAsync(fakeId, content, "image/png");
+
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Equal(content, user.Initials);
+        Assert.Equal("image/png", user.InitialsContentType);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadInitialsAsync_ShouldReturnFailure_WhenUserNotFound()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync((User)null);
+
+        var result = await _userService.UploadInitialsAsync(fakeId, [1, 2, 3, 4], "image/png");
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("User not found.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+        _mockUserRepo.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadInitialsAsync_ShouldReturnFailure_WhenExceptionIsThrown()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+        };
+
+        _mockUserRepo.Setup(r => r.GetByIdAsync(fakeId)).ReturnsAsync(user);
+        _mockUserRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).ThrowsAsync(new InvalidOperationException());
+
+        var result = await _userService.UploadInitialsAsync(fakeId, [1, 2, 3, 4], "image/png");
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        Assert.Equal("Error uploading initials.", result.Errors[0]);
+        _mockUserRepo.Verify(r => r.GetByIdAsync(fakeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSignatureAsync_ShouldReturnImage_WhenSignatureExists()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var judgeId = _faker.Random.Int(1, 1000);
+        var content = new byte[] { 10, 20, 30 };
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+            JudgeId = judgeId,
+            Signature = content,
+            SignatureContentType = "image/png",
+        };
+
+        _mockUserRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([user]);
+
+        var result = await _userService.GetSignatureAsync(fakeId, judgeId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(content, result.Payload.Content);
+        Assert.Equal("image/png", result.Payload.ContentType);
+    }
+
+    [Fact]
+    public async Task GetSignatureAsync_ShouldFallBackToOctetStream_WhenContentTypeMissing()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var judgeId = _faker.Random.Int(1, 1000);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+            JudgeId = judgeId,
+            Signature = [1, 2, 3],
+            SignatureContentType = null,
+        };
+
+        _mockUserRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([user]);
+
+        var result = await _userService.GetSignatureAsync(fakeId, judgeId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("application/octet-stream", result.Payload.ContentType);
+    }
+
+    [Fact]
+    public async Task GetSignatureAsync_ShouldReturnFailure_WhenUserNotFound()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var judgeId = _faker.Random.Int(1, 1000);
+
+        _mockUserRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([]);
+
+        var result = await _userService.GetSignatureAsync(fakeId, judgeId);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("User not found.", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task GetSignatureAsync_ShouldReturnFailure_WhenSignatureMissing()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var judgeId = _faker.Random.Int(1, 1000);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+            JudgeId = judgeId,
+            Signature = null,
+        };
+
+        _mockUserRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([user]);
+
+        var result = await _userService.GetSignatureAsync(fakeId, judgeId);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("User does not have signature.", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task GetInitialsAsync_ShouldReturnImage_WhenInitialsExists()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var judgeId = _faker.Random.Int(1, 1000);
+        var content = new byte[] { 40, 50, 60 };
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+            JudgeId = judgeId,
+            Initials = content,
+            InitialsContentType = "image/jpeg",
+        };
+
+        _mockUserRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([user]);
+
+        var result = await _userService.GetInitialsAsync(fakeId, judgeId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(content, result.Payload.Content);
+        Assert.Equal("image/jpeg", result.Payload.ContentType);
+    }
+
+    [Fact]
+    public async Task GetInitialsAsync_ShouldReturnFailure_WhenInitialsMissing()
+    {
+        var fakeId = _faker.Random.AlphaNumeric(10);
+        var judgeId = _faker.Random.Int(1, 1000);
+        var user = new User
+        {
+            FirstName = _faker.Person.FirstName,
+            LastName = _faker.Person.LastName,
+            Email = _faker.Person.Email,
+            JudgeId = judgeId,
+            Initials = null,
+        };
+
+        _mockUserRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync([user]);
+
+        var result = await _userService.GetInitialsAsync(fakeId, judgeId);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("User does not have initials.", result.Errors[0]);
+    }
 }

@@ -941,6 +941,68 @@ public class OrderServiceTests : ServiceTestBase
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Once);
     }
 
+    [Theory]
+    [InlineData(OrderStatus.Approved)]
+    [InlineData(OrderStatus.Unapproved)]
+    [InlineData(OrderStatus.AwaitingDocumentation)]
+    [InlineData(OrderStatus.OrderMade)]
+    public async Task ReviewOrder_EnqueuesSubmitOrderJob_WhenStatusRequiresSubmission(OrderStatus status)
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto { Status = status };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_DoesNotEnqueueSubmitOrderJob_WhenStatusDoesNotRequireSubmission()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto { Status = OrderStatus.Pending };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(orderId))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Never);
+    }
+
     #endregion
 
     #region SubmitOrder Tests
@@ -1089,6 +1151,149 @@ public class OrderServiceTests : ServiceTestBase
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Once);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Once);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}"), Times.Once);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitApprovedDeskOrder_AppendsClerkNote_WhenIsClerkToSignIsTrue()
+    {
+        var fakeComment = _faker.Lorem.Sentence();
+        var fakeDirections = "Registry “must” review cafés — today…";
+        var fakeOrderTerm = "Pay $50 – then file résumé • exhibit";
+        var sanitizedDirections = "Registry \"must\" review cafes - today...";
+        var sanitizedOrderTerm = "Pay $50 - then file resume * exhibit";
+        var sanitizedComment = $"{fakeComment}. {sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}";
+
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+        order.SupportingDocumentData = _faker.Random.Bytes(32);
+        order.Status = OrderStatus.Approved;
+        order.Comments = fakeComment;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Returns(new DeskOrderDetailsDto
+            {
+                Directions = fakeDirections,
+                OrderTerms = [new() { Text = fakeOrderTerm }],
+                IsClerkToSign = true,
+            });
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeDirections)).Returns(sanitizedDirections);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeOrderTerm)).Returns(sanitizedOrderTerm);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}")).Returns(sanitizedComment);
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == sanitizedComment
+                    && ja.OrderTerms.Count == 1
+                    && ja.OrderTerms.First().Text == sanitizedOrderTerm
+                    && ja.Document.Length == 0
+                )),
+                Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}"), Times.Once);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitApprovedDeskOrder_OmitsEmptyComment_WhenNoCommentsProvidedAndClerkDesignated()
+    {
+        var fakeDirections = _faker.Lorem.Sentence();
+        var fakeOrderTerm = _faker.Lorem.Sentence();
+        var sanitizedDirections = _faker.Lorem.Sentence();
+        var sanitizedOrderTerm = _faker.Lorem.Sentence();
+        // No comment provided, so the empty part should be filtered out of the joined comment.
+        var expectedComment = $"{sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}";
+        var sanitizedComment = _faker.Lorem.Sentence();
+
+        var order = CreateOrder();
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+        order.SupportingDocumentData = _faker.Random.Bytes(32);
+        order.Status = OrderStatus.Approved;
+        order.Comments = null;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Returns(new DeskOrderDetailsDto
+            {
+                Directions = fakeDirections,
+                OrderTerms = [new() { Text = fakeOrderTerm }],
+                IsClerkToSign = true,
+            });
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeDirections)).Returns(sanitizedDirections);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeOrderTerm)).Returns(sanitizedOrderTerm);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(expectedComment)).Returns(sanitizedComment);
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == sanitizedComment
+                    && ja.OrderTerms.Count == 1
+                    && ja.OrderTerms.First().Text == sanitizedOrderTerm
+                    && ja.Document.Length == 0
+                )),
+                Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(expectedComment), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 

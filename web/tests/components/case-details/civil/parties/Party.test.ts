@@ -50,11 +50,15 @@ describe('Party.vue', () => {
     expect(labelWithTooltip.length).toBe(1);
   });
 
-  it('renders Party component with "Self-Represented" Counsel', () => {
+  it('renders Party component with Counsel info', () => {
     const mockParty = {
       givenNm: faker.person.firstName(),
       lastNm: faker.person.lastName(),
-      selfRepresentedYN: 'Y',
+      counsel: [
+        {
+          fullNm: faker.person.fullName(),
+        },
+      ],
     } as partyType;
     const wrapper = shallowMount(Party, {
       props: {
@@ -67,7 +71,7 @@ describe('Party.vue', () => {
     const lastRow = rows[rows.length - 1];
     const label = lastRow.findComponent({ name: 'LabelWithTooltip' });
 
-    expect(label.attributes('values')).toBe('Self-Represented');
+    expect(label.attributes('values')).toBe(mockParty.counsel[0].fullNm);
   });
 
   it('renders Party with alias data for Small Claims case', () => {

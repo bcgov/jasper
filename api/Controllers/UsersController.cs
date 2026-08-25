@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
@@ -6,8 +7,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Infrastructure.Validation;
+using Scv.Api.Models;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Models.AccessControlManagement;
 
@@ -20,10 +24,15 @@ public class UsersController(
     IUserService userService,
     IValidator<UserDto> validator,
     IValidator<ReleaseNotesViewedRequestDto> releaseNotesViewedRequestValidator,
-    ILogger<UsersController> logger
+    IValidator<FileUploadRequest> fileUploadRequestValidator,
+    ILogger<UsersController> logger,
+    IAntiVirusService antiVirusService
 ) : AccessControlManagementControllerBase<IUserService, UserDto>(userService, validator)
 {
     private readonly IValidator<ReleaseNotesViewedRequestDto> _releaseNotesViewedRequestValidator = releaseNotesViewedRequestValidator;
+    private readonly IValidator<FileUploadRequest> _fileUploadRequestValidator = fileUploadRequestValidator;
+    private readonly ILogger<UsersController> _logger = logger;
+    private readonly IAntiVirusService _antiVirusService = antiVirusService;
 
     /// <summary>
     /// Get all active users
@@ -45,7 +54,7 @@ public class UsersController(
     public async Task<IActionResult> GetMyUser()
     {
         var userId = User.UserId();
-        logger.LogInformation("User Id {UserId}, returning their own user information", userId);
+        _logger.LogInformation("User Id {UserId}, returning their own user information", userId);
         if (string.IsNullOrWhiteSpace(userId))
         {
             return BadRequest("Invalid user. Please contact the JASPER admin.");
@@ -81,8 +90,8 @@ public class UsersController(
         var result = await base.Service.MarkReleaseNotesViewedAsync(userId, request?.Version, DateTime.UtcNow);
         if (!result.Succeeded)
         {
-            var error = result.Errors.FirstOrDefault();
-            if (string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
+            var error = result.Errors.Count > 0 ? result.Errors[0] : null;
+            if (!string.IsNullOrEmpty(error) && string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
             {
                 return NotFound(error);
             }
@@ -102,7 +111,7 @@ public class UsersController(
     public async Task<IActionResult> RequestAccess()
     {
         var userId = User.UserId();
-        logger.LogInformation("User Id {UserId}, requested access", userId);
+        _logger.LogInformation("User Id {UserId}, requested access", userId);
         if (string.IsNullOrWhiteSpace(userId))
         {
             return BadRequest("Invalid user. Please contact the JASPER admin.");
@@ -134,5 +143,113 @@ public class UsersController(
         {
             return existingUserResponse;
         }
+    }
+
+    /// <summary>
+    /// Uploads a signature image for the user with the specified ID. The image is scanned for viruses before being stored.
+    /// </summary>
+    /// <param name="id">The ID of the user.</param>
+    /// <param name="request">The file upload request containing the signature image.</param>
+    /// <returns>The result of the upload operation.</returns>
+    [HttpPost]
+    [Route("{id}/signature")]
+    [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
+    public Task<IActionResult> UploadSignature([FromRoute, ObjectId] string id, [FromForm] FileUploadRequest request)
+        => UploadImageAsync(request, (file, contentType) => base.Service.UploadSignatureAsync(id, file, contentType));
+
+    /// <summary>
+    /// Uploads initials image for the user with the specified ID. The image is scanned for viruses before being stored.
+    /// </summary>
+    /// <param name="id">The ID of the user.</param>
+    /// <param name="request">The file upload request containing the initials image.</param>
+    /// <returns>The result of the upload operation.</returns>
+    [HttpPost]
+    [Route("{id}/initials")]
+    [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
+    public Task<IActionResult> UploadInitials([FromRoute, ObjectId] string id, [FromForm] FileUploadRequest request)
+        => UploadImageAsync(request, (file, contentType) => base.Service.UploadInitialsAsync(id, file, contentType));
+
+    /// <summary>
+    /// Gets the signature image for the currently logged-in user.
+    /// </summary>
+    /// <returns>The signature image file.</returns>
+    [HttpGet]
+    [Route("me/signature")]
+    public Task<IActionResult> GetMySignature()
+        => GetImageAsync(base.Service.GetSignatureAsync);
+
+    /// <summary>
+    /// Gets the initials image for the currently logged-in user.
+    /// </summary>
+    /// <returns>The initials image file.</returns>
+    [HttpGet]
+    [Route("me/initials")]
+    public Task<IActionResult> GetMyInitials()
+        => GetImageAsync(base.Service.GetInitialsAsync);
+
+    private async Task<IActionResult> UploadImageAsync(
+        FileUploadRequest request,
+        Func<byte[], string, Task<OperationResult>> uploadAsync)
+    {
+        if (request == null)
+        {
+            return BadRequest("No file was uploaded.");
+        }
+
+        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
+        }
+
+        var file = request.File;
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+
+        memoryStream.Position = 0;
+        var (isClean, message) = await _antiVirusService.ScanAsync(memoryStream);
+        if (!isClean)
+        {
+            _logger.LogWarning("The uploaded file failed the antivirus scan: {Message}", message);
+            return BadRequest("The uploaded file failed the antivirus scan.");
+        }
+
+        var result = await uploadAsync(memoryStream.ToArray(), file.ContentType);
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.Count > 0 ? result.Errors[0] : null;
+            if (!string.IsNullOrEmpty(error) && string.Equals(error, "User not found.", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(error);
+            }
+
+            return BadRequest(result.Errors);
+        }
+
+        return Ok(result);
+    }
+
+    private async Task<IActionResult> GetImageAsync(Func<string, int, Task<OperationResult<UserImageDto>>> getAsync)
+    {
+        var userId = User.UserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("Invalid user. Please contact the JASPER admin.");
+        }
+
+        var judgeId = User.JudgeId();
+        if (judgeId <= 0)
+        {
+            return BadRequest("Invalid judge. Please contact the JASPER admin.");
+        }
+
+        var result = await getAsync(userId, judgeId);
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.Count > 0 ? result.Errors[0] : null;
+            return NotFound(error);
+        }
+
+        return File(result.Payload.Content, result.Payload.ContentType);
     }
 }

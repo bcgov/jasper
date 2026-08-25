@@ -18,5 +18,9 @@ namespace Scv.Api.Services
         Task<List<Location>> GetJudicialListingLocations(ClaimsPrincipal user);
         Task<List<Location>> GetRotaAdminLocations(ClaimsPrincipal user);
         Task<OperationResult<UserDto>> MarkReleaseNotesViewedAsync(string userId, string version, DateTime viewedAtUtc);
+        Task<OperationResult> UploadSignatureAsync(string userId, byte[] signature, string contentType);
+        Task<OperationResult> UploadInitialsAsync(string userId, byte[] initials, string contentType);
+        Task<OperationResult<UserImageDto>> GetSignatureAsync(string userId, int judgeId);
+        Task<OperationResult<UserImageDto>> GetInitialsAsync(string userId, int judgeId);
     }
 }

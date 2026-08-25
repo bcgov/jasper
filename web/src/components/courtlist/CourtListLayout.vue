@@ -22,10 +22,10 @@
   import { inject, onMounted, ref } from 'vue';
 
   enum HearingType {
-    'A' = '+',
-    'G' = '@',
-    'D' = '-',
-    'S' = '*',
+    A = '+',
+    G = '@',
+    D = '-',
+    S = '*',
   }
 
   let civilCourtListJson: civilCourtListType[] = [];

@@ -1,5 +1,6 @@
 import { GeneratePdfResponse } from '@/components/documents/models/GeneratePdf';
 import { OrderPDFStrategy } from '@/components/documents/strategies/OrderPDFStrategy';
+import { PDFViewerToolbarContext } from '@/components/documents/strategies/PDFViewerTypes';
 import {
   useCommonStore,
   useOrdersStore,
@@ -14,7 +15,7 @@ import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import { ToolbarItem } from '@nutrient-sdk/viewer';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-import { inject } from 'vue';
+import { inject, nextTick, reactive } from 'vue';
 
 vi.mock('@/stores', () => ({
   usePDFViewerStore: vi.fn(),
@@ -112,12 +113,17 @@ const mockOrderService = {
   getOrder: vi.fn(),
 };
 
+const mockUserService = {
+  getSignature: vi.fn(),
+  getInitials: vi.fn(),
+};
+
 const mockSnackbarStore = {
   showSnackbar: vi.fn(),
 };
 
 const mockCommonStore = {
-  userInfo: { judgeId: 11 },
+  userInfo: { judgeId: 11, hasSignature: false, hasInitials: false },
   loggedInUserInfo: { judgeId: 11 },
 };
 
@@ -142,6 +148,58 @@ const setLocationSearch = (search: string) => {
   });
 };
 
+const createMockContext = (
+  overrides: Partial<PDFViewerToolbarContext> = {}
+): PDFViewerToolbarContext => {
+  const ImageAnnotation = vi.fn().mockImplementation(function (
+    this: Record<string, unknown>,
+    config: Record<string, unknown>
+  ) {
+    Object.assign(this, config);
+  });
+  const createdAnnotation = new (
+    ImageAnnotation as unknown as {
+      new (config: Record<string, unknown>): { id: string };
+    }
+  )({ id: 'annotation-id' });
+
+  return {
+    instance: {
+      viewState: { currentPageIndex: 0 },
+      createAttachment: vi.fn().mockResolvedValue('attachment-id'),
+      pageInfoForIndex: vi.fn().mockReturnValue({ width: 600, height: 800 }),
+      create: vi.fn().mockResolvedValue([createdAnnotation]),
+      setSelectedAnnotations: vi.fn(),
+    },
+    nutrientViewer: {
+      Annotations: {
+        ImageAnnotation,
+      },
+      Geometry: {
+        Rect: vi.fn().mockImplementation(function (config) {
+          return { ...config };
+        }),
+      },
+      Immutable: {
+        List: vi.fn().mockImplementation((arr) => arr),
+      },
+    },
+    rawData: mockStoreDocuments,
+    resolveInformationContext: vi.fn(),
+    openReviewModal: vi.fn(),
+    updateCanApprove: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  } as unknown as PDFViewerToolbarContext;
+};
+
+const createOrderPDFStrategyForAnotherJudge = (): OrderPDFStrategy => {
+  mockedUseCommonStore.mockReturnValueOnce({
+    userInfo: { judgeId: 11, hasSignature: false, hasInitials: false },
+    loggedInUserInfo: { judgeId: 12 },
+  });
+  return new OrderPDFStrategy();
+};
+
 describe('OrderPDFStrategy', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -149,15 +207,26 @@ describe('OrderPDFStrategy', () => {
     mockedUseSnackbarStore.mockReturnValue(mockSnackbarStore);
     mockedUseCommonStore.mockReturnValue(mockCommonStore);
     mockedUseOrdersStore.mockReturnValue(mockOrdersStore);
+    mockCommonStore.userInfo = {
+      judgeId: 11,
+      hasSignature: false,
+      hasInitials: false,
+    };
+    mockCommonStore.loggedInUserInfo = { judgeId: 11 };
     mockOrdersStore.orders = [createMockOrder('123')];
     mockedInject.mockClear();
     mockedInject.mockImplementation((key: string) => {
       if (key === 'filesService') return mockFilesService;
       if (key === 'orderService') return mockOrderService;
+      if (key === 'userService') return mockUserService;
       return undefined;
     });
 
     setLocationSearch('?id=123');
+
+    globalThis.createImageBitmap = vi
+      .fn()
+      .mockResolvedValue({ width: 210, height: 95, close: vi.fn() });
 
     mockPDFViewerStore.hasPdfData.mockImplementation(() => true);
     mockPDFViewerStore.getPdfItems.mockImplementation(() => mockStoreDocuments);
@@ -165,6 +234,8 @@ describe('OrderPDFStrategy', () => {
     mockFilesService.generatePdf.mockClear();
     mockOrderService.review.mockClear();
     mockOrderService.getOrder.mockReset();
+    mockUserService.getSignature.mockReset();
+    mockUserService.getInitials.mockReset();
     mockSnackbarStore.showSnackbar.mockClear();
     mockedViewOrderSupportingDocuments.mockClear();
   });
@@ -172,10 +243,33 @@ describe('OrderPDFStrategy', () => {
   it('throws if OrderService is not injected', () => {
     mockedInject.mockImplementation((key: string) => {
       if (key === 'filesService') return mockFilesService;
+      if (key === 'userService') return mockUserService;
       return undefined;
     });
 
     expect(() => new OrderPDFStrategy()).toThrow('Service(s) is undefined.');
+  });
+
+  it('throws if UserService is not injected', () => {
+    mockedInject.mockImplementation((key: string) => {
+      if (key === 'filesService') return mockFilesService;
+      if (key === 'orderService') return mockOrderService;
+      return undefined;
+    });
+
+    expect(() => new OrderPDFStrategy()).toThrow('Service(s) is undefined.');
+  });
+
+  it('throws if FilesService is not injected', () => {
+    mockedInject.mockImplementation((key: string) => {
+      if (key === 'orderService') return mockOrderService;
+      if (key === 'userService') return mockUserService;
+      return undefined;
+    });
+
+    expect(() => new OrderPDFStrategy()).toThrow(
+      'FilesService is not available!'
+    );
   });
 
   it('throws if the order ID is not present in the URL', () => {
@@ -303,101 +397,147 @@ describe('OrderPDFStrategy', () => {
     expect(mockPDFViewerStore.clearPdfItems).toHaveBeenCalled();
   });
 
-  it('showOrderReviewOptions is true when judge IDs match', () => {
-    const strategy = new OrderPDFStrategy();
-
-    expect(strategy.showOrderReviewOptions).toBe(true);
-  });
-
-  it('showOrderReviewOptions is false when judge IDs do not match', () => {
-    mockedUseCommonStore.mockReturnValueOnce({
+  it('cleanup stops watching for judge ID changes', async () => {
+    const commonStore = reactive({
       userInfo: { judgeId: 11 },
-      loggedInUserInfo: { judgeId: 12 },
+      loggedInUserInfo: { judgeId: 11 },
+    });
+    mockedUseCommonStore.mockReturnValueOnce(commonStore);
+    mockOrderService.getOrder.mockResolvedValue(createMockOrder('123'));
+
+    const strategy = new OrderPDFStrategy();
+    strategy.cleanup();
+
+    commonStore.userInfo.judgeId = 99;
+    await nextTick();
+    await strategy.initialize();
+
+    expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
+  });
+  describe('getRequiredApprovalAnnotations', () => {
+    it('returns Signature and Initials when the user has both', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: true,
+      };
+
+      const strategy = new OrderPDFStrategy();
+
+      expect(strategy.getRequiredApprovalAnnotations()).toEqual([
+        'Signature',
+        'Initials',
+      ]);
     });
 
-    const strategy = new OrderPDFStrategy();
+    it('returns only Signature when the user has a signature but no initials', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: false,
+      };
 
-    expect(strategy.showOrderReviewOptions).toBe(false);
-  });
+      const strategy = new OrderPDFStrategy();
 
-  it('approves order successfully and shows success snackbar', async () => {
-    const strategy = new OrderPDFStrategy();
-    const review: OrderReview = {
-      comments: 'approved',
-      signed: true,
-      status: OrderReviewStatus.Approved,
-      documentData: 'pdf-data',
-      supportingDocumentData: '',
-    };
-
-    await strategy.reviewOrder(review);
-
-    expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
-    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-      'The order has been approved.',
-      'success',
-      '✅ Approved!'
-    );
-  });
-
-  it('rejects order successfully and shows rejection snackbar', async () => {
-    const strategy = new OrderPDFStrategy();
-    const review: OrderReview = {
-      comments: 'rejected',
-      signed: false,
-      status: OrderReviewStatus.Unapproved,
-      documentData: '',
-      supportingDocumentData: '',
-    };
-
-    await strategy.reviewOrder(review);
-
-    expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
-    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-      'The order has been rejected.',
-      'success',
-      '📋 Rejected'
-    );
-  });
-
-  it('sets order to pending and shows pending snackbar', async () => {
-    const strategy = new OrderPDFStrategy();
-    const review: OrderReview = {
-      comments: 'pending',
-      signed: false,
-      status: OrderReviewStatus.AwaitingDocumentation,
-      documentData: '',
-      supportingDocumentData: 'supporting-doc',
-    };
-
-    await strategy.reviewOrder(review);
-
-    expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
-    expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-      'The order review is awaiting documentation.',
-      'success',
-      '⏳ Pending'
-    );
-  });
-
-  it('reviewOrder uses the resolved order ID from the store', async () => {
-    mockedUseOrdersStore.mockReturnValueOnce({
-      orders: [createMockOrder('order-abc')],
+      expect(strategy.getRequiredApprovalAnnotations()).toEqual(['Signature']);
     });
-    setLocationSearch('?id=order-abc');
 
-    const strategy = new OrderPDFStrategy();
-    const review: OrderReview = {
-      comments: '',
-      signed: true,
-      status: OrderReviewStatus.Approved,
-      documentData: '',
-      supportingDocumentData: '',
-    };
+    it('returns only Initials when the user has initials but no signature', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: false,
+        hasInitials: true,
+      };
 
-    await strategy.reviewOrder(review);
+      const strategy = new OrderPDFStrategy();
 
-    expect(mockOrderService.review).toHaveBeenCalledWith('order-abc', review);
+      expect(strategy.getRequiredApprovalAnnotations()).toEqual(['Initials']);
+    });
+
+    it('returns undefined when the user has neither a signature nor initials', () => {
+      const strategy = new OrderPDFStrategy();
+
+      expect(strategy.getRequiredApprovalAnnotations()).toBeUndefined();
+    });
+  });
+
+  describe('reviewOrder', () => {
+    it('approves order successfully and shows success snackbar', async () => {
+      const strategy = new OrderPDFStrategy();
+      const review: OrderReview = {
+        comments: 'approved',
+        signed: true,
+        status: OrderReviewStatus.Approved,
+        documentData: 'pdf-data',
+        supportingDocumentData: '',
+      };
+
+      await strategy.reviewOrder(review);
+
+      expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
+      expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+        'The order has been approved.',
+        'success',
+        '✅ Approved!'
+      );
+    });
+
+    it('rejects order successfully and shows rejection snackbar', async () => {
+      const strategy = new OrderPDFStrategy();
+      const review: OrderReview = {
+        comments: 'rejected',
+        signed: false,
+        status: OrderReviewStatus.Unapproved,
+        documentData: '',
+        supportingDocumentData: '',
+      };
+
+      await strategy.reviewOrder(review);
+
+      expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
+      expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+        'The order has been rejected.',
+        'success',
+        '📋 Rejected'
+      );
+    });
+
+    it('sets order to pending and shows pending snackbar', async () => {
+      const strategy = new OrderPDFStrategy();
+      const review: OrderReview = {
+        comments: 'pending',
+        signed: false,
+        status: OrderReviewStatus.AwaitingDocumentation,
+        documentData: '',
+        supportingDocumentData: 'supporting-doc',
+      };
+
+      await strategy.reviewOrder(review);
+
+      expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
+      expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
+        'The order review is awaiting documentation.',
+        'success',
+        '⏳ Pending'
+      );
+    });
+
+    it('uses the order ID from the URL parameters', async () => {
+      setLocationSearch('?id=order-abc');
+
+      const strategy = new OrderPDFStrategy();
+      const review: OrderReview = {
+        comments: '',
+        signed: true,
+        status: OrderReviewStatus.Approved,
+        documentData: '',
+        supportingDocumentData: '',
+      };
+
+      await strategy.reviewOrder(review);
+
+      expect(mockOrderService.review).toHaveBeenCalledWith('order-abc', review);
+    });
   });
 
   describe('initialize', () => {
@@ -408,8 +548,29 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       await strategy.initialize();
 
-      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123');
-      expect(strategy.additionalToolbarItems()).toHaveLength(1);
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
+      // Supporting-documents button only appears once the order is loaded.
+      const items = strategy.addCustomToolbarItems(createMockContext());
+      expect(
+        items.some((item) => item.id === 'open-supporting-documents')
+      ).toBe(true);
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
+    });
+
+    it('passes the updated judge ID to getOrder after the judge changes', async () => {
+      const commonStore = reactive({
+        userInfo: { judgeId: 11 },
+        loggedInUserInfo: { judgeId: 11 },
+      });
+      mockedUseCommonStore.mockReturnValueOnce(commonStore);
+      mockOrderService.getOrder.mockResolvedValue(createMockOrder('123'));
+
+      const strategy = new OrderPDFStrategy();
+      commonStore.userInfo.judgeId = 42;
+      await nextTick();
+      await strategy.initialize();
+
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 42);
     });
 
     it('throws when the order cannot be found', async () => {
@@ -423,24 +584,65 @@ describe('OrderPDFStrategy', () => {
     });
   });
 
-  describe('additionalToolbarItems', () => {
-    it('returns a supporting-documents button when the order has supporting documents', async () => {
-      mockOrderService.getOrder.mockResolvedValue(
-        createMockOrder('123', { hasSupportingDocs: true })
-      );
-
+  describe('addCustomToolbarItems', () => {
+    it('returns the review options when the current user is the assigned judge', () => {
       const strategy = new OrderPDFStrategy();
-      await strategy.initialize();
-      const extras = strategy.additionalToolbarItems();
 
-      expect(extras).toHaveLength(1);
-      expect(extras[0]).toMatchObject({
-        type: 'custom',
-        id: 'open-supporting-documents',
-      });
+      const items = strategy.addCustomToolbarItems(createMockContext());
+
+      expect(items.map((item) => item.id)).toEqual([
+        'open-information',
+        'open-document-review',
+      ]);
     });
 
-    it('returns an empty array when the order has no supporting documents', async () => {
+    it('returns open-information toolbar item when the current user is not the assigned judge', () => {
+      const strategy = createOrderPDFStrategyForAnotherJudge();
+
+      const items = strategy.addCustomToolbarItems(createMockContext());
+
+      expect(items.map((item) => item.id)).toEqual(['open-information']);
+    });
+
+    it('includes an add-signature item when the user has a signature', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: false,
+      };
+
+      const strategy = new OrderPDFStrategy();
+      const items = strategy.addCustomToolbarItems(createMockContext());
+
+      expect(items.some((item) => item.id === 'add-signature')).toBe(true);
+      expect(items.some((item) => item.id === 'add-initials')).toBe(false);
+    });
+
+    it('includes an add-initials item when the user has initials', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: false,
+        hasInitials: true,
+      };
+
+      const strategy = new OrderPDFStrategy();
+      const items = strategy.addCustomToolbarItems(createMockContext());
+
+      expect(items.some((item) => item.id === 'add-initials')).toBe(true);
+      expect(items.some((item) => item.id === 'add-signature')).toBe(false);
+    });
+
+    it('does not include a supporting-documents item before the order is initialized', () => {
+      const strategy = new OrderPDFStrategy();
+
+      const items = strategy.addCustomToolbarItems(createMockContext());
+
+      expect(
+        items.some((item) => item.id === 'open-supporting-documents')
+      ).toBe(false);
+    });
+
+    it('does not include a supporting-documents item when the order has none', async () => {
       mockOrderService.getOrder.mockResolvedValue(
         createMockOrder('123', { hasSupportingDocs: false })
       );
@@ -448,41 +650,178 @@ describe('OrderPDFStrategy', () => {
       const strategy = new OrderPDFStrategy();
       await strategy.initialize();
 
-      expect(strategy.additionalToolbarItems()).toEqual([]);
+      const items = strategy.addCustomToolbarItems(createMockContext());
+      expect(
+        items.some((item) => item.id === 'open-supporting-documents')
+      ).toBe(false);
     });
 
-    it('returns an empty array before the order has been initialized', () => {
-      const strategy = new OrderPDFStrategy();
-
-      expect(strategy.additionalToolbarItems()).toEqual([]);
-    });
-
-    it('invokes viewOrderSupportingDocuments when the button is pressed', async () => {
-      const order = createMockOrder('123', {
-        hasSupportingDocs: true,
-        relevantCeisDocuments: [
-          {
-            civilDocumentId: 2,
-            documentTypeDesc: 'Doc B',
-          },
-        ],
+    it('open-information opens a civil-file window for a civil case', () => {
+      const context = createMockContext({
+        resolveInformationContext: vi.fn(() => ({
+          physicalFileId: 'PF-1',
+          isCriminal: false,
+        })),
       });
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+
+      const strategy = new OrderPDFStrategy();
+      const item = strategy
+        .addCustomToolbarItems(context)
+        .find((toolbarItem) => toolbarItem.id === 'open-information');
+
+      (item as unknown as { onPress: () => void }).onPress();
+
+      expect(context.resolveInformationContext).toHaveBeenCalledWith(
+        context.rawData
+      );
+      expect(openSpy).toHaveBeenCalledWith(
+        'civil-file/PF-1',
+        'relatedCaseInfo'
+      );
+
+      openSpy.mockRestore();
+    });
+
+    it('open-information opens a criminal-file window for a criminal case', () => {
+      const context = createMockContext({
+        resolveInformationContext: vi.fn(() => ({
+          physicalFileId: 'PF-2',
+          isCriminal: true,
+        })),
+      });
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+
+      const strategy = new OrderPDFStrategy();
+      const item = strategy
+        .addCustomToolbarItems(context)
+        .find((toolbarItem) => toolbarItem.id === 'open-information');
+
+      (item as unknown as { onPress: () => void }).onPress();
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'criminal-file/PF-2',
+        'relatedCaseInfo'
+      );
+
+      openSpy.mockRestore();
+    });
+
+    it('open-information warns and does not open a window when the context is unresolved', () => {
+      const context = createMockContext({
+        resolveInformationContext: vi.fn(() => undefined),
+      });
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const strategy = new OrderPDFStrategy();
+      const item = strategy
+        .addCustomToolbarItems(context)
+        .find((toolbarItem) => toolbarItem.id === 'open-information');
+
+      (item as unknown as { onPress: () => void }).onPress();
+
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Unable to resolve PDF viewer information context.'
+      );
+
+      openSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+
+    it('open-document-review opens the review modal', () => {
+      const context = createMockContext();
+
+      const strategy = new OrderPDFStrategy();
+      const item = strategy
+        .addCustomToolbarItems(context)
+        .find((toolbarItem) => toolbarItem.id === 'open-document-review');
+
+      (item as unknown as { onPress: () => void }).onPress();
+
+      expect(context.openReviewModal).toHaveBeenCalled();
+    });
+
+    it('open-supporting-documents invokes viewOrderSupportingDocuments with the current order', async () => {
+      const order = createMockOrder('123', { hasSupportingDocs: true });
       mockOrderService.getOrder.mockResolvedValue(order);
 
       const strategy = new OrderPDFStrategy();
       await strategy.initialize();
-      const [button] = strategy.additionalToolbarItems();
+      const item = strategy
+        .addCustomToolbarItems(createMockContext())
+        .find((toolbarItem) => toolbarItem.id === 'open-supporting-documents');
 
-      await (button as unknown as { onPress: () => Promise<void> }).onPress();
+      (item as unknown as { onPress: () => void }).onPress();
 
-      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123');
+      expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
       expect(mockedViewOrderSupportingDocuments).toHaveBeenCalledWith(order);
+    });
+
+    it('add-signature fetches the signature and adds a selected image annotation', async () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: false,
+      };
+      const blob = new Blob(['signature'], { type: 'image/png' });
+      mockUserService.getSignature.mockResolvedValue(blob);
+      const context = createMockContext();
+
+      const strategy = new OrderPDFStrategy();
+      const item = strategy
+        .addCustomToolbarItems(context)
+        .find((toolbarItem) => toolbarItem.id === 'add-signature');
+
+      await (item as unknown as { onPress: () => Promise<void> }).onPress();
+
+      expect(mockUserService.getSignature).toHaveBeenCalled();
+      expect(context.instance.createAttachment).toHaveBeenCalledWith(blob);
+      expect(context.instance.create).toHaveBeenCalled();
+      expect(context.instance.setSelectedAnnotations).toHaveBeenCalled();
+      expect(
+        context.nutrientViewer.Annotations.ImageAnnotation
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pageIndex: 0,
+          contentType: 'image/png',
+          imageAttachmentId: 'attachment-id',
+          description: 'Signature',
+        })
+      );
+    });
+
+    it('add-initials logs an error when adding the annotation fails', async () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: false,
+        hasInitials: true,
+      };
+      mockUserService.getInitials.mockRejectedValue(new Error('boom'));
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const context = createMockContext();
+
+      const strategy = new OrderPDFStrategy();
+      const item = strategy
+        .addCustomToolbarItems(context)
+        .find((toolbarItem) => toolbarItem.id === 'add-initials');
+
+      await (item as unknown as { onPress: () => Promise<void> }).onPress();
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to add initials:',
+        expect.any(Error)
+      );
+      expect(context.instance.create).not.toHaveBeenCalled();
+
+      errorSpy.mockRestore();
     });
   });
 
   describe('setToolbarItems', () => {
     it('removes note, print, callout, and image items from the toolbar', () => {
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const items = [
         { type: 'pan' },
         { type: 'note' },
@@ -492,7 +831,7 @@ describe('OrderPDFStrategy', () => {
         { type: 'zoom-in' },
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       expect(result.some((item) => item.type === 'note')).toBe(false);
       expect(result.some((item) => item.type === 'print')).toBe(false);
@@ -505,8 +844,66 @@ describe('OrderPDFStrategy', () => {
       expect(panIndex).toBeLessThan(zoomIndex);
     });
 
-    it('inserts extras immediately after the linearized-download-indicator anchor', () => {
+    it('removes stamp and link items from the toolbar', () => {
+      const strategy = createOrderPDFStrategyForAnotherJudge();
+      const items = [
+        { type: 'pan' },
+        { type: 'stamp' },
+        { type: 'link' },
+        { type: 'zoom-in' },
+      ] as unknown as ToolbarItem[];
+
+      const result = strategy.setToolbarItems(items, createMockContext());
+
+      expect(result.some((item) => item.type === 'stamp')).toBe(false);
+      expect(result.some((item) => item.type === 'link')).toBe(false);
+      expect(result.some((item) => item.type === 'pan')).toBe(true);
+      expect(result.some((item) => item.type === 'zoom-in')).toBe(true);
+    });
+
+    it('omits the built-in image tool when the user has a signature or initials', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: false,
+      };
+
       const strategy = new OrderPDFStrategy();
+      const imageItem = { type: 'image' };
+      const items = [
+        { type: 'linearized-download-indicator' },
+        imageItem,
+      ] as unknown as ToolbarItem[];
+
+      const result = strategy.setToolbarItems(items, createMockContext());
+
+      expect(result.some((item) => item.type === 'image')).toBe(false);
+    });
+
+    it('relocates add-signature and add-initials into the extras section', () => {
+      mockCommonStore.userInfo = {
+        judgeId: 11,
+        hasSignature: true,
+        hasInitials: true,
+      };
+
+      const strategy = new OrderPDFStrategy();
+      const items = [
+        { type: 'linearized-download-indicator' },
+      ] as unknown as ToolbarItem[];
+
+      const result = strategy.setToolbarItems(items, createMockContext());
+
+      const anchorIndex = result.findIndex(
+        (item) => item.type === 'linearized-download-indicator'
+      );
+      const afterAnchor = result.slice(anchorIndex + 1).map((item) => item.id);
+      expect(afterAnchor).toContain('add-signature');
+      expect(afterAnchor).toContain('add-initials');
+    });
+
+    it('inserts extras immediately after the linearized-download-indicator anchor', () => {
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const items = [
         { type: 'pan' },
         { type: 'linearized-download-indicator' },
@@ -515,7 +912,7 @@ describe('OrderPDFStrategy', () => {
         { id: 'open-document-review', type: 'custom' },
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       const anchorIndex = result.findIndex(
         (item) => item.type === 'linearized-download-indicator'
@@ -527,7 +924,7 @@ describe('OrderPDFStrategy', () => {
     });
 
     it('appends extras at the end when no linearized-download-indicator exists', () => {
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const items = [
         { type: 'pan' },
         { type: 'zoom-in' },
@@ -535,7 +932,7 @@ describe('OrderPDFStrategy', () => {
         { id: 'open-document-review', type: 'custom' },
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       const spacerIndex = result.findIndex((item) => item.type === 'spacer');
       expect(spacerIndex).toBe(result.length - 3);
@@ -544,24 +941,24 @@ describe('OrderPDFStrategy', () => {
     });
 
     it('filters out missing extra items (undefined)', () => {
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const items = [
         { type: 'pan' },
         { type: 'zoom-in' },
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       expect(result.some((item) => item === undefined)).toBe(false);
       expect(result.filter((item) => item.type === 'spacer').length).toBe(1);
-      expect(result.some((item) => item.id === 'open-information')).toBe(false);
+      expect(result.some((item) => item.id === 'open-information')).toBe(true);
       expect(result.some((item) => item.id === 'open-document-review')).toBe(
         false
       );
     });
 
     it('moves an image item into the extras section after the anchor', () => {
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const imageWithId = { id: 'custom-image', type: 'image' };
       const items = [
         { type: 'pan' },
@@ -569,25 +966,31 @@ describe('OrderPDFStrategy', () => {
         imageWithId,
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       const anchorIndex = result.findIndex(
         (item) => item.type === 'linearized-download-indicator'
       );
       expect(result[anchorIndex + 1].type).toBe('spacer');
-      expect(result[anchorIndex + 2]).toBe(imageWithId);
+      const imageIndex = result.indexOf(imageWithId as unknown as ToolbarItem);
+      expect(imageIndex).toBeGreaterThan(anchorIndex + 1);
     });
 
-    it('returns only a spacer when given an empty items array', () => {
-      const strategy = new OrderPDFStrategy();
+    it('returns a spacer and the information item for a non-reviewer with empty items', () => {
+      const strategy = createOrderPDFStrategyForAnotherJudge();
 
-      const result = strategy.setToolbarItems([] as ToolbarItem[]);
+      const result = strategy.setToolbarItems(
+        [] as ToolbarItem[],
+        createMockContext()
+      );
 
-      expect(result).toEqual([{ type: 'spacer' }]);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ type: 'spacer' });
+      expect(result[1].id).toBe('open-information');
     });
 
     it('preserves the relative order of non-removed base items', () => {
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const items = [
         { type: 'pan' },
         { type: 'note' },
@@ -596,9 +999,9 @@ describe('OrderPDFStrategy', () => {
         { type: 'zoom-out' },
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
       const baseTypes = result
-        .filter((item) => item.type !== 'spacer')
+        .filter((item) => item.type !== 'spacer' && item.type !== 'custom')
         .map((item) => item.type);
 
       expect(baseTypes).toEqual(['pan', 'zoom-in', 'zoom-out']);
@@ -609,8 +1012,12 @@ describe('OrderPDFStrategy', () => {
         createMockOrder('123', { hasSupportingDocs: true })
       );
 
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       await strategy.initialize();
+      const openSupportingDocuments = {
+        id: 'open-supporting-documents',
+        type: 'custom',
+      };
       const openInformation = { id: 'open-information', type: 'custom' };
       const imageItem = { type: 'image' };
       const openDocumentReview = {
@@ -619,19 +1026,20 @@ describe('OrderPDFStrategy', () => {
       };
       const items = [
         { type: 'linearized-download-indicator' },
+        openSupportingDocuments,
         openInformation,
         imageItem,
         openDocumentReview,
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       const anchorIndex = result.findIndex(
         (item) => item.type === 'linearized-download-indicator'
       );
       expect(result[anchorIndex + 1].type).toBe('spacer');
       expect(result[anchorIndex + 2].id).toBe('open-supporting-documents');
-      expect(result[anchorIndex + 3]).toBe(openInformation);
+      expect(result[anchorIndex + 3].id).toBe('open-information');
       expect(result[anchorIndex + 4]).toBe(imageItem);
       expect(result[anchorIndex + 5]).toBe(openDocumentReview);
     });
@@ -639,7 +1047,7 @@ describe('OrderPDFStrategy', () => {
     it('does not add extras when viewing supporting documents', () => {
       setLocationSearch('?id=123&isShowingSupportingDocs=true');
 
-      const strategy = new OrderPDFStrategy();
+      const strategy = createOrderPDFStrategyForAnotherJudge();
       const items = [
         { type: 'pan' },
         { type: 'linearized-download-indicator' },
@@ -647,7 +1055,7 @@ describe('OrderPDFStrategy', () => {
         { id: 'open-document-review', type: 'custom' },
       ] as unknown as ToolbarItem[];
 
-      const result = strategy.setToolbarItems(items);
+      const result = strategy.setToolbarItems(items, createMockContext());
 
       expect(result.some((item) => item.type === 'spacer')).toBe(false);
       expect(result.some((item) => item.id === 'open-information')).toBe(false);

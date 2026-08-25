@@ -104,6 +104,8 @@ export interface UserInfo {
   releaseNotes?: ReleaseNotesInfo | null;
   permissions?: string[];
   groups?: string[];
+  hasSignature: boolean;
+  hasInitials: boolean;
 }
 
 export interface LookupCode {
@@ -180,6 +182,7 @@ export enum OrderReviewStatus {
   Pending = 'Pending',
   Approved = 'Approved',
   AwaitingDocumentation = 'AwaitingDocumentation',
+  OrderMade = 'OrderMade',
 }
 
 export enum OrderPriorityEnum {

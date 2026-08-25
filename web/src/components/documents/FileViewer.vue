@@ -21,11 +21,8 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-  import {
-    mdiFileDocumentArrowRightOutline,
-    mdiNotebookOutline,
-  } from '@mdi/js';
-  import type { ToolbarItem } from '@nutrient-sdk/viewer';
+  import type NutrientViewer from '@nutrient-sdk/viewer';
+  import type { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
   import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
   import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
@@ -34,6 +31,7 @@
     EmbeddedOutlineAwarePDFViewerStrategy,
     OutlineItem,
     PDFViewerInformationContext,
+    PDFViewerToolbarContext,
   } from './strategies/PDFViewerTypes';
 
   // Props for the generic component
@@ -55,28 +53,49 @@
 
     return typeof value === 'string' && value.length > 0 ? value : undefined;
   });
-  const nutrientViewer = globalThis.NutrientViewer as any;
+  const nutrientViewer: typeof NutrientViewer = globalThis.NutrientViewer;
+  if (!nutrientViewer) {
+    throw new Error('Nutrient Web SDK is not loaded.');
+  }
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
     throw new Error('Service(s) is undefined.');
   }
 
-  let instance = {} as any;
+  let instance!: Instance;
 
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
+    styleSheets: [`${import.meta.env.BASE_URL}styles/nutrient-toolbar.css`],
   };
 
-  async function hasImageAnnotation(pageIndex: number) {
+  async function hasImageAnnotation(
+    pageIndex: number,
+    requiredDescriptions: string[] | undefined
+  ) {
     const annotations = await instance.getAnnotations(pageIndex);
-    return annotations.filter((a) => a.contentType?.includes('image')).size > 0;
+    return (
+      annotations.filter((a) => {
+        if (!(a instanceof nutrientViewer.Annotations.ImageAnnotation)) {
+          return false;
+        }
+        return (
+          a.contentType?.includes('image') &&
+          (!requiredDescriptions ||
+            (a.description !== null &&
+              requiredDescriptions.includes(a.description)))
+        );
+      }).size > 0
+    );
   }
 
   async function checkDocumentForAnnotations() {
+    const requiredDescriptions =
+      props.strategy.getRequiredApprovalAnnotations?.();
     for (let i = 0; i < instance.totalPageCount; i++) {
-      if (await hasImageAnnotation(i)) return true;
+      if (await hasImageAnnotation(i, requiredDescriptions)) return true;
     }
     return false;
   }
@@ -109,42 +128,19 @@
 
       const base64Pdf = props.strategy.extractBase64PDF(apiResponse);
 
-      const openInfoItem: ToolbarItem = {
-        type: 'custom',
-        id: 'open-information',
-        title: 'Case details',
-        icon: `<svg><path d="${mdiNotebookOutline}"/></svg>`,
-        onPress: () => {
-          const informationContext = resolveInformationContext(rawData);
-
-          if (!informationContext) {
-            console.warn('Unable to resolve PDF viewer information context.');
-            return;
-          }
-
-          window.open(
-            `${
-              informationContext.isCriminal ? 'criminal-file/' : 'civil-file/'
-            }${informationContext.physicalFileId}`,
-            'relatedCaseInfo'
-          );
-        },
-      };
-
-      const reviewItem: ToolbarItem = {
-        type: 'custom',
-        id: 'open-document-review',
-        title: 'Submit',
-        icon: `<svg><path d="${mdiFileDocumentArrowRightOutline}"/></svg>`,
-        onPress: () => {
-          showReviewModal.value = true;
-        },
-      };
-
       instance = await nutrientViewer.load({
         ...configuration,
         document: `data:application/pdf;base64,${base64Pdf}`,
       });
+
+      // Default the built-in line tool's stroke color to red instead of blue.
+      instance.setAnnotationPresets((presets) => ({
+        ...presets,
+        line: {
+          ...presets.line,
+          strokeColor: nutrientViewer.Color.RED,
+        },
+      }));
 
       if (supportsEmbeddedOutline(props.strategy)) {
         const outline = props.strategy.createOutlineWithEmbeddedOutline(
@@ -170,17 +166,8 @@
           nutrientViewer.SidebarMode.DOCUMENT_OUTLINE
         )
       );
-      instance.setToolbarItems((items: ToolbarItem[]) => {
-        if (props.strategy.showOrderReviewOptions) {
-          items.push(openInfoItem, reviewItem);
-        }
 
-        if (props.strategy.setToolbarItems) {
-          items = props.strategy.setToolbarItems(items);
-        }
-
-        return items;
-      });
+      addCustomToolbarItems(rawData);
 
       // Listen for annotation changes to update canApprove
       instance.addEventListener('annotations.create', updateCanApprove);
@@ -395,18 +382,80 @@
     await props.strategy.reviewOrder(orderReview);
   };
 
+  const addCustomToolbarItems = (rawData: unknown) => {
+    const context: PDFViewerToolbarContext = {
+      instance,
+      nutrientViewer,
+      rawData,
+      resolveInformationContext,
+      openReviewModal: () => {
+        showReviewModal.value = true;
+      },
+      updateCanApprove,
+    };
+
+    instance.setToolbarItems((items: ToolbarItem[]) => {
+      // Add custom toolbar items based on the strategy and context
+      const allItems =
+        props.strategy.setToolbarItems?.(items, context) ?? items;
+
+      return arrangeToolbarItems(allItems);
+    });
+  };
+
   onMounted(() => {
     loadNutrient();
   });
 
   onUnmounted(() => {
-    if (nutrientViewer) {
-      nutrientViewer.unload('.pdf-container');
+    if (instance) {
+      nutrientViewer.unload(instance);
     }
     if (props.strategy.cleanup) {
       props.strategy.cleanup(sessionId.value);
     }
   });
+
+  const arrangeToolbarItems = (allItems: ToolbarItem[]): ToolbarItem[] => {
+    // Desired order of default toolbar items
+    const desiredTypes: ToolbarItem['type'][] = [
+      'line',
+      'arrow',
+      'rectangle',
+      'ellipse',
+      'polygon',
+      'cloudy-polygon',
+      'polyline',
+      'ink',
+      'highlighter',
+      'text-highlighter',
+      'ink-eraser',
+      'content-editor',
+      'search',
+      'export-pdf',
+    ];
+
+    // Create the ordered block, preserving existing items and adding missing ones.
+    const desiredTypeSet = new Set(desiredTypes);
+    const desiredItems: ToolbarItem[] = desiredTypes.map(
+      (type) => allItems.find((item) => item.type === type) ?? { type }
+    );
+
+    // Keep the remaining items (those not part of the block) in their original order.
+    const remainingItems = allItems.filter(
+      (item) => !desiredTypeSet.has(item.type)
+    );
+
+    // Insert the sequence just after the text tool (or append if absent).
+    const textIndex = remainingItems.findIndex((item) => item.type === 'text');
+    const insertAt = textIndex === -1 ? remainingItems.length : textIndex + 1;
+
+    return [
+      ...remainingItems.slice(0, insertAt),
+      ...desiredItems,
+      ...remainingItems.slice(insertAt),
+    ];
+  };
 </script>
 
 <style scoped>

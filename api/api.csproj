@@ -25,7 +25,7 @@
     <None Remove="Models\Calendar\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Lambda" Version="4.0.105" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.106" />
     <PackageReference Include="AnyAscii" Version="0.3.3" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="ColeSoft.Extensions.Logging.Splunk" Version="1.0.72" />
@@ -34,7 +34,7 @@
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="dotenv.net" Version="4.0.2" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
-    <PackageReference Include="GdPicture.API" Version="14.4.7" />
+    <PackageReference Include="GdPicture.API" Version="14.4.8" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.24" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.10" />

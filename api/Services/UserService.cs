@@ -72,7 +72,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.Email == email);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with email: {Email} is not found", email.Replace(Environment.NewLine, ""));
+            this.Logger.LogInformation("User with the provided email is not found");
             return null;
         }
 
@@ -84,7 +84,7 @@ public class UserService(
         var result = await this.Repo.FindAsync(u => u.NativeGuid == guid);
         if (result == null || !result.Any())
         {
-            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.Replace(Environment.NewLine, ""));
+            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.SanitizeForLog());
             return null;
         }
 
@@ -96,7 +96,7 @@ public class UserService(
         var user = await GetByIdAsync(userId);
         if (user == null)
         {
-            this.Logger.LogInformation("User with id: {UserId} is not found", userId);
+            this.Logger.LogInformation("User with id: {UserId} is not found", userId.SanitizeForLog());
             return null;
         }
 
@@ -166,8 +166,8 @@ public class UserService(
     {
         Logger.LogInformation(
             "Marking release notes as viewed. UserId: {UserId}, Version: {Version}, ViewedAtUtc: {ViewedAtUtc}",
-            userId,
-            version,
+            userId.SanitizeForLog(),
+            version.SanitizeForLog(),
             viewedAtUtc);
 
         if (string.IsNullOrWhiteSpace(userId))
@@ -201,7 +201,7 @@ public class UserService(
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error updating release notes for user {UserId}: {Message}", userId, ex.Message);
+            Logger.LogError(ex, "Error updating release notes for user {UserId}: {Message}", userId.SanitizeForLog(), ex.Message);
             return OperationResult<UserDto>.Failure("Error updating release notes.");
         }
     }
@@ -315,5 +315,85 @@ public class UserService(
         homeLocationIdValue = homeLocationId.ToString();
         return true;
     }
+
+    public Task<OperationResult> UploadSignatureAsync(string userId, byte[] signature, string contentType) =>
+        UploadUserImageAsync(userId, signature, contentType, (user, image, type) =>
+        {
+            user.Signature = image;
+            user.SignatureContentType = type;
+        }, "signature");
+
+    public Task<OperationResult> UploadInitialsAsync(string userId, byte[] initials, string contentType) =>
+        UploadUserImageAsync(userId, initials, contentType, (user, image, type) =>
+        {
+            user.Initials = image;
+            user.InitialsContentType = type;
+        }, "initials");
+
+    public Task<OperationResult<UserImageDto>> GetSignatureAsync(string userId, int judgeId) =>
+        GetUserImageAsync(userId, user => (user.Signature, user.SignatureContentType), "signature", judgeId);
+
+    public Task<OperationResult<UserImageDto>> GetInitialsAsync(string userId, int judgeId) =>
+        GetUserImageAsync(userId, user => (user.Initials, user.InitialsContentType), "initials", judgeId);
+
+    #region Private Methods
+
+    private async Task<OperationResult> UploadUserImageAsync(
+        string userId,
+        byte[] image,
+        string contentType,
+        Action<User, byte[], string> assignImage,
+        string imageType)
+    {
+        var user = await this.Repo.GetByIdAsync(userId);
+        if (user == null)
+        {
+            this.Logger.LogWarning("User with id: {UserId} is not found", userId.SanitizeForLog());
+            return OperationResult.Failure("User not found.");
+        }
+
+        try
+        {
+            assignImage(user, image, contentType);
+
+            await this.Repo.UpdateAsync(user);
+            InvalidateCache(CacheName);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error uploading {ImageType}: {Message}", imageType, ex.Message);
+            return OperationResult.Failure($"Error uploading {imageType}.");
+        }
+    }
+
+    private async Task<OperationResult<UserImageDto>> GetUserImageAsync(
+        string userId,
+        Func<User, (byte[] Content, string ContentType)> getImage,
+        string imageType,
+        int judgeId)
+    {
+        var user = (await this.Repo.FindAsync(u => u.Id == userId && u.JudgeId == judgeId))?.FirstOrDefault();
+        if (user == null)
+        {
+            this.Logger.LogWarning("User with id: {UserId} is not found", userId.SanitizeForLog());
+            return OperationResult<UserImageDto>.Failure("User not found.");
+        }
+
+        var (content, contentType) = getImage(user);
+        if (content == null || content.Length == 0)
+        {
+            return OperationResult<UserImageDto>.Failure($"User does not have {imageType}.");
+        }
+
+        return OperationResult<UserImageDto>.Success(new UserImageDto
+        {
+            Content = content,
+            ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType,
+        });
+    }
+
+    #endregion
 
 }

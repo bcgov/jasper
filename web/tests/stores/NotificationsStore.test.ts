@@ -40,6 +40,7 @@ vi.mock('@/utils/utils', () => ({
 }));
 
 import { useNotificationsStore } from '@/stores/NotificationsStore';
+import { mdiFileSign } from '@mdi/js';
 
 describe('NotificationsStore', () => {
   beforeEach(() => {
@@ -80,7 +81,7 @@ describe('NotificationsStore', () => {
       id: 'order-1',
       packageId: 12345,
       priorityType: 'P1',
-      priorityTypeDescription: 'High',
+      priorityTypeDesc: 'High',
       courtListType: 'Trial List',
       packageDocumentId: 'doc-1',
       packageName: 'Order Package',
@@ -122,11 +123,13 @@ describe('NotificationsStore', () => {
     expect(fetchOrdersMock).toHaveBeenCalledWith(orderService);
     expect(showSnackbarMock).toHaveBeenCalledTimes(1);
     expect(showSnackbarMock).toHaveBeenCalledWith(
-      'Received Trial List for file Criminal - 12345-1 with priority class: High',
-      'light',
-      'Trial List received!',
+      'Received order for file Criminal - 12345-1 with priority class: High',
+      'success',
+      `Heads-up!`,
       15000,
-      expect.objectContaining({ label: 'View package #12345' })
+      expect.objectContaining({ label: 'View package #12345' }),
+      0.7,
+      mdiFileSign
     );
 
     const action = showSnackbarMock.mock.calls[0][4];

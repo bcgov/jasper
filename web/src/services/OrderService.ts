@@ -17,7 +17,9 @@ export class OrderService extends ServiceBase {
     return this.httpService.get<Order[]>(`api/orders?judgeId=${judgeId ?? ''}`);
   }
 
-  getOrder(orderId: string): Promise<Order> {
-    return this.httpService.get<Order>(`api/orders/${orderId}`);
+  getOrder(orderId: string, judgeId: number | null): Promise<Order> {
+    return this.httpService.get<Order>(
+      `api/orders/${orderId}?judgeId=${judgeId ?? ''}`
+    );
   }
 }

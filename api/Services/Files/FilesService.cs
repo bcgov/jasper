@@ -10,6 +10,7 @@ using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
 using Scv.Core.ContractResolver;
 using Scv.Core.Helpers.Extensions;
+using PCSSFileDetailServices = PCSSCommon.Clients.FileDetailServices;
 
 namespace Scv.Api.Services.Files
 {
@@ -39,7 +40,8 @@ namespace Scv.Api.Services.Files
             IAppCache cache,
             ClaimsPrincipal claimsPrincipal,
             ILoggerFactory factory,
-            IDocumentConverter documentConverter)
+            IDocumentConverter documentConverter,
+            PCSSFileDetailServices.FileDetailClient pcssFileDetailClient)
         {
             _filesClient = filesClient;
             _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -52,8 +54,9 @@ namespace Scv.Api.Services.Files
                 locationService,
                 cache,
                 claimsPrincipal,
-                factory.CreateLogger<CivilFilesService>());
-            Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, cache, claimsPrincipal, documentConverter);
+                factory.CreateLogger<CivilFilesService>(),
+                pcssFileDetailClient);
+            Criminal = new CriminalFilesService(configuration, filesClient, mapper, lookupService, locationService, cache, claimsPrincipal, documentConverter, pcssFileDetailClient);
 
             _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
             _requestAgencyIdentifierId = claimsPrincipal?.AgencyCode() ?? configuration.GetNonEmptyValue("Request:AgencyIdentifierId");

@@ -1,5 +1,6 @@
 import { OrderService } from '@/services';
 import { Order } from '@/types';
+import { subscribeToOrderSubmitted } from '@/utils/ordersSync';
 import { defineStore } from 'pinia';
 import { ref, Ref, watch } from 'vue';
 
@@ -9,6 +10,7 @@ export const useOrdersStore = defineStore('orders', () => {
   const lastFetched = ref<Date | null>(null);
   const isInitialized = ref(false);
   const currentJudgeId = ref<number | null>(null);
+  let unsubscribeOrderSubmitted: (() => void) | null = null;
 
   const setOrders = (newOrders: Order[]) => {
     orders.value = newOrders;
@@ -57,6 +59,11 @@ export const useOrdersStore = defineStore('orders', () => {
       { immediate: true }
     );
 
+    // Reload the list of orders when an order is submitted.
+    unsubscribeOrderSubmitted = subscribeToOrderSubmitted(() => {
+      void fetchOrders(orderService);
+    });
+
     isInitialized.value = true;
   };
 
@@ -66,6 +73,8 @@ export const useOrdersStore = defineStore('orders', () => {
     isLoading.value = false;
     isInitialized.value = false;
     currentJudgeId.value = null;
+    unsubscribeOrderSubmitted?.();
+    unsubscribeOrderSubmitted = null;
   };
 
   return {

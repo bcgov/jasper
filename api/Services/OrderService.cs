@@ -17,7 +17,6 @@ using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
 using Scv.Core.ContractResolver;
-using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
 using Scv.Db.Models;
@@ -48,6 +47,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly IJudicialServicesClient _judicialClient;
     private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
     private readonly ICsoTextSanitizer _csoTextSanitizer;
+    private readonly IAntiVirusService _antiVirusService;
 
     public const string NOTE_TO_APPEND_IF_CLERK_DESIGNATED = "-- NOTE -- Pursuant to PCF rule 169, I designate the Clerk of the Court to sign the order on my behalf.";
 
@@ -65,7 +65,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IHttpContextAccessor httpContextAccessor,
         IJudicialServicesClient judicialClient,
         IDeskOrderDetailsExtractor deskOrderDetailsExtractor,
-        ICsoTextSanitizer csoTextSanitizer
+        ICsoTextSanitizer csoTextSanitizer,
+        IAntiVirusService antiVirusService
     ) : base(
             cache,
             mapper,
@@ -84,6 +85,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _judicialClient = judicialClient;
         _deskOrderDetailsExtractor = deskOrderDetailsExtractor;
         _csoTextSanitizer = csoTextSanitizer;
+        _antiVirusService = antiVirusService;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -224,29 +226,51 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult.Failure("Order not found");
         }
 
-        // Validate signed document type if provided
-        if (!string.IsNullOrWhiteSpace(orderReview.DocumentData)
-            && !DocumentHelper.IsPdfOrWordDocumentBase64(orderReview.DocumentData))
+        var documentScan = await ScanReviewDocumentAsync(orderReview.DocumentData, "signed");
+        if (!documentScan.Succeeded)
         {
-            return OperationResult.Failure("Signed document must be a valid PDF, Word Document (.doc or .docx).");
+            return documentScan;
         }
 
-        // Validate uploaded supporting document type if provided
-        if (!string.IsNullOrWhiteSpace(orderReview.SupportingDocumentData)
-            && !DocumentHelper.IsPdfOrWordDocumentBase64(orderReview.SupportingDocumentData))
+        var supportingScan = await ScanReviewDocumentAsync(orderReview.SupportingDocumentData, "supporting");
+        if (!supportingScan.Succeeded)
         {
-            return OperationResult.Failure("Supporting document must be a valid PDF, Word Document (.doc or .docx).");
+            return supportingScan;
         }
 
         var assignedJudgeId = order.JudgeId;
         var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
-
         if (assignedJudgeId != judgeId)
         {
             return OperationResult.Failure("Judge is not assigned to review this Order.");
         }
+
         var orderDto = Mapper.Map<OrderDto>(order);
         orderReview.Adapt(orderDto);
+
+        if (orderDto.Status == OrderStatus.Pending)
+        {
+            return OperationResult.Failure("Order is still pending and cannot be reviewed.");
+        }
+
+        if (orderDto.OrderRequest?.Referral?.CourtListTypeDesc == CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION)
+        {
+            // Desk Orders should only have a status of Order Made
+            if (orderDto.Status != OrderStatus.OrderMade)
+            {
+                return OperationResult.Failure("Incorrect status for submitting a desk order.");
+            }
+
+            if (orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.DocumentData))
+            {
+                return OperationResult.Failure("Desk Order is signed but has no document data.");
+            }
+
+            if (!orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
+            {
+                return OperationResult.Failure("Desk Order is not signed but has no supporting document data.");
+            }
+        }
 
         var result = await UpdateAsync(orderDto);
 
@@ -255,13 +279,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return result;
         }
 
-        if (orderDto.Status is OrderStatus.Approved
-            or OrderStatus.Unapproved
-            or OrderStatus.AwaitingDocumentation
-            or OrderStatus.OrderMade)
-        {
-            _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
-        }
+        _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
 
         return OperationResult.Success();
     }
@@ -351,6 +369,23 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     }
 
     #region Private Methods
+
+    private async Task<OperationResult> ScanReviewDocumentAsync(string base64Data, string documentLabel)
+    {
+        if (string.IsNullOrWhiteSpace(base64Data))
+        {
+            return OperationResult.Success();
+        }
+
+        using var stream = new MemoryStream(Convert.FromBase64String(base64Data));
+        var (isClean, _) = await _antiVirusService.ScanAsync(stream);
+        if (!isClean)
+        {
+            return OperationResult.Failure($"The uploaded {documentLabel} document failed the antivirus scan.");
+        }
+
+        return OperationResult.Success();
+    }
 
     private static bool IsCriminalCourtClass(CourtClassCd courtClass) =>
         courtClass is CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T;
@@ -465,9 +500,26 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             actionDto.SignedDate = null;
         }
 
-        if (orderDto.OrderRequest.Referral.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
-            || orderDto.OrderRequest.Referral.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE)
+        if (orderDto.OrderRequest?.Referral?.CourtListTypeDesc == CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION)
         {
+            if (orderDto.Status != OrderStatus.OrderMade)
+            {
+                this.Logger.LogError("Desk Order {OrderId} status should be Order Made. Unable to submit.", orderDto.Id);
+                return null;
+            }
+
+            if (orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.DocumentData))
+            {
+                this.Logger.LogError("Desk Order {OrderId} is signed but has no document data. Unable to submit.", orderDto.Id);
+                return null;
+            }
+
+            if (!orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
+            {
+                this.Logger.LogError("Desk Order {OrderId} is not signed but has no supporting document data. Unable to submit.", orderDto.Id);
+                return null;
+            }
+
             actionDto = PopulateDeskOrderDetails(orderDto, actionDto);
         }
 
@@ -476,12 +528,14 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
     private JudicialAction PopulateDeskOrderDetails(OrderDto orderDto, JudicialAction actionDto)
     {
-        // No document will be sent for Desk Orders
-        actionDto.Document = [];
-        if (orderDto.Status != OrderStatus.Approved && orderDto.Status != OrderStatus.OrderMade)
+        if (orderDto.Signed)
         {
+            // Order is signed, no need to extract directions and terms.
             return actionDto;
         }
+
+        // Desk order is not signed, extract directions and terms from the supporting document.
+        actionDto.Document = [];
 
         var bytes = Convert.FromBase64String(orderDto.SupportingDocumentData);
         using var stream = new MemoryStream(bytes);

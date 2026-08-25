@@ -88,7 +88,7 @@
 
           <DocumentUpload
             class="mt-3"
-            v-if="isFamilyDeskOrder"
+            v-if="isFamilyDeskOrder && !props.canApprove"
             :disabled="!isFamilyDeskOrder"
             v-model:show="show"
             v-model:selectedFile="selectedUpload"
@@ -191,10 +191,8 @@
   const closeBlocked = ref<boolean>(false);
   let autoCloseTimer: ReturnType<typeof setInterval> | null = null;
   const canReject = computed<boolean>(() => comments.value?.length > 0);
-  const canApprove = computed<boolean>(() =>
-    isFamilyDeskOrder.value
-      ? selectedUpload.value !== null
-      : props.canApprove || selectedUpload.value !== null
+  const canApprove = computed<boolean>(
+    () => props.canApprove || selectedUpload.value !== null
   );
   const orderStore = useOrdersStore();
   const route = useRoute();
@@ -238,7 +236,9 @@
     const review: OrderReview = {
       comments: comments.value,
       status: status,
-      signed: status === OrderReviewStatus.Approved && !isFamilyDeskOrder.value, // Approved Family Desk Orders doesn't require signature.
+      signed:
+        status === OrderReviewStatus.Approved ||
+        (status === OrderReviewStatus.OrderMade && !supportingDocumentData), // Submitting an order without a supporting document is considered signed
       documentData,
       supportingDocumentData,
     };

@@ -111,10 +111,11 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
     switch (review.status) {
       case OrderReviewStatus.Approved:
+      case OrderReviewStatus.OrderMade:
         this.snackBarStore.showSnackbar(
-          'The order has been approved.',
+          'The order has been submitted.',
           'success',
-          '✅ Approved!'
+          '✅ Submitted!'
         );
         break;
       case OrderReviewStatus.Unapproved:

@@ -13,17 +13,16 @@ using Scv.Models.Order;
 
 namespace Scv.Api.Controllers;
 
-
 [Route("api/[controller]")]
 [ApiController]
 public class OrdersController(
     IValidator<OrderRequestDto> orderRequestValidator,
-    IOrderService orderService,
-    IAntiVirusService antiVirusService) : ControllerBase
+    IValidator<OrderReviewDto> orderReviewValidator,
+    IOrderService orderService) : ControllerBase
 {
     private readonly IValidator<OrderRequestDto> _orderRequestValidator = orderRequestValidator;
+    private readonly IValidator<OrderReviewDto> _orderReviewValidator = orderReviewValidator;
     private readonly IOrderService _orderService = orderService;
-    private readonly IAntiVirusService _antiVirusService = antiVirusService;
 
     /// <summary>
     /// Retrieves all orders assigned to the judge.
@@ -108,6 +107,12 @@ public class OrdersController(
         [FromRoute, ObjectId] string id,
         [FromBody] OrderReviewDto orderReview)
     {
+        var basicValidation = await _orderReviewValidator.ValidateAsync(orderReview);
+        if (!basicValidation.IsValid)
+        {
+            return BadRequest(basicValidation.Errors.Select(e => e.ErrorMessage));
+        }
+
         var result = await _orderService.ReviewOrder(id, orderReview);
 
         if (!result.Succeeded)
@@ -120,5 +125,3 @@ public class OrdersController(
         return NoContent();
     }
 }
-
-

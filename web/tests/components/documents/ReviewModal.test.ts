@@ -149,15 +149,22 @@ describe('ReviewModal.vue', () => {
       setOrders(createFamilyDeskOrder());
     });
 
-    it('should render the DocumentUpload component', () => {
-      const wrapper = createWrapper({ canApprove: true });
+    it('should render the DocumentUpload component when it can be approved (submitted)', () => {
+      const wrapper = createWrapper({ canApprove: false });
       expect(wrapper.find('[data-testid="document-upload"]').exists()).toBe(
         true
       );
     });
 
-    it('should show the upload-required warning instead of the signature warning', () => {
+    it('should not render the DocumentUpload component when it can be approved (submitted)', () => {
       const wrapper = createWrapper({ canApprove: true });
+      expect(wrapper.find('[data-testid="document-upload"]').exists()).toBe(
+        false
+      );
+    });
+
+    it('should show the upload-required warning instead of the signature warning', () => {
+      const wrapper = createWrapper({ canApprove: false });
       expect(wrapper.text()).toContain(
         'Document upload is required before submitting the order'
       );
@@ -167,7 +174,7 @@ describe('ReviewModal.vue', () => {
     });
 
     it('should disable Submit until a supporting document has been selected', async () => {
-      const wrapper = createWrapper({ canApprove: true });
+      const wrapper = createWrapper({ canApprove: false });
       const approveButton = wrapper.find('[color="success"]');
       expect(approveButton.attributes('disabled')).toBe('true');
 
@@ -184,7 +191,7 @@ describe('ReviewModal.vue', () => {
     });
 
     it('should emit an OrderMade review with signed=false on Submit for a Family Desk order', async () => {
-      const wrapper = createWrapper({ canApprove: true });
+      const wrapper = createWrapper({ canApprove: false });
       const upload = wrapper.findComponent({ name: 'DocumentUpload' });
       const fakeFile = new File(['data'], 'order.pdf', {
         type: 'application/pdf',
@@ -301,6 +308,22 @@ describe('ReviewModal.vue', () => {
       expect(calls.length).toBeGreaterThan(0);
       const review = calls[0][0];
       expect(review.status).toBe(OrderReviewStatus.Approved);
+      expect(review.signed).toBe(true);
+      expect(review.documentData).toBe('');
+      expect(review.supportingDocumentData).toBe('');
+    });
+
+    it('should emit a fully-formed review payload with signed=true on Submit for Desk orders', async () => {
+      setOrders(createFamilyDeskOrder());
+      const wrapper = createWrapper({ canApprove: true });
+      const approveButton = wrapper.find('[color="success"]');
+      await approveButton.trigger('click');
+      await flushPromises();
+
+      const calls = getReviewCalls();
+      expect(calls.length).toBeGreaterThan(0);
+      const review = calls[0][0];
+      expect(review.status).toBe(OrderReviewStatus.OrderMade);
       expect(review.signed).toBe(true);
       expect(review.documentData).toBe('');
       expect(review.supportingDocumentData).toBe('');

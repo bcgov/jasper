@@ -45,6 +45,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<IJudicialServicesClient> _mockJudicialClient;
     private readonly Mock<IDeskOrderDetailsExtractor> _mockDeskOrderDetailsExtractor;
     private readonly Mock<ICsoTextSanitizer> _mockCsoTextSanitizer;
+    private readonly Mock<IAntiVirusService> _mockAntiVirusService;
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -79,6 +80,10 @@ public class OrderServiceTests : ServiceTestBase
         _mockCsoTextSanitizer
             .Setup(s => s.Sanitize(It.IsAny<string>()))
             .Returns((string text) => text);
+        _mockAntiVirusService = new Mock<IAntiVirusService>();
+        _mockAntiVirusService
+            .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
+            .ReturnsAsync((true, "File is clean."));
 
         _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -100,7 +105,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockHttpContextAccessor.Object,
             _mockJudicialClient.Object,
             _mockDeskOrderDetailsExtractor.Object,
-            _mockCsoTextSanitizer.Object);
+            _mockCsoTextSanitizer.Object,
+            _mockAntiVirusService.Object);
     }
 
     private void SetupConfiguration()
@@ -833,7 +839,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ReviewOrder_ReturnsFailure_WhenSignedDocumentIsInvalidType()
+    public async Task ReviewOrder_ReturnsFailure_WhenSignedDocumentFailsAntivirusScan()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var judgeId = _faker.Random.Int(1, 1000);
@@ -844,23 +850,27 @@ public class OrderServiceTests : ServiceTestBase
         var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.Approved,
-            DocumentData = Convert.ToBase64String([0x89, 0x50, 0x4E, 0x47])
+            DocumentData = Convert.ToBase64String([0x25, 0x50, 0x44, 0x46])
         };
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(orderId))
             .ReturnsAsync(order);
 
+        _mockAntiVirusService
+            .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
+            .ReturnsAsync((false, "Virus detected."));
+
         SetupHttpContextWithJudge(judgeId);
 
         var result = await _orderService.ReviewOrder(orderId, orderReview);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Signed document must be a valid PDF, Word Document (.doc or .docx).", result.Errors);
+        Assert.Contains("The uploaded signed document failed the antivirus scan.", result.Errors);
     }
 
     [Fact]
-    public async Task ReviewOrder_ReturnsFailure_WhenSupportingDocumentIsInvalidType()
+    public async Task ReviewOrder_ReturnsFailure_WhenSupportingDocumentFailsAntivirusScan()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var judgeId = _faker.Random.Int(1, 1000);
@@ -871,19 +881,23 @@ public class OrderServiceTests : ServiceTestBase
         var orderReview = new OrderReviewDto
         {
             Status = OrderStatus.AwaitingDocumentation,
-            SupportingDocumentData = Convert.ToBase64String([0x89, 0x50, 0x4E, 0x47])
+            SupportingDocumentData = Convert.ToBase64String([0x25, 0x50, 0x44, 0x46])
         };
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(orderId))
             .ReturnsAsync(order);
 
+        _mockAntiVirusService
+            .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
+            .ReturnsAsync((false, "Virus detected."));
+
         SetupHttpContextWithJudge(judgeId);
 
         var result = await _orderService.ReviewOrder(orderId, orderReview);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Supporting document must be a valid PDF, Word Document (.doc or .docx).", result.Errors);
+        Assert.Contains("The uploaded supporting document failed the antivirus scan.", result.Errors);
     }
 
     [Fact]
@@ -997,7 +1011,7 @@ public class OrderServiceTests : ServiceTestBase
 
         var result = await _orderService.ReviewOrder(orderId, orderReview);
 
-        Assert.True(result.Succeeded);
+        Assert.False(result.Succeeded);
         _mockBackgroundJobClient.Verify(c => c.Create(
             It.IsAny<Hangfire.Common.Job>(),
             It.IsAny<Hangfire.States.IState>()), Times.Never);
@@ -1084,7 +1098,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task SubmitApprovedDeskOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
+    public async Task SubmitDeskOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
     {
         var fakeComment = _faker.Lorem.Sentence();
         var fakeDirections = "Registry “must” review cafés — today…";
@@ -1097,7 +1111,7 @@ public class OrderServiceTests : ServiceTestBase
         order.SubmitAttempts = 2;
         order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
         order.SupportingDocumentData = _faker.Random.Bytes(32);
-        order.Status = OrderStatus.Approved;
+        order.Status = OrderStatus.OrderMade;
         order.Comments = fakeComment;
         SetupHttpContextWithGuid();
 
@@ -1155,7 +1169,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task SubmitApprovedDeskOrder_AppendsClerkNote_WhenIsClerkToSignIsTrue()
+    public async Task SubmitDeskOrder_AppendsClerkNote_WhenIsClerkToSignIsTrue()
     {
         var fakeComment = _faker.Lorem.Sentence();
         var fakeDirections = "Registry “must” review cafés — today…";
@@ -1168,7 +1182,7 @@ public class OrderServiceTests : ServiceTestBase
         order.SubmitAttempts = 2;
         order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
         order.SupportingDocumentData = _faker.Random.Bytes(32);
-        order.Status = OrderStatus.Approved;
+        order.Status = OrderStatus.OrderMade;
         order.Comments = fakeComment;
         SetupHttpContextWithGuid();
 
@@ -1227,7 +1241,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task SubmitApprovedDeskOrder_OmitsEmptyComment_WhenNoCommentsProvidedAndClerkDesignated()
+    public async Task SubmitDeskOrder_OmitsEmptyComment_WhenNoCommentsProvidedAndClerkDesignated()
     {
         var fakeDirections = _faker.Lorem.Sentence();
         var fakeOrderTerm = _faker.Lorem.Sentence();
@@ -1241,7 +1255,7 @@ public class OrderServiceTests : ServiceTestBase
         order.SubmitAttempts = 2;
         order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
         order.SupportingDocumentData = _faker.Random.Bytes(32);
-        order.Status = OrderStatus.Approved;
+        order.Status = OrderStatus.OrderMade;
         order.Comments = null;
         SetupHttpContextWithGuid();
 
@@ -1298,7 +1312,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task SubmitApprovedDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
+    public async Task SubmitDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
     {
         const string comment = "Desk order note";
         const string extractedDirections = "Registry “must” review cafés — today…";
@@ -1317,7 +1331,7 @@ public class OrderServiceTests : ServiceTestBase
         });
 
         order.SupportingDocumentData = deskOrderDocument.ToArray();
-        order.Status = OrderStatus.Approved;
+        order.Status = OrderStatus.OrderMade;
         order.Comments = comment;
         SetupHttpContextWithGuid();
 
@@ -1333,7 +1347,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockHttpContextAccessor.Object,
             _mockJudicialClient.Object,
             new DeskOrderDetailsExtractor(),
-            new CsoTextSanitizer());
+            new CsoTextSanitizer(),
+            _mockAntiVirusService.Object);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1377,7 +1392,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task SubmitNotApprovedDeskOrder_ReturnsSuccess_WhenCsoSubmitSucceeds()
+    public async Task SubmitDeskOrder_ReturnsFailure_WhenStatusIsNotOrderMade()
     {
         var fakeComment = _faker.Lorem.Sentence();
         var fakeDirections = _faker.Lorem.Sentence();
@@ -1423,7 +1438,7 @@ public class OrderServiceTests : ServiceTestBase
 
         var result = await _orderService.SubmitOrder(order.Id);
 
-        Assert.True(result.Succeeded);
+        Assert.False(result.Succeeded);
         _mockJudicialClient
             .Verify(c =>
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
@@ -1433,7 +1448,7 @@ public class OrderServiceTests : ServiceTestBase
                     && ja.OrderTerms.Count == 0
                     && ja.Document.Length == 0
                 )),
-                Times.Once);
+                Times.Never);
         _mockDeskOrderDetailsExtractor.Verify(d => d.Extract(It.IsAny<Stream>()), Times.Never);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Never);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Never);

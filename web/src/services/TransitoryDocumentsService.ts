@@ -1,5 +1,6 @@
 import {
   FileMetadataDto,
+  TransitoryDocumentSearchResponse,
   TransitoryMergeContext,
 } from '@/types/transitory-documents';
 import { HttpService } from './HttpService';
@@ -12,7 +13,7 @@ export class TransitoryDocumentsService {
     roomCd: string,
     date: string,
     forceRefresh = false
-  ): Promise<FileMetadataDto[]> {
+  ): Promise<TransitoryDocumentSearchResponse> {
     const query = {
       locationId,
       roomCd,
@@ -20,7 +21,7 @@ export class TransitoryDocumentsService {
       ...(forceRefresh ? { forceRefresh: true } : {}),
     };
 
-    return this.httpService.get<FileMetadataDto[]>(
+    return this.httpService.get<TransitoryDocumentSearchResponse>(
       'api/TransitoryDocuments',
       query
     );

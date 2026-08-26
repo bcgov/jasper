@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Scv.Models;
+using Scv.Models.Document;
 using TDCommon.Clients.DocumentsServices;
 
 namespace Scv.Api.Services
@@ -19,9 +20,9 @@ namespace Scv.Api.Services
         /// <param name="date">The date to retrieve files.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <param name="forceRefresh">Whether to discard the cached result for this search before retrieving documents.</param>
-        /// <returns>The collection of file metadata from the API.</returns>
+        /// <returns>The documents and metadata that identify when and whether the search result was cached.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
-        Task<IEnumerable<Scv.Models.Document.FileMetadataDto>> ListSharedDocuments(
+        Task<TransitoryDocumentSearchResponse> ListSharedDocuments(
             string locationId,
             string roomCode,
             string date,

@@ -158,7 +158,9 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        var resultList = result.ToList();
+        Assert.False(result.IsCached);
+        Assert.NotEqual(default, result.RetrievedAtUtc);
+        var resultList = result.Documents;
         Assert.Single(resultList);
         Assert.Equal("test.pdf", resultList[0].FileName);
         Assert.Equal(".pdf", resultList[0].Extension);
@@ -219,7 +221,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         var result = await service.ListSharedDocuments(locationId, roomCode, date);
 
         // Assert
-        var resultList = result.ToList();
+        var resultList = result.Documents;
         Assert.Single(resultList);
         Assert.Equal(expectedDateTime.UtcDateTime, resultList[0].CreatedUtc);
     }
@@ -257,7 +259,47 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.Empty(result);
+        Assert.Empty(result.Documents);
+    }
+
+    [Fact]
+    public async Task ListSharedDocuments_ShouldCacheEmptyResults()
+    {
+        // Arrange
+        var locationId = _faker.Random.AlphaNumeric(5);
+        var roomCode = _faker.Random.AlphaNumeric(3);
+        var date = _faker.Date.Recent().ToString("yyyy-MM-dd");
+        var location = Scv.Models.Location.Location.Create(
+            _faker.Address.City(),
+            locationId,
+            locationId,
+            true,
+            []);
+        location.ShortName = _faker.Random.AlphaNumeric(5);
+        location.AgencyIdentifierCd = _faker.Random.AlphaNumeric(3);
+        var region = new JCRegion
+        {
+            RegionId = _faker.Random.Int(1, 10),
+            RegionName = _faker.Address.State(),
+            RegionLocations = []
+        };
+        var (service, mockTdClient, _, _) = SetupService([], location, region);
+
+        // Act
+        var firstResult = await service.ListSharedDocuments(locationId, roomCode, date);
+        var secondResult = await service.ListSharedDocuments(locationId, roomCode, date);
+
+        // Assert
+        Assert.Empty(firstResult.Documents);
+        Assert.Empty(secondResult.Documents);
+        Assert.False(firstResult.IsCached);
+        Assert.True(secondResult.IsCached);
+        Assert.Equal(firstResult.RetrievedAtUtc, secondResult.RetrievedAtUtc);
+        mockTdClient.Verify(
+            client => client.SearchAsync(
+                It.IsAny<TransitoryDocumentSearchRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -502,7 +544,7 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         var result = await service.ListSharedDocuments(locationId, roomCode, date);
 
         // Assert
-        var resultList = result.ToList();
+        var resultList = result.Documents;
         Assert.Equal(2, resultList.Count);
         Assert.Equal("test1.pdf", resultList[0].FileName);
         Assert.Equal("test2.docx", resultList[1].FileName);
@@ -553,7 +595,10 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         // Assert
         Assert.NotNull(firstResult);
         Assert.NotNull(secondResult);
-        Assert.Single(secondResult);
+        Assert.False(firstResult.IsCached);
+        Assert.True(secondResult.IsCached);
+        Assert.Equal(firstResult.RetrievedAtUtc, secondResult.RetrievedAtUtc);
+        Assert.Single(secondResult.Documents);
 
         mockKeycloakService.Verify(k => k.GetServiceAccountTokenAsync(It.IsAny<KeycloakClientOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         mockLocationService.Verify(l => l.GetLocations(It.IsAny<bool>()), Times.Once);
@@ -586,15 +631,62 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
         var (service, mockTdClient, _, _) = SetupService([], location, region);
 
         // Act
-        await service.ListSharedDocuments(locationId, roomCode, date);
-        await service.ListSharedDocuments(locationId, roomCode, date, forceRefresh: true);
+        var initialResult = await service.ListSharedDocuments(locationId, roomCode, date);
+        var refreshedResult = await service.ListSharedDocuments(locationId, roomCode, date, forceRefresh: true);
 
         // Assert
+        Assert.False(refreshedResult.IsCached);
+        Assert.True(refreshedResult.RetrievedAtUtc >= initialResult.RetrievedAtUtc);
         mockTdClient.Verify(
             client => client.SearchAsync(
                 It.IsAny<TransitoryDocumentSearchRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task ListSharedDocuments_ShouldNotCacheFailedForceRefresh()
+    {
+        // Arrange
+        var locationId = _faker.Random.AlphaNumeric(5);
+        var roomCode = _faker.Random.AlphaNumeric(3);
+        var date = _faker.Date.Recent().ToString("yyyy-MM-dd");
+        var location = Scv.Models.Location.Location.Create(
+            _faker.Address.City(),
+            locationId,
+            locationId,
+            true,
+            []);
+        location.ShortName = _faker.Random.AlphaNumeric(5);
+        location.AgencyIdentifierCd = _faker.Random.AlphaNumeric(3);
+        var region = new JCRegion
+        {
+            RegionId = _faker.Random.Int(1, 10),
+            RegionName = _faker.Address.State(),
+            RegionLocations = []
+        };
+        var (service, mockTdClient, _, _) = SetupService([], location, region);
+        mockTdClient
+            .SetupSequence(client => client.SearchAsync(
+                It.IsAny<TransitoryDocumentSearchRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([])
+            .ThrowsAsync(new InvalidOperationException("Search failed."))
+            .ReturnsAsync([]);
+
+        // Act
+        await service.ListSharedDocuments(locationId, roomCode, date);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ListSharedDocuments(locationId, roomCode, date, forceRefresh: true));
+        var resultAfterFailure = await service.ListSharedDocuments(locationId, roomCode, date);
+
+        // Assert
+        Assert.False(resultAfterFailure.IsCached);
+        mockTdClient.Verify(
+            client => client.SearchAsync(
+                It.IsAny<TransitoryDocumentSearchRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(3));
     }
 
     #endregion

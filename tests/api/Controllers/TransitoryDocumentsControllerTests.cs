@@ -136,15 +136,16 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, date.ToString("yyyy-MM-dd")))
-            .ReturnsAsync(expectedDocuments);
+            .ReturnsAsync(CreateSearchResponse(expectedDocuments));
 
         // Act
         var result = await _controller.DocumentGet(locationId, roomCd, date);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var actualDocuments = Assert.IsType<IEnumerable<SearchFileMetadata>>(okResult.Value, false);
-        Assert.Equal(expectedDocuments.Count, actualDocuments.Count());
+        var searchResponse = Assert.IsType<TransitoryDocumentSearchResponse>(okResult.Value);
+        Assert.Equal(expectedDocuments.Count, searchResponse.Documents.Count);
+        Assert.False(searchResponse.IsCached);
 
         _mockTransitoryDocumentsService.Verify(
             s => s.ListSharedDocuments(locationId, roomCd, date.ToString("yyyy-MM-dd")),
@@ -165,15 +166,15 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, It.IsAny<string>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(CreateSearchResponse([]));
 
         // Act
         var result = await _controller.DocumentGet(locationId, roomCd, date);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var actualDocuments = Assert.IsType<IEnumerable<SearchFileMetadata>>(okResult.Value, false);
-        Assert.Empty(actualDocuments);
+        var searchResponse = Assert.IsType<TransitoryDocumentSearchResponse>(okResult.Value);
+        Assert.Empty(searchResponse.Documents);
     }
 
     [Fact]
@@ -194,7 +195,7 @@ public class TransitoryDocumentsControllerTests
                 date.ToString("yyyy-MM-dd"),
                 It.IsAny<CancellationToken>(),
                 true))
-            .ReturnsAsync([]);
+            .ReturnsAsync(CreateSearchResponse([]));
 
         // Act
         var result = await _controller.DocumentGet(locationId, roomCd, date, true);
@@ -225,7 +226,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(locationId, roomCd, "2025-10-31"))
-            .ReturnsAsync([]);
+            .ReturnsAsync(CreateSearchResponse([]));
 
         // Act
         await _controller.DocumentGet(locationId, roomCd, date);
@@ -696,7 +697,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
+            .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -736,7 +737,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
+            .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -778,7 +779,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
+            .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -818,7 +819,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
+            .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -856,7 +857,7 @@ public class TransitoryDocumentsControllerTests
 
         _mockTransitoryDocumentsService
             .Setup(s => s.ListSharedDocuments(request.LocationId, request.RoomCd, request.Date.ToString("yyyy-MM-dd"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request.Files.Select(ToSearchFileMetadata));
+            .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
             .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
@@ -898,6 +899,16 @@ public class TransitoryDocumentsControllerTests
             CreatedUtc = metadata.CreatedUtc,
             RelativePath = metadata.RelativePath,
             MatchedRoomFolder = metadata.MatchedRoomFolder
+        };
+    }
+
+    private static TransitoryDocumentSearchResponse CreateSearchResponse(IEnumerable<SearchFileMetadata> documents)
+    {
+        return new TransitoryDocumentSearchResponse
+        {
+            Documents = documents.ToList(),
+            RetrievedAtUtc = DateTimeOffset.UtcNow,
+            IsCached = false
         };
     }
 

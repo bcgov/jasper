@@ -17,6 +17,7 @@ using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Infrastructure.Options;
 using Scv.Core.Exceptions;
 using Scv.Models;
+using Scv.Models.Document;
 using TDCommon.Clients.DocumentsServices;
 
 namespace Scv.Api.Services
@@ -64,9 +65,9 @@ namespace Scv.Api.Services
         /// <param name="date">The date to retrieve files.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <param name="forceRefresh">Force the cache to be ignored for this request.</param>
-        /// <returns>The collection of file metadata from the API.</returns>
+        /// <returns>The documents and metadata that identify when and whether the search result was cached.</returns>
         /// <exception cref="ApiException">A server-side error occurred.</exception>
-        public async Task<IEnumerable<Scv.Models.Document.FileMetadataDto>> ListSharedDocuments(
+        public async Task<TransitoryDocumentSearchResponse> ListSharedDocuments(
             string locationId,
             string roomCode,
             string date,
@@ -89,10 +90,12 @@ namespace Scv.Api.Services
                         date);
                 }
 
-                return await _cache.GetOrAddAsync(
+                var isCached = true;
+                var cachedSearch = await _cache.GetOrAddAsync(
                     cacheKey,
                     async _ =>
                     {
+                        isCached = false;
                         var bearer = await _keycloakTokenService.GetServiceAccountTokenAsync(_tdKeycloakOptions.Value, cancellationToken);
                         _tdClient.SetBearerToken(bearer);
 
@@ -136,12 +139,21 @@ namespace Scv.Api.Services
                             cancellationToken);
 
                         // Use Mapster to map generated client DTOs to shared model DTOs.
-                        return _mapper.Map<IEnumerable<Scv.Models.Document.FileMetadataDto>>(clientResult).ToList();
+                        return new CachedTransitoryDocumentSearch(
+                            _mapper.Map<IEnumerable<Scv.Models.Document.FileMetadataDto>>(clientResult).ToList(),
+                            DateTimeOffset.UtcNow);
                     },
                     new MemoryCacheEntryOptions
                     {
                         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_tdSearchExpiryMinutes)
                     });
+
+                return new TransitoryDocumentSearchResponse
+                {
+                    Documents = cachedSearch.Documents,
+                    RetrievedAtUtc = cachedSearch.RetrievedAtUtc,
+                    IsCached = isCached
+                };
             }
             catch (ApiException<string> apiEx)
             {
@@ -296,6 +308,10 @@ namespace Scv.Api.Services
 
             return "application/octet-stream";
         }
+
+        private sealed record CachedTransitoryDocumentSearch(
+            IReadOnlyList<Scv.Models.Document.FileMetadataDto> Documents,
+            DateTimeOffset RetrievedAtUtc);
 
 
     }

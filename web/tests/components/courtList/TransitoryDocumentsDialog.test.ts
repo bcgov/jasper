@@ -1,6 +1,9 @@
 import TransitoryDocumentsTable from '@/components/courtlist/TransitoryDocumentsTable.vue';
 import { useCommonStore } from '@/stores';
-import { FileMetadataDto } from '@/types/transitory-documents';
+import {
+  FileMetadataDto,
+  TransitoryDocumentSearchResponse,
+} from '@/types/transitory-documents';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -57,6 +60,7 @@ type TransitoryDocumentsTableVm = {
   loading: boolean;
   error: unknown;
   documents: FileMetadataDto[];
+  searchResult: TransitoryDocumentSearchResponse | null;
   selectedDocuments: FileMetadataDto[];
   downloadError: boolean;
   downloadErrorMessage: string;
@@ -111,9 +115,11 @@ describe('TransitoryDocumentsTable', () => {
     mockDocuments: FileMetadataDto[] = [],
     permissions: string[] = [DOWNLOAD_PERMISSION, VIEW_PERMISSION]
   ) => {
-    mockTransitoryDocumentsService.searchDocuments.mockResolvedValue(
-      mockDocuments
-    );
+    mockTransitoryDocumentsService.searchDocuments.mockResolvedValue({
+      documents: mockDocuments,
+      retrievedAtUtc: '2025-11-01T10:30:00Z',
+      isCached: false,
+    });
 
     const pinia = createPiniaWithUser(permissions);
 
@@ -222,7 +228,7 @@ describe('TransitoryDocumentsTable', () => {
     });
 
     it('shows loading state when fetching documents', async () => {
-      const promise = new Promise<FileMetadataDto[]>(() => {
+      const promise = new Promise<TransitoryDocumentSearchResponse>(() => {
         // Intentionally unresolved so loading remains true while assertion runs.
       });
 
@@ -315,6 +321,38 @@ describe('TransitoryDocumentsTable', () => {
   });
 
   describe('Document fetching', () => {
+    it('shows a blue banner for current results', async () => {
+      const wrapper = createWrapper({}, [createMockDocument()]);
+      await flushAll();
+
+      const banner = wrapper.find('[data-testid="search-freshness-banner"]');
+      expect(banner.text()).toContain('Results as of');
+      expect(banner.attributes('data-cache-status')).toBe('current');
+    });
+
+    it('shows a yellow banner for cached results', async () => {
+      mockTransitoryDocumentsService.searchDocuments.mockResolvedValue({
+        documents: [createMockDocument()],
+        retrievedAtUtc: '2025-11-01T10:30:00Z',
+        isCached: true,
+      });
+      const pinia = createPiniaWithUser();
+      const wrapper = mount(TransitoryDocumentsTable, {
+        props: defaultProps,
+        global: {
+          plugins: [vuetify, pinia],
+          provide: {
+            transitoryDocumentsService: mockTransitoryDocumentsService,
+          },
+        },
+      });
+      await flushAll();
+
+      const banner = wrapper.find('[data-testid="search-freshness-banner"]');
+      expect(banner.text()).toContain('Cached results as of');
+      expect(banner.attributes('data-cache-status')).toBe('cached');
+    });
+
     it('fetches documents when dialog is opened', async () => {
       const mockDocs = [createMockDocument()];
       const wrapper = createWrapper({ modelValue: false }, mockDocs);
@@ -353,6 +391,19 @@ describe('TransitoryDocumentsTable', () => {
       const vm = getVm(wrapper);
 
       await vm.refreshDocuments();
+
+      expect(
+        mockTransitoryDocumentsService.searchDocuments
+      ).toHaveBeenLastCalledWith('1', '101', '2025-11-01', true);
+    });
+
+    it('refreshes documents when the banner refresh link is clicked', async () => {
+      const wrapper = createWrapper();
+      await flushAll();
+
+      await wrapper
+        .find('[data-testid="refresh-documents-link"]')
+        .trigger('click');
 
       expect(
         mockTransitoryDocumentsService.searchDocuments
@@ -628,7 +679,9 @@ describe('TransitoryDocumentsTable', () => {
       await wrapper.setProps({ modelValue: true });
       await flushAll();
 
-      expect(wrapper.find('a.text-primary').exists()).toBe(false);
+      expect(
+        wrapper.find('[data-testid="documents-table"] a.text-primary').exists()
+      ).toBe(false);
       expect(wrapper.text()).toContain('test-file.pdf');
     });
 

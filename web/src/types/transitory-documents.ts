@@ -7,6 +7,12 @@ export interface FileMetadataDto {
   matchedRoomFolder: string | null;
 }
 
+export interface TransitoryDocumentSearchResponse {
+  documents: FileMetadataDto[];
+  retrievedAtUtc: string;
+  isCached: boolean;
+}
+
 export interface TransitoryMergeContext {
   locationId: string;
   roomCd: string;

@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using System.Linq;
+using FluentValidation;
 using FluentValidation.Results;
 using Scv.Core.Helpers;
 using Scv.Models.Order;
@@ -7,6 +8,14 @@ namespace Scv.Api.Validators.Order;
 
 public class OrderReviewDtoValidator : AbstractValidator<OrderReviewDto>
 {
+    private static readonly OrderStatus[] ValidReviewStatuses =
+    {
+        OrderStatus.Approved,
+        OrderStatus.Unapproved,
+        OrderStatus.AwaitingDocumentation,
+        OrderStatus.OrderMade
+    };
+
     public OrderReviewDtoValidator()
     {
         RuleFor(x => x.DocumentData)
@@ -15,9 +24,13 @@ public class OrderReviewDtoValidator : AbstractValidator<OrderReviewDto>
             .WithMessage("Signed document must be a valid PDF, Word Document (.doc or .docx).");
 
         RuleFor(x => x.SupportingDocumentData)
-            .Must(supportingDoc => DocumentHelper.IsPdfOrWordDocumentBase64(supportingDoc))
+            .Must(supportingDoc => DocumentHelper.IsWordDocumentBase64(supportingDoc))
             .When(x => !string.IsNullOrWhiteSpace(x.SupportingDocumentData))
-            .WithMessage("Supporting document must be a valid PDF, Word Document (.doc or .docx).");
+            .WithMessage("Supporting document must be a valid Word Document (.doc or .docx).");
+
+        RuleFor(x => x.Status)
+            .Must(status => ValidReviewStatuses.Contains(status))
+            .WithMessage("Status must be a valid review OrderStatus value.");
     }
 
     protected override bool PreValidate(ValidationContext<OrderReviewDto> context, ValidationResult result)

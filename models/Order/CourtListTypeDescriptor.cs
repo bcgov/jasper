@@ -19,4 +19,7 @@ public static class CourtListTypeDescriptor
             _ => courtListType,
         };
     }
+
+    public static bool IsDeskOrder(string courtListType) =>
+        Describe(courtListType) == DESK_ORDER_DESCRIPTION;
 }

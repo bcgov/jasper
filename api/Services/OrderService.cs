@@ -253,22 +253,12 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         orderReview.Adapt(orderDto);
 
-        if (orderDto.OrderRequest?.Referral?.CourtListTypeDesc == CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION)
+        if (orderDto.OrderRequest?.Referral?.IsDeskOrder == true)
         {
-            // Desk Orders should only have a status of Order Made
-            if (orderDto.Status != OrderStatus.OrderMade)
+            var deskOrderValidation = ValidateDeskOrder(orderDto);
+            if (!deskOrderValidation.Succeeded)
             {
-                return OperationResult.Failure("Incorrect status for submitting a desk order.");
-            }
-
-            if (orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.DocumentData))
-            {
-                return OperationResult.Failure("Desk Order is signed but has no document data.");
-            }
-
-            if (!orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
-            {
-                return OperationResult.Failure("Desk Order is not signed but has no supporting document data.");
+                return deskOrderValidation;
             }
         }
 
@@ -492,12 +482,16 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             PaasSeqNo = orderDto.OrderRequest?.Referral?.ReferredByPaasSeqNo.GetValueOrDefault() ?? 0,
             PartId = judge.ParticipantId.Value
         };
+
         SetActionReviewDates(orderDto, actionDto);
 
-        if (orderDto.OrderRequest?.Referral?.CourtListTypeDesc == CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION)
+        if (orderDto.OrderRequest?.Referral?.IsDeskOrder == true)
         {
-            if (!IsDeskOrderReadyForSubmission(orderDto))
+            var deskOrderValidation = ValidateDeskOrder(orderDto);
+            if (!deskOrderValidation.Succeeded)
             {
+                this.Logger.LogError("Desk Order {OrderId} cannot be submitted: {Reason}",
+                    orderDto.Id, string.Join(" ", deskOrderValidation.Errors));
                 return null;
             }
 
@@ -518,38 +512,43 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             : null;
     }
 
-    private bool IsDeskOrderReadyForSubmission(OrderDto orderDto)
+    private static OperationResult ValidateDeskOrder(OrderDto orderDto)
     {
         if (orderDto.Status != OrderStatus.OrderMade)
         {
-            this.Logger.LogError("Desk Order {OrderId} status should be Order Made. Unable to submit.", orderDto.Id);
-            return false;
+            return OperationResult.Failure("Incorrect status for submitting a desk order.");
         }
 
         if (orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.DocumentData))
         {
-            this.Logger.LogError("Desk Order {OrderId} is signed but has no document data. Unable to submit.", orderDto.Id);
-            return false;
+            return OperationResult.Failure("Desk Order is signed but has no document data.");
         }
 
-        if (!orderDto.Signed && string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
+        if (!orderDto.Signed)
         {
-            this.Logger.LogError("Desk Order {OrderId} is not signed but has no supporting document data. Unable to submit.", orderDto.Id);
-            return false;
+            if (orderDto?.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE)
+            {
+                return OperationResult.Failure("Small Claims Desk Order cannot be submitted unsigned.");
+            }
+
+            if (string.IsNullOrWhiteSpace(orderDto.SupportingDocumentData))
+            {
+                return OperationResult.Failure("Family Desk Order is not signed but has no supporting document data.");
+            }
         }
 
-        return true;
+        return OperationResult.Success();
     }
 
     private JudicialAction PopulateDeskOrderDetails(OrderDto orderDto, JudicialAction actionDto)
     {
         if (orderDto.Signed)
         {
-            // Order is signed, no need to extract directions and terms.
+            // Desk Order (PSM/PFM) is signed. Nothing else to do.
             return actionDto;
         }
 
-        // Desk order is not signed, extract directions and terms from the supporting document.
+        // Family Desk order is not signed, extract directions and terms from the supporting document.
         actionDto.Document = [];
 
         var bytes = Convert.FromBase64String(orderDto.SupportingDocumentData);

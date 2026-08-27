@@ -1312,7 +1312,7 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task SubmitDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
+    public async Task SubmitFamilyDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
     {
         const string comment = "Desk order note";
         const string extractedDirections = "Registry “must” review cafés — today…";
@@ -1320,7 +1320,7 @@ public class OrderServiceTests : ServiceTestBase
 
         var order = CreateOrder();
         order.SubmitAttempts = 2;
-        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
         using var deskOrderDocument = BuildDocxStream(body =>
         {
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
@@ -1390,6 +1390,158 @@ public class OrderServiceTests : ServiceTestBase
                 )),
                 Times.Once);
     }
+
+    [Fact]
+    public async Task SubmitSmallClaimsDeskOrder_ReturnsFailure_WhenUnsigned()
+    {
+        const string comment = "Desk order note";
+        const string extractedDirections = "Registry “must” review cafés — today…";
+        const string extractedOrderTerm = "Pay $50 – then file résumé • exhibit";
+
+        var order = CreateOrder();
+        order.Signed = false;
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+        using var deskOrderDocument = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(extractedDirections));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(extractedOrderTerm));
+            body.AppendChild(SignatureSdt());
+        });
+
+        order.SupportingDocumentData = deskOrderDocument.ToArray();
+        order.Status = OrderStatus.OrderMade;
+        order.Comments = comment;
+        SetupHttpContextWithGuid();
+
+        var orderService = new OrderService(
+            _cache,
+            _mapper,
+            _mockLogger.Object,
+            _mockOrderRepo.Object,
+            _mockFileServicesClient.Object,
+            _mockConfiguration.Object,
+            _mockJudgeService.Object,
+            _mockBackgroundJobClient.Object,
+            _mockHttpContextAccessor.Object,
+            _mockJudicialClient.Object,
+            new DeskOrderDetailsExtractor(),
+            new CsoTextSanitizer(),
+            _mockAntiVirusService.Object);
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        var result = await orderService.SubmitOrder(order.Id);
+
+        Assert.False(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == "Desk order note. Registry \"must\" review cafes - today..."
+                    && ja.OrderTerms.Count == 1
+                    && ja.OrderTerms.First().Text == "Pay $50 - then file resume * exhibit"
+                    && ja.OrderTerms.First().SequenceNumber == 1
+                    && ja.OrderTerms.First().DisplaySortNumber == 1
+                    && ja.Document.Length == 0
+                )),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task SubmitSmallClaimsDeskOrder_ReturnsFailure_WhenSignedButNoDocumentData()
+    {
+        const string comment = "Desk order note";
+
+        var order = CreateOrder();
+        order.Signed = true;
+        order.SubmitAttempts = 2;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+        order.DocumentData = null;
+        order.Status = OrderStatus.OrderMade;
+        order.Comments = comment;
+        SetupHttpContextWithGuid();
+
+        var orderService = new OrderService(
+            _cache,
+            _mapper,
+            _mockLogger.Object,
+            _mockOrderRepo.Object,
+            _mockFileServicesClient.Object,
+            _mockConfiguration.Object,
+            _mockJudgeService.Object,
+            _mockBackgroundJobClient.Object,
+            _mockHttpContextAccessor.Object,
+            _mockJudicialClient.Object,
+            new DeskOrderDetailsExtractor(),
+            new CsoTextSanitizer(),
+            _mockAntiVirusService.Object);
+
+        _mockOrderRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(order);
+
+        _mockOrderRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .Returns(Task.CompletedTask);
+
+        _mockJudicialClient
+            .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
+            .Returns(() => Task.CompletedTask);
+
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync(
+            [
+                new PersonSearchItem
+                {
+                    PersonId = order.JudgeId,
+                    ParticipantId = order.OrderRequest.Referral.SentToPartId.GetValueOrDefault()
+                }
+            ]);
+
+        var result = await orderService.SubmitOrder(order.Id);
+
+        Assert.False(result.Succeeded);
+        _mockJudicialClient
+            .Verify(c =>
+                c.SaveJudicialActionAsync(It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.Is<JudicialAction>(ja =>
+                    ja.Comment == "Desk order note. Registry \"must\" review cafes - today..."
+                    && ja.OrderTerms.Count == 1
+                    && ja.OrderTerms.First().Text == "Pay $50 - then file resume * exhibit"
+                    && ja.OrderTerms.First().SequenceNumber == 1
+                    && ja.OrderTerms.First().DisplaySortNumber == 1
+                    && ja.Document.Length == 0
+                )),
+                Times.Never);
+    }
+
 
     [Fact]
     public async Task SubmitDeskOrder_ReturnsFailure_WhenStatusIsNotOrderMade()

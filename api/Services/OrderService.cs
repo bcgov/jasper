@@ -574,12 +574,14 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         var deskOrderDetails = _deskOrderDetailsExtractor.Extract(stream);
 
-        this.Logger.LogInformation("Desk order Directions and Order Terms extracted successfully for Order {OrderId}.", orderDto.Id);
+        this.Logger.LogInformation("Reasons for Rejection, Directions and Order Terms extracted successfully for Order {OrderId}.", orderDto.Id);
 
         var sanitizedDirections = _csoTextSanitizer.Sanitize(deskOrderDetails.Directions);
+        var sanitizedRejectionReasons = _csoTextSanitizer.Sanitize(deskOrderDetails.ReasonsForRejection);
         var commentParts = new[]
         {
             actionDto.Comment,
+            sanitizedRejectionReasons,
             sanitizedDirections,
             deskOrderDetails.IsClerkToSign ? NOTE_TO_APPEND_IF_CLERK_DESIGNATED : ""
         };

@@ -3,3 +3,8 @@ export interface OrderReceivedNotificationPayload {
   physicalFileId: string;
   message: string;
 }
+
+export interface OrderSubmittedNotificationPayload {
+  orderId: string;
+  message: string;
+}

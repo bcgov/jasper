@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
+using Scv.Api.SignalR.Notifications;
 using Scv.Core.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
@@ -48,7 +49,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
     private readonly ICsoTextSanitizer _csoTextSanitizer;
     private readonly IAntiVirusService _antiVirusService;
-
+    private readonly OrderSubmittedAckNotification _orderSubmittedAck;
     public const string NOTE_TO_APPEND_IF_CLERK_DESIGNATED = "-- NOTE -- Pursuant to PCF rule 169, I designate the Clerk of the Court to sign the order on my behalf.";
 
     public override string CacheName => "GetOrdersAsync";
@@ -66,7 +67,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IJudicialServicesClient judicialClient,
         IDeskOrderDetailsExtractor deskOrderDetailsExtractor,
         ICsoTextSanitizer csoTextSanitizer,
-        IAntiVirusService antiVirusService
+        IAntiVirusService antiVirusService,
+        OrderSubmittedAckNotification orderSubmittedAck
     ) : base(
             cache,
             mapper,
@@ -86,6 +88,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _deskOrderDetailsExtractor = deskOrderDetailsExtractor;
         _csoTextSanitizer = csoTextSanitizer;
         _antiVirusService = antiVirusService;
+        _orderSubmittedAck = orderSubmittedAck;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -270,6 +273,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
+        await _orderSubmittedAck.SendAsync(orderDto, _httpContextAccessor.HttpContext.User.UserId());
 
         return OperationResult.Success();
     }

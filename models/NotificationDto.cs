@@ -5,7 +5,8 @@ namespace Scv.Models;
 public enum NotificationType
 {
     SYSTEM,
-    ORDER_RECEIVED
+    ORDER_RECEIVED,
+    ORDER_SUBMITTED
 }
 
 

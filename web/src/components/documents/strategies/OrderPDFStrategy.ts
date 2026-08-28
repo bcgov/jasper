@@ -4,7 +4,6 @@ import { StoreDocument } from '@/stores/PDFViewerStore';
 import { Order, OrderReview } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
-import { notifyOrderSubmitted } from '@/utils/ordersSync';
 import {
   mdiAlphaIBoxOutline,
   mdiFileDocumentMultipleOutline,
@@ -108,9 +107,6 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     }
 
     await this.orderService.review(this.orderId, review);
-
-    // Order has been submitted. Broadcast event to reload the list of orders.
-    notifyOrderSubmitted();
 
     switch (review.status) {
       case OrderReviewStatus.Approved:

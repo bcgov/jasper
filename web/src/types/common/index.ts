@@ -209,6 +209,7 @@ export enum ActivityClassEnum {
 export enum NotificationType {
   SYSTEM = 'SYSTEM',
   ORDER_RECEIVED = 'ORDER_RECEIVED',
+  ORDER_SUBMITTED = 'ORDER_SUBMITTED',
 }
 
 export enum OrderCourtLisTypeEnum {

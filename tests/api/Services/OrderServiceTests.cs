@@ -25,8 +25,10 @@ using PCSSCommon.Models;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
+using Scv.Api.SignalR.Notifications;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models;
 using Scv.Models.Order;
 using Xunit;
 
@@ -46,6 +48,10 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<IDeskOrderDetailsExtractor> _mockDeskOrderDetailsExtractor;
     private readonly Mock<ICsoTextSanitizer> _mockCsoTextSanitizer;
     private readonly Mock<IAntiVirusService> _mockAntiVirusService;
+    private readonly Mock<INotificationService> _mockNotificationService;
+    private readonly Mock<ILogger<OrderSubmittedAckNotification>> _mockOrderSubmittedAckLogger;
+    private readonly OrderSubmittedAckNotification _orderSubmittedAckNotification;
+
     private readonly IMapper _mapper;
     private readonly IAppCache _cache;
     private readonly OrderService _orderService;
@@ -84,6 +90,13 @@ public class OrderServiceTests : ServiceTestBase
         _mockAntiVirusService
             .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
             .ReturnsAsync((true, "File is clean."));
+        _mockOrderSubmittedAckLogger = new Mock<ILogger<OrderSubmittedAckNotification>>();
+
+        _mockNotificationService = new Mock<INotificationService>();
+
+        _orderSubmittedAckNotification = new OrderSubmittedAckNotification(
+            _mockNotificationService.Object,
+            _mockOrderSubmittedAckLogger.Object);
 
         _requestAgencyIdentifierId = _faker.Random.Double().ToString();
         _requestPartId = _faker.Random.AlphaNumeric(10);
@@ -106,7 +119,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudicialClient.Object,
             _mockDeskOrderDetailsExtractor.Object,
             _mockCsoTextSanitizer.Object,
-            _mockAntiVirusService.Object);
+            _mockAntiVirusService.Object,
+            _orderSubmittedAckNotification);
     }
 
     private void SetupConfiguration()
@@ -953,6 +967,10 @@ public class OrderServiceTests : ServiceTestBase
 
         Assert.True(result.Succeeded);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Once);
+        _mockNotificationService
+            .Verify(n => n.NotifyUserWithAckAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<NotificationDto<OrderSubmittedAckNotificationPayload>>()), Times.Once);
     }
 
     [Theory]
@@ -1348,7 +1366,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudicialClient.Object,
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
-            _mockAntiVirusService.Object);
+            _mockAntiVirusService.Object,
+            _orderSubmittedAckNotification);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1429,7 +1448,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudicialClient.Object,
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
-            _mockAntiVirusService.Object);
+            _mockAntiVirusService.Object,
+            _orderSubmittedAckNotification);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1499,7 +1519,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudicialClient.Object,
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
-            _mockAntiVirusService.Object);
+            _mockAntiVirusService.Object,
+            _orderSubmittedAckNotification);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1754,7 +1775,8 @@ public class OrderServiceTests : ServiceTestBase
     {
         var claims = new List<Claim>
         {
-            new (Scv.Core.Helpers.CustomClaimTypes.JudgeId, judgeId.ToString())
+            new (Scv.Core.Helpers.CustomClaimTypes.JudgeId, judgeId.ToString()),
+            new (Scv.Core.Helpers.CustomClaimTypes.UserId, _faker.Random.AlphaNumeric(10))
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var claimsPrincipal = new ClaimsPrincipal(identity);

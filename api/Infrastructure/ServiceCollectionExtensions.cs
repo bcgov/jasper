@@ -270,6 +270,7 @@ namespace Scv.Api.Infrastructure
                 outboxMinAgeSeconds));
             services.AddSingleton<UserConnectionTracker>();
             services.AddScoped<OrderReceivedAckNotification>();
+            services.AddScoped<OrderSubmittedAckNotification>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddHostedService<PostgresSignalRNotificationBridge>();
 

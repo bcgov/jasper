@@ -1,5 +1,6 @@
 import { OrderService } from '@/services';
 import { createOrderReceivedHandler } from '@/signalr/handlers/orderReceivedHandler';
+import { createOrderSubmittedHandler } from '@/signalr/handlers/orderSubmittedHandler';
 import {
   type NotificationHandler,
   type NotificationsService,
@@ -65,6 +66,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
           viewOrderDetails,
           viewOrders,
         })
+      );
+      registerHandler(
+        NotificationType.ORDER_SUBMITTED,
+        createOrderSubmittedHandler({ orderService, ordersStore })
       );
       hasOrderHandler.value = true;
     }

@@ -1333,6 +1333,7 @@ public class OrderServiceTests : ServiceTestBase
     public async Task SubmitFamilyDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
     {
         const string comment = "Desk order note";
+        const string extractedRejectionReason = "Rejecting bécausé XYZ";
         const string extractedDirections = "Registry “must” review cafés — today…";
         const string extractedOrderTerm = "Pay $50 – then file résumé • exhibit";
 
@@ -1341,6 +1342,8 @@ public class OrderServiceTests : ServiceTestBase
         order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
         using var deskOrderDocument = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(extractedRejectionReason));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(extractedDirections));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -1400,7 +1403,7 @@ public class OrderServiceTests : ServiceTestBase
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
                 It.IsAny<double>(),
                 It.Is<JudicialAction>(ja =>
-                    ja.Comment == "Desk order note. Registry \"must\" review cafes - today..."
+                    ja.Comment == "Desk order note. Rejecting because XYZ. Registry \"must\" review cafes - today..."
                     && ja.OrderTerms.Count == 1
                     && ja.OrderTerms.First().Text == "Pay $50 - then file resume * exhibit"
                     && ja.OrderTerms.First().SequenceNumber == 1

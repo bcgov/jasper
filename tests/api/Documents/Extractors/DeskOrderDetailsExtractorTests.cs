@@ -38,24 +38,29 @@ public class DeskOrderDetailsExtractorTests
         var term = _faker.Lorem.Sentence();
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
             body.AppendChild(ParagraphOf(term));
             body.AppendChild(SignatureSdt());
         });
 
         var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract directions from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void Extract_ReturnsDirectionsAndOrderTerms_WhenDocumentIsValid()
     {
+        var rejectionReasons = _faker.Lorem.Sentence();
         var directionsText = _faker.Lorem.Sentence();
         var term1 = _faker.Lorem.Sentence();
         var term2 = _faker.Lorem.Sentence();
 
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(rejectionReasons));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(directionsText));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -66,6 +71,7 @@ public class DeskOrderDetailsExtractorTests
 
         var result = _extractor.Extract(stream);
 
+        Assert.Equal(rejectionReasons, result.ReasonsForRejection);
         Assert.Equal(directionsText, result.Directions);
         Assert.Equal(2, result.OrderTerms.Length);
 
@@ -83,6 +89,8 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -104,6 +112,8 @@ public class DeskOrderDetailsExtractorTests
 
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(fakeDirection));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -127,6 +137,8 @@ public class DeskOrderDetailsExtractorTests
 
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -147,6 +159,8 @@ public class DeskOrderDetailsExtractorTests
 
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -176,6 +190,8 @@ public class DeskOrderDetailsExtractorTests
 
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -196,6 +212,8 @@ public class DeskOrderDetailsExtractorTests
 
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -214,12 +232,15 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
-            body.AppendChild(ParagraphOf("Some unrelated content"));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(SignatureSdt());
         });
 
         var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract directions from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -227,6 +248,8 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -245,6 +268,8 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -263,6 +288,8 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -281,6 +308,8 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -299,6 +328,8 @@ public class DeskOrderDetailsExtractorTests
     {
         using var stream = BuildDocxStream(body =>
         {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
@@ -310,6 +341,97 @@ public class DeskOrderDetailsExtractorTests
         var result = _extractor.Extract(stream);
 
         Assert.False(result.IsClerkToSign);
+    }
+
+    [Fact]
+    public void Extract_ReturnsReasonsForRejection_WhenDocumentIsValid()
+    {
+        var rejectionReason1 = _faker.Lorem.Sentence();
+        var rejectionReason2 = _faker.Lorem.Sentence();
+
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(rejectionReason1));
+            body.AppendChild(ParagraphOf(rejectionReason2));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.Equal($"{rejectionReason1} {rejectionReason2}", result.ReasonsForRejection);
+    }
+
+    [Fact]
+    public void Extract_ReturnsEmptyReasonsForRejection_WhenNoContentBetweenLabels()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.Equal(string.Empty, result.ReasonsForRejection);
+    }
+
+    [Fact]
+    public void Extract_ThrowsInvalidDataException_WhenRejectionReasonsLabelIsMissing()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
+        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Extract_ThrowsInvalidDataException_WhenDirectionsContentIsEmpty()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
+        Assert.Contains("Directions content is empty or whitespace.", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Extract_ThrowsInvalidDataException_WhenOrderTermsContentIsEmpty()
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
+        Assert.Contains("Order terms content is empty or whitespace.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     private static MemoryStream BuildDocxStream(Action<Body> configureBody)

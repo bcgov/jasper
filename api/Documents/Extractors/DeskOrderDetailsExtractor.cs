@@ -13,6 +13,7 @@ namespace Scv.Api.Documents.Extractors;
 
 public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 {
+    public const string REJECTION_REASONS_LABEL = "Reasons for Rejection:";
     public const string DIRECTIONS_LABEL = "Directions:";
     public const string ORDER_TERMS_LABEL = "Terms of Order:";
     public const string SIGNATURE_TAG = "Insert Signature";
@@ -32,19 +33,22 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
         var body = (wordDoc.MainDocumentPart?.Document?.Body)
             ?? throw new InvalidDataException("Unable to extract desk order details from the document body.");
 
-        // Get the indices of the "Directions:", "Terms of Order:" section and
+        // Get the indices of the  "Reasons for Rejection:", "Directions:", "Terms of Order:" section and
         // the signature section to be able to extract the relevant content for each section
-        var (directionsIndex, orderTermsIndex, signatureIndex) = GetSectionIndices(body);
+        var (rejectionReasonsIndex, directionsIndex, orderTermsIndex, signatureIndex) = GetSectionIndices(body);
 
-        if (directionsIndex == -1 || orderTermsIndex == -1 || directionsIndex >= orderTermsIndex)
+        if (rejectionReasonsIndex == -1 || directionsIndex == -1 || orderTermsIndex == -1 || directionsIndex >= orderTermsIndex)
         {
-            throw new InvalidDataException("Unable to extract directions from the document body.");
+            throw new InvalidDataException("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.");
         }
 
         if (signatureIndex == -1 || orderTermsIndex >= signatureIndex)
         {
             throw new InvalidDataException("Unable to extract order terms from the document body.");
         }
+
+        // Whatever is between "Reasons for Rejection:" and "Directions:" is the Reasons for Rejection content.
+        var rejectionReasonsContent = ExtractContentBetween(body, rejectionReasonsIndex, directionsIndex);
 
         // Whatever is between "Directions:" and "Terms of Order:" is the Directions content.
         var directionsContent = ExtractContentBetween(body, directionsIndex, orderTermsIndex);
@@ -68,6 +72,9 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 
         return new DeskOrderDetailsDto
         {
+            ReasonsForRejection = rejectionReasonsContent != null && rejectionReasonsContent.Count > 0
+                ? string.Join(" ", rejectionReasonsContent)
+                : string.Empty,
             Directions = string.Join(" ", directionsContent),
             OrderTerms = [.. orderTermsContent
                 .Select((text, index) => new OrderTermDto
@@ -121,8 +128,9 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
     private static bool IsPlaceholderShowing(SdtElement sdt) =>
         sdt.SdtProperties?.GetFirstChild<ShowingPlaceholder>() is not null;
 
-    private static (int directionsIndex, int orderTermsIndex, int signatureIndex) GetSectionIndices(Body body)
+    private static (int rejectionReasonsIndex, int directionsIndex, int orderTermsIndex, int signatureIndex) GetSectionIndices(Body body)
     {
+        var rejectionReasonsIndex = -1;
         var directionsIndex = -1;
         var orderTermsIndex = -1;
         var signatureIndex = -1;
@@ -131,7 +139,11 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
         {
             var child = body.ChildElements[i];
 
-            if (directionsIndex < 0 && IsLabelMatch(child.InnerText, DIRECTIONS_LABEL))
+            if (rejectionReasonsIndex < 0 && IsLabelMatch(child.InnerText, REJECTION_REASONS_LABEL))
+            {
+                rejectionReasonsIndex = i;
+            }
+            else if (directionsIndex < 0 && IsLabelMatch(child.InnerText, DIRECTIONS_LABEL))
             {
                 directionsIndex = i;
             }
@@ -146,7 +158,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
             }
         }
 
-        return (directionsIndex, orderTermsIndex, signatureIndex);
+        return (rejectionReasonsIndex, directionsIndex, orderTermsIndex, signatureIndex);
     }
 
     private static bool IsLabelMatch(string text, string label) =>

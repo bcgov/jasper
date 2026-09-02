@@ -1333,7 +1333,7 @@ public class OrderServiceTests : ServiceTestBase
     public async Task SubmitFamilyDeskOrder_SanitizesWordSpecificCharacters_WhenSendingToCso()
     {
         const string comment = "Desk order note";
-        const string extractedRejectionReason = "Rejecting because XYZ";
+        const string extractedRejectionReason = "Rejecting bécausé XYZ";
         const string extractedDirections = "Registry “must” review cafés — today…";
         const string extractedOrderTerm = "Pay $50 – then file résumé • exhibit";
 

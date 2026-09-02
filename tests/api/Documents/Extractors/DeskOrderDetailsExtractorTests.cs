@@ -46,7 +46,7 @@ public class DeskOrderDetailsExtractorTests
         });
 
         var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract directions from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public class DeskOrderDetailsExtractorTests
         });
 
         var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract directions from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -397,7 +397,7 @@ public class DeskOrderDetailsExtractorTests
         });
 
         var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract directions from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

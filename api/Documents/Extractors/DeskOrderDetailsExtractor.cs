@@ -39,7 +39,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 
         if (rejectionReasonsIndex == -1 || directionsIndex == -1 || orderTermsIndex == -1 || directionsIndex >= orderTermsIndex)
         {
-            throw new InvalidDataException("Unable to extract directions from the document body.");
+            throw new InvalidDataException("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.");
         }
 
         if (signatureIndex == -1 || orderTermsIndex >= signatureIndex)

@@ -287,7 +287,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Unexpected error reviewing order {OrderId}.", id);
+            this.Logger.LogError(ex, "Unexpected error reviewing order {OrderId}.", id.SanitizeForLog());
             return OperationResult.Failure("Failed to submit order to CSO.");
         }
     }

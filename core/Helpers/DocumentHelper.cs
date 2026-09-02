@@ -8,13 +8,21 @@ public static class DocumentHelper
 
     private static readonly byte[][] PdfOrWordSignatures = [PdfSignature, DocSignature, DocxSignature];
 
+    private static readonly byte[][] WordSignatures = [DocSignature, DocxSignature];
+
     public static bool IsDocXDocument(Stream stream) =>
         HasSignature(stream, DocxSignature);
 
     public static bool IsPdfOrWordDocument(Stream stream) =>
         PdfOrWordSignatures.Any(signature => HasSignature(stream, signature));
 
-    public static bool IsPdfOrWordDocumentBase64(string base64Data)
+    public static bool IsPdfOrWordDocumentBase64(string base64Data) =>
+        HasSignatureBase64(base64Data, PdfOrWordSignatures);
+
+    public static bool IsWordDocumentBase64(string base64Data) =>
+        HasSignatureBase64(base64Data, WordSignatures);
+
+    private static bool HasSignatureBase64(string base64Data, byte[][] signatures)
     {
         if (string.IsNullOrWhiteSpace(base64Data))
         {
@@ -24,7 +32,7 @@ public static class DocumentHelper
         try
         {
             var bytes = Convert.FromBase64String(base64Data);
-            return PdfOrWordSignatures.Any(signature =>
+            return signatures.Any(signature =>
                 bytes.Length >= signature.Length &&
                 bytes.AsSpan(0, signature.Length).SequenceEqual(signature));
         }

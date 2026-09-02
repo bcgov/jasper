@@ -476,9 +476,9 @@ describe('OrderPDFStrategy', () => {
 
       expect(mockOrderService.review).toHaveBeenCalledWith('123', review);
       expect(mockSnackbarStore.showSnackbar).toHaveBeenCalledWith(
-        'The order has been approved.',
+        'The order has been submitted.',
         'success',
-        '✅ Approved!'
+        '✅ Submitted!'
       );
     });
 

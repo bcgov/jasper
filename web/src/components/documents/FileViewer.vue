@@ -371,9 +371,11 @@
     if (!props.strategy.reviewOrder) {
       return;
     }
-    // If the user approved the Order and did not upload a supporting document, export the flattened PDF
+
+    // If the user 'submitted' the Order and did not upload a supporting document, export the flattened PDF
     if (
-      orderReview.status === OrderReviewStatus.Approved &&
+      (orderReview.status === OrderReviewStatus.Approved ||
+        orderReview.status === OrderReviewStatus.OrderMade) &&
       !orderReview.supportingDocumentData
     ) {
       const arrayBuffer = await instance.exportPDF({ flatten: true });

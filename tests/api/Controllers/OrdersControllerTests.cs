@@ -21,8 +21,8 @@ namespace tests.api.Controllers;
 public class OrdersControllerTests
 {
     private readonly Mock<IValidator<OrderRequestDto>> _mockOrderRequestValidator;
+    private readonly Mock<IValidator<OrderReviewDto>> _mockOrderReviewValidator;
     private readonly Mock<IOrderService> _mockOrderService;
-    private readonly Mock<IAntiVirusService> _mockAntiVirusService;
     private readonly OrdersController _controller;
     private readonly Faker _faker;
     private readonly int _judgeId;
@@ -30,15 +30,18 @@ public class OrdersControllerTests
     public OrdersControllerTests()
     {
         _mockOrderRequestValidator = new Mock<IValidator<OrderRequestDto>>();
+        _mockOrderReviewValidator = new Mock<IValidator<OrderReviewDto>>();
+        _mockOrderReviewValidator
+            .Setup(v => v.ValidateAsync(It.IsAny<OrderReviewDto>(), default))
+            .ReturnsAsync(new ValidationResult());
         _mockOrderService = new Mock<IOrderService>();
-        _mockAntiVirusService = new Mock<IAntiVirusService>();
         _faker = new Faker();
         _judgeId = _faker.Random.Int(1, 1000);
 
         _controller = new OrdersController(
             _mockOrderRequestValidator.Object,
-            _mockOrderService.Object,
-            _mockAntiVirusService.Object);
+            _mockOrderReviewValidator.Object,
+            _mockOrderService.Object);
 
         var claims = new List<Claim>
         {
@@ -300,6 +303,55 @@ public class OrdersControllerTests
     #endregion
 
     #region ReviewOrder Tests
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsBadRequest_WhenPayloadIsNull()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var validationFailures = new List<ValidationFailure>
+        {
+            new(string.Empty, "Order review payload is required.")
+        };
+
+        _mockOrderReviewValidator
+            .Setup(v => v.ValidateAsync(null, default))
+            .ReturnsAsync(new ValidationResult(validationFailures));
+
+        var result = await _controller.ReviewOrder(orderId, null);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
+        _mockOrderService.Verify(
+            s => s.ReviewOrder(It.IsAny<string>(), It.IsAny<OrderReviewDto>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsBadRequest_WhenValidationFails()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            DocumentData = "invalid-document-data"
+        };
+        var validationFailures = new List<ValidationFailure>
+        {
+            new("DocumentData", "Signed document must be a valid PDF, Word Document (.doc or .docx).")
+        };
+
+        _mockOrderReviewValidator
+            .Setup(v => v.ValidateAsync(orderReview, default))
+            .ReturnsAsync(new ValidationResult(validationFailures));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var errors = Assert.IsType<IEnumerable<string>>(badRequestResult.Value, exactMatch: false);
+        Assert.Contains("Signed document must be a valid PDF, Word Document (.doc or .docx).", errors);
+        _mockOrderReviewValidator.Verify(v => v.ValidateAsync(orderReview, default), Times.Once);
+        _mockOrderService.Verify(
+            s => s.ReviewOrder(It.IsAny<string>(), It.IsAny<OrderReviewDto>()), Times.Never);
+    }
 
     [Fact]
     public async Task ReviewOrder_ReturnsNoContent_WhenReviewIsSuccessful()
@@ -615,8 +667,8 @@ public class OrdersControllerTests
     private OrdersController CreateController(ClaimsPrincipal principal) =>
         new(
             _mockOrderRequestValidator.Object,
-            _mockOrderService.Object,
-            _mockAntiVirusService.Object)
+            _mockOrderReviewValidator.Object,
+            _mockOrderService.Object)
         {
             ControllerContext = new ControllerContext
             {

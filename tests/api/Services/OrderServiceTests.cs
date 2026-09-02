@@ -1448,7 +1448,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudicialClient.Object,
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
-            _mockAntiVirusService.Object);
+            _mockAntiVirusService.Object,
+            _orderSubmittedAckNotification);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1518,7 +1519,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockJudicialClient.Object,
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
-            _mockAntiVirusService.Object);
+            _mockAntiVirusService.Object,
+            _orderSubmittedAckNotification);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))

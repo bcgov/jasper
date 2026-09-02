@@ -222,60 +222,74 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
     public async Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview)
     {
-        var order = await Repo.GetByIdAsync(id);
-        if (order is null)
+        try
         {
-            return OperationResult.Failure("Order not found");
-        }
-
-        var assignedJudgeId = order.JudgeId;
-        var judgeId = _httpContextAccessor.HttpContext.User.JudgeId();
-        if (assignedJudgeId != judgeId)
-        {
-            return OperationResult.Failure("Judge is not assigned to review this Order.");
-        }
-
-        var documentScan = await ScanReviewDocumentAsync(orderReview.DocumentData, "signed");
-        if (!documentScan.Succeeded)
-        {
-            return documentScan;
-        }
-
-        var supportingScan = await ScanReviewDocumentAsync(orderReview.SupportingDocumentData, "supporting");
-        if (!supportingScan.Succeeded)
-        {
-            return supportingScan;
-        }
-
-        var orderDto = Mapper.Map<OrderDto>(order);
-
-        if (orderReview.Status == OrderStatus.Pending)
-        {
-            return OperationResult.Failure("Order review status cannot be set to Pending.");
-        }
-
-        orderReview.Adapt(orderDto);
-
-        if (orderDto.OrderRequest?.Referral?.IsDeskOrder == true)
-        {
-            var deskOrderValidation = ValidateDeskOrder(orderDto);
-            if (!deskOrderValidation.Succeeded)
+            var order = await Repo.GetByIdAsync(id);
+            if (order is null)
             {
-                return deskOrderValidation;
+                return OperationResult.Failure("Order not found");
             }
+
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user == null)
+            {
+                return OperationResult.Failure("No authenticated user context available to review this Order.");
+            }
+
+            var assignedJudgeId = order.JudgeId;
+            var judgeId = user.JudgeId();
+            if (assignedJudgeId != judgeId)
+            {
+                return OperationResult.Failure("Judge is not assigned to review this Order.");
+            }
+
+            var documentScan = await ScanReviewDocumentAsync(orderReview.DocumentData, "signed");
+            if (!documentScan.Succeeded)
+            {
+                return documentScan;
+            }
+
+            var supportingScan = await ScanReviewDocumentAsync(orderReview.SupportingDocumentData, "supporting");
+            if (!supportingScan.Succeeded)
+            {
+                return supportingScan;
+            }
+
+            var orderDto = Mapper.Map<OrderDto>(order);
+
+            if (orderReview.Status == OrderStatus.Pending)
+            {
+                return OperationResult.Failure("Order review status cannot be set to Pending.");
+            }
+
+            orderReview.Adapt(orderDto);
+
+            if (orderDto.OrderRequest?.Referral?.IsDeskOrder == true)
+            {
+                var deskOrderValidation = ValidateDeskOrder(orderDto);
+                if (!deskOrderValidation.Succeeded)
+                {
+                    return deskOrderValidation;
+                }
+            }
+
+            var result = await UpdateAsync(orderDto);
+
+            if (!result.Succeeded)
+            {
+                return result;
+            }
+
+            _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
+            await _orderSubmittedAck.SendAsync(orderDto, user.UserId());
+
+            return OperationResult.Success();
         }
-
-        var result = await UpdateAsync(orderDto);
-
-        if (!result.Succeeded)
+        catch (Exception ex)
         {
-            return result;
+            this.Logger.LogError(ex, "Unexpected error reviewing order {OrderId}.", id);
+            return OperationResult.Failure("Failed to submit order to CSO.");
         }
-
-        _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(id));
-        await _orderSubmittedAck.SendAsync(orderDto, _httpContextAccessor.HttpContext.User.UserId());
-
-        return OperationResult.Success();
     }
 
     public override Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)

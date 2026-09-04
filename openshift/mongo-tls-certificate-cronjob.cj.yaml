@@ -245,7 +245,7 @@ parameters:
   - name: IMAGE
     displayName: Certificate generation image
     required: true
-    value: ghcr.io/devinleighsmith/jasper/generate-mongo-tls:latest
+    value: ghcr.io/bcgov/jasper/generate-mongo-tls:latest
 
   - name: IMAGE_PULL_POLICY
     required: true

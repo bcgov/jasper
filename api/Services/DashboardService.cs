@@ -62,9 +62,7 @@ public class DashboardService(
         try
         {
             var currentDate = DateTime.Now.ToClientTimezone().ToString(CourtCalendarDay.DASHBOARD_DATE_FORMAT);
-            async Task<PCSS.JudicialCalendar> TodaysSchedule() => await _calendarClient.ReadCalendarV2Async(judgeId, currentDate, currentDate);
-            var todayScheduleTask = GetDataFromCache($"{CacheName}-{judgeId}-{currentDate}-{currentDate}", TodaysSchedule);
-            var todaySchedule = await todayScheduleTask;
+            var todaySchedule = await _calendarClient.ReadCalendarV2Async(judgeId, currentDate, currentDate);
 
             var days = await GetDays(todaySchedule);
             var today = days.SingleOrDefault(d => d.Date == currentDate);

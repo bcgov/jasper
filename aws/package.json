@@ -23,7 +23,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^10.0.2",
     "eslint-define-config": "^2.1.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.31.0",

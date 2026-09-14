@@ -438,7 +438,6 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IDocumentCategoryService, DocumentCategoryService>();
             services.AddScoped<IJudgeService, JudgeService>();
             services.AddScoped<ICsvParser, CsvParser>();
-            services.AddScoped<IExcelParser, ExcelParser>();
             services.AddScoped<IPcssSyncService, PcssSyncService>();
             services.AddScoped<IPcssConfigService, PcssConfigService>();
             services.AddScoped<IAntiVirusService, ClamAvAntiVirusService>();

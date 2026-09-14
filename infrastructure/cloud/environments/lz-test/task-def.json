@@ -1,0 +1,534 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "jasper-api-container-lz-test",
+      "image": "747549824256.dkr.ecr.ca-central-1.amazonaws.com/jasper-app-repo-lz-test:api-95c0529",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "hostPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "AWS_API_GATEWAY_URL",
+          "value": "https://pjh23hguqj.execute-api.ca-central-1.amazonaws.com/lz-test"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "ca-central-1"
+        },
+        {
+          "name": "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME",
+          "value": "jasper-get-assigned-cases-request-lambda-lz-test"
+        },
+        {
+          "name": "CLAM_AV__HOST",
+          "value": "localhost"
+        },
+        {
+          "name": "DEFAULT_QUICK_LINKS",
+          "value": "[{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Picklists\",\"Order\":\"1\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Adult Bail\",\"Order\":\"2\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlPicklists/Criminal%20Release%20Order.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Adult Probation and Peace Bond\",\"Order\":\"3\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlPicklists/Criminal%20Probation%20and%20Peace%20Bond.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Adult CSO\",\"Order\":\"4\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlPicklists/Criminal%20Conditional%20Sentence.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Adult Ancillary Order\",\"Order\":\"5\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlPicklists/Ancillary.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Youth Bail\",\"Order\":\"6\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/Criminal%20Youth%20Picklists/Criminal%20Youth%20Release%20Order.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Youth Sentencing\",\"Order\":\"7\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/Criminal%20Youth%20Picklists/Criminal%20Youth%20Sentencing.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Youth Ancillary Order\",\"Order\":\"8\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/Criminal%20Youth%20Picklists/Criminal%20Youth%20Ancillary.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Family FLA\",\"Order\":\"9\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/Family%20Picklists/Family%20FLA.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Family CFCSA\",\"Order\":\"10\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/Family%20Picklists/Family%20CFCSA.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Small Claims\",\"Order\":\"11\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlSmallClaimsPicklists/Small%20Claims.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"French CSO\",\"Order\":\"12\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlPicklists/Criminal%20French%20Conditional%20Sentence.docx\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"French Probation and Peace Bond\",\"Order\":\"13\",\"ParentName\":\"Picklists\",\"URL\":\"ms-word:ofv|u|https://provincialcourt.sharepoint.com/:w:/r/sites/LawPractice/dlPicklists/Criminal%20French%20Probation%20and%20Peace%20Bond.docx\"},{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Criminal Adult\",\"Order\":\"14\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Criminal Code\",\"Order\":\"15\",\"ParentName\":\"Criminal Adult\",\"URL\":\"https://laws-lois.justice.gc.ca/eng/acts/c-46/\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"CDSA\",\"Order\":\"16\",\"ParentName\":\"Criminal Adult\",\"URL\":\"https://laws-lois.justice.gc.ca/eng/acts/c-38.8/\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Offence Act\",\"Order\":\"17\",\"ParentName\":\"Criminal Adult\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96338_01\"},{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Criminal Youth\",\"Order\":\"18\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"YCJA\",\"Order\":\"19\",\"ParentName\":\"Criminal Youth\",\"URL\":\"https://laws-lois.justice.gc.ca/eng/acts/y-1.5/\"},{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Family\",\"Order\":\"20\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"FLA\",\"Order\":\"21\",\"ParentName\":\"Family\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/11025_01\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Family law rules\",\"Order\":\"22\",\"ParentName\":\"Family\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/120_2020\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Family law forms\",\"Order\":\"23\",\"ParentName\":\"Family\",\"URL\":\"https://www2.gov.bc.ca/gov/content/justice/courthouse-services/documents-forms-records/court-forms/prov-family-forms\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"CFCSA Rules\",\"Order\":\"24\",\"ParentName\":\"Family\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/533_95\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"FMEA\",\"Order\":\"25\",\"ParentName\":\"Family\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96127_01\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"CFCSA\",\"Order\":\"26\",\"ParentName\":\"Family\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96046_01\"},{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Small Claims\",\"Order\":\"27\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Small Claims Act\",\"Order\":\"28\",\"ParentName\":\"Small Claims\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96430_01\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Forms\",\"Order\":\"29\",\"ParentName\":\"Small Claims\",\"URL\":\"https://www2.gov.bc.ca/gov/content/justice/courthouse-services/documents-forms-records/court-forms/small-claims-forms\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Rules\",\"Order\":\"30\",\"ParentName\":\"Small Claims\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/261_93_00b\"},{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Statutes\",\"Order\":\"31\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Criminal Code\",\"Order\":\"32\",\"ParentName\":\"Statutes\",\"URL\":\"https://laws-lois.justice.gc.ca/eng/acts/c-46/\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"CDSA\",\"Order\":\"33\",\"ParentName\":\"Statutes\",\"URL\":\"https://laws-lois.justice.gc.ca/eng/acts/c-38.8/\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Offence Act\",\"Order\":\"34\",\"ParentName\":\"Statutes\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96338_01\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Family Law Act\",\"Order\":\"35\",\"ParentName\":\"Statutes\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/11025_01\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Small Claims Act\",\"Order\":\"36\",\"ParentName\":\"Statutes\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96430_01\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Consolidated Statutes and Regulations\",\"Order\":\"37\",\"ParentName\":\"Statutes\",\"URL\":\"https://www.bclaws.gov.bc.ca/civix/content/crbc/crbc/?xsl=/templates/browse.xsl\"},{\"IsMenu\":\"true\",\"JudgeId\":null,\"Name\":\"Resources\",\"Order\":\"38\",\"ParentName\":null,\"URL\":\"\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"CanLii\",\"Order\":\"39\",\"ParentName\":\"Resources\",\"URL\":\"https://www.canlii.org/bc/bcpc\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"CLEBC\",\"Order\":\"40\",\"ParentName\":\"Resources\",\"URL\":\"https://www.cle.bc.ca/\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Lexis Nexis\",\"Order\":\"41\",\"ParentName\":\"Resources\",\"URL\":\"https://www.lexisnexis.ca/en-ca/home.page\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"WestLaw\",\"Order\":\"42\",\"ParentName\":\"Resources\",\"URL\":\"https://legal.thomsonreuters.com/en/westlaw\"},{\"IsMenu\":\"false\",\"JudgeId\":null,\"Name\":\"Divorcemate Cloud\",\"Order\":\"43\",\"ParentName\":\"Resources\",\"URL\":\"https://cloud.divorcemate.com/login\"}]"
+        },
+        {
+          "name": "DEFAULT_USERS",
+          "value": "[{\"Email\":\"ronaldo.macapobre@gov.bc.ca\",\"FirstName\":\"Ronaldo\",\"Group\":\"Training and Administration\",\"LastName\":\"Macapobre\"},{\"Email\":\"wade.barnes@gov.bc.ca\",\"FirstName\":\"Wade\",\"Group\":\"Training and Administration\",\"LastName\":\"Barnes\"},{\"Email\":\"joshua.traill@gov.bc.ca\",\"FirstName\":\"Joshua\",\"Group\":\"Training and Administration\",\"LastName\":\"Traill\"},{\"Email\":\"geethu.nair@gov.bc.ca\",\"FirstName\":\"Geethu\",\"Group\":\"Training and Administration\",\"LastName\":\"Nair\"},{\"Email\":\"jennifer.gibbens@gov.bc.ca\",\"FirstName\":\"Jennifer\",\"Group\":\"Training and Administration\",\"LastName\":\"Gibbens\"},{\"Email\":\"devin.smith@gov.bc.ca\",\"FirstName\":\"Devin\",\"Group\":\"Training and Administration\",\"LastName\":\"Smith\"}]"
+        },
+        {
+          "name": "CLAM_AV__PORT",
+          "value": "3310"
+        },
+        {
+          "name": "AWS_GET_ASSIGNED_CASES_LAMBDA_TIMEOUT_MINUTES",
+          "value": "5"
+        },
+        {
+          "name": "AWS_LAMBDA_RETRY_ATTEMPTS",
+          "value": "0"
+        },
+        {
+          "name": "MONGODB_USE_TLS_PEM",
+          "value": "true"
+        },
+        {
+          "name": "CORS_DOMAIN",
+          "value": "internal-lz-test-app-svc-lb-724565299.ca-central-1.elb.amazonaws.com"
+        },
+        {
+          "name": "AWS_LAMBDA_LONG_TIMEOUT_MINUTES",
+          "value": "5"
+        },
+        {
+          "name": "MONGODB_CONNECTION_STRING",
+          "value": "mongodb://root:9u4gXHRragjC@10.99.9.215:27017/admin?authSource=admin&tls=true&tlsAllowInvalidHostnames=true&directConnection=true"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "efs-files-storage",
+          "containerPath": "/mnt/efs",
+          "readOnly": false
+        }
+      ],
+      "volumesFrom": [],
+      "secrets": [
+        {
+          "name": "ASPNETCORE_URLS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-aspnet-core-secret-lz-test-vPWCf5:urls::"
+        },
+        {
+          "name": "ASPNETCORE_ENVIRONMENT",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-aspnet-core-secret-lz-test-vPWCf5:environment::"
+        },
+        {
+          "name": "AWS_API_GATEWAY_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-auth-secret-lz-test-uio9AO:apigwApiKey::"
+        },
+        {
+          "name": "Auth__UserId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-auth-secret-lz-test-uio9AO:userId::"
+        },
+        {
+          "name": "Auth__UserPassword",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-auth-secret-lz-test-uio9AO:userPassword::"
+        },
+        {
+          "name": "Auth__AllowSiteMinderUserType",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-auth-secret-lz-test-uio9AO:allowSiteMinderUserType::"
+        },
+        {
+          "name": "AuthorizerKey",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:jasper-api-authorizer-secret-lz-test-NLwf53:verifyKey::"
+        },
+        {
+          "name": "AZURE__CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-azure-secret-lz-test-CDYrpk:clientId::"
+        },
+        {
+          "name": "AZURE__CLIENT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-azure-secret-lz-test-CDYrpk:clientSecret::"
+        },
+        {
+          "name": "AZURE__SERVICE_ACCOUNT",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-azure-secret-lz-test-CDYrpk:serviceAccount::"
+        },
+        {
+          "name": "AZURE__TENANT_ID",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-azure-secret-lz-test-CDYrpk:tenantId::"
+        },
+        {
+          "name": "CsoKeycloak__Audience",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-secret-lz-test-anUkE1:audience::"
+        },
+        {
+          "name": "CsoKeycloak__Authority",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-secret-lz-test-anUkE1:authority::"
+        },
+        {
+          "name": "CsoKeycloak__ClientId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-secret-lz-test-anUkE1:client::"
+        },
+        {
+          "name": "CsoKeycloak__Secret",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-secret-lz-test-anUkE1:secret::"
+        },
+        {
+          "name": "CsoKeycloak__WriteRole",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-secret-lz-test-anUkE1:writeRole::"
+        },
+        {
+          "name": "CsoClientKeycloak__Audience",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-client-secret-lz-test-h4hlYx:audience::"
+        },
+        {
+          "name": "CsoClientKeycloak__Authority",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-client-secret-lz-test-h4hlYx:authority::"
+        },
+        {
+          "name": "CsoClientKeycloak__ClientId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-client-secret-lz-test-h4hlYx:client::"
+        },
+        {
+          "name": "CsoClientKeycloak__ServiceAccountSecret",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-cso-client-secret-lz-test-h4hlYx:secret::"
+        },
+        {
+          "name": "CSO__BaseUrl",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-cso-secret-lz-test-TtX1hK:baseUrl::"
+        },
+        {
+          "name": "CSO__ActionUri",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-cso-secret-lz-test-TtX1hK:actionUri::"
+        },
+        {
+          "name": "DARS__Username",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-dars-secret-lz-test-3F8KKk:username::"
+        },
+        {
+          "name": "DARS__Password",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-dars-secret-lz-test-3F8KKk:password::"
+        },
+        {
+          "name": "DARS__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-dars-secret-lz-test-3F8KKk:baseUrl::"
+        },
+        {
+          "name": "DARS__LogsheetUrl",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-dars-secret-lz-test-3F8KKk:logsheetUrl::"
+        },
+        {
+          "name": "DatabaseConnectionString",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-database-secret-lz-test-vHl47l:dbConnectionString::"
+        },
+        {
+          "name": "DataProtectionKeyEncryptionKey",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:dataProtectionKeyEncryptionKey::"
+        },
+        {
+          "name": "DOCUMENT_RETRIEVAL_BATCH_SIZE",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:documentRetrievalBatchSize::"
+        },
+        {
+          "name": "FileServicesClient__Username",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-file-services-client-secret-lz-test-rF2dQk:username::"
+        },
+        {
+          "name": "FileServicesClient__Password",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-file-services-client-secret-lz-test-rF2dQk:password::"
+        },
+        {
+          "name": "FileServicesClient__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-file-services-client-secret-lz-test-rF2dQk:baseUrl::"
+        },
+        {
+          "name": "JOBS__SYNC_ASSIGNED_CASES_SCHEDULE",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:syncAssignedCasesSchedule::"
+        },
+        {
+          "name": "JOBS__SYNC_DOCUMENT_CATEGORIES_SCHEDULE",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:syncDocumentCategoriesSchedule::"
+        },
+        {
+          "name": "JOBS__RETRY_COUNT",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:retryCount::"
+        },
+        {
+          "name": "JOBS__SubmitOrder__RetryCount",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:orderSubmitJobRetryCount::"
+        },
+        {
+          "name": "JOBS__RetrySubmitOrder__CronSchedule",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:orderSubmitRetryJobCronSchedule::"
+        },
+        {
+          "name": "JOBS__CleanupSignalRMessages__CronSchedule",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:cleanupSignalRMessagesCronSchedule::"
+        },
+        {
+          "name": "JOBS__RetrySubmitOrder__MaxRetries",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:orderSubmitRetryJobMaxRetries::"
+        },
+        {
+          "name": "Keycloak__Audience",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-secret-lz-test-vHl47l:audience::"
+        },
+        {
+          "name": "Keycloak__Authority",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-secret-lz-test-vHl47l:authority::"
+        },
+        {
+          "name": "Keycloak__Client",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-secret-lz-test-vHl47l:client::"
+        },
+        {
+          "name": "Keycloak__PresReqConfId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-secret-lz-test-vHl47l:presReqConfId::"
+        },
+        {
+          "name": "Keycloak__Secret",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-secret-lz-test-vHl47l:secret::"
+        },
+        {
+          "name": "Keycloak__VcIdpHint",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-secret-lz-test-vHl47l:vcIdpHint::"
+        },
+        {
+          "name": "KEY_DOCS_BINDER_REFRESH_HOURS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:keyDocsBinderRefreshHours::"
+        },
+        {
+          "name": "LAZY_CACHE_DEFAULT_DURATION_SECONDS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:lazyCacheDefaultDurationSeconds::"
+        },
+        {
+          "name": "JOBS__FailureEmail__Recipients__0",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:jobFailureEmailRecipients0::"
+        },
+        {
+          "name": "JOBS__FailureEmail__Subject",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-jobs-secret-lz-test-3F8KKk:jobFailureEmailSubject::"
+        },
+        {
+          "name": "LocationServicesClient__Username",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-location-services-client-secret-lz-test-iirV2P:username::"
+        },
+        {
+          "name": "LocationServicesClient__Password",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-location-services-client-secret-lz-test-iirV2P:password::"
+        },
+        {
+          "name": "LocationServicesClient__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-location-services-client-secret-lz-test-iirV2P:baseUrl::"
+        },
+        {
+          "name": "LookupServicesClient__Username",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-lookup-services-client-secret-lz-test-CLzZw4:username::"
+        },
+        {
+          "name": "LookupServicesClient__Password",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-lookup-services-client-secret-lz-test-CLzZw4:password::"
+        },
+        {
+          "name": "LookupServicesClient__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-lookup-services-client-secret-lz-test-CLzZw4:baseUrl::"
+        },
+        {
+          "name": "MONGODB_NAME",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-database-secret-lz-test-vHl47l:mongoDbName::"
+        },
+        {
+          "name": "MONGODB_TLS_PEM",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-mongo-tls-lz-test-NbVHlL"
+        },
+        {
+          "name": "NUTRIENT_BE_LICENSE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-nutrient-secret-lz-test-3F8KKk:nutrientBeLicenseKey::"
+        },
+        {
+          "name": "NUTRIENT_FE_LICENSE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-nutrient-secret-lz-test-3F8KKk:nutrientFeLicenseKey::"
+        },
+        {
+          "name": "ORDER_MAX_REASSIGNMENT_NOTIFICATIONS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-order-secret-lz-test-Ra3nPC:maxReassignmentNotifications::"
+        },
+        {
+          "name": "ORDER_MAX_REMINDER_NOTIFICATIONS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-order-secret-lz-test-Ra3nPC:maxReminderNotifications::"
+        },
+        {
+          "name": "ORDER_REASSIGNMENT_THRESHOLD_DAYS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-order-secret-lz-test-Ra3nPC:reassignmentThresholdDays::"
+        },
+        {
+          "name": "ORDER_REMINDER_THRESHOLD_DAYS",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-order-secret-lz-test-Ra3nPC:reminderThresholdDays::"
+        },
+        {
+          "name": "PCSS__Username",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-pcss-secret-lz-test-vPWCf5:username::"
+        },
+        {
+          "name": "PCSS__Password",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-pcss-secret-lz-test-vPWCf5:password::"
+        },
+        {
+          "name": "PCSS__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-pcss-secret-lz-test-vPWCf5:baseUrl::"
+        },
+        {
+          "name": "PCSS__JudgeId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-pcss-secret-lz-test-vPWCf5:judgeId::"
+        },
+        {
+          "name": "PCSS__JudgeHomeLocationId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-pcss-secret-lz-test-vPWCf5:judgeHomeLocationId::"
+        },
+        {
+          "name": "PublicCorsDomain",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:publicCorsDomain::"
+        },
+        {
+          "name": "Request__ApplicationCd",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-request-secret-lz-test-sSiUZ5:applicationCd::"
+        },
+        {
+          "name": "Request__AgencyIdentifierId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-request-secret-lz-test-sSiUZ5:agencyIdentifierId::"
+        },
+        {
+          "name": "Request__GetUserLoginDefaultAgencyId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-request-secret-lz-test-sSiUZ5:getUserLoginDefaultAgencyId::"
+        },
+        {
+          "name": "Request__PartId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-request-secret-lz-test-sSiUZ5:partId::"
+        },
+        {
+          "name": "RESERVED_JUDGEMENTS__ATTACHMENT_NAME",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-reserved-judgements-secret-lz-test-NLwf53:attachmentName::"
+        },
+        {
+          "name": "RESERVED_JUDGEMENTS__SENDER",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-reserved-judgements-secret-lz-test-NLwf53:sender::"
+        },
+        {
+          "name": "RESERVED_JUDGEMENTS__SUBJECT",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-reserved-judgements-secret-lz-test-NLwf53:subject::"
+        },
+        {
+          "name": "SiteMinderLogoutUrl",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:siteMinderLogoutUrl::"
+        },
+        {
+          "name": "SplunkCollectorId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-splunk-secret-lz-test-CDYrpk:collectorId::"
+        },
+        {
+          "name": "SplunkCollectorUrl",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-splunk-secret-lz-test-CDYrpk:collectorUrl::"
+        },
+        {
+          "name": "SplunkToken",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-splunk-secret-lz-test-CDYrpk:token::"
+        },
+        {
+          "name": "SUPPORT_ACCOUNT",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-misc-secret-lz-test-fNGxq4:supportAccount::"
+        },
+        {
+          "name": "TD__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-td-secret-lz-test-CDYrpk:url::"
+        },
+        {
+          "name": "TDKeycloak__Audience",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-td-secret-lz-test-CDYrpk:audience::"
+        },
+        {
+          "name": "TDKeycloak__Authority",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-td-secret-lz-test-CDYrpk:authority::"
+        },
+        {
+          "name": "TDKeycloak__ClientId",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-td-secret-lz-test-CDYrpk:client::"
+        },
+        {
+          "name": "TDKeycloak__ServiceAccountSecret",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-keycloak-td-secret-lz-test-CDYrpk:secret::"
+        },
+        {
+          "name": "UserServicesClient__Username",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-user-services-client-secret-lz-test-NLwf53:username::"
+        },
+        {
+          "name": "UserServicesClient__Password",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-user-services-client-secret-lz-test-NLwf53:password::"
+        },
+        {
+          "name": "UserServicesClient__Url",
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:747549824256:secret:external/jasper-user-services-client-secret-lz-test-NLwf53:baseUrl::"
+        }
+      ],
+      "dependsOn": [
+        {
+          "containerName": "jasper-clamav-lz-test",
+          "condition": "HEALTHY"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/ecs/jasper-ecs-api-td-log-group-lz-test",
+          "awslogs-region": "ca-central-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "systemControls": []
+    },
+    {
+      "name": "jasper-clamav-lz-test",
+      "image": "clamav/clamav@sha256:c6eb128c7bd57bb0c533491198753a2130b471c517605ad8d289174a56c450a8",
+      "cpu": 0,
+      "memoryReservation": 512,
+      "portMappings": [
+        {
+          "containerPort": 3310,
+          "hostPort": 3310,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": false,
+      "environment": [
+        {
+          "name": "CLAMAV_NO_FRESHCLAMD",
+          "value": "false"
+        },
+        {
+          "name": "CLAMD_CONF_LocalSocket",
+          "value": "/tmp/clamd.sock"
+        },
+        {
+          "name": "CLAMD_CONF_StreamMaxLength",
+          "value": "100M"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "clamav-db",
+          "containerPath": "/var/lib/clamav",
+          "readOnly": false
+        }
+      ],
+      "volumesFrom": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/ecs/jasper-ecs-api-td-log-group-lz-test",
+          "awslogs-region": "ca-central-1",
+          "awslogs-stream-prefix": "clamav"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD", "/usr/local/bin/clamdcheck.sh"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 120
+      },
+      "systemControls": []
+    }
+  ],
+  "family": "jasper-api-td-mongo-lz-test",
+  "taskRoleArn": "arn:aws:iam::747549824256:role/jasper-ecs-execution-role-lz-test",
+  "executionRoleArn": "arn:aws:iam::747549824256:role/jasper-ecs-execution-role-lz-test",
+  "networkMode": "awsvpc",
+  "volumes": [
+    {
+      "name": "efs-files-storage",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-08fd706855fadc32e",
+        "rootDirectory": "/",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-0fd5f52eeb2000dc0",
+          "iam": "ENABLED"
+        }
+      }
+    },
+    {
+      "name": "clamav-db",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-07b099c19382dfd06",
+        "rootDirectory": "/",
+        "transitEncryption": "ENABLED"
+      }
+    }
+  ],
+  "placementConstraints": [],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "3072"
+}

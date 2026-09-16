@@ -4,16 +4,12 @@
     color="var(--bg-gray-500)"
     elevation="0"
     data-testid="all-documents-container"
-    v-if="documents?.length > 0"
+    v-if="documents?.length > 0 || props.hasActiveFilters"
   >
     <v-card-text>
       <v-row align="center" no-gutters>
         <v-col class="text-headline-small" cols="6">
-          {{
-            props.selectedCategory && props.getCategoryDisplayTitle
-              ? props.getCategoryDisplayTitle(props.selectedCategory)
-              : 'All Documents'
-          }}
+          {{ props.sectionTitle || 'All Documents' }}
           ({{ documents.length }})
         </v-col>
       </v-row>
@@ -53,13 +49,6 @@
       <span v-else>
         {{ item.documentTypeDescription }}
       </span>
-      <span
-        v-if="selectedCategory === 'Scheduled' && item.filedDt"
-        class="text-caption"
-      >
-        <br />
-        Date Filed: {{ formatDateToDDMMMYYYY(item.filedDt) }}
-      </span>
     </template>
     <template v-slot:[`item.activity`]="{ item }">
       <v-chip-group>
@@ -93,7 +82,6 @@
   import { Anchor, LookupCode } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { mdiNotebookOutline } from '@mdi/js';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
 
   const props = defineProps<{
     selectedItems: civilDocumentType[];
@@ -104,9 +92,9 @@
     baseHeaders: DataTableHeader[];
     binderDocumentIds: string[];
     addDocumentToBinder: (document: civilDocumentType) => void;
-    selectedCategory?: string;
-    sortBy?: [{ key: string; order: 'asc' | 'desc' }];
-    getCategoryDisplayTitle?: (category: string) => string;
+    hasActiveFilters?: boolean;
+    sectionTitle?: string;
+    sortBy?: { key: string; order: 'asc' | 'desc' }[];
     openIndividualDocument: (data: civilDocumentType) => void;
   }>();
   const emit =

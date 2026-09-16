@@ -16,21 +16,11 @@
   <v-row>
     <v-col cols="6" />
     <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
-      <v-select
-        v-model="selectedCategory"
-        placeholder="All documents"
-        hide-details
+      <ChipMultiSelect
+        v-model="selectedCategories"
         :items="documentCategories"
-        item-title="title"
-        item-value="value"
-      >
-        <template v-slot:item="{ props: itemProps, item }">
-          <v-list-item
-            v-bind="itemProps"
-            :title="`${item.title} (${categoryCount(item.value)})`"
-          ></v-list-item>
-        </template>
-      </v-select>
+        :select-all-count="uniqueDocuments.length"
+      />
     </v-col>
   </v-row>
   <AllDocuments
@@ -43,9 +33,9 @@
     :openIndividualDocument
     :selectedItems
     :binderDocumentIds="currentBinder?.documents.map((d) => d.documentId) ?? []"
-    :selectedCategory="selectedCategory"
+    :hasActiveFilters="activeCategories.length > 0"
+    :sectionTitle="allDocumentsSectionTitle"
     :sortBy
-    :getCategoryDisplayTitle="getCategoryDisplayTitle"
     @update:selectedItems="(val) => (selectedItems = val)"
   />
 
@@ -122,11 +112,21 @@
   } from '@/types/shared';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
+    DEFAULT_OTHER_LABEL,
+    getActiveSelections,
+    pruneInvalidSelections,
+    getSectionTitle,
+    getUncategorizedCount,
+    isAllOptionsSelected,
+    matchesCategorySelection,
+  } from '@/utils/categoryFilterUtils';
+  import {
     mdiFileDocumentMultipleOutline,
     mdiNotebookOutline,
     mdiNotebookRemoveOutline,
   } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
+  import ChipMultiSelect from '../common/ChipMultiSelect.vue';
   import AllDocuments from './documents/AllDocuments.vue';
   import JudicialBinder from './documents/JudicialBinder.vue';
 
@@ -148,6 +148,7 @@
   const CSR_CATEGORY_DESC = 'Court Summary';
   const AFF_FIN_STMT = 'Affidavits/Financial Stmts';
   const LITIGANT = 'Litigant';
+  const OTHER_CATEGORY = DEFAULT_OTHER_LABEL;
 
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
@@ -171,24 +172,93 @@
   const scheduledDocuments = computed(() =>
     uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt)
   );
-  const selectedCategory = ref<string | undefined>(
-    scheduledDocuments.value.length > 0 ? SCHEDULED_CATEGORY : undefined
-  );
+  const selectedCategories = ref<string[]>([]);
   const isBinderLoading = ref(true);
   const rolesLoading = ref(false);
   const roles = ref<LookupCode[]>();
   const currentBinder = ref<Binder>();
   const courtClassCdStyle = getCourtClassStyle(props.courtClassCd);
-  const sortBy = computed<[{ key: string; order: 'desc' | 'asc' }]>(() => {
-    return selectedCategory?.value === CSR_CATEGORY
-      ? [{ key: 'filedDt', order: 'desc' as const }]
-      : [{ key: 'fileSeqNo', order: 'desc' as const }];
-  });
+  const isAllSelected = computed<boolean>(() =>
+    isAllOptionsSelected(
+      selectedCategories.value,
+      documentCategories.value.length
+    )
+  );
+  const activeCategories = computed<string[]>(() =>
+    getActiveSelections(selectedCategories.value, isAllSelected.value)
+  );
+  const allDocumentsSectionTitle = computed<string>(() =>
+    getSectionTitle(activeCategories.value, getCategoryDisplayTitle)
+  );
+
+  const compareDatesDescending = (dateA: string, dateB: string): number => {
+    const timestampA = new Date(dateA).getTime();
+    const timestampB = new Date(dateB).getTime();
+    const hasDateA = !Number.isNaN(timestampA);
+    const hasDateB = !Number.isNaN(timestampB);
+
+    if (hasDateA !== hasDateB) {
+      return hasDateA ? -1 : 1;
+    }
+
+    return hasDateA ? timestampB - timestampA : 0;
+  };
+
+  const compareDefaultDocumentOrder = (
+    documentA: civilDocumentType,
+    documentB: civilDocumentType
+  ): number => {
+    const isCourtSummaryA =
+      documentA.category?.trim().toUpperCase() === CSR_CATEGORY;
+    const isCourtSummaryB =
+      documentB.category?.trim().toUpperCase() === CSR_CATEGORY;
+
+    if (isCourtSummaryA !== isCourtSummaryB) {
+      return isCourtSummaryA ? 1 : -1;
+    }
+
+    if (isCourtSummaryA && isCourtSummaryB) {
+      return compareDatesDescending(documentA.filedDt, documentB.filedDt);
+    }
+
+    const isScheduledA = !!documentA.nextAppearanceDt;
+    const isScheduledB = !!documentB.nextAppearanceDt;
+
+    if (isScheduledA !== isScheduledB) {
+      return isScheduledA ? -1 : 1;
+    }
+
+    return isScheduledA && isScheduledB
+      ? compareDatesDescending(
+          documentA.nextAppearanceDt,
+          documentB.nextAppearanceDt
+        )
+      : 0;
+  };
+
+  const sortBy = computed<{ key: string; order: 'desc' | 'asc' }[]>(() => [
+    { key: 'nextAppearanceDt', order: 'desc' },
+    { key: 'fileSeqNo', order: 'desc' },
+  ]);
 
   const headers = computed<DataTableHeader[]>(() => {
-    const baseHeaders = shared.getBaseCivilDocumentTableHeaders(
-      selectedCategory.value === SCHEDULED_CATEGORY
+    const baseHeaders = shared.getBaseCivilDocumentTableHeaders();
+    const dateScheduledHeader = shared
+      .getBaseCivilDocumentTableHeaders(true)
+      .find((header) => header.key === 'nextAppearanceDt');
+    const dateFiledIndex = baseHeaders.findIndex(
+      (header) => header.key === 'filedDt'
     );
+
+    if (dateScheduledHeader && dateFiledIndex >= 0) {
+      baseHeaders.splice(dateFiledIndex + 1, 0, {
+        ...dateScheduledHeader,
+        // Vuetify reverses arguments for descending sorts. Reverse them here
+        // so the comparator describes the order users see in the table.
+        sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
+          compareDefaultDocumentOrder(b, a),
+      });
+    }
 
     return [
       ...baseHeaders,
@@ -263,10 +333,48 @@
     return categoryMap[category] || category;
   };
 
-  const documentCategories = computed<{ title: string; value: string }[]>(() =>
-    (scheduledDocuments.value.length > 0
-      ? [{ title: SCHEDULED_CATEGORY, value: SCHEDULED_CATEGORY }]
-      : []
+  const getUncategorizedDocumentCount = (): number =>
+    getUncategorizedCount(uniqueDocuments.value, (doc) => doc.category);
+
+  const categoryCount = (category: string): number => {
+    if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
+      return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
+    }
+
+    if (
+      category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase() ||
+      category.toLowerCase() === CSR_CATEGORY.toLowerCase()
+    ) {
+      return uniqueDocuments.value.filter(
+        (doc) =>
+          doc.category?.trim().toLowerCase() === CSR_CATEGORY.toLowerCase()
+      ).length;
+    }
+
+    if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
+      return getUncategorizedDocumentCount();
+    }
+
+    return uniqueDocuments.value.filter(
+      (doc) => doc.category?.trim().toLowerCase() === category.toLowerCase()
+    ).length;
+  };
+
+  const documentCategories = computed<
+    { title: string; value: string; count: number }[]
+  >(() => {
+    const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+
+    return (
+      scheduledDocuments.value.length > 0
+        ? [
+            {
+              title: SCHEDULED_CATEGORY,
+              value: SCHEDULED_CATEGORY,
+              count: categoryCount(SCHEDULED_CATEGORY),
+            },
+          ]
+        : []
     ).concat(
       [
         ...new Set(
@@ -274,28 +382,53 @@
             .filter((d) => d.category)
             .map((doc) => doc.category)
         ),
-      ].map((category) => ({
-        title: getCategoryDisplayTitle(category),
-        value: category,
-      }))
-    )
+      ]
+        .map((category) => ({
+          title: getCategoryDisplayTitle(category),
+          value: category,
+          count: categoryCount(category),
+        }))
+        .concat(
+          uncategorizedDocumentCount > 0
+            ? [
+                {
+                  title: OTHER_CATEGORY,
+                  value: OTHER_CATEGORY,
+                  count: uncategorizedDocumentCount,
+                },
+              ]
+            : []
+        )
+    );
+  });
+
+  watch(
+    documentCategories,
+    (categories) => {
+      const filteredSelections = pruneInvalidSelections(
+        selectedCategories.value,
+        categories.map((category) => category.value)
+      );
+
+      if (filteredSelections.length !== selectedCategories.value.length) {
+        selectedCategories.value = filteredSelections;
+      }
+    },
+    { immediate: true }
   );
 
   const filterByCategory = (item: civilDocumentType) => {
-    const category = selectedCategory.value?.toLowerCase();
-    if (!category) {
-      return true;
-    }
-
-    if (category === SCHEDULED_CATEGORY.toLowerCase()) {
-      return !!item.nextAppearanceDt;
-    }
-
-    if (category === CSR_CATEGORY_DESC.toLowerCase()) {
-      return item.category === CSR_CATEGORY;
-    }
-
-    return item.category?.toLowerCase() === category;
+    return matchesCategorySelection(
+      item,
+      activeCategories.value,
+      (doc) => doc.category,
+      {
+        otherLabel: OTHER_CATEGORY,
+        specialPredicates: {
+          [SCHEDULED_CATEGORY.toLowerCase()]: (doc) => !!doc.nextAppearanceDt,
+        },
+      }
+    );
   };
 
   const filteredDocuments = computed(() =>
@@ -333,23 +466,6 @@
     },
     { immediate: true }
   );
-
-  const categoryCount = (category: string): number => {
-    if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
-      return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
-    }
-
-    if (category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase()) {
-      return uniqueDocuments.value.filter(
-        (doc) => doc.category === CSR_CATEGORY
-      ).length;
-    }
-
-    return uniqueDocuments.value.filter(
-      (doc) => doc.category?.toLowerCase() === category.toLowerCase()
-    ).length;
-  };
-
   onMounted(async () => {
     try {
       rolesLoading.value = true;

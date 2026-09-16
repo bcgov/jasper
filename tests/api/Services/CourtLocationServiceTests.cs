@@ -78,6 +78,6 @@ public class CourtLocationServiceTests
 
         Assert.False(result.Succeeded);
         Assert.Null(result.Payload);
-        Assert.Contains("db down", result.Errors);
+        Assert.Contains("Something went wrong when retrieving the court location.", result.Errors);
     }
 }

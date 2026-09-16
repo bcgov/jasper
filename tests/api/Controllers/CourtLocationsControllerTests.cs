@@ -51,8 +51,9 @@ public class CourtLocationsControllerTests
 
         var result = await _controller.GetCourtLocationByCode("4801");
 
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Failed to retrieve court location: boom", badRequest.Value);
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+        Assert.Equal("Failed to retrieve court location: boom", objectResult.Value);
         _mockService.Verify(s => s.GetCourtLocationByCodeAsync("4801"), Times.Once());
     }
 

@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Services;
@@ -21,12 +22,12 @@ public class CourtLocationsController(ICourtLocationService clService) : Control
             return BadRequest("Please provide a location code.");
         }
 
-        var courtLocation = await _clService.GetCourtLocationByCodeAsync(code);
+        var courtLocation = await _clService.GetCourtLocationByCodeAsync(code.Trim());
 
         if (!courtLocation.Succeeded)
         {
             var resultErrors = string.Join(", ", courtLocation.Errors);
-            return BadRequest($"Failed to retrieve court location: {resultErrors}");
+            return StatusCode(StatusCodes.Status500InternalServerError, $"Failed to retrieve court location: {resultErrors}");
         }
 
         if (courtLocation.Payload == null)

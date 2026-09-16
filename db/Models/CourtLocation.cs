@@ -9,8 +9,8 @@ public class CourtLocation : EntityBase
 {
     public string Code { get; set; }
     public string Name { get; set; }
-    public string AltName { get; set; }
-    public string Url { get; set; }
+    public string JasperName { get; set; }
+    public string Path { get; set; }
     public string Address1 { get; set; }
     public string Address2 { get; set; }
     public string City { get; set; }

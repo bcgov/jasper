@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
@@ -29,7 +30,22 @@ public class CourtLocationService(
     public override string CacheName => nameof(CourtLocationService);
 
     public override Task<OperationResult<CourtLocationDto>> ValidateAsync(CourtLocationDto dto, bool isEdit = false)
-        => Task.FromResult(OperationResult<CourtLocationDto>.Success(dto));
+        => throw new NotSupportedException();
+
+    public override Task<OperationResult<CourtLocationDto>> AddAsync(CourtLocationDto dto)
+        => throw new NotSupportedException();
+
+    public override Task<OperationResult<CourtLocationDto>> AddRangeAsync(List<CourtLocationDto> dtos)
+        => throw new NotSupportedException();
+
+    public override Task<OperationResult<CourtLocationDto>> UpdateAsync(CourtLocationDto dto)
+        => throw new NotSupportedException();
+
+    public override Task<OperationResult> DeleteAsync(string id)
+        => throw new NotSupportedException();
+
+    public override Task<OperationResult> DeleteRangeAsync(List<string> ids)
+        => throw new NotSupportedException();
 
     public async Task<OperationResult<CourtLocationDto>> GetCourtLocationByCodeAsync(string code)
     {
@@ -48,7 +64,8 @@ public class CourtLocationService(
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "An error occurred while getting court location by code.");
-            return OperationResult<CourtLocationDto>.Failure(ex.Message);
+            return OperationResult<CourtLocationDto>.Failure("Something went wrong when retrieving the court location.");
         }
     }
+
 }

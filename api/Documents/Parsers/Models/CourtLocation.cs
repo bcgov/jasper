@@ -4,8 +4,8 @@ public class CourtLocation
 {
     [ExcelColumn("Location Name")] public string Name { get; set; } = "";
     [ExcelColumn("Location Code (4 digit)")] public string Code { get; set; } = "";
-    [ExcelColumn("JASPER Name")] public string AltName { get; set; } = "";
-    [ExcelColumn("Location Url")] public string Url { get; set; } = "";
+    [ExcelColumn("JASPER Name")] public string JasperName { get; set; } = "";
+    [ExcelColumn("Location Path")] public string Path { get; set; } = "";
     [ExcelColumn("Court Address 1")] public string Address1 { get; set; } = "";
     [ExcelColumn("Court Address 2")] public string Address2 { get; set; } = "";
     [ExcelColumn("Location Staffed")] public string Staffed { get; set; } = "";

@@ -9,13 +9,14 @@ using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Scv.Api.Documents.Parsers;
 
-public class ExcelWorkbook : IExcelWorkbook
+public sealed class ExcelWorkbook : IExcelWorkbook
 {
     private readonly SpreadsheetDocument _document;
     private readonly WorkbookPart _workbookPart;
     private readonly string[] _sharedStrings;
+    private bool _disposed;
 
-    public ExcelWorkbook(MemoryStream excelStream)
+    public ExcelWorkbook(Stream excelStream)
     {
         _document = SpreadsheetDocument.Open(excelStream, false);
         _workbookPart = _document.WorkbookPart
@@ -32,13 +33,13 @@ public class ExcelWorkbook : IExcelWorkbook
             .ToArray() ?? [];
     }
 
-    public IReadOnlyList<T> GetSheet<T>(string sheetName) where T : class
+    public IReadOnlyList<T> GetSheet<T>(string sheetName) where T : class, new()
     {
         var sheet = _workbookPart.Workbook.Descendants<Sheet>()
             .FirstOrDefault(s => s.Name == sheetName)
-            ?? throw new ArgumentException($"Sheet '{sheetName}' not found.", nameof(sheetName));
+            ?? throw new ArgumentException($"Sheet '{sheetName}' not found.", sheetName);
 
-        var worksheetPart = (WorksheetPart)_workbookPart.GetPartById(sheet.Id!);
+        var worksheetPart = (WorksheetPart)_workbookPart.GetPartById(sheet.Id);
         var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()?.Elements<Row>().ToList() ?? [];
 
         var results = new List<T>();
@@ -69,7 +70,16 @@ public class ExcelWorkbook : IExcelWorkbook
         return results;
     }
 
-    public void Dispose() => _document.Dispose();
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _document.Dispose();
+        _disposed = true;
+    }
 
     private Dictionary<string, PropertyInfo> BuildColumnMap<T>(Row headerRow) where T : class
     {
@@ -135,14 +145,16 @@ public class ExcelWorkbook : IExcelWorkbook
         return cellReference[..length];
     }
 
-    private static object? ConvertValue(string raw, Type targetType)
+    private static object ConvertValue(string raw, Type targetType)
     {
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-        var isNullable = Nullable.GetUnderlyingType(targetType) != null || !targetType.IsValueType;
+        var nullableUnderlying = Nullable.GetUnderlyingType(targetType);
+        var underlyingType = nullableUnderlying ?? targetType;
 
         if (string.IsNullOrEmpty(raw))
         {
-            return isNullable ? null : Activator.CreateInstance(underlyingType);
+            return nullableUnderlying != null || !targetType.IsValueType
+                ? null
+                : Activator.CreateInstance(underlyingType);
         }
 
         if (underlyingType == typeof(string))
@@ -157,7 +169,7 @@ public class ExcelWorkbook : IExcelWorkbook
 
         if (underlyingType == typeof(DateTime))
         {
-            return double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var serial)
+            return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var serial)
                 ? DateTime.FromOADate(serial)
                 : DateTime.Parse(raw, CultureInfo.InvariantCulture);
         }

@@ -38,7 +38,7 @@ public class SyncCourtLocationsJob(
     {
         try
         {
-            var attachmentStream = await GetCourtLocationAttachment()
+            using var attachmentStream = await GetCourtLocationAttachment()
                 ?? throw new InvalidOperationException("Unable to retrieve court location attachment from email.");
 
             var courtLocations = await this.GetCourtLocations(attachmentStream);
@@ -87,7 +87,7 @@ public class SyncCourtLocationsJob(
 
     private async Task<CourtLocationDto[]> GetCourtLocations(MemoryStream stream)
     {
-        var parser = _excelParser.Open(stream);
+        using var parser = _excelParser.Open(stream);
         var parsedCourtLocations = parser.GetSheet<CourtLocation>(COURT_LOCATIONS_SHEET);
         var parsedAdultOffices = parser.GetSheet<AdultProbationOffice>(ADULT_PROBATION_OFFICES_SHEET);
         var parsedYouthOffices = parser.GetSheet<YouthProbationOffice>(YOUTH_PROBATION_OFFICES_SHEET);
@@ -112,12 +112,14 @@ public class SyncCourtLocationsJob(
             var parsed = parsedCourtLocations[i];
             var dto = courtLocations[i];
 
-            if (!string.IsNullOrWhiteSpace(parsed.AdultProbationOffice) && adultOfficesByName.TryGetValue(parsed.AdultProbationOffice.Trim(), out var adult))
+            if (!string.IsNullOrWhiteSpace(parsed.AdultProbationOffice)
+                && adultOfficesByName.TryGetValue(parsed.AdultProbationOffice.Trim(), out var adult))
             {
                 dto.AdultProbationOffice = adult;
             }
 
-            if (!string.IsNullOrWhiteSpace(parsed.YouthProbationOffice) && youthOfficesByName.TryGetValue(parsed.YouthProbationOffice.Trim(), out var youth))
+            if (!string.IsNullOrWhiteSpace(parsed.YouthProbationOffice)
+                && youthOfficesByName.TryGetValue(parsed.YouthProbationOffice.Trim(), out var youth))
             {
                 dto.YouthProbationOffice = youth;
             }

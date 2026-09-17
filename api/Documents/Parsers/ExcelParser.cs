@@ -4,5 +4,6 @@ namespace Scv.Api.Documents.Parsers;
 
 public class ExcelParser : IExcelParser
 {
-    public IExcelWorkbook Open(MemoryStream excelStream) => new ExcelWorkbook(excelStream);
+    public IExcelWorkbook Open(Stream excelStream)
+        => new ExcelWorkbook(excelStream);
 }

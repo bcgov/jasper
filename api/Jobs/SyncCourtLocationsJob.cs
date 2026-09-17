@@ -48,7 +48,6 @@ public class SyncCourtLocationsJob(
             var courtLocations = await this.GetCourtLocations(attachmentStream);
 
             var result = await _clService.ReplaceCourtLocationsAsync(courtLocations);
-
             if (!result.Succeeded)
             {
                 throw new InvalidOperationException($"Failed to replace court locations: {string.Join(", ", result.Errors)}");

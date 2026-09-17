@@ -100,11 +100,11 @@ public class SyncCourtLocationsJob(
         var courtLocations = this.Mapper.Map<CourtLocationDto[]>(parsedCourtLocations);
 
         var adultOfficesByName = parsedAdultOffices
-            .GroupBy(o => o.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .GroupBy(o => (o.Name ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => this.Mapper.Map<AdultProbationOfficeDto>(g.First()), StringComparer.OrdinalIgnoreCase);
 
         var youthOfficesByName = parsedYouthOffices
-            .GroupBy(o => o.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .GroupBy(o => (o.Name ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => this.Mapper.Map<YouthProbationOfficeDto>(g.First()), StringComparer.OrdinalIgnoreCase);
 
         for (var i = 0; i < courtLocations.Length; i++)

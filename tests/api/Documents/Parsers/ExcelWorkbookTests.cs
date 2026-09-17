@@ -195,13 +195,12 @@ public class ExcelWorkbookTests
     [Fact]
     public void GetSheet_Does_Not_Map_Property_Name_When_Attribute_Overrides_It()
     {
-        // The property is "Name" but the attribute says "Location Name" - a header of "Name" must not match.
         using var stream = BuildWorkbook(COURT_LOCATIONS_SHEET, true, ["Name"], ["Victoria Law Courts"]);
         using var wb = new ExcelWorkbook(stream);
 
         var cl = wb.GetSheet<CourtLocation>(COURT_LOCATIONS_SHEET).Single();
 
-        Assert.Equal("", cl.Name);
+        Assert.Null(cl.Name);
     }
 
     [Fact]
@@ -250,8 +249,8 @@ public class ExcelWorkbookTests
 
         var cl = wb.GetSheet<CourtLocation>(COURT_LOCATIONS_SHEET).Single();
 
-        Assert.Equal("", cl.Code);
-        Assert.Equal("", cl.AdultProbationOffice);
+        Assert.Null(cl.Code);
+        Assert.Null(cl.AdultProbationOffice);
     }
 
     #endregion
@@ -301,7 +300,7 @@ public class ExcelWorkbookTests
         using var wb = new ExcelWorkbook(stream);
         var cl = wb.GetSheet<CourtLocation>(COURT_LOCATIONS_SHEET).Single();
 
-        Assert.Equal("", cl.Name);
+        Assert.Null(cl.Name);
         Assert.Equal("3581", cl.Code);
     }
 

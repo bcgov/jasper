@@ -614,9 +614,7 @@ export default {
     return newWindow;
   },
 
-  getBaseCivilDocumentTableHeaders(
-    isScheduledCategory = false
-  ): DataTableHeader[] {
+  getBaseCivilDocumentTableHeaders(): DataTableHeader[] {
     return [
       {
         title: 'SEQ',
@@ -632,28 +630,37 @@ export default {
         title: 'ACT',
         key: 'activity',
       },
-      isScheduledCategory
-        ? {
-            title: 'DATE SCHEDULED',
-            key: 'nextAppearanceDt',
-            width: '8.5rem',
-            maxWidth: '8.5rem',
-            value: (item: civilDocumentType) =>
-              formatDateToDDMMMYYYY(item.nextAppearanceDt),
-            sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-              new Date(a.nextAppearanceDt).getTime() -
-              new Date(b.nextAppearanceDt).getTime(),
-          }
-        : {
-            title: 'DATE FILED',
-            key: 'filedDt',
-            width: '8.5rem',
-            maxWidth: '8.5rem',
-            value: (item: civilDocumentType) =>
-              formatDateToDDMMMYYYY(item.filedDt),
-            sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-              new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
-          },
+      {
+        title: 'DATE FILED',
+        key: 'filedDt',
+        width: '8.5rem',
+        maxWidth: '8.5rem',
+        value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
+        sortRaw: (a: civilDocumentType, b: civilDocumentType) => {
+          const timeA = new Date(a.filedDt).getTime();
+          const timeB = new Date(b.filedDt).getTime();
+          return (
+            (Number.isNaN(timeA) ? Number.NEGATIVE_INFINITY : timeA) -
+            (Number.isNaN(timeB) ? Number.NEGATIVE_INFINITY : timeB)
+          );
+        },
+      },
+      {
+        title: 'DATE SCHEDULED',
+        key: 'nextAppearanceDt',
+        width: '8.5rem',
+        maxWidth: '8.5rem',
+        value: (item: civilDocumentType) =>
+          formatDateToDDMMMYYYY(item.nextAppearanceDt),
+        sortRaw: (a: civilDocumentType, b: civilDocumentType) => {
+          const timeA = new Date(a.nextAppearanceDt).getTime();
+          const timeB = new Date(b.nextAppearanceDt).getTime();
+          return (
+            (Number.isNaN(timeA) ? Number.NEGATIVE_INFINITY : timeA) -
+            (Number.isNaN(timeB) ? Number.NEGATIVE_INFINITY : timeB)
+          );
+        },
+      },
       {
         title: 'ORDER MADE',
         key: 'orderMadeDt',

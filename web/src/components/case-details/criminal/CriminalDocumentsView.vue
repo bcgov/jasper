@@ -19,6 +19,7 @@
           v-model="selectedCategories"
           :items="documentCategories"
           :select-all-count="unfilteredDocuments.length"
+          placeholder="All documents"
         />
       </v-col>
     </v-row>
@@ -145,13 +146,16 @@
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
   import { computed, ref, watch } from 'vue';
   import {
-    DEFAULT_OTHER_LABEL,
     getActiveSelections,
     pruneInvalidSelections,
     getSectionTitle,
     getUncategorizedCount,
     isAllOptionsSelected,
     matchesCategorySelection,
+    normalizeCategory,
+    OTHER_CATEGORY_LABEL,
+    UNCATEGORIZED_CATEGORY_FILTER,
+    UNCATEGORIZED_CATEGORY_LABEL,
   } from '@/utils/categoryFilterUtils';
   import ChipMultiSelect from '../common/ChipMultiSelect.vue';
 
@@ -165,7 +169,6 @@
   const keyDocumentsSortBy = ref([{ key: 'category', order: 'asc' }] as const);
   const selectedCategories = ref<string[]>([]);
   const selectedAccused = ref<string>();
-  const OTHER_CATEGORY = DEFAULT_OTHER_LABEL;
   type CriminalViewDocument = documentType & {
     fullName?: string;
     fullNameLastFirst?: string;
@@ -176,7 +179,7 @@
   const isAllSelected = computed<boolean>(() =>
     isAllOptionsSelected(
       selectedCategories.value,
-      documentCategories.value.length
+      documentCategories.value.map((category) => category.value)
     )
   );
 
@@ -190,7 +193,7 @@
       activeCategories.value,
       (doc) => doc.category,
       {
-        otherLabel: OTHER_CATEGORY,
+        uncategorizedValue: UNCATEGORIZED_CATEGORY_FILTER,
       }
     );
   };
@@ -248,42 +251,48 @@
     getUncategorizedCount(unfilteredDocuments.value, (doc) => doc.category);
 
   const categoryCount = (category: string): number => {
-    if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
+    if (category === UNCATEGORIZED_CATEGORY_FILTER) {
       return getUncategorizedDocumentCount();
     }
 
     return unfilteredDocuments.value.filter(
-      (doc) => doc.category?.trim().toLowerCase() === category.toLowerCase()
+      (doc) => normalizeCategory(doc.category) === category
     ).length;
   };
 
+  const getCategoryDisplayTitle = (category: string): string =>
+    documentCategories.value.find((option) => option.value === category)
+      ?.title ?? category;
+
   const documentsSectionTitle = computed<string>(() =>
-    getSectionTitle(activeCategories.value)
+    getSectionTitle(activeCategories.value, getCategoryDisplayTitle)
   );
 
   const documentCategories = computed<
     { title: string; value: string; count: number }[]
   >(() => {
     const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+    const categoriesByIdentity = new Map<string, string>();
 
-    return [
-      ...new Set(
-        unfilteredDocuments.value
-          ?.filter((doc) => doc.category)
-          .map((doc) => doc.category) || []
-      ),
-    ]
-      .map((category) => ({
-        title: category,
-        value: category,
-        count: categoryCount(category),
+    unfilteredDocuments.value.forEach((document) => {
+      const identity = normalizeCategory(document.category);
+      if (identity && !categoriesByIdentity.has(identity)) {
+        categoriesByIdentity.set(identity, document.category.trim());
+      }
+    });
+
+    return [...categoriesByIdentity]
+      .map(([value, title]) => ({
+        title: value === 'other' ? OTHER_CATEGORY_LABEL : title,
+        value,
+        count: categoryCount(value),
       }))
       .concat(
         uncategorizedDocumentCount > 0
           ? [
               {
-                title: OTHER_CATEGORY,
-                value: OTHER_CATEGORY,
+                title: UNCATEGORIZED_CATEGORY_LABEL,
+                value: UNCATEGORIZED_CATEGORY_FILTER,
                 count: uncategorizedDocumentCount,
               },
             ]

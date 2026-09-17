@@ -2,6 +2,10 @@ import shared from '@/components/shared';
 import { BinderService } from '@/services';
 import { useCommonStore } from '@/stores';
 import { DocumentRequestType } from '@/types/shared';
+import {
+  SCHEDULED_CATEGORY_FILTER,
+  UNCATEGORIZED_CATEGORY_FILTER,
+} from '@/utils/categoryFilterUtils';
 import { shallowMount } from '@vue/test-utils';
 import CivilDocumentsView from 'CMP/case-details/civil/CivilDocumentsView.vue';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
@@ -132,7 +136,7 @@ describe('CivilDocumentsView.vue', () => {
   });
 
   it('filters documents by selected type', async () => {
-    wrapper.vm.selectedCategories = ['CSR'];
+    wrapper.vm.selectedCategories = ['csr'];
 
     expect(wrapper.vm.filteredDocuments).toEqual([mockDocuments[0]]);
   });
@@ -214,7 +218,7 @@ describe('CivilDocumentsView.vue', () => {
   it('inserts "Scheduled" option when a document has a next appearance date', async () => {
     expect(wrapper.vm.documentCategories[0]).toEqual({
       title: 'Scheduled',
-      value: 'Scheduled',
+      value: SCHEDULED_CATEGORY_FILTER,
       count: 2,
     });
   });
@@ -222,7 +226,7 @@ describe('CivilDocumentsView.vue', () => {
   it(`renames 'CSR' to 'Court Summary' in the document categories`, async () => {
     expect(wrapper.vm.documentCategories[1]).toEqual({
       title: 'Court Summary',
-      value: 'CSR',
+      value: 'csr',
       count: 1,
     });
   });
@@ -230,7 +234,7 @@ describe('CivilDocumentsView.vue', () => {
   it(`renames 'Affidavits' to 'Affidavits/Financial Stmts' in the document categories`, async () => {
     expect(wrapper.vm.documentCategories[4]).toEqual({
       title: 'Affidavits/Financial Stmts',
-      value: 'Affidavits',
+      value: 'affidavits',
       count: 1,
     });
   });
@@ -412,7 +416,7 @@ describe('CivilDocumentsView.vue', () => {
     });
 
     it('does not filter judicial binder documents by category', async () => {
-      wrapper.vm.selectedCategories = ['CSR'];
+      wrapper.vm.selectedCategories = ['csr'];
       await nextTick();
 
       expect(wrapper.vm.filteredDocuments).toHaveLength(1);
@@ -425,13 +429,77 @@ describe('CivilDocumentsView.vue', () => {
     });
 
     it('filters all documents table by category', async () => {
-      wrapper.vm.selectedCategories = ['ROP'];
+      wrapper.vm.selectedCategories = ['rop'];
       await nextTick();
 
       expect(wrapper.vm.filteredDocuments).toHaveLength(1);
       expect(wrapper.vm.filteredDocuments[0].category).toBe('ROP');
       expect(wrapper.vm.filteredDocuments[0].civilDocumentId).toBe('2');
     });
+
+    it('filters by multiple categories simultaneously', async () => {
+      wrapper.vm.selectedCategories = ['csr', 'rop'];
+      await nextTick();
+
+      expect(
+        wrapper.vm.filteredDocuments.map((document) => document.civilDocumentId)
+      ).toEqual(['1', '2']);
+    });
+
+    it('shows all documents for empty selection and Select All', async () => {
+      wrapper.vm.selectedCategories = [];
+      await nextTick();
+      const emptySelectionIds = wrapper.vm.filteredDocuments.map(
+        (document) => document.civilDocumentId
+      );
+
+      wrapper.vm.selectedCategories = wrapper.vm.documentCategories.map(
+        (category) => category.value
+      );
+      await nextTick();
+
+      expect(
+        wrapper.vm.filteredDocuments.map((document) => document.civilDocumentId)
+      ).toEqual(emptySelectionIds);
+    });
+  });
+
+  it('keeps a genuine Other category separate from uncategorized documents', async () => {
+    wrapper = mountView([
+      { ...mockDocuments[0], civilDocumentId: 'other', category: ' Other ' },
+      { ...mockDocuments[1], civilDocumentId: 'empty', category: ' ' },
+    ] as any);
+
+    wrapper.vm.selectedCategories = ['other'];
+    await nextTick();
+    expect(wrapper.vm.documentCategories).toEqual([
+      { title: 'Other', value: 'other', count: 1 },
+      {
+        title: 'Uncategorized',
+        value: UNCATEGORIZED_CATEGORY_FILTER,
+        count: 1,
+      },
+    ]);
+    expect(
+      wrapper.vm.filteredDocuments.map((document) => document.civilDocumentId)
+    ).toEqual(['other']);
+
+    wrapper.vm.selectedCategories = [UNCATEGORIZED_CATEGORY_FILTER];
+    await nextTick();
+    expect(
+      wrapper.vm.filteredDocuments.map((document) => document.civilDocumentId)
+    ).toEqual(['empty']);
+  });
+
+  it('deduplicates normalized categories and reports their combined count', () => {
+    wrapper = mountView([
+      { ...mockDocuments[0], civilDocumentId: 'csr-1', category: ' CSR ' },
+      { ...mockDocuments[1], civilDocumentId: 'csr-2', category: 'csr' },
+    ] as any);
+
+    expect(wrapper.vm.documentCategories).toEqual([
+      { title: 'Court Summary', value: 'csr', count: 2 },
+    ]);
   });
 
   describe('Unique documents', () => {
@@ -490,11 +558,11 @@ describe('CivilDocumentsView.vue', () => {
     });
 
     it('uses deduplicated documents for category counts', () => {
-      expect(wrapper.vm.categoryCount('CSR')).toBe(1);
+      expect(wrapper.vm.categoryCount('csr')).toBe(1);
     });
 
     it('removes stale selected categories that are no longer valid', async () => {
-      wrapper.vm.selectedCategories = ['Scheduled'];
+      wrapper.vm.selectedCategories = [SCHEDULED_CATEGORY_FILTER];
 
       await wrapper.setProps({
         documents: [

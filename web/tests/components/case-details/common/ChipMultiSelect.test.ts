@@ -52,6 +52,24 @@ describe('ChipMultiSelect.vue', () => {
     expect(wrapper.vm.getItemTitle(baseProps.items[2])).toBe('Option C (0)');
   });
 
+  it('resolves normalized Vuetify items without a raw payload', () => {
+    const wrapper = shallowMount(ChipMultiSelect, {
+      props: baseProps,
+    });
+
+    expect(wrapper.vm.getItemTitle({ value: 'a' })).toBe('Option A (2)');
+    expect(wrapper.vm.getItemValue({ value: 'a' })).toBe('a');
+  });
+
+  it('handles a missing slot item without throwing', () => {
+    const wrapper = shallowMount(ChipMultiSelect, {
+      props: baseProps,
+    });
+
+    expect(wrapper.vm.getItemTitle(undefined)).toBe('');
+    expect(wrapper.vm.getItemValue(undefined)).toBe('');
+  });
+
   it('emits an empty selection when update value is undefined', () => {
     const wrapper = shallowMount(ChipMultiSelect, {
       props: baseProps,
@@ -83,6 +101,17 @@ describe('ChipMultiSelect.vue', () => {
     wrapper.vm.toggleSelectAll();
 
     expect(wrapper.emitted('update:modelValue')).toEqual([[[]]]);
+  });
+
+  it('does not treat stale or duplicate values as all selected', () => {
+    const wrapper = shallowMount(ChipMultiSelect, {
+      props: {
+        ...baseProps,
+        modelValue: ['stale', 'stale', 'a'],
+      },
+    });
+
+    expect(wrapper.vm.isAllSelected).toBe(false);
   });
 
   it('removeValue emits model without removed option', () => {

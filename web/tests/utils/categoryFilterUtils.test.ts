@@ -1,9 +1,13 @@
 import {
   DEFAULT_SECTION_TITLE,
   MULTI_SECTION_TITLE,
+  SCHEDULED_CATEGORY_FILTER,
+  UNCATEGORIZED_CATEGORY_FILTER,
   getSectionTitle,
   getUncategorizedCount,
+  isAllOptionsSelected,
   matchesCategorySelection,
+  normalizeCategory,
   pruneInvalidSelections,
 } from '@/utils/categoryFilterUtils';
 import { describe, expect, it } from 'vitest';
@@ -23,6 +27,25 @@ describe('categoryFilterUtils', () => {
       const result = pruneInvalidSelections(['A', 'B'], ['X', 'Y']);
       expect(result).toEqual([]);
     });
+
+    it('canonicalizes and deduplicates valid selections', () => {
+      expect(pruneInvalidSelections([' CSR ', 'csr'], ['csr'])).toEqual([
+        'csr',
+      ]);
+    });
+  });
+
+  describe('isAllOptionsSelected', () => {
+    it('requires every current option to be selected', () => {
+      expect(isAllOptionsSelected(['stale', 'duplicate'], ['a', 'b'])).toBe(
+        false
+      );
+      expect(isAllOptionsSelected(['b', 'a', 'stale'], ['a', 'b'])).toBe(true);
+    });
+  });
+
+  it('normalizes category identity once', () => {
+    expect(normalizeCategory(' CSR ')).toBe('csr');
   });
 
   describe('getSectionTitle', () => {
@@ -76,35 +99,38 @@ describe('categoryFilterUtils', () => {
       ).toBe(true);
     });
 
-    it('matches Other against uncategorized items', () => {
+    it('matches the uncategorized sentinel against uncategorized items', () => {
       expect(
-        matchesCategorySelection({ category: '   ' }, ['Other'], getCategory)
+        matchesCategorySelection(
+          { category: '   ' },
+          [UNCATEGORIZED_CATEGORY_FILTER],
+          getCategory
+        )
       ).toBe(true);
     });
 
-    it('does not match Other when item has a real category', () => {
+    it('keeps a genuine Other category distinct from uncategorized', () => {
       expect(
-        matchesCategorySelection({ category: 'CSR' }, ['Other'], getCategory)
+        matchesCategorySelection({ category: 'Other' }, ['other'], getCategory)
+      ).toBe(true);
+      expect(
+        matchesCategorySelection(
+          { category: 'Other' },
+          [UNCATEGORIZED_CATEGORY_FILTER],
+          getCategory
+        )
       ).toBe(false);
-    });
-
-    it('supports custom other label', () => {
-      expect(
-        matchesCategorySelection({ category: '' }, ['Misc'], getCategory, {
-          otherLabel: 'Misc',
-        })
-      ).toBe(true);
     });
 
     it('uses special predicates when provided', () => {
       const item = { category: 'CSR', nextAppearanceDt: '2025-01-01' };
       const result = matchesCategorySelection(
         item,
-        ['Scheduled'],
+        [SCHEDULED_CATEGORY_FILTER],
         (doc) => doc.category,
         {
           specialPredicates: {
-            scheduled: (doc) => !!doc.nextAppearanceDt,
+            [SCHEDULED_CATEGORY_FILTER]: (doc) => !!doc.nextAppearanceDt,
           },
         }
       );
@@ -116,11 +142,11 @@ describe('categoryFilterUtils', () => {
       const item = { category: 'Transcript', nextAppearanceDt: '' };
       const result = matchesCategorySelection(
         item,
-        ['Transcript', 'Scheduled'],
+        ['transcript', SCHEDULED_CATEGORY_FILTER],
         (doc) => doc.category,
         {
           specialPredicates: {
-            scheduled: (doc) => !!doc.nextAppearanceDt,
+            [SCHEDULED_CATEGORY_FILTER]: (doc) => !!doc.nextAppearanceDt,
           },
         }
       );

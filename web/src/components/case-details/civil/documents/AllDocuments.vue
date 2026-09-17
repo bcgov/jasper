@@ -29,9 +29,10 @@
     v-if="documents?.length"
     :model-value="selectedItems"
     @update:model-value="handleSelectedItemsChange"
-    :headers="baseHeaders"
+    :headers="headers"
     :items="documents"
-    :sortBy
+    v-model:sort-by="activeSort"
+    :must-sort="!!pinToBottom"
     return-object
     item-value="civilDocumentId"
     show-select
@@ -82,6 +83,7 @@
   import { Anchor, LookupCode } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { mdiNotebookOutline } from '@mdi/js';
+  import { computed, ref, watch } from 'vue';
 
   const props = defineProps<{
     selectedItems: civilDocumentType[];
@@ -95,6 +97,7 @@
     hasActiveFilters?: boolean;
     sectionTitle?: string;
     sortBy?: { key: string; order: 'asc' | 'desc' }[];
+    pinToBottom?: (document: civilDocumentType) => boolean;
     openIndividualDocument: (data: civilDocumentType) => void;
   }>();
   const emit =
@@ -105,6 +108,54 @@
   const handleSelectedItemsChange = (newItems) => {
     emit('update:selectedItems', [...newItems]);
   };
+
+  const activeSort = ref([...(props.sortBy ?? [])]);
+
+  watch(
+    () => props.sortBy,
+    (sortBy) => {
+      activeSort.value = [...(sortBy ?? [])];
+    },
+    { deep: true }
+  );
+
+  const compareValues = (valueA: unknown, valueB: unknown): number =>
+    String(valueA ?? '').localeCompare(String(valueB ?? ''), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+
+  const headers = computed<DataTableHeader[]>(() =>
+    props.baseHeaders.map((header) => {
+      if (header.sortable === false || !props.pinToBottom) {
+        return header;
+      }
+
+      const baseComparator = header.sortRaw;
+      return {
+        ...header,
+        sortRaw: (
+          documentA: civilDocumentType,
+          documentB: civilDocumentType
+        ) => {
+          const isPinnedA = props.pinToBottom?.(documentA) ?? false;
+          const isPinnedB = props.pinToBottom?.(documentB) ?? false;
+
+          if (isPinnedA !== isPinnedB) {
+            const displayedOrder = isPinnedA ? 1 : -1;
+            const sortOrder = activeSort.value.find(
+              (sort) => sort.key === header.key
+            )?.order;
+            return sortOrder === 'desc' ? -displayedOrder : displayedOrder;
+          }
+
+          return baseComparator
+            ? baseComparator(documentA, documentB)
+            : compareValues(documentA[header.key], documentB[header.key]);
+        },
+      };
+    })
+  );
 
   const getAllDocumentsMenuItems = (item: civilDocumentType) => {
     return [

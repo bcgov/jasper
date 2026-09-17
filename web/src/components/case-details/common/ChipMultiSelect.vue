@@ -33,13 +33,13 @@
       <v-list-item
         v-bind="itemProps"
         density="compact"
-        :title="getItemTitle(item.raw)"
+        :title="getItemTitle(item)"
       >
         <template #prepend>
           <v-checkbox-btn
-            :model-value="isSelected(item.raw.value)"
+            :model-value="isSelected(getItemValue(item))"
             hide-details
-            @click.stop="toggleValue(item.raw.value)"
+            @click.stop="toggleValue(getItemValue(item))"
           />
         </template>
       </v-list-item>
@@ -49,9 +49,9 @@
         v-bind="chipProps"
         closable
         size="small"
-        @click:close.stop="removeValue(item.raw.value)"
+        @click:close.stop="removeValue(getItemValue(item))"
       >
-        {{ item.raw.title }}
+        <span class="chip-label">{{ getItemTitle(item, false) }}</span>
       </v-chip>
     </template>
   </v-select>
@@ -64,6 +64,10 @@
     title: string;
     value: string;
     count?: number;
+  };
+
+  type SelectSlotItem = Partial<SelectOption> & {
+    raw?: SelectOption;
   };
 
   const props = withDefaults(
@@ -86,7 +90,8 @@
 
   const isAllSelected = computed<boolean>(() => {
     return (
-      props.items.length > 0 && props.modelValue.length === props.items.length
+      props.items.length > 0 &&
+      props.items.every((item) => props.modelValue.includes(item.value))
     );
   });
 
@@ -102,12 +107,25 @@
     return props.selectAllLabel;
   };
 
-  const getItemTitle = (item: SelectOption): string => {
-    if (typeof item.count === 'number') {
-      return `${item.title} (${item.count})`;
+  const getItemValue = (item?: SelectSlotItem): string =>
+    item?.raw?.value ?? item?.value ?? '';
+
+  const getItemOption = (item?: SelectSlotItem): SelectOption | undefined => {
+    const value = getItemValue(item);
+    return item?.raw ?? props.items.find((option) => option.value === value);
+  };
+
+  const getItemTitle = (item?: SelectSlotItem, includeCount = true): string => {
+    const option = getItemOption(item);
+    if (!option) {
+      return '';
     }
 
-    return item.title;
+    if (includeCount && typeof option.count === 'number') {
+      return `${option.title} (${option.count})`;
+    }
+
+    return option.title;
   };
 
   const toggleSelectAll = () => {
@@ -148,5 +166,9 @@
     border: 0;
     border-top: 1px solid var(--border-gray-300);
     margin: 4px 0;
+  }
+
+  .chip-label {
+    margin-right: 4px;
   }
 </style>

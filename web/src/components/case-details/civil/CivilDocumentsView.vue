@@ -20,6 +20,7 @@
         v-model="selectedCategories"
         :items="documentCategories"
         :select-all-count="uniqueDocuments.length"
+        placeholder="All documents"
       />
     </v-col>
   </v-row>
@@ -36,6 +37,7 @@
     :hasActiveFilters="activeCategories.length > 0"
     :sectionTitle="allDocumentsSectionTitle"
     :sortBy
+    :pinToBottom="isCourtSummary"
     @update:selectedItems="(val) => (selectedItems = val)"
   />
 
@@ -112,13 +114,17 @@
   } from '@/types/shared';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
-    DEFAULT_OTHER_LABEL,
     getActiveSelections,
     pruneInvalidSelections,
     getSectionTitle,
     getUncategorizedCount,
     isAllOptionsSelected,
     matchesCategorySelection,
+    normalizeCategory,
+    OTHER_CATEGORY_LABEL,
+    SCHEDULED_CATEGORY_FILTER,
+    UNCATEGORIZED_CATEGORY_FILTER,
+    UNCATEGORIZED_CATEGORY_LABEL,
   } from '@/utils/categoryFilterUtils';
   import {
     mdiFileDocumentMultipleOutline,
@@ -148,7 +154,6 @@
   const CSR_CATEGORY_DESC = 'Court Summary';
   const AFF_FIN_STMT = 'Affidavits/Financial Stmts';
   const LITIGANT = 'Litigant';
-  const OTHER_CATEGORY = DEFAULT_OTHER_LABEL;
 
   const selectedItems = ref<civilDocumentType[]>([]);
   const selectedBinderItems = ref<civilDocumentType[]>([]);
@@ -181,7 +186,7 @@
   const isAllSelected = computed<boolean>(() =>
     isAllOptionsSelected(
       selectedCategories.value,
-      documentCategories.value.length
+      documentCategories.value.map((category) => category.value)
     )
   );
   const activeCategories = computed<string[]>(() =>
@@ -191,49 +196,16 @@
     getSectionTitle(activeCategories.value, getCategoryDisplayTitle)
   );
 
-  const compareDatesDescending = (dateA: string, dateB: string): number => {
-    const timestampA = new Date(dateA).getTime();
-    const timestampB = new Date(dateB).getTime();
-    const hasDateA = !Number.isNaN(timestampA);
-    const hasDateB = !Number.isNaN(timestampB);
+  const isCourtSummary = (document: civilDocumentType): boolean =>
+    normalizeCategory(document.category) === normalizeCategory(CSR_CATEGORY);
 
-    if (hasDateA !== hasDateB) {
-      return hasDateA ? -1 : 1;
-    }
-
-    return hasDateA ? timestampB - timestampA : 0;
-  };
-
-  const compareDefaultDocumentOrder = (
-    documentA: civilDocumentType,
-    documentB: civilDocumentType
-  ): number => {
-    const isCourtSummaryA =
-      documentA.category?.trim().toUpperCase() === CSR_CATEGORY;
-    const isCourtSummaryB =
-      documentB.category?.trim().toUpperCase() === CSR_CATEGORY;
-
-    if (isCourtSummaryA !== isCourtSummaryB) {
-      return isCourtSummaryA ? 1 : -1;
-    }
-
-    if (isCourtSummaryA && isCourtSummaryB) {
-      return compareDatesDescending(documentA.filedDt, documentB.filedDt);
-    }
-
-    const isScheduledA = !!documentA.nextAppearanceDt;
-    const isScheduledB = !!documentB.nextAppearanceDt;
-
-    if (isScheduledA !== isScheduledB) {
-      return isScheduledA ? -1 : 1;
-    }
-
-    return isScheduledA && isScheduledB
-      ? compareDatesDescending(
-          documentA.nextAppearanceDt,
-          documentB.nextAppearanceDt
-        )
-      : 0;
+  const compareDates = (dateA: string, dateB: string): number => {
+    const timeA = new Date(dateA).getTime();
+    const timeB = new Date(dateB).getTime();
+    return (
+      (Number.isNaN(timeA) ? Number.NEGATIVE_INFINITY : timeA) -
+      (Number.isNaN(timeB) ? Number.NEGATIVE_INFINITY : timeB)
+    );
   };
 
   const sortBy = computed<{ key: string; order: 'desc' | 'asc' }[]>(() => [
@@ -242,23 +214,25 @@
   ]);
 
   const headers = computed<DataTableHeader[]>(() => {
-    const baseHeaders = shared.getBaseCivilDocumentTableHeaders();
-    const dateScheduledHeader = shared
-      .getBaseCivilDocumentTableHeaders(true)
-      .find((header) => header.key === 'nextAppearanceDt');
-    const dateFiledIndex = baseHeaders.findIndex(
-      (header) => header.key === 'filedDt'
-    );
-
-    if (dateScheduledHeader && dateFiledIndex >= 0) {
-      baseHeaders.splice(dateFiledIndex + 1, 0, {
-        ...dateScheduledHeader,
-        // Vuetify reverses arguments for descending sorts. Reverse them here
-        // so the comparator describes the order users see in the table.
-        sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-          compareDefaultDocumentOrder(b, a),
-      });
-    }
+    const baseHeaders = shared
+      .getBaseCivilDocumentTableHeaders()
+      .map((header) =>
+        header.key === 'nextAppearanceDt'
+          ? {
+              ...header,
+              sortRaw: (
+                documentA: civilDocumentType,
+                documentB: civilDocumentType
+              ) =>
+                isCourtSummary(documentA) && isCourtSummary(documentB)
+                  ? compareDates(documentA.filedDt, documentB.filedDt)
+                  : compareDates(
+                      documentA.nextAppearanceDt,
+                      documentB.nextAppearanceDt
+                    ),
+            }
+          : header
+      );
 
     return [
       ...baseHeaders,
@@ -324,39 +298,34 @@
     return binderDocument;
   };
 
-  const getCategoryDisplayTitle = (category: string): string => {
+  const getBackendCategoryDisplayTitle = (category: string): string => {
     const categoryMap: Record<string, string> = {
-      Affidavits: AFF_FIN_STMT,
-      CSR: CSR_CATEGORY_DESC,
-      LITIGANT: LITIGANT,
+      affidavits: AFF_FIN_STMT,
+      csr: CSR_CATEGORY_DESC,
+      litigant: LITIGANT,
+      other: OTHER_CATEGORY_LABEL,
     };
-    return categoryMap[category] || category;
+    return categoryMap[normalizeCategory(category)] || category.trim();
   };
+
+  const getCategoryDisplayTitle = (category: string): string =>
+    documentCategories.value.find((option) => option.value === category)
+      ?.title ?? category;
 
   const getUncategorizedDocumentCount = (): number =>
     getUncategorizedCount(uniqueDocuments.value, (doc) => doc.category);
 
   const categoryCount = (category: string): number => {
-    if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
+    if (category === SCHEDULED_CATEGORY_FILTER) {
       return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
     }
 
-    if (
-      category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase() ||
-      category.toLowerCase() === CSR_CATEGORY.toLowerCase()
-    ) {
-      return uniqueDocuments.value.filter(
-        (doc) =>
-          doc.category?.trim().toLowerCase() === CSR_CATEGORY.toLowerCase()
-      ).length;
-    }
-
-    if (category.toLowerCase() === OTHER_CATEGORY.toLowerCase()) {
+    if (category === UNCATEGORIZED_CATEGORY_FILTER) {
       return getUncategorizedDocumentCount();
     }
 
     return uniqueDocuments.value.filter(
-      (doc) => doc.category?.trim().toLowerCase() === category.toLowerCase()
+      (doc) => normalizeCategory(doc.category) === category
     ).length;
   };
 
@@ -364,36 +333,38 @@
     { title: string; value: string; count: number }[]
   >(() => {
     const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+    const categoriesByIdentity = new Map<string, string>();
+
+    uniqueDocuments.value.forEach((document) => {
+      const identity = normalizeCategory(document.category);
+      if (identity && !categoriesByIdentity.has(identity)) {
+        categoriesByIdentity.set(identity, document.category.trim());
+      }
+    });
 
     return (
       scheduledDocuments.value.length > 0
         ? [
             {
               title: SCHEDULED_CATEGORY,
-              value: SCHEDULED_CATEGORY,
-              count: categoryCount(SCHEDULED_CATEGORY),
+              value: SCHEDULED_CATEGORY_FILTER,
+              count: categoryCount(SCHEDULED_CATEGORY_FILTER),
             },
           ]
         : []
     ).concat(
-      [
-        ...new Set(
-          uniqueDocuments.value
-            .filter((d) => d.category)
-            .map((doc) => doc.category)
-        ),
-      ]
-        .map((category) => ({
-          title: getCategoryDisplayTitle(category),
-          value: category,
-          count: categoryCount(category),
+      [...categoriesByIdentity]
+        .map(([value, title]) => ({
+          title: getBackendCategoryDisplayTitle(title),
+          value,
+          count: categoryCount(value),
         }))
         .concat(
           uncategorizedDocumentCount > 0
             ? [
                 {
-                  title: OTHER_CATEGORY,
-                  value: OTHER_CATEGORY,
+                  title: UNCATEGORIZED_CATEGORY_LABEL,
+                  value: UNCATEGORIZED_CATEGORY_FILTER,
                   count: uncategorizedDocumentCount,
                 },
               ]
@@ -423,9 +394,9 @@
       activeCategories.value,
       (doc) => doc.category,
       {
-        otherLabel: OTHER_CATEGORY,
+        uncategorizedValue: UNCATEGORIZED_CATEGORY_FILTER,
         specialPredicates: {
-          [SCHEDULED_CATEGORY.toLowerCase()]: (doc) => !!doc.nextAppearanceDt,
+          [SCHEDULED_CATEGORY_FILTER]: (doc) => !!doc.nextAppearanceDt,
         },
       }
     );

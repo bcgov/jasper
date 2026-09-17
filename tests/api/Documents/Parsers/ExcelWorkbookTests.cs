@@ -195,6 +195,7 @@ public class ExcelWorkbookTests
     [Fact]
     public void GetSheet_Does_Not_Map_Property_Name_When_Attribute_Overrides_It()
     {
+        // The property is "Name" but the attribute says "Location Name" - a header of "Name" must not match.
         using var stream = BuildWorkbook(COURT_LOCATIONS_SHEET, true, ["Name"], ["Victoria Law Courts"]);
         using var wb = new ExcelWorkbook(stream);
 

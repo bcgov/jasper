@@ -38,8 +38,12 @@ public class SyncCourtLocationsJob(
     {
         try
         {
-            using var attachmentStream = await GetCourtLocationAttachment()
-                ?? throw new InvalidOperationException("Unable to retrieve court location attachment from email.");
+            using var attachmentStream = await GetCourtLocationAttachment();
+            if (attachmentStream == null)
+            {
+                this.Logger.LogInformation("No updated court location attachment found.");
+                return;
+            }
 
             var courtLocations = await this.GetCourtLocations(attachmentStream);
 

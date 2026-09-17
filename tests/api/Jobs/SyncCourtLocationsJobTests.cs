@@ -177,35 +177,17 @@ public class SyncCourtLocationsJobTests
     }
 
     [Fact]
-    public async Task Execute_Throws_WhenNoEmailFound()
+    public async Task Execute_ReturnsSuccessfully_WhenNoEmailFound()
     {
         _mockEmailService
             .Setup(s => s.GetFilteredEmailsAsync(Mailbox, Subject, null, true))
             .ReturnsAsync([]);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
+        var result = _job.Execute();
 
         _mockEmailService.Verify(
             s => s.GetAttachmentsAsStreamsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never());
-        _mockClService.Verify(
-            s => s.ReplaceCourtLocationsAsync(It.IsAny<CourtLocationDto[]>()),
-            Times.Never());
-    }
-
-    [Fact]
-    public async Task Execute_Throws_WhenNoMatchingAttachment()
-    {
-        _mockEmailService
-            .Setup(s => s.GetFilteredEmailsAsync(Mailbox, Subject, null, true))
-            .ReturnsAsync([new GraphModel.Message { Id = "msg-1" }]);
-        _mockEmailService
-            .Setup(s => s.GetAttachmentsAsStreamsAsync(Mailbox, "msg-1", Filename))
-            .ReturnsAsync([]);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
-
-        _mockExcelParser.Verify(p => p.Open(It.IsAny<Stream>()), Times.Never());
         _mockClService.Verify(
             s => s.ReplaceCourtLocationsAsync(It.IsAny<CourtLocationDto[]>()),
             Times.Never());

@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using Amazon;
 using Amazon.Lambda;
 using Azure.Identity;
@@ -26,8 +28,6 @@ using Microsoft.Graph;
 using MongoDB.Driver;
 using nClam;
 using PostgreSQL.ListenNotify.DependencyInjection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Documents.Parsers;
@@ -456,6 +456,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IBinderService, BinderService>();
                 services.AddScoped<IGroupService, GroupService>();
                 services.AddScoped<IRoleService, RoleService>();
+                services.AddScoped<ICourtLocationService, CourtLocationService>();
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IOrderService, OrderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();

@@ -8,6 +8,7 @@ public static class CollectionNameConstants
     public const string BINDERS = "binders";
     public const string CASES = "cases";
     public const string CONSTANTS = "constants";
+    public const string COURT_LOCATIONS = "court_locations";
     public const string DOCUMENT_CATEGORIES = "document_categories";
     public const string EMAIL_TEMPLATES = "email_templates";
     public const string GROUPS = "groups";

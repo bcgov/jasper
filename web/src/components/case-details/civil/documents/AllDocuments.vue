@@ -132,14 +132,8 @@
       sensitivity: 'base',
     });
 
-  const headers = computed<DataTableHeader[]>(() => [
-    {
-      key: 'data-table-select',
-      width: '4rem',
-      maxWidth: '4rem',
-      sortable: false,
-    },
-    ...props.baseHeaders.map((header) => {
+  const headers = computed<DataTableHeader[]>(() =>
+    props.baseHeaders.map((header) => {
       if (header.sortable === false || !props.pinToBottom) {
         return header;
       }
@@ -167,8 +161,8 @@
             : compareValues(documentA[header.key], documentB[header.key]);
         },
       };
-    }),
-  ]);
+    })
+  );
 
   const getAllDocumentsMenuItems = (item: civilDocumentType) => {
     return [

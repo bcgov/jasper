@@ -31,6 +31,22 @@ describe('AllDocuments.vue', () => {
     expect(mainEl.exists()).toBe(false);
   });
 
+  it('renders header when filters are active even if there are no documents', () => {
+    const wrapper = mount(AllDocuments, {
+      props: {
+        ...mockProps,
+        documents: [],
+        hasActiveFilters: true,
+      },
+    });
+
+    const mainEl = wrapper.find('[data-testid="all-documents-container"]');
+    const header = wrapper.find('.text-headline-small');
+
+    expect(mainEl.exists()).toBe(true);
+    expect(header.text()).toContain('All Documents (0)');
+  });
+
   it('renders All Documents', () => {
     const mockDocuments = [{} as civilDocumentType, {} as civilDocumentType];
     mockProps.documents = mockDocuments;
@@ -65,43 +81,26 @@ describe('AllDocuments.vue', () => {
     expect(tableEl.exists()).toBe(true);
   });
 
-  it('displays "All Documents" when no category is selected', () => {
+  it('displays sectionTitle when provided', () => {
     mockProps.documents = [{} as civilDocumentType];
     mockProps.binderDocumentIds = [];
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: undefined,
+        sectionTitle: 'Orders',
       },
     });
 
     const header = wrapper.find('.text-headline-small');
-    expect(header.text()).toContain('All Documents (1)');
-  });
-
-  it('displays category display title when category is selected', () => {
-    mockProps.documents = [{} as civilDocumentType];
-    const getCategoryDisplayTitle = vi.fn().mockReturnValue('Orders');
-    const wrapper = mount(AllDocuments, {
-      props: {
-        ...mockProps,
-        selectedCategory: 'ORDER',
-        getCategoryDisplayTitle,
-      },
-    });
-
-    const header = wrapper.find('.text-headline-small');
-    expect(getCategoryDisplayTitle).toHaveBeenCalledWith('ORDER');
     expect(header.text()).toContain('Orders (1)');
   });
 
-  it('displays "All Documents" when category is selected but getCategoryDisplayTitle is not provided', () => {
+  it('displays "All Documents" when sectionTitle is not provided', () => {
     mockProps.documents = [{} as civilDocumentType];
     const wrapper = mount(AllDocuments, {
       props: {
         ...mockProps,
-        selectedCategory: 'ORDER',
-        getCategoryDisplayTitle: undefined,
+        sectionTitle: undefined,
       },
     });
 
@@ -109,65 +108,41 @@ describe('AllDocuments.vue', () => {
     expect(header.text()).toContain('All Documents (1)');
   });
 
-  it('displays scheduled date when selectedCategory is "Scheduled" and nextAppearanceDt exists', () => {
-    const mockDocument = {
-      civilDocumentId: '1',
-      documentTypeDescription: 'Test Document',
-      imageId: 'img-123',
-      nextAppearanceDt: '2026-01-15',
-    } as civilDocumentType;
-    
-    mockProps.documents = [mockDocument];
-    const wrapper = mount(AllDocuments, {
-      props: {
-        ...mockProps,
-        selectedCategory: 'Scheduled',
-      },
-    });
+  it.each(['asc', 'desc'] as const)(
+    'keeps pinned documents last when sorting %s',
+    (order) => {
+      const regularDocument = {
+        civilDocumentId: 'regular',
+        category: 'ROP',
+        documentTypeDescription: 'A document',
+      } as civilDocumentType;
+      const courtSummary = {
+        civilDocumentId: 'summary',
+        category: 'CSR',
+        documentTypeDescription: 'Z document',
+      } as civilDocumentType;
+      const wrapper = mount(AllDocuments, {
+        props: {
+          ...mockProps,
+          documents: [regularDocument, courtSummary],
+          baseHeaders: [
+            { title: 'DOCUMENT TYPE', key: 'documentTypeDescription' },
+          ],
+          sortBy: [{ key: 'documentTypeDescription', order }],
+          pinToBottom: (document) => document.category === 'CSR',
+        },
+      });
 
-    const documentCell = wrapper.find('[data-testid="all-documents-container"]');
-    expect(documentCell.exists()).toBe(true);
-    // The scheduled date should be formatted and displayed
-    const tableEl = wrapper.find('v-data-table-virtual');
-    expect(tableEl.exists()).toBe(true);
-  });
+      expect(wrapper.find('v-data-table-virtual').attributes('must-sort')).toBe(
+        'true'
+      );
+      const comparator = wrapper.vm.headers[0].sortRaw;
+      const comparison =
+        order === 'desc'
+          ? comparator(courtSummary, regularDocument)
+          : comparator(regularDocument, courtSummary);
 
-  it('does not display scheduled date when selectedCategory is not "Scheduled"', () => {
-    const mockDocument = {
-      civilDocumentId: '1',
-      documentTypeDescription: 'Test Document',
-      imageId: 'img-123',
-      nextAppearanceDt: '2026-01-15',
-    } as civilDocumentType;
-    
-    mockProps.documents = [mockDocument];
-    const wrapper = mount(AllDocuments, {
-      props: {
-        ...mockProps,
-        selectedCategory: 'ORDER',
-      },
-    });
-
-    const tableEl = wrapper.find('v-data-table-virtual');
-    expect(tableEl.exists()).toBe(true);
-  });
-
-  it('does not display scheduled date when nextAppearanceDt is not present', () => {
-    const mockDocument = {
-      civilDocumentId: '1',
-      documentTypeDescription: 'Test Document',
-      imageId: 'img-123',
-    } as civilDocumentType;
-    
-    mockProps.documents = [mockDocument];
-    const wrapper = mount(AllDocuments, {
-      props: {
-        ...mockProps,
-        selectedCategory: 'Scheduled',
-      },
-    });
-
-    const tableEl = wrapper.find('v-data-table-virtual');
-    expect(tableEl.exists()).toBe(true);
-  });
+      expect(comparison).toBeLessThan(0);
+    }
+  );
 });

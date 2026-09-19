@@ -614,51 +614,67 @@ export default {
     return newWindow;
   },
 
-  getBaseCivilDocumentTableHeaders(
-    isScheduledCategory = false
-  ): DataTableHeader[] {
+  getBaseCivilDocumentTableHeaders(): DataTableHeader[] {
     return [
       {
         title: 'SEQ',
         key: 'fileSeqNo',
+        minWidth: '2rem',
         width: '4rem',
         maxWidth: '4rem',
       },
       {
         title: 'DOCUMENT TYPE',
         key: 'documentTypeDescription',
+        width: '8rem',
+        minWidth: '8rem',
+        maxWidth: '8rem',
       },
       {
         title: 'ACT',
         key: 'activity',
+        width: '6rem',
+        minWidth: '4rem',
       },
-      isScheduledCategory
-        ? {
-            title: 'DATE SCHEDULED',
-            key: 'nextAppearanceDt',
-            width: '8.5rem',
-            maxWidth: '8.5rem',
-            value: (item: civilDocumentType) =>
-              formatDateToDDMMMYYYY(item.nextAppearanceDt),
-            sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-              new Date(a.nextAppearanceDt).getTime() -
-              new Date(b.nextAppearanceDt).getTime(),
-          }
-        : {
-            title: 'DATE FILED',
-            key: 'filedDt',
-            width: '8.5rem',
-            maxWidth: '8.5rem',
-            value: (item: civilDocumentType) =>
-              formatDateToDDMMMYYYY(item.filedDt),
-            sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
-              new Date(a.filedDt).getTime() - new Date(b.filedDt).getTime(),
-          },
+      {
+        title: 'DATE FILED',
+        key: 'filedDt',
+        width: '6rem',
+        minWidth: '5rem',
+        maxWidth: '6rem',
+        value: (item: civilDocumentType) => formatDateToDDMMMYYYY(item.filedDt),
+        sortRaw: (a: civilDocumentType, b: civilDocumentType) => {
+          const timeA = new Date(a.filedDt).getTime();
+          const timeB = new Date(b.filedDt).getTime();
+          return (
+            (Number.isNaN(timeA) ? Number.NEGATIVE_INFINITY : timeA) -
+            (Number.isNaN(timeB) ? Number.NEGATIVE_INFINITY : timeB)
+          );
+        },
+      },
+      {
+        title: 'DATE SCHEDULED',
+        key: 'nextAppearanceDt',
+        width: '6rem',
+        minWidth: '5rem',
+        maxWidth: '6rem',
+        value: (item: civilDocumentType) =>
+          formatDateToDDMMMYYYY(item.nextAppearanceDt),
+        sortRaw: (a: civilDocumentType, b: civilDocumentType) => {
+          const timeA = new Date(a.nextAppearanceDt).getTime();
+          const timeB = new Date(b.nextAppearanceDt).getTime();
+          return (
+            (Number.isNaN(timeA) ? Number.NEGATIVE_INFINITY : timeA) -
+            (Number.isNaN(timeB) ? Number.NEGATIVE_INFINITY : timeB)
+          );
+        },
+      },
       {
         title: 'ORDER MADE',
         key: 'orderMadeDt',
-        width: '9.5rem',
-        maxWidth: '9.5rem',
+        width: '6rem',
+        minWidth: '5rem',
+        maxWidth: '6rem',
         value: (item: civilDocumentType) =>
           formatDateToDDMMMYYYY(item.orderMadeDt),
         sortRaw: (a: civilDocumentType, b: civilDocumentType) =>
@@ -667,10 +683,14 @@ export default {
       {
         title: 'FILED / SWORN BY',
         key: 'filedBy',
+        width: '7rem',
+        maxWidth: '7rem',
       },
       {
         title: 'ISSUES',
         key: 'issue',
+        width: '7rem',
+        maxWidth: '7rem',
       },
     ];
   },

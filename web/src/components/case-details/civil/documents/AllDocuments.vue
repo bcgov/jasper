@@ -39,15 +39,19 @@
     class="my-3"
     height="800"
   >
+    <template v-slot:[`header.nextAppearanceDt`]>
+      <span class="scheduled-date-header">DATE SCHEDULED</span>
+    </template>
     <template v-slot:[`item.documentTypeDescription`]="{ item }">
       <a
         v-if="item.imageId"
+        class="document-type"
         href="javascript:void(0)"
         @click="openIndividualDocument(item)"
       >
         {{ item.documentTypeDescription }}
       </a>
-      <span v-else>
+      <span v-else class="document-type">
         {{ item.documentTypeDescription }}
       </span>
     </template>
@@ -73,7 +77,10 @@
       />
     </template>
     <template v-slot:[`item.binderMenu`]="{ item }">
-      <EllipsesMenu :menuItems="getAllDocumentsMenuItems(item)" />
+      <EllipsesMenu
+        density="compact"
+        :menuItems="getAllDocumentsMenuItems(item)"
+      />
     </template>
   </v-data-table-virtual>
 </template>
@@ -125,8 +132,14 @@
       sensitivity: 'base',
     });
 
-  const headers = computed<DataTableHeader[]>(() =>
-    props.baseHeaders.map((header) => {
+  const headers = computed<DataTableHeader[]>(() => [
+    {
+      key: 'data-table-select',
+      width: '4rem',
+      maxWidth: '4rem',
+      sortable: false,
+    },
+    ...props.baseHeaders.map((header) => {
       if (header.sortable === false || !props.pinToBottom) {
         return header;
       }
@@ -154,8 +167,8 @@
             : compareValues(documentA[header.key], documentB[header.key]);
         },
       };
-    })
-  );
+    }),
+  ]);
 
   const getAllDocumentsMenuItems = (item: civilDocumentType) => {
     return [
@@ -169,3 +182,14 @@
     ];
   };
 </script>
+<style scoped>
+  .document-type {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .scheduled-date-header {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+</style>

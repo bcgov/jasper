@@ -241,6 +241,8 @@
         key: 'binderMenu',
         align: 'end' as const,
         sortable: false,
+        width: '4rem',
+        maxWidth: '4rem',
       },
     ];
   });

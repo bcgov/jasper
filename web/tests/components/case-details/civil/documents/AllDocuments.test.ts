@@ -136,7 +136,9 @@ describe('AllDocuments.vue', () => {
       expect(wrapper.find('v-data-table-virtual').attributes('must-sort')).toBe(
         'true'
       );
-      const comparator = wrapper.vm.headers[0].sortRaw;
+      const comparator = wrapper.vm.headers.find(
+        (header) => header.key === 'documentTypeDescription'
+      ).sortRaw;
       const comparison =
         order === 'desc'
           ? comparator(courtSummary, regularDocument)

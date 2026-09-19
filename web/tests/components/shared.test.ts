@@ -366,6 +366,7 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[0]).toEqual({
         title: 'SEQ',
         key: 'fileSeqNo',
+        minWidth: '2rem',
         width: '4rem',
         maxWidth: '4rem',
       });
@@ -376,6 +377,9 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[1]).toEqual({
         title: 'DOCUMENT TYPE',
         key: 'documentTypeDescription',
+        width: '8rem',
+        minWidth: '8rem',
+        maxWidth: '8rem',
       });
     });
 
@@ -384,6 +388,8 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[2]).toEqual({
         title: 'ACT',
         key: 'activity',
+        width: '6rem',
+        minWidth: '4rem',
       });
     });
 
@@ -392,8 +398,9 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       const dateHeader = headers[3];
       expect(dateHeader.title).toBe('DATE FILED');
       expect(dateHeader.key).toBe('filedDt');
-      expect(dateHeader.width).toBe('8.5rem');
-      expect(dateHeader.maxWidth).toBe('8.5rem');
+      expect(dateHeader.width).toBe('6rem');
+      expect(dateHeader.minWidth).toBe('5rem');
+      expect(dateHeader.maxWidth).toBe('6rem');
     });
 
     it('should have value formatter for DATE FILED header', () => {
@@ -429,8 +436,9 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       const orderMadeHeader = headers[5];
       expect(orderMadeHeader.title).toBe('ORDER MADE');
       expect(orderMadeHeader.key).toBe('orderMadeDt');
-      expect(orderMadeHeader.width).toBe('9.5rem');
-      expect(orderMadeHeader.maxWidth).toBe('9.5rem');
+      expect(orderMadeHeader.width).toBe('6rem');
+      expect(orderMadeHeader.minWidth).toBe('5rem');
+      expect(orderMadeHeader.maxWidth).toBe('6rem');
       expect(orderMadeHeader.value).toBeDefined();
       expect(orderMadeHeader.sortRaw).toBeDefined();
     });
@@ -451,6 +459,8 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[6]).toEqual({
         title: 'FILED / SWORN BY',
         key: 'filedBy',
+        width: '7rem',
+        maxWidth: '7rem',
       });
     });
 
@@ -459,6 +469,8 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[7]).toEqual({
         title: 'ISSUES',
         key: 'issue',
+        width: '7rem',
+        maxWidth: '7rem',
       });
     });
   });
@@ -469,8 +481,9 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       const dateHeader = headers[4];
       expect(dateHeader.title).toBe('DATE SCHEDULED');
       expect(dateHeader.key).toBe('nextAppearanceDt');
-      expect(dateHeader.width).toBe('8.5rem');
-      expect(dateHeader.maxWidth).toBe('8.5rem');
+      expect(dateHeader.width).toBe('6rem');
+      expect(dateHeader.minWidth).toBe('5rem');
+      expect(dateHeader.maxWidth).toBe('6rem');
     });
 
     it('should have value formatter for DATE SCHEDULED header', () => {

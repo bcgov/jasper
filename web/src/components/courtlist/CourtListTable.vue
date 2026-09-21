@@ -8,6 +8,7 @@
     :search="search"
     :group-by
     :return-object="true"
+    show-expand
     show-select
     items-per-page="100"
     class="pb-5"

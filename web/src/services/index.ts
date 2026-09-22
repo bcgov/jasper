@@ -1,9 +1,11 @@
+import { notificationsService } from '@/signalr/notifications';
 import { App } from 'vue';
 import { ApplicationService } from './ApplicationService';
 import { AuthService } from './AuthService';
 import { BinderService } from './BinderService';
 import { CaseService } from './CaseService';
 import { CourtListService } from './CourtListService';
+import { CourtLocationService } from './CourtLocationService';
 import { DarsService } from './DarsService';
 import { DashboardService } from './DashboardService';
 import { FilesService } from './FilesService';
@@ -16,7 +18,6 @@ import { QuickLinkService } from './QuickLinkService';
 import { TimebankService } from './TimebankService';
 import { TransitoryDocumentsService } from './TransitoryDocumentsService';
 import { UserService } from './UserService';
-import { notificationsService } from '@/signalr/notifications';
 
 export function registerRouter(app: App) {
   const httpService = new HttpService(import.meta.env.BASE_URL);
@@ -34,6 +35,7 @@ export function registerRouter(app: App) {
   const darsService = new DarsService(httpService);
   const quickLinkService = new QuickLinkService(httpService);
   const orderService = new OrderService(httpService);
+  const courtLocationService = new CourtLocationService(httpService);
   const judgeService = new JudgeService(httpService);
   const transitoryDocumentsService = new TransitoryDocumentsService(
     httpService
@@ -57,6 +59,7 @@ export function registerRouter(app: App) {
   app.provide('orderService', orderService);
   app.provide('judgeService', judgeService);
   app.provide('notificationsService', notificationsService);
+  app.provide('courtLocationService', courtLocationService);
 
   return {
     orderService,
@@ -68,6 +71,7 @@ export * from './AuthService';
 export * from './BinderService';
 export * from './CaseService';
 export * from './CourtListService';
+export * from './CourtLocationService';
 export * from './DarsService';
 export * from './DashboardService';
 export * from './FilesService';
@@ -80,3 +84,4 @@ export * from './RedirectHandlerService';
 export * from './TimebankService';
 export * from './TransitoryDocumentsService';
 export * from './UserService';
+

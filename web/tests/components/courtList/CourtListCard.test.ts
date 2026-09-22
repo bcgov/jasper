@@ -1,4 +1,5 @@
 import { useCommonStore } from '@/stores';
+import { UserInfo } from '@/types/common';
 import { CourtListCardInfo } from '@/types/courtlist';
 import { mount } from '@vue/test-utils';
 import CourtListCard from 'CMP/courtlist/CourtListCard.vue';
@@ -36,7 +37,7 @@ const setUserPermissions = (permissions: string[] = []) => {
     judgeHomeLocationId: 0,
     email: '',
     userTitle: '',
-  });
+  } as unknown as UserInfo);
   return commonStore;
 };
 
@@ -91,7 +92,11 @@ describe('CourtListCard.vue', () => {
       ]);
       await nextTick();
 
-      expect(wrapper.findAll('a')[1].attributes('href')).toBe('link');
+      expect(
+        wrapper
+          .findComponent({ name: 'CourtLocationInfoDialog' })
+          .props('locationUrl')
+      ).toBe('link');
     }
   );
 

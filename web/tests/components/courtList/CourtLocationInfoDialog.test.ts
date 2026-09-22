@@ -17,7 +17,7 @@ describe('CourtLocationInfoDialog.vue', () => {
     path: '',
     address1: '271 Main Street',
     address2: '',
-    city: 'Ahousaht, BC',
+    city: 'Ahousaht',
     isStaffed: false,
     iarSchedule: 'Thursday at 9 am',
     fxdSchedule: 'Wednesdays at 9:30 am',
@@ -89,10 +89,23 @@ describe('CourtLocationInfoDialog.vue', () => {
     ).toHaveBeenCalledWith('4801');
     expect(wrapper.text()).toContain('Ahousaht');
     expect(wrapper.text()).toContain('271 Main Street');
+    expect(wrapper.text()).toContain('Ahousaht, BC');
     expect(wrapper.text()).toContain('Judicial Case Manager');
     expect(wrapper.text()).toContain('JCM Schedule');
     expect(wrapper.text()).toContain('Thursday at 9 am');
     expect(wrapper.text()).toContain('Wednesdays at 9:30 am');
+  });
+
+  it('shows a fallback when no JCM schedule is available', async () => {
+    mockCourtLocationService.getCourtLocationByCode.mockResolvedValue({
+      ...mockLocation,
+      iarSchedule: '',
+      fxdSchedule: '',
+    });
+    const wrapper = mountDialog();
+    await openDialog(wrapper);
+
+    expect(wrapper.text()).toContain('JCM Schedule Not Available');
   });
 
   it('renders phone, email and location links', async () => {
@@ -141,6 +154,20 @@ describe('CourtLocationInfoDialog.vue', () => {
     expect(hrefs).toContain('tel:1-888-770-4770');
     expect(hrefs).toContain('tel:250-720-2650');
     expect(wrapper.text()).toContain('Port Alberni Youth Probation');
+  });
+
+  it('shows a fallback when no probation office information is available', async () => {
+    mockCourtLocationService.getCourtLocationByCode.mockResolvedValue({
+      ...mockLocation,
+      adultProbationOffice: undefined,
+      youthProbationOffice: undefined,
+    });
+    const wrapper = mountDialog();
+    await openDialog(wrapper);
+
+    expect(wrapper.text()).toContain(
+      'No probation office information for this location'
+    );
   });
 
   it('shows a fallback message when no details are returned', async () => {

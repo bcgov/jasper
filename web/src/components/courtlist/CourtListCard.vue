@@ -48,23 +48,32 @@
         </v-col>
         <v-col>
           <h5>
-            <a :href="infoAddress" target="_blank">
+            <button
+              type="button"
+              class="link-button text-decoration-underline cursor-pointer"
+              @click="showLocationDialog = true"
+            >
               See more about this location
-              <v-icon :icon="mdiOpenInNew" size="x-small" />
-            </a>
+            </button>
           </h5>
         </v-col>
       </v-row>
     </v-card-text>
+
+    <CourtLocationInfoDialog
+      v-model="showLocationDialog"
+      :agencyIdCode="matchedLocation?.agencyIdentifierCd"
+      :locationUrl="matchedLocation?.infoLink"
+    />
   </v-card>
 </template>
 
 <script setup lang="ts">
+  import CourtLocationInfoDialog from '@/components/courtlist/CourtLocationInfoDialog.vue';
   import { PERMISSIONS } from '@/constants/permissions';
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
-  import { mdiOpenInNew } from '@mdi/js';
-  import { computed, PropType } from 'vue';
+  import { computed, PropType, ref } from 'vue';
   import { useRouter } from 'vue-router';
 
   const props = defineProps({
@@ -102,13 +111,24 @@
     window.open(route.href, '_blank', 'noopener');
   };
 
-  const infoAddress = computed<string>(() => {
-    // Try to get the location from the store using the id since it is the most reliable.
-    // Failing that, try to get the location from the name
-    return commonStore.courtRoomsAndLocations.filter(
+  const showLocationDialog = ref(false);
+
+  const matchedLocation = computed(() => {
+    // Match on id first since it is the most reliable, then fall back to name.
+    return commonStore.courtRoomsAndLocations.find(
       (location) =>
         location.locationId === props.cardInfo.courtListLocationID.toString() ||
         location.name === props.cardInfo.courtListLocation
-    )[0]?.infoLink;
+    );
   });
 </script>
+
+<style scoped>
+  .link-button {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+  }
+</style>

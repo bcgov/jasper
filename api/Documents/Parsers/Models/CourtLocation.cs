@@ -8,6 +8,7 @@ public class CourtLocation
     [ExcelColumn("Location Path")] public string Path { get; set; }
     [ExcelColumn("Court Address 1")] public string Address1 { get; set; }
     [ExcelColumn("Court Address 2")] public string Address2 { get; set; }
+    [ExcelColumn("City")] public string City { get; set; }
     [ExcelColumn("Location Staffed")] public string Staffed { get; set; }
     [ExcelColumn("JCM Phone 1")] public string JcmPhone1 { get; set; }
     [ExcelColumn("JCM Phone 1 Notes")] public string JcmPhone1Notes { get; set; }

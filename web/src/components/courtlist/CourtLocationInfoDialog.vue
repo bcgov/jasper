@@ -53,7 +53,7 @@
             <p v-if="location.address2">
               {{ location.address2 }}
             </p>
-            <p v-if="location.city">{{ location.city }}</p>
+            <p v-if="location.city">{{ location.city }}, BC</p>
           </div>
           <v-divider class="border-opacity-100 my-2" />
           <div class="mb-2">
@@ -68,7 +68,7 @@
                 <a class="inherit-color" :href="`tel:${p.phone}`">{{
                   p.phone
                 }}</a>
-                <p v-if="p.notes" class="text-caption text-medium-emphasis">
+                <p v-if="p.notes" class="text-body-medium text-medium-emphasis">
                   {{ p.notes }}
                 </p>
               </div>
@@ -83,15 +83,15 @@
                 <a :href="`mailto:${e.email}`" class="inherit-color">{{
                   e.email
                 }}</a>
-                <p v-if="e.notes" class="text-caption text-medium-emphasis">
+                <p v-if="e.notes" class="text-body-medium text-medium-emphasis">
                   {{ e.notes }}
                 </p>
               </div>
             </div>
           </div>
 
-          <template v-if="location.iarSchedule || location.fxdSchedule">
-            <div class="mb-2">
+          <div class="mb-2">
+            <div v-if="location.iarSchedule || location.fxdSchedule">
               <h5 class="font-weight-bold">JCM Schedule</h5>
               <div v-if="location.iarSchedule">
                 <p class="font-weight-bold">IAR</p>
@@ -102,22 +102,26 @@
                 <p class="schedule-value">{{ location.fxdSchedule }}</p>
               </div>
             </div>
-          </template>
-
-          <template
-            v-if="
-              location.adultProbationOffice || location.youthProbationOffice
-            "
-          >
-            <v-divider class="border-opacity-100 my-2" />
-            <div class="mb-2">
+            <div v-else>
+              <h5 class="font-weight-bold">JCM Schedule Not Available</h5>
+            </div>
+          </div>
+          <v-divider class="border-opacity-100 my-2" />
+          <div class="mb-2">
+            <div
+              v-if="
+                location.adultProbationOffice || location.youthProbationOffice
+              "
+            >
               <h5 class="font-weight-bold">Nearest probation offices</h5>
 
               <div v-if="location.adultProbationOffice" class="mb-1">
                 <span class="font-weight-bold">
                   {{ location.adultProbationOffice.name }}
                 </span>
-                <p v-if="adultProbationAddress">{{ adultProbationAddress }}</p>
+                <p v-if="adultProbationAddress">
+                  {{ adultProbationAddress }}, BC
+                </p>
                 <p
                   v-for="(p, i) in location.adultProbationOffice.phones"
                   :key="`adult-phone-${i}`"
@@ -126,7 +130,9 @@
                   <a class="inherit-color" :href="`tel:${p.phone}`">{{
                     p.phone
                   }}</a>
-                  <span v-if="p.notes" class="text-caption text-medium-emphasis"
+                  <span
+                    v-if="p.notes"
+                    class="text-body-medium text-medium-emphasis"
                     >({{ p.notes }})</span
                   >
                 </p>
@@ -145,7 +151,9 @@
                 <span class="font-weight-bold">
                   {{ location.youthProbationOffice.name }}
                 </span>
-                <p v-if="youthProbationAddress">{{ youthProbationAddress }}</p>
+                <p v-if="youthProbationAddress">
+                  {{ youthProbationAddress }}, BC
+                </p>
                 <p v-if="location.youthProbationOffice.phone">
                   <v-icon :icon="mdiPhone" size="x-small" class="mr-1" />
                   <a
@@ -161,7 +169,12 @@
                 </p>
               </div>
             </div>
-          </template>
+            <div v-else>
+              <h5 class="font-weight-bold">
+                No probation office information for this location
+              </h5>
+            </div>
+          </div>
         </v-card-text>
       </template>
 

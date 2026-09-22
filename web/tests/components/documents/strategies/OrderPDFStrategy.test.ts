@@ -415,7 +415,7 @@ describe('OrderPDFStrategy', () => {
     expect(mockOrderService.getOrder).toHaveBeenCalledWith('123', 11);
   });
   describe('getRequiredApprovalAnnotations', () => {
-    it('returns Signature and Initials when the user has both', () => {
+    it('returns only Signature when the user has both', () => {
       mockCommonStore.userInfo = {
         judgeId: 11,
         hasSignature: true,
@@ -424,10 +424,7 @@ describe('OrderPDFStrategy', () => {
 
       const strategy = new OrderPDFStrategy();
 
-      expect(strategy.getRequiredApprovalAnnotations()).toEqual([
-        'Signature',
-        'Initials',
-      ]);
+      expect(strategy.getRequiredApprovalAnnotations()).toEqual(['Signature']);
     });
 
     it('returns only Signature when the user has a signature but no initials', () => {
@@ -442,7 +439,7 @@ describe('OrderPDFStrategy', () => {
       expect(strategy.getRequiredApprovalAnnotations()).toEqual(['Signature']);
     });
 
-    it('returns only Initials when the user has initials but no signature', () => {
+    it('returns undefined when user has initials only', () => {
       mockCommonStore.userInfo = {
         judgeId: 11,
         hasSignature: false,
@@ -450,8 +447,9 @@ describe('OrderPDFStrategy', () => {
       };
 
       const strategy = new OrderPDFStrategy();
+      const annotations = strategy.getRequiredApprovalAnnotations();
 
-      expect(strategy.getRequiredApprovalAnnotations()).toEqual(['Initials']);
+      expect(annotations).toBeUndefined();
     });
 
     it('returns undefined when the user has neither a signature nor initials', () => {

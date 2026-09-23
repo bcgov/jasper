@@ -28,6 +28,7 @@ public class SyncCourtLocationsJob(
     private const string COURT_LOCATIONS_SHEET = "Court Locations";
     private const string ADULT_PROBATION_OFFICES_SHEET = "Adult Probation Offices";
     private const string YOUTH_PROBATION_OFFICES_SHEET = "Youth Probation Offices";
+    private const string SENDER_EMAIL_PATTERN = "*@provincialcourt.bc.ca";
 
     private readonly IEmailService _emailService = emailService;
     private readonly IExcelParser _excelParser = excelParser;

@@ -161,10 +161,9 @@
       }
 
       instance.setViewState((viewState) =>
-        viewState.set(
-          'sidebarMode',
-          nutrientViewer.SidebarMode.DOCUMENT_OUTLINE
-        )
+        viewState
+          .set('sidebarMode', nutrientViewer.SidebarMode.DOCUMENT_OUTLINE)
+          .set('keepSelectedTool', true)
       );
 
       addCustomToolbarItems(rawData);

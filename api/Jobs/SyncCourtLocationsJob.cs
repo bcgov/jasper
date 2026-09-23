@@ -21,16 +21,19 @@ public class SyncCourtLocationsJob(
     ILogger<SyncCourtLocationsJob> logger,
     IEmailService emailService,
     IExcelParser excelParser,
-    ICourtLocationService clService)
+    ICourtLocationService clService,
+    IAntiVirusService antiVirusService)
     : RecurringJobBase<SyncCourtLocationsJob>(configuration, cache, mapper, logger)
 {
     private const string COURT_LOCATIONS_SHEET = "Court Locations";
     private const string ADULT_PROBATION_OFFICES_SHEET = "Adult Probation Offices";
     private const string YOUTH_PROBATION_OFFICES_SHEET = "Youth Probation Offices";
+    private const string SENDER_EMAIL_PATTERN = "*@provincialcourt.bc.ca";
 
     private readonly IEmailService _emailService = emailService;
     private readonly IExcelParser _excelParser = excelParser;
     private readonly ICourtLocationService _clService = clService;
+    private readonly IAntiVirusService _antiVirusService = antiVirusService;
 
     public override string JobName => nameof(SyncCourtLocationsJob);
 
@@ -45,7 +48,13 @@ public class SyncCourtLocationsJob(
                 return;
             }
 
-            var courtLocations = await this.GetCourtLocations(attachmentStream);
+            var (isClean, message) = await _antiVirusService.ScanAsync(attachmentStream);
+            if (!isClean)
+            {
+                throw new InvalidOperationException($"Attachment failed virus scan: {message}");
+            }
+
+            var courtLocations = this.GetCourtLocations(attachmentStream);
 
             var result = await _clService.ReplaceCourtLocationsAsync(courtLocations);
             if (!result.Succeeded)
@@ -68,8 +77,7 @@ public class SyncCourtLocationsJob(
         var subject = this.Configuration.GetNonEmptyValue("COURT_LOCATIONS:SUBJECT");
         var filename = this.Configuration.GetNonEmptyValue("COURT_LOCATIONS:ATTACHMENT_NAME");
 
-        var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, null, hasAttachment: true);
-
+        var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, SENDER_EMAIL_PATTERN, true);
 
         if (!messages.Any())
         {
@@ -85,10 +93,10 @@ public class SyncCourtLocationsJob(
         }
 
         this.Logger.LogInformation("Court Location Attachment found.");
-        return attachments.First().Value;
+        return attachments.First(a => a.Key == filename).Value;
     }
 
-    private async Task<CourtLocationDto[]> GetCourtLocations(MemoryStream stream)
+    private CourtLocationDto[] GetCourtLocations(MemoryStream stream)
     {
         using var parser = _excelParser.Open(stream);
         var parsedCourtLocations = parser.GetSheet<CourtLocation>(COURT_LOCATIONS_SHEET);

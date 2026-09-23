@@ -38,6 +38,7 @@ public class SyncCourtLocationsJobTests
     private readonly Mock<IExcelWorkbook> _mockWorkbook;
     private readonly Mock<ICourtLocationService> _mockClService;
     private readonly Mock<ILogger<SyncCourtLocationsJob>> _mockLogger;
+    private readonly Mock<IAntiVirusService> _mockAvService;
     private readonly SyncCourtLocationsJob _job;
 
     public SyncCourtLocationsJobTests()
@@ -48,6 +49,7 @@ public class SyncCourtLocationsJobTests
         _mockWorkbook = new Mock<IExcelWorkbook>();
         _mockClService = new Mock<ICourtLocationService>();
         _mockLogger = new Mock<ILogger<SyncCourtLocationsJob>>();
+        _mockAvService = new Mock<IAntiVirusService>();
 
         var cache = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
@@ -67,7 +69,8 @@ public class SyncCourtLocationsJobTests
             _mockLogger.Object,
             _mockEmailService.Object,
             _mockExcelParser.Object,
-            _mockClService.Object);
+            _mockClService.Object,
+            _mockAvService.Object);
     }
 
     private void SetupConfig()
@@ -87,7 +90,7 @@ public class SyncCourtLocationsJobTests
     private void SetupValidEmailWithAttachment()
     {
         _mockEmailService
-            .Setup(s => s.GetFilteredEmailsAsync(Mailbox, Subject, null, true))
+            .Setup(s => s.GetFilteredEmailsAsync(Mailbox, Subject, It.IsAny<string>(), true))
             .ReturnsAsync([new GraphModel.Message { Id = "msg-1" }]);
 
         _mockEmailService
@@ -109,6 +112,13 @@ public class SyncCourtLocationsJobTests
             .Returns(adultOffices);
         _mockWorkbook.Setup(w => w.GetSheet<ParserModel.YouthProbationOffice>(YouthProbationOfficesSheet))
             .Returns(youthOffices);
+    }
+
+    private void SetupAntiVirusScanPass()
+    {
+        _mockAvService
+            .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
+            .ReturnsAsync((true, null));
     }
 
     private static List<ParserModel.CourtLocation> DefaultCourtLocations() =>
@@ -140,6 +150,7 @@ public class SyncCourtLocationsJobTests
     {
         SetupValidEmailWithAttachment();
         SetupWorkbookSheets(DefaultCourtLocations(), DefaultAdultOffices(), DefaultYouthOffices());
+        SetupAntiVirusScanPass();
         _mockClService
             .Setup(s => s.ReplaceCourtLocationsAsync(It.IsAny<CourtLocationDto[]>()))
             .ReturnsAsync(OperationResult.Success());
@@ -157,6 +168,7 @@ public class SyncCourtLocationsJobTests
     {
         SetupValidEmailWithAttachment();
         SetupWorkbookSheets(DefaultCourtLocations(), DefaultAdultOffices(), DefaultYouthOffices());
+        SetupAntiVirusScanPass();
 
         CourtLocationDto[] captured = null;
         _mockClService
@@ -183,7 +195,7 @@ public class SyncCourtLocationsJobTests
             .Setup(s => s.GetFilteredEmailsAsync(Mailbox, Subject, null, true))
             .ReturnsAsync([]);
 
-        var result = _job.Execute();
+        await _job.Execute();
 
         _mockEmailService.Verify(
             s => s.GetAttachmentsAsStreamsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -194,10 +206,27 @@ public class SyncCourtLocationsJobTests
     }
 
     [Fact]
+    public async Task Execute_Throws_WhenAttachmentIsNotClean()
+    {
+        SetupValidEmailWithAttachment();
+        SetupWorkbookSheets(DefaultCourtLocations(), [], DefaultYouthOffices());
+        _mockAvService
+            .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
+            .ReturnsAsync((false, "Infected"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
+
+        _mockClService.Verify(
+            s => s.ReplaceCourtLocationsAsync(It.IsAny<CourtLocationDto[]>()),
+            Times.Never());
+    }
+
+    [Fact]
     public async Task Execute_Throws_WhenASheetIsEmpty()
     {
         SetupValidEmailWithAttachment();
         SetupWorkbookSheets(DefaultCourtLocations(), [], DefaultYouthOffices());
+        SetupAntiVirusScanPass();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
 

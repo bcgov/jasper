@@ -71,7 +71,8 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
         {
             var pattern = new Regex(
                 "^" + Regex.Escape(fromEmail).Replace("\\*", ".*") + "$",
-                RegexOptions.IgnoreCase);
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromMilliseconds(100));
 
             messages = [.. messages
                 .Where(m => m.From?.EmailAddress?.Address is string address && pattern.IsMatch(address))];

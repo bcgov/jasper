@@ -39,7 +39,10 @@ describe('FileViewer.vue', () => {
   const mockInstance = {
     getDocumentOutline: vi.fn(),
     setDocumentOutline: vi.fn(),
-    setViewState: vi.fn((callback) => callback({ set: vi.fn() })),
+    setViewState: vi.fn((callback) => {
+      const viewState = { set: vi.fn(() => viewState) };
+      return callback(viewState);
+    }),
     setToolbarItems: vi.fn((callback) => {
       toolbarItems = callback([]);
       return toolbarItems;

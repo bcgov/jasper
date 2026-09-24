@@ -6,6 +6,7 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using Scv.Core.Infrastructure;
+using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.CourtLocation;
@@ -15,6 +16,7 @@ namespace Scv.Api.Services;
 public interface ICourtLocationService : ICrudService<CourtLocationDto>
 {
     Task<OperationResult<CourtLocationDto>> GetCourtLocationByCodeAsync(string code);
+    Task<OperationResult> ReplaceCourtLocationsAsync(CourtLocationDto[] dtos);
 }
 
 public class CourtLocationService(
@@ -68,4 +70,19 @@ public class CourtLocationService(
         }
     }
 
+    public async Task<OperationResult> ReplaceCourtLocationsAsync(CourtLocationDto[] dtos)
+    {
+        try
+        {
+            var entities = this.Mapper.Map<CourtLocation[]>(dtos);
+            await this.Repo.ReplaceAllAsync(CollectionNameConstants.COURT_LOCATIONS, entities);
+            this.InvalidateCache(this.CacheName);
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "An error occurred while replacing all court locations.");
+            return OperationResult.Failure(ex.Message);
+        }
+    }
 }

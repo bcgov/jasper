@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
@@ -45,7 +46,9 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
             orderByCriteria.Add("subject");
         }
 
-        if (!string.IsNullOrWhiteSpace(fromEmail))
+        // Graph does not support endsWith reliably on from/emailAddress/address.
+        var isPattern = !string.IsNullOrWhiteSpace(fromEmail) && fromEmail.Contains('*');
+        if (!string.IsNullOrWhiteSpace(fromEmail) && !isPattern)
         {
             filterCriteria.Add($"from/emailAddress/address eq '{fromEmail.Replace("'", "''")}'");
             orderByCriteria.Add("from/emailAddress/address");
@@ -59,10 +62,23 @@ public class EmailService(GraphServiceClient graphServiceClient) : IEmailService
                 config.QueryParameters.Filter = string.Join(" and ", filterCriteria);
                 config.QueryParameters.Select = ["id", "subject", "from", "receivedDateTime", "hasAttachments"];
                 config.QueryParameters.Orderby = [.. orderByCriteria];
-                config.QueryParameters.Top = 10;
+                config.QueryParameters.Top = isPattern ? 50 : 10;
             });
 
-        return response.Value;
+        var messages = response.Value ?? [];
+
+        if (isPattern)
+        {
+            var pattern = new Regex(
+                "^" + Regex.Escape(fromEmail).Replace("\\*", ".*") + "$",
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromMilliseconds(100));
+
+            messages = [.. messages
+                .Where(m => m.From?.EmailAddress?.Address is string address && pattern.IsMatch(address))];
+        }
+
+        return messages;
     }
 
     public async Task<Dictionary<string, MemoryStream>> GetAttachmentsAsStreamsAsync(

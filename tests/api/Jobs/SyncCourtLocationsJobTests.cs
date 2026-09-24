@@ -27,6 +27,7 @@ public class SyncCourtLocationsJobTests
     private const string Mailbox = "service@example.com";
     private const string Subject = "Court Locations";
     private const string Filename = "court-locations.xlsx";
+    private const string SupportAccount = "example@support.com";
 
     private const string CourtLocationsSheet = "Court Locations";
     private const string AdultProbationOfficesSheet = "Adult Probation Offices";
@@ -78,6 +79,7 @@ public class SyncCourtLocationsJobTests
         SetupConfigValue("AZURE:SERVICE_ACCOUNT", Mailbox);
         SetupConfigValue("COURT_LOCATIONS:SUBJECT", Subject);
         SetupConfigValue("COURT_LOCATIONS:ATTACHMENT_NAME", Filename);
+        SetupConfigValue("SUPPORT_ACCOUNT", SupportAccount);
     }
 
     private void SetupConfigValue(string key, string value)

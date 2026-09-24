@@ -28,7 +28,6 @@ public class SyncCourtLocationsJob(
     private const string COURT_LOCATIONS_SHEET = "Court Locations";
     private const string ADULT_PROBATION_OFFICES_SHEET = "Adult Probation Offices";
     private const string YOUTH_PROBATION_OFFICES_SHEET = "Youth Probation Offices";
-    private const string SENDER_EMAIL_PATTERN = "*@provincialcourt.bc.ca";
 
     private readonly IEmailService _emailService = emailService;
     private readonly IExcelParser _excelParser = excelParser;
@@ -76,8 +75,9 @@ public class SyncCourtLocationsJob(
         var mailbox = this.Configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
         var subject = this.Configuration.GetNonEmptyValue("COURT_LOCATIONS:SUBJECT");
         var filename = this.Configuration.GetNonEmptyValue("COURT_LOCATIONS:ATTACHMENT_NAME");
+        var sender = Configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
 
-        var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, SENDER_EMAIL_PATTERN, true);
+        var messages = await _emailService.GetFilteredEmailsAsync(mailbox, subject, sender, true);
 
         if (!messages.Any())
         {

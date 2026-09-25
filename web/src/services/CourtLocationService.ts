@@ -11,7 +11,9 @@ export class CourtLocationService extends ServiceBase {
 
   getCourtLocationByCode(code: string): Promise<CourtLocation> {
     return this.httpService.get<CourtLocation>(
-      `${this.baseUrl}?code=${encodeURIComponent(code)}`
+      `${this.baseUrl}?code=${encodeURIComponent(code)}`,
+      {},
+      { skipErrorHandler: true }
     );
   }
 }

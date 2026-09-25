@@ -1,5 +1,5 @@
 import { useCommonStore } from '@/stores';
-import { UserInfo } from '@/types/common';
+import { ApplicationInfo, UserInfo } from '@/types/common';
 import { CourtListCardInfo } from '@/types/courtlist';
 import { mount } from '@vue/test-utils';
 import CourtListCard from 'CMP/courtlist/CourtListCard.vue';
@@ -41,8 +41,23 @@ const setUserPermissions = (permissions: string[] = []) => {
   return commonStore;
 };
 
-const createWrapper = (permissions: string[] = []) => {
+const createWrapper = (
+  permissions: string[] = [],
+  options: {
+    useCourtLocations?: boolean;
+    openLocationInfo?: (opts: {
+      locationId?: string;
+      locationName?: string;
+    }) => void;
+  } = {}
+) => {
   setUserPermissions(permissions);
+  if (options.useCourtLocations !== undefined) {
+    const commonStore = useCommonStore();
+    commonStore.appInfo = {
+      useCourtLocations: options.useCourtLocations,
+    } as ApplicationInfo;
+  }
   const card: CourtListCardInfo = {
     courtListLocation: 'Court A',
     courtListLocationID: 1,
@@ -65,6 +80,11 @@ const createWrapper = (permissions: string[] = []) => {
     props: {
       cardInfo: card,
       date: '2024-10-11',
+    },
+    global: {
+      provide: {
+        openLocationInfo: options.openLocationInfo,
+      },
     },
   });
 };
@@ -92,11 +112,9 @@ describe('CourtListCard.vue', () => {
       ]);
       await nextTick();
 
-      expect(
-        wrapper
-          .findComponent({ name: 'CourtLocationInfoDialog' })
-          .props('locationUrl')
-      ).toBe('link');
+      expect(wrapper.find('a[target="_blank"]').attributes('href')).toBe(
+        'link'
+      );
     }
   );
 
@@ -132,6 +150,65 @@ describe('CourtListCard.vue', () => {
       '/transitory-documents',
       '_blank',
       'noopener'
+    );
+  });
+
+  it('renders the info link with "See more" text when useCourtLocations is disabled', async () => {
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
+      useCourtLocations: false,
+    });
+    const commonStore = useCommonStore();
+    commonStore.updateCourtRoomsAndLocations([
+      { locationId: '1', name: 'Court A', infoLink: 'link' },
+    ]);
+    await nextTick();
+
+    const link = wrapper.find('a[target="_blank"]');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes('href')).toBe('link');
+    expect(link.text()).toContain('See more about this location');
+    expect(wrapper.find('button.link-button').exists()).toBe(false);
+  });
+
+  it('renders the location info button when useCourtLocations is enabled', () => {
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
+      useCourtLocations: true,
+      openLocationInfo: vi.fn(),
+    });
+
+    const button = wrapper.find('button.link-button');
+    expect(button.exists()).toBe(true);
+    expect(button.text()).toContain('See more about this location');
+    expect(wrapper.find('a[target="_blank"]').exists()).toBe(false);
+  });
+
+  it('calls openLocationInfo with location details when the info button is clicked', async () => {
+    const openLocationInfo = vi.fn();
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
+      useCourtLocations: true,
+      openLocationInfo,
+    });
+
+    await wrapper.find('button.link-button').trigger('click');
+
+    expect(openLocationInfo).toHaveBeenCalledWith({
+      locationId: '1',
+      locationName: 'Court A',
+    });
+  });
+
+  it('matches the location by name when the id does not match', async () => {
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
+      useCourtLocations: false,
+    });
+    const commonStore = useCommonStore();
+    commonStore.updateCourtRoomsAndLocations([
+      { locationId: '99', name: 'Court A', infoLink: 'name-match-link' },
+    ]);
+    await nextTick();
+
+    expect(wrapper.find('a[target="_blank"]').attributes('href')).toBe(
+      'name-match-link'
     );
   });
 });

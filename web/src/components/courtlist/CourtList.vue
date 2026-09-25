@@ -56,6 +56,11 @@
         v-model:showDialog="showDialog"
         :on-generate="onGenerateClick"
       />
+      <CourtLocationInfoDialog
+        v-model="showLocationDialog"
+        :agencyIdCode="locationDialogAgencyId"
+        :locationUrl="locationDialogUrl"
+      />
     </v-skeleton-loader>
     <div
       v-if="
@@ -70,6 +75,7 @@
 <script setup lang="ts">
   import shared from '@/components/shared';
   import { CourtListService } from '@/services';
+  import { useCommonStore } from '@/stores';
   import { ApiResponse } from '@/types/ApiResponse';
   import { DivisionEnum } from '@/types/common';
   import {
@@ -80,8 +86,8 @@
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
-    formatDateInstanceToYYYYMMDD,
     formatDateInstanceToDDMMMYYYY,
+    formatDateInstanceToYYYYMMDD,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
   import { parseQueryStringToString } from '@/utils/utils';
@@ -91,6 +97,7 @@
   import CourtListSearch from './CourtListSearch.vue';
   import CourtListTable from './CourtListTable.vue';
   import CourtListTableSearch from './CourtListTableSearch.vue';
+  import CourtLocationInfoDialog from './CourtLocationInfoDialog.vue';
 
   const route = useRoute();
   const router = useRouter();
@@ -253,6 +260,27 @@
   provide('menuClicked', () => {
     showDialog.value = true;
   });
+
+  const commonStore = useCommonStore();
+  const showLocationDialog = ref(false);
+  const locationDialogAgencyId = ref<string>();
+  const locationDialogUrl = ref<string>();
+
+  const openLocationInfo = (opts: {
+    locationId?: string;
+    locationName?: string;
+  }) => {
+    // Match on id first since it is the most reliable, then fall back to name.
+    const match = commonStore.courtRoomsAndLocations.find(
+      (location) =>
+        (opts.locationId && location.locationId === opts.locationId) ||
+        (opts.locationName && location.name === opts.locationName)
+    );
+    locationDialogAgencyId.value = match?.agencyIdentifierCd;
+    locationDialogUrl.value = match?.infoLink;
+    showLocationDialog.value = true;
+  };
+  provide('openLocationInfo', openLocationInfo);
 
   const onGenerateClick = (reportType: 'Daily' | 'Additions') => {
     documentUrls.value = [];

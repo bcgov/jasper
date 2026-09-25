@@ -5,6 +5,12 @@ variable "environment" {
   type        = string
 }
 
+variable "create_documentdb" {
+  description = "Whether to create the DocumentDB cluster and its instances"
+  type        = bool
+  default     = true
+}
+
 variable "data_subnets_ids" {
   description = "List of subnet IDs for the DocDB subnet group"
   type        = list(string)

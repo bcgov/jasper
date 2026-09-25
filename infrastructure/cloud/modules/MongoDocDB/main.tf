@@ -1,6 +1,7 @@
 
 
 resource "aws_docdb_cluster_parameter_group" "mongo_params" {
+  count  = var.create_documentdb ? 1 : 0
   family = "docdb5.0"
   name   = "${var.app_name}-mongo-param-val-${var.environment}"
 
@@ -12,19 +13,21 @@ resource "aws_docdb_cluster_parameter_group" "mongo_params" {
 
 
 resource "aws_docdb_subnet_group" "mongo_grp" {
+  count      = var.create_documentdb ? 1 : 0
   name       = "${var.app_name}-mongo-subnet-group-${var.environment}"
   subnet_ids = var.data_subnets_ids
 }
 
 
 resource "aws_docdb_cluster" "mongo_cluster" {
+  count                           = var.create_documentdb ? 1 : 0
   skip_final_snapshot             = true
-  db_subnet_group_name            = aws_docdb_subnet_group.mongo_grp.name
+  db_subnet_group_name            = aws_docdb_subnet_group.mongo_grp[0].name
   cluster_identifier              = "${var.app_name}-mongo-app-cluster-${var.environment}"
   engine                          = "docdb"
   master_username                 = var.mongousername
   manage_master_user_password     = true
-  db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.mongo_params.name
+  db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.mongo_params[0].name
   storage_encrypted               = true
   kms_key_id                      = var.kms_key_id
   vpc_security_group_ids          = [var.app_sg_id]
@@ -38,8 +41,8 @@ resource "aws_docdb_cluster" "mongo_cluster" {
 
 
 resource "aws_docdb_cluster_instance" "mongo_instance" {
-  count              = var.mongo_node_count
+  count              = var.create_documentdb ? var.mongo_node_count : 0
   identifier         = "${var.app_name}-mongo-instance-${var.environment}"
-  cluster_identifier = aws_docdb_cluster.mongo_cluster.id
+  cluster_identifier = aws_docdb_cluster.mongo_cluster[0].id
   instance_class     = var.mongo_instance_type
 }

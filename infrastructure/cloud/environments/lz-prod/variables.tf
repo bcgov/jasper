@@ -86,6 +86,12 @@ variable "delete_protection_enabled" {
   default     = true
 }
 
+variable "create_documentdb" {
+  description = "Whether to create the DocumentDB cluster and its instances"
+  type        = bool
+  default     = true
+}
+
 variable "mongo_node_count" {
   description = "Number of instances in the DocDB cluster"
   type        = number

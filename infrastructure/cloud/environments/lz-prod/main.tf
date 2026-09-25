@@ -68,6 +68,7 @@ module "rds" {
 module "mongodb" {
   source                    = "../../modules/MongoDocDB"
   environment               = var.environment
+  create_documentdb         = var.create_documentdb
   data_subnets_ids          = module.subnets.data_subnets_ids
   kms_key_id                = module.initial.kms_key_arn
   app_sg_id                 = data.aws_security_group.app_sg.id
@@ -336,7 +337,7 @@ module "ecs_api_td" {
         value = tostring(var.use_mongo_tls_pem)
       },
     ],
-    # ClamAV connection settings - Only injected when the sidecar is enabled
+    # ClamAV connection settings - only injected when the sidecar is enabled
     var.clamav_config != null ? [
       {
         name  = "CLAM_AV__HOST"

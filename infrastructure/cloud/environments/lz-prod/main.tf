@@ -335,6 +335,10 @@ module "ecs_api_td" {
         name  = "MONGODB_USE_TLS_PEM"
         value = tostring(var.use_mongo_tls_pem)
       },
+      {
+        name  = "USE_COURT_LOCATIONS"
+        value = tostring(var.use_court_locations)
+      }
     ],
     # ClamAV connection settings - Only injected when the sidecar is enabled
     var.clamav_config != null ? [

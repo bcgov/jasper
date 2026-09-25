@@ -199,3 +199,9 @@ variable "use_mongo_tls_pem" {
   type        = bool
   default     = false
 }
+
+variable "use_court_locations" {
+  description = "If true, court locations will be used in the application. If false, users will be redirected to the courts website."
+  type        = bool
+  default     = false
+}

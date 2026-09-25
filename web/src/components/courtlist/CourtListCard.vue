@@ -49,31 +49,35 @@
         <v-col>
           <h5>
             <button
+              v-if="commonStore.appInfo?.useCourtLocations"
               type="button"
               class="link-button text-decoration-underline cursor-pointer"
-              @click="showLocationDialog = true"
+              @click="
+                openLocationInfo?.({
+                  locationId: cardInfo.courtListLocationID.toString(),
+                  locationName: cardInfo.courtListLocation,
+                })
+              "
             >
-              See more about this location
+              {{ seeMoreText }}
             </button>
+            <a :href="matchedLocation?.infoLink" target="_blank" v-else>
+              {{ seeMoreText }}
+              <v-icon :icon="mdiOpenInNew" size="x-small" />
+            </a>
           </h5>
         </v-col>
       </v-row>
     </v-card-text>
-
-    <CourtLocationInfoDialog
-      v-model="showLocationDialog"
-      :agencyIdCode="matchedLocation?.agencyIdentifierCd"
-      :locationUrl="matchedLocation?.infoLink"
-    />
   </v-card>
 </template>
 
 <script setup lang="ts">
-  import CourtLocationInfoDialog from '@/components/courtlist/CourtLocationInfoDialog.vue';
   import { PERMISSIONS } from '@/constants/permissions';
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
-  import { computed, PropType, ref } from 'vue';
+  import { mdiOpenInNew } from '@mdi/js';
+  import { computed, inject, PropType } from 'vue';
   import { useRouter } from 'vue-router';
 
   const props = defineProps({
@@ -87,8 +91,15 @@
     },
   });
 
+  const seeMoreText = 'See more about this location';
+
   const commonStore = useCommonStore();
   const router = useRouter();
+
+  const openLocationInfo =
+    inject<(opts: { locationId?: string; locationName?: string }) => void>(
+      'openLocationInfo'
+    );
 
   const canViewSharedFolder = computed(
     () =>
@@ -110,8 +121,6 @@
 
     window.open(route.href, '_blank', 'noopener');
   };
-
-  const showLocationDialog = ref(false);
 
   const matchedLocation = computed(() => {
     // Match on id first since it is the most reliable, then fall back to name.

@@ -74,6 +74,7 @@ export interface ApplicationInfo {
   nutrientFeLicenseKey: string;
   environment: string;
   configuration: ApplicationConfiguration[];
+  useCourtLocations: boolean;
 }
 
 export interface ApplicationConfiguration {

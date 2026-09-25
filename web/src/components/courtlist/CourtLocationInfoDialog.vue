@@ -5,9 +5,12 @@
         <v-progress-circular indeterminate />
       </div>
 
-      <v-alert v-else-if="error" type="error" variant="tonal">
-        {{ error }}
-      </v-alert>
+      <div v-else-if="error">
+        <v-card-title> Court Location </v-card-title>
+        <v-card-text>
+          {{ error }}
+        </v-card-text>
+      </div>
 
       <template v-else-if="location">
         <v-card-title class="d-flex align-center px-0">
@@ -243,7 +246,8 @@
           props.agencyIdCode
         )) ?? null;
     } catch {
-      error.value = 'Unable to load location details.';
+      error.value =
+        'Unable to load location details. Please contact the System Administrator.';
     } finally {
       loading.value = false;
     }

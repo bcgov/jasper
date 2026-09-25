@@ -86,7 +86,23 @@
       </template>
 
       <template v-if="item.homeLocationNm">
+        <span
+          v-if="commonStore.appInfo?.useCourtLocations"
+          class="cursor-pointer"
+          @click="
+            openLocationInfo?.({
+              locationId: item.homeLocationId?.toString(),
+              locationName: item.homeLocationNm,
+            })
+          "
+        >
+          <TooltipIcon
+            :text="'Court file home location: ' + item.homeLocationNm"
+            :icon="mdiHomeOutline"
+          />
+        </span>
         <TooltipIcon
+          v-else
           :text="'Court file home location: ' + item.homeLocationNm"
           :icon="mdiHomeOutline"
         />
@@ -170,7 +186,7 @@
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
-  import { useCourtFileSearchStore } from '@/stores';
+  import { useCommonStore, useCourtFileSearchStore } from '@/stores';
   import {
     CourtClassEnum,
     CourtLevelEnum,
@@ -192,7 +208,12 @@
     mdiNotebookOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed, inject, ref } from 'vue';
+
+  const openLocationInfo =
+    inject<(opts: { locationId?: string; locationName?: string }) => void>(
+      'openLocationInfo'
+    );
 
   const selected = ref<CourtListAppearance[]>([]);
   const sortBy = ref([
@@ -204,6 +225,7 @@
       order: 'asc',
     },
   ] as const);
+  const commonStore = useCommonStore();
 
   const props = defineProps<{
     data: CourtListAppearance[];

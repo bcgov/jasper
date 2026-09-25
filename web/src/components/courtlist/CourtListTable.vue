@@ -86,21 +86,18 @@
       </template>
 
       <template v-if="item.homeLocationNm">
-        <span
+        <v-btn
           v-if="commonStore.appInfo?.useCourtLocations"
-          class="cursor-pointer"
-          @click="
-            openLocationInfo?.({
-              locationId: item.homeLocationId?.toString(),
-              locationName: item.homeLocationNm,
-            })
-          "
+          variant="text"
+          icon
+          size="small"
+          @click="openCourtLocation(item)"
         >
           <TooltipIcon
             :text="'Court file home location: ' + item.homeLocationNm"
             :icon="mdiHomeOutline"
           />
-        </span>
+        </v-btn>
         <TooltipIcon
           v-else
           :text="'Court file home location: ' + item.homeLocationNm"
@@ -463,5 +460,12 @@
   const getGroupDisplayName = (sortableValue: string) => {
     // Extract the court class name from the sortable key (format: "00-Criminal - Adult")
     return sortableValue.split('-').slice(1).join('-');
+  };
+
+  const openCourtLocation = (item: CourtListAppearance) => {
+    openLocationInfo?.({
+      locationId: item.homeLocationId?.toString(),
+      locationName: item.homeLocationNm,
+    });
   };
 </script>

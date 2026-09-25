@@ -38,7 +38,7 @@ public class ApplicationController(IConfiguration configuration, IConfigurationS
             NutrientFeLicenseKey = _configuration.GetNonEmptyValue("NUTRIENT_FE_LICENSE_KEY"),
             Environment = _configuration.GetNonEmptyValue("ASPNETCORE_ENVIRONMENT"),
             Configuration = dbConfig,
-            UseCourtLocations = true
+            UseCourtLocations = useCourtLocations
         });
     }
 }

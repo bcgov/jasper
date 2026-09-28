@@ -242,6 +242,19 @@ public class ExcelWorkbookTests
     }
 
     [Fact]
+    public void GetSheet_Uses_Last_Column_When_Header_Is_Duplicated()
+    {
+        using var stream = BuildWorkbook(COURT_LOCATIONS_SHEET, true,
+            ["Location Name", "Location Name"],
+            ["First Value", "Second Value"]);
+        using var wb = new ExcelWorkbook(stream);
+
+        var cl = wb.GetSheet<CourtLocation>(COURT_LOCATIONS_SHEET).Single();
+
+        Assert.Equal("Second Value", cl.Name);
+    }
+
+    [Fact]
     public void GetSheet_Leaves_Default_When_Column_Is_Absent_From_Sheet()
     {
         using var stream = BuildWorkbook(COURT_LOCATIONS_SHEET, true, ["Location Name"], ["Victoria Law Courts"]);

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using LazyCache;
@@ -7,10 +9,13 @@ using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using Moq;
 using Scv.Api.Services;
+using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
+using Scv.Models.CourtLocation;
 using Xunit;
 
 namespace tests.api.Services;
@@ -79,5 +84,82 @@ public class CourtLocationServiceTests
         Assert.False(result.Succeeded);
         Assert.Null(result.Payload);
         Assert.Contains("Something went wrong when retrieving the court location.", result.Errors);
+    }
+
+    [Fact]
+    public async Task ReplaceCourtLocationsAsync_ReturnsSuccess_AndReplacesMappedEntities()
+    {
+        var dtos = new[]
+        {
+            new CourtLocationDto { Code = "4801", Name = "Vancouver" },
+            new CourtLocationDto { Code = "4811", Name = "Victoria" },
+        };
+
+        IEnumerable<CourtLocation> captured = null;
+        _mockRepo
+            .Setup(r => r.ReplaceAllAsync(
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<CourtLocation>>(),
+                It.IsAny<FilterDefinition<CourtLocation>>()))
+            .Callback<string, IEnumerable<CourtLocation>, FilterDefinition<CourtLocation>>(
+                (_, entities, _) => captured = [.. entities])
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.ReplaceCourtLocationsAsync(dtos);
+
+        Assert.True(result.Succeeded);
+
+        _mockRepo.Verify(
+            r => r.ReplaceAllAsync(
+                CollectionNameConstants.COURT_LOCATIONS,
+                It.IsAny<IEnumerable<CourtLocation>>(),
+                It.IsAny<FilterDefinition<CourtLocation>>()),
+            Times.Once());
+
+        Assert.NotNull(captured);
+        var mapped = captured.ToList();
+        Assert.Equal(2, mapped.Count);
+        Assert.Equal("4801", mapped[0].Code);
+        Assert.Equal("Vancouver", mapped[0].Name);
+        Assert.Equal("4811", mapped[1].Code);
+        Assert.Equal("Victoria", mapped[1].Name);
+    }
+
+    [Fact]
+    public async Task ReplaceCourtLocationsAsync_ReturnsSuccess_WhenGivenEmptyArray()
+    {
+        _mockRepo
+            .Setup(r => r.ReplaceAllAsync(
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<CourtLocation>>(),
+                It.IsAny<FilterDefinition<CourtLocation>>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.ReplaceCourtLocationsAsync([]);
+
+        Assert.True(result.Succeeded);
+        _mockRepo.Verify(
+            r => r.ReplaceAllAsync(
+                CollectionNameConstants.COURT_LOCATIONS,
+                It.IsAny<IEnumerable<CourtLocation>>(),
+                It.IsAny<FilterDefinition<CourtLocation>>()),
+            Times.Once());
+    }
+
+    [Fact]
+    public async Task ReplaceCourtLocationsAsync_ReturnsFailure_WhenRepositoryThrows()
+    {
+        _mockRepo
+            .Setup(r => r.ReplaceAllAsync(
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<CourtLocation>>(),
+                It.IsAny<FilterDefinition<CourtLocation>>()))
+            .ThrowsAsync(new InvalidOperationException("db down"));
+
+        var result = await _service.ReplaceCourtLocationsAsync(
+            [new CourtLocationDto { Code = "4801", Name = "Vancouver" }]);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("db down", result.Errors);
     }
 }

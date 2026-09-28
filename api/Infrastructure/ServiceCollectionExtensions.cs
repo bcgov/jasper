@@ -441,6 +441,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IPcssSyncService, PcssSyncService>();
             services.AddScoped<IPcssConfigService, PcssConfigService>();
             services.AddScoped<IAntiVirusService, ClamAvAntiVirusService>();
+            services.AddScoped<IExcelParser, ExcelParser>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(connectionString))
@@ -469,6 +470,7 @@ namespace Scv.Api.Infrastructure
                 services.AddTransient<IRecurringJob, OrderReminderJob>();
                 services.AddTransient<IRecurringJob, PopulateJudicialBinderDocumentFieldsJob>();
                 services.AddTransient<IRecurringJob, CleanupSignalRMessagesJob>();
+                services.AddTransient<IRecurringJob, SyncCourtLocationsJob>();
 
                 services.AddHostedService<HangfireJobRegistrationService>();
             }

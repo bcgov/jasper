@@ -11,6 +11,7 @@ secret_keys="\
   aspnet_core \
   auth \
   azure \
+  court_locations \
   cso \
   dars \
   database \

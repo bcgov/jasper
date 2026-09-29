@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@fullcalendar/vue3": "^7.0.1",
+    "@microsoft/signalr": "10.0.0",
     "@nutrient-sdk/viewer": "^1.18.0",
     "@types/luxon": "^3.7.4",
     "@types/underscore": "^1.13.0",

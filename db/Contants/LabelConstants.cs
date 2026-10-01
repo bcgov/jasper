@@ -37,4 +37,20 @@ public static class LabelConstants
     /// Indicates if the case is criminal.
     /// </summary>
     public const string IS_CRIMINAL = "isCriminal";
+    /// <summary>
+    /// The id of a case.
+    /// </summary>
+    public const string CASE_ID = "caseId";
+    /// <summary>
+    /// The id of a document.
+    /// </summary>
+    public const string DOCUMENT_ID = "documentId";
+    /// <summary>
+    /// The division of a case.
+    /// </summary>
+    public const string DIVISION = "division";
+    /// <summary>
+    /// The image id of a document.
+    /// </summary>
+    public const string IMAGE_ID = "imageId";
 }

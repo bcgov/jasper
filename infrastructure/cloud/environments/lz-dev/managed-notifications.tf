@@ -1,10 +1,6 @@
 module "managed_notifications" {
   source = "../../modules/ManagedNotifications"
 
-  providers = {
-    aws = aws.notifications_hub
-  }
-
   account_id                          = data.aws_caller_identity.current.account_id
   environment                         = var.environment
   notification_hub_region             = var.region

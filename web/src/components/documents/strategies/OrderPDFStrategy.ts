@@ -89,14 +89,11 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     return document.documentName || 'Order';
   }
 
-  // Retrieves the required "approval" annotations (signature and/or initials) based on its availability.
+  // Retrieves the required "approval" annotations (signature only) based on its availability.
   getRequiredApprovalAnnotations(): string[] | undefined {
     const descriptions: string[] = [];
     if (this.hasSignature) {
       descriptions.push(OrderPDFStrategy.SIGNATURE_DESCRIPTION);
-    }
-    if (this.hasInitials) {
-      descriptions.push(OrderPDFStrategy.INITIALS_DESCRIPTION);
     }
     return descriptions.length > 0 ? descriptions : undefined;
   }

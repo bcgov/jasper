@@ -82,6 +82,7 @@
   import logo from '@/assets/jasper-logo.svg?url';
   import { useOrderBadgePulse } from '@/composables/useOrderBadgePulse.js';
   import { isDeskOrder, useOrderCounts } from '@/composables/useOrderCounts';
+  import { PERMISSIONS } from '@/constants/permissions';
   import { JudgeService, OrderService } from '@/services';
   import { NotificationsService } from '@/signalr/notifications';
   import { useCommonStore } from '@/stores';
@@ -89,13 +90,11 @@
   import { useNotificationsStore } from '@/stores/NotificationsStore';
   import { useOrdersStore } from '@/stores/OrdersStore';
   import { PersonSearchItem } from '@/types';
-  import { RolesEnum } from '@/types/common';
   import { mdiAccountCircle } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import OrdersTab from '../orders/OrdersTab.vue';
   import JudgeSelector from './JudgeSelector.vue';
-  import { PERMISSIONS } from '@/constants/permissions';
 
   const emit = defineEmits<(e: 'open-profile') => void>();
 

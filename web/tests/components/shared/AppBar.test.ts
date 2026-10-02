@@ -249,6 +249,24 @@ describe('AppBar.vue', () => {
 
       expect((wrapper.vm as any).selectedTab).toBe('court-file-search');
     });
+
+    it('should not show Orders/Applications tab when user does not have permission', async () => {
+      const commonStore = useCommonStore();
+      commonStore.userInfo = generateUserInfo({
+        permissions: [PERMISSIONS.LIST_TRANSITORY_DOCUMENTS],
+      });
+
+      const mockOrders = [generateDeskOrder(OrderReviewStatus.Approved)];
+
+      mockOrderService.getOrders.mockResolvedValue(mockOrders);
+      const orderStore = useOrdersStore();
+      orderStore.orders = mockOrders;
+
+      const wrapper = createWrapper();
+      await flushPromises();
+
+      expect((wrapper.vm as any).showOrders).toBeFalsy();
+    });
   });
 
   describe('profile button', () => {

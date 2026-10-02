@@ -20,6 +20,7 @@ namespace Scv.Db.Contexts
         public DbSet<QuickLink> QuickLinks { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
+        public DbSet<CourtLocation> CourtLocations { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -53,6 +54,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
             modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));
             modelBuilder.Entity<EmailTemplate>(o => o.HasKey(o => o.Id));
+            modelBuilder.Entity<CourtLocation>(cl => cl.HasKey(cl => cl.Id));
         }
     }
 }

@@ -24,6 +24,10 @@ public interface IRepositoryBase<TEntity> where TEntity : EntityBase
     Task AddAsync(TEntity entity);
     Task AddRangeAsync(IEnumerable<TEntity> entities);
     Task UpdateAsync(TEntity entity);
+    Task ReplaceAllAsync(
+        string collectionName,
+        IEnumerable<TEntity> replacements,
+        FilterDefinition<TEntity> deleteFilter = null);
     Task DeleteAsync(TEntity entity);
     Task DeleteRangeAsync(IEnumerable<TEntity> entities);
 }
@@ -95,6 +99,29 @@ public class RepositoryBase<TEntity>(JasperDbContext context, IMongoDatabase mon
     {
         _dbSet.Update(entity);
         await _context.SaveChangesAsync();
+    }
+
+    public virtual async Task ReplaceAllAsync(
+        string collectionName,
+        IEnumerable<TEntity> replacements,
+        FilterDefinition<TEntity> deleteFilter = null)
+    {
+        var toInsert = replacements?.ToList() ?? [];
+        var collection = _mongoDb.GetCollection<TEntity>(collectionName);
+
+        using var session = await _mongoDb.Client.StartSessionAsync();
+
+        await session.WithTransactionAsync(async (s, ct) =>
+        {
+            await collection.DeleteManyAsync(s, deleteFilter ?? Builders<TEntity>.Filter.Empty, cancellationToken: ct);
+
+            if (toInsert.Count > 0)
+            {
+                await collection.InsertManyAsync(s, toInsert, cancellationToken: ct);
+            }
+
+            return true;
+        });
     }
 
     public virtual async Task DeleteAsync(TEntity entity)

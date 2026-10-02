@@ -226,7 +226,7 @@ resource "aws_secretsmanager_secret" "misc_secret" {
 resource "aws_secretsmanager_secret_version" "misc_secret_value" {
   secret_id = aws_secretsmanager_secret.misc_secret.id
   secret_string = jsonencode({
-    publicCorsDomain               = "",
+    publicCorsDomain                = "",
     dataProtectionKeyEncryptionKey  = "",
     webBaseHref                     = "",
     useSelfSignedSsl                = "",
@@ -408,15 +408,16 @@ resource "aws_secretsmanager_secret" "jobs_secret" {
 resource "aws_secretsmanager_secret_version" "jobs_secret_value" {
   secret_id = aws_secretsmanager_secret.jobs_secret.id
   secret_string = jsonencode({
-    syncAssignedCasesSchedule       = "",
-    syncDocumentCategoriesSchedule  = "",
-    retryCount                      = "",
-    orderSubmitJobRetryCount        = "",
-    orderSubmitRetryJobCronSchedule = "",
+    syncAssignedCasesSchedule          = "",
+    syncCourtLocationsSchedule         = "",
+    syncDocumentCategoriesSchedule     = "",
+    retryCount                         = "",
+    orderSubmitJobRetryCount           = "",
+    orderSubmitRetryJobCronSchedule    = "",
     cleanupSignalRMessagesCronSchedule = "",
-    orderSubmitRetryJobMaxRetries   = "",
-    jobFailureEmailRecipients0      = "",
-    jobFailureEmailSubject          = ""
+    orderSubmitRetryJobMaxRetries      = "",
+    jobFailureEmailRecipients0         = "",
+    jobFailureEmailSubject             = ""
   })
   lifecycle {
     ignore_changes = [secret_string]
@@ -501,6 +502,22 @@ resource "aws_secretsmanager_secret_version" "mongo_tls_secret_value" {
   secret_string = jsonencode({
     ca  = "",
     pem = ""
+  })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+resource "aws_secretsmanager_secret" "court_locations_secret" {
+  name       = "external/${var.app_name}-court-locations-secret-${var.environment}"
+  kms_key_id = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "court_locations_secret_value" {
+  secret_id = aws_secretsmanager_secret.court_locations_secret.id
+  secret_string = jsonencode({
+    attachmentName = "",
+    subject        = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

@@ -21,6 +21,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Newtonsoft.Json.Linq;
 using PCSSCommon.Models;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Infrastructure.Mappings;
@@ -121,6 +122,17 @@ public class OrderServiceTests : ServiceTestBase
             _mockCsoTextSanitizer.Object,
             _mockAntiVirusService.Object,
             _orderSubmittedAckNotification);
+    }
+
+    private static bool HasExpectedCommentJson(string json, string comments, string rejectionReasons, string directions, bool clerkToSign)
+    {
+        return JToken.DeepEquals(JObject.Parse(json), new JObject
+        {
+            ["comments"] = comments,
+            ["rejection_reasons"] = rejectionReasons,
+            ["directions"] = directions,
+            ["pursuant_to_pcf_rule_169"] = clerkToSign
+        });
     }
 
     private void SetupConfiguration()
@@ -1123,7 +1135,7 @@ public class OrderServiceTests : ServiceTestBase
         var fakeOrderTerm = "Pay $50 – then file résumé • exhibit";
         var sanitizedDirections = "Registry \"must\" review cafes - today...";
         var sanitizedOrderTerm = "Pay $50 - then file resume * exhibit";
-        var sanitizedComment = $"{fakeComment}. {sanitizedDirections}";
+        var sanitizedComment = "Sanitized comment with \"quotes\" and \\backslash\nNew line";
 
         var order = CreateOrder();
         order.SubmitAttempts = 2;
@@ -1164,7 +1176,8 @@ public class OrderServiceTests : ServiceTestBase
             });
         _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeDirections)).Returns(sanitizedDirections);
         _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeOrderTerm)).Returns(sanitizedOrderTerm);
-        _mockCsoTextSanitizer.Setup(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}")).Returns(sanitizedComment);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeComment)).Returns(sanitizedComment);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(null)).Returns(string.Empty);
 
         var result = await _orderService.SubmitOrder(order.Id);
 
@@ -1174,7 +1187,7 @@ public class OrderServiceTests : ServiceTestBase
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
                 It.IsAny<double>(),
                 It.Is<JudicialAction>(ja =>
-                    ja.Comment == sanitizedComment
+                    HasExpectedCommentJson(ja.Comment, sanitizedComment, string.Empty, sanitizedDirections, false)
                     && ja.OrderTerms.Count == 1
                     && ja.OrderTerms.First().Text == sanitizedOrderTerm
                     && ja.Document.Length == 0
@@ -1182,19 +1195,18 @@ public class OrderServiceTests : ServiceTestBase
                 Times.Once);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Once);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Once);
-        _mockCsoTextSanitizer.Verify(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}"), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeComment), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
     [Fact]
-    public async Task SubmitDeskOrder_AppendsClerkNote_WhenIsClerkToSignIsTrue()
+    public async Task SubmitDeskOrder_SetsClerkDesignationFlag_WhenIsClerkToSignIsTrue()
     {
         var fakeComment = _faker.Lorem.Sentence();
         var fakeDirections = "Registry “must” review cafés — today…";
         var fakeOrderTerm = "Pay $50 – then file résumé • exhibit";
         var sanitizedDirections = "Registry \"must\" review cafes - today...";
         var sanitizedOrderTerm = "Pay $50 - then file resume * exhibit";
-        var sanitizedComment = $"{fakeComment}. {sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}";
 
         var order = CreateOrder();
         order.SubmitAttempts = 2;
@@ -1236,7 +1248,7 @@ public class OrderServiceTests : ServiceTestBase
             });
         _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeDirections)).Returns(sanitizedDirections);
         _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeOrderTerm)).Returns(sanitizedOrderTerm);
-        _mockCsoTextSanitizer.Setup(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}")).Returns(sanitizedComment);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(null)).Returns(string.Empty);
 
         var result = await _orderService.SubmitOrder(order.Id);
 
@@ -1246,7 +1258,7 @@ public class OrderServiceTests : ServiceTestBase
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
                 It.IsAny<double>(),
                 It.Is<JudicialAction>(ja =>
-                    ja.Comment == sanitizedComment
+                    HasExpectedCommentJson(ja.Comment, fakeComment, string.Empty, sanitizedDirections, true)
                     && ja.OrderTerms.Count == 1
                     && ja.OrderTerms.First().Text == sanitizedOrderTerm
                     && ja.Document.Length == 0
@@ -1254,20 +1266,17 @@ public class OrderServiceTests : ServiceTestBase
                 Times.Once);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeDirections), Times.Once);
         _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeOrderTerm), Times.Once);
-        _mockCsoTextSanitizer.Verify(s => s.Sanitize($"{fakeComment}. {sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}"), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(fakeComment), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
     [Fact]
-    public async Task SubmitDeskOrder_OmitsEmptyComment_WhenNoCommentsProvidedAndClerkDesignated()
+    public async Task SubmitDeskOrder_IncludesEmptyComment_WhenNoCommentsProvidedAndClerkDesignated()
     {
         var fakeDirections = _faker.Lorem.Sentence();
         var fakeOrderTerm = _faker.Lorem.Sentence();
         var sanitizedDirections = _faker.Lorem.Sentence();
         var sanitizedOrderTerm = _faker.Lorem.Sentence();
-        // No comment provided, so the empty part should be filtered out of the joined comment.
-        var expectedComment = $"{sanitizedDirections}. {OrderService.NOTE_TO_APPEND_IF_CLERK_DESIGNATED}";
-        var sanitizedComment = _faker.Lorem.Sentence();
 
         var order = CreateOrder();
         order.SubmitAttempts = 2;
@@ -1309,7 +1318,7 @@ public class OrderServiceTests : ServiceTestBase
             });
         _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeDirections)).Returns(sanitizedDirections);
         _mockCsoTextSanitizer.Setup(s => s.Sanitize(fakeOrderTerm)).Returns(sanitizedOrderTerm);
-        _mockCsoTextSanitizer.Setup(s => s.Sanitize(expectedComment)).Returns(sanitizedComment);
+        _mockCsoTextSanitizer.Setup(s => s.Sanitize(null)).Returns(string.Empty);
 
         var result = await _orderService.SubmitOrder(order.Id);
 
@@ -1319,13 +1328,13 @@ public class OrderServiceTests : ServiceTestBase
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
                 It.IsAny<double>(),
                 It.Is<JudicialAction>(ja =>
-                    ja.Comment == sanitizedComment
+                    HasExpectedCommentJson(ja.Comment, string.Empty, string.Empty, sanitizedDirections, true)
                     && ja.OrderTerms.Count == 1
                     && ja.OrderTerms.First().Text == sanitizedOrderTerm
                     && ja.Document.Length == 0
                 )),
                 Times.Once);
-        _mockCsoTextSanitizer.Verify(s => s.Sanitize(expectedComment), Times.Once);
+        _mockCsoTextSanitizer.Verify(s => s.Sanitize(null), Times.Exactly(2));
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
     }
 
@@ -1403,7 +1412,7 @@ public class OrderServiceTests : ServiceTestBase
                 c.SaveJudicialActionAsync(It.IsAny<Guid>(),
                 It.IsAny<double>(),
                 It.Is<JudicialAction>(ja =>
-                    ja.Comment == "Desk order note. Rejecting because XYZ. Registry \"must\" review cafes - today..."
+                    HasExpectedCommentJson(ja.Comment, "Desk order note", "Rejecting because XYZ", "Registry \"must\" review cafes - today...", false)
                     && ja.OrderTerms.Count == 1
                     && ja.OrderTerms.First().Text == "Pay $50 - then file resume * exhibit"
                     && ja.OrderTerms.First().SequenceNumber == 1

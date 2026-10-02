@@ -71,11 +71,11 @@
   }>();
 
   const selectedLocations = defineModel<string[]>('selectedLocations', {
-    default: [],
+    default: () => [],
   });
 
   const selectedPresiders = defineModel<string[]>('selectedPresiders', {
-    default: [],
+    default: () => [],
   });
 
   const selectedActivityClass = defineModel<string>('selectedActivityClass', {
@@ -83,7 +83,7 @@
   });
 
   const selectedActivities = defineModel<string[]>('selectedActivities', {
-    default: [],
+    default: () => [],
   });
 
   const isPresidersView = defineModel<boolean>('isPresidersView', {

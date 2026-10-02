@@ -4,18 +4,27 @@
     type="date-picker"
     :loading="isCalendarLoading"
   ></v-skeleton-loader>
-  <FullCalendar
-    class="mx-2"
-    v-else
-    :options="calendarOptions"
-    ref="calendarRef"
-  >
+  <FullCalendar class="fc mx-2" v-else :options="calendarOptions">
     <template v-slot:eventContent="{ event }">
       <MyCalendarDay
         :date="event.extendedProps.date"
         :isWeekend="event.extendedProps.isWeekend"
         :activities="event.extendedProps.activities"
       />
+    </template>
+    <template v-slot:dayCellTopContent="{ date, dayNumberText }">
+      <span>{{ dayNumberText }}</span>
+      <RouterLink
+        v-if="showCourtList(date)"
+        class="court-list"
+        :to="{
+          name: 'CourtList',
+          query: { date: formatDateInstanceToDDMMMYYYY(date) },
+        }"
+        title="View Court List"
+      >
+        <v-icon :icon="mdiListBoxOutline" size="18" />
+      </RouterLink>
     </template>
   </FullCalendar>
   <!--
@@ -38,20 +47,19 @@
   import { CalendarDay } from '@/types';
   import { ActivityClassEnum } from '@/types/common';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
-  import { CalendarOptions, DayCellMountArg } from '@fullcalendar/core';
-  import dayGridPlugin from '@fullcalendar/daygrid';
-  import FullCalendar from '@fullcalendar/vue3';
+  import FullCalendar, {
+    CalendarOptions,
+    useCalendarController,
+    type DateClickInfo,
+    type DayCellInfo,
+    type EventClickInfo,
+    type MountInfo,
+  } from '@fullcalendar/vue3';
+  import dayGridPlugin from '@fullcalendar/vue3/daygrid';
+  import interactionPlugin from '@fullcalendar/vue3/interaction';
+  import classicThemePlugin from '@fullcalendar/vue3/themes/classic';
   import { mdiListBoxOutline } from '@mdi/js';
-  import {
-    computed,
-    inject,
-    onMounted,
-    onUnmounted,
-    ref,
-    watch,
-    watchEffect,
-  } from 'vue';
-  import MyCalendarDay from './MyCalendarDay.vue';
+  import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
 
@@ -61,6 +69,7 @@
 
   const props = defineProps<{
     judgeId: number | undefined;
+    baseCalendarOptions: CalendarOptions;
   }>();
 
   const selectedDate = defineModel<Date>('selectedDate')!;
@@ -72,7 +81,7 @@
 
   const calendarData = ref<CalendarDay[]>([]);
   const expandedDate = ref<string | null>(null);
-  const calendarRef = ref();
+  const controller = useCalendarController();
   const { setupAutoRefresh } = useAutoRefresh(
     () => !!selectedDate.value,
     () => loadCalendarData(),
@@ -112,6 +121,7 @@
     if (newDate) {
       startDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
       endDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+      controller.gotoDate(newDate);
     }
     await loadCalendarData();
   });
@@ -162,79 +172,54 @@
     calendarData.value.filter((d) => hasExpandableActivities(d.activities))
   );
 
-  const dayCellDidMount = (info: DayCellMountArg) => {
-    // Appends the Court List icon next to the day's date
+  const showCourtList = (date: Date) => {
+    const formatted = formatDateInstanceToDDMMMYYYY(date);
+    const data = calendarData.value.find((d) => d.date === formatted);
+    return !!data && data.activities.length > 0 && data.showCourtList;
+  };
+
+  const toggleExpandedPanel = (date: string) => {
+    const data = calendarData.value.find((d) => d.date === date);
+    if (!data || !hasExpandableActivities(data.activities)) {
+      return;
+    }
+    expandedDate.value = expandedDate.value === date ? null : date;
+  };
+
+  const handleDateClick = (info: DateClickInfo) => {
+    toggleExpandedPanel(formatDateInstanceToDDMMMYYYY(info.date));
+  };
+
+  const handleEventClick = (info: EventClickInfo) => {
+    toggleExpandedPanel(info.event.extendedProps.date);
+  };
+
+  const dayCellDidMount = (info: MountInfo<DayCellInfo>) => {
     const date = formatDateInstanceToDDMMMYYYY(info.date);
     const data = calendarData.value.find((d) => d.date === date);
-    const dayTop = info.el.querySelector('.fc-daygrid-day-top');
-
-    if (!data || data.activities.length === 0 || !dayTop) {
+    if (!data || !hasExpandableActivities(data.activities)) {
       return;
     }
 
-    if (data.showCourtList) {
-      const link = document.createElement('a');
-      link.className = 'court-list';
-      link.href = `/court-list?date=${date}`;
-      link.title = 'View Court List';
-
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('width', '18');
-      svg.setAttribute('height', '18');
-
-      const path = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'path'
-      );
-      path.setAttribute('d', mdiListBoxOutline);
-
-      svg.appendChild(path);
-      link.appendChild(svg);
-      dayTop.appendChild(link);
-    }
-
-    if (!hasExpandableActivities(data.activities)) {
-      return;
-    }
-
-    // Attach a click event for the expanded panel
     const wrapper = document.createElement('div');
     wrapper.classList.add('fc-expand-wrapper');
     wrapper.dataset.date = date;
 
-    info.el.style.position = 'relative';
-
-    info.el.appendChild(wrapper);
     info.el.classList.add('cursor-pointer');
-
-    info.el.addEventListener('click', () => {
-      expandedDate.value = expandedDate.value === date ? null : date;
-    });
+    info.el.prepend(wrapper);
   };
 
-  const calendarOptions: CalendarOptions = {
+  const calendarOptions = computed<CalendarOptions>(() => ({
+    ...props.baseCalendarOptions,
+    controller,
     initialView: 'dayGridMonth',
-    plugins: [dayGridPlugin],
-    headerToolbar: false,
-    dayHeaderFormat: { weekday: 'long' },
-    dayCellDidMount,
-    contentHeight: 'auto',
-    dayMaxEventRows: true,
-    expandRows: false,
-  };
-
-  watchEffect(() => {
-    const calendarApi = calendarRef.value?.getApi();
-    if (calendarApi) {
-      calendarApi.removeAllEvents();
-
-      calendarEvents.value.forEach((e) => {
-        return calendarApi.addEvent({ ...e });
-      });
-      calendarApi.gotoDate(selectedDate.value);
-    }
-  });
+    initialDate: selectedDate.value,
+    plugins: [classicThemePlugin, dayGridPlugin, interactionPlugin],
+    events: calendarEvents.value,
+    dayCellDidMount: dayCellDidMount,
+    dateClick: handleDateClick,
+    eventClick: handleEventClick,
+  }));
 
   const closeExpandedPanel = (e: MouseEvent) => {
     // Determine whether the expanded panel is going to be closed.
@@ -247,7 +232,7 @@
     }
 
     // Find the nearest Calendar cell
-    const dayGridCell = target.closest('.fc-daygrid-day');
+    const dayGridCell = target.closest('.day-cell');
     if (!dayGridCell) {
       expandedDate.value = null;
       return;
@@ -266,7 +251,7 @@
     // then the click happened on a cell that has an expanded panel.
     // If not found, we can safely close the panel.
     const date = dateEl.dataset.formattedDate;
-    const hasActivity = calendarEventsWithActivities.value.find(
+    const hasActivity = calendarEventsWithActivities.value.some(
       (e) => e.date === date
     );
     if (!hasActivity) {
@@ -275,78 +260,12 @@
   };
 </script>
 <style scoped>
-  :deep(.court-list) {
-    margin-right: 4px;
-  }
-
-  /* Header Styles */
-  :deep(.fc-col-header-cell-cushion),
-  :deep(.fc-col-header-cell-cushion:hover) {
+  .court-list {
+    margin-left: auto;
     color: var(--text-blue-800);
-    font-size: 0.875rem;
-    font-weight: normal;
-    text-transform: uppercase !important;
-    text-decoration: none;
   }
 
   :deep(.fc-event) {
     display: block;
-  }
-
-  /* Day Styles */
-  :deep(.fc-daygrid-day-top) {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  :deep(.fc-daygrid-day-number),
-  :deep(.fc-daygrid-day-number:hover) {
-    font-weight: bold;
-    color: var(--text-blue-800);
-    text-decoration: none;
-  }
-
-  :deep(.fc-daygrid-day-frame) {
-    padding: 0.3125rem;
-  }
-
-  :deep(.fc-daygrid-day) {
-    background-color: var(--bg-white-500) !important;
-  }
-
-  :deep(.fc-daygrid-day:hover) {
-    background-color: var(--bg-blue-100) !important;
-  }
-
-  :deep(.fc-daygrid-dot-event:hover) {
-    background-color: transparent;
-  }
-
-  /* Today Styles */
-  :deep(.fc-day-today .fc-daygrid-day-frame) {
-    position: relative;
-    background-color: var(--bg-blue-50) !important;
-  }
-
-  :deep(.fc-day-today .fc-daygrid-day-frame)::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 5px;
-    width: 100%;
-    background-color: var(--bg-blue-500);
-  }
-
-  /* Weekend Styles */
-  :deep(.fc-day-sun .fc-daygrid-day-frame),
-  :deep(.fc-day-sat .fc-daygrid-day-frame) {
-    background-color: var(--bg-gray-400) !important;
-  }
-
-  :deep(.fc-day-sun .fc-daygrid-day-frame:hover),
-  :deep(.fc-day-sat .fc-daygrid-day-frame:hover) {
-    background-color: var(--bg-blue-100) !important;
   }
 </style>

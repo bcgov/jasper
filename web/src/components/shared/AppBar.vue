@@ -95,6 +95,7 @@
   import { useRoute } from 'vue-router';
   import OrdersTab from '../orders/OrdersTab.vue';
   import JudgeSelector from './JudgeSelector.vue';
+  import { PERMISSIONS } from '@/constants/permissions';
 
   const emit = defineEmits<(e: 'open-profile') => void>();
 
@@ -111,8 +112,6 @@
   );
   const judgeService = inject<JudgeService>('judgeService');
   const judges = ref<PersonSearchItem[]>([]);
-  // Only users with Admin role can see Orders tab for now.
-  const requiredOrderRoles = [RolesEnum.Admin] as const;
 
   if (!judgeService || !orderService || !notificationsService) {
     throw new Error('Service is not available!');
@@ -149,8 +148,8 @@
 
   const showOrders = computed(
     () =>
-      requiredOrderRoles.every((requiredRole) =>
-        commonStore.userInfo?.roles?.includes(requiredRole)
+      commonStore.userInfo?.permissions?.includes(
+        PERMISSIONS.VIEW_ORDERS_DASHBOARD
       ) ?? false
   );
 

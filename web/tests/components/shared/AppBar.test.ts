@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '@/constants/permissions';
 import { useCommonStore, useDarsStore, useOrdersStore } from '@/stores';
 import { ApplicationConfigurationKey } from '@/stores/CommonStore';
 import { PersonSearchItem } from '@/types';
@@ -61,6 +62,8 @@ const generateUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
   judgeHomeLocationId: faker.number.int({ min: 1, max: 100 }),
   email: faker.internet.email(),
   userTitle: `Judge ${faker.person.fullName()}`,
+  hasSignature: false,
+  hasInitials: false,
   ...overrides,
 });
 
@@ -82,6 +85,9 @@ const generateOrder = (
   courtFileNumber: faker.string.alphanumeric({ length: 10 }).toUpperCase(),
   styleOfCause: `${faker.person.lastName()} v ${faker.person.lastName()}`,
   physicalFileId: faker.number.int().toString(),
+  packageDocuments: [],
+  relevantCeisDocuments: [],
+  hasSupportingDocs: false,
 });
 
 const generateDeskOrder = (
@@ -304,9 +310,12 @@ describe('AppBar.vue', () => {
       expect(wrapper.text()).not.toContain('Applications');
     });
 
-    it('should show Orders tab for admin users', async () => {
+    it('should show Orders tab for users with the dashboard permission', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const wrapper = createWrapper();
       await wrapper.vm.$nextTick();
@@ -318,7 +327,10 @@ describe('AppBar.vue', () => {
 
     it('should display priority pending orders badge when there are priority pending orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         generateOrder(
@@ -348,7 +360,10 @@ describe('AppBar.vue', () => {
 
     it('should display regular pending orders badge when there are non-priority pending orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         generateOrder(OrderReviewStatus.Pending),
@@ -372,7 +387,10 @@ describe('AppBar.vue', () => {
 
     it('should not display badge when there are no pending orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [generateOrder(OrderReviewStatus.Approved)];
 
@@ -388,7 +406,10 @@ describe('AppBar.vue', () => {
 
     it('should show order-combo-badge element when there are both priority and regular pending orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         generateOrder(
@@ -418,7 +439,10 @@ describe('AppBar.vue', () => {
   describe('Applications tab (desk orders)', () => {
     it('should split desk orders into desk-order counts and not into For Signing counts', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         // For Signing: 1 priority, 1 regular
@@ -448,8 +472,6 @@ describe('AppBar.vue', () => {
       const wrapper = createWrapper();
       await flushPromises();
 
-      console.log(wrapper.html());
-
       expect((wrapper.vm as any).priorityPendingOrdersCount).toBe(1);
       expect((wrapper.vm as any).regularPendingOrdersCount).toBe(1);
       expect((wrapper.vm as any).priorityPendingDeskOrdersCount).toBe(2);
@@ -458,7 +480,10 @@ describe('AppBar.vue', () => {
 
     it('should display priority badge on Applications tab when there are priority pending desk orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        roles: [RolesEnum.Admin],
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         generateDeskOrder(
@@ -489,7 +514,9 @@ describe('AppBar.vue', () => {
 
     it('should display regular badge on Applications tab when there are non-priority pending desk orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         generateDeskOrder(OrderReviewStatus.Pending),
@@ -514,7 +541,9 @@ describe('AppBar.vue', () => {
 
     it('should show order-combo-badge when there are both priority and regular pending desk orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [
         generateDeskOrder(
@@ -537,7 +566,9 @@ describe('AppBar.vue', () => {
 
     it('should not display any desk-order badge when there are no pending desk orders', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const mockOrders = [generateDeskOrder(OrderReviewStatus.Approved)];
 
@@ -586,7 +617,9 @@ describe('AppBar.vue', () => {
 
     it('should show judge selector on orders tab', async () => {
       const commonStore = useCommonStore();
-      commonStore.userInfo = generateUserInfo({ roles: [RolesEnum.Admin] });
+      commonStore.userInfo = generateUserInfo({
+        permissions: [PERMISSIONS.VIEW_ORDERS_DASHBOARD],
+      });
 
       const judges: PersonSearchItem[] = [generateJudge()];
 

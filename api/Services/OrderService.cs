@@ -13,6 +13,7 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
@@ -50,7 +51,6 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly ICsoTextSanitizer _csoTextSanitizer;
     private readonly IAntiVirusService _antiVirusService;
     private readonly OrderSubmittedAckNotification _orderSubmittedAck;
-    public const string NOTE_TO_APPEND_IF_CLERK_DESIGNATED = "-- NOTE -- Pursuant to PCF rule 169, I designate the Clerk of the Court to sign the order on my behalf.";
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -576,18 +576,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         this.Logger.LogInformation("Reasons for Rejection, Directions and Order Terms extracted successfully for Order {OrderId}.", orderDto.Id);
 
-        var sanitizedDirections = _csoTextSanitizer.Sanitize(deskOrderDetails.Directions);
-        var sanitizedRejectionReasons = _csoTextSanitizer.Sanitize(deskOrderDetails.ReasonsForRejection);
-        var commentParts = new[]
+        actionDto.Comment = JsonConvert.SerializeObject(new
         {
-            actionDto.Comment,
-            sanitizedRejectionReasons,
-            sanitizedDirections,
-            deskOrderDetails.IsClerkToSign ? NOTE_TO_APPEND_IF_CLERK_DESIGNATED : ""
-        };
-
-        actionDto.Comment = _csoTextSanitizer.Sanitize(
-            string.Join(". ", commentParts.Where(p => !string.IsNullOrWhiteSpace(p))));
+            comments = _csoTextSanitizer.Sanitize(actionDto.Comment),
+            rejection_reasons = _csoTextSanitizer.Sanitize(deskOrderDetails.ReasonsForRejection),
+            directions = _csoTextSanitizer.Sanitize(deskOrderDetails.Directions),
+            pursuant_to_pcf_rule_169 = deskOrderDetails.IsClerkToSign
+        });
         actionDto.OrderTerms = [.. deskOrderDetails.OrderTerms.Select(term => new OrderTerm
             {
                 SequenceNumber = term.SequenceNumber,

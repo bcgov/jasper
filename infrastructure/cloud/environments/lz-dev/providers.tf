@@ -1,5 +1,5 @@
 terraform {
-  required_version = "~> 1.15.8"
+  required_version = "~> 1.16.4"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -19,6 +19,5 @@ terraform {
 }
 
 provider "aws" {
-  alias  = "notifications_hub"
   region = var.region
 }

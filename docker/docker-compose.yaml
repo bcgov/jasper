@@ -133,6 +133,7 @@ services:
       - SUPPORT_ACCOUNT=${SUPPORT_ACCOUNT}
       - TD__Url=${TD_URL}
       - TDKeycloak__ServiceAccountSecret=${TDKeycloakServiceSecret}
+      - USE_COURT_LOCATIONS=${USE_COURT_LOCATIONS:-false}
       - UserServicesClient__Password=${UserServicesClientPassword}
       - UserServicesClient__Url=${UserServicesClientUrl}
       - UserServicesClient__Username=${UserServicesClientUsername}

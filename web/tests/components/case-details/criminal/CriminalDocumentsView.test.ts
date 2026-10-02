@@ -1,6 +1,7 @@
 import shared from '@/components/shared';
 import { useCriminalFileStore } from '@/stores';
 import { DocumentRequestType } from '@/types/shared';
+import { UNCATEGORIZED_CATEGORY_FILTER } from '@/utils/categoryFilterUtils';
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import DocumentsView from 'CMP/case-details/criminal/CriminalDocumentsView.vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -142,18 +143,90 @@ describe('CriminalDocumentsView.vue', () => {
   });
 
   it('computes unfilteredDocuments correctly', async () => {
-    wrapper.vm.selectedCategory = 'ROP';
-
     const unfilteredDocuments = wrapper.vm.unfilteredDocuments;
     expect(unfilteredDocuments).toHaveLength(2);
   });
 
   it('filters documents by category', async () => {
-    wrapper.vm.selectedCategory = 'bail';
+    wrapper.vm.selectedCategories = ['bail'];
 
     const documents = wrapper.vm.documents;
     expect(documents).toHaveLength(1);
     expect(documents[0].category).toBe('bail');
+  });
+
+  it('filters documents by multiple categories', async () => {
+    wrapper.vm.selectedCategories = ['bail', 'other'];
+    await nextTick();
+
+    expect(wrapper.vm.documents).toHaveLength(2);
+  });
+
+  it('shows the same documents for empty selection and Select All', async () => {
+    wrapper.vm.selectedCategories = [];
+    await nextTick();
+    const emptySelectionIds = wrapper.vm.documents.map(
+      (document) => document.id
+    );
+
+    wrapper.vm.selectedCategories = wrapper.vm.documentCategories.map(
+      (category) => category.value
+    );
+    await nextTick();
+
+    expect(wrapper.vm.documents.map((document) => document.id)).toEqual(
+      emptySelectionIds
+    );
+  });
+
+  it('keeps a genuine Other category separate from uncategorized documents', async () => {
+    mockParticipantOne.document.push({
+      ...mockDocumentOne,
+      category: ' ',
+      imageId: 'uncategorized',
+    });
+    const localWrapper = shallowMount(DocumentsView, {
+      props: { participants: mockParticipants },
+    });
+
+    localWrapper.vm.selectedCategories = ['other'];
+    await nextTick();
+    expect(localWrapper.vm.documentCategories).toContainEqual({
+      title: 'Other',
+      value: 'other',
+      count: 1,
+    });
+    expect(localWrapper.vm.documentCategories).toContainEqual({
+      title: 'Uncategorized',
+      value: UNCATEGORIZED_CATEGORY_FILTER,
+      count: 1,
+    });
+    expect(
+      localWrapper.vm.documents.map((document) => document.imageId)
+    ).toEqual(['456']);
+
+    localWrapper.vm.selectedCategories = [UNCATEGORIZED_CATEGORY_FILTER];
+    await nextTick();
+    expect(
+      localWrapper.vm.documents.map((document) => document.imageId)
+    ).toEqual(['uncategorized']);
+  });
+
+  it('deduplicates normalized categories and reports their combined count', () => {
+    mockParticipantOne.document.push({
+      ...mockDocumentOne,
+      category: ' BAIL ',
+      imageId: 'second-bail',
+    });
+    const localWrapper = shallowMount(DocumentsView, {
+      props: { participants: mockParticipants },
+    });
+
+    expect(
+      localWrapper.vm.documentCategories.filter(
+        (category) => category.value === 'bail'
+      )
+    ).toEqual([{ title: 'bail', value: 'bail', count: 2 }]);
   });
 
   it('does not filter key documents by category', async () => {
@@ -173,7 +246,7 @@ describe('CriminalDocumentsView.vue', () => {
       },
     });
 
-    (wrapper.vm as any).selectedCategory = 'bail';
+    (wrapper.vm as any).selectedCategories = ['bail'];
     await nextTick();
 
     const documents = (wrapper.vm as any).documents;
@@ -554,7 +627,7 @@ describe('CriminalDocumentsView.vue', () => {
     });
 
     it('displays original category name when no special formatting applies', async () => {
-      wrapper.vm.selectedCategory = 'bail';
+      wrapper.vm.selectedCategories = ['bail'];
       await nextTick();
 
       const sections = wrapper.findAll('v-card-text .text-headline-small');
@@ -648,7 +721,7 @@ describe('CriminalDocumentsView.vue', () => {
       expect(documentIds[2]).toContain('145');
 
       // Filter to only show transcripts
-      wrapper.vm.selectedCategory = 'Transcript';
+      wrapper.vm.selectedCategories = ['transcript'];
       await nextTick();
 
       const filteredDocuments = wrapper.vm.documents;
@@ -704,5 +777,36 @@ describe('CriminalDocumentsView.vue', () => {
       expect(documentIds[0]).toContain('IMG-001');
       expect(documentIds[1]).toContain('IMG-002');
     });
+  });
+
+  it('removes stale selected categories that are no longer valid', async () => {
+    wrapper.vm.selectedCategories = ['bail'];
+
+    await wrapper.setProps({
+      participants: [
+        {
+          fullName: 'New Person',
+          lastNm: 'Person',
+          givenNm: 'New',
+          profSeqNo: 99,
+          keyDocuments: [],
+          document: [
+            {
+              issueDate: '2023-09-01',
+              documentTypeDescription: 'Only Transcript',
+              category: 'Transcript',
+              documentPageCount: 1,
+              imageId: '999',
+              docmDispositionDsc: 'Disposition',
+            },
+          ],
+        },
+      ],
+    });
+
+    await nextTick();
+
+    expect(wrapper.vm.selectedCategories).toEqual([]);
+    expect(wrapper.vm.documentsSectionTitle).toBe('All Documents');
   });
 });

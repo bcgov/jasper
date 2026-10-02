@@ -355,10 +355,10 @@ describe('shared.openCivilDocument', () => {
 });
 
 describe('shared.getBaseCivilDocumentTableHeaders', () => {
-  describe('when isScheduledCategory is false (default)', () => {
-    it('should return 7 headers', () => {
+  describe('standard Civil headers', () => {
+    it('should return 8 headers', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
-      expect(headers).toHaveLength(7);
+      expect(headers).toHaveLength(8);
     });
 
     it('should have correct SEQ header', () => {
@@ -366,6 +366,7 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[0]).toEqual({
         title: 'SEQ',
         key: 'fileSeqNo',
+        minWidth: '2rem',
         width: '4rem',
         maxWidth: '4rem',
       });
@@ -376,6 +377,9 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[1]).toEqual({
         title: 'DOCUMENT TYPE',
         key: 'documentTypeDescription',
+        width: '8rem',
+        minWidth: '8rem',
+        maxWidth: '8rem',
       });
     });
 
@@ -384,34 +388,37 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       expect(headers[2]).toEqual({
         title: 'ACT',
         key: 'activity',
+        width: '6rem',
+        minWidth: '4rem',
       });
     });
 
     it('should have DATE FILED header as the 4th header', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(false);
+      const headers = shared.getBaseCivilDocumentTableHeaders();
       const dateHeader = headers[3];
       expect(dateHeader.title).toBe('DATE FILED');
       expect(dateHeader.key).toBe('filedDt');
-      expect(dateHeader.width).toBe('8.5rem');
-      expect(dateHeader.maxWidth).toBe('8.5rem');
+      expect(dateHeader.width).toBe('6rem');
+      expect(dateHeader.minWidth).toBe('5rem');
+      expect(dateHeader.maxWidth).toBe('6rem');
     });
 
     it('should have value formatter for DATE FILED header', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(false);
+      const headers = shared.getBaseCivilDocumentTableHeaders();
       const dateHeader = headers[3];
       expect(dateHeader.value).toBeDefined();
       expect(typeof dateHeader.value).toBe('function');
     });
 
     it('should have sortRaw function for DATE FILED header', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(false);
+      const headers = shared.getBaseCivilDocumentTableHeaders();
       const dateHeader = headers[3];
       expect(dateHeader.sortRaw).toBeDefined();
       expect(typeof dateHeader.sortRaw).toBe('function');
     });
 
     it('should sort DATE FILED by date correctly', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(false);
+      const headers = shared.getBaseCivilDocumentTableHeaders();
       const dateHeader = headers[3];
 
       const item1 = { filedDt: '2024-01-15' } as civilDocumentType;
@@ -426,18 +433,19 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
 
     it('should have correct ORDER MADE header', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
-      const orderMadeHeader = headers[4];
+      const orderMadeHeader = headers[5];
       expect(orderMadeHeader.title).toBe('ORDER MADE');
       expect(orderMadeHeader.key).toBe('orderMadeDt');
-      expect(orderMadeHeader.width).toBe('9.5rem');
-      expect(orderMadeHeader.maxWidth).toBe('9.5rem');
+      expect(orderMadeHeader.width).toBe('6rem');
+      expect(orderMadeHeader.minWidth).toBe('5rem');
+      expect(orderMadeHeader.maxWidth).toBe('6rem');
       expect(orderMadeHeader.value).toBeDefined();
       expect(orderMadeHeader.sortRaw).toBeDefined();
     });
 
     it('should sort ORDER MADE by date correctly', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
-      const orderMadeHeader = headers[4];
+      const orderMadeHeader = headers[5];
 
       const item1 = { orderMadeDt: '2024-03-10' } as civilDocumentType;
       const item2 = { orderMadeDt: '2024-08-25' } as civilDocumentType;
@@ -448,53 +456,53 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
 
     it('should have correct FILED / SWORN BY header', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
-      expect(headers[5]).toEqual({
+      expect(headers[6]).toEqual({
         title: 'FILED / SWORN BY',
         key: 'filedBy',
+        width: '7rem',
+        maxWidth: '7rem',
       });
     });
 
     it('should have correct ISSUES header', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
-      expect(headers[6]).toEqual({
+      expect(headers[7]).toEqual({
         title: 'ISSUES',
         key: 'issue',
+        width: '7rem',
+        maxWidth: '7rem',
       });
     });
   });
 
-  describe('when isScheduledCategory is true', () => {
-    it('should return 7 headers', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(true);
-      expect(headers).toHaveLength(7);
-    });
-
-    it('should have DATE SCHEDULED header as the 4th header', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(true);
-      const dateHeader = headers[3];
+  describe('DATE SCHEDULED header', () => {
+    it('should be the 5th header', () => {
+      const headers = shared.getBaseCivilDocumentTableHeaders();
+      const dateHeader = headers[4];
       expect(dateHeader.title).toBe('DATE SCHEDULED');
       expect(dateHeader.key).toBe('nextAppearanceDt');
-      expect(dateHeader.width).toBe('8.5rem');
-      expect(dateHeader.maxWidth).toBe('8.5rem');
+      expect(dateHeader.width).toBe('6rem');
+      expect(dateHeader.minWidth).toBe('5rem');
+      expect(dateHeader.maxWidth).toBe('6rem');
     });
 
     it('should have value formatter for DATE SCHEDULED header', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(true);
-      const dateHeader = headers[3];
+      const headers = shared.getBaseCivilDocumentTableHeaders();
+      const dateHeader = headers[4];
       expect(dateHeader.value).toBeDefined();
       expect(typeof dateHeader.value).toBe('function');
     });
 
     it('should have sortRaw function for DATE SCHEDULED header', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(true);
-      const dateHeader = headers[3];
+      const headers = shared.getBaseCivilDocumentTableHeaders();
+      const dateHeader = headers[4];
       expect(dateHeader.sortRaw).toBeDefined();
       expect(typeof dateHeader.sortRaw).toBe('function');
     });
 
     it('should sort DATE SCHEDULED by date correctly', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(true);
-      const dateHeader = headers[3];
+      const headers = shared.getBaseCivilDocumentTableHeaders();
+      const dateHeader = headers[4];
 
       const item1 = { nextAppearanceDt: '2024-02-10' } as civilDocumentType;
       const item2 = { nextAppearanceDt: '2024-09-15' } as civilDocumentType;
@@ -505,32 +513,11 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
       const reverseResult = dateHeader.sortRaw!(item2, item1);
       expect(reverseResult).toBeGreaterThan(0); // item2 is after item1
     });
-
-    it('should have same first 3 headers as when isScheduledCategory is false', () => {
-      const headersScheduled = shared.getBaseCivilDocumentTableHeaders(true);
-      const headersNotScheduled =
-        shared.getBaseCivilDocumentTableHeaders(false);
-
-      expect(headersScheduled[0]).toEqual(headersNotScheduled[0]);
-      expect(headersScheduled[1]).toEqual(headersNotScheduled[1]);
-      expect(headersScheduled[2]).toEqual(headersNotScheduled[2]);
-    });
-
-    it('should have different 4th header than when isScheduledCategory is false', () => {
-      const headersScheduled = shared.getBaseCivilDocumentTableHeaders(true);
-      const headersNotScheduled =
-        shared.getBaseCivilDocumentTableHeaders(false);
-
-      expect(headersScheduled[3].title).not.toEqual(
-        headersNotScheduled[3].title
-      );
-      expect(headersScheduled[3].key).not.toEqual(headersNotScheduled[3].key);
-    });
   });
 
   describe('sortRaw edge cases', () => {
     it('should handle equal dates in DATE FILED sortRaw', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(false);
+      const headers = shared.getBaseCivilDocumentTableHeaders();
       const dateHeader = headers[3];
 
       const item1 = { filedDt: '2024-05-15' } as civilDocumentType;
@@ -541,8 +528,8 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
     });
 
     it('should handle equal dates in DATE SCHEDULED sortRaw', () => {
-      const headers = shared.getBaseCivilDocumentTableHeaders(true);
-      const dateHeader = headers[3];
+      const headers = shared.getBaseCivilDocumentTableHeaders();
+      const dateHeader = headers[4];
 
       const item1 = { nextAppearanceDt: '2024-07-20' } as civilDocumentType;
       const item2 = { nextAppearanceDt: '2024-07-20' } as civilDocumentType;
@@ -553,7 +540,7 @@ describe('shared.getBaseCivilDocumentTableHeaders', () => {
 
     it('should handle equal dates in ORDER MADE sortRaw', () => {
       const headers = shared.getBaseCivilDocumentTableHeaders();
-      const orderMadeHeader = headers[4];
+      const orderMadeHeader = headers[5];
 
       const item1 = { orderMadeDt: '2024-04-10' } as civilDocumentType;
       const item2 = { orderMadeDt: '2024-04-10' } as civilDocumentType;

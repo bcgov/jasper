@@ -68,7 +68,6 @@ module "rds" {
 module "mongodb" {
   source                    = "../../modules/MongoDocDB"
   environment               = var.environment
-  create_documentdb         = var.create_documentdb
   data_subnets_ids          = module.subnets.data_subnets_ids
   kms_key_id                = module.initial.kms_key_arn
   app_sg_id                 = data.aws_security_group.app_sg.id

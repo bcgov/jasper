@@ -2,10 +2,10 @@
 
 output mongo_cluster_endpoint {
   description = "The connection endpoint for the DocumentDB cluster."
-  value       = one(aws_docdb_cluster.mongo_cluster[*].endpoint)
+  value       = aws_docdb_cluster.mongo_cluster.endpoint
 }
 
 output mongo_cluster_arn {
   description = "The ARN of the DocumentDB cluster."
-  value       = one(aws_docdb_cluster.mongo_cluster[*].arn)
+  value       = aws_docdb_cluster.mongo_cluster.arn
 }

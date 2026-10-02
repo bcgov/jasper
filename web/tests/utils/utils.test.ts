@@ -6,12 +6,36 @@ import {
   isCourtClassLabelCriminal,
   isPositiveInteger,
   parseQueryStringToString,
+  resolveCourtLocation,
 } from '@/utils/utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/stores');
 
 describe('utils', () => {
+  describe('resolveCourtLocation', () => {
+    const locations = [
+      { locationId: '1', name: 'Court A', infoLink: 'a' },
+      { locationId: '2', name: 'Court B', infoLink: 'b' },
+    ] as any[];
+
+    it('matches by id', () => {
+      expect(resolveCourtLocation(locations, '2', 'Court A')?.infoLink).toBe(
+        'b'
+      );
+    });
+
+    it('falls back to name when the id does not match', () => {
+      expect(resolveCourtLocation(locations, '99', 'Court B')?.infoLink).toBe(
+        'b'
+      );
+    });
+
+    it('returns undefined when nothing matches', () => {
+      expect(resolveCourtLocation(locations, '99', 'Nope')).toBeUndefined();
+      expect(resolveCourtLocation(locations)).toBeUndefined();
+    });
+  });
   describe('parseQueryStringToString', () => {
     it('returns the string when value is a string', () => {
       expect(parseQueryStringToString('test')).toBe('test');

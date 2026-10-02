@@ -87,7 +87,20 @@
       </template>
 
       <template v-if="item.homeLocationNm">
+        <v-btn
+          v-if="commonStore.appInfo?.useCourtLocations"
+          variant="text"
+          icon
+          size="small"
+          @click="openCourtLocation(item)"
+        >
+          <TooltipIcon
+            :text="'Court file home location: ' + item.homeLocationNm"
+            :icon="mdiHomeOutline"
+          />
+        </v-btn>
         <TooltipIcon
+          v-else
           :text="'Court file home location: ' + item.homeLocationNm"
           :icon="mdiHomeOutline"
         />
@@ -171,7 +184,7 @@
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
-  import { useCourtFileSearchStore } from '@/stores';
+  import { useCommonStore, useCourtFileSearchStore } from '@/stores';
   import {
     CourtClassEnum,
     CourtLevelEnum,
@@ -195,6 +208,13 @@
   } from '@mdi/js';
   import { computed, ref } from 'vue';
 
+  const emit = defineEmits<{
+    (
+      event: 'open-location-info',
+      opts: { locationId?: string; locationName?: string }
+    ): void;
+  }>();
+
   const selected = ref<CourtListAppearance[]>([]);
   const sortBy = ref([
     { key: 'appearanceSequenceNumber', order: 'asc' },
@@ -205,6 +225,7 @@
       order: 'asc',
     },
   ] as const);
+  const commonStore = useCommonStore();
 
   const props = defineProps<{
     data: CourtListAppearance[];
@@ -442,5 +463,12 @@
   const getGroupDisplayName = (sortableValue: string) => {
     // Extract the court class name from the sortable key (format: "00-Criminal - Adult")
     return sortableValue.split('-').slice(1).join('-');
+  };
+
+  const openCourtLocation = (item: CourtListAppearance) => {
+    emit('open-location-info', {
+      locationId: item.homeLocationId?.toString(),
+      locationName: item.homeLocationNm,
+    });
   };
 </script>

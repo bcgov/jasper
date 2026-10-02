@@ -48,13 +48,23 @@
           <court-list-card
             :cardInfo="pairing.card"
             :date="formatDateInstanceToYYYYMMDD(appliedDate)"
+            @open-location-info="openLocationInfo"
           />
-          <court-list-table :search="search" :data="pairing.tableData" />
+          <court-list-table
+            :search="search"
+            :data="pairing.tableData"
+            @open-location-info="openLocationInfo"
+          />
         </div>
       </template>
       <court-list-table-search-dialog
         v-model:showDialog="showDialog"
         :on-generate="onGenerateClick"
+      />
+      <CourtLocationInfoDialog
+        v-model="showLocationDialog"
+        :agencyIdCode="locationDialogAgencyId"
+        :locationUrl="locationDialogUrl"
       />
     </v-skeleton-loader>
     <div
@@ -70,6 +80,7 @@
 <script setup lang="ts">
   import shared from '@/components/shared';
   import { CourtListService } from '@/services';
+  import { useCommonStore } from '@/stores';
   import { ApiResponse } from '@/types/ApiResponse';
   import { DivisionEnum } from '@/types/common';
   import {
@@ -80,17 +91,21 @@
   } from '@/types/courtlist';
   import { DocumentRequestType } from '@/types/shared';
   import {
-    formatDateInstanceToYYYYMMDD,
     formatDateInstanceToDDMMMYYYY,
+    formatDateInstanceToYYYYMMDD,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
-  import { parseQueryStringToString } from '@/utils/utils';
+  import {
+    parseQueryStringToString,
+    resolveCourtLocation,
+  } from '@/utils/utils';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
   import { computed, inject, provide, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import CourtListSearch from './CourtListSearch.vue';
   import CourtListTable from './CourtListTable.vue';
   import CourtListTableSearch from './CourtListTableSearch.vue';
+  import CourtLocationInfoDialog from './CourtLocationInfoDialog.vue';
 
   const route = useRoute();
   const router = useRouter();
@@ -253,6 +268,25 @@
   provide('menuClicked', () => {
     showDialog.value = true;
   });
+
+  const commonStore = useCommonStore();
+  const showLocationDialog = ref(false);
+  const locationDialogAgencyId = ref<string>();
+  const locationDialogUrl = ref<string>();
+
+  const openLocationInfo = (opts: {
+    locationId?: string;
+    locationName?: string;
+  }) => {
+    const match = resolveCourtLocation(
+      commonStore.courtRoomsAndLocations,
+      opts.locationId,
+      opts.locationName
+    );
+    locationDialogAgencyId.value = match?.agencyIdentifierCd;
+    locationDialogUrl.value = match?.infoLink;
+    showLocationDialog.value = true;
+  };
 
   const onGenerateClick = (reportType: 'Daily' | 'Additions') => {
     documentUrls.value = [];

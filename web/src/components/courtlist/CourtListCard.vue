@@ -48,8 +48,21 @@
         </v-col>
         <v-col>
           <h5>
-            <a :href="infoAddress" target="_blank">
-              See more about this location
+            <button
+              v-if="commonStore.appInfo?.useCourtLocations"
+              type="button"
+              class="link-button text-decoration-underline cursor-pointer"
+              @click="
+                emit('open-location-info', {
+                  locationId: cardInfo.courtListLocationID.toString(),
+                  locationName: cardInfo.courtListLocation,
+                })
+              "
+            >
+              {{ seeMoreText }}
+            </button>
+            <a :href="matchedLocation?.infoLink" target="_blank" v-else>
+              {{ seeMoreText }}
               <v-icon :icon="mdiOpenInNew" size="x-small" />
             </a>
           </h5>
@@ -63,6 +76,7 @@
   import { PERMISSIONS } from '@/constants/permissions';
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
+  import { resolveCourtLocation } from '@/utils/utils';
   import { mdiOpenInNew } from '@mdi/js';
   import { computed, PropType } from 'vue';
   import { useRouter } from 'vue-router';
@@ -78,8 +92,17 @@
     },
   });
 
+  const seeMoreText = 'See more about this location';
+
   const commonStore = useCommonStore();
   const router = useRouter();
+
+  const emit = defineEmits<{
+    (
+      event: 'open-location-info',
+      opts: { locationId?: string; locationName?: string }
+    ): void;
+  }>();
 
   const canViewSharedFolder = computed(
     () =>
@@ -102,13 +125,21 @@
     window.open(route.href, '_blank', 'noopener');
   };
 
-  const infoAddress = computed<string>(() => {
-    // Try to get the location from the store using the id since it is the most reliable.
-    // Failing that, try to get the location from the name
-    return commonStore.courtRoomsAndLocations.filter(
-      (location) =>
-        location.locationId === props.cardInfo.courtListLocationID.toString() ||
-        location.name === props.cardInfo.courtListLocation
-    )[0]?.infoLink;
-  });
+  const matchedLocation = computed(() =>
+    resolveCourtLocation(
+      commonStore.courtRoomsAndLocations,
+      props.cardInfo.courtListLocationID.toString(),
+      props.cardInfo.courtListLocation
+    )
+  );
 </script>
+
+<style scoped>
+  .link-button {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+  }
+</style>

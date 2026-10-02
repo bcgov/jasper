@@ -109,6 +109,13 @@ public class RepositoryBase<TEntity>(JasperDbContext context, IMongoDatabase mon
         var toInsert = replacements?.ToList() ?? [];
         var collection = _mongoDb.GetCollection<TEntity>(collectionName);
 
+        var now = DateTime.UtcNow;
+        foreach (var entity in toInsert)
+        {
+            entity.Ent_Dtm = now;
+            entity.Upd_Dtm = now;
+        }
+
         using var session = await _mongoDb.Client.StartSessionAsync();
 
         await session.WithTransactionAsync(async (s, ct) =>

@@ -458,6 +458,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<IGroupService, GroupService>();
                 services.AddScoped<IRoleService, RoleService>();
                 services.AddScoped<ICourtLocationService, CourtLocationService>();
+                services.AddScoped<IUserArtifactService, UserArtifactService>();
                 services.AddTransient<IQuickLinkService, QuickLinkService>();
                 services.AddTransient<IOrderService, OrderService>();
                 services.AddTransient<IRecurringJob, SyncDocumentCategoriesJob>();

@@ -20,6 +20,7 @@
               class="mr-1 inherit-color d-inline-flex"
               :href="locationUrl"
               target="_blank"
+              rel="noopener noreferrer"
               aria-label="Open location page"
             >
               <v-icon :icon="mdiOpenInNew" size="24" />

@@ -48,8 +48,13 @@
           <court-list-card
             :cardInfo="pairing.card"
             :date="formatDateInstanceToYYYYMMDD(appliedDate)"
+            @open-location-info="openLocationInfo"
           />
-          <court-list-table :search="search" :data="pairing.tableData" />
+          <court-list-table
+            :search="search"
+            :data="pairing.tableData"
+            @open-location-info="openLocationInfo"
+          />
         </div>
       </template>
       <court-list-table-search-dialog
@@ -90,7 +95,10 @@
     formatDateInstanceToYYYYMMDD,
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
-  import { parseQueryStringToString } from '@/utils/utils';
+  import {
+    parseQueryStringToString,
+    resolveCourtLocation,
+  } from '@/utils/utils';
   import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
   import { computed, inject, provide, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
@@ -270,17 +278,15 @@
     locationId?: string;
     locationName?: string;
   }) => {
-    // Match on id first since it is the most reliable, then fall back to name.
-    const match = commonStore.courtRoomsAndLocations.find(
-      (location) =>
-        (opts.locationId && location.locationId === opts.locationId) ||
-        (opts.locationName && location.name === opts.locationName)
+    const match = resolveCourtLocation(
+      commonStore.courtRoomsAndLocations,
+      opts.locationId,
+      opts.locationName
     );
     locationDialogAgencyId.value = match?.agencyIdentifierCd;
     locationDialogUrl.value = match?.infoLink;
     showLocationDialog.value = true;
   };
-  provide('openLocationInfo', openLocationInfo);
 
   const onGenerateClick = (reportType: 'Daily' | 'Additions') => {
     documentUrls.value = [];

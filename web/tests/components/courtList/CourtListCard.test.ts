@@ -45,10 +45,6 @@ const createWrapper = (
   permissions: string[] = [],
   options: {
     useCourtLocations?: boolean;
-    openLocationInfo?: (opts: {
-      locationId?: string;
-      locationName?: string;
-    }) => void;
   } = {}
 ) => {
   setUserPermissions(permissions);
@@ -80,11 +76,6 @@ const createWrapper = (
     props: {
       cardInfo: card,
       date: '2024-10-11',
-    },
-    global: {
-      provide: {
-        openLocationInfo: options.openLocationInfo,
-      },
     },
   });
 };
@@ -173,7 +164,6 @@ describe('CourtListCard.vue', () => {
   it('renders the location info button when useCourtLocations is enabled', () => {
     const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
       useCourtLocations: true,
-      openLocationInfo: vi.fn(),
     });
 
     const button = wrapper.find('button.link-button');
@@ -182,19 +172,16 @@ describe('CourtListCard.vue', () => {
     expect(wrapper.find('a[target="_blank"]').exists()).toBe(false);
   });
 
-  it('calls openLocationInfo with location details when the info button is clicked', async () => {
-    const openLocationInfo = vi.fn();
+  it('emits open-location-info with location details when the info button is clicked', async () => {
     const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
       useCourtLocations: true,
-      openLocationInfo,
     });
 
     await wrapper.find('button.link-button').trigger('click');
 
-    expect(openLocationInfo).toHaveBeenCalledWith({
-      locationId: '1',
-      locationName: 'Court A',
-    });
+    expect(wrapper.emitted('open-location-info')).toEqual([
+      [{ locationId: '1', locationName: 'Court A' }],
+    ]);
   });
 
   it('matches the location by name when the id does not match', async () => {

@@ -53,7 +53,7 @@
               type="button"
               class="link-button text-decoration-underline cursor-pointer"
               @click="
-                openLocationInfo?.({
+                emit('open-location-info', {
                   locationId: cardInfo.courtListLocationID.toString(),
                   locationName: cardInfo.courtListLocation,
                 })
@@ -76,8 +76,9 @@
   import { PERMISSIONS } from '@/constants/permissions';
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
+  import { resolveCourtLocation } from '@/utils/utils';
   import { mdiOpenInNew } from '@mdi/js';
-  import { computed, inject, PropType } from 'vue';
+  import { computed, PropType } from 'vue';
   import { useRouter } from 'vue-router';
 
   const props = defineProps({
@@ -96,10 +97,12 @@
   const commonStore = useCommonStore();
   const router = useRouter();
 
-  const openLocationInfo =
-    inject<(opts: { locationId?: string; locationName?: string }) => void>(
-      'openLocationInfo'
-    );
+  const emit = defineEmits<{
+    (
+      event: 'open-location-info',
+      opts: { locationId?: string; locationName?: string }
+    ): void;
+  }>();
 
   const canViewSharedFolder = computed(
     () =>
@@ -122,14 +125,13 @@
     window.open(route.href, '_blank', 'noopener');
   };
 
-  const matchedLocation = computed(() => {
-    // Match on id first since it is the most reliable, then fall back to name.
-    return commonStore.courtRoomsAndLocations.find(
-      (location) =>
-        location.locationId === props.cardInfo.courtListLocationID.toString() ||
-        location.name === props.cardInfo.courtListLocation
-    );
-  });
+  const matchedLocation = computed(() =>
+    resolveCourtLocation(
+      commonStore.courtRoomsAndLocations,
+      props.cardInfo.courtListLocationID.toString(),
+      props.cardInfo.courtListLocation
+    )
+  );
 </script>
 
 <style scoped>

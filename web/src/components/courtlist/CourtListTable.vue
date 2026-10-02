@@ -206,12 +206,14 @@
     mdiNotebookOutline,
     mdiTrashCanOutline,
   } from '@mdi/js';
-  import { computed, inject, ref } from 'vue';
+  import { computed, ref } from 'vue';
 
-  const openLocationInfo =
-    inject<(opts: { locationId?: string; locationName?: string }) => void>(
-      'openLocationInfo'
-    );
+  const emit = defineEmits<{
+    (
+      event: 'open-location-info',
+      opts: { locationId?: string; locationName?: string }
+    ): void;
+  }>();
 
   const selected = ref<CourtListAppearance[]>([]);
   const sortBy = ref([
@@ -464,7 +466,7 @@
   };
 
   const openCourtLocation = (item: CourtListAppearance) => {
-    openLocationInfo?.({
+    emit('open-location-info', {
       locationId: item.homeLocationId?.toString(),
       locationName: item.homeLocationNm,
     });

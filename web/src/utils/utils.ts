@@ -7,7 +7,12 @@ import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
 import { civilAppearancesListType } from '@/types/civil';
 import { civilApprDetailType } from '@/types/civil/jsonTypes';
-import { CourtClassEnum, LookupCode, UserInfo } from '@/types/common';
+import {
+  CourtClassEnum,
+  CourtRoomsJsonInfoType,
+  LookupCode,
+  UserInfo,
+} from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
 import _ from 'underscore';
@@ -383,6 +388,21 @@ export const parseQueryStringToString = (
 export const isPositiveInteger = (value) => {
   return _.isNumber(value) && value > 0;
 };
+
+/**
+ * Finds a court location by id first, since it is the most reliable, then falls back to name.
+ * @param locations The court locations to search.
+ * @param id The location id to match.
+ * @param name The location name to match when the id does not match.
+ * @returns The matching location, or undefined if none matches.
+ */
+export const resolveCourtLocation = (
+  locations: CourtRoomsJsonInfoType[],
+  id?: string,
+  name?: string
+): CourtRoomsJsonInfoType | undefined =>
+  (id ? locations.find((l) => l.locationId === id) : undefined) ??
+  (name ? locations.find((l) => l.name === name) : undefined);
 
 /**
  * Maps a known activity class description to its corresponding CSS class name.

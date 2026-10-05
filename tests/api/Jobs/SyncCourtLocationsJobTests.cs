@@ -218,6 +218,7 @@ public class SyncCourtLocationsJobTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _job.Execute());
 
+        _mockExcelParser.Verify(p => p.Open(It.IsAny<Stream>()), Times.Never());
         _mockClService.Verify(
             s => s.ReplaceCourtLocationsAsync(It.IsAny<CourtLocationDto[]>()),
             Times.Never());

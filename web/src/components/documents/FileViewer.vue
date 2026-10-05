@@ -21,9 +21,16 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-  import type NutrientViewer from '@nutrient-sdk/viewer';
   import type { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
-  import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+  import NutrientViewer from '@nutrient-sdk/viewer';
+  import {
+    computed,
+    defineProps,
+    inject,
+    onMounted,
+    onUnmounted,
+    ref,
+  } from 'vue';
   import { useRoute } from 'vue-router';
   import ReviewModal from './ReviewModal.vue';
   import type { AnyPDFViewerStrategy } from './strategies/PDFStrategyFactory';
@@ -53,10 +60,7 @@
 
     return typeof value === 'string' && value.length > 0 ? value : undefined;
   });
-  const nutrientViewer: typeof NutrientViewer = globalThis.NutrientViewer;
-  if (!nutrientViewer) {
-    throw new Error('Nutrient Web SDK is not loaded.');
-  }
+  const nutrientViewer = NutrientViewer;
 
   const orderService = inject<OrderService>('orderService');
   if (!orderService) {
@@ -68,6 +72,7 @@
   const configuration = {
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
+    useCDN: true,
     styleSheets: [`${import.meta.env.BASE_URL}styles/nutrient-toolbar.css`],
   };
 
@@ -139,6 +144,10 @@
         line: {
           ...presets.line,
           strokeColor: nutrientViewer.Color.RED,
+        },
+        text: {
+          ...presets.text,
+          fontSize: 14,
         },
       }));
 

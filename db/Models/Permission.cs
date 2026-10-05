@@ -63,6 +63,9 @@ namespace Scv.Db.Models
         public const string VIEW_TRANSITORY_DOCUMENTS = "VIEW_TRANSITORY_DOCUMENTS";
         public const string DOWNLOAD_TRANSITORY_DOCUMENTS = "DOWNLOAD_TRANSITORY_DOCUMENTS";
 
+        // Orders
+        public const string VIEW_ORDERS_DASHBOARD = "VIEW_ORDERS_DASHBOARD";
+
         // Others
         public const string ACCESS_DARS = "ACCESS_DARS";
         public const string VIEW_QUICK_LINKS = "VIEW_QUICK_LINKS";
@@ -376,6 +379,15 @@ namespace Scv.Db.Models
                 Code = DOWNLOAD_TRANSITORY_DOCUMENTS,
                 Name = "Download Transitory Documents",
                 Description = "Permissions to download transitory documents",
+                IsActive = true
+            },
+
+            // Orders
+            new Permission
+            {
+                Code = VIEW_ORDERS_DASHBOARD,
+                Name = "View Orders Dashboard",
+                Description = "Permissions to view the 'For Signing' and 'Applications' dashboards",
                 IsActive = true
             },
 

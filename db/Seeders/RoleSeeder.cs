@@ -407,7 +407,7 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
             Permission.VIEW_TRANSITORY_DOCUMENTS,
             Permission.LIST_TRANSITORY_DOCUMENTS,
-
+            Permission.VIEW_ORDERS_DASHBOARD
         ];
     }
     #endregion Judiciary Group Permissions

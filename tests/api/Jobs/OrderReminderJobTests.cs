@@ -95,7 +95,8 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         return new Scv.Models.Person
         {
-            UserId = judgeId,
+            Id = judgeId,
+            UserId = _faker.Random.Int(),
             HomeLocationId = 123,
             Names =
             [
@@ -113,7 +114,7 @@ public class OrderReminderJobTests : ServiceTestBase
         return new PersonSearchItem
         {
             PersonId = rajId,
-            UserId = rajId,
+            UserId = _faker.Random.Int(),
             ParticipantId = participantId,
             FirstName = _faker.Name.FirstName(),
             LastName = _faker.Name.LastName(),

@@ -156,7 +156,7 @@ public class OrderReminderJob(
                 await _orderRepo.UpdateAsync(order);
 
                 Logger.LogInformation("Order {OrderId} reassigned from judge {JudgeId} to RAJ {RajId}",
-                    order.Id, judge.UserId, raj.PersonId);
+                    order.Id, judge.Id, raj.PersonId);
             }
             else
             {
@@ -177,7 +177,7 @@ public class OrderReminderJob(
     {
         if (!judge.HomeLocationId.HasValue)
         {
-            Logger.LogWarning("Judge {JudgeId} has no HomeLocationId set", judge.UserId);
+            Logger.LogWarning("Judge {JudgeId} has no HomeLocationId set", judge.Id);
             return null;
         }
 
@@ -190,7 +190,7 @@ public class OrderReminderJob(
 
     private async Task SendReassignmentNotifications(Order order, PersonSearchItem raj)
     {
-        var rajUser = await _userService.GetByJudgeIdAsync(raj.UserId);
+        var rajUser = await _userService.GetByJudgeIdAsync(raj.PersonId);
         if (rajUser == null || string.IsNullOrWhiteSpace(rajUser.Email)) return;
 
         var supportAccount = Configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
@@ -207,7 +207,7 @@ public class OrderReminderJob(
         await _orderRepo.UpdateAsync(order);
 
         Logger.LogInformation("Reassignment notification sent to RAJ {RajId} for order {OrderId} (count: {Count})",
-            raj.UserId, order.Id, order.ReassignmentNotificationsSent);
+            raj.PersonId, order.Id, order.ReassignmentNotificationsSent);
     }
 
     private async Task<(Person judge, Scv.Models.AccessControlManagement.UserDto user)> GetJudgeAndUserAsync(Order order)

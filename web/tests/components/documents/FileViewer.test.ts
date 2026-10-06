@@ -125,6 +125,7 @@ describe('FileViewer.vue', () => {
 
     Object.assign(nutrientViewerMock, {
       load: vi.fn().mockResolvedValue(mockInstance),
+      preloadWorker: vi.fn().mockResolvedValue(undefined),
       unload: vi.fn(),
       SidebarMode: { DOCUMENT_OUTLINE: 'DOCUMENT_OUTLINE' },
       Color: { RED: 'RED' },

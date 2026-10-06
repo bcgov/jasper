@@ -21,7 +21,11 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
-  import type { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
+  import type {
+    Instance,
+    StandaloneConfiguration,
+    ToolbarItem,
+  } from '@nutrient-sdk/viewer';
   import NutrientViewer from '@nutrient-sdk/viewer';
   import {
     computed,
@@ -69,7 +73,8 @@
 
   let instance!: Instance;
 
-  const configuration = {
+  const configuration: StandaloneConfiguration = {
+    document: '', // This would be overridden by the actual PDF document when loaded.
     container: '.pdf-container',
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
     useCDN: true,
@@ -127,6 +132,8 @@
       const [apiResponse] = await Promise.all([
         props.strategy.generatePDF(processedData),
         props.strategy.initialize?.(),
+        // Recommended to preload the worker for better performance.
+        nutrientViewer.preloadWorker(configuration),
       ]);
 
       loading.value = false;

@@ -19,5 +19,6 @@ public static class CollectionNameConstants
     public const string ROLES = "roles";
     public const string ROLES_ALIASES = "role_aliases";
     public const string TAGS = "tags";
+    public const string USER_ARTIFACTS = "user_artifacts";
     public const string USERS = "users";
 }

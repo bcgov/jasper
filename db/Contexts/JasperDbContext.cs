@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MongoDB.EntityFrameworkCore.Extensions;
+using Scv.Db.Contants;
 using Scv.Db.Interceptors;
 using Scv.Db.Models;
+using Scv.Models.UserArtifacts;
 
 namespace Scv.Db.Contexts
 {
@@ -21,6 +23,7 @@ namespace Scv.Db.Contexts
         public DbSet<Order> Orders { get; set; }
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
         public DbSet<CourtLocation> CourtLocations { get; set; }
+        public DbSet<UserArtifact> UserArtifacts { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -44,7 +47,7 @@ namespace Scv.Db.Contexts
             {
                 u.HasKey(u => u.Id);
                 u.HasIndex(u => u.Email).IsUnique();
-                u.ToCollection("users");
+                u.ToCollection(CollectionNameConstants.USERS);
             });
             modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
             modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
@@ -55,6 +58,15 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));
             modelBuilder.Entity<EmailTemplate>(o => o.HasKey(o => o.Id));
             modelBuilder.Entity<CourtLocation>(cl => cl.HasKey(cl => cl.Id));
+            modelBuilder.Entity<UserArtifact>(ua =>
+            {
+                ua.HasKey(a => a.Id);
+                ua.HasIndex(a => a.UserId);
+                ua.Property(a => a.ArtifactType).HasConversion<string>();
+                ua.HasDiscriminator(a => a.ArtifactType)
+                  .HasValue<Note>(ArtifactType.Note)
+                  .HasValue<Annotation>(ArtifactType.Annotation);
+            });
         }
     }
 }

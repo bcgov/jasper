@@ -57,6 +57,8 @@
     },
     dayCellTopClass: 'day-cell-top',
     dayCellInnerClass: 'day-cell-inner',
+    listItemEventBeforeClass: 'event-dot',
+    listItemEventInnerClass: 'event-inner',
     expandRows: false,
     contentHeight: 'auto',
     aspectRatio: 3,
@@ -129,14 +131,11 @@
     background-color: transparent !important;
   }
 
-  /* Hide the event graphic/dot (first child of each event) */
-  .day-cell-inner > div > div > div:first-child {
-    display: none !important;
+  .event-dot {
+    display: none;
   }
 
-  .day-cell-inner > div > div > div:last-child {
-    margin-left: 0.25rem;
-    margin-right: 0.25rem;
+  .event-inner {
     font-size: 0.875rem;
   }
 

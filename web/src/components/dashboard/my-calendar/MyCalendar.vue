@@ -59,7 +59,16 @@
   import interactionPlugin from '@fullcalendar/vue3/interaction';
   import classicThemePlugin from '@fullcalendar/vue3/themes/classic';
   import { mdiListBoxOutline } from '@mdi/js';
-  import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
+  import {
+    computed,
+    defineModel,
+    defineProps,
+    inject,
+    onMounted,
+    onUnmounted,
+    ref,
+    watch,
+  } from 'vue';
 
   const dashboardService = inject<DashboardService>('dashboardService');
 
@@ -263,9 +272,5 @@
   .court-list {
     margin-left: auto;
     color: var(--text-blue-800);
-  }
-
-  :deep(.fc-event) {
-    display: block;
   }
 </style>

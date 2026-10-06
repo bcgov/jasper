@@ -9,7 +9,7 @@ using Scv.Models.UserArtifacts;
 namespace Scv.Db.Models;
 
 [Collection(CollectionNameConstants.USER_ARTIFACTS)]
-public class UserArtifact : EntityBase
+public abstract class UserArtifact : EntityBase
 {
     public string UserId { get; set; }
 
@@ -35,5 +35,5 @@ public class Annotation : UserArtifact
     public string DocumentId { get; set; }
     public string DocumentHash { get; set; }
     public DateTime? DocumentSourceDate { get; set; }
-    public bool IsStale { get; set; }
+    public string AnnotationData { get; set; }
 }

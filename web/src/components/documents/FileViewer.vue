@@ -147,6 +147,7 @@
         },
         text: {
           ...presets.text,
+          font: 'Calibri',
           fontSize: 14,
         },
       }));

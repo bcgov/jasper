@@ -33,6 +33,7 @@
       :calendar-view="calendarView"
       :events="presidersCalendarEvents"
       :selected-date="selectedDate"
+      :baseCalendarOptions="props.baseCalendarOptions"
     >
       <template #eventContent="{ event }">
         <CourtCalendarPresidersDay
@@ -47,6 +48,7 @@
       :calendar-view="calendarView"
       :events="activitiesCalendarEvents"
       :selected-date="selectedDate"
+      :baseCalendarOptions="props.baseCalendarOptions"
     >
       <template #eventContent="{ event }">
         <CourtCalendarActivityDay
@@ -65,6 +67,7 @@
   import { ActivityClassEnum, CalendarViewEnum } from '@/types/common';
   import { LocationInfo } from '@/types/courtlist';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
+  import { CalendarOptions } from '@fullcalendar/vue3';
   import { computed, inject, onMounted, ref, watch } from 'vue';
   import CourtCalendar from './CourtCalendar.vue';
   import CourtCalendarActivityDay from './CourtCalendarActivityDay.vue';
@@ -83,6 +86,7 @@
 
   const props = defineProps<{
     judgeId: number | undefined;
+    baseCalendarOptions: CalendarOptions;
   }>();
 
   const selectedDate = defineModel<Date>('selectedDate');

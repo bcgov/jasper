@@ -23,9 +23,7 @@
     "json-schema": ">=0.4.0"
   },
   "dependencies": {
-    "@fullcalendar/core": "^6.1.20",
-    "@fullcalendar/daygrid": "^6.1.21",
-    "@fullcalendar/vue3": "^6.1.20",
+    "@fullcalendar/vue3": "^7.0.1",
     "@microsoft/signalr": "10.0.0",
     "@nutrient-sdk/viewer": "^1.18.0",
     "@types/luxon": "^3.7.4",
@@ -40,6 +38,7 @@
     "pinia": "^4.0.2",
     "pinia-plugin-persistedstate": "^4.7.1",
     "splunk-logging": "^0.11.1",
+    "temporal-polyfill": "^1.0.5",
     "underscore": "^1.13.8",
     "uuid": "^14.0.1",
     "vue": "^3.5.41",

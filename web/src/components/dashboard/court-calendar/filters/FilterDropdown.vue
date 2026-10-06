@@ -97,7 +97,7 @@
     }
   );
 
-  const selectedItems = defineModel<string[]>({ default: [] });
+  const selectedItems = defineModel<string[]>({ default: () => [] });
 
   const selectedItemObjects = ref<TextValue[]>([]);
 

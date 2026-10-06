@@ -136,7 +136,7 @@
 <style scoped>
   .calendar-day {
     color: var(--text-blue-800) !important;
-    font-size: 0.75rem;
+    width: 100%;
   }
 
   .is-borrowed {

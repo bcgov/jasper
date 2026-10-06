@@ -22,8 +22,7 @@ export type NotificationHandler<TPayload = unknown> = (
 export class NotificationsService {
   private connection: HubConnection | null = null;
   private handlerProvider:
-    | ((type: NotificationType) => Iterable<NotificationHandler<unknown>>)
-    | null = null;
+    (() => Iterable<NotificationHandler<unknown>>) | null = null;
   private readonly seenAckGuids = new Set<string>();
   private readonly seenAckQueue: string[] = [];
   private readonly maxSeenAckGuids = 200;

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using LazyCache;
@@ -15,6 +14,7 @@ using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Db.Contants;
+using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.UserArtifacts;
 using Xunit;

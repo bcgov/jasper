@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Scv.Models.UserArtifacts;
 using Xunit;
 
 namespace tests.Api.Helpers;

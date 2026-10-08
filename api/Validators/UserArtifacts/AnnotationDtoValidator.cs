@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Scv.Models.UserArtifacts;
 
 namespace Scv.Api.Validators.UserArtifacts;
 

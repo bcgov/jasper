@@ -1,4 +1,6 @@
 using Mapster;
+using Scv.Db.Models;
+using Scv.Models.UserArtifacts;
 
 namespace Scv.Api.Infrastructure.Mappings;
 

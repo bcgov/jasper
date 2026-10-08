@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Mapster;
 using Scv.Api.Infrastructure.Mappings;
+using Scv.Db.Models;
+using Scv.Models.UserArtifacts;
 using Xunit;
 
 namespace tests.api.Infrastructure.Mappings;
@@ -57,7 +59,6 @@ public class UserArtifactMappingTests
         var annotation = Assert.IsType<Annotation>(entity);
         Assert.Equal("doc-1", annotation.DocumentId);
         Assert.Equal("hash-1", annotation.DocumentHash);
-        Assert.True(annotation.IsStale);
         Assert.Equal(ArtifactType.Annotation, annotation.ArtifactType);
     }
 

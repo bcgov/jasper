@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Services;
 using Scv.Models.UserArtifacts;
 
 namespace Scv.Api.Controllers;

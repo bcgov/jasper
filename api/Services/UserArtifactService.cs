@@ -12,6 +12,7 @@ using MongoDB.Driver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
+using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.UserArtifacts;
 
@@ -230,10 +231,10 @@ public class UserArtifactService(
             filter &= filterBuilder.Eq(a => a.DeletedDate, null);
         }
 
-        if (criteria.ArtifactType.HasValue)
-        {
-            filter &= filterBuilder.Eq("ArtifactType", criteria.ArtifactType.Value.ToString());
-        }
+        //if (criteria.ArtifactType.HasValue)
+        //{
+        //    filter &= filterBuilder.Eq("ArtifactType", criteria.ArtifactType.Value.ToString());
+        //}
 
         if (criteria.LabelKeysExist?.Count > 0)
         {

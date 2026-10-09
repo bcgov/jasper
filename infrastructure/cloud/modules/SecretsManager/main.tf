@@ -276,6 +276,7 @@ resource "aws_secretsmanager_secret_version" "order_secret_value" {
     orderMaxReminderNotifications     = "",
     orderReassignmentThresholdDays    = "",
     orderReminderThresholdDays        = "",
+    scl029Url                         = ""
   })
   lifecycle {
     ignore_changes = [secret_string]

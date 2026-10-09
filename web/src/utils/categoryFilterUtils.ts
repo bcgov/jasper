@@ -1,16 +1,21 @@
-export const DEFAULT_OTHER_LABEL = 'Other';
 export const DEFAULT_SECTION_TITLE = 'All Documents';
 export const MULTI_SECTION_TITLE = 'Selected Categories';
+export const OTHER_CATEGORY_LABEL = 'Other';
+export const SCHEDULED_CATEGORY_FILTER = '__scheduled__';
+export const UNCATEGORIZED_CATEGORY_FILTER = '__uncategorized__';
+export const UNCATEGORIZED_CATEGORY_LABEL = 'Uncategorized';
 
 type CategoryValue = string | null | undefined;
 
-const normalizeCategory = (value: CategoryValue): string =>
+export const normalizeCategory = (value: CategoryValue): string =>
   (value ?? '').trim().toLowerCase();
 
 export const isAllOptionsSelected = (
   selectedValues: string[],
-  totalOptions: number
-): boolean => totalOptions > 0 && selectedValues.length === totalOptions;
+  validValues: string[]
+): boolean =>
+  validValues.length > 0 &&
+  validValues.every((value) => selectedValues.includes(value));
 
 export const getActiveSelections = (
   selectedValues: string[],
@@ -21,8 +26,17 @@ export const pruneInvalidSelections = (
   selectedValues: string[],
   validValues: string[]
 ): string[] => {
-  const validSet = new Set(validValues);
-  return selectedValues.filter((value) => validSet.has(value));
+  const validValuesByIdentity = new Map(
+    validValues.map((value) => [normalizeCategory(value), value])
+  );
+
+  return [
+    ...new Set(
+      selectedValues
+        .map((value) => validValuesByIdentity.get(normalizeCategory(value)))
+        .filter((value): value is string => value !== undefined)
+    ),
+  ];
 };
 
 export const getSectionTitle = (
@@ -51,7 +65,7 @@ export const matchesCategorySelection = <T>(
   activeValues: string[],
   getCategory: (entry: T) => CategoryValue,
   options?: {
-    otherLabel?: string;
+    uncategorizedValue?: string;
     specialPredicates?: Record<string, (entry: T) => boolean>;
   }
 ): boolean => {
@@ -60,8 +74,8 @@ export const matchesCategorySelection = <T>(
   }
 
   const normalizedCategory = normalizeCategory(getCategory(item));
-  const normalizedOtherLabel = normalizeCategory(
-    options?.otherLabel ?? DEFAULT_OTHER_LABEL
+  const normalizedUncategorizedValue = normalizeCategory(
+    options?.uncategorizedValue ?? UNCATEGORIZED_CATEGORY_FILTER
   );
 
   return activeValues.some((value) => {
@@ -72,7 +86,7 @@ export const matchesCategorySelection = <T>(
       return specialPredicate(item);
     }
 
-    if (normalizedValue === normalizedOtherLabel) {
+    if (normalizedValue === normalizedUncategorizedValue) {
       return !normalizedCategory;
     }
 

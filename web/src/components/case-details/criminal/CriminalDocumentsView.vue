@@ -15,21 +15,12 @@
     <v-row v-if="type === 'documents'">
       <v-col cols="6" />
       <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
-        <v-select
-          v-model="selectedCategory"
-          placeholder="All documents"
-          hide-details
+        <ChipMultiSelect
+          v-model="selectedCategories"
           :items="documentCategories"
-          item-title="title"
-          item-value="value"
-        >
-          <template v-slot:item="{ props: itemProps, item }">
-            <v-list-item
-              v-bind="itemProps"
-              :title="`${item.title} (${item.count})`"
-            ></v-list-item>
-          </template>
-        </v-select>
+          :select-all-count="unfilteredDocuments.length"
+          placeholder="All documents"
+        />
       </v-col>
     </v-row>
     <v-card
@@ -42,9 +33,7 @@
         <v-row align="center" no-gutters>
           <v-col class="text-headline-small" cols="6">
             {{
-              type === 'keyDocuments'
-                ? 'Key Documents'
-                : getCategoryDisplayTitle()
+              type === 'keyDocuments' ? 'Key Documents' : documentsSectionTitle
             }}
             ({{ documentList.length }})
           </v-col>
@@ -155,7 +144,20 @@
   import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
   import { formatFromFullname } from '@/utils/utils';
   import { mdiFileDocumentMultipleOutline } from '@mdi/js';
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
+  import {
+    getActiveSelections,
+    pruneInvalidSelections,
+    getSectionTitle,
+    getUncategorizedCount,
+    isAllOptionsSelected,
+    matchesCategorySelection,
+    normalizeCategory,
+    OTHER_CATEGORY_LABEL,
+    UNCATEGORIZED_CATEGORY_FILTER,
+    UNCATEGORIZED_CATEGORY_LABEL,
+  } from '@/utils/categoryFilterUtils';
+  import ChipMultiSelect from '../common/ChipMultiSelect.vue';
 
   const props = defineProps<{ participants: criminalParticipantType[] }>();
 
@@ -165,15 +167,40 @@
   );
   const sortBy = ref([{ key: 'issueDate', order: 'desc' }] as const);
   const keyDocumentsSortBy = ref([{ key: 'category', order: 'asc' }] as const);
-  const selectedCategory = ref<string>();
+  const selectedCategories = ref<string[]>([]);
   const selectedAccused = ref<string>();
+  type CriminalViewDocument = documentType & {
+    fullName?: string;
+    fullNameLastFirst?: string;
+    profSeqNo?: string | number;
+    id: string;
+  };
 
-  const filterByCategory = (item: any) =>
-    !selectedCategory.value ||
-    item.category?.toLowerCase() === selectedCategory.value?.toLowerCase();
-  const filterByAccused = (item: any) =>
+  const isAllSelected = computed<boolean>(() =>
+    isAllOptionsSelected(
+      selectedCategories.value,
+      documentCategories.value.map((category) => category.value)
+    )
+  );
+
+  const activeCategories = computed<string[]>(() =>
+    getActiveSelections(selectedCategories.value, isAllSelected.value)
+  );
+
+  const filterByCategory = (item: CriminalViewDocument) => {
+    return matchesCategorySelection(
+      item,
+      activeCategories.value,
+      (doc) => doc.category,
+      {
+        uncategorizedValue: UNCATEGORIZED_CATEGORY_FILTER,
+      }
+    );
+  };
+
+  const filterByAccused = (item: CriminalViewDocument) =>
     !selectedAccused.value ||
-    (item.fullName &&
+    (!!item.fullName &&
       formatFromFullname(item.fullName) === selectedAccused.value);
 
   const unfilteredDocuments = computed(
@@ -220,29 +247,72 @@
     unfilteredKeyDocuments.value.filter(filterByAccused)
   );
 
+  const getUncategorizedDocumentCount = (): number =>
+    getUncategorizedCount(unfilteredDocuments.value, (doc) => doc.category);
+
   const categoryCount = (category: string): number => {
-    return unfilteredDocuments.value.filter((doc) => doc.category === category)
-      .length;
+    if (category === UNCATEGORIZED_CATEGORY_FILTER) {
+      return getUncategorizedDocumentCount();
+    }
+
+    return unfilteredDocuments.value.filter(
+      (doc) => normalizeCategory(doc.category) === category
+    ).length;
   };
 
-  const getCategoryDisplayTitle = (): string => {
-    return selectedCategory.value ? selectedCategory.value : 'All Documents';
-  };
+  const getCategoryDisplayTitle = (category: string): string =>
+    documentCategories.value.find((option) => option.value === category)
+      ?.title ?? category;
+
+  const documentsSectionTitle = computed<string>(() =>
+    getSectionTitle(activeCategories.value, getCategoryDisplayTitle)
+  );
 
   const documentCategories = computed<
     { title: string; value: string; count: number }[]
-  >(() =>
-    [
-      ...new Set(
-        (unfilteredDocuments.value ?? [])
-          .filter((doc) => doc.category)
-          .map((doc) => doc.category)
-      ),
-    ].map((category) => ({
-      title: category,
-      value: category,
-      count: categoryCount(category),
-    }))
+  >(() => {
+    const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+    const categoriesByIdentity = new Map<string, string>();
+
+    unfilteredDocuments.value.forEach((document) => {
+      const identity = normalizeCategory(document.category);
+      if (identity && !categoriesByIdentity.has(identity)) {
+        categoriesByIdentity.set(identity, document.category.trim());
+      }
+    });
+
+    return [...categoriesByIdentity]
+      .map(([value, title]) => ({
+        title: value === 'other' ? OTHER_CATEGORY_LABEL : title,
+        value,
+        count: categoryCount(value),
+      }))
+      .concat(
+        uncategorizedDocumentCount > 0
+          ? [
+              {
+                title: UNCATEGORIZED_CATEGORY_LABEL,
+                value: UNCATEGORIZED_CATEGORY_FILTER,
+                count: uncategorizedDocumentCount,
+              },
+            ]
+          : []
+      );
+  });
+
+  watch(
+    documentCategories,
+    (categories) => {
+      const filteredSelections = pruneInvalidSelections(
+        selectedCategories.value,
+        categories.map((category) => category.value)
+      );
+
+      if (filteredSelections.length !== selectedCategories.value.length) {
+        selectedCategories.value = filteredSelections;
+      }
+    },
+    { immediate: true }
   );
 
   const groupBy = ref([

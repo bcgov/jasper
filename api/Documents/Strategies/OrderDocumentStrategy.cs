@@ -17,6 +17,7 @@ using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Document;
 using Scv.Models.Order;
+using GdP = GdPicture14;
 
 namespace Scv.Api.Documents.Strategies;
 

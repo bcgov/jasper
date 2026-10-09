@@ -16,21 +16,12 @@
   <v-row>
     <v-col cols="6" />
     <v-col cols="3" class="ml-auto" v-if="documentCategories.length > 1">
-      <v-select
-        v-model="selectedCategory"
-        placeholder="All documents"
-        hide-details
+      <ChipMultiSelect
+        v-model="selectedCategories"
         :items="documentCategories"
-        item-title="title"
-        item-value="value"
-      >
-        <template v-slot:item="{ props: itemProps, item }">
-          <v-list-item
-            v-bind="itemProps"
-            :title="`${item.title} (${categoryCount(item.value)})`"
-          ></v-list-item>
-        </template>
-      </v-select>
+        :select-all-count="uniqueDocuments.length"
+        placeholder="All documents"
+      />
     </v-col>
   </v-row>
   <AllDocuments
@@ -43,9 +34,10 @@
     :openIndividualDocument
     :selectedItems
     :binderDocumentIds="currentBinder?.documents.map((d) => d.documentId) ?? []"
-    :selectedCategory="selectedCategory"
+    :hasActiveFilters="activeCategories.length > 0"
+    :sectionTitle="allDocumentsSectionTitle"
     :sortBy
-    :getCategoryDisplayTitle="getCategoryDisplayTitle"
+    :pinToBottom="isCourtSummary"
     @update:selectedItems="(val) => (selectedItems = val)"
   />
 
@@ -122,11 +114,25 @@
   } from '@/types/shared';
   import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
+    getActiveSelections,
+    pruneInvalidSelections,
+    getSectionTitle,
+    getUncategorizedCount,
+    isAllOptionsSelected,
+    matchesCategorySelection,
+    normalizeCategory,
+    OTHER_CATEGORY_LABEL,
+    SCHEDULED_CATEGORY_FILTER,
+    UNCATEGORIZED_CATEGORY_FILTER,
+    UNCATEGORIZED_CATEGORY_LABEL,
+  } from '@/utils/categoryFilterUtils';
+  import {
     mdiFileDocumentMultipleOutline,
     mdiNotebookOutline,
     mdiNotebookRemoveOutline,
   } from '@mdi/js';
   import { computed, inject, onMounted, ref, watch } from 'vue';
+  import ChipMultiSelect from '../common/ChipMultiSelect.vue';
   import AllDocuments from './documents/AllDocuments.vue';
   import JudicialBinder from './documents/JudicialBinder.vue';
 
@@ -171,24 +177,62 @@
   const scheduledDocuments = computed(() =>
     uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt)
   );
-  const selectedCategory = ref<string | undefined>(
-    scheduledDocuments.value.length > 0 ? SCHEDULED_CATEGORY : undefined
-  );
+  const selectedCategories = ref<string[]>([]);
   const isBinderLoading = ref(true);
   const rolesLoading = ref(false);
   const roles = ref<LookupCode[]>();
   const currentBinder = ref<Binder>();
   const courtClassCdStyle = getCourtClassStyle(props.courtClassCd);
-  const sortBy = computed<[{ key: string; order: 'desc' | 'asc' }]>(() => {
-    return selectedCategory?.value === CSR_CATEGORY
-      ? [{ key: 'filedDt', order: 'desc' as const }]
-      : [{ key: 'fileSeqNo', order: 'desc' as const }];
-  });
+  const isAllSelected = computed<boolean>(() =>
+    isAllOptionsSelected(
+      selectedCategories.value,
+      documentCategories.value.map((category) => category.value)
+    )
+  );
+  const activeCategories = computed<string[]>(() =>
+    getActiveSelections(selectedCategories.value, isAllSelected.value)
+  );
+  const allDocumentsSectionTitle = computed<string>(() =>
+    getSectionTitle(activeCategories.value, getCategoryDisplayTitle)
+  );
+
+  const isCourtSummary = (document: civilDocumentType): boolean =>
+    normalizeCategory(document.category) === normalizeCategory(CSR_CATEGORY);
+
+  const compareDates = (dateA: string, dateB: string): number => {
+    const timeA = new Date(dateA).getTime();
+    const timeB = new Date(dateB).getTime();
+    return (
+      (Number.isNaN(timeA) ? Number.NEGATIVE_INFINITY : timeA) -
+      (Number.isNaN(timeB) ? Number.NEGATIVE_INFINITY : timeB)
+    );
+  };
+
+  const sortBy = computed<{ key: string; order: 'desc' | 'asc' }[]>(() => [
+    { key: 'nextAppearanceDt', order: 'desc' },
+    { key: 'fileSeqNo', order: 'desc' },
+  ]);
 
   const headers = computed<DataTableHeader[]>(() => {
-    const baseHeaders = shared.getBaseCivilDocumentTableHeaders(
-      selectedCategory.value === SCHEDULED_CATEGORY
-    );
+    const baseHeaders = shared
+      .getBaseCivilDocumentTableHeaders()
+      .map((header) =>
+        header.key === 'nextAppearanceDt'
+          ? {
+              ...header,
+              sortRaw: (
+                documentA: civilDocumentType,
+                documentB: civilDocumentType
+              ) =>
+                isCourtSummary(documentA) && isCourtSummary(documentB)
+                  ? compareDates(documentA.filedDt, documentB.filedDt)
+                  : compareDates(
+                      documentA.nextAppearanceDt,
+                      documentB.nextAppearanceDt
+                    ),
+            }
+          : header
+      );
 
     return [
       ...baseHeaders,
@@ -197,6 +241,8 @@
         key: 'binderMenu',
         align: 'end' as const,
         sortable: false,
+        width: '4rem',
+        maxWidth: '4rem',
       },
     ];
   });
@@ -254,48 +300,108 @@
     return binderDocument;
   };
 
-  const getCategoryDisplayTitle = (category: string): string => {
+  const getBackendCategoryDisplayTitle = (category: string): string => {
     const categoryMap: Record<string, string> = {
-      Affidavits: AFF_FIN_STMT,
-      CSR: CSR_CATEGORY_DESC,
-      LITIGANT: LITIGANT,
+      affidavits: AFF_FIN_STMT,
+      csr: CSR_CATEGORY_DESC,
+      litigant: LITIGANT,
+      other: OTHER_CATEGORY_LABEL,
     };
-    return categoryMap[category] || category;
+    return categoryMap[normalizeCategory(category)] || category.trim();
   };
 
-  const documentCategories = computed<{ title: string; value: string }[]>(() =>
-    (scheduledDocuments.value.length > 0
-      ? [{ title: SCHEDULED_CATEGORY, value: SCHEDULED_CATEGORY }]
-      : []
+  const getCategoryDisplayTitle = (category: string): string =>
+    documentCategories.value.find((option) => option.value === category)
+      ?.title ?? category;
+
+  const getUncategorizedDocumentCount = (): number =>
+    getUncategorizedCount(uniqueDocuments.value, (doc) => doc.category);
+
+  const categoryCount = (category: string): number => {
+    if (category === SCHEDULED_CATEGORY_FILTER) {
+      return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
+    }
+
+    if (category === UNCATEGORIZED_CATEGORY_FILTER) {
+      return getUncategorizedDocumentCount();
+    }
+
+    return uniqueDocuments.value.filter(
+      (doc) => normalizeCategory(doc.category) === category
+    ).length;
+  };
+
+  const documentCategories = computed<
+    { title: string; value: string; count: number }[]
+  >(() => {
+    const uncategorizedDocumentCount = getUncategorizedDocumentCount();
+    const categoriesByIdentity = new Map<string, string>();
+
+    uniqueDocuments.value.forEach((document) => {
+      const identity = normalizeCategory(document.category);
+      if (identity && !categoriesByIdentity.has(identity)) {
+        categoriesByIdentity.set(identity, document.category.trim());
+      }
+    });
+
+    return (
+      scheduledDocuments.value.length > 0
+        ? [
+            {
+              title: SCHEDULED_CATEGORY,
+              value: SCHEDULED_CATEGORY_FILTER,
+              count: categoryCount(SCHEDULED_CATEGORY_FILTER),
+            },
+          ]
+        : []
     ).concat(
-      [
-        ...new Set(
-          uniqueDocuments.value
-            .filter((d) => d.category)
-            .map((doc) => doc.category)
-        ),
-      ].map((category) => ({
-        title: getCategoryDisplayTitle(category),
-        value: category,
-      }))
-    )
+      [...categoriesByIdentity]
+        .map(([value, title]) => ({
+          title: getBackendCategoryDisplayTitle(title),
+          value,
+          count: categoryCount(value),
+        }))
+        .concat(
+          uncategorizedDocumentCount > 0
+            ? [
+                {
+                  title: UNCATEGORIZED_CATEGORY_LABEL,
+                  value: UNCATEGORIZED_CATEGORY_FILTER,
+                  count: uncategorizedDocumentCount,
+                },
+              ]
+            : []
+        )
+    );
+  });
+
+  watch(
+    documentCategories,
+    (categories) => {
+      const filteredSelections = pruneInvalidSelections(
+        selectedCategories.value,
+        categories.map((category) => category.value)
+      );
+
+      if (filteredSelections.length !== selectedCategories.value.length) {
+        selectedCategories.value = filteredSelections;
+      }
+    },
+    { immediate: true }
   );
 
   const filterByCategory = (item: civilDocumentType) => {
-    const category = selectedCategory.value?.toLowerCase();
-    if (!category) {
-      return true;
-    }
-
-    if (category === SCHEDULED_CATEGORY.toLowerCase()) {
-      return !!item.nextAppearanceDt;
-    }
-
-    if (category === CSR_CATEGORY_DESC.toLowerCase()) {
-      return item.category === CSR_CATEGORY;
-    }
-
-    return item.category?.toLowerCase() === category;
+    return matchesCategorySelection(
+      item,
+      activeCategories.value,
+      (doc) => doc.category,
+      {
+        uncategorizedValue: UNCATEGORIZED_CATEGORY_FILTER,
+        specialPredicates: {
+          [SCHEDULED_CATEGORY_FILTER]: (doc) => !!doc.nextAppearanceDt,
+        },
+      }
+    );
   };
 
   const filteredDocuments = computed(() =>
@@ -333,23 +439,6 @@
     },
     { immediate: true }
   );
-
-  const categoryCount = (category: string): number => {
-    if (category.toLowerCase() === SCHEDULED_CATEGORY.toLowerCase()) {
-      return uniqueDocuments.value.filter((doc) => doc.nextAppearanceDt).length;
-    }
-
-    if (category.toLowerCase() === CSR_CATEGORY_DESC.toLowerCase()) {
-      return uniqueDocuments.value.filter(
-        (doc) => doc.category === CSR_CATEGORY
-      ).length;
-    }
-
-    return uniqueDocuments.value.filter(
-      (doc) => doc.category?.toLowerCase() === category.toLowerCase()
-    ).length;
-  };
-
   onMounted(async () => {
     try {
       rolesLoading.value = true;

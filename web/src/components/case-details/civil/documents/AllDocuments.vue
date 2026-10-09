@@ -4,16 +4,12 @@
     color="var(--bg-gray-500)"
     elevation="0"
     data-testid="all-documents-container"
-    v-if="documents?.length > 0"
+    v-if="documents?.length > 0 || props.hasActiveFilters"
   >
     <v-card-text>
       <v-row align="center" no-gutters>
         <v-col class="text-headline-small" cols="6">
-          {{
-            props.selectedCategory && props.getCategoryDisplayTitle
-              ? props.getCategoryDisplayTitle(props.selectedCategory)
-              : 'All Documents'
-          }}
+          {{ props.sectionTitle || 'All Documents' }}
           ({{ documents.length }})
         </v-col>
       </v-row>
@@ -33,32 +29,30 @@
     v-if="documents?.length"
     :model-value="selectedItems"
     @update:model-value="handleSelectedItemsChange"
-    :headers="baseHeaders"
+    :headers="headers"
     :items="documents"
-    :sortBy
+    v-model:sort-by="activeSort"
+    :must-sort="!!pinToBottom"
     return-object
     item-value="civilDocumentId"
     show-select
     class="my-3"
     height="800"
   >
+    <template v-slot:[`header.nextAppearanceDt`]>
+      <span class="scheduled-date-header">DATE SCHEDULED</span>
+    </template>
     <template v-slot:[`item.documentTypeDescription`]="{ item }">
       <a
         v-if="item.imageId"
+        class="document-type"
         href="javascript:void(0)"
         @click="openIndividualDocument(item)"
       >
         {{ item.documentTypeDescription }}
       </a>
-      <span v-else>
+      <span v-else class="document-type">
         {{ item.documentTypeDescription }}
-      </span>
-      <span
-        v-if="selectedCategory === 'Scheduled' && item.filedDt"
-        class="text-caption"
-      >
-        <br />
-        Date Filed: {{ formatDateToDDMMMYYYY(item.filedDt) }}
       </span>
     </template>
     <template v-slot:[`item.activity`]="{ item }">
@@ -83,7 +77,10 @@
       />
     </template>
     <template v-slot:[`item.binderMenu`]="{ item }">
-      <EllipsesMenu :menuItems="getAllDocumentsMenuItems(item)" />
+      <EllipsesMenu
+        density="compact"
+        :menuItems="getAllDocumentsMenuItems(item)"
+      />
     </template>
   </v-data-table-virtual>
 </template>
@@ -93,7 +90,7 @@
   import { Anchor, LookupCode } from '@/types/common';
   import { DataTableHeader } from '@/types/shared';
   import { mdiNotebookOutline } from '@mdi/js';
-  import { formatDateToDDMMMYYYY } from '@/utils/dateUtils';
+  import { computed, ref, watch } from 'vue';
 
   const props = defineProps<{
     selectedItems: civilDocumentType[];
@@ -104,9 +101,10 @@
     baseHeaders: DataTableHeader[];
     binderDocumentIds: string[];
     addDocumentToBinder: (document: civilDocumentType) => void;
-    selectedCategory?: string;
-    sortBy?: [{ key: string; order: 'asc' | 'desc' }];
-    getCategoryDisplayTitle?: (category: string) => string;
+    hasActiveFilters?: boolean;
+    sectionTitle?: string;
+    sortBy?: { key: string; order: 'asc' | 'desc' }[];
+    pinToBottom?: (document: civilDocumentType) => boolean;
     openIndividualDocument: (data: civilDocumentType) => void;
   }>();
   const emit =
@@ -117,6 +115,54 @@
   const handleSelectedItemsChange = (newItems) => {
     emit('update:selectedItems', [...newItems]);
   };
+
+  const activeSort = ref([...(props.sortBy ?? [])]);
+
+  watch(
+    () => props.sortBy,
+    (sortBy) => {
+      activeSort.value = [...(sortBy ?? [])];
+    },
+    { deep: true }
+  );
+
+  const compareValues = (valueA: unknown, valueB: unknown): number =>
+    String(valueA ?? '').localeCompare(String(valueB ?? ''), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+
+  const headers = computed<DataTableHeader[]>(() =>
+    props.baseHeaders.map((header) => {
+      if (header.sortable === false || !props.pinToBottom) {
+        return header;
+      }
+
+      const baseComparator = header.sortRaw;
+      return {
+        ...header,
+        sortRaw: (
+          documentA: civilDocumentType,
+          documentB: civilDocumentType
+        ) => {
+          const isPinnedA = props.pinToBottom?.(documentA) ?? false;
+          const isPinnedB = props.pinToBottom?.(documentB) ?? false;
+
+          if (isPinnedA !== isPinnedB) {
+            const displayedOrder = isPinnedA ? 1 : -1;
+            const sortOrder = activeSort.value.find(
+              (sort) => sort.key === header.key
+            )?.order;
+            return sortOrder === 'desc' ? -displayedOrder : displayedOrder;
+          }
+
+          return baseComparator
+            ? baseComparator(documentA, documentB)
+            : compareValues(documentA[header.key], documentB[header.key]);
+        },
+      };
+    })
+  );
 
   const getAllDocumentsMenuItems = (item: civilDocumentType) => {
     return [
@@ -130,3 +176,14 @@
     ];
   };
 </script>
+<style scoped>
+  .document-type {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .scheduled-date-header {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+</style>

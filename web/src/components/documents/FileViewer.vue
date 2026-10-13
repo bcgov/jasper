@@ -72,6 +72,7 @@
   }
 
   let instance!: Instance;
+  let hasContentEditorSave = false;
 
   const configuration: StandaloneConfiguration = {
     document: '', // This would be overridden by the actual PDF document when loaded.
@@ -112,6 +113,29 @@
 
   async function updateCanApprove() {
     canApprove.value = await checkDocumentForAnnotations();
+  }
+
+  async function hasUserAnnotations(pageIndex: number) {
+    const annotations = await instance.getAnnotations(pageIndex);
+    return annotations.some(
+      (a) =>
+        !(a instanceof nutrientViewer.Annotations.WidgetAnnotation) &&
+        !(a instanceof nutrientViewer.Annotations.LinkAnnotation)
+    );
+  }
+
+  // Content editor saves are document-wide, so any save counts as touching the appended page.
+  async function isAppendedPageEdited(): Promise<boolean> {
+    const appendedPageIndex = props.strategy.getAppendedPageIndex?.(
+      instance.totalPageCount
+    );
+    if (appendedPageIndex === undefined || appendedPageIndex < 1) {
+      return false;
+    }
+
+    return (
+      hasContentEditorSave || (await hasUserAnnotations(appendedPageIndex))
+    );
   }
 
   const loadNutrient = async () => {
@@ -194,6 +218,11 @@
       instance.addEventListener('annotations.create', updateCanApprove);
       instance.addEventListener('annotations.update', updateCanApprove);
       instance.addEventListener('annotations.delete', updateCanApprove);
+      instance.addEventListener('document.change', (operations) => {
+        if (operations?.some((o) => o.type === 'contentEditorSave')) {
+          hasContentEditorSave = true;
+        }
+      });
 
       // Check if document can be approved initially
       await updateCanApprove();
@@ -401,6 +430,7 @@
     ) {
       const arrayBuffer = await instance.exportPDF({ flatten: true });
       orderReview.documentData = arrayBufferToBase64(arrayBuffer);
+      orderReview.isAppendedPageDirty = await isAppendedPageEdited();
     }
     await props.strategy.reviewOrder(orderReview);
   };

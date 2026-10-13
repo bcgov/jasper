@@ -2,7 +2,7 @@ import { OrderService, UserService } from '@/services';
 import { useCommonStore, useSnackbarStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
 import { Order, OrderReview } from '@/types';
-import { OrderReviewStatus } from '@/types/common';
+import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import {
   mdiAlphaIBoxOutline,
@@ -98,12 +98,20 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     return descriptions.length > 0 ? descriptions : undefined;
   }
 
+  getAppendedPageIndex(totalPageCount: number): number | undefined {
+    return this.currentOrder?.courtListType === OrderCourtLisTypeEnum.PSM
+      ? totalPageCount - 1
+      : undefined;
+  }
+
   async reviewOrder(review: OrderReview): Promise<void> {
     if (!this.orderId) {
       throw new Error(`Order ID is not defined.`);
     }
 
-    await this.orderService.review(this.orderId, review);
+    console.log(review);
+
+    //await this.orderService.review(this.orderId, review);
 
     switch (review.status) {
       case OrderReviewStatus.Approved:

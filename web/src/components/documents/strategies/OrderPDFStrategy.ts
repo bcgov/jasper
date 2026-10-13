@@ -109,7 +109,9 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       throw new Error(`Order ID is not defined.`);
     }
 
-    await this.orderService.review(this.orderId, review);
+    console.log(review);
+
+    //await this.orderService.review(this.orderId, review);
 
     switch (review.status) {
       case OrderReviewStatus.Approved:

@@ -18,12 +18,14 @@ public enum DocumentPdfConverterId
 
 internal interface IDocumentPdfRouteTable
 {
-    IReadOnlyList<IDocumentPdfConversionStrategy> GetStrategies(DocumentFormat format);
+    IReadOnlyList<IDocumentPdfConversionStrategy> GetStrategies(
+        DocumentFormat format,
+        string extension);
 }
 
 internal sealed class DocumentPdfRouteTable : IDocumentPdfRouteTable, IHostedService
 {
-    private readonly IReadOnlyDictionary<DocumentFormatFamily, IReadOnlyList<IDocumentPdfConversionStrategy>> _routes;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<IDocumentPdfConversionStrategy>> _routes;
 
     public DocumentPdfRouteTable(
         IOptions<DocumentConversionOptions> options,
@@ -38,13 +40,27 @@ internal sealed class DocumentPdfRouteTable : IDocumentPdfRouteTable, IHostedSer
             errors.Add($"Document converter '{duplicate.Key}' is registered {duplicate.Value.Length} times.");
         }
 
-        _routes = DocumentConversionRouting.ParseRoutes(options.Value.Routes).ToDictionary(
-            route => route.Key,
-            route => (IReadOnlyList<IDocumentPdfConversionStrategy>)route.Value
-                .Select(converterId => ResolveStrategy(route.Key, converterId, registry, errors))
-                .Where(strategy => strategy is not null)
-                .ToArray());
+        var routes = new Dictionary<string, IReadOnlyList<IDocumentPdfConversionStrategy>>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var (extension, converterIds) in DocumentConversionRouting.ParseFormats(options.Value.Formats))
+        {
+            if (!DocumentFormatDetector.TryGetFormatForExtension(extension, out var format))
+            {
+                errors.Add($"DocumentConversion format '{extension}' is not registered.");
+                continue;
+            }
 
+            var route = converterIds
+                .Select(converterId => ResolveStrategy(extension, format, converterId, registry, errors))
+                .Where(strategy => strategy is not null)
+                .ToArray();
+            if (!routes.TryAdd(extension, route))
+            {
+                errors.Add($"DocumentConversion format '{extension}' is duplicated.");
+            }
+        }
+
+        _routes = routes;
         if (errors.Count > 0)
         {
             throw new OptionsValidationException(
@@ -54,10 +70,15 @@ internal sealed class DocumentPdfRouteTable : IDocumentPdfRouteTable, IHostedSer
         }
     }
 
-    public IReadOnlyList<IDocumentPdfConversionStrategy> GetStrategies(DocumentFormat format)
+    public IReadOnlyList<IDocumentPdfConversionStrategy> GetStrategies(
+        DocumentFormat format,
+        string extension)
     {
-        var family = DocumentFormatDetector.GetFamily(format);
-        if (family is null || !_routes.TryGetValue(family.Value, out var route))
+        var normalizedExtension = DocumentPdfConversionService.NormalizeExtension(extension);
+        if (normalizedExtension is null ||
+            !DocumentFormatDetector.TryGetFormatForExtension(normalizedExtension, out var configuredFormat) ||
+            configuredFormat != format ||
+            !_routes.TryGetValue(normalizedExtension, out var route))
         {
             return [];
         }
@@ -70,21 +91,23 @@ internal sealed class DocumentPdfRouteTable : IDocumentPdfRouteTable, IHostedSer
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     private static IDocumentPdfConversionStrategy ResolveStrategy(
-        DocumentFormatFamily family,
+        string extension,
+        DocumentFormat format,
         DocumentPdfConverterId converterId,
         IReadOnlyDictionary<DocumentPdfConverterId, IDocumentPdfConversionStrategy[]> registry,
         ICollection<string> errors)
     {
         if (!registry.TryGetValue(converterId, out var registrations) || registrations.Length != 1)
         {
-            errors.Add($"DocumentConversion route '{family}' references unregistered converter '{converterId}'.");
+            errors.Add($"DocumentConversion format '{extension}' references unregistered converter '{converterId}'.");
             return null;
         }
 
         var strategy = registrations[0];
-        foreach (var format in DocumentFormatDetector.GetFormats(family).Where(format => !strategy.CanConvert(format)))
+        if (!strategy.CanConvert(format))
         {
-            errors.Add($"DocumentConversion converter '{converterId}' does not support format '{format}' in route '{family}'.");
+            errors.Add($"DocumentConversion converter '{converterId}' does not support format '{format}' for extension '{extension}'.");
+            return null;
         }
 
         return strategy;
@@ -93,16 +116,35 @@ internal sealed class DocumentPdfRouteTable : IDocumentPdfRouteTable, IHostedSer
 
 internal static class DocumentConversionRouting
 {
-    internal static IReadOnlyDictionary<DocumentFormatFamily, IReadOnlyList<DocumentPdfConverterId>> ParseRoutes(
-        IReadOnlyDictionary<string, List<string>> configuredRoutes)
-    {
-        return configuredRoutes.ToDictionary(
-            route => Enum.Parse<DocumentFormatFamily>(route.Key, ignoreCase: true),
-            route => (IReadOnlyList<DocumentPdfConverterId>)route.Value
-                .Select(value => Enum.Parse<DocumentPdfConverterId>(value, ignoreCase: true))
-                .ToArray());
-    }
+    internal const string PassthroughDirective = "passthrough";
 
+    internal static bool IsPassthrough(string value) =>
+        string.Equals(value, PassthroughDirective, StringComparison.OrdinalIgnoreCase);
+
+    internal static IReadOnlyDictionary<string, IReadOnlyList<DocumentPdfConverterId>> ParseFormats(
+        IReadOnlyDictionary<string, List<string>> configuredFormats)
+    {
+        var formats = new Dictionary<string, IReadOnlyList<DocumentPdfConverterId>>(
+            StringComparer.OrdinalIgnoreCase);
+        if (configuredFormats is null)
+        {
+            return formats;
+        }
+
+        foreach (var (configuredExtension, configuredRoute) in configuredFormats)
+        {
+            var extension = DocumentPdfConversionService.NormalizeExtension(configuredExtension) ??
+                configuredExtension;
+            formats.TryAdd(
+                extension,
+                (configuredRoute ?? [])
+                    .Where(value => !IsPassthrough(value))
+                    .Select(value => Enum.Parse<DocumentPdfConverterId>(value, ignoreCase: true))
+                    .ToArray());
+        }
+
+        return formats;
+    }
 }
 
 internal sealed class DocumentConversionOptionsValidator : IValidateOptions<DocumentConversionOptions>
@@ -110,20 +152,7 @@ internal sealed class DocumentConversionOptionsValidator : IValidateOptions<Docu
     public ValidateOptionsResult Validate(string name, DocumentConversionOptions options)
     {
         var errors = new List<string>();
-        ValidateExtensions(options.DefaultEnabledExtensions, errors);
-        if (options.Routes is null || options.Routes.Count == 0)
-        {
-            errors.Add("DocumentConversion:Routes must not be empty.");
-        }
-        else
-        {
-            foreach (var (configuredFamily, configuredRoute) in options.Routes)
-            {
-                ValidateRoute(configuredFamily, configuredRoute, errors);
-            }
-
-            ValidateRouteCoverage(options, errors);
-        }
+        ValidateFormats(options.Formats, errors);
 
         if (options.LibreOfficeProcessTimeoutSeconds >= options.OverallConversionTimeoutSeconds)
         {
@@ -135,98 +164,93 @@ internal sealed class DocumentConversionOptionsValidator : IValidateOptions<Docu
             : ValidateOptionsResult.Fail(errors);
     }
 
-    private static void ValidateExtensions(
-        IReadOnlyCollection<string> configuredExtensions,
+    private static void ValidateFormats(
+        IReadOnlyDictionary<string, List<string>> configuredFormats,
         ICollection<string> errors)
     {
-        if (configuredExtensions is null || configuredExtensions.Count == 0)
+        if (configuredFormats is null || configuredFormats.Count == 0)
         {
-            errors.Add("DocumentConversion:DefaultEnabledExtensions must not be empty.");
+            errors.Add("DocumentConversion:Formats must not be empty.");
             return;
         }
 
         var normalizedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var configuredExtension in configuredExtensions)
-        {
-            var extension = DocumentPdfConversionService.NormalizeExtension(configuredExtension);
-            if (extension is null || !DocumentFormatDetector.TryGetFormatForExtension(extension, out _))
-            {
-                errors.Add($"DocumentConversion extension '{configuredExtension}' is not registered.");
-            }
-            else if (!normalizedExtensions.Add(extension))
-            {
-                errors.Add($"DocumentConversion extension '{configuredExtension}' is duplicated.");
-            }
-        }
-    }
-
-    private static void ValidateRouteCoverage(
-        DocumentConversionOptions options,
-        ICollection<string> errors)
-    {
-        var configuredFamilies = options.Routes.Keys
-            .Select(value => Enum.TryParse<DocumentFormatFamily>(value, ignoreCase: true, out var family)
-                ? family
-                : (DocumentFormatFamily?)null)
-            .Where(family => family.HasValue)
-            .Select(family => family.Value)
-            .ToHashSet();
-
-        foreach (var configuredExtension in options.DefaultEnabledExtensions)
+        foreach (var (configuredExtension, configuredRoute) in configuredFormats)
         {
             var extension = DocumentPdfConversionService.NormalizeExtension(configuredExtension);
             if (extension is null ||
                 !DocumentFormatDetector.TryGetFormatForExtension(extension, out var format))
             {
+                errors.Add($"DocumentConversion format '{configuredExtension}' is not registered.");
                 continue;
             }
 
-            var family = DocumentFormatDetector.GetFamily(format);
-            if (family.HasValue && !configuredFamilies.Contains(family.Value))
+            if (!normalizedExtensions.Add(extension))
             {
-                errors.Add($"DocumentConversion extension '{extension}' has no route for family '{family}'.");
+                errors.Add($"DocumentConversion format '{configuredExtension}' is duplicated.");
             }
+
+            ValidateRoute(extension, format, configuredRoute, errors);
         }
     }
 
     private static void ValidateRoute(
-        string configuredFamily,
+        string extension,
+        DocumentFormat format,
         IReadOnlyCollection<string> configuredRoute,
         ICollection<string> errors)
     {
-        if (!Enum.TryParse<DocumentFormatFamily>(configuredFamily, ignoreCase: true, out var family) ||
-            !Enum.IsDefined(family))
+        if (configuredRoute is null)
         {
-            errors.Add($"DocumentConversion route '{configuredFamily}' is not a registered format family.");
+            errors.Add($"DocumentConversion format '{extension}' must provide a converter list.");
             return;
         }
 
-        if (configuredRoute is null || configuredRoute.Count == 0)
+        if (format == DocumentFormat.Pdf)
         {
-            errors.Add($"DocumentConversion route '{family}' must provide at least one converter.");
+            if (configuredRoute.Count != 1 ||
+                !DocumentConversionRouting.IsPassthrough(configuredRoute.Single()))
+            {
+                errors.Add(
+                    $"DocumentConversion passthrough format '{extension}' must specify only the '{DocumentConversionRouting.PassthroughDirective}' directive.");
+            }
+
+            return;
+        }
+
+        if (configuredRoute.Count == 0)
+        {
+            errors.Add($"DocumentConversion format '{extension}' must provide at least one converter.");
+            return;
+        }
+
+        if (configuredRoute.Any(DocumentConversionRouting.IsPassthrough))
+        {
+            errors.Add(
+                $"DocumentConversion format '{extension}' cannot use the '{DocumentConversionRouting.PassthroughDirective}' directive because it requires conversion to PDF.");
             return;
         }
 
         var parsed = configuredRoute
-            .Select(converterName => ParseConverter(converterName, family, errors))
+            .Select(converterName => ParseConverter(converterName, extension, errors))
             .Where(converter => converter.HasValue)
             .Select(converter => converter.Value)
             .ToArray();
         if (parsed.Length != parsed.Distinct().Count())
         {
-            errors.Add($"DocumentConversion route '{family}' contains duplicate converter identifiers.");
+            errors.Add($"DocumentConversion format '{extension}' contains duplicate converter identifiers.");
         }
     }
 
     private static DocumentPdfConverterId? ParseConverter(
         string converterName,
-        DocumentFormatFamily family,
+        string extension,
         ICollection<string> errors)
     {
         if (!Enum.TryParse<DocumentPdfConverterId>(converterName, ignoreCase: true, out var converter) ||
             !Enum.IsDefined(converter))
         {
-            errors.Add($"DocumentConversion route '{family}' references unknown converter '{converterName}'.");
+            errors.Add($"DocumentConversion format '{extension}' references unknown converter '{converterName}'.");
             return null;
         }
 

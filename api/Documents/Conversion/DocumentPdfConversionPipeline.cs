@@ -127,7 +127,9 @@ internal sealed class DocumentPdfConversionPipeline
     {
         var totalStopwatch = Stopwatch.StartNew();
         DocumentPdfConversionAttempt lastAttempt = null;
-        var strategies = _routeTable.GetStrategies(context.Format);
+        var strategies = _routeTable.GetStrategies(
+            context.Format,
+            Path.GetExtension(context.FileName));
         var attemptNumber = 0;
         foreach (var strategy in strategies)
         {

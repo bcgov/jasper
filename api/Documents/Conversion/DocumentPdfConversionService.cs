@@ -186,6 +186,17 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
 
     private async Task<bool> IsEnabledAsync(string requestedExtension)
     {
+        var normalizedRequestedExtension = NormalizeExtension(requestedExtension);
+        if (normalizedRequestedExtension is null || _options.Formats is null ||
+            !_options.Formats.Keys.Any(extension =>
+                string.Equals(
+                    NormalizeExtension(extension),
+                    normalizedRequestedExtension,
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
         var configuration = await _configurationService.GetConfigurationAsync();
         var configuredValues = configuration
             .FirstOrDefault(item => string.Equals(
@@ -203,7 +214,7 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
             .Where(value => value is not null)
             .OfType<string>()
             .Where(value => DocumentFormatDetector.TryGetFormatForExtension(value, out _))
-            .Contains(requestedExtension, StringComparer.OrdinalIgnoreCase);
+            .Contains(normalizedRequestedExtension, StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task<MemoryStream> CopyToBoundedStreamAsync(

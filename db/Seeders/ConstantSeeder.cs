@@ -52,9 +52,9 @@ public class ConstantSeeder(
         if (existingConstants.All(c => c.Key != ApplicationConfigurationKeys.TransitoryDocumentConvertibleExtensions))
         {
             var defaultExtensions = configuration
-                .GetSection("DocumentConversion:DefaultEnabledExtensions")
+                .GetSection("DocumentConversion:Formats")
                 .GetChildren()
-                .Select(section => NormalizeExtension(section.Value))
+                .Select(section => NormalizeExtension(section.Key))
                 .Where(value => value is not null)
                 .OfType<string>()
                 .Distinct(System.StringComparer.OrdinalIgnoreCase)

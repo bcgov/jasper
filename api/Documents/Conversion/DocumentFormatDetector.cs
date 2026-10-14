@@ -35,14 +35,6 @@ public enum DocumentFormat
     Webp
 }
 
-public enum DocumentFormatFamily
-{
-    Word,
-    Spreadsheet,
-    Presentation,
-    Image
-}
-
 internal static class DocumentFormatDetector
 {
     private const string OfficeDocumentRelationshipSuffix = "/officeDocument";
@@ -98,23 +90,6 @@ internal static class DocumentFormatDetector
     {
         return Extensions.TryGetValue(extension, out format);
     }
-
-    internal static DocumentFormatFamily? GetFamily(DocumentFormat format) => format switch
-    {
-        DocumentFormat.Doc or DocumentFormat.Docx or DocumentFormat.Docm or
-            DocumentFormat.Dotx or DocumentFormat.Dotm or DocumentFormat.Rtf or
-            DocumentFormat.Odt => DocumentFormatFamily.Word,
-        DocumentFormat.Xls or DocumentFormat.Xlsx or DocumentFormat.Xlsm or
-            DocumentFormat.Xltx or DocumentFormat.Xltm or DocumentFormat.Xlsb =>
-            DocumentFormatFamily.Spreadsheet,
-        DocumentFormat.Pptx or DocumentFormat.Pptm => DocumentFormatFamily.Presentation,
-        DocumentFormat.Png or DocumentFormat.Jpeg or DocumentFormat.Tiff or DocumentFormat.Webp =>
-            DocumentFormatFamily.Image,
-        _ => null
-    };
-
-    internal static IEnumerable<DocumentFormat> GetFormats(DocumentFormatFamily family) =>
-        Enum.GetValues<DocumentFormat>().Where(format => GetFamily(format) == family);
 
     internal static DocumentFormat Detect(Stream stream)
     {

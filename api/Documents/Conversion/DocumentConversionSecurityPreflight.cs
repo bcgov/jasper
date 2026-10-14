@@ -138,7 +138,7 @@ internal sealed class DocumentConversionSecurityPreflight : IDocumentConversionS
 
             var relationshipType = reader.GetAttribute("Type");
             var target = reader.GetAttribute("Target");
-            var uri = GetSafeAbsoluteUri(target);
+            var uri = GetAbsoluteUri(target);
             var targetIsAbsolute = uri is not null;
             var targetScheme = targetIsAbsolute
                 ? uri.Scheme
@@ -155,17 +155,11 @@ internal sealed class DocumentConversionSecurityPreflight : IDocumentConversionS
         }
     }
 
-    private static Uri GetSafeAbsoluteUri(string target)
+    private static Uri GetAbsoluteUri(string target)
     {
         if (!Uri.TryCreate(target, UriKind.Absolute, out var uri))
         {
             return null;
-        }
-
-        if (uri.IsFile)
-        {
-            throw new InvalidDataException(
-                "The Office package contains an unsafe file relationship.");
         }
 
         return uri;

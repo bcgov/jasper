@@ -144,7 +144,8 @@ internal static class ImageConversionPreflight
     internal static bool IsResourceLimitFailure(MagickException exception) =>
         exception is MagickResourceLimitErrorException or MagickResourceLimitWarningException ||
         exception.Message.Contains("resource limit", StringComparison.OrdinalIgnoreCase) ||
-        exception.Message.Contains("cache resources exhausted", StringComparison.OrdinalIgnoreCase);
+        exception.Message.Contains("cache resources exhausted", StringComparison.OrdinalIgnoreCase) ||
+        exception.Message.Contains("CacheResourcesExhausted", StringComparison.OrdinalIgnoreCase);
 
     private static DocumentSizeLimitExceededException ResourceLimit(
         string reason,

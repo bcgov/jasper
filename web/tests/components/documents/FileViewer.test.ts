@@ -9,6 +9,10 @@ import {
   RouteRecordRaw,
 } from 'vue-router';
 
+const nutrientViewerMock = vi.hoisted(() => ({}) as any);
+
+vi.mock('@nutrient-sdk/viewer', () => ({ default: nutrientViewerMock }));
+
 vi.mock('@/stores', () => ({
   useCommonStore: vi.fn(),
 }));
@@ -22,9 +26,6 @@ vi.mock('@/components/documents/ReviewModal.vue', () => ({
 }));
 
 const mockedUseCommonStore = vi.mocked(useCommonStore);
-const globalWithNutrientViewer = globalThis as typeof globalThis & {
-  NutrientViewer: any;
-};
 
 const routes: RouteRecordRaw[] = [
   {
@@ -122,8 +123,9 @@ describe('FileViewer.vue', () => {
     toolbarItems = [];
     vi.spyOn(window, 'open').mockImplementation(() => null);
 
-    globalWithNutrientViewer.NutrientViewer = {
+    Object.assign(nutrientViewerMock, {
       load: vi.fn().mockResolvedValue(mockInstance),
+      preloadWorker: vi.fn().mockResolvedValue(undefined),
       unload: vi.fn(),
       SidebarMode: { DOCUMENT_OUTLINE: 'DOCUMENT_OUTLINE' },
       Color: { RED: 'RED' },
@@ -145,7 +147,7 @@ describe('FileViewer.vue', () => {
       Immutable: {
         List: (items: unknown[]) => items,
       },
-    };
+    });
   });
 
   it('clears embedded outline for non-transitory strategies when no custom outline is returned', async () => {
@@ -513,9 +515,7 @@ describe('FileViewer.vue', () => {
     expect(setToolbarItems).toHaveBeenCalledTimes(1);
     const context = setToolbarItems.mock.calls[0][1] as Record<string, unknown>;
     expect(context.instance).toBe(mockInstance);
-    expect(context.nutrientViewer).toBe(
-      globalWithNutrientViewer.NutrientViewer
-    );
+    expect(context.nutrientViewer).toBe(nutrientViewerMock);
     expect(context.rawData).toEqual(rawData);
     expect(typeof context.resolveInformationContext).toBe('function');
     expect(typeof context.openReviewModal).toBe('function');
@@ -625,9 +625,10 @@ describe('FileViewer.vue', () => {
     mockInstance.getAnnotations.mockResolvedValue({
       filter: (predicate: (annotation: unknown) => boolean) => ({
         size: [
-          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
-            { contentType: 'image/png', description: 'Signature' }
-          ),
+          new nutrientViewerMock.Annotations.ImageAnnotation({
+            contentType: 'image/png',
+            description: 'Signature',
+          }),
         ].filter(predicate).length,
       }),
     });
@@ -648,9 +649,10 @@ describe('FileViewer.vue', () => {
     mockInstance.getAnnotations.mockResolvedValue({
       filter: (predicate: (annotation: unknown) => boolean) => ({
         size: [
-          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
-            { contentType: 'image/png', description: 'Initials' }
-          ),
+          new nutrientViewerMock.Annotations.ImageAnnotation({
+            contentType: 'image/png',
+            description: 'Initials',
+          }),
         ].filter(predicate).length,
       }),
     });
@@ -671,9 +673,10 @@ describe('FileViewer.vue', () => {
     mockInstance.getAnnotations.mockResolvedValue({
       filter: (predicate: (annotation: unknown) => boolean) => ({
         size: [
-          new globalWithNutrientViewer.NutrientViewer.Annotations.ImageAnnotation(
-            { contentType: 'image/png', description: 'Anything' }
-          ),
+          new nutrientViewerMock.Annotations.ImageAnnotation({
+            contentType: 'image/png',
+            description: 'Anything',
+          }),
         ].filter(predicate).length,
       }),
     });

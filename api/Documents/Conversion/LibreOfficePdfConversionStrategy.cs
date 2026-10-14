@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +17,6 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
     private const string WriterPdfExportFilter = "pdf:writer_pdf_Export";
     private const string CalcPdfExportFilter = "pdf:calc_pdf_Export";
     private const string ImpressPdfExportFilter = "pdf:impress_pdf_Export";
-    private const string SecurityProfileResourceName =
-        "Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu";
 
     private sealed record LibreOfficeFormat(string Extension, string PdfExportFilter);
 
@@ -94,7 +91,9 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
             Directory.CreateDirectory(inputDirectory);
             Directory.CreateDirectory(outputDirectory);
             Directory.CreateDirectory(profileDirectory);
-            await WriteSecurityProfileAsync(profileDirectory, cancellationToken);
+            await LibreOfficeProcessConfiguration.WriteSecurityProfileAsync(
+                profileDirectory,
+                cancellationToken);
 
             context.Input.Position = 0;
             await using (var inputFile = new FileStream(
@@ -108,7 +107,7 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
                 await context.Input.CopyToAsync(inputFile, cancellationToken);
             }
 
-            var startInfo = CreateStartInfo(
+            var startInfo = LibreOfficeProcessConfiguration.CreateStartInfo(
                 _options.LibreOfficeExecutablePath,
                 inputPath,
                 outputDirectory,
@@ -261,84 +260,6 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
         }
     }
 
-    private static ProcessStartInfo CreateStartInfo(
-        string executablePath,
-        string inputPath,
-        string outputDirectory,
-        string profileDirectory,
-        string workingDirectory,
-        string pdfExportFilter)
-    {
-        var profileUri = new Uri(
-            Path.GetFullPath(profileDirectory) + Path.DirectorySeparatorChar).AbsoluteUri;
-        var startInfo = new ProcessStartInfo(executablePath)
-        {
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        startInfo.ArgumentList.Add("--headless");
-        startInfo.ArgumentList.Add("--nologo");
-        startInfo.ArgumentList.Add("--nodefault");
-        startInfo.ArgumentList.Add("--norestore");
-        // Do not use --safe-mode: it replaces the configured user profile and would
-        // bypass the per-attempt security settings written below.
-        startInfo.ArgumentList.Add($"-env:UserInstallation={profileUri}");
-        startInfo.ArgumentList.Add("--convert-to");
-        startInfo.ArgumentList.Add(pdfExportFilter);
-        startInfo.ArgumentList.Add("--outdir");
-        startInfo.ArgumentList.Add(outputDirectory);
-        startInfo.ArgumentList.Add(inputPath);
-
-        // Do not expose API credentials or unrelated application configuration to the child.
-        var allowedEnvironment = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["PATH"] = Environment.GetEnvironmentVariable("PATH"),
-            ["LANG"] = Environment.GetEnvironmentVariable("LANG"),
-            ["LC_ALL"] = Environment.GetEnvironmentVariable("LC_ALL"),
-            ["TZ"] = Environment.GetEnvironmentVariable("TZ"),
-            ["LD_LIBRARY_PATH"] = Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")
-        };
-        startInfo.Environment.Clear();
-        foreach (var (name, value) in allowedEnvironment)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                startInfo.Environment[name] = value;
-            }
-        }
-
-        // Keep LibreOffice state and temporary files inside the per-attempt directory.
-        startInfo.Environment["HOME"] = workingDirectory;
-        startInfo.Environment["TMPDIR"] = workingDirectory;
-        startInfo.Environment["SAL_USE_VCLPLUGIN"] = "svp";
-        return startInfo;
-    }
-
-    private static async Task WriteSecurityProfileAsync(
-        string profileDirectory,
-        CancellationToken cancellationToken)
-    {
-        var userDirectory = Path.Combine(profileDirectory, "user");
-        Directory.CreateDirectory(userDirectory);
-        var registryPath = Path.Combine(userDirectory, "registrymodifications.xcu");
-        await using var source = typeof(LibreOfficePdfConversionStrategy)
-            .Assembly
-            .GetManifestResourceStream(SecurityProfileResourceName)
-            ?? throw new InvalidOperationException(
-                "The LibreOffice security profile resource is missing.");
-        await using var destination = new FileStream(
-            registryPath,
-            new FileStreamOptions
-            {
-                Mode = FileMode.Create,
-                Access = FileAccess.Write,
-                Share = FileShare.None,
-                Options = FileOptions.Asynchronous
-            });
-        await source.CopyToAsync(destination, cancellationToken);
-    }
-
     private DocumentPdfConversionAttempt CreateFailedAttempt(
         DocumentFormat format,
         DocumentPdfConversionAttemptStatus status,
@@ -379,23 +300,4 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
                 format);
         }
     }
-
-}
-
-internal sealed class LibreOfficeConversionConcurrencyLimiter : IDisposable
-{
-    private readonly SemaphoreSlim _gate;
-
-    public LibreOfficeConversionConcurrencyLimiter(IOptions<DocumentConversionOptions> options)
-    {
-        _gate = new SemaphoreSlim(
-            options.Value.MaxConcurrentLibreOfficeConversions,
-            options.Value.MaxConcurrentLibreOfficeConversions);
-    }
-
-    public Task WaitAsync(CancellationToken cancellationToken) => _gate.WaitAsync(cancellationToken);
-
-    public void Release() => _gate.Release();
-
-    public void Dispose() => _gate.Dispose();
 }

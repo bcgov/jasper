@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -34,29 +33,11 @@ namespace Scv.Api.Documents.Conversion;
 internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStrategy
 {
     private const string ConversionErrorMessage = DocumentPdfConversionService.ConversionErrorMessage;
-    private const string HeaderFooterZoneOverlapDiagnosticCode =
-        "HeaderFooterZoneOverlap";
 
     private readonly ILogger<OfficeImoPdfConversionStrategy> _logger;
     private readonly DocumentConversionOptions _options;
     private readonly OfficeDocumentReader _imageReader;
-
-    private static readonly HashSet<string> CosmeticXlsbDiagnosticCodes = new(StringComparer.Ordinal)
-    {
-        "XLSB-PAGESETUP-FIRST-PAGE-PRESERVED"
-    };
-
-    private static readonly HashSet<string> MaterialXlsbDiagnosticCodes = new(StringComparer.Ordinal)
-    {
-        "XLSB-RECORDS-PRESERVED",
-        "XLSB-DEFINED-NAME-PRESERVED",
-        "XLSB-AUTOFILTER-PARTIAL"
-    };
-
-    private static readonly HashSet<string> NonLossImageDiagnosticCodes = new(StringComparer.Ordinal)
-    {
-        "IMAGE_SOURCE_DECODED_BY_CALLER_CODEC"
-    };
+    private readonly OfficeImoDiagnosticPolicy _diagnosticPolicy;
 
     public OfficeImoPdfConversionStrategy(
         ILogger<OfficeImoPdfConversionStrategy> logger,
@@ -64,6 +45,7 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
     {
         _logger = logger;
         _options = options.Value;
+        _diagnosticPolicy = new OfficeImoDiagnosticPolicy(logger);
         _imageReader = new OfficeDocumentReaderBuilder()
             .AddImageHandler(new ReaderImageOptions
             {
@@ -101,60 +83,11 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
                 cancellationToken);
             return DocumentPdfConversionAttempt.Succeeded(Name, output);
         }
-        catch (UnsupportedDocumentFormatException exception)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.Unsupported,
-                exception);
-        }
-        catch (DocumentFidelityRejectedException exception)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.FidelityRejected,
-                exception);
-        }
-        catch (DocumentParsingRejectedException exception)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.InvalidDocument,
-                exception);
-        }
-        catch (OfficePackageSecurityException exception)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.UnsafeDocument,
-                exception);
-        }
-        catch (DocumentSizeLimitExceededException exception)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.OutputLimitExceeded,
-                exception);
-        }
-        catch (Exception exception) when (exception is InvalidDataException or FormatException or OpenXmlPackageException)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.InvalidDocument,
-                exception);
-        }
-        catch (NotSupportedException exception)
-        {
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.ConverterIncompatible,
-                exception);
-        }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             return DocumentPdfConversionAttempt.Failed(
                 Name,
-                DocumentPdfConversionAttemptStatus.ConverterExecutionFailed,
+                ClassifyFailure(exception),
                 exception);
         }
     }
@@ -183,54 +116,51 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
             _ => throw new UnsupportedDocumentFormatException(ConversionErrorMessage)
         };
 
-        cancellationToken.ThrowIfCancellationRequested();
-        var output = new BoundedMemoryStream(_options.MaxOutputSizeBytes, ConversionErrorMessage);
         try
         {
-            var saveResult = await conversion.SaveAsync(output, cancellationToken);
-            if (!saveResult.Succeeded)
+            cancellationToken.ThrowIfCancellationRequested();
+            var writeResult = await PdfOutputWriter.WriteAsync(
+                conversion,
+                _options.MaxOutputSizeBytes,
+                ConversionErrorMessage,
+                cancellationToken,
+                saveResult => _diagnosticPolicy.ValidateFidelity(
+                    fileName,
+                    format,
+                    saveResult.FidelityDiagnostics.ToArray()));
+            if (writeResult.Failure == PdfOutputFailure.SerializationFailed)
             {
                 _logger.LogError(
-                    saveResult.Exception,
+                    writeResult.SaveResult.Exception,
                     "OfficeIMO PDF serialization failed - FileName: {FileName}, Format: {Format}, BytesWritten: {BytesWritten}, Diagnostics: {@Diagnostics}",
                     fileName,
                     format,
-                    saveResult.BytesWritten,
-                    saveResult.Diagnostics);
-                throw saveResult.Exception ?? new Exception("OfficeIMO PDF serialization failed.");
+                    writeResult.SaveResult.BytesWritten,
+                    writeResult.SaveResult.Diagnostics);
+                throw writeResult.SaveResult.Exception ?? new Exception("OfficeIMO PDF serialization failed.");
             }
 
-            // PdfSaveResult aggregates source, projection, and final serialization fidelity
-            // evidence, avoiding duplicate evaluation of diagnostics already propagated to save.
-            ValidateFidelityDiagnostics(fileName, format, saveResult.FidelityDiagnostics.ToArray());
-
-            if (output.Length == 0 || !PdfFileValidation.HasPdfSignature(output))
+            if (!writeResult.Succeeded)
             {
                 _logger.LogError(
-                    "OfficeIMO produced an invalid PDF artifact - FileName: {FileName}, Format: {Format}, OutputBytes: {OutputBytes}",
+                    "OfficeIMO produced an invalid PDF artifact - FileName: {FileName}, Format: {Format}, OutputBytes: {OutputBytes}, Failure: {Failure}",
                     fileName,
                     format,
-                    output.Length);
+                    writeResult.OutputBytes,
+                    writeResult.Failure);
                 throw new UnprocessableDocumentException(ConversionErrorMessage);
             }
 
-            output.Position = 0;
-            return output;
+            return writeResult.Output;
         }
         catch (Exception exception) when (IsPdfTextEncodingPreflightException(exception))
         {
-            await output.DisposeAsync();
             _logger.LogWarning(
                 exception,
                 "OfficeIMO PDF text encoding preflight rejected the rendered document; allowing renderer fallback - FileName: {FileName}, Format: {Format}",
                 fileName,
                 format);
             throw new DocumentFidelityRejectedException(ConversionErrorMessage, exception);
-        }
-        catch
-        {
-            await output.DisposeAsync();
-            throw;
         }
     }
 
@@ -245,7 +175,10 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
         };
         using var loadResult = LoadWithParsingFallback(
             () => WordDocument.LoadLegacyDocWithReport(input, importOptions));
-        ValidateFidelityDiagnostics(fileName, DocumentFormat.Doc, loadResult.FidelityDiagnostics.ToArray());
+        _diagnosticPolicy.ValidateFidelity(
+            fileName,
+            DocumentFormat.Doc,
+            loadResult.FidelityDiagnostics.ToArray());
         return loadResult.Document.ToPdfDocumentResult(CreateWordPdfOptions(), cancellationToken);
     }
 
@@ -260,7 +193,10 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
         };
         using var loadResult = LoadWithParsingFallback(
             () => ExcelDocument.LoadLegacyXlsWithReport(input, importOptions));
-        ValidateFidelityDiagnostics(fileName, DocumentFormat.Xls, loadResult.FidelityDiagnostics.ToArray());
+        _diagnosticPolicy.ValidateFidelity(
+            fileName,
+            DocumentFormat.Xls,
+            loadResult.FidelityDiagnostics.ToArray());
         return loadResult.Document.ToPdfDocumentResult(CreateExcelPdfOptions(), cancellationToken);
     }
 
@@ -293,82 +229,7 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
         using var document = LoadWithParsingFallback(() => ExcelDocument.Load(input, loadOptions));
         if (format == DocumentFormat.Xlsb)
         {
-            var diagnostics = document.XlsbImportDiagnostics.ToArray();
-            var informationalDiagnostics = diagnostics
-                .Where(diagnostic => diagnostic.Severity == XlsbImportDiagnosticSeverity.Information)
-                .ToArray();
-            if (informationalDiagnostics.Length > 0)
-            {
-                _logger.LogInformation(
-                    "XLSB import produced informational diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                    fileName,
-                    informationalDiagnostics.Select(diagnostic => new
-                    {
-                        diagnostic.Code,
-                        Severity = diagnostic.Severity.ToString(),
-                        diagnostic.Message,
-                        diagnostic.PartName,
-                        diagnostic.RecordType,
-                        diagnostic.RecordOffset
-                    }).ToArray());
-            }
-
-            var warningDiagnostics = diagnostics
-                .Where(diagnostic => diagnostic.Severity == XlsbImportDiagnosticSeverity.Warning)
-                .ToArray();
-            if (warningDiagnostics.Length > 0)
-            {
-                _logger.LogWarning(
-                    "XLSB import produced warning diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                    fileName,
-                    warningDiagnostics.Select(diagnostic => new
-                    {
-                        diagnostic.Code,
-                        Severity = diagnostic.Severity.ToString(),
-                        diagnostic.Message,
-                        diagnostic.PartName,
-                        diagnostic.RecordType,
-                        diagnostic.RecordOffset
-                    }).ToArray());
-            }
-
-            var errorDiagnostics = diagnostics
-                .Where(diagnostic => IsFatalXlsbDiagnostic(diagnostic.Severity))
-                .ToArray();
-            if (errorDiagnostics.Length > 0)
-            {
-                _logger.LogError(
-                    "XLSB parsing was rejected - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                    fileName,
-                    errorDiagnostics.Select(diagnostic => new
-                    {
-                        diagnostic.Code,
-                        Severity = diagnostic.Severity.ToString(),
-                        diagnostic.Message,
-                        diagnostic.PartName,
-                        diagnostic.RecordType,
-                        diagnostic.RecordOffset
-                    }).ToArray());
-                throw new DocumentParsingRejectedException(ConversionErrorMessage);
-            }
-
-            var fidelityDiagnostics = diagnostics
-                .Where(diagnostic => ClassifyXlsbDiagnostic(diagnostic.Code) is
-                    DocumentDiagnosticImpact.Material or DocumentDiagnosticImpact.Unknown)
-                .ToArray();
-            if (fidelityDiagnostics.Length > 0)
-            {
-                _logger.LogError(
-                    "XLSB import rejected potential material content loss - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                    fileName,
-                    fidelityDiagnostics.Select(diagnostic => new
-                    {
-                        diagnostic.Code,
-                        Severity = diagnostic.Severity.ToString(),
-                        diagnostic.Message
-                    }).ToArray());
-                throw new DocumentFidelityRejectedException(ConversionErrorMessage);
-            }
+            _diagnosticPolicy.ValidateXlsb(fileName, document.XlsbImportDiagnostics.ToArray());
         }
 
         return document.ToPdfDocumentResult(CreateExcelPdfOptions(), cancellationToken);
@@ -396,59 +257,7 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
         var readOptions = RtfReadOptions.CreateOfficeIMOProfile();
         readOptions.MaxInputBytes = _options.MaxInputSizeBytes;
         var readResult = RtfDocument.LoadResult(input, readOptions, cancellationToken: cancellationToken);
-        var parserDiagnostics = readResult.Diagnostics.ToArray();
-
-        var informationalDiagnostics = parserDiagnostics
-            .Where(diagnostic => diagnostic.Severity == RtfDiagnosticSeverity.Info)
-            .ToArray();
-        if (informationalDiagnostics.Length > 0)
-        {
-            _logger.LogInformation(
-                "RTF parsing produced informational diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                informationalDiagnostics.Select(diagnostic => new
-                {
-                    diagnostic.Code,
-                    Severity = diagnostic.Severity.ToString(),
-                    diagnostic.Message,
-                    diagnostic.Position
-                }).ToArray());
-        }
-
-        var warningDiagnostics = parserDiagnostics
-            .Where(diagnostic => diagnostic.Severity == RtfDiagnosticSeverity.Warning)
-            .ToArray();
-        if (warningDiagnostics.Length > 0)
-        {
-            _logger.LogWarning(
-                "RTF parsing produced warning diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                warningDiagnostics.Select(diagnostic => new
-                {
-                    diagnostic.Code,
-                    Severity = diagnostic.Severity.ToString(),
-                    diagnostic.Message,
-                    diagnostic.Position
-                }).ToArray());
-        }
-
-        var errorDiagnostics = parserDiagnostics
-            .Where(diagnostic => IsFatalRtfDiagnostic(diagnostic.Severity))
-            .ToArray();
-        if (errorDiagnostics.Length > 0)
-        {
-            _logger.LogError(
-                "RTF parsing was rejected - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                errorDiagnostics.Select(diagnostic => new
-                {
-                    diagnostic.Code,
-                    Severity = diagnostic.Severity.ToString(),
-                    diagnostic.Message,
-                    diagnostic.Position
-                }).ToArray());
-            throw new DocumentParsingRejectedException(ConversionErrorMessage);
-        }
+        _diagnosticPolicy.ValidateRtf(fileName, readResult.Diagnostics.ToArray());
 
         return readResult.Document.ToPdfDocumentResult(new RtfToPdfOptions
         {
@@ -497,54 +306,7 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
                 DetectionMode = ReaderDetectionMode.ExtensionOnly
             },
             cancellationToken);
-        var readerDiagnostics = readResult.Diagnostics.ToArray();
-
-        var informationalDiagnostics = readerDiagnostics
-            .Where(diagnostic => diagnostic.Severity == OfficeDocumentDiagnosticSeverity.Information)
-            .ToArray();
-        if (informationalDiagnostics.Length > 0)
-        {
-            _logger.LogInformation(
-                "Image reading produced informational diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                FormatImageDiagnostics(informationalDiagnostics));
-        }
-
-        var warningDiagnostics = readerDiagnostics
-            .Where(diagnostic => diagnostic.Severity == OfficeDocumentDiagnosticSeverity.Warning)
-            .ToArray();
-        if (warningDiagnostics.Length > 0)
-        {
-            _logger.LogWarning(
-                "Image reading produced warning diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                FormatImageDiagnostics(warningDiagnostics));
-        }
-
-        var fidelityDiagnostics = readerDiagnostics
-            .Where(diagnostic => diagnostic.Severity is not OfficeDocumentDiagnosticSeverity.Information)
-            .Where(diagnostic => ClassifyImageDiagnostic(diagnostic.Code) is not DocumentDiagnosticImpact.NoContentLoss)
-            .ToArray();
-        if (fidelityDiagnostics.Length > 0)
-        {
-            _logger.LogError(
-                "Image conversion rejected potential material content loss - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                FormatImageDiagnostics(fidelityDiagnostics));
-            throw new DocumentFidelityRejectedException(ConversionErrorMessage);
-        }
-
-        var errorDiagnostics = readerDiagnostics
-            .Where(diagnostic => diagnostic.Severity == OfficeDocumentDiagnosticSeverity.Error)
-            .ToArray();
-        if (errorDiagnostics.Length > 0)
-        {
-            _logger.LogError(
-                "Image conversion rejected fatal reader diagnostics - FileName: {FileName}, Diagnostics: {@Diagnostics}",
-                fileName,
-                FormatImageDiagnostics(errorDiagnostics));
-            throw new UnprocessableDocumentException(ConversionErrorMessage);
-        }
+        _diagnosticPolicy.ValidateImage(fileName, readResult.Diagnostics.ToArray());
 
         var imageAssets = readResult.Assets
             .Where(asset =>
@@ -655,85 +417,6 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
             cancellationToken);
     }
 
-    private static object[] FormatImageDiagnostics(IEnumerable<OfficeDocumentDiagnostic> diagnostics) =>
-        diagnostics.Select(diagnostic => (object)new
-        {
-            diagnostic.Code,
-            Severity = diagnostic.Severity.ToString(),
-            diagnostic.Category,
-            diagnostic.Message,
-            diagnostic.Location
-        }).ToArray();
-
-    private void ValidateFidelityDiagnostics(
-        string fileName,
-        DocumentFormat format,
-        IReadOnlyList<OfficeConversionFidelityDiagnostic> diagnostics)
-    {
-        if (diagnostics.Count == 0) return;
-
-        _logger.LogWarning(
-            "OfficeIMO conversion produced diagnostics - FileName: {FileName}, Format: {Format}, DiagnosticCount: {DiagnosticCount}, Diagnostics: {@Diagnostics}",
-            fileName,
-            format,
-            diagnostics.Count,
-            diagnostics.Select(diagnostic => new
-            {
-                diagnostic.Code,
-                LossKind = diagnostic.LossKind.ToString(),
-                diagnostic.Source,
-                diagnostic.Message,
-                diagnostic.Location
-            }).ToArray());
-
-        var rendererFallbackDiagnostics = diagnostics
-            .Where(IsHeaderFooterZoneOverlapDiagnostic)
-            .ToArray();
-        if (rendererFallbackDiagnostics.Length > 0)
-        {
-            _logger.LogWarning(
-                "OfficeIMO conversion rejected a renderer-specific layout diagnostic; allowing renderer fallback - FileName: {FileName}, Format: {Format}, DiagnosticCodes: {DiagnosticCodes}",
-                fileName,
-                format,
-                rendererFallbackDiagnostics.Select(diagnostic => diagnostic.Code).ToArray());
-            throw new DocumentFidelityRejectedException(ConversionErrorMessage);
-        }
-
-        var potentiallyMaterial = diagnostics
-            .Where(diagnostic => diagnostic.LossKind is not
-                OfficeConversionLossKind.None and not
-                OfficeConversionLossKind.Approximation)
-            .ToArray();
-        if (potentiallyMaterial.Length == 0) return;
-
-        _logger.LogError(
-            "Document conversion rejected potential material content loss - FileName: {FileName}, Format: {Format}, DiagnosticCodes: {DiagnosticCodes}",
-            fileName,
-            format,
-            potentiallyMaterial.Select(diagnostic => diagnostic.Code).ToArray());
-        throw new DocumentFidelityRejectedException(ConversionErrorMessage);
-    }
-
-    private static bool IsHeaderFooterZoneOverlapDiagnostic(
-        OfficeConversionFidelityDiagnostic diagnostic)
-    {
-        if (string.Equals(
-                diagnostic.Code?.Trim(),
-                HeaderFooterZoneOverlapDiagnosticCode,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return string.Equals(
-                diagnostic.Source?.Trim(),
-                "OfficeIMO.Word.Pdf",
-                StringComparison.OrdinalIgnoreCase) &&
-            diagnostic.Message?.Contains(
-                "Header zones overlap",
-                StringComparison.OrdinalIgnoreCase) == true;
-    }
-
     private static T LoadWithParsingFallback<T>(Func<T> load)
     {
         try
@@ -790,32 +473,30 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
     }
 
     internal static DocumentDiagnosticImpact ClassifyXlsbDiagnostic(string code)
-    {
-        if (CosmeticXlsbDiagnosticCodes.Contains(code)) return DocumentDiagnosticImpact.Cosmetic;
-        if (MaterialXlsbDiagnosticCodes.Contains(code)) return DocumentDiagnosticImpact.Material;
-        return DocumentDiagnosticImpact.Unknown;
-    }
+        => OfficeImoDiagnosticPolicy.ClassifyXlsbDiagnostic(code);
 
     internal static DocumentDiagnosticImpact ClassifyImageDiagnostic(string code) =>
-        NonLossImageDiagnosticCodes.Contains(code)
-            ? DocumentDiagnosticImpact.NoContentLoss
-            : DocumentDiagnosticImpact.Unknown;
+        OfficeImoDiagnosticPolicy.ClassifyImageDiagnostic(code);
 
     internal static bool IsFatalRtfDiagnostic(RtfDiagnosticSeverity severity) =>
-        severity == RtfDiagnosticSeverity.Error;
+        OfficeImoDiagnosticPolicy.IsFatalRtfDiagnostic(severity);
 
     internal static bool IsFatalXlsbDiagnostic(XlsbImportDiagnosticSeverity severity) =>
-        severity == XlsbImportDiagnosticSeverity.Error;
+        OfficeImoDiagnosticPolicy.IsFatalXlsbDiagnostic(severity);
 
-    internal static string NormalizeExtension(string extension)
-    {
-        var normalized = extension?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(normalized)) return null;
-        if (normalized[0] != '.') normalized = $".{normalized}";
-        return normalized.Length is > 1 and <= 16 && normalized.Skip(1).All(char.IsLetterOrDigit)
-            ? normalized
-            : null;
-    }
+    private static DocumentPdfConversionAttemptStatus ClassifyFailure(Exception exception) =>
+        exception switch
+        {
+            UnsupportedDocumentFormatException => DocumentPdfConversionAttemptStatus.Unsupported,
+            DocumentFidelityRejectedException => DocumentPdfConversionAttemptStatus.FidelityRejected,
+            DocumentParsingRejectedException => DocumentPdfConversionAttemptStatus.InvalidDocument,
+            OfficePackageSecurityException => DocumentPdfConversionAttemptStatus.UnsafeDocument,
+            DocumentSizeLimitExceededException => DocumentPdfConversionAttemptStatus.OutputLimitExceeded,
+            InvalidDataException or FormatException or OpenXmlPackageException =>
+                DocumentPdfConversionAttemptStatus.InvalidDocument,
+            NotSupportedException => DocumentPdfConversionAttemptStatus.ConverterIncompatible,
+            _ => DocumentPdfConversionAttemptStatus.ConverterExecutionFailed
+        };
 
     private static WordToPdfOptions CreateWordPdfOptions()
     {
@@ -868,12 +549,4 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
     {
         ResourcePolicy = PdfResourcePolicy.CreateDefault()
     }.UseProfile(PdfExportProfile.Faithful);
-}
-
-internal enum DocumentDiagnosticImpact
-{
-    NoContentLoss,
-    Cosmetic,
-    Material,
-    Unknown
 }

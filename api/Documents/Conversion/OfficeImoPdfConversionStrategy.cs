@@ -477,6 +477,14 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
         string fileName,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        input.Position = 0;
+        var metadata = ImageConversionPreflight.InspectAndValidate(input.ToArray(), _options);
+        input.Position = 0;
+
+        // OfficeIMO does not expose a hard in-process memory or temporary-disk ceiling for its
+        // raster decoder. Metadata-only preflight bounds dimensions, frames, and decoded pixels
+        // before that decoder runs; the global conversion permit and timeout remain defense in depth.
         var readResult = _imageReader.ReadDocument(
             input,
             fileName,
@@ -556,6 +564,16 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
                     PayloadLength = asset.PayloadBytes?.Length ?? 0
                 }).ToArray());
             throw new UnprocessableDocumentException(ConversionErrorMessage);
+        }
+
+        if (imageAssets.Length != metadata.FrameCount)
+        {
+            _logger.LogError(
+                "Image conversion rejected frame loss - FileName: {FileName}, SourceFrames: {SourceFrames}, MaterializedFrames: {MaterializedFrames}",
+                fileName,
+                metadata.FrameCount,
+                imageAssets.Length);
+            throw new DocumentFidelityRejectedException(ConversionErrorMessage);
         }
 
         var imageSources = imageAssets.Select(asset =>

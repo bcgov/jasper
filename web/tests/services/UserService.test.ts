@@ -34,6 +34,9 @@ describe('UserService', () => {
 
       expect(mockHttpService.put).toHaveBeenCalledWith(
         'api/users/request-access',
+        {},
+        {},
+        'json',
         { suppressErrorNotification: true }
       );
       expect(result).toEqual(mockUser);

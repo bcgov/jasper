@@ -11,6 +11,6 @@ public class OrderReviewDto
     public string Comments { get; set; }
     public string DocumentData { get; set; }
     public string SupportingDocumentData { get; set; }
-    public bool IsAppendedPageDirty { get; set; }
+    public bool? IsAppendedPageDirty { get; set; }
 }
 

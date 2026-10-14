@@ -1054,7 +1054,8 @@ public class OrderServiceTests : ServiceTestBase
     [Theory]
     [InlineData(false, 1)]
     [InlineData(true, 0)]
-    public async Task ReviewOrder_RemovesAppendedPage_OnlyWhenSmallClaimsDeskOrderIsNotDirty(bool isAppendedPageDirty, int expectedRemovals)
+    [InlineData(null, 0)]
+    public async Task ReviewOrder_RemovesAppendedPage_OnlyWhenSmallClaimsDeskOrderIsNotDirty(bool? isAppendedPageDirty, int expectedRemovals)
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var judgeId = _faker.Random.Int(1, 1000);
@@ -1084,7 +1085,7 @@ public class OrderServiceTests : ServiceTestBase
 
         Assert.True(result.Succeeded);
         _mockPdfPageEditor.Verify(e => e.RemoveLastPage(It.IsAny<MemoryStream>()), Times.Exactly(expectedRemovals));
-        var expectedBytes = isAppendedPageDirty ? originalBytes : trimmedBytes;
+        var expectedBytes = isAppendedPageDirty == false ? trimmedBytes : originalBytes;
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.DocumentData.SequenceEqual(expectedBytes))), Times.Once);
     }
 
@@ -1097,7 +1098,8 @@ public class OrderServiceTests : ServiceTestBase
         {
             Status = OrderStatus.OrderMade,
             Signed = true,
-            DocumentData = Convert.ToBase64String(new byte[] { 1, 2, 3 })
+            DocumentData = Convert.ToBase64String(new byte[] { 1, 2, 3 }),
+            IsAppendedPageDirty = false
         };
 
         var order = CreateOrder();

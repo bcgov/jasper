@@ -277,8 +277,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 }
 
                 // Remove appended additional small claims page if it has not been touched by the user.
-                if (orderDto?.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
-                    && !orderReview.IsAppendedPageDirty)
+                if (orderDto.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+                    && orderReview.IsAppendedPageDirty == false)
                 {
                     orderDto.DocumentData = RemoveSmallClaimsAdditionalPage(orderDto.DocumentData);
                 }
@@ -564,7 +564,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         if (!orderDto.Signed)
         {
-            if (orderDto?.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE)
+            if (orderDto.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE)
             {
                 return OperationResult.Failure("Small Claims Desk Order cannot be submitted unsigned.");
             }

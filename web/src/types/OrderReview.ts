@@ -6,5 +6,5 @@ export interface OrderReview {
   status: OrderReviewStatus;
   documentData: string;
   supportingDocumentData: string;
-  isAppendedPageDirty: boolean;
+  isAppendedPageDirty?: boolean;
 }

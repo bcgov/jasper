@@ -271,6 +271,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 {
                     return deskOrderValidation;
                 }
+
+                // Remove appended additional small claims page if it has not been touched by the user.
+                if (orderDto?.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+                    && !orderReview.IsAppendedPageDirty)
+                {
+                    orderDto.DocumentData = RemoveSmallClaimsAdditionalPage(orderDto.DocumentData);
+                }
             }
 
             var result = await UpdateAsync(orderDto);
@@ -385,12 +392,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult.Success();
         }
 
-        byte[] bytes;
-        try
-        {
-            bytes = Convert.FromBase64String(base64Data);
-        }
-        catch (FormatException)
+        if (!TryDecodeBase64(base64Data, out var bytes))
         {
             return OperationResult.Failure($"The uploaded {documentLabel} document contains invalid base64 content.");
         }
@@ -403,6 +405,20 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         return OperationResult.Success();
+    }
+
+    private static bool TryDecodeBase64(string base64, out byte[] bytes)
+    {
+        try
+        {
+            bytes = Convert.FromBase64String(base64);
+            return true;
+        }
+        catch (FormatException)
+        {
+            bytes = null;
+            return false;
+        }
     }
 
     private static bool IsCriminalCourtClass(CourtClassCd courtClass) =>
@@ -591,6 +607,46 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             })];
 
         return actionDto;
+    }
+
+    private static string RemoveSmallClaimsAdditionalPage(string base64Pdf)
+    {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(base64Pdf);
+
+        if (!TryDecodeBase64(base64Pdf, out var bytes))
+        {
+            throw new FormatException("The provided base64 string is not valid.");
+        }
+
+        using var pdf = new GdPicture14.GdPicturePDF();
+        using var input = new MemoryStream(bytes);
+
+        var loadStatus = pdf.LoadFromStream(input, false);
+        if (loadStatus != GdPicture14.GdPictureStatus.OK)
+        {
+            throw new InvalidOperationException($"Failed to load the desk order document: {loadStatus}");
+        }
+
+        var pageCount = pdf.GetPageCount();
+        if (pageCount < 2)
+        {
+            return base64Pdf;
+        }
+
+        var deleteStatus = pdf.DeletePage(pageCount);
+        if (deleteStatus != GdPicture14.GdPictureStatus.OK)
+        {
+            throw new InvalidOperationException($"Failed to remove the appended page: {deleteStatus}");
+        }
+
+        using var output = new MemoryStream();
+        var saveStatus = pdf.SaveToStream(output);
+        if (saveStatus != GdPicture14.GdPictureStatus.OK)
+        {
+            throw new InvalidOperationException($"Failed to save the desk order document: {saveStatus}");
+        }
+
+        return Convert.ToBase64String(output.ToArray());
     }
 
     #endregion Private Methods

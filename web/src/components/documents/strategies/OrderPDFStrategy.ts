@@ -111,7 +111,7 @@ export class OrderPDFStrategy extends FilePDFStrategy {
 
     console.log(review);
 
-    //await this.orderService.review(this.orderId, review);
+    await this.orderService.review(this.orderId, review);
 
     switch (review.status) {
       case OrderReviewStatus.Approved:

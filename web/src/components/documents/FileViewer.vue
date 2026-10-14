@@ -205,8 +205,6 @@
       const [apiResponse] = await Promise.all([
         props.strategy.generatePDF(processedData),
         props.strategy.initialize?.(),
-        // Recommended to preload the worker for better performance.
-        nutrientViewer.preloadWorker(configuration),
       ]);
 
       loading.value = false;

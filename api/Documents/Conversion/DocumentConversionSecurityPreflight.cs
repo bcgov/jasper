@@ -14,9 +14,6 @@ public interface IDocumentConversionSecurityPreflight
 
 internal sealed class DocumentConversionSecurityPreflight : IDocumentConversionSecurityPreflight
 {
-    private const int MaximumPackageEntries = 10_000;
-    private const int MaximumRelationshipPartBytes = 1024 * 1024;
-    private const int MaximumRelationshipPartsBytes = 8 * 1024 * 1024;
     private readonly ILogger<DocumentConversionSecurityPreflight> _logger;
 
     private static readonly DocumentFormat[] OpenXmlFormats =
@@ -52,7 +49,7 @@ internal sealed class DocumentConversionSecurityPreflight : IDocumentConversionS
         {
             input.Position = 0;
             using var archive = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
-            if (archive.Entries.Count > MaximumPackageEntries)
+            if (archive.Entries.Count > OfficePackageLimits.MaximumEntries)
             {
                 throw new InvalidDataException("The Office package contains too many entries.");
             }
@@ -90,8 +87,8 @@ internal sealed class DocumentConversionSecurityPreflight : IDocumentConversionS
             }
 
             relationshipBytes = checked(relationshipBytes + entry.Length);
-            if (entry.Length > MaximumRelationshipPartBytes ||
-                relationshipBytes > MaximumRelationshipPartsBytes)
+            if (entry.Length > OfficePackageLimits.MaximumRelationshipPartBytes ||
+                relationshipBytes > OfficePackageLimits.MaximumRelationshipPartsBytes)
             {
                 throw new InvalidDataException("Office relationship metadata exceeds the configured limit.");
             }
@@ -128,7 +125,7 @@ internal sealed class DocumentConversionSecurityPreflight : IDocumentConversionS
         {
             DtdProcessing = DtdProcessing.Prohibit,
             XmlResolver = null,
-            MaxCharactersInDocument = MaximumRelationshipPartBytes
+            MaxCharactersInDocument = OfficePackageLimits.MaximumRelationshipPartBytes
         });
         while (reader.Read())
         {

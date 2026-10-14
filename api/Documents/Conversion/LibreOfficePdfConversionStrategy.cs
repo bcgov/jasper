@@ -18,6 +18,8 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
     private const string WriterPdfExportFilter = "pdf:writer_pdf_Export";
     private const string CalcPdfExportFilter = "pdf:calc_pdf_Export";
     private const string ImpressPdfExportFilter = "pdf:impress_pdf_Export";
+    private const string SecurityProfileResourceName =
+        "Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu";
 
     private sealed record LibreOfficeFormat(string Extension, string PdfExportFilter);
 
@@ -129,16 +131,10 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
                 var timeoutException = new DocumentConversionTimeoutException(
                     DocumentPdfConversionService.ConversionErrorMessage,
                     exception);
-                LogFailure(
+                return CreateFailedAttempt(
                     context.Format,
                     DocumentPdfConversionAttemptStatus.ConverterTimedOut,
                     "process-timeout",
-                    null,
-                    0,
-                    timeoutException);
-                return DocumentPdfConversionAttempt.Failed(
-                    Name,
-                    DocumentPdfConversionAttemptStatus.ConverterTimedOut,
                     timeoutException);
             }
 
@@ -146,36 +142,24 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
             {
                 var exception = new UnprocessableDocumentException(
                     DocumentPdfConversionService.ConversionErrorMessage);
-                LogFailure(
+                return CreateFailedAttempt(
                     context.Format,
                     DocumentPdfConversionAttemptStatus.ConverterExecutionFailed,
                     "nonzero-exit-code",
-                    processResult.ExitCode,
-                    0,
                     exception,
-                    processResult.ElapsedMilliseconds);
-                return DocumentPdfConversionAttempt.Failed(
-                    Name,
-                    DocumentPdfConversionAttemptStatus.ConverterExecutionFailed,
-                    exception);
+                    processResult);
             }
 
             if (!File.Exists(outputPath))
             {
                 var exception = new UnprocessableDocumentException(
                     DocumentPdfConversionService.ConversionErrorMessage);
-                LogFailure(
+                return CreateFailedAttempt(
                     context.Format,
                     DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
                     "missing-output",
-                    processResult.ExitCode,
-                    0,
                     exception,
-                    processResult.ElapsedMilliseconds);
-                return DocumentPdfConversionAttempt.Failed(
-                    Name,
-                    DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
-                    exception);
+                    processResult);
             }
 
             var outputLength = new FileInfo(outputPath).Length;
@@ -183,36 +167,26 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
             {
                 var exception = new UnprocessableDocumentException(
                     DocumentPdfConversionService.ConversionErrorMessage);
-                LogFailure(
+                return CreateFailedAttempt(
                     context.Format,
                     DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
                     "empty-output",
-                    processResult.ExitCode,
-                    outputLength,
                     exception,
-                    processResult.ElapsedMilliseconds);
-                return DocumentPdfConversionAttempt.Failed(
-                    Name,
-                    DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
-                    exception);
+                    processResult,
+                    outputLength);
             }
 
             if (outputLength > _options.MaxOutputSizeBytes)
             {
                 var exception = new DocumentSizeLimitExceededException(
                     DocumentPdfConversionService.ConversionErrorMessage);
-                LogFailure(
+                return CreateFailedAttempt(
                     context.Format,
                     DocumentPdfConversionAttemptStatus.OutputLimitExceeded,
                     "output-size-limit",
-                    processResult.ExitCode,
-                    outputLength,
                     exception,
-                    processResult.ElapsedMilliseconds);
-                return DocumentPdfConversionAttempt.Failed(
-                    Name,
-                    DocumentPdfConversionAttemptStatus.OutputLimitExceeded,
-                    exception);
+                    processResult,
+                    outputLength);
             }
 
             var output = new BoundedMemoryStream(
@@ -233,18 +207,13 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
                 {
                     var exception = new UnprocessableDocumentException(
                         DocumentPdfConversionService.ConversionErrorMessage);
-                    LogFailure(
+                    return CreateFailedAttempt(
                         context.Format,
                         DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
                         "invalid-pdf-signature",
-                        processResult.ExitCode,
-                        outputLength,
                         exception,
-                        processResult.ElapsedMilliseconds);
-                    return DocumentPdfConversionAttempt.Failed(
-                        Name,
-                        DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
-                        exception);
+                        processResult,
+                        outputLength);
                 }
 
                 output.Position = 0;
@@ -268,16 +237,10 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
             var safeException = new UnprocessableDocumentException(
                 DocumentPdfConversionService.ConversionErrorMessage,
                 exception);
-            LogFailure(
+            return CreateFailedAttempt(
                 context.Format,
                 DocumentPdfConversionAttemptStatus.ConverterUnavailable,
                 "process-unavailable",
-                null,
-                0,
-                safeException);
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.ConverterUnavailable,
                 safeException);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -285,16 +248,10 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
             var safeException = new UnprocessableDocumentException(
                 DocumentPdfConversionService.ConversionErrorMessage,
                 exception);
-            LogFailure(
+            return CreateFailedAttempt(
                 context.Format,
                 DocumentPdfConversionAttemptStatus.ConverterExecutionFailed,
                 "process-or-filesystem-failure",
-                null,
-                0,
-                safeException);
-            return DocumentPdfConversionAttempt.Failed(
-                Name,
-                DocumentPdfConversionAttemptStatus.ConverterExecutionFailed,
                 safeException);
         }
         finally
@@ -365,38 +322,30 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
         var userDirectory = Path.Combine(profileDirectory, "user");
         Directory.CreateDirectory(userDirectory);
         var registryPath = Path.Combine(userDirectory, "registrymodifications.xcu");
-        const string registry = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <oor:items xmlns:oor="http://openoffice.org/2001/registry">
-              <item oor:path="/org.openoffice.Office.Common/Security/Scripting">
-                <prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop>
-                <prop oor:name="DisableMacrosExecution" oor:op="fuse"><value>true</value></prop>
-                <prop oor:name="DisableActiveContent" oor:op="fuse"><value>true</value></prop>
-                <prop oor:name="DisablePythonRuntime" oor:op="fuse"><value>true</value></prop>
-                <prop oor:name="DisableOLEAutomation" oor:op="fuse"><value>true</value></prop>
-                <prop oor:name="BlockUntrustedRefererLinks" oor:op="fuse"><value>true</value></prop>
-              </item>
-              <item oor:path="/org.openoffice.Office.Calc/Content/Update">
-                <prop oor:name="Link" oor:op="fuse"><value>1</value></prop>
-              </item>
-              <item oor:path="/org.openoffice.Office.Writer/Content/Update">
-                <prop oor:name="Link" oor:op="fuse"><value>2</value></prop>
-                <prop oor:name="Field" oor:op="fuse"><value>false</value></prop>
-                <prop oor:name="Chart" oor:op="fuse"><value>false</value></prop>
-              </item>
-            </oor:items>
-            """;
-        await File.WriteAllTextAsync(registryPath, registry, cancellationToken);
+        await using var source = typeof(LibreOfficePdfConversionStrategy)
+            .Assembly
+            .GetManifestResourceStream(SecurityProfileResourceName)
+            ?? throw new InvalidOperationException(
+                "The LibreOffice security profile resource is missing.");
+        await using var destination = new FileStream(
+            registryPath,
+            new FileStreamOptions
+            {
+                Mode = FileMode.Create,
+                Access = FileAccess.Write,
+                Share = FileShare.None,
+                Options = FileOptions.Asynchronous
+            });
+        await source.CopyToAsync(destination, cancellationToken);
     }
 
-    private void LogFailure(
+    private DocumentPdfConversionAttempt CreateFailedAttempt(
         DocumentFormat format,
         DocumentPdfConversionAttemptStatus status,
         string fallbackReason,
-        int? exitCode,
-        long outputBytes,
         Exception exception,
-        long elapsedMilliseconds = 0)
+        DocumentProcessResult processResult = null,
+        long outputBytes = 0)
     {
         _logger.LogError(
             exception,
@@ -405,9 +354,11 @@ internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionS
             format,
             status,
             fallbackReason,
-            exitCode,
-            elapsedMilliseconds,
+            processResult?.ExitCode,
+            processResult?.ElapsedMilliseconds ?? 0,
             outputBytes);
+
+        return DocumentPdfConversionAttempt.Failed(Name, status, exception);
     }
 
     private void TryDeleteWorkingDirectory(string workingDirectory, DocumentFormat format)

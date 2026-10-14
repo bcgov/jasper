@@ -13,7 +13,7 @@ export class CourtLocationService extends ServiceBase {
     return this.httpService.get<CourtLocation>(
       `${this.baseUrl}?code=${encodeURIComponent(code)}`,
       {},
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   }
 }

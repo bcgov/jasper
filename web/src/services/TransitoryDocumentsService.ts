@@ -57,7 +57,8 @@ export class TransitoryDocumentsService {
 
   async mergePdfs(
     files: FileMetadataDto[],
-    context?: TransitoryMergeContext
+    context?: TransitoryMergeContext,
+    signal?: AbortSignal
   ): Promise<{
     base64Pdf: string;
     pageRanges: Array<{ start: number; end?: number }>;
@@ -65,7 +66,10 @@ export class TransitoryDocumentsService {
     const response = await this.httpService.post<{
       base64Pdf: string;
       pageRanges: Array<{ start: number; end?: number }>;
-    }>('api/TransitoryDocuments/merge', { files, ...context }, {}, 'json');
+    }>('api/TransitoryDocuments/merge', { files, ...context }, {}, 'json', {
+      suppressErrorNotification: true,
+      signal,
+    });
 
     return response;
   }

@@ -1,5 +1,5 @@
 import TransitoryDocumentsTable from '@/components/courtlist/TransitoryDocumentsTable.vue';
-import { useCommonStore } from '@/stores';
+import { ApplicationConfigurationKey, useCommonStore } from '@/stores';
 import {
   FileMetadataDto,
   TransitoryDocumentSearchResponse,
@@ -21,6 +21,29 @@ const vuetify = createVuetify();
 
 const DOWNLOAD_PERMISSION = 'DOWNLOAD_TRANSITORY_DOCUMENTS';
 const VIEW_PERMISSION = 'VIEW_TRANSITORY_DOCUMENTS';
+const DEFAULT_CONVERTIBLE_EXTENSIONS = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.docm',
+  '.dotx',
+  '.dotm',
+  '.xlsx',
+  '.xlsm',
+  '.xltx',
+  '.xltm',
+  '.xls',
+  '.xlsb',
+  '.pptx',
+  '.pptm',
+  '.rtf',
+  '.odt',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.tiff',
+  '.webp',
+];
 
 const defaultUserInfo = {
   userType: '',
@@ -38,7 +61,8 @@ const defaultUserInfo = {
 };
 
 const createPiniaWithUser = (
-  permissions: string[] = [DOWNLOAD_PERMISSION, VIEW_PERMISSION]
+  permissions: string[] = [DOWNLOAD_PERMISSION, VIEW_PERMISSION],
+  convertibleExtensions: string[] = DEFAULT_CONVERTIBLE_EXTENSIONS
 ) => {
   const pinia = createPinia();
   const commonStore = useCommonStore(pinia);
@@ -47,6 +71,14 @@ const createPiniaWithUser = (
     roles: [],
     permissions,
   });
+  commonStore.appInfo = {
+    configuration: [
+      {
+        key: ApplicationConfigurationKey.TransitoryDocumentConvertibleExtensions,
+        values: convertibleExtensions,
+      },
+    ],
+  };
   return pinia;
 };
 
@@ -72,7 +104,6 @@ type TransitoryDocumentsTableVm = {
   }>;
   formatFileSize: (bytes: number) => string;
   formatDate: (dateString: string) => string;
-  isPdf: (item: FileMetadataDto) => boolean;
   isSupportedByNutrient: (item: FileMetadataDto) => boolean;
   openInNutrient: (item: FileMetadataDto) => Promise<void>;
   downloadFile: (item: FileMetadataDto) => Promise<void>;
@@ -113,7 +144,8 @@ describe('TransitoryDocumentsTable', () => {
   const createWrapper = (
     props = {},
     mockDocuments: FileMetadataDto[] = [],
-    permissions: string[] = [DOWNLOAD_PERMISSION, VIEW_PERMISSION]
+    permissions: string[] = [DOWNLOAD_PERMISSION, VIEW_PERMISSION],
+    convertibleExtensions: string[] = DEFAULT_CONVERTIBLE_EXTENSIONS
   ) => {
     mockTransitoryDocumentsService.searchDocuments.mockResolvedValue({
       documents: mockDocuments,
@@ -121,7 +153,7 @@ describe('TransitoryDocumentsTable', () => {
       isCached: false,
     });
 
-    const pinia = createPiniaWithUser(permissions);
+    const pinia = createPiniaWithUser(permissions, convertibleExtensions);
 
     return mount(TransitoryDocumentsTable, {
       props: {
@@ -442,25 +474,58 @@ describe('TransitoryDocumentsTable', () => {
 
   describe('File type detection', () => {
     it.each([
-      { extension: '.pdf', isPdf: true, isSupported: true },
-      { extension: '.PDF', isPdf: true, isSupported: true },
-      { extension: '.doc', isPdf: false, isSupported: true },
-      { extension: '.docx', isPdf: false, isSupported: true },
-      { extension: '.DOC', isPdf: false, isSupported: true },
-      { extension: '.DOCX', isPdf: false, isSupported: true },
-      { extension: '.txt', isPdf: false, isSupported: false },
-      { extension: '.xlsx', isPdf: false, isSupported: false },
-    ])(
-      'correctly identifies $extension (isPdf: $isPdf, isSupported: $isSupported)',
-      async ({ extension, isPdf, isSupported }) => {
-        const mockDoc = createMockDocument({ extension });
-        const wrapper = createWrapper({}, [mockDoc]);
-        const vm = getVm(wrapper);
+      '.pdf',
+      '.doc',
+      '.docx',
+      '.docm',
+      '.dotx',
+      '.dotm',
+      '.xlsx',
+      '.xlsm',
+      '.xltx',
+      '.xltm',
+      '.xls',
+      '.xlsb',
+      '.pptx',
+      '.pptm',
+      '.rtf',
+      '.odt',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.tiff',
+      '.webp',
+      '.PDF',
+      '.DOCX',
+      '.JPEG',
+    ])('allows supported viewer extension %s', async (extension) => {
+      const mockDoc = createMockDocument({ extension });
+      const wrapper = createWrapper({}, [mockDoc]);
+      const vm = getVm(wrapper);
 
-        expect(vm.isPdf(mockDoc)).toBe(isPdf);
-        expect(vm.isSupportedByNutrient(mockDoc)).toBe(isSupported);
-      }
-    );
+      expect(vm.isSupportedByNutrient(mockDoc)).toBe(true);
+    });
+
+    it('rejects extensions not enabled in application configuration', () => {
+      const mockDoc = createMockDocument({ extension: '.txt' });
+      const wrapper = createWrapper({}, [mockDoc]);
+
+      expect(getVm(wrapper).isSupportedByNutrient(mockDoc)).toBe(false);
+    });
+
+    it('normalizes configured extension case and whitespace', () => {
+      const mockDoc = createMockDocument({ extension: '.DOCX' });
+      const wrapper = createWrapper({}, [mockDoc], undefined, ['  .DoCx  ']);
+
+      expect(getVm(wrapper).isSupportedByNutrient(mockDoc)).toBe(true);
+    });
+
+    it('fails closed when no convertible extensions are configured', () => {
+      const mockDoc = createMockDocument({ extension: '.pdf' });
+      const wrapper = createWrapper({}, [mockDoc], undefined, []);
+
+      expect(getVm(wrapper).isSupportedByNutrient(mockDoc)).toBe(false);
+    });
   });
 
   describe('File name rendering', () => {
@@ -697,45 +762,39 @@ describe('TransitoryDocumentsTable', () => {
   });
 
   describe('Bulk document viewing', () => {
-    it('does not allow non-pdfs to be selected.', async () => {
+    it('does not allow unsupported formats to be selected', async () => {
       const mockDoc = createMockDocument({ extension: '.txt' });
       const wrapper = createWrapper({}, [mockDoc]);
 
       const vm = getVm(wrapper);
-
-      // Verify that the document is not selectable (isPdf returns false)
-      expect(vm.isPdf(mockDoc)).toBe(false);
-
-      // Even if we try to set it as selected, calling handleViewDocuments should show error
-      vm.selectedDocuments = [mockDoc];
-      await vm.handleViewDocuments();
-
-      expect(vm.downloadError).toBe(true);
-      expect(vm.downloadErrorMessage).toBe(
-        'Please select PDF files to view in the document viewer.'
-      );
-      expect(window.open).not.toHaveBeenCalled();
+      expect(vm.isSupportedByNutrient(mockDoc)).toBe(false);
     });
 
-    it('opens PDF files in Nutrient and shows warning for non-PDF files', async () => {
+    it('opens mixed supported formats in original selection order', async () => {
       const pdfDoc = createMockDocument({
         fileName: 'doc1.pdf',
         extension: '.pdf',
       });
-      const txtDoc = createMockDocument({
-        fileName: 'doc2.txt',
-        extension: '.txt',
+      const wordDoc = createMockDocument({
+        fileName: 'doc2.docx',
+        extension: '.docx',
       });
-      const wrapper = createWrapper({ modelValue: false }, [pdfDoc, txtDoc]);
+      const imageDoc = createMockDocument({
+        fileName: 'doc3.png',
+        extension: '.png',
+      });
+      const wrapper = createWrapper({ modelValue: false }, [
+        pdfDoc,
+        wordDoc,
+        imageDoc,
+      ]);
 
       await wrapper.setProps({ modelValue: true });
       await flushPromises();
 
       const vm = getVm(wrapper);
 
-      // Simulate selecting checkbox for PDF document (only PDFs can be selected)
-      // In the actual UI, only the PDF checkbox would be enabled
-      vm.selectedDocuments = [pdfDoc];
+      vm.selectedDocuments = [wordDoc, imageDoc, pdfDoc];
 
       // Verify the "View documents" button would be available
       expect(vm.selectedDocuments.length).toBeGreaterThan(0);
@@ -750,13 +809,12 @@ describe('TransitoryDocumentsTable', () => {
         await viewButton.trigger('click');
       }
 
-      // Should succeed with only the PDF
       expect(window.sessionStorage.setItem).toHaveBeenCalled();
       const setItemCall = getSessionStorageSetItemMock().mock.calls[0];
       expect(setItemCall[0]).toMatch(/^transitoryDocuments:/);
       expect(setItemCall[1]).toBe(
         JSON.stringify({
-          files: [pdfDoc],
+          files: [wordDoc, imageDoc, pdfDoc],
           context: {
             locationId: '1',
             roomCd: '101',
@@ -788,8 +846,8 @@ describe('TransitoryDocumentsTable', () => {
 
       // Verify both documents are selected
       expect(vm.selectedDocuments.length).toBe(2);
-      expect(vm.isPdf(pdfDoc1)).toBe(true);
-      expect(vm.isPdf(pdfDoc2)).toBe(true);
+      expect(vm.isSupportedByNutrient(pdfDoc1)).toBe(true);
+      expect(vm.isSupportedByNutrient(pdfDoc2)).toBe(true);
 
       // Reset mock to clear any previous calls
       getSessionStorageSetItemMock().mockClear();
@@ -918,14 +976,16 @@ describe('TransitoryDocumentsTable', () => {
   });
 
   describe('Item selection', () => {
-    it('only allows PDF files to be selectable', async () => {
+    it('allows supported formats and rejects unsupported formats', async () => {
       const pdfDoc = createMockDocument({ extension: '.pdf' });
+      const spreadsheetDoc = createMockDocument({ extension: '.xlsx' });
       const txtDoc = createMockDocument({ extension: '.txt' });
-      const wrapper = createWrapper({}, [pdfDoc, txtDoc]);
+      const wrapper = createWrapper({}, [pdfDoc, spreadsheetDoc, txtDoc]);
 
       const vm = getVm(wrapper);
-      expect(vm.isPdf(pdfDoc)).toBe(true);
-      expect(vm.isPdf(txtDoc)).toBe(false);
+      expect(vm.isSupportedByNutrient(pdfDoc)).toBe(true);
+      expect(vm.isSupportedByNutrient(spreadsheetDoc)).toBe(true);
+      expect(vm.isSupportedByNutrient(txtDoc)).toBe(false);
     });
   });
 

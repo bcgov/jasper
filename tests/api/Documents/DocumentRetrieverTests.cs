@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -34,14 +35,18 @@ public class DocumentRetrieverTest
 
         var strategyMock = new Mock<IDocumentStrategy>();
         strategyMock.SetupGet(s => s.Type).Returns(DocumentType.File);
-        strategyMock.Setup(s => s.Invoke(requestData)).ReturnsAsync(expectedStream);
+        strategyMock
+            .Setup(s => s.Invoke(requestData, CancellationToken.None))
+            .ReturnsAsync(expectedStream);
 
         var retriever = new DocumentRetriever([strategyMock.Object], _logger.Object);
 
         var result = await retriever.Retrieve(request);
 
         Assert.Same(expectedStream, result);
-        strategyMock.Verify(s => s.Invoke(requestData), Times.Once);
+        strategyMock.Verify(
+            s => s.Invoke(requestData, CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]

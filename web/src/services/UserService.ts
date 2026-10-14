@@ -9,7 +9,7 @@ export class UserService extends ServiceBase {
 
   async requestAccess(): Promise<UserInfo> {
     return await this.httpService.put<UserInfo>(`api/users/request-access`, {
-      skipErrorHandler: true,
+      suppressErrorNotification: true,
     });
   }
 

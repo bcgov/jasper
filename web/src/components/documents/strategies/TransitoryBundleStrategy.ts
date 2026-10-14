@@ -1,4 +1,5 @@
 import type { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
+import { CustomAPIError } from '@/types/ApiResponse';
 import {
   type FileMetadataDto,
   type TransitoryMergeContext,
@@ -9,6 +10,7 @@ import type {
   OutlineItem,
   PDFViewerStrategy,
 } from './PDFViewerTypes';
+import axios, { type AxiosError } from 'axios';
 
 interface MergedPdfResponse {
   base64Pdf: string;
@@ -20,6 +22,13 @@ export class TransitoryBundleStrategy
     PDFViewerStrategy<FileMetadataDto[], FileMetadataDto[], MergedPdfResponse>,
     EmbeddedOutlineAwarePDFViewerStrategy<FileMetadataDto[], MergedPdfResponse>
 {
+  private static readonly conversionErrorCodes = new Set([
+    'DOCUMENT_FORMAT_UNSUPPORTED',
+    'DOCUMENT_CONVERSION_FAILED',
+    'DOCUMENT_SIZE_LIMIT_EXCEEDED',
+    'DOCUMENT_CONVERSION_TIMEOUT',
+  ]);
+
   private readonly transitoryDocumentsService: TransitoryDocumentsService;
   private readonly storageKey: string;
   private documentsData: FileMetadataDto[] = [];
@@ -75,13 +84,15 @@ export class TransitoryBundleStrategy
   }
 
   async generatePDF(
-    processedData: FileMetadataDto[]
+    processedData: FileMetadataDto[],
+    signal?: AbortSignal
   ): Promise<MergedPdfResponse> {
     // Send file metadata directly to backend for merging
     // The backend will download and merge all PDFs efficiently in one operation
     const mergedResult = await this.transitoryDocumentsService.mergePdfs(
       processedData,
-      this.mergeContext
+      this.mergeContext,
+      signal
     );
 
     return mergedResult;
@@ -89,6 +100,23 @@ export class TransitoryBundleStrategy
 
   extractBase64PDF(apiResponse: MergedPdfResponse): string {
     return apiResponse.base64Pdf;
+  }
+
+  getLoadErrorMessage(error: unknown): string | undefined {
+    if (
+      !(error instanceof CustomAPIError) ||
+      !axios.isAxiosError((error as CustomAPIError<AxiosError>).originalError)
+    ) {
+      return undefined;
+    }
+
+    const responseData = (
+      error as CustomAPIError<AxiosError<{ code?: unknown }>>
+    ).originalError.response?.data;
+    return typeof responseData?.code === 'string' &&
+      TransitoryBundleStrategy.conversionErrorCodes.has(responseData.code)
+      ? 'This document format could not be converted for viewing.'
+      : undefined;
   }
 
   extractPageRanges(

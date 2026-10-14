@@ -21,7 +21,12 @@ export interface PDFViewerStrategy<
 
   processDataForAPI(rawData: TRawData): TProcessedData;
 
-  generatePDF(processedData: TProcessedData): Promise<TApiResponse>;
+  generatePDF(
+    processedData: TProcessedData,
+    signal?: AbortSignal
+  ): Promise<TApiResponse>;
+
+  getLoadErrorMessage?(error: unknown): string | undefined;
 
   extractBase64PDF(apiResponse: TApiResponse): string;
 

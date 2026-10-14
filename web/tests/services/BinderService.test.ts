@@ -40,7 +40,7 @@ describe('BinderService', () => {
       'api/binders',
       queryParams,
       {
-        skipErrorHandler: true,
+        suppressErrorNotification: true,
       }
     );
     expect(result).toEqual(expectedResponse);
@@ -62,7 +62,7 @@ describe('BinderService', () => {
       binder,
       {},
       'json',
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
     expect(result).toEqual(expectedResponse);
   });
@@ -83,7 +83,7 @@ describe('BinderService', () => {
       binder,
       {},
       'json',
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
     expect(result).toEqual(expectedResponse);
   });
@@ -98,7 +98,7 @@ describe('BinderService', () => {
       `api/binders/${binderId}`,
       {},
       'json',
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   });
 });

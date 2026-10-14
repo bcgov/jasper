@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,10 +10,14 @@ using GdPicture14;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Scv.Api.Documents;
+using Scv.Api.Documents.Conversion;
 using Scv.Api.Documents.Strategies;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
+using Scv.Core.Exceptions;
 using Scv.Models;
 using Scv.Models.Document;
 using tests.api.Services;
@@ -24,6 +29,154 @@ namespace tests.api.Documents;
 
 public class DocumentMergerTest : ServiceTestBase
 {
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 4)]
+    [InlineData(2, 4)]
+    [InlineData(3, 4)]
+    [InlineData(4, 8)]
+    public void GetBase64EncodedLength_ReturnsEncodedByteCount(long inputBytes, long expected)
+    {
+        Assert.Equal(expected, DocumentMerger.GetBase64EncodedLength(inputBytes));
+    }
+
+    [Fact]
+    public void ValidateBase64ResponseSize_RejectsEncodedResponseOverLimit()
+    {
+        Assert.Throws<DocumentSizeLimitExceededException>(() =>
+            DocumentMerger.ValidateBase64ResponseSize(101, 100));
+    }
+
+    [Fact]
+    public async Task MergeDocuments_RejectsAggregateConvertedOutputBeforePdfProcessing()
+    {
+        var retriever = new Mock<IDocumentRetriever>();
+        var stream = new DisposalTrackingMemoryStream("%PDF-1.7"u8.ToArray());
+        retriever
+            .Setup(value => value.Retrieve(It.IsAny<PdfDocumentRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stream);
+        var merger = CreateMerger(
+            retriever.Object,
+            Mock.Of<IPdfMergePreparationStrategyResolver>(),
+            Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(),
+            new DocumentConversionOptions { MaxAggregateConvertedOutputSizeBytes = 4 });
+
+        await Assert.ThrowsAsync<DocumentSizeLimitExceededException>(() =>
+            merger.MergeDocuments([
+                new PdfDocumentRequest
+                {
+                    Type = ScvDocumentType.TransitoryDocument,
+                    Data = new PdfDocumentRequestDetails()
+                }
+            ]));
+
+        Assert.True(stream.WasDisposed);
+    }
+
+    [Fact]
+    public async Task MergeDocuments_DisposesSuccessfulStreams_WhenAnotherRetrievalInBatchFails()
+    {
+        var retrieverMock = new Mock<IDocumentRetriever>();
+        var preparationStrategyResolverMock = new Mock<IPdfMergePreparationStrategyResolver>();
+        var loggerMock = new Mock<ILogger<DocumentMerger>>();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["DOCUMENT_RETRIEVAL_BATCH_SIZE"] = "2"
+            })
+            .Build();
+        var merger = new DocumentMerger(
+            retrieverMock.Object,
+            preparationStrategyResolverMock.Object,
+            loggerMock.Object,
+            configuration,
+            Options.Create(new DocumentConversionOptions()));
+        var allocatedStream = new DisposalTrackingMemoryStream("%PDF-1.7"u8.ToArray());
+        var requests = new[]
+        {
+            new PdfDocumentRequest { Type = ScvDocumentType.File, Data = new PdfDocumentRequestDetails() },
+            new PdfDocumentRequest { Type = ScvDocumentType.File, Data = new PdfDocumentRequestDetails() }
+        };
+
+        retrieverMock
+            .Setup(x => x.Retrieve(requests[0], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allocatedStream);
+        retrieverMock
+            .Setup(x => x.Retrieve(requests[1], It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new UnprocessableDocumentException(
+                DocumentPdfConversionService.ConversionErrorMessage));
+
+        await Assert.ThrowsAsync<UnprocessableDocumentException>(() =>
+            merger.MergeDocuments(requests, CancellationToken.None));
+
+        Assert.True(allocatedStream.WasDisposed);
+    }
+
+    [Fact]
+    public async Task MergeDocuments_CancelsAndObservesRemainingRetrievals_WhenBatchFails()
+    {
+        var retrieverMock = new Mock<IDocumentRetriever>();
+        var requests = new[]
+        {
+            new PdfDocumentRequest { Type = ScvDocumentType.TransitoryDocument, Data = new PdfDocumentRequestDetails() },
+            new PdfDocumentRequest { Type = ScvDocumentType.TransitoryDocument, Data = new PdfDocumentRequestDetails() }
+        };
+        var siblingStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var siblingCancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        retrieverMock
+            .Setup(x => x.Retrieve(requests[0], It.IsAny<CancellationToken>()))
+            .Returns(async (PdfDocumentRequest _, CancellationToken cancellationToken) =>
+            {
+                siblingStarted.TrySetResult(true);
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                    return new MemoryStream();
+                }
+                catch (OperationCanceledException)
+                {
+                    siblingCancelled.TrySetResult(true);
+                    throw;
+                }
+            });
+        retrieverMock
+            .Setup(x => x.Retrieve(requests[1], It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                await siblingStarted.Task;
+                throw new UnprocessableDocumentException(
+                    DocumentPdfConversionService.ConversionErrorMessage);
+            });
+
+        var merger = CreateMerger(
+            retrieverMock.Object,
+            Mock.Of<IPdfMergePreparationStrategyResolver>(),
+            Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["DOCUMENT_RETRIEVAL_BATCH_SIZE"] = "2"
+            }).Build());
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            merger.MergeDocuments(requests, CancellationToken.None));
+
+        Assert.True(await siblingCancelled.Task.WaitAsync(TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public void ShouldEnforceTransitoryPageLimit_OnlyForTransitoryMergeRequests()
+    {
+        var transitory = new PdfDocumentRequest { Type = ScvDocumentType.TransitoryDocument };
+        var existingFileWorkflow = new PdfDocumentRequest { Type = ScvDocumentType.File };
+
+        Assert.True(DocumentMerger.ShouldEnforceTransitoryPageLimit([transitory]));
+        Assert.False(DocumentMerger.ShouldEnforceTransitoryPageLimit([existingFileWorkflow]));
+        Assert.False(DocumentMerger.ShouldEnforceTransitoryPageLimit([transitory, existingFileWorkflow]));
+        Assert.False(DocumentMerger.ShouldEnforceTransitoryPageLimit([]));
+    }
+
     [Fact]
     public async Task MergeDocuments_RetrievesDocumentsInBatches()
     {
@@ -31,19 +184,19 @@ public class DocumentMergerTest : ServiceTestBase
         var preparationStrategyResolverMock = new Mock<IPdfMergePreparationStrategyResolver>();
         var loggerMock = new Mock<ILogger<DocumentMerger>>();
         var configuration = new ConfigurationBuilder().Build();
-        var merger = new DocumentMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
+        var merger = CreateMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
 
         var activeRequests = 0;
         var maxConcurrentRequests = 0;
 
         retrieverMock
-            .Setup(x => x.Retrieve(It.IsAny<PdfDocumentRequest>()))
-            .Returns(async () =>
+            .Setup(x => x.Retrieve(It.IsAny<PdfDocumentRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(async (PdfDocumentRequest _, CancellationToken cancellationToken) =>
             {
                 var current = Interlocked.Increment(ref activeRequests);
                 UpdateMaxConcurrentRequests(ref maxConcurrentRequests, current);
 
-                await Task.Delay(20);
+                await Task.Delay(20, cancellationToken);
 
                 Interlocked.Decrement(ref activeRequests);
                 return null;
@@ -74,7 +227,7 @@ public class DocumentMergerTest : ServiceTestBase
         var preparationStrategyResolverMock = new Mock<IPdfMergePreparationStrategyResolver>();
         var loggerMock = new Mock<ILogger<DocumentMerger>>();
         var configuration = new ConfigurationBuilder().Build();
-        var merger = new DocumentMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
+        var merger = CreateMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
         var docId = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("doc1"));
         var request = new PdfDocumentRequest
         {
@@ -99,7 +252,7 @@ public class DocumentMergerTest : ServiceTestBase
         var preparationStrategyResolverMock = new Mock<IPdfMergePreparationStrategyResolver>();
         var loggerMock = new Mock<ILogger<DocumentMerger>>();
         var configuration = new ConfigurationBuilder().Build();
-        var merger = new DocumentMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
+        var merger = CreateMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
 
         preparationStrategyResolverMock
             .Setup(x => x.Resolve(It.IsAny<PdfDocumentRequest>()))
@@ -126,6 +279,7 @@ public class DocumentMergerTest : ServiceTestBase
     public async Task MergeDocuments_PreservesBookmarks_ForTransitoryDocuments()
     {
         var transitoryDocumentsServiceMock = new Mock<ITransitoryDocumentsService>();
+        var conversionServiceMock = new Mock<IDocumentPdfConversionService>();
         var transitoryStrategyLoggerMock = new Mock<ILogger<TransitoryDocumentStrategy>>();
         var documentRetrieverLoggerMock = new Mock<ILogger<DocumentRetriever>>();
         var documentMergerLoggerMock = new Mock<ILogger<DocumentMerger>>();
@@ -139,13 +293,25 @@ public class DocumentMergerTest : ServiceTestBase
                 CreatePdfWithBookmark(bookmarkTitle, 2),
                 "transitory.pdf",
                 "application/pdf"));
+        conversionServiceMock
+            .Setup(x => x.ConvertToPdfAsync(It.IsAny<DocumentPdfConversionRequest>(), It.IsAny<CancellationToken>()))
+            .Returns<DocumentPdfConversionRequest, CancellationToken>(async (request, cancellationToken) =>
+            {
+                var output = new MemoryStream();
+                await request.Stream.CopyToAsync(output, cancellationToken);
+                output.Position = 0;
+                return output;
+            });
 
         var documentRetriever = new DocumentRetriever(
-            [new TransitoryDocumentStrategy(transitoryDocumentsServiceMock.Object, transitoryStrategyLoggerMock.Object)],
+            [new TransitoryDocumentStrategy(
+                transitoryDocumentsServiceMock.Object,
+                conversionServiceMock.Object,
+                transitoryStrategyLoggerMock.Object)],
             documentRetrieverLoggerMock.Object);
         var preparationStrategyResolver = new PdfMergePreparationStrategyResolver(
             [new DefaultPdfMergePreparationStrategy(), new TransitoryDocumentPdfMergePreparationStrategy()]);
-        var merger = new DocumentMerger(documentRetriever, preparationStrategyResolver, documentMergerLoggerMock.Object, configuration);
+        var merger = CreateMerger(documentRetriever, preparationStrategyResolver, documentMergerLoggerMock.Object, configuration);
 
         var response = await merger.MergeDocuments([
             new PdfDocumentRequest
@@ -209,6 +375,21 @@ public class DocumentMergerTest : ServiceTestBase
         while (Interlocked.CompareExchange(ref maxConcurrentRequests, current, observedMax) != observedMax);
     }
 
+    private static DocumentMerger CreateMerger(
+        IDocumentRetriever retriever,
+        IPdfMergePreparationStrategyResolver resolver,
+        ILogger<DocumentMerger> logger,
+        IConfiguration configuration,
+        DocumentConversionOptions options = null)
+    {
+        return new DocumentMerger(
+            retriever,
+            resolver,
+            logger,
+            configuration,
+            Options.Create(options ?? new DocumentConversionOptions()));
+    }
+
     private static MemoryStream CreatePdfWithBookmark(string bookmarkTitle, int destinationPage)
     {
         using var pdf = new GdPicturePDF();
@@ -227,5 +408,16 @@ public class DocumentMergerTest : ServiceTestBase
         Assert.Equal(GdPictureStatus.OK, pdf.SaveToStream(stream));
         stream.Position = 0;
         return stream;
+    }
+
+    private sealed class DisposalTrackingMemoryStream(byte[] buffer) : MemoryStream(buffer)
+    {
+        public bool WasDisposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            WasDisposed = true;
+            base.Dispose(disposing);
+        }
     }
 }

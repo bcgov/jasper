@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using GdPicture14;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Scv.Api.Documents;

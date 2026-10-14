@@ -6,6 +6,13 @@
       <p class="text-center mx-auto">No documents available to display.</p>
     </v-col>
   </v-row>
+  <v-row class="py-12" v-if="loadErrorMessage">
+    <v-col cols="12" md="8" class="mx-auto">
+      <v-alert type="error" border="start" data-testid="viewer-load-error">
+        {{ loadErrorMessage }}
+      </v-alert>
+    </v-col>
+  </v-row>
 
   <ReviewModal
     v-model="showReviewModal"
@@ -21,6 +28,7 @@
   import type { OrderReview } from '@/types';
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
+  import axios from 'axios';
   import type {
     Instance,
     StandaloneConfiguration,
@@ -57,6 +65,7 @@
   const commonStore = useCommonStore();
   const loading = ref(false);
   const emptyStore = ref(false);
+  const loadErrorMessage = ref('');
   const showReviewModal = ref(false);
   const canApprove = ref<boolean>(false);
   const sessionId = computed(() => {
@@ -72,6 +81,8 @@
   }
 
   let instance!: Instance;
+  let conversionController: AbortController | undefined;
+  let isUnmounted = false;
 
   const configuration: StandaloneConfiguration = {
     document: '', // This would be overridden by the actual PDF document when loaded.
@@ -117,6 +128,7 @@
   const loadNutrient = async () => {
     loading.value = true;
     emptyStore.value = false;
+    loadErrorMessage.value = '';
 
     if (!props.strategy.hasData(sessionId.value)) {
       loading.value = false;
@@ -128,6 +140,11 @@
       // Follow the strategy pattern workflow
       const rawData = props.strategy.getRawData(sessionId.value);
       const processedData = props.strategy.processDataForAPI(rawData);
+      conversionController = new AbortController();
+      const pdfPromise = props.strategy.generatePDF(
+        processedData,
+        conversionController.signal
+      );
 
       // Recommended to preload the worker for better performance.
       void nutrientViewer.preloadWorker(configuration).catch((error) => {
@@ -135,9 +152,11 @@
       });
 
       const [apiResponse] = await Promise.all([
-        props.strategy.generatePDF(processedData),
+        pdfPromise,
         props.strategy.initialize?.(),
       ]);
+
+      if (isUnmounted) return;
 
       loading.value = false;
 
@@ -196,9 +215,13 @@
       // Check if document can be approved initially
       await updateCanApprove();
     } catch (error) {
+      if (isUnmounted || axios.isCancel(error)) return;
       console.error('Error loading PDF:', error);
       loading.value = false;
-      emptyStore.value = true;
+      emptyStore.value = false;
+      loadErrorMessage.value =
+        props.strategy.getLoadErrorMessage?.(error) ??
+        'The document could not be loaded. Please try again.';
     }
   };
 
@@ -429,6 +452,8 @@
   });
 
   onUnmounted(() => {
+    isUnmounted = true;
+    conversionController?.abort();
     if (instance) {
       nutrientViewer.unload(instance);
     }

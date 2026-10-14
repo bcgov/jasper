@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Documents.Strategies;
@@ -21,10 +22,18 @@ public class DocumentRetriever(IEnumerable<IDocumentStrategy> strategies, ILogge
     /// <returns>The retrieved PDF document stream</returns>
     public Task<MemoryStream> Retrieve(PdfDocumentRequest documentRequest)
     {
+        return Retrieve(documentRequest, CancellationToken.None);
+    }
+
+    public Task<MemoryStream> Retrieve(
+        PdfDocumentRequest documentRequest,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            return _strategies.FirstOrDefault(strat => strat.Type == documentRequest.Type)?.Invoke(documentRequest.Data)
+            var strategy = _strategies.FirstOrDefault(strat => strat.Type == documentRequest.Type)
                 ?? throw new InvalidOperationException();
+            return strategy.Invoke(documentRequest.Data, cancellationToken);
         }
         catch (InvalidOperationException)
         {

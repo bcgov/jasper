@@ -83,19 +83,16 @@ export class HttpService implements IHttpService {
       redirectHandlerService.handleUnauthorized(globalThis.location.href);
     }
 
-    if (error.config?.skipErrorHandler) {
-      // Component handles the error
-      return Promise.reject(
-        new CustomAPIError<AxiosError>(error.message, error)
-      );
-    }
-
     // todo: check for a 403 and handle it
     if (status === 409) {
       globalThis.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
-    } else if (status !== 403 && status !== 401) {
+    } else if (
+      !error.config?.suppressErrorNotification &&
+      status !== 403 &&
+      status !== 401
+    ) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',

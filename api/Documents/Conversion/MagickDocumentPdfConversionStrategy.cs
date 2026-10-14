@@ -65,31 +65,21 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
                 },
                 cancellationToken);
             var conversion = new PdfDocumentConversionResult(document, new PdfConversionReport());
-            var output = new BoundedMemoryStream(
+            var writeResult = await PdfOutputWriter.WriteAsync(
+                conversion,
                 _options.MaxOutputSizeBytes,
-                DocumentPdfConversionService.ConversionErrorMessage);
-            try
+                DocumentPdfConversionService.ConversionErrorMessage,
+                cancellationToken);
+            if (!writeResult.Succeeded)
             {
-                var saveResult = await conversion.SaveAsync(output, cancellationToken);
-                if (!saveResult.Succeeded || output.Length == 0 ||
-                    !PdfFileValidation.HasPdfSignature(output))
-                {
-                    await output.DisposeAsync();
-                    return DocumentPdfConversionAttempt.Failed(
-                        Name,
-                        DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
-                        saveResult.Exception ?? new UnprocessableDocumentException(
-                            DocumentPdfConversionService.ConversionErrorMessage));
-                }
+                return DocumentPdfConversionAttempt.Failed(
+                    Name,
+                    DocumentPdfConversionAttemptStatus.InvalidConverterOutput,
+                    writeResult.SaveResult.Exception ?? new UnprocessableDocumentException(
+                        DocumentPdfConversionService.ConversionErrorMessage));
+            }
 
-                output.Position = 0;
-                return DocumentPdfConversionAttempt.Succeeded(Name, output);
-            }
-            catch
-            {
-                await output.DisposeAsync();
-                throw;
-            }
+            return DocumentPdfConversionAttempt.Succeeded(Name, writeResult.Output);
         }
         catch (OperationCanceledException)
         {
@@ -102,7 +92,8 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
                 DocumentPdfConversionAttemptStatus.OutputLimitExceeded,
                 exception);
         }
-        catch (MagickException exception) when (IsResourceLimitFailure(exception))
+        catch (MagickException exception) when (
+            ImageConversionPreflight.IsResourceLimitFailure(exception))
         {
             return DocumentPdfConversionAttempt.Failed(
                 Name,
@@ -185,8 +176,4 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
 
         return imageSources;
     }
-
-    private static bool IsResourceLimitFailure(MagickException exception) =>
-        ImageConversionPreflight.IsResourceLimitFailure(exception);
-
 }

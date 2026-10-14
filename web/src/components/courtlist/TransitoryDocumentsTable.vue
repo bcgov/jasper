@@ -67,8 +67,7 @@
             return-object
             :item-value="(item) => item.relativePath"
             :item-selectable="
-              (item) =>
-                canViewDocuments && isSupportedByNutrient(item)
+              (item) => canViewDocuments && isSupportedByNutrient(item)
             "
             data-testid="documents-table"
             :items-per-page="-1"

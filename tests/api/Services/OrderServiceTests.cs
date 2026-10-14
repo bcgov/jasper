@@ -23,6 +23,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json.Linq;
 using PCSSCommon.Models;
+using Scv.Api.Documents;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
@@ -49,6 +50,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Mock<IDeskOrderDetailsExtractor> _mockDeskOrderDetailsExtractor;
     private readonly Mock<ICsoTextSanitizer> _mockCsoTextSanitizer;
     private readonly Mock<IAntiVirusService> _mockAntiVirusService;
+    private readonly Mock<IPdfPageEditor> _mockPdfPageEditor;
     private readonly Mock<INotificationService> _mockNotificationService;
     private readonly Mock<ILogger<OrderSubmittedAckNotification>> _mockOrderSubmittedAckLogger;
     private readonly OrderSubmittedAckNotification _orderSubmittedAckNotification;
@@ -88,6 +90,7 @@ public class OrderServiceTests : ServiceTestBase
             .Setup(s => s.Sanitize(It.IsAny<string>()))
             .Returns((string text) => text);
         _mockAntiVirusService = new Mock<IAntiVirusService>();
+        _mockPdfPageEditor = new Mock<IPdfPageEditor>();
         _mockAntiVirusService
             .Setup(s => s.ScanAsync(It.IsAny<Stream>()))
             .ReturnsAsync((true, "File is clean."));
@@ -121,7 +124,8 @@ public class OrderServiceTests : ServiceTestBase
             _mockDeskOrderDetailsExtractor.Object,
             _mockCsoTextSanitizer.Object,
             _mockAntiVirusService.Object,
-            _orderSubmittedAckNotification);
+            _orderSubmittedAckNotification,
+            _mockPdfPageEditor.Object);
     }
 
     private static bool HasExpectedCommentJson(string json, string comments, string rejectionReasons, string directions, bool clerkToSign)
@@ -1047,6 +1051,72 @@ public class OrderServiceTests : ServiceTestBase
             It.IsAny<Hangfire.States.IState>()), Times.Never);
     }
 
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 0)]
+    public async Task ReviewOrder_RemovesAppendedPage_OnlyWhenSmallClaimsDeskOrderIsNotDirty(bool isAppendedPageDirty, int expectedRemovals)
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var originalBytes = new byte[] { 1, 2, 3 };
+        var trimmedBytes = new byte[] { 4, 5 };
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.OrderMade,
+            Signed = true,
+            DocumentData = Convert.ToBase64String(originalBytes),
+            IsAppendedPageDirty = isAppendedPageDirty
+        };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId)).ReturnsAsync(order);
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+        _mockPdfPageEditor
+            .Setup(e => e.RemoveLastPage(It.IsAny<MemoryStream>()))
+            .Returns(new MemoryStream(trimmedBytes));
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockPdfPageEditor.Verify(e => e.RemoveLastPage(It.IsAny<MemoryStream>()), Times.Exactly(expectedRemovals));
+        var expectedBytes = isAppendedPageDirty ? originalBytes : trimmedBytes;
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.DocumentData.SequenceEqual(expectedBytes))), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_ReturnsFailure_WhenRemovingAppendedPageFails()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.OrderMade,
+            Signed = true,
+            DocumentData = Convert.ToBase64String(new byte[] { 1, 2, 3 })
+        };
+
+        var order = CreateOrder();
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId)).ReturnsAsync(order);
+        _mockPdfPageEditor
+            .Setup(e => e.RemoveLastPage(It.IsAny<MemoryStream>()))
+            .Throws(new InvalidOperationException("boom"));
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.False(result.Succeeded);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Never);
+    }
+
     #endregion
 
     #region SubmitOrder Tests
@@ -1379,7 +1449,8 @@ public class OrderServiceTests : ServiceTestBase
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
             _mockAntiVirusService.Object,
-            _orderSubmittedAckNotification);
+            _orderSubmittedAckNotification,
+            _mockPdfPageEditor.Object);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1461,7 +1532,8 @@ public class OrderServiceTests : ServiceTestBase
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
             _mockAntiVirusService.Object,
-            _orderSubmittedAckNotification);
+            _orderSubmittedAckNotification,
+            _mockPdfPageEditor.Object);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))
@@ -1532,7 +1604,8 @@ public class OrderServiceTests : ServiceTestBase
             new DeskOrderDetailsExtractor(),
             new CsoTextSanitizer(),
             _mockAntiVirusService.Object,
-            _orderSubmittedAckNotification);
+            _orderSubmittedAckNotification,
+            _mockPdfPageEditor.Object);
 
         _mockOrderRepo
             .Setup(r => r.GetByIdAsync(It.IsAny<string>()))

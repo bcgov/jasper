@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Documents;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
 using Scv.Api.SignalR.Notifications;
@@ -51,6 +52,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly ICsoTextSanitizer _csoTextSanitizer;
     private readonly IAntiVirusService _antiVirusService;
     private readonly OrderSubmittedAckNotification _orderSubmittedAck;
+    private readonly IPdfPageEditor _pdfPageEditor;
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -68,7 +70,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IDeskOrderDetailsExtractor deskOrderDetailsExtractor,
         ICsoTextSanitizer csoTextSanitizer,
         IAntiVirusService antiVirusService,
-        OrderSubmittedAckNotification orderSubmittedAck
+        OrderSubmittedAckNotification orderSubmittedAck,
+        IPdfPageEditor pdfPageEditor
     ) : base(
             cache,
             mapper,
@@ -89,6 +92,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _csoTextSanitizer = csoTextSanitizer;
         _antiVirusService = antiVirusService;
         _orderSubmittedAck = orderSubmittedAck;
+        _pdfPageEditor = pdfPageEditor;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -609,7 +613,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         return actionDto;
     }
 
-    private static string RemoveSmallClaimsAdditionalPage(string base64Pdf)
+    private string RemoveSmallClaimsAdditionalPage(string base64Pdf)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(base64Pdf);
 
@@ -618,33 +622,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             throw new FormatException("The provided base64 string is not valid.");
         }
 
-        using var pdf = new GdPicture14.GdPicturePDF();
         using var input = new MemoryStream(bytes);
-
-        var loadStatus = pdf.LoadFromStream(input, false);
-        if (loadStatus != GdPicture14.GdPictureStatus.OK)
-        {
-            throw new InvalidOperationException($"Failed to load the desk order document: {loadStatus}");
-        }
-
-        var pageCount = pdf.GetPageCount();
-        if (pageCount < 2)
-        {
-            return base64Pdf;
-        }
-
-        var deleteStatus = pdf.DeletePage(pageCount);
-        if (deleteStatus != GdPicture14.GdPictureStatus.OK)
-        {
-            throw new InvalidOperationException($"Failed to remove the appended page: {deleteStatus}");
-        }
-
-        using var output = new MemoryStream();
-        var saveStatus = pdf.SaveToStream(output);
-        if (saveStatus != GdPicture14.GdPictureStatus.OK)
-        {
-            throw new InvalidOperationException($"Failed to save the desk order document: {saveStatus}");
-        }
+        using var output = _pdfPageEditor.RemoveLastPage(input);
 
         return Convert.ToBase64String(output.ToArray());
     }

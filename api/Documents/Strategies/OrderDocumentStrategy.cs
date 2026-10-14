@@ -16,7 +16,6 @@ using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Document;
 using Scv.Models.Order;
-using GdP = GdPicture14;
 
 namespace Scv.Api.Documents.Strategies;
 
@@ -26,19 +25,22 @@ public class OrderDocumentStrategy : IDocumentStrategy
     private readonly IConfiguration _configuration;
     private readonly IRepositoryBase<Order> _orderRepository;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IPdfPageEditor _pdfPageEditor;
     public DocumentType Type => DocumentType.Order;
 
     public OrderDocumentStrategy(
         IJudicialServicesClient judicialClient,
         IConfiguration configuration,
         IRepositoryBase<Order> orderRepository,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IPdfPageEditor pdfPageEditor)
     {
         _judicialClient = judicialClient;
         _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
         _configuration = configuration;
         _orderRepository = orderRepository;
         _httpClientFactory = httpClientFactory;
+        _pdfPageEditor = pdfPageEditor;
     }
 
     public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
@@ -125,20 +127,9 @@ public class OrderDocumentStrategy : IDocumentStrategy
         using var additionalPageStream = new MemoryStream();
         await response.Content.CopyToAsync(additionalPageStream);
 
-        documentStream.Position = 0;
-        additionalPageStream.Position = 0;
-
-        var mergedStream = new MemoryStream();
-        using var converter = new GdP.GdPictureDocumentConverter();
-        var status = converter.CombineToPDF([documentStream, additionalPageStream], mergedStream, GdP.PdfConformance.PDF);
-        if (status != GdP.GdPictureStatus.OK)
-        {
-            await mergedStream.DisposeAsync();
-            throw new InvalidOperationException($"Failed to append small claims page: {status}");
-        }
+        var mergedStream = _pdfPageEditor.AppendPages(documentStream, additionalPageStream);
 
         await documentStream.DisposeAsync();
-        mergedStream.Position = 0;
         return mergedStream;
     }
 }

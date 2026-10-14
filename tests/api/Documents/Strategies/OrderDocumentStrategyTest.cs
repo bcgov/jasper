@@ -9,6 +9,7 @@ using CSOCommon.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
 using Scv.Core.Exceptions;
 using Scv.Db.Models;
@@ -26,6 +27,7 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<IRepositoryBase<Order>> _mockOrderRepo;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
+    private readonly Mock<IPdfPageEditor> _mockPdfPageEditor;
     private readonly string _fakeContent = "fake-pdf-bytes";
     private readonly byte[] _fakeContentBytes;
 
@@ -36,6 +38,7 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockConfiguration = new Mock<IConfiguration>();
         _mockOrderRepo = new Mock<IRepositoryBase<Order>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        _mockPdfPageEditor = new Mock<IPdfPageEditor>();
 
         var mockAgencySection = Mock.Of<IConfigurationSection>(s => s.Value == "123");
         var mockAppCdSection = Mock.Of<IConfigurationSection>(s => s.Value == "TESTAPP");
@@ -89,7 +92,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         Assert.Equal(DocumentType.Order, strategy.Type);
     }
@@ -104,7 +108,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         var result = await strategy.Invoke(BuildRequest(documentId.ToString()));
 
@@ -124,7 +129,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         var result = await strategy.Invoke(BuildRequest(ciesDocumentId.ToString()));
 
@@ -145,7 +151,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await strategy.Invoke(request);
 
@@ -164,7 +171,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await strategy.Invoke(request);
 
@@ -179,7 +187,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await Assert.ThrowsAsync<System.ArgumentNullException>(() => strategy.Invoke(request));
     }
@@ -192,7 +201,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await Assert.ThrowsAsync<System.ArgumentNullException>(() => strategy.Invoke(request));
     }
@@ -206,7 +216,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await Assert.ThrowsAsync<InvalidDataException>(() => strategy.Invoke(request));
     }
@@ -223,7 +234,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await Assert.ThrowsAsync<InvalidDataException>(() => strategy.Invoke(BuildRequest()));
     }
@@ -239,7 +251,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
             _mockOrderRepo.Object,
-            _mockHttpClientFactory.Object);
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object);
 
         await Assert.ThrowsAsync<NotFoundException>(() => strategy.Invoke(BuildRequest("789")));
     }
@@ -315,7 +328,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockJudicialClient.Object,
         _mockConfiguration.Object,
         _mockOrderRepo.Object,
-        _mockHttpClientFactory.Object);
+        _mockHttpClientFactory.Object,
+        _mockPdfPageEditor.Object);
 
     private void SetupSmallClaimsUrl(string url)
     {

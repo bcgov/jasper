@@ -93,18 +93,8 @@ internal sealed class DocumentProcessRunner(ILogger<DocumentProcessRunner> logge
         }
     }
 
-    private static async Task DrainAsync(Stream stream, CancellationToken cancellationToken)
-    {
-        var buffer = new byte[4096];
-        while (true)
-        {
-            var bytesRead = await stream.ReadAsync(buffer.AsMemory(), cancellationToken);
-            if (bytesRead == 0)
-            {
-                break;
-            }
-        }
-    }
+    private static Task DrainAsync(Stream stream, CancellationToken cancellationToken) =>
+        stream.CopyToAsync(Stream.Null, cancellationToken);
 
     private static void TryKillProcessTree(Process process)
     {

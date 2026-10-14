@@ -26,6 +26,11 @@
     <None Remove="Models\Calendar\**" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource
+      Include="Documents\Conversion\Resources\LibreOfficeSecurityProfile.xcu"
+      LogicalName="Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.108.1" />
     <PackageReference Include="AnyAscii" Version="0.3.3" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />

@@ -45,9 +45,6 @@ public enum DocumentFormatFamily
 
 internal static class DocumentFormatDetector
 {
-    private const int MaximumPackageEntries = 10_000;
-    private const int MaximumContentTypesBytes = 1024 * 1024;
-    private const int MaximumPackageRelationshipsBytes = 1024 * 1024;
     private const string OfficeDocumentRelationshipSuffix = "/officeDocument";
 
     private static readonly IReadOnlyDictionary<string, DocumentFormat> Extensions =
@@ -180,7 +177,7 @@ internal static class DocumentFormatDetector
         try
         {
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
-            if (archive.Entries.Count > MaximumPackageEntries)
+            if (archive.Entries.Count > OfficePackageLimits.MaximumEntries)
             {
                 return DocumentFormat.Unknown;
             }
@@ -201,9 +198,9 @@ internal static class DocumentFormatDetector
             var contentTypesEntry = archive.GetEntry("[Content_Types].xml");
             var relationshipsEntry = archive.GetEntry("_rels/.rels");
             if (contentTypesEntry is null ||
-                contentTypesEntry.Length > MaximumContentTypesBytes ||
+                contentTypesEntry.Length > OfficePackageLimits.MaximumContentTypesBytes ||
                 relationshipsEntry is null ||
-                relationshipsEntry.Length > MaximumPackageRelationshipsBytes)
+                relationshipsEntry.Length > OfficePackageLimits.MaximumRelationshipPartBytes)
             {
                 return DocumentFormat.Unknown;
             }
@@ -219,7 +216,7 @@ internal static class DocumentFormatDetector
             {
                 DtdProcessing = DtdProcessing.Prohibit,
                 XmlResolver = null,
-                MaxCharactersInDocument = MaximumContentTypesBytes
+                MaxCharactersInDocument = OfficePackageLimits.MaximumContentTypesBytes
             });
             var document = XDocument.Load(xmlReader, LoadOptions.None);
             var primaryContentType = document
@@ -260,7 +257,7 @@ internal static class DocumentFormatDetector
         {
             DtdProcessing = DtdProcessing.Prohibit,
             XmlResolver = null,
-            MaxCharactersInDocument = MaximumPackageRelationshipsBytes
+            MaxCharactersInDocument = OfficePackageLimits.MaximumRelationshipPartBytes
         });
         var relationships = XDocument.Load(reader, LoadOptions.None);
         var relationship = relationships

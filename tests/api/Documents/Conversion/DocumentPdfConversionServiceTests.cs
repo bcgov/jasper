@@ -270,6 +270,125 @@ public class DocumentPdfConversionServiceTests
         Assert.Equal("%PDF-", Encoding.ASCII.GetString(output.ToArray(), 0, 5));
     }
 
+    [Theory]
+    [InlineData(MagickFormat.Png, ".png")]
+    [InlineData(MagickFormat.Jpeg, ".jpg")]
+    [InlineData(MagickFormat.Tiff, ".tiff")]
+    [InlineData(MagickFormat.WebP, ".webp")]
+    public async Task ConvertToPdfAsync_ConvertsNormalImageFormats(
+        MagickFormat format,
+        string extension)
+    {
+        using var image = new MagickImage(MagickColors.Red, 8, 8);
+        var encoded = image.ToByteArray(format);
+        using var limiter = CreateLimiter();
+        var fallback = new MagickDocumentPdfConversionStrategy(
+            Options.Create(new DocumentConversionOptions()));
+        var service = CreateService(limiter: limiter, fallbackStrategies: [fallback]);
+        using var input = new MemoryStream(encoded);
+
+        await using var output = await service.ConvertToPdfAsync(
+            new DocumentPdfConversionRequest(input, $"image{extension}", "safe-id"));
+
+        Assert.Equal(0, output.Position);
+        Assert.Equal("%PDF-", Encoding.ASCII.GetString(output.ToArray(), 0, 5));
+    }
+
+    [Fact]
+    public async Task ConvertToPdfAsync_ResourceLimitFailureDoesNotInvokeImageFallback()
+    {
+        using var image = new MagickImage(MagickColors.Red, 2, 1);
+        var encoded = image.ToByteArray(MagickFormat.Png);
+        var options = new DocumentConversionOptions { MaxImageDimension = 1 };
+        var fallback = new Mock<IDocumentPdfConversionStrategy>();
+        fallback.Setup(strategy => strategy.CanConvert(ConversionDocumentFormat.Png)).Returns(true);
+        using var limiter = CreateLimiter(options);
+        var service = CreateService(
+            options,
+            limiter,
+            fallbackStrategies: [fallback.Object]);
+        using var input = new MemoryStream(encoded);
+
+        try
+        {
+            await Assert.ThrowsAsync<DocumentSizeLimitExceededException>(() =>
+                service.ConvertToPdfAsync(
+                    new DocumentPdfConversionRequest(input, "oversized.png", "safe-id")));
+
+            fallback.Verify(strategy => strategy.ConvertAsync(
+                It.IsAny<DocumentPdfConversionContext>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+        finally
+        {
+            ImageConversionPreflight.ExecuteWithMagickResourceLimits(
+                new DocumentConversionOptions(),
+                () => true);
+        }
+    }
+
+    [Fact]
+    public async Task ConvertToPdfAsync_PreservesEveryMultiFrameTiffPage()
+    {
+        var encoded = CreateMultiFrameTiff(2, 8, 8);
+        var options = new DocumentConversionOptions
+        {
+            MaxImageFrames = 2,
+            MaxPageCount = 2,
+            MaxDecodedImagePixels = 128
+        };
+        using var limiter = CreateLimiter(options);
+        var fallback = new MagickDocumentPdfConversionStrategy(Options.Create(options));
+        var service = CreateService(options, limiter, fallbackStrategies: [fallback]);
+        using var input = new MemoryStream(encoded);
+
+        await using var output = await service.ConvertToPdfAsync(
+            new DocumentPdfConversionRequest(input, "pages.tiff", "safe-id"));
+        var pdfReader = new OfficeDocumentReaderBuilder().AddPdfHandler().Build();
+        var convertedDocument = pdfReader.ReadDocument(
+            output,
+            "pages.pdf",
+            new ReaderOptions { MaxInputBytes = 10 * 1024 * 1024 });
+
+        Assert.Equal(2, convertedDocument.Pages.Count);
+    }
+
+    [Fact]
+    public async Task ConvertToPdfAsync_RejectsTiffAboveFrameLimitWithoutFallback()
+    {
+        var encoded = CreateMultiFrameTiff(2, 8, 8);
+        var options = new DocumentConversionOptions
+        {
+            MaxImageFrames = 1,
+            MaxPageCount = 10
+        };
+        var fallback = new Mock<IDocumentPdfConversionStrategy>();
+        fallback.Setup(strategy => strategy.CanConvert(ConversionDocumentFormat.Tiff)).Returns(true);
+        using var limiter = CreateLimiter(options);
+        var service = CreateService(
+            options,
+            limiter,
+            fallbackStrategies: [fallback.Object]);
+        using var input = new MemoryStream(encoded);
+
+        try
+        {
+            await Assert.ThrowsAsync<DocumentSizeLimitExceededException>(() =>
+                service.ConvertToPdfAsync(
+                    new DocumentPdfConversionRequest(input, "too-many-frames.tiff", "safe-id")));
+
+            fallback.Verify(strategy => strategy.ConvertAsync(
+                It.IsAny<DocumentPdfConversionContext>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+        finally
+        {
+            ImageConversionPreflight.ExecuteWithMagickResourceLimits(
+                new DocumentConversionOptions(),
+                () => true);
+        }
+    }
+
     [Fact]
     public async Task ConvertToPdfAsync_NormalizesUnsupportedTiffIccProfileAndFitsPage()
     {
@@ -1091,6 +1210,17 @@ public class DocumentPdfConversionServiceTests
 
         stream.Position = 0;
         return stream;
+    }
+
+    private static byte[] CreateMultiFrameTiff(int frameCount, uint width, uint height)
+    {
+        using var images = new MagickImageCollection();
+        for (var index = 0; index < frameCount; index++)
+        {
+            images.Add(new MagickImage(MagickColors.Red, width, height));
+        }
+
+        return images.ToByteArray(MagickFormat.Tiff);
     }
 
     private static MemoryStream CreateDocmWithMacroPayload(string text)

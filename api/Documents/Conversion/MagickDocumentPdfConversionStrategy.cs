@@ -47,63 +47,14 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
             cancellationToken.ThrowIfCancellationRequested();
             context.Input.Position = 0;
             var encodedBytes = context.Input.ToArray();
-            ConfigureResourceLimits();
-            using var images = new MagickImageCollection();
-            images.Read(encodedBytes);
-
-            if (images.Count == 0)
-            {
-                return InvalidDocument("Magick did not find an image frame in the input.");
-            }
-
-            if (images.Count > Math.Min(_options.MaxPageCount, _options.MaxImageFrames))
-            {
-                return OutputLimit(
-                    $"The image contains {images.Count} frames, exceeding the configured page limit.");
-            }
-
-            var imageSources = new List<PdfImageDocumentSource>(images.Count);
-            long normalizedPixels = 0;
-            var frameNumber = 0;
-            foreach (var image in images)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                frameNumber++;
-                if (image.Width == 0 || image.Height == 0)
-                {
-                    return InvalidDocument($"Image frame {frameNumber} has invalid dimensions.");
-                }
-
-                var targetWidth = image.Width >= image.Height
-                    ? A4PortraitHeightAt300Dpi
-                    : A4PortraitWidthAt300Dpi;
-                var targetHeight = image.Width >= image.Height
-                    ? A4PortraitWidthAt300Dpi
-                    : A4PortraitHeightAt300Dpi;
-                if (image.Width > targetWidth || image.Height > targetHeight)
-                {
-                    image.Resize(new MagickGeometry(targetWidth, targetHeight));
-                }
-
-                normalizedPixels = checked(normalizedPixels + checked((long)image.Width * image.Height));
-                if (normalizedPixels > _options.MaxDecodedImagePixels)
-                {
-                    return OutputLimit("The normalized image frames exceed the configured pixel limit.");
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-                image.AutoOrient();
-                image.TransformColorSpace(ColorProfiles.SRGB);
-                image.Strip();
-
-                using var normalized = new BoundedMemoryStream(
-                    _options.MaxOutputSizeBytes,
-                    DocumentPdfConversionService.ConversionErrorMessage);
-                image.Write(normalized, MagickFormat.Png);
-                imageSources.Add(new PdfImageDocumentSource(
-                    normalized.ToArray(),
-                    $"{context.FileName}#{frameNumber}"));
-            }
+            var metadata = ImageConversionPreflight.InspectAndValidate(encodedBytes, _options);
+            var imageSources = ImageConversionPreflight.ExecuteWithMagickResourceLimits(
+                _options,
+                () => DecodeAndNormalizeImages(
+                    encodedBytes,
+                    metadata,
+                    context.FileName,
+                    cancellationToken));
 
             var document = PdfDocument.CreateFromImages(
                 imageSources,
@@ -181,35 +132,61 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
         }
     }
 
-    private DocumentPdfConversionAttempt InvalidDocument(string reason) =>
-        DocumentPdfConversionAttempt.Failed(
-            Name,
-            DocumentPdfConversionAttemptStatus.InvalidDocument,
-            new UnprocessableDocumentException(
-                DocumentPdfConversionService.ConversionErrorMessage,
-                new InvalidDataException(reason)));
-
-    private void ConfigureResourceLimits()
+    private List<PdfImageDocumentSource> DecodeAndNormalizeImages(
+        byte[] encodedBytes,
+        ImageConversionMetadata metadata,
+        string fileName,
+        CancellationToken cancellationToken)
     {
-        ResourceLimits.Area = checked((ulong)_options.MaxDecodedImagePixels);
-        ResourceLimits.Width = checked((ulong)_options.MaxImageDimension);
-        ResourceLimits.Height = checked((ulong)_options.MaxImageDimension);
-        ResourceLimits.ListLength = checked((ulong)_options.MaxImageFrames);
-        ResourceLimits.Memory = checked((ulong)_options.MaxImageMemoryBytes);
-        ResourceLimits.Disk = checked((ulong)_options.MaxImageDiskBytes);
-        ResourceLimits.Thread = checked((ulong)_options.MaxImageThreads);
+        using var images = new MagickImageCollection();
+        images.Read(encodedBytes);
+
+        if (images.Count != metadata.FrameCount)
+        {
+            throw new InvalidDataException(
+                $"Magick metadata reported {metadata.FrameCount} frames but decoded {images.Count} frames.");
+        }
+
+        var imageSources = new List<PdfImageDocumentSource>(images.Count);
+        var frameNumber = 0;
+        foreach (var image in images)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            frameNumber++;
+            if (image.Width == 0 || image.Height == 0)
+            {
+                throw new InvalidDataException($"Image frame {frameNumber} has invalid dimensions.");
+            }
+
+            var targetWidth = image.Width >= image.Height
+                ? A4PortraitHeightAt300Dpi
+                : A4PortraitWidthAt300Dpi;
+            var targetHeight = image.Width >= image.Height
+                ? A4PortraitWidthAt300Dpi
+                : A4PortraitHeightAt300Dpi;
+            if (image.Width > targetWidth || image.Height > targetHeight)
+            {
+                image.Resize(new MagickGeometry(targetWidth, targetHeight));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            image.AutoOrient();
+            image.TransformColorSpace(ColorProfiles.SRGB);
+            image.Strip();
+
+            using var normalized = new BoundedMemoryStream(
+                _options.MaxOutputSizeBytes,
+                DocumentPdfConversionService.ConversionErrorMessage);
+            image.Write(normalized, MagickFormat.Png);
+            imageSources.Add(new PdfImageDocumentSource(
+                normalized.ToArray(),
+                $"{fileName}#{frameNumber}"));
+        }
+
+        return imageSources;
     }
 
     private static bool IsResourceLimitFailure(MagickException exception) =>
-        exception.Message.Contains("resource limit", StringComparison.OrdinalIgnoreCase) ||
-        exception.Message.Contains("cache resources exhausted", StringComparison.OrdinalIgnoreCase);
-
-    private DocumentPdfConversionAttempt OutputLimit(string reason) =>
-        DocumentPdfConversionAttempt.Failed(
-            Name,
-            DocumentPdfConversionAttemptStatus.OutputLimitExceeded,
-            new DocumentSizeLimitExceededException(
-                DocumentPdfConversionService.ConversionErrorMessage,
-                new InvalidDataException(reason)));
+        ImageConversionPreflight.IsResourceLimitFailure(exception);
 
 }

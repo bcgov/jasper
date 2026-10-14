@@ -129,11 +129,14 @@
       const rawData = props.strategy.getRawData(sessionId.value);
       const processedData = props.strategy.processDataForAPI(rawData);
 
+      // Recommended to preload the worker for better performance.
+      void nutrientViewer.preloadWorker(configuration).catch((error) => {
+        console.warn('Nutrient worker preload failed:', error);
+      });
+
       const [apiResponse] = await Promise.all([
         props.strategy.generatePDF(processedData),
         props.strategy.initialize?.(),
-        // Recommended to preload the worker for better performance.
-        nutrientViewer.preloadWorker(configuration),
       ]);
 
       loading.value = false;

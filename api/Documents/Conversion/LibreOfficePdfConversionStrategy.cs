@@ -11,6 +11,9 @@ using Scv.Core.Exceptions;
 
 namespace Scv.Api.Documents.Conversion;
 
+/// <summary>
+/// Libre office converter - implemented as fallback only given that this starts a conversion process instead of running in a dedicated service.
+/// </summary>
 internal sealed class LibreOfficePdfConversionStrategy : IDocumentPdfConversionStrategy
 {
     private const string ConverterName = "LibreOffice";

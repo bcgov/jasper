@@ -36,13 +36,27 @@ public class DocumentPdfConversionServiceTests
 {
     private const string SafeMessage = "This document format could not be converted for viewing.";
 
-    public static TheoryData<string> SupportedExtensions => new()
+    private static readonly string[] SupportedExtensionValues =
     {
         ".pdf", ".doc", ".docx", ".docm", ".dotx", ".dotm",
         ".xlsx", ".xlsm", ".xltx", ".xltm", ".xls", ".xlsb",
         ".pptx", ".pptm", ".rtf", ".odt", ".png", ".jpg", ".jpeg",
         ".tiff", ".webp"
     };
+
+    public static TheoryData<string> SupportedExtensions
+    {
+        get
+        {
+            var data = new TheoryData<string>();
+            foreach (var extension in SupportedExtensionValues)
+            {
+                data.Add(extension);
+            }
+
+            return data;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(SupportedExtensions))]
@@ -191,15 +205,16 @@ public class DocumentPdfConversionServiceTests
     }
 
     [Fact]
-    public async Task ConvertToPdfAsync_RejectsFileHyperlinkRelationships()
+    public async Task ConvertToPdfAsync_AllowsFileHyperlinkRelationshipsWithoutResolvingThem()
     {
         using var limiter = CreateLimiter();
         var service = CreateService(limiter: limiter);
         using var input = CreateDocxWithExternalRelationship("file:///server/share/document.docx");
 
-        await Assert.ThrowsAsync<UnprocessableDocumentException>(() =>
-            service.ConvertToPdfAsync(new DocumentPdfConversionRequest(
-                input, "document.docx", "safe-id")));
+        await using var output = await service.ConvertToPdfAsync(new DocumentPdfConversionRequest(
+            input, "document.docx", "safe-id"));
+
+        Assert.Equal("%PDF-", Encoding.ASCII.GetString(output.ToArray(), 0, 5));
     }
 
     [Fact]
@@ -1113,6 +1128,16 @@ public class DocumentPdfConversionServiceTests
         IConfigurationService configurationService = null)
     {
         options ??= new DocumentConversionOptions();
+        if (options.Formats.Count == 0)
+        {
+            options.Formats = SupportedExtensionValues.ToDictionary(
+                extension => extension,
+                extension => extension == ".pdf"
+                    ? new List<string> { "passthrough" }
+                    : new List<string> { "OfficeIMO" },
+                StringComparer.OrdinalIgnoreCase);
+        }
+
         if (configurationService is null)
         {
             var configurationServiceMock = new Mock<IConfigurationService>();
@@ -1123,7 +1148,7 @@ public class DocumentPdfConversionServiceTests
                     {
                         Key = ApplicationConfigurationKeys.TransitoryDocumentConvertibleExtensions,
                         Values = enabledExtensions is null
-                            ? [.. SupportedExtensions]
+                            ? [.. SupportedExtensionValues]
                             : [.. enabledExtensions]
                     }
                 ]);
@@ -1168,7 +1193,8 @@ public class DocumentPdfConversionServiceTests
         IReadOnlyList<IDocumentPdfConversionStrategy> strategies) : IDocumentPdfRouteTable
     {
         public IReadOnlyList<IDocumentPdfConversionStrategy> GetStrategies(
-            ConversionDocumentFormat format) =>
+            ConversionDocumentFormat format,
+            string extension) =>
             strategies.Where(strategy => strategy.CanConvert(format)).ToArray();
     }
 

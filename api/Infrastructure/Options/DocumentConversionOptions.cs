@@ -61,7 +61,5 @@ public sealed class DocumentConversionOptions
     [Range(1, 300)]
     public int MinimumFallbackTimeSeconds { get; set; } = 5;
 
-    public List<string> DefaultEnabledExtensions { get; set; } = [];
-
-    public Dictionary<string, List<string>> Routes { get; set; } = new();
+    public Dictionary<string, List<string>> Formats { get; set; } = new();
 }

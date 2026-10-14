@@ -53,6 +53,7 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
                 () => DecodeAndNormalizeImages(
                     encodedBytes,
                     metadata,
+                    context.Format,
                     context.FileName,
                     cancellationToken));
 
@@ -126,11 +127,24 @@ internal sealed class MagickDocumentPdfConversionStrategy : IDocumentPdfConversi
     private List<PdfImageDocumentSource> DecodeAndNormalizeImages(
         byte[] encodedBytes,
         ImageConversionMetadata metadata,
+        DocumentFormat format,
         string fileName,
         CancellationToken cancellationToken)
     {
         using var images = new MagickImageCollection();
-        images.Read(encodedBytes);
+        if (format == DocumentFormat.Jpeg)
+        {
+            var readSettings = new MagickReadSettings();
+            readSettings.SetDefine(
+                MagickFormat.Jpeg,
+                "size",
+                $"{A4PortraitHeightAt300Dpi}x{A4PortraitHeightAt300Dpi}");
+            images.Read(encodedBytes, readSettings);
+        }
+        else
+        {
+            images.Read(encodedBytes);
+        }
 
         if (images.Count != metadata.FrameCount)
         {

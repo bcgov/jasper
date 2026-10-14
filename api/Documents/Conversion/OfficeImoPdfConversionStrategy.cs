@@ -197,7 +197,9 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
             fileName,
             DocumentFormat.Xls,
             loadResult.FidelityDiagnostics.ToArray());
-        return loadResult.Document.ToPdfDocumentResult(CreateExcelPdfOptions(), cancellationToken);
+        return loadResult.Document.ToPdfDocumentResult(
+            CreateExcelPdfOptions(DocumentFormat.Xls),
+            cancellationToken);
     }
 
     private PdfDocumentConversionResult ConvertWord(MemoryStream input, CancellationToken cancellationToken)
@@ -232,7 +234,7 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
             _diagnosticPolicy.ValidateXlsb(fileName, document.XlsbImportDiagnostics.ToArray());
         }
 
-        return document.ToPdfDocumentResult(CreateExcelPdfOptions(), cancellationToken);
+        return document.ToPdfDocumentResult(CreateExcelPdfOptions(format), cancellationToken);
     }
 
     private PdfDocumentConversionResult ConvertPowerPoint(MemoryStream input, CancellationToken cancellationToken)
@@ -530,15 +532,16 @@ internal sealed class OfficeImoPdfConversionStrategy : IDocumentPdfConversionStr
                 PdfFontFamilySubstitutionImpact.Compatible);
     }
 
-    private static ExcelToPdfOptions CreateExcelPdfOptions()
+    private static ExcelToPdfOptions CreateExcelPdfOptions(DocumentFormat format)
     {
+        var ignoreWorksheetPageSetup = format is DocumentFormat.Xls or DocumentFormat.Xlsb;
         var options = new ExcelToPdfOptions
         {
             ResourcePolicy = PdfResourcePolicy.CreateDefault()
         }.UseProfile(PdfExportProfile.Faithful);
 
         options.WorksheetLayout = ExcelPdfWorksheetLayoutMode.WorksheetCanvas;
-        options.UseWorksheetPageSetup = true;
+        options.UseWorksheetPageSetup = !ignoreWorksheetPageSetup;
         options.UseWorksheetCellStyles = true;
         options.UseWorksheetColumnWidths = true;
         options.UseWorksheetRowHeights = true;

@@ -20,10 +20,10 @@ public class ConstantSeederTests
         await using var context = CreateContext();
         var configuration = CreateConfiguration(new()
         {
-            ["DocumentConversion:DefaultEnabledExtensions:0"] = ".PDF",
-            ["DocumentConversion:DefaultEnabledExtensions:1"] = ".docx",
-            ["DocumentConversion:DefaultEnabledExtensions:2"] = "XLSX",
-            ["DocumentConversion:DefaultEnabledExtensions:3"] = ".xlsx"
+            ["DocumentConversion:Formats:.PDF:0"] = "passthrough",
+            ["DocumentConversion:Formats:.docx:0"] = "OfficeIMO",
+            ["DocumentConversion:Formats:XLSX:0"] = "LibreOffice",
+            ["DocumentConversion:Formats:.xlsx:0"] = "OfficeIMO"
         });
         var seeder = new ConstantSeeder(Mock.Of<ILogger<ConstantSeeder>>(), configuration);
 
@@ -31,7 +31,9 @@ public class ConstantSeederTests
 
         var constant = await context.Constants.SingleAsync(value =>
             value.Key == ApplicationConfigurationKeys.TransitoryDocumentConvertibleExtensions);
-        Assert.Equal([".pdf", ".docx", ".xlsx"], constant.Values);
+        Assert.Equal(
+            new[] { ".pdf", ".docx", ".xlsx" }.OrderBy(value => value),
+            constant.Values.OrderBy(value => value));
     }
 
     [Fact]
@@ -46,7 +48,7 @@ public class ConstantSeederTests
         await context.SaveChangesAsync();
         var configuration = CreateConfiguration(new()
         {
-            ["DocumentConversion:DefaultEnabledExtensions:0"] = ".xlsx"
+            ["DocumentConversion:Formats:.xlsx:0"] = "LibreOffice"
         });
         var seeder = new ConstantSeeder(Mock.Of<ILogger<ConstantSeeder>>(), configuration);
 

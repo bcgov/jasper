@@ -12,26 +12,27 @@ namespace tests.api.Documents.Conversion;
 
 public class DocumentPdfRouteTableTests
 {
-    public static TheoryData<ConversionDocumentFormat> OfficeFormats => new()
+    public static TheoryData<ConversionDocumentFormat, string> OfficeFormats => new()
     {
-        ConversionDocumentFormat.Xls,
-        ConversionDocumentFormat.Xlsx,
-        ConversionDocumentFormat.Xlsm,
-        ConversionDocumentFormat.Xltx,
-        ConversionDocumentFormat.Xltm,
-        ConversionDocumentFormat.Xlsb,
-        ConversionDocumentFormat.Docx,
-        ConversionDocumentFormat.Pptx
+        { ConversionDocumentFormat.Xls, ".xls" },
+        { ConversionDocumentFormat.Xlsx, ".xlsx" },
+        { ConversionDocumentFormat.Xlsm, ".xlsm" },
+        { ConversionDocumentFormat.Xltx, ".xltx" },
+        { ConversionDocumentFormat.Xltm, ".xltm" },
+        { ConversionDocumentFormat.Xlsb, ".xlsb" },
+        { ConversionDocumentFormat.Docx, ".docx" },
+        { ConversionDocumentFormat.Pptx, ".pptx" }
     };
 
     [Theory]
     [MemberData(nameof(OfficeFormats))]
-    public void GetStrategies_UsesDetectedFamilyAndProductionOrdering(
-        ConversionDocumentFormat format)
+    public void GetStrategies_UsesConfiguredExtensionOrdering(
+        ConversionDocumentFormat format,
+        string extension)
     {
         var routeTable = CreateProductionRouteTable();
 
-        var selected = routeTable.GetStrategies(format);
+        var selected = routeTable.GetStrategies(format, extension);
 
         Assert.Equal(
             [DocumentPdfConverterId.OfficeIMO, DocumentPdfConverterId.LibreOffice],
@@ -43,9 +44,9 @@ public class DocumentPdfRouteTableTests
     {
         var options = new DocumentConversionOptions
         {
-            Routes = new Dictionary<string, List<string>>
+            Formats = new Dictionary<string, List<string>>
             {
-                ["Word"] = ["LibreOffice"]
+                [".docx"] = ["LibreOffice"]
             }
         };
 
@@ -58,13 +59,13 @@ public class DocumentPdfRouteTableTests
     }
 
     [Fact]
-    public void Constructor_RejectsConverterThatDoesNotSupportRouteFamily()
+    public void Constructor_RejectsConverterThatDoesNotSupportFormat()
     {
         var options = new DocumentConversionOptions
         {
-            Routes = new Dictionary<string, List<string>>
+            Formats = new Dictionary<string, List<string>>
             {
-                ["Word"] = ["OfficeIMO"]
+                [".docx"] = ["OfficeIMO"]
             }
         };
         var strategy = new Mock<IDocumentPdfConversionStrategy>();

@@ -8,7 +8,7 @@ namespace tests.api.Documents.Conversion;
 public class DocumentConversionOptionsValidatorTests
 {
     [Fact]
-    public void Validate_AcceptsDefaultEnabledExtensionsAndFamilyRoutes()
+    public void Validate_AcceptsExtensionRoutesAndExplicitPassthrough()
     {
         var result = new DocumentConversionOptionsValidator().Validate(null, ValidOptions());
 
@@ -16,40 +16,39 @@ public class DocumentConversionOptionsValidatorTests
     }
 
     [Fact]
-    public void Validate_RejectsUnknownFamilyAndOverlappingLibreOfficeTimeout()
+    public void Validate_RejectsUnknownExtensionAndOverlappingLibreOfficeTimeout()
     {
         var options = ValidOptions();
-        options.Routes["Unknown"] = ["OfficeIMO"];
+        options.Formats[".unknown"] = ["OfficeIMO"];
         options.LibreOfficeProcessTimeoutSeconds = options.OverallConversionTimeoutSeconds;
 
         var result = new DocumentConversionOptionsValidator().Validate(null, options);
 
         Assert.True(result.Failed);
-        Assert.Contains(result.Failures, failure => failure.Contains("Unknown"));
+        Assert.Contains(result.Failures, failure => failure.Contains("not registered"));
         Assert.Contains(result.Failures, failure => failure.Contains("must be less"));
     }
 
     [Fact]
-    public void Validate_RejectsEnabledExtensionWithoutFamilyRoute()
+    public void Validate_RejectsEmptyConverterRoute()
     {
         var options = ValidOptions();
-        options.Routes.Remove("Spreadsheet");
+        options.Formats[".xlsx"] = [];
 
         var result = new DocumentConversionOptionsValidator().Validate(null, options);
 
         Assert.True(result.Failed);
-        Assert.Contains(result.Failures, failure => failure.Contains("Spreadsheet"));
+        Assert.Contains(result.Failures, failure => failure.Contains("at least one converter"));
     }
 
     private static DocumentConversionOptions ValidOptions() => new()
     {
-        DefaultEnabledExtensions = [".pdf", ".docx", ".xlsx", ".png"],
-        Routes = new Dictionary<string, List<string>>
+        Formats = new Dictionary<string, List<string>>
         {
-            ["Word"] = ["OfficeIMO", "LibreOffice"],
-            ["Spreadsheet"] = ["OfficeIMO", "LibreOffice"],
-            ["Presentation"] = ["OfficeIMO", "LibreOffice"],
-            ["Image"] = ["OfficeIMO", "Magick"]
+            [".pdf"] = ["passthrough"],
+            [".docx"] = ["OfficeIMO", "LibreOffice"],
+            [".xlsx"] = ["OfficeIMO", "LibreOffice"],
+            [".png"] = ["OfficeIMO", "Magick"]
         }
     };
 }

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Scv.Models.Document;
 
@@ -12,4 +13,8 @@ public interface IDocumentRetriever
     /// <param name="documentRequest">The document request containing the source information</param>
     /// <returns>The retrieved PDF document stream</returns>
     Task<MemoryStream> Retrieve(PdfDocumentRequest documentRequest);
+
+    Task<MemoryStream> Retrieve(
+        PdfDocumentRequest documentRequest,
+        CancellationToken cancellationToken);
 }

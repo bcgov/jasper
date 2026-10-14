@@ -1,5 +1,6 @@
 import FileViewer from '@/components/documents/FileViewer.vue';
 import { useCommonStore } from '@/stores';
+import { CustomAPIError } from '@/types/ApiResponse';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -36,6 +37,7 @@ const routes: RouteRecordRaw[] = [
 
 describe('FileViewer.vue', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   let toolbarItems: any[] = [];
   const mockInstance = {
     getDocumentOutline: vi.fn(),
@@ -120,6 +122,7 @@ describe('FileViewer.vue', () => {
     mockInstance.getDocumentOutline.mockReset();
     mockInstance.getDocumentOutline.mockResolvedValue([]);
     warnSpy.mockClear();
+    errorSpy.mockClear();
     toolbarItems = [];
     vi.spyOn(window, 'open').mockImplementation(() => null);
 
@@ -504,6 +507,71 @@ describe('FileViewer.vue', () => {
     createOutline: () => [],
     cleanup: vi.fn(),
     ...overrides,
+  });
+
+  it.each([
+    'DOCUMENT_FORMAT_UNSUPPORTED',
+    'DOCUMENT_CONVERSION_FAILED',
+    'DOCUMENT_SIZE_LIMIT_EXCEEDED',
+    'DOCUMENT_CONVERSION_TIMEOUT',
+  ])(
+    'shows the conversion message for transitory error code %s',
+    async (code) => {
+      const strategy = createBaseStrategy([{ fileName: 'document.docx' }], {
+        getLoadErrorMessage: () =>
+          'This document format could not be converted for viewing.',
+        generatePDF: vi.fn().mockRejectedValue(
+          new CustomAPIError('conversion failed', {
+            isAxiosError: true,
+            response: { status: 422, data: { code } },
+          })
+        ),
+      });
+
+      const wrapper = await mountViewer(strategy);
+      const alert = wrapper.find('[data-testid="viewer-load-error"]');
+
+      expect(alert.exists()).toBe(true);
+      expect(alert.text()).toContain(
+        'This document format could not be converted for viewing.'
+      );
+      expect(wrapper.text()).not.toContain(
+        'No documents available to display.'
+      );
+    }
+  );
+
+  it('shows a generic message for a conversion status outside transitory viewing', async () => {
+    const strategy = createBaseStrategy([{ fileName: 'document.pdf' }], {
+      generatePDF: vi.fn().mockRejectedValue(
+        new CustomAPIError('request failed', {
+          isAxiosError: true,
+          response: {
+            status: 422,
+            data: { code: 'DOCUMENT_CONVERSION_FAILED' },
+          },
+        })
+      ),
+    });
+
+    const wrapper = await mountViewer(strategy);
+
+    expect(wrapper.find('[data-testid="viewer-load-error"]').text()).toContain(
+      'The document could not be loaded. Please try again.'
+    );
+  });
+
+  it('shows a visible generic message for an unexpected viewer failure', async () => {
+    const strategy = createBaseStrategy([{ fileName: 'document.pdf' }], {
+      generatePDF: vi.fn().mockRejectedValue(new Error('network failure')),
+    });
+
+    const wrapper = await mountViewer(strategy);
+
+    expect(wrapper.find('[data-testid="viewer-load-error"]').text()).toContain(
+      'The document could not be loaded. Please try again.'
+    );
+    expect(wrapper.text()).not.toContain('No documents available to display.');
   });
 
   it('delegates toolbar construction to the strategy with a viewer context', async () => {

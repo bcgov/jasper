@@ -43,17 +43,28 @@ FROM build AS publish
 ARG RELEASE_VERSION=0.0.0
 
 RUN dotnet publish "api/api.csproj" -c Release -o /app/publish \
-    --runtime linux-musl-x64 --no-self-contained /p:ReleaseVersion="${RELEASE_VERSION}"
+    --runtime linux-x64 --no-self-contained /p:ReleaseVersion="${RELEASE_VERSION}"
 
 FROM base AS final
 
 # Download and install the AWS RDS CA bundle and debugging tools.
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends ca-certificates curl; \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    fontconfig \
+    fonts-crosextra-carlito \
+    fonts-liberation \
+    fonts-liberation-sans-narrow \
+    libreoffice-calc \
+    libreoffice-impress \
+    libreoffice-writer; \
+    soffice --headless --version; \
     curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
-      -o /usr/local/share/ca-certificates/aws-rds.crt; \
+    -o /usr/local/share/ca-certificates/aws-rds.crt; \
     update-ca-certificates; \
+    fc-cache -f; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

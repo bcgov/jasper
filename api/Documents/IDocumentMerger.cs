@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Scv.Models.Document;
 
@@ -11,4 +12,8 @@ public interface IDocumentMerger
     /// <param name="documentRequests">An array of document requests to merge documents from</param>
     /// <returns>The merge result</returns>
     Task<PdfDocumentResponse> MergeDocuments(PdfDocumentRequest[] documentRequests);
+
+    Task<PdfDocumentResponse> MergeDocuments(
+        PdfDocumentRequest[] documentRequests,
+        CancellationToken cancellationToken);
 }

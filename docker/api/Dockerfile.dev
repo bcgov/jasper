@@ -8,10 +8,20 @@ ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl unzip \
- && rm -rf /var/lib/apt/lists/* \
- && mkdir -p /vsdbg \
- && curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    fontconfig \
+    fonts-crosextra-carlito \
+    fonts-liberation \
+    fonts-liberation-sans-narrow \
+    libreoffice-calc \
+    libreoffice-impress \
+    libreoffice-writer \
+    unzip \
+    && fc-cache -f \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /vsdbg \
+    && curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg
 
 WORKDIR /opt/app-root/src
 

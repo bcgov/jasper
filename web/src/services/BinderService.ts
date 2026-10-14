@@ -19,7 +19,7 @@ export class BinderService extends ServiceBase {
     return this.httpService.get<ApiResponse<Binder[]>>(
       `api/binders`,
       queryParams,
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   }
 
@@ -30,7 +30,7 @@ export class BinderService extends ServiceBase {
       {},
       'json',
       {
-        skipErrorHandler: true,
+        suppressErrorNotification: true,
       }
     );
   }
@@ -42,14 +42,14 @@ export class BinderService extends ServiceBase {
       {},
       'json',
       {
-        skipErrorHandler: true,
+        suppressErrorNotification: true,
       }
     );
   }
 
   deleteBinder(binderId: string): Promise<void> {
     return this.httpService.delete(`api/binders/${binderId}`, {}, 'json', {
-      skipErrorHandler: true,
+      suppressErrorNotification: true,
     });
   }
 

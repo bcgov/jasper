@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Scv.Core.Exceptions;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
@@ -107,6 +106,7 @@ namespace Scv.Api.Infrastructure.Middleware
         {
             var code = HttpStatusCode.InternalServerError;
             var message = "An unhandled error has occurred.";
+            string? applicationErrorCode = null;
 
             switch (ex)
             {
@@ -144,6 +144,30 @@ namespace Scv.Api.Infrastructure.Middleware
                     message = ex.Message;
                     break;
 
+                case UnsupportedDocumentFormatException _:
+                    code = HttpStatusCode.UnsupportedMediaType;
+                    message = ex.Message;
+                    applicationErrorCode = DocumentConversionErrorCodes.FormatUnsupported;
+                    break;
+
+                case UnprocessableDocumentException _:
+                    code = HttpStatusCode.UnprocessableEntity;
+                    message = ex.Message;
+                    applicationErrorCode = DocumentConversionErrorCodes.ConversionFailed;
+                    break;
+
+                case DocumentSizeLimitExceededException _:
+                    code = HttpStatusCode.RequestEntityTooLarge;
+                    message = ex.Message;
+                    applicationErrorCode = DocumentConversionErrorCodes.SizeLimitExceeded;
+                    break;
+
+                case DocumentConversionTimeoutException _:
+                    code = HttpStatusCode.GatewayTimeout;
+                    message = ex.Message;
+                    applicationErrorCode = DocumentConversionErrorCodes.ConversionTimeout;
+                    break;
+
                 case JCCommon.Clients.FileServices.ApiException exception:
                     code = HttpStatusCode.InternalServerError;
                     message = exception.Message;
@@ -170,7 +194,14 @@ namespace Scv.Api.Infrastructure.Middleware
 
             if (!context.Response.HasStarted)
             {
-                var result = JsonSerializer.Serialize(new ErrorResponseModel(_env, ex, message), _options.JsonSerializerOptions);
+                var result = JsonSerializer.Serialize(
+                    new ErrorResponseModel(
+                        _env,
+                        ex,
+                        message,
+                        code: applicationErrorCode,
+                        exposeExceptionDetails: applicationErrorCode is null),
+                    _options.JsonSerializerOptions);
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)code;
                 await context.Response.WriteAsync(result);

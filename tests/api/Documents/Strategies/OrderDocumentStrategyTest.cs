@@ -1,18 +1,25 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
+using LazyCache;
+using LazyCache.Providers;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using Nutrient.NativeSDK.API.Exceptions;
+using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
 using Scv.Core.Exceptions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.Document;
+using Scv.Models.Order;
 using tests.api.Services;
 using Xunit;
 
@@ -23,8 +30,11 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     private readonly Mock<IJudicialServicesClient> _mockJudicialClient;
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<IRepositoryBase<Order>> _mockOrderRepo;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
+    private readonly Mock<IPdfPageEditor> _mockPdfPageEditor;
     private readonly string _fakeContent = "fake-pdf-bytes";
     private readonly byte[] _fakeContentBytes;
+    private readonly IAppCache _cache;
 
     public OrderDocumentStrategyTest()
     {
@@ -32,6 +42,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockJudicialClient = new Mock<IJudicialServicesClient>();
         _mockConfiguration = new Mock<IConfiguration>();
         _mockOrderRepo = new Mock<IRepositoryBase<Order>>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        _mockPdfPageEditor = new Mock<IPdfPageEditor>();
 
         var mockAgencySection = Mock.Of<IConfigurationSection>(s => s.Value == "123");
         var mockAppCdSection = Mock.Of<IConfigurationSection>(s => s.Value == "TESTAPP");
@@ -44,6 +56,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             .Returns(mockAppCdSection);
 
         _mockJudicialClient.Setup(j => j.JsonSerializerSettings).Returns(new Newtonsoft.Json.JsonSerializerSettings());
+
+        _cache = new CachingService(new Lazy<ICacheProvider>(() =>
+            new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
     }
 
     private static PdfDocumentRequestDetails BuildRequest(string rawDocumentId = "12345", string correlationId = null)
@@ -84,7 +99,10 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
         Assert.Equal(DocumentType.Order, strategy.Type);
     }
@@ -98,7 +116,10 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
         var result = await strategy.Invoke(BuildRequest(documentId.ToString()));
 
@@ -117,7 +138,10 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
         var result = await strategy.Invoke(BuildRequest(ciesDocumentId.ToString()));
 
@@ -137,7 +161,10 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
         await strategy.Invoke(request);
 
@@ -155,7 +182,10 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
         await strategy.Invoke(request);
 
@@ -163,44 +193,53 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     }
 
     [Fact]
-    public async Task Invoke_ThrowsInvalidArgumentException_WhenDocumentIdIsNull()
+    public async Task Invoke_ThrowsArgumentNullException_WhenDocumentIdIsNull()
     {
         var request = new PdfDocumentRequestDetails { DocumentId = null };
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => strategy.Invoke(request));
+        await Assert.ThrowsAsync<System.ArgumentNullException>(() => strategy.Invoke(request));
     }
 
     [Fact]
-    public async Task Invoke_ThrowsInvalidArgumentException_WhenOrderIdIsNull()
+    public async Task Invoke_ThrowsArgumentNullException_WhenOrderIdIsNull()
     {
         var request = new PdfDocumentRequestDetails { DocumentId = "123", OrderId = null };
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => strategy.Invoke(request));
+        await Assert.ThrowsAsync<System.ArgumentNullException>(() => strategy.Invoke(request));
     }
 
     [Fact]
-    public async Task Invoke_ThrowsInvalidArgumentException_WhenDocumentIdIsNotValidBase64Number()
+    public async Task Invoke_ThrowsInvalidDataException_WhenDocumentIdIsNotValidBase64Number()
     {
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes("not-a-number"));
-        var request = new PdfDocumentRequestDetails { DocumentId = encoded };
+        var request = new PdfDocumentRequestDetails { DocumentId = encoded, OrderId = "12345" };
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => strategy.Invoke(request));
+        await Assert.ThrowsAsync<InvalidDataException>(() => strategy.Invoke(request));
     }
 
     [Fact]
-    public async Task Invoke_ThrowsInvalidArgumentException_WhenAgencyIdIsInvalid()
+    public async Task Invoke_ThrowsInvalidDataException_WhenAgencyIdIsInvalid()
     {
         var badAgencySection = Mock.Of<IConfigurationSection>(s => s.Value == "not-a-number");
         _mockConfiguration
@@ -210,9 +249,12 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => strategy.Invoke(BuildRequest()));
+        await Assert.ThrowsAsync<InvalidDataException>(() => strategy.Invoke(BuildRequest()));
     }
 
     [Fact]
@@ -225,12 +267,149 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         var strategy = new OrderDocumentStrategy(
             _mockJudicialClient.Object,
             _mockConfiguration.Object,
-            _mockOrderRepo.Object);
+            _mockOrderRepo.Object,
+            _mockHttpClientFactory.Object,
+            _mockPdfPageEditor.Object,
+            _cache);
 
         await Assert.ThrowsAsync<NotFoundException>(() => strategy.Invoke(BuildRequest("789")));
     }
 
-    private void SetupOrderRepo(int packageDocumentId, int relevantCeisDocumentId = 456)
+    [Fact]
+    public async Task Invoke_ThrowsNotFoundException_WhenOrderDoesNotExist()
+    {
+        _mockOrderRepo
+            .Setup(o => o.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync((Order)null);
+        var strategy = CreateStrategy();
+
+        await Assert.ThrowsAsync<NotFoundException>(() => strategy.Invoke(BuildRequest()));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE)]
+    public async Task Invoke_DoesNotAppendAdditionalPage_WhenOrderIsNotSmallClaimsDeskOrder(string courtListTypeCd)
+    {
+        SetupJudicialClientResponse();
+        SetupOrderRepo(123, courtListTypeCd: courtListTypeCd);
+        var strategy = CreateStrategy();
+
+        var result = await strategy.Invoke(BuildRequest("123"));
+
+        result.Position = 0;
+        Assert.Equal(_fakeContentBytes, result.ToArray());
+        _mockHttpClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_DoesNotAppendAdditionalPage_WhenDocumentIsNotReferredDocument()
+    {
+        SetupJudicialClientResponse();
+        SetupOrderRepo(123, courtListTypeCd: CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE, isPackageReferred: false);
+        var strategy = CreateStrategy();
+
+        var result = await strategy.Invoke(BuildRequest("123"));
+
+        result.Position = 0;
+        Assert.Equal(_fakeContentBytes, result.ToArray());
+        _mockHttpClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_ThrowsConfigurationException_WhenSmallClaimsUrlIsMissing()
+    {
+        SetupJudicialClientResponse();
+        SetupSmallClaimsOrderRepo(123);
+        SetupSmallClaimsUrl(null);
+        var strategy = CreateStrategy();
+
+        await Assert.ThrowsAsync<ConfigurationException>(() => strategy.Invoke(BuildRequest("123")));
+
+        _mockHttpClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_ThrowsHttpRequestException_WhenSmallClaimsPageDownloadFails()
+    {
+        SetupJudicialClientResponse();
+        SetupSmallClaimsOrderRepo(123);
+        SetupSmallClaimsUrl("https://example.com/scl029.pdf");
+        SetupHttpClient(HttpStatusCode.NotFound, []);
+        var strategy = CreateStrategy();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => strategy.Invoke(BuildRequest("123")));
+    }
+
+    [Fact]
+    public async Task Invoke_RequestsConfiguredSmallClaimsUrl_ForSmallClaimsDeskOrder()
+    {
+        const string url = "https://example.com/scl029.pdf";
+        SetupJudicialClientResponse();
+        SetupSmallClaimsOrderRepo(123);
+        SetupSmallClaimsUrl(url);
+        var handler = SetupHttpClient(HttpStatusCode.NotFound, []);
+        var strategy = CreateStrategy();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => strategy.Invoke(BuildRequest("123")));
+
+        Assert.Equal(url, handler.RequestUri?.ToString());
+    }
+
+    [Fact]
+    public async Task Invoke_DownloadsSmallClaimsPageOnce_AndAppendsCachedBytesOnEachCall()
+    {
+        SetupSmallClaimsUrl("https://example.com/scl029.pdf");
+        SetupSmallClaimsOrderRepo(123);
+        var pageBytes = new byte[] { 1, 2, 3 };
+        var handler = SetupHttpClient(HttpStatusCode.OK, pageBytes);
+        var appendedPages = new List<byte[]>();
+        _mockPdfPageEditor
+            .Setup(p => p.AppendPages(It.IsAny<MemoryStream>(), It.IsAny<MemoryStream>()))
+            .Callback<MemoryStream, MemoryStream>((_, pages) => appendedPages.Add(pages.ToArray()))
+            .Returns(() => new MemoryStream());
+        var strategy = CreateStrategy();
+
+        SetupJudicialClientResponse();
+        await strategy.Invoke(BuildRequest("123"));
+        SetupJudicialClientResponse();
+        await strategy.Invoke(BuildRequest("123"));
+
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(2, appendedPages.Count);
+        Assert.All(appendedPages, bytes => Assert.Equal(pageBytes, bytes));
+    }
+
+    private OrderDocumentStrategy CreateStrategy() => new(
+        _mockJudicialClient.Object,
+        _mockConfiguration.Object,
+        _mockOrderRepo.Object,
+        _mockHttpClientFactory.Object,
+        _mockPdfPageEditor.Object,
+        _cache);
+
+    private void SetupSmallClaimsUrl(string url)
+    {
+        _mockConfiguration
+            .Setup(c => c.GetSection("ORDER_SCL029_URL"))
+            .Returns(Mock.Of<IConfigurationSection>(s => s.Value == url));
+    }
+
+    private StubHttpMessageHandler SetupHttpClient(HttpStatusCode statusCode, byte[] content)
+    {
+        var handler = new StubHttpMessageHandler(statusCode, content);
+        _mockHttpClientFactory
+            .Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient(handler));
+        return handler;
+    }
+
+    private void SetupSmallClaimsOrderRepo(int packageDocumentId) =>
+        SetupOrderRepo(
+            packageDocumentId,
+            courtListTypeCd: CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE);
+
+    private void SetupOrderRepo(int packageDocumentId, int relevantCeisDocumentId = 456, string courtListTypeCd = null, bool isPackageReferred = true)
     {
         _mockOrderRepo
             .Setup(o => o.GetByIdAsync(It.IsAny<string>()))
@@ -240,13 +419,31 @@ public class OrderDocumentStrategyTest : ServiceTestBase
                 {
                     PackageDocuments =
                     [
-                        new() { DocumentId = packageDocumentId }
+                        new()
+                        {
+                            DocumentId = packageDocumentId,
+                            ReferredDocument = isPackageReferred
+                        }
                     ],
                     RelevantCeisDocuments =
                     [
                         new() { CivilDocumentId = relevantCeisDocumentId }
-                    ]
+                    ],
+                    Referral = courtListTypeCd is null ? null : new Referral { CourtListTypeCd = courtListTypeCd }
                 }
             });
+    }
+
+    private sealed class StubHttpMessageHandler(HttpStatusCode statusCode, byte[] content) : HttpMessageHandler
+    {
+        public System.Uri RequestUri { get; private set; }
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+        {
+            RequestUri = request.RequestUri;
+            RequestCount++;
+            return Task.FromResult(new HttpResponseMessage(statusCode) { Content = new ByteArrayContent(content) });
+        }
     }
 }

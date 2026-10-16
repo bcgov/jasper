@@ -2,7 +2,7 @@ import { OrderService, UserService } from '@/services';
 import { useCommonStore, useSnackbarStore } from '@/stores';
 import { StoreDocument } from '@/stores/PDFViewerStore';
 import { Order, OrderReview } from '@/types';
-import { OrderReviewStatus } from '@/types/common';
+import { OrderCourtLisTypeEnum, OrderReviewStatus } from '@/types/common';
 import { viewOrderSupportingDocuments } from '@/utils/orderDetails';
 import {
   mdiAlphaIBoxOutline,
@@ -96,6 +96,12 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       descriptions.push(OrderPDFStrategy.SIGNATURE_DESCRIPTION);
     }
     return descriptions.length > 0 ? descriptions : undefined;
+  }
+
+  getAppendedPageIndex(totalPageCount: number): number | undefined {
+    return this.currentOrder?.courtListType === OrderCourtLisTypeEnum.PSM
+      ? totalPageCount - 1
+      : undefined;
   }
 
   async reviewOrder(review: OrderReview): Promise<void> {

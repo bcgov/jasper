@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Scv.Api.Documents;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
 using Scv.Api.SignalR.Notifications;
@@ -51,6 +52,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
     private readonly ICsoTextSanitizer _csoTextSanitizer;
     private readonly IAntiVirusService _antiVirusService;
     private readonly OrderSubmittedAckNotification _orderSubmittedAck;
+    private readonly IPdfPageEditor _pdfPageEditor;
 
     public override string CacheName => "GetOrdersAsync";
 
@@ -68,7 +70,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IDeskOrderDetailsExtractor deskOrderDetailsExtractor,
         ICsoTextSanitizer csoTextSanitizer,
         IAntiVirusService antiVirusService,
-        OrderSubmittedAckNotification orderSubmittedAck
+        OrderSubmittedAckNotification orderSubmittedAck,
+        IPdfPageEditor pdfPageEditor
     ) : base(
             cache,
             mapper,
@@ -89,6 +92,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         _csoTextSanitizer = csoTextSanitizer;
         _antiVirusService = antiVirusService;
         _orderSubmittedAck = orderSubmittedAck;
+        _pdfPageEditor = pdfPageEditor;
     }
 
     public async Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto)
@@ -271,6 +275,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 {
                     return deskOrderValidation;
                 }
+
+                // Remove appended additional small claims page if it has not been touched by the user.
+                if (orderDto.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+                    && orderReview.IsAppendedPageDirty == false)
+                {
+                    orderDto.DocumentData = RemoveSmallClaimsAdditionalPage(orderDto.DocumentData);
+                }
             }
 
             var result = await UpdateAsync(orderDto);
@@ -385,12 +396,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return OperationResult.Success();
         }
 
-        byte[] bytes;
-        try
-        {
-            bytes = Convert.FromBase64String(base64Data);
-        }
-        catch (FormatException)
+        if (!TryDecodeBase64(base64Data, out var bytes))
         {
             return OperationResult.Failure($"The uploaded {documentLabel} document contains invalid base64 content.");
         }
@@ -403,6 +409,20 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
 
         return OperationResult.Success();
+    }
+
+    private static bool TryDecodeBase64(string base64, out byte[] bytes)
+    {
+        try
+        {
+            bytes = Convert.FromBase64String(base64);
+            return true;
+        }
+        catch (FormatException)
+        {
+            bytes = null;
+            return false;
+        }
     }
 
     private static bool IsCriminalCourtClass(CourtClassCd courtClass) =>
@@ -544,7 +564,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
         if (!orderDto.Signed)
         {
-            if (orderDto?.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE)
+            if (orderDto.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE)
             {
                 return OperationResult.Failure("Small Claims Desk Order cannot be submitted unsigned.");
             }
@@ -591,6 +611,21 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             })];
 
         return actionDto;
+    }
+
+    private string RemoveSmallClaimsAdditionalPage(string base64Pdf)
+    {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(base64Pdf);
+
+        if (!TryDecodeBase64(base64Pdf, out var bytes))
+        {
+            throw new FormatException("The provided base64 string is not valid.");
+        }
+
+        using var input = new MemoryStream(bytes);
+        using var output = _pdfPageEditor.RemoveLastPage(input);
+
+        return Convert.ToBase64String(output.ToArray());
     }
 
     #endregion Private Methods

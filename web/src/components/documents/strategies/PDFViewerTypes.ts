@@ -45,6 +45,9 @@ export interface PDFViewerStrategy<
   // Annotation descriptions that must be present to approve; undefined means any image annotation qualifies.
   getRequiredApprovalAnnotations?(): string[] | undefined;
 
+  // Index of the API-appended page that is dropped on submit if the user left it untouched; undefined when none.
+  getAppendedPageIndex?(totalPageCount: number): number | undefined;
+
   setToolbarItems?(
     items: ToolbarItem[],
     context: PDFViewerToolbarContext

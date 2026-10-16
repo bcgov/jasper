@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Scv.Models.Document;
 
 public sealed class TransitoryDocumentSearchResponse

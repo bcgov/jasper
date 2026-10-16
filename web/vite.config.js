@@ -1,7 +1,7 @@
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import vue from '@vitejs/plugin-vue';
 import Components from 'unplugin-vue-components/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, normalizePath } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import svgLoader from 'vite-svg-loader';
 
@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     viteStaticCopy({
       targets: [
         {
-          src: path.resolve(__dirname, 'snowplow.js'),
+          src: normalizePath(path.resolve(__dirname, 'snowplow.js')),
           dest: '.',
         },
       ],

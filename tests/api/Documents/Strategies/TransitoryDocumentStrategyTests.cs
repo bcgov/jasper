@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Scv.Api.Documents.Conversion;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Services;
 using Scv.Models;
@@ -20,6 +21,7 @@ public class TransitoryDocumentStrategyTests
         var sourceStream = new MemoryStream(contentBytes);
         sourceStream.Position = sourceStream.Length;
         var transitoryDocumentsServiceMock = new Mock<ITransitoryDocumentsService>();
+        var conversionServiceMock = new Mock<IDocumentPdfConversionService>();
         var loggerMock = new Mock<ILogger<TransitoryDocumentStrategy>>();
 
         transitoryDocumentsServiceMock
@@ -28,9 +30,23 @@ public class TransitoryDocumentStrategyTests
                 sourceStream,
                 "document.pdf",
                 "application/pdf"));
+        conversionServiceMock
+            .Setup(x => x.ConvertToPdfAsync(
+                It.IsAny<DocumentPdfConversionRequest>(),
+                default))
+            .Returns<DocumentPdfConversionRequest, System.Threading.CancellationToken>(
+                async (request, cancellationToken) =>
+                {
+                    var output = new MemoryStream();
+                    request.Stream.Position = 0;
+                    await request.Stream.CopyToAsync(output, cancellationToken);
+                    output.Position = 0;
+                    return output;
+                });
 
         var strategy = new TransitoryDocumentStrategy(
             transitoryDocumentsServiceMock.Object,
+            conversionServiceMock.Object,
             loggerMock.Object);
 
         var result = await strategy.Invoke(new PdfDocumentRequestDetails
@@ -39,5 +55,11 @@ public class TransitoryDocumentStrategyTests
         });
 
         Assert.Equal(contentBytes, result.ToArray());
+        Assert.False(sourceStream.CanRead);
+        conversionServiceMock.Verify(x => x.ConvertToPdfAsync(
+            It.Is<DocumentPdfConversionRequest>(request =>
+                request.FileName == "document.pdf" &&
+                request.SourceIdentifier == "path/to/document.pdf"),
+            default), Times.Once);
     }
 }

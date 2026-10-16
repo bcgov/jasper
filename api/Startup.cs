@@ -156,6 +156,10 @@ namespace Scv.Api
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
             services.Configure<TdApiOptions>(Configuration.GetSection("TDApi"));
+            services.AddOptions<DocumentConversionOptions>()
+                .Bind(Configuration.GetSection(DocumentConversionOptions.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
             #endregion Setup Services
 

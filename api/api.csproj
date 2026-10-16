@@ -4,7 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Scv.Api</RootNamespace>
     <UserSecretsId>de959767-ede6-4f8a-b6b9-d36aed703396</UserSecretsId>
-    <!-- Version information - set by ReleaseVersion MSBuild property from GitHub Release tag (e.g. 1.2.3) -->
+    <!-- Version information - set by ReleaseVersion MSBuild property from GitHub Release tag (e.g.
+    1.2.3) -->
     <VersionPrefix>1.0.0</VersionPrefix>
     <Version Condition="'$(ReleaseVersion)' != ''">$(ReleaseVersion)</Version>
     <Version Condition="'$(ReleaseVersion)' == ''">$(VersionPrefix)</Version>
@@ -23,6 +24,11 @@
     <Content Remove="Models\Calendar\**" />
     <EmbeddedResource Remove="Models\Calendar\**" />
     <None Remove="Models\Calendar\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource
+      Include="Documents\Conversion\Resources\LibreOfficeSecurityProfile.xcu"
+      LogicalName="Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.108.1" />
@@ -47,6 +53,7 @@
     <PackageReference Include="Mapster" Version="10.0.12" />
     <PackageReference Include="LazyCache" Version="2.4.0" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.2" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.25" />
     <PackageReference Include="Polly" Version="8.6.6" />
     <PackageReference Include="Scriban" Version="7.2.2" />
@@ -57,6 +64,12 @@
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
     <PackageReference Include="OpenMcdf" Version="3.2.0" />
+    <PackageReference Include="OfficeIMO.Excel.Pdf" Version="3.4.4" />
+    <PackageReference Include="OfficeIMO.OpenDocument.Odt.Pdf" Version="3.4.4" />
+    <PackageReference Include="OfficeIMO.PowerPoint.Pdf" Version="3.4.4" />
+    <PackageReference Include="OfficeIMO.Reader.Image" Version="3.4.4" />
+    <PackageReference Include="OfficeIMO.Rtf.Pdf" Version="3.4.4" />
+    <PackageReference Include="OfficeIMO.Word.Pdf" Version="3.4.4" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cso-client\cso-client.csproj" />
@@ -67,6 +80,10 @@
     <ProjectReference Include="..\models\models.csproj" />
     <ProjectReference Include="..\pcss-client\pcss-client.csproj" />
     <ProjectReference Include="..\transitory-documents-client\transitory-documents-client.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\Dars\" />

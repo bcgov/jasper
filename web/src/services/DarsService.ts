@@ -51,7 +51,7 @@ export class DarsService {
         agencyIdentifierCd,
         courtRoomCd,
       },
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   }
 
@@ -66,7 +66,7 @@ export class DarsService {
         mdocJustinNo,
         returnChildRecords: true,
       },
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   }
 
@@ -76,8 +76,7 @@ export class DarsService {
   ): Promise<string> {
     const response = await this.httpService.get<{ base64Pdf: string }>(
       `api/Dars/transcript/${orderId}/${documentId}`,
-      {},
-      { skipErrorHandler: false }
+      {}
     );
     return response.base64Pdf;
   }

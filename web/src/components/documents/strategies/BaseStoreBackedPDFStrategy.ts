@@ -18,7 +18,10 @@ export abstract class BaseStoreBackedPDFStrategy<
 
   abstract processDataForAPI(rawData: TItem[]): TProcessedData;
 
-  abstract generatePDF(processedData: TProcessedData): Promise<TApiResponse>;
+  abstract generatePDF(
+    processedData: TProcessedData,
+    signal?: AbortSignal
+  ): Promise<TApiResponse>;
 
   abstract extractBase64PDF(apiResponse: TApiResponse): string;
 

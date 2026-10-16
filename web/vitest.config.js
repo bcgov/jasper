@@ -8,6 +8,7 @@ const basePath = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [Vue()],
   resolve: {
+    conditions: ['node', 'development|production', 'default'],
     extensions: ['.ts', '.vue'],
   },
   test: {

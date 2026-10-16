@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Scv.Models.Document;
 
@@ -8,4 +9,8 @@ public interface IDocumentStrategy
 {
     public DocumentType Type { get; }
     public Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest);
+
+    public Task<MemoryStream> Invoke(
+        PdfDocumentRequestDetails documentRequest,
+        CancellationToken cancellationToken) => Invoke(documentRequest);
 }

@@ -278,7 +278,7 @@ namespace Scv.Api.Controllers
                 }
             }).ToArray();
 
-            var result = await documentMerger.MergeDocuments(documentRequests);
+            var result = await documentMerger.MergeDocuments(documentRequests, cancellationToken);
 
             logger.LogInformation(
                 "Transitory documents merged successfully - FileCount: {FileCount}",

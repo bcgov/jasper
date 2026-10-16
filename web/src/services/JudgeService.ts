@@ -13,7 +13,7 @@ export class JudgeService extends ServiceBase {
     return this.httpService.get<PersonSearchItem[]>(
       this.baseUrl,
       {},
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   }
 }

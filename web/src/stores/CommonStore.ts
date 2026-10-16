@@ -9,6 +9,7 @@ import { defineStore } from 'pinia';
 
 export enum ApplicationConfigurationKey {
   ReleaseNotesUrl = 'ReleaseNotesUrl',
+  TransitoryDocumentConvertibleExtensions = 'TransitoryDocumentConvertibleExtensions',
 }
 
 enum appearanceStatus {

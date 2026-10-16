@@ -401,7 +401,7 @@ public class DeskOrderDetailsExtractorTests
     }
 
     [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenDirectionsContentIsEmpty()
+    public void Extract_ReturnsEmptyDirections_WhenNoContentBetweenLabels()
     {
         using var stream = BuildDocxStream(body =>
         {
@@ -413,12 +413,14 @@ public class DeskOrderDetailsExtractorTests
             body.AppendChild(SignatureSdt());
         });
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Directions content is empty or whitespace.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var result = _extractor.Extract(stream);
+
+        Assert.Equal(string.Empty, result.Directions);
+        Assert.Single(result.OrderTerms);
     }
 
     [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenOrderTermsContentIsEmpty()
+    public void Extract_ReturnsEmptyOrderTerms_WhenNoContentBetweenLabelAndSignature()
     {
         using var stream = BuildDocxStream(body =>
         {
@@ -430,8 +432,10 @@ public class DeskOrderDetailsExtractorTests
             body.AppendChild(SignatureSdt());
         });
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Order terms content is empty or whitespace.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var result = _extractor.Extract(stream);
+
+        Assert.NotEmpty(result.Directions);
+        Assert.Empty(result.OrderTerms);
     }
 
     private static MemoryStream BuildDocxStream(Action<Body> configureBody)

@@ -53,28 +53,12 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
         // Whatever is between "Directions:" and "Terms of Order:" is the Directions content.
         var directionsContent = ExtractContentBetween(body, directionsIndex, orderTermsIndex);
 
-        if (directionsContent == null
-            || directionsContent.Count == 0
-            || string.IsNullOrWhiteSpace(directionsContent[0]))
-        {
-            throw new InvalidDataException("Directions content is empty or whitespace.");
-        }
-
         // Whatever is between "Terms of Order:" and the signature field are the Order Terms.
         var orderTermsContent = ExtractContentBetween(body, orderTermsIndex, signatureIndex);
 
-        if (orderTermsContent == null
-            || orderTermsContent.Count == 0
-            || string.IsNullOrWhiteSpace(orderTermsContent[0]))
-        {
-            throw new InvalidDataException("Order terms content is empty or whitespace.");
-        }
-
         return new DeskOrderDetailsDto
         {
-            ReasonsForRejection = rejectionReasonsContent != null && rejectionReasonsContent.Count > 0
-                ? string.Join(" ", rejectionReasonsContent)
-                : string.Empty,
+            ReasonsForRejection = string.Join(" ", rejectionReasonsContent),
             Directions = string.Join(" ", directionsContent),
             OrderTerms = [.. orderTermsContent
                 .Select((text, index) => new OrderTermDto

@@ -380,6 +380,48 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         Assert.All(appendedPages, bytes => Assert.Equal(pageBytes, bytes));
     }
 
+    [Fact]
+    public async Task Invoke_FillsAndFlattensAdditionalPage_BeforeAppending_ForSmallClaimsDeskOrder()
+    {
+        SetupJudicialClientResponse();
+        SetupSmallClaimsUrl("https://example.com/scl029.pdf");
+        SetupHttpClient(HttpStatusCode.OK, [1, 2, 3]);
+        _mockOrderRepo
+            .Setup(o => o.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(new Order
+            {
+                OrderRequest = new OrderRequest
+                {
+                    FullFileNo = "SC-123",
+                    CourtLocationDesc = "Vancouver",
+                    PackageDocuments = [new() { DocumentId = 123 }],
+                    Referral = new Referral
+                    {
+                        CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+                    }
+                }
+            });
+
+        var filled = new MemoryStream([4, 5, 6]);
+        var merged = new MemoryStream([7, 8, 9]);
+        IReadOnlyDictionary<string, string> capturedValues = null;
+        _mockPdfPageEditor
+            .Setup(p => p.FillFormFields(It.IsAny<MemoryStream>(), It.IsAny<IReadOnlyDictionary<string, string>>(), true))
+            .Callback<MemoryStream, IReadOnlyDictionary<string, string>, bool>((_, values, _) => capturedValues = values)
+            .Returns(filled);
+        _mockPdfPageEditor
+            .Setup(p => p.AppendPages(It.IsAny<MemoryStream>(), filled))
+            .Returns(merged);
+        var strategy = CreateStrategy();
+
+        var result = await strategy.Invoke(BuildRequest("123"));
+
+        Assert.Same(merged, result);
+        Assert.Equal("SC-123", capturedValues["FullFileNo"]);
+        Assert.Equal("Vancouver", capturedValues["Location"]);
+        _mockPdfPageEditor.Verify(p => p.AppendPages(It.IsAny<MemoryStream>(), filled), Times.Once);
+    }
+
     private OrderDocumentStrategy CreateStrategy() => new(
         _mockJudicialClient.Object,
         _mockConfiguration.Object,

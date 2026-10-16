@@ -102,9 +102,13 @@
     availableFonts
   ) => {
     const isSubsetFont = Boolean(fontInfo.subsetInfo);
-    const isArialMatch = match?.toLowerCase().includes('arial') ?? false;
+    const originalFontName =
+      fontInfo.subsetInfo?.demangledName ?? fontInfo.name;
+    const isArial = [originalFontName, match].some((name) =>
+      name?.toLowerCase().includes('arial')
+    );
 
-    if (!isSubsetFont && !isArialMatch) {
+    if (!isSubsetFont && !isArial) {
       return undefined;
     }
 

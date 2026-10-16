@@ -123,23 +123,24 @@ public class OrderDocumentStrategy : IDocumentStrategy
 
     private async Task<MemoryStream> AppendSmallClaimsAdditionalPage(MemoryStream documentStream)
     {
+        await using var originalDocumentStream = documentStream;
+
         var url = _configuration.GetNonEmptyValue("ORDER_SCL029_URL");
         ArgumentNullException.ThrowIfNullOrWhiteSpace(url);
 
+        // Cache the downloaded bytes, not the HttpResponseMessage: its content stream can only be read once.
+        var pageBytes = await _cache.GetOrAddAsync("SmallClaimsPage", () => DownloadSmallClaimsPage(url));
+
+        using var additionalPageStream = new MemoryStream(pageBytes);
+
+        return _pdfPageEditor.AppendPages(documentStream, additionalPageStream);
+    }
+
+    private async Task<byte[]> DownloadSmallClaimsPage(string url)
+    {
         var client = _httpClientFactory.CreateClient();
-
-        async Task<HttpResponseMessage> smallClaimsPage() => await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-
-        using var responseTask = _cache.GetOrAddAsync("SmallClaimsPage", smallClaimsPage);
-
-        responseTask.Result.EnsureSuccessStatusCode();
-
-        using var additionalPageStream = new MemoryStream();
-        await responseTask.Result.Content.CopyToAsync(additionalPageStream);
-
-        var mergedStream = _pdfPageEditor.AppendPages(documentStream, additionalPageStream);
-
-        await documentStream.DisposeAsync();
-        return mergedStream;
+        using var response = await client.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
     }
 }

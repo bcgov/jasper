@@ -356,6 +356,30 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         Assert.Equal(url, handler.RequestUri?.ToString());
     }
 
+    [Fact]
+    public async Task Invoke_DownloadsSmallClaimsPageOnce_AndAppendsCachedBytesOnEachCall()
+    {
+        SetupSmallClaimsUrl("https://example.com/scl029.pdf");
+        SetupSmallClaimsOrderRepo(123);
+        var pageBytes = new byte[] { 1, 2, 3 };
+        var handler = SetupHttpClient(HttpStatusCode.OK, pageBytes);
+        var appendedPages = new List<byte[]>();
+        _mockPdfPageEditor
+            .Setup(p => p.AppendPages(It.IsAny<MemoryStream>(), It.IsAny<MemoryStream>()))
+            .Callback<MemoryStream, MemoryStream>((_, pages) => appendedPages.Add(pages.ToArray()))
+            .Returns(() => new MemoryStream());
+        var strategy = CreateStrategy();
+
+        SetupJudicialClientResponse();
+        await strategy.Invoke(BuildRequest("123"));
+        SetupJudicialClientResponse();
+        await strategy.Invoke(BuildRequest("123"));
+
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(2, appendedPages.Count);
+        Assert.All(appendedPages, bytes => Assert.Equal(pageBytes, bytes));
+    }
+
     private OrderDocumentStrategy CreateStrategy() => new(
         _mockJudicialClient.Object,
         _mockConfiguration.Object,
@@ -413,10 +437,12 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     private sealed class StubHttpMessageHandler(HttpStatusCode statusCode, byte[] content) : HttpMessageHandler
     {
         public System.Uri RequestUri { get; private set; }
+        public int RequestCount { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
         {
             RequestUri = request.RequestUri;
+            RequestCount++;
             return Task.FromResult(new HttpResponseMessage(statusCode) { Content = new ByteArrayContent(content) });
         }
     }

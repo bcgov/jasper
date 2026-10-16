@@ -102,6 +102,7 @@ output "api_secrets" {
     ["ORDER_MAX_REMINDER_NOTIFICATIONS", "${aws_secretsmanager_secret.order_secret.arn}:maxReminderNotifications::"],
     ["ORDER_REASSIGNMENT_THRESHOLD_DAYS", "${aws_secretsmanager_secret.order_secret.arn}:reassignmentThresholdDays::"],
     ["ORDER_REMINDER_THRESHOLD_DAYS", "${aws_secretsmanager_secret.order_secret.arn}:reminderThresholdDays::"],
+    ["ORDER_SCL029_URL", "${aws_secretsmanager_secret.order_secret.arn}:scl029Url::"],
     ["PCSS__Username", "${aws_secretsmanager_secret.pcss_secret.arn}:username::"],
     ["PCSS__Password", "${aws_secretsmanager_secret.pcss_secret.arn}:password::"],
     ["PCSS__Url", "${aws_secretsmanager_secret.pcss_secret.arn}:baseUrl::"],

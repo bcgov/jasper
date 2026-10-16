@@ -22,6 +22,7 @@
   import { OrderReviewStatus } from '@/types/common';
   import { arrayBufferToBase64 } from '@/utils/utils';
   import type {
+    ContentEditing,
     Instance,
     StandaloneConfiguration,
     ToolbarItem,
@@ -72,6 +73,51 @@
   }
 
   let instance!: Instance;
+  let hasContentEditorSave = false;
+
+  // Content editor fallback font. Some embedded fonts only have a subset of
+  // glyphs, so unsupported chars show up as tofu boxes. Using Work Sans here
+  // since it's already bundled (see fonts.css) and content editing needs
+  // fonts passed in via customFonts - dynamic font loading doesn't work for it.
+  const contentEditingFallbackFonts = [
+    new NutrientViewer.Font({
+      name: 'WorkSans-Medium.ttf',
+      callback: (fontFileName) =>
+        fetch(`${import.meta.env.BASE_URL}styles/${fontFileName}`).then(
+          (response) => {
+            if (response.status === 200) {
+              return response.blob();
+            }
+            throw new Error(`Failed to load font: ${fontFileName}`);
+          }
+        ),
+    }),
+  ];
+
+  // Force Work Sans for Arial (subset or not) - Nutrient's own Arial is
+  // missing glyphs too. Other fonts untouched.
+  const contentEditingFontMatcher: ContentEditing.FontMatcher = (
+    match,
+    fontInfo,
+    availableFonts
+  ) => {
+    const isSubsetFont = Boolean(fontInfo.subsetInfo);
+    const originalFontName =
+      fontInfo.subsetInfo?.demangledName ?? fontInfo.name;
+    const isArial = [originalFontName, match].some((name) =>
+      name?.toLowerCase().includes('arial')
+    );
+
+    if (!isSubsetFont && !isArial) {
+      return undefined;
+    }
+
+    const fallback = availableFonts.find((font) =>
+      font.family?.toLowerCase().includes('work sans')
+    );
+
+    return fallback ? { font: fallback, size: fontInfo.fontSize } : undefined;
+  };
 
   const configuration: StandaloneConfiguration = {
     document: '', // This would be overridden by the actual PDF document when loaded.
@@ -79,6 +125,8 @@
     licenseKey: commonStore.appInfo?.nutrientFeLicenseKey ?? '',
     useCDN: true,
     styleSheets: [`${import.meta.env.BASE_URL}styles/nutrient-toolbar.css`],
+    customFonts: contentEditingFallbackFonts,
+    contentEditingFontMatcher,
   };
 
   async function hasImageAnnotation(
@@ -112,6 +160,30 @@
 
   async function updateCanApprove() {
     canApprove.value = await checkDocumentForAnnotations();
+  }
+
+  async function hasUserAnnotations(pageIndex: number) {
+    const annotations = await instance.getAnnotations(pageIndex);
+    return annotations.some(
+      (a) =>
+        !(a instanceof nutrientViewer.Annotations.WidgetAnnotation) &&
+        !(a instanceof nutrientViewer.Annotations.LinkAnnotation)
+    );
+  }
+
+  // Content editor saves are document-wide, so any save counts as touching the appended page.
+  // Returns undefined when the document has no appended page.
+  async function isAppendedPageEdited(): Promise<boolean | undefined> {
+    const appendedPageIndex = props.strategy.getAppendedPageIndex?.(
+      instance.totalPageCount
+    );
+    if (appendedPageIndex === undefined || appendedPageIndex < 1) {
+      return undefined;
+    }
+
+    return (
+      hasContentEditorSave || (await hasUserAnnotations(appendedPageIndex))
+    );
   }
 
   const loadNutrient = async () => {
@@ -162,23 +234,7 @@
         },
       }));
 
-      if (supportsEmbeddedOutline(props.strategy)) {
-        const outline = props.strategy.createOutlineWithEmbeddedOutline(
-          rawData,
-          apiResponse,
-          await getEmbeddedOutline()
-        );
-
-        if (outline?.length) {
-          const nutrientOutline = createNutrientOutline(outline);
-          await instance.setDocumentOutline(nutrientOutline);
-        }
-      } else {
-        const outline =
-          props.strategy.createOutline(rawData, apiResponse) ?? [];
-        const nutrientOutline = createNutrientOutline(outline);
-        await instance.setDocumentOutline(nutrientOutline);
-      }
+      await applyDocumentOutline(rawData, apiResponse);
 
       instance.setViewState((viewState) =>
         viewState
@@ -192,6 +248,19 @@
       instance.addEventListener('annotations.create', updateCanApprove);
       instance.addEventListener('annotations.update', updateCanApprove);
       instance.addEventListener('annotations.delete', updateCanApprove);
+      instance.addEventListener('document.change', (operations) => {
+        if (operations?.some((o) => o.type === 'contentEditorSave')) {
+          hasContentEditorSave = true;
+
+          // Saving a content edit resets the sidebar to the PDF's raw embedded outline; reapply ours.
+          void applyDocumentOutline(rawData, apiResponse).catch((error) => {
+            console.warn(
+              'Failed to reapply document outline after content editing save:',
+              error
+            );
+          });
+        }
+      });
 
       // Check if document can be approved initially
       await updateCanApprove();
@@ -206,6 +275,30 @@
     return nutrientViewer.Immutable.List(
       outlineData.map((item) => createOutlineElement(item))
     );
+  };
+
+  // Applies our curated outline. Re-run after content editing saves, since
+  // saving resets the sidebar to the PDF's raw embedded outline.
+  const applyDocumentOutline = async (
+    rawData: unknown,
+    apiResponse: unknown
+  ): Promise<void> => {
+    if (supportsEmbeddedOutline(props.strategy)) {
+      const outline = props.strategy.createOutlineWithEmbeddedOutline(
+        rawData,
+        apiResponse,
+        await getEmbeddedOutline()
+      );
+
+      if (outline?.length) {
+        const nutrientOutline = createNutrientOutline(outline);
+        await instance.setDocumentOutline(nutrientOutline);
+      }
+    } else {
+      const outline = props.strategy.createOutline(rawData, apiResponse) ?? [];
+      const nutrientOutline = createNutrientOutline(outline);
+      await instance.setDocumentOutline(nutrientOutline);
+    }
   };
 
   const resolveInformationContext = (
@@ -399,6 +492,7 @@
     ) {
       const arrayBuffer = await instance.exportPDF({ flatten: true });
       orderReview.documentData = arrayBufferToBase64(arrayBuffer);
+      orderReview.isAppendedPageDirty = await isAppendedPageEdited();
     }
     await props.strategy.reviewOrder(orderReview);
   };

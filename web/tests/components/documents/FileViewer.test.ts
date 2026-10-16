@@ -129,6 +129,9 @@ describe('FileViewer.vue', () => {
       unload: vi.fn(),
       SidebarMode: { DOCUMENT_OUTLINE: 'DOCUMENT_OUTLINE' },
       Color: { RED: 'RED' },
+      Font: class {
+        constructor(public readonly config: unknown) {}
+      },
       Actions: {
         GoToAction: class {
           constructor(public readonly config: unknown) {}

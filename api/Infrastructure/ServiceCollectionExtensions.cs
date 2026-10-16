@@ -85,6 +85,7 @@ namespace Scv.Api.Infrastructure
             licenseManager.RegisterKEY(configuration.GetValue<string>("NUTRIENT_BE_LICENSE_KEY"));
 
             services.AddScoped<IDocumentMerger, DocumentMerger>();
+            services.AddScoped<IPdfPageEditor, PdfPageEditor>();
             services.AddScoped<IDocumentRetriever, DocumentRetriever>();
             services.AddScoped<IDocumentConverter, DocumentConverter>();
             services.AddScoped<IPdfMergePreparationStrategyResolver, PdfMergePreparationStrategyResolver>();

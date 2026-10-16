@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
+using LazyCache;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
@@ -26,6 +27,8 @@ public class OrderDocumentStrategy : IDocumentStrategy
     private readonly IRepositoryBase<Order> _orderRepository;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IPdfPageEditor _pdfPageEditor;
+    private readonly IAppCache _cache;
+
     public DocumentType Type => DocumentType.Order;
 
     public OrderDocumentStrategy(
@@ -33,7 +36,8 @@ public class OrderDocumentStrategy : IDocumentStrategy
         IConfiguration configuration,
         IRepositoryBase<Order> orderRepository,
         IHttpClientFactory httpClientFactory,
-        IPdfPageEditor pdfPageEditor)
+        IPdfPageEditor pdfPageEditor,
+        IAppCache cache)
     {
         _judicialClient = judicialClient;
         _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
@@ -41,6 +45,7 @@ public class OrderDocumentStrategy : IDocumentStrategy
         _orderRepository = orderRepository;
         _httpClientFactory = httpClientFactory;
         _pdfPageEditor = pdfPageEditor;
+        _cache = cache;
     }
 
     public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
@@ -70,7 +75,7 @@ public class OrderDocumentStrategy : IDocumentStrategy
 
         var documentStream = await GetJudicialDocumentCopy(transactionId, agencyId, documentIdInt, docAppName);
 
-        if (!IsSmallClaimsDeskOrder(request))
+        if (!IsSmallClaimsDeskOrder(request, documentIdInt))
         {
             return documentStream;
         }
@@ -93,8 +98,9 @@ public class OrderDocumentStrategy : IDocumentStrategy
         throw new NotFoundException("Document id not found.");
     }
 
-    private static bool IsSmallClaimsDeskOrder(OrderRequest request) =>
-        request.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE;
+    private static bool IsSmallClaimsDeskOrder(OrderRequest request, int documentId) =>
+        request.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+        && request.PackageDocuments?.Any(pd => pd.DocumentId == documentId && pd.ReferredDocument) == true;
 
     private async Task<MemoryStream> GetJudicialDocumentCopy(
         Guid transactionId,
@@ -121,11 +127,15 @@ public class OrderDocumentStrategy : IDocumentStrategy
         ArgumentNullException.ThrowIfNullOrWhiteSpace(url);
 
         var client = _httpClientFactory.CreateClient();
-        using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
+
+        async Task<HttpResponseMessage> smallClaimsPage() => await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+
+        using var responseTask = _cache.GetOrAddAsync("SmallClaimsPage", smallClaimsPage);
+
+        responseTask.Result.EnsureSuccessStatusCode();
 
         using var additionalPageStream = new MemoryStream();
-        await response.Content.CopyToAsync(additionalPageStream);
+        await responseTask.Result.Content.CopyToAsync(additionalPageStream);
 
         var mergedStream = _pdfPageEditor.AppendPages(documentStream, additionalPageStream);
 

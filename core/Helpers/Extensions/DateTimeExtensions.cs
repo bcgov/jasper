@@ -31,7 +31,7 @@ public static class DateTimeExtensions
 
     /// <summary>
     /// Gets the current DateTime adjusted to the timezone specified in the X-Timezone header.
-    /// Automatically uses the current HTTP context. Falls back to UTC Time (America/Vancouver) if no header is provided or if the timezone is invalid.
+    /// Automatically uses the current HTTP context. Falls back to UTC if no header is provided or if the timezone is invalid.
     /// </summary>
     /// <param name="dateTime">The DateTime instance (typically DateTime.Now)</param>
     /// <returns>DateTime adjusted to the specified timezone</returns>
@@ -42,7 +42,7 @@ public static class DateTimeExtensions
 
     /// <summary>
     /// Gets the current DateTime adjusted to the timezone specified in the X-Timezone header.
-    /// Falls back to UTC Time (America/Vancouver) if no header is provided or if the timezone is invalid.
+    /// Falls back to UTC if no header is provided or if the timezone is invalid.
     /// </summary>
     /// <param name="dateTime">The DateTime instance (typically DateTime.Now)</param>
     /// <param name="httpContext">The HTTP context to read the X-Timezone header from</param>

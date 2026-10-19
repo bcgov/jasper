@@ -644,7 +644,7 @@ public class OrderServiceTests : ServiceTestBase
         var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Cannot update an order that is not in Pending status.", result.Errors);
+        Assert.Contains("There's an already existing order that has been processed.", result.Errors);
     }
 
     [Fact]

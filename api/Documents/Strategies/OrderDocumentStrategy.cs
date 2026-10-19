@@ -7,8 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
-using LazyCache;
 using JCCommon.Clients.FileServices;
+using LazyCache;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
@@ -244,14 +244,9 @@ public class OrderDocumentStrategy : IDocumentStrategy
             return string.Empty;
         }
 
-        var locationId = await _locationService.GetLocationId(request.CourtLocationId.ToString());
-        if (string.IsNullOrWhiteSpace(locationId))
-        {
-            return string.Empty;
-        }
-
-        var shortName = await _locationService.GetLocationShortName(locationId);
-        return shortName;
+        // CourtLocationId is the location code in LocationService.
+        return await _locationService.GetLocationShortNameByCode(request.CourtLocationId.ToString())
+            ?? string.Empty;
     }
 
     #endregion

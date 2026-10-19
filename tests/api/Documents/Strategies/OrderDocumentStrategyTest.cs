@@ -452,8 +452,7 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockPdfPageEditor
             .Setup(p => p.AppendPages(It.IsAny<MemoryStream>(), It.IsAny<MemoryStream>()))
             .Returns(merged);
-        _mockLocationService.Setup(l => l.GetLocationId("10")).ReturnsAsync("LOC-10");
-        _mockLocationService.Setup(l => l.GetLocationShortName("LOC-10")).ReturnsAsync("Vancouver");
+        _mockLocationService.Setup(l => l.GetLocationShortNameByCode("10")).ReturnsAsync("Vancouver");
         var strategy = CreateStrategy();
 
         var result = await strategy.Invoke(BuildRequest("123"));

@@ -72,4 +72,11 @@ public interface ILocationService
     /// <param name="agencyIdentifierCd">The agency identifier code.</param>
     /// <returns>The location code.</returns>
     Task<string> GetLocationCodeByAgencyIdentifierCd(string agencyIdentifierCd);
+
+    /// <summary>
+    /// Gets the location short name by location code.
+    /// </summary>
+    /// <param name="code">The location code.</param>
+    /// <returns>The location short name, or null if the code is not found.</returns>
+    Task<string> GetLocationShortNameByCode(string code);
 }

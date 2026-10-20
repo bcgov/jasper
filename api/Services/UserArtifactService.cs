@@ -72,7 +72,7 @@ public class UserArtifactService(
     public override async Task<UserArtifactDto> GetByIdAsync(string id) =>
         await GetByIdAsync(id, includeDeleted: false);
 
-    public async Task<UserArtifactDto> GetByIdAsync(string id, bool includeDeleted)
+    public async Task<UserArtifactDto> GetByIdAsync(string id, bool includeDeleted = false)
     {
         var entity = await this.Repo.GetByIdAsync(id);
         if (entity == null || entity.UserId != this.CurrentUserId || (entity.DeletedDate != null && !includeDeleted))

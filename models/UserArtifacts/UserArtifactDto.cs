@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Scv.Models.UserArtifacts;
 
 public enum ArtifactType
@@ -6,6 +8,7 @@ public enum ArtifactType
     Annotation
 }
 
+[JsonConverter(typeof(UserArtifactDtoConverter))]
 public abstract class UserArtifactDto : BaseDto
 {
     public string UserId { get; set; }

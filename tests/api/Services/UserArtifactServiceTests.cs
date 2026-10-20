@@ -299,6 +299,7 @@ public class UserArtifactServiceTests
     public async Task GetByIdAsync_NoAuthenticatedUser_Throws()
     {
         SetCurrentUser(null);
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(CreateNote());
 
         var act = () => _service.GetByIdAsync("note-1");
 
@@ -310,6 +311,7 @@ public class UserArtifactServiceTests
     public async Task GetByIdAsync_NoHttpContext_Throws()
     {
         _httpContextAccessor.Setup(a => a.HttpContext).Returns((HttpContext)null);
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(CreateNote());
 
         var act = () => _service.GetByIdAsync("note-1");
 

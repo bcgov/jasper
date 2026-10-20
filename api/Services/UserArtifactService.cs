@@ -29,6 +29,8 @@ public class UserArtifactService(
 
     public override string CacheName => nameof(UserArtifactService);
 
+    private string CurrentUserId => _httpContextAccessor.HttpContext?.User?.UserId();
+
     public override Task<OperationResult<UserArtifactDto>> ValidateAsync(UserArtifactDto dto, bool isEdit = false)
     {
         var errors = new List<string>();
@@ -157,7 +159,7 @@ public class UserArtifactService(
             if (existing.UserId != currentUserId)
             {
                 return OperationResult.Failure("User is not allowed to delete this user artifact.");
-            }
+    }
 
             MarkAsDeleted(existing, currentUserId);
 

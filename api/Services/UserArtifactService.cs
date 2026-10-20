@@ -143,7 +143,7 @@ public class UserArtifactService(
             if (!IsOwnedBy(existing, currentUserId))
             {
                 return OperationResult.Failure("User is not allowed to delete this user artifact.");
-            }
+    }
 
             MarkAsDeleted(existing, currentUserId);
 

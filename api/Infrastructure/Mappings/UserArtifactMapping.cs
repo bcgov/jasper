@@ -25,11 +25,15 @@ public class UserArtifactMapping : IRegister
             .Include<Note, NoteDto>()
             .Include<Annotation, AnnotationDto>();
 
-        config.NewConfig<NoteDto, Note>();
-        config.NewConfig<Note, NoteDto>();
+        config.NewConfig<NoteDto, Note>()
+            .Inherits<UserArtifactDto, UserArtifact>();
+        config.NewConfig<Note, NoteDto>()
+            .Inherits<UserArtifact, UserArtifactDto>();
 
-        config.NewConfig<AnnotationDto, Annotation>();
-        config.NewConfig<Annotation, AnnotationDto>();
+        config.NewConfig<AnnotationDto, Annotation>()
+            .Inherits<UserArtifactDto, UserArtifact>();
+        config.NewConfig<Annotation, AnnotationDto>()
+            .Inherits<UserArtifact, UserArtifactDto>();
     }
 
     void IRegister.Register(TypeAdapterConfig config)

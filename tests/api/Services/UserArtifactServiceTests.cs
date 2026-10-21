@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
@@ -295,25 +296,67 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_NoAuthenticatedUser_ReturnsNull()
+    public async Task GetByIdAsync_NoAuthenticatedUser_Throws()
     {
         SetCurrentUser(null);
-        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(CreateNote());
 
-        var result = await _service.GetByIdAsync("note-1");
+        var act = () => _service.GetByIdAsync("note-1");
 
-        result.Should().BeNull();
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.GetByIdAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetByIdAsync_NoHttpContext_ReturnsNull()
+    public async Task GetByIdAsync_NoHttpContext_Throws()
     {
         _httpContextAccessor.Setup(a => a.HttpContext).Returns((HttpContext)null);
-        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(CreateNote());
 
-        var result = await _service.GetByIdAsync("note-1");
+        var act = () => _service.GetByIdAsync("note-1");
 
-        result.Should().BeNull();
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhitespaceUserId_Throws()
+    {
+        SetCurrentUser("   ");
+
+        var act = () => _service.GetByIdAsync("note-1");
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task GetAllAsync_NoAuthenticatedUser_Throws()
+    {
+        SetCurrentUser(null);
+
+        var act = () => _service.GetAllAsync();
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<UserArtifact, bool>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddAsync_NoAuthenticatedUser_ThrowsInsteadOfReturningFailure()
+    {
+        SetCurrentUser(null);
+
+        var act = () => _service.AddAsync(new NoteDto { Content = "x" });
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.AddAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NoAuthenticatedUser_ThrowsInsteadOfReturningFailure()
+    {
+        SetCurrentUser(null);
+
+        var act = () => _service.UpdateAsync(new NoteDto { Id = "note-1", Content = "x" });
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
     }
 
     #endregion
@@ -404,6 +447,102 @@ public class UserArtifactServiceTests
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainSingle().Which.Should().Be("Error when adding user artifact.");
+        _logger.Verify(l => l.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+    }
+
+    #endregion
+
+    #region AddRangeAsync
+
+    [Fact]
+    public async Task AddRangeAsync_SetsCurrentUserAndClearsDeletionFields_ForAllItems()
+    {
+        List<UserArtifact> added = null;
+        _repo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()))
+            .Callback<IEnumerable<UserArtifact>>(e => added = [.. e])
+            .Returns(Task.CompletedTask);
+        var dtos = new List<UserArtifactDto>
+        {
+            new NoteDto { Content = "a", UserId = OtherUserId, DeletedDate = DateTime.UtcNow, DeletedByUserId = OtherUserId },
+            new AnnotationDto { DocumentId = "d", DocumentHash = "h", UserId = OtherUserId }
+        };
+
+        var result = await _service.AddRangeAsync(dtos);
+
+        result.Succeeded.Should().BeTrue();
+        added.Should().HaveCount(2);
+        added[0].Should().BeOfType<Note>();
+        added[1].Should().BeOfType<Annotation>();
+        added.Should().AllSatisfy(a =>
+        {
+            a.UserId.Should().Be(CurrentUserId);
+            a.DeletedDate.Should().BeNull();
+            a.DeletedByUserId.Should().BeNull();
+        });
+        _repo.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AddRangeAsync_DoesNotUseClientProvidedIds()
+    {
+        List<UserArtifact> added = null;
+        _repo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()))
+            .Callback<IEnumerable<UserArtifact>>(e => added = [.. e])
+            .Returns(Task.CompletedTask);
+
+        await _service.AddRangeAsync([new NoteDto { Id = "client-id", Content = "x" }]);
+
+        added.Single().Id.Should().NotBe("client-id");
+    }
+
+    [Fact]
+    public async Task AddRangeAsync_NullOrEmpty_ReturnsFailure()
+    {
+        var empty = await _service.AddRangeAsync([]);
+        var nullList = await _service.AddRangeAsync(null);
+
+        empty.Succeeded.Should().BeFalse();
+        nullList.Succeeded.Should().BeFalse();
+        empty.Errors.Should().ContainSingle().Which.Should().Be("No user artifacts provided.");
+        _repo.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddRangeAsync_InvalidatesCache()
+    {
+        _repo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>())).Returns(Task.CompletedTask);
+        _cache.Add(_service.CacheName, "cached");
+
+        await _service.AddRangeAsync([new NoteDto { Content = "x" }]);
+
+        _cache.Get<string>(_service.CacheName).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AddRangeAsync_NoAuthenticatedUser_Throws()
+    {
+        SetCurrentUser(null);
+
+        var act = () => _service.AddRangeAsync([new NoteDto { Content = "x" }]);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddRangeAsync_RepositoryThrows_ReturnsFailureAndLogsError()
+    {
+        _repo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>())).ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await _service.AddRangeAsync([new NoteDto { Content = "x" }]);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("Error when adding user artifacts.");
         _logger.Verify(l => l.Log(
             LogLevel.Error,
             It.IsAny<EventId>(),
@@ -561,6 +700,260 @@ public class UserArtifactServiceTests
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainSingle().Which.Should().Be("Error when updating user artifact.");
+        _logger.Verify(l => l.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+    }
+
+    #endregion
+
+    #region DeleteAsync
+
+    [Fact]
+    public async Task DeleteAsync_OwnedArtifact_SoftDeletesAndReturnsSuccess()
+    {
+        var existing = CreateNote();
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(existing);
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).Returns(Task.CompletedTask);
+        var before = DateTime.UtcNow;
+
+        var result = await _service.DeleteAsync("note-1");
+
+        result.Succeeded.Should().BeTrue();
+        existing.DeletedDate.Should().NotBeNull().And.BeOnOrAfter(before);
+        existing.DeletedByUserId.Should().Be(CurrentUserId);
+        _repo.Verify(r => r.UpdateAsync(existing), Times.Once);
+        _repo.Verify(r => r.DeleteAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_Annotation_SoftDeletes()
+    {
+        var existing = CreateAnnotation();
+        _repo.Setup(r => r.GetByIdAsync("ann-1")).ReturnsAsync(existing);
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).Returns(Task.CompletedTask);
+
+        var result = await _service.DeleteAsync("ann-1");
+
+        result.Succeeded.Should().BeTrue();
+        existing.DeletedDate.Should().NotBeNull();
+        existing.DeletedByUserId.Should().Be(CurrentUserId);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NotFound_ReturnsFailure()
+    {
+        _repo.Setup(r => r.GetByIdAsync("missing")).ReturnsAsync((UserArtifact)null);
+
+        var result = await _service.DeleteAsync("missing");
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("User artifact not found.");
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AlreadyDeleted_ReturnsNotFoundAndKeepsOriginalDeletion()
+    {
+        var deletedDate = new DateTime(2025, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+        var existing = CreateNote(deletedDate: deletedDate);
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(existing);
+
+        var result = await _service.DeleteAsync("note-1");
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("User artifact not found.");
+        existing.DeletedDate.Should().Be(deletedDate);
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OtherUsersArtifact_ReturnsNotAllowed()
+    {
+        var existing = CreateNote(userId: OtherUserId);
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(existing);
+
+        var result = await _service.DeleteAsync("note-1");
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("User is not allowed to delete this user artifact.");
+        existing.DeletedDate.Should().BeNull();
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+        _repo.Verify(r => r.DeleteAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NoAuthenticatedUser_Throws()
+    {
+        SetCurrentUser(null);
+
+        var act = () => _service.DeleteAsync("note-1");
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_InvalidatesCache()
+    {
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(CreateNote());
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).Returns(Task.CompletedTask);
+        _cache.Add(_service.CacheName, "cached");
+
+        await _service.DeleteAsync("note-1");
+
+        _cache.Get<string>(_service.CacheName).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RepositoryThrows_ReturnsFailureAndLogsError()
+    {
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(CreateNote());
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await _service.DeleteAsync("note-1");
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("Error when deleting user artifact.");
+        _logger.Verify(l => l.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+    }
+
+    #endregion
+
+    #region DeleteRangeAsync
+
+    [Fact]
+    public async Task DeleteRangeAsync_OwnedArtifacts_SoftDeletesAll()
+    {
+        var note = CreateNote("n1");
+        var annotation = CreateAnnotation("a1");
+        _repo.Setup(r => r.GetByIdAsync("n1")).ReturnsAsync(note);
+        _repo.Setup(r => r.GetByIdAsync("a1")).ReturnsAsync(annotation);
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).Returns(Task.CompletedTask);
+
+        var result = await _service.DeleteRangeAsync(["n1", "a1"]);
+
+        result.Succeeded.Should().BeTrue();
+        new UserArtifact[] { note, annotation }.Should().AllSatisfy(a =>
+        {
+            a.DeletedDate.Should().NotBeNull();
+            a.DeletedByUserId.Should().Be(CurrentUserId);
+        });
+        _repo.Verify(r => r.UpdateAsync(note), Times.Once);
+        _repo.Verify(r => r.UpdateAsync(annotation), Times.Once);
+        _repo.Verify(r => r.DeleteRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_SkipsMissingAndAlreadyDeleted()
+    {
+        var note = CreateNote("n1");
+        var deletedDate = new DateTime(2025, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+        var alreadyDeleted = CreateNote("n2", deletedDate: deletedDate);
+        _repo.Setup(r => r.GetByIdAsync("n1")).ReturnsAsync(note);
+        _repo.Setup(r => r.GetByIdAsync("n2")).ReturnsAsync(alreadyDeleted);
+        _repo.Setup(r => r.GetByIdAsync("missing")).ReturnsAsync((UserArtifact)null);
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).Returns(Task.CompletedTask);
+
+        var result = await _service.DeleteRangeAsync(["n1", "n2", "missing"]);
+
+        result.Succeeded.Should().BeTrue();
+        note.DeletedDate.Should().NotBeNull();
+        alreadyDeleted.DeletedDate.Should().Be(deletedDate);
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_NoneFound_ReturnsFailure()
+    {
+        _repo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync((UserArtifact)null);
+
+        var result = await _service.DeleteRangeAsync(["x", "y"]);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("No user artifacts found.");
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_EmptyIds_ReturnsFailure()
+    {
+        var result = await _service.DeleteRangeAsync([]);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("No user artifacts found.");
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_AllDeleted_ReturnsFailure()
+    {
+        _repo.Setup(r => r.GetByIdAsync("n1")).ReturnsAsync(CreateNote("n1", deletedDate: DateTime.UtcNow));
+
+        var result = await _service.DeleteRangeAsync(["n1"]);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("No user artifacts found.");
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_AnyArtifactOwnedByOtherUser_RejectsWholeRequest()
+    {
+        var mine = CreateNote("n1");
+        var theirs = CreateNote("n2", userId: OtherUserId);
+        _repo.Setup(r => r.GetByIdAsync("n1")).ReturnsAsync(mine);
+        _repo.Setup(r => r.GetByIdAsync("n2")).ReturnsAsync(theirs);
+
+        var result = await _service.DeleteRangeAsync(["n1", "n2"]);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle()
+            .Which.Should().Be("User is not allowed to delete one or more of these user artifacts.");
+        mine.DeletedDate.Should().BeNull();
+        theirs.DeletedDate.Should().BeNull();
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_NoAuthenticatedUser_Throws()
+    {
+        SetCurrentUser(null);
+
+        var act = () => _service.DeleteRangeAsync(["n1"]);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<UserArtifact>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_InvalidatesCache()
+    {
+        _repo.Setup(r => r.GetByIdAsync("n1")).ReturnsAsync(CreateNote("n1"));
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).Returns(Task.CompletedTask);
+        _cache.Add(_service.CacheName, "cached");
+
+        await _service.DeleteRangeAsync(["n1"]);
+
+        _cache.Get<string>(_service.CacheName).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRangeAsync_RepositoryThrows_ReturnsFailureAndLogsError()
+    {
+        _repo.Setup(r => r.GetByIdAsync("n1")).ReturnsAsync(CreateNote("n1"));
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<UserArtifact>())).ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await _service.DeleteRangeAsync(["n1"]);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("Error when deleting user artifacts.");
         _logger.Verify(l => l.Log(
             LogLevel.Error,
             It.IsAny<EventId>(),

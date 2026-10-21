@@ -180,8 +180,7 @@ public class UserArtifactService(
 
         try
         {
-            var entities = await Task.WhenAll(ids.Select(this.Repo.GetByIdAsync));
-            var existing = entities.Where(e => e != null && e.DeletedDate == null).ToList();
+            var existing = (await this.Repo.FindAsync(a => ids.Contains(a.Id) && a.DeletedDate == null)).ToList();
 
             if (existing.Count == 0)
             {
@@ -193,11 +192,9 @@ public class UserArtifactService(
                 return OperationResult.Failure("User is not allowed to delete one or more of these user artifacts.");
             }
 
-            foreach (var entity in existing)
-            {
-                MarkAsDeleted(entity, currentUserId);
-                await this.Repo.UpdateAsync(entity);
-            }
+            existing.ForEach(entity => MarkAsDeleted(entity, currentUserId));
+
+            await this.Repo.UpdateRangeAsync(existing);
 
             this.InvalidateCache(this.CacheName);
 

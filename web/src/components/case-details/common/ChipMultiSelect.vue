@@ -30,10 +30,12 @@
       <hr class="select-divider" />
     </template>
     <template #item="{ props: itemProps, item }">
+      <hr v-if="startsUngroupedSection(item)" class="select-divider" />
       <v-list-item
         v-bind="itemProps"
         density="compact"
         :title="getItemTitle(item)"
+        :subtitle="getItemOption(item)?.hint"
       >
         <template #prepend>
           <v-checkbox-btn
@@ -64,6 +66,10 @@
     title: string;
     value: string;
     count?: number;
+    // Grouped items are listed first and separated from ungrouped items by a divider
+    group?: string;
+    // Secondary text shown under the item title
+    hint?: string;
   };
 
   type SelectSlotItem = Partial<SelectOption> & {
@@ -126,6 +132,18 @@
     }
 
     return option.title;
+  };
+
+  const getItemIndex = (item?: SelectSlotItem): number => {
+    const value = getItemValue(item);
+    return props.items.findIndex((option) => option.value === value);
+  };
+
+  const startsUngroupedSection = (item?: SelectSlotItem): boolean => {
+    const index = getItemIndex(item);
+    return (
+      index > 0 && !props.items[index]?.group && !!props.items[index - 1]?.group
+    );
   };
 
   const toggleSelectAll = () => {

@@ -112,20 +112,20 @@
     DocumentData,
     DocumentRequestType,
   } from '@/types/shared';
-  import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
     getActiveSelections,
-    pruneInvalidSelections,
     getSectionTitle,
     getUncategorizedCount,
     isAllOptionsSelected,
     matchesCategorySelection,
     normalizeCategory,
     OTHER_CATEGORY_LABEL,
+    pruneInvalidSelections,
     SCHEDULED_CATEGORY_FILTER,
     UNCATEGORIZED_CATEGORY_FILTER,
     UNCATEGORIZED_CATEGORY_LABEL,
   } from '@/utils/categoryFilterUtils';
+  import { getCourtClassStyle, getRoles } from '@/utils/utils';
   import {
     mdiFileDocumentMultipleOutline,
     mdiNotebookOutline,
@@ -332,7 +332,13 @@
   };
 
   const documentCategories = computed<
-    { title: string; value: string; count: number }[]
+    {
+      title: string;
+      value: string;
+      count: number;
+      group?: string;
+      hint?: string;
+    }[]
   >(() => {
     const uncategorizedDocumentCount = getUncategorizedDocumentCount();
     const categoriesByIdentity = new Map<string, string>();
@@ -344,35 +350,36 @@
       }
     });
 
-    return (
-      scheduledDocuments.value.length > 0
+    return [
+      // Scheduled category
+      ...(scheduledDocuments.value.length > 0
         ? [
             {
               title: SCHEDULED_CATEGORY,
               value: SCHEDULED_CATEGORY_FILTER,
               count: categoryCount(SCHEDULED_CATEGORY_FILTER),
+              group: 'scheduled',
+              hint: 'Also counted in its category',
             },
           ]
-        : []
-    ).concat(
-      [...categoriesByIdentity]
-        .map(([value, title]) => ({
-          title: getBackendCategoryDisplayTitle(title),
-          value,
-          count: categoryCount(value),
-        }))
-        .concat(
-          uncategorizedDocumentCount > 0
-            ? [
-                {
-                  title: UNCATEGORIZED_CATEGORY_LABEL,
-                  value: UNCATEGORIZED_CATEGORY_FILTER,
-                  count: uncategorizedDocumentCount,
-                },
-              ]
-            : []
-        )
-    );
+        : []),
+      // Other categories
+      ...[...categoriesByIdentity].map(([value, title]) => ({
+        title: getBackendCategoryDisplayTitle(title),
+        value,
+        count: categoryCount(value),
+      })),
+      // Uncategorized
+      ...(uncategorizedDocumentCount > 0
+        ? [
+            {
+              title: UNCATEGORIZED_CATEGORY_LABEL,
+              value: UNCATEGORIZED_CATEGORY_FILTER,
+              count: uncategorizedDocumentCount,
+            },
+          ]
+        : []),
+    ];
   });
 
   watch(

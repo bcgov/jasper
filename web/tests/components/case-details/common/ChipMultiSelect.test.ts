@@ -1,6 +1,28 @@
 import ChipMultiSelect from '@/components/case-details/common/ChipMultiSelect.vue';
-import { shallowMount } from '@vue/test-utils';
+import { shallowMount as baseShallowMount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
+
+type SlotItem = { value?: unknown; raw?: unknown } | undefined;
+
+// Members of the <script setup> component accessed through wrapper.vm
+type ChipMultiSelectVm = {
+  isAllSelected: boolean;
+  getSelectAllTitle(): string;
+  getItemTitle(item?: SlotItem): string;
+  getItemValue(item?: SlotItem): string;
+  onUpdate(value: string[]): void;
+  toggleSelectAll(): void;
+  removeValue(value: string): void;
+  toggleValue(value: string): void;
+  isSelected(value: string): boolean;
+};
+
+const shallowMount = (
+  ...args: Parameters<typeof baseShallowMount<typeof ChipMultiSelect>>
+) =>
+  baseShallowMount(...args) as unknown as VueWrapper & {
+    vm: ChipMultiSelectVm;
+  };
 
 describe('ChipMultiSelect.vue', () => {
   const baseProps = {
@@ -163,5 +185,23 @@ describe('ChipMultiSelect.vue', () => {
 
     expect(wrapper.vm.isSelected('b')).toBe(true);
     expect(wrapper.vm.isSelected('a')).toBe(false);
+  });
+
+  it('adds a divider where ungrouped items follow a group', () => {
+    const items = [
+      { title: 'Scheduled', value: 's', group: 'scheduled' },
+      { title: 'Option A', value: 'a' },
+      { title: 'Option B', value: 'b' },
+    ];
+    const wrapper = shallowMount(ChipMultiSelect, {
+      props: { modelValue: [], items },
+    });
+    const vm = wrapper.vm as typeof wrapper.vm & {
+      startsUngroupedSection(item: (typeof items)[number]): boolean;
+    };
+
+    expect(vm.startsUngroupedSection(items[0])).toBe(false);
+    expect(vm.startsUngroupedSection(items[1])).toBe(true);
+    expect(vm.startsUngroupedSection(items[2])).toBe(false);
   });
 });

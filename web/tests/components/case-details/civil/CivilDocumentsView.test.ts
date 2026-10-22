@@ -220,6 +220,8 @@ describe('CivilDocumentsView.vue', () => {
       title: 'Scheduled',
       value: SCHEDULED_CATEGORY_FILTER,
       count: 2,
+      group: 'scheduled',
+      hint: 'Also counted in its category',
     });
   });
 

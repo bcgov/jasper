@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Bogus;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
 using LazyCache;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
+using Scv.Api.Services;
 using Scv.Core.Exceptions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -22,6 +24,7 @@ using Scv.Models.Document;
 using Scv.Models.Order;
 using tests.api.Services;
 using Xunit;
+using JCFileServices = JCCommon.Clients.FileServices;
 
 namespace tests.api.Documents.Strategies;
 
@@ -32,6 +35,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     private readonly Mock<IRepositoryBase<Order>> _mockOrderRepo;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<IPdfPageEditor> _mockPdfPageEditor;
+    private readonly Mock<JCFileServices.FileServicesClient> _mockFileServicesClient;
+    private readonly Mock<ILocationService> _mockLocationService;
     private readonly string _fakeContent = "fake-pdf-bytes";
     private readonly byte[] _fakeContentBytes;
     private readonly IAppCache _cache;
@@ -44,9 +49,11 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockOrderRepo = new Mock<IRepositoryBase<Order>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockPdfPageEditor = new Mock<IPdfPageEditor>();
+        _mockLocationService = new Mock<ILocationService>();
 
         var mockAgencySection = Mock.Of<IConfigurationSection>(s => s.Value == "123");
         var mockAppCdSection = Mock.Of<IConfigurationSection>(s => s.Value == "TESTAPP");
+        var mockPartIdSection = Mock.Of<IConfigurationSection>(s => s.Value == "456");
 
         _mockConfiguration
             .Setup(c => c.GetSection("Request:AgencyIdentifierId"))
@@ -54,11 +61,17 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockConfiguration
             .Setup(c => c.GetSection("Request:ApplicationCd"))
             .Returns(mockAppCdSection);
+        _mockConfiguration
+            .Setup(c => c.GetSection("Request:PartId"))
+            .Returns(mockPartIdSection);
 
         _mockJudicialClient.Setup(j => j.JsonSerializerSettings).Returns(new Newtonsoft.Json.JsonSerializerSettings());
 
         _cache = new CachingService(new Lazy<ICacheProvider>(() =>
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions()))));
+
+        var httpClient = SetupHttpClient();
+        _mockFileServicesClient = new Mock<JCFileServices.FileServicesClient>(MockBehavior.Strict, httpClient);
     }
 
     private static PdfDocumentRequestDetails BuildRequest(string rawDocumentId = "12345", string correlationId = null)
@@ -102,7 +115,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         Assert.Equal(DocumentType.Order, strategy.Type);
     }
@@ -119,7 +134,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         var result = await strategy.Invoke(BuildRequest(documentId.ToString()));
 
@@ -141,7 +158,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         var result = await strategy.Invoke(BuildRequest(ciesDocumentId.ToString()));
 
@@ -164,7 +183,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await strategy.Invoke(request);
 
@@ -185,7 +206,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await strategy.Invoke(request);
 
@@ -202,7 +225,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await Assert.ThrowsAsync<System.ArgumentNullException>(() => strategy.Invoke(request));
     }
@@ -217,7 +242,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await Assert.ThrowsAsync<System.ArgumentNullException>(() => strategy.Invoke(request));
     }
@@ -233,7 +260,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await Assert.ThrowsAsync<InvalidDataException>(() => strategy.Invoke(request));
     }
@@ -252,7 +281,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await Assert.ThrowsAsync<InvalidDataException>(() => strategy.Invoke(BuildRequest()));
     }
@@ -270,7 +301,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             _mockOrderRepo.Object,
             _mockHttpClientFactory.Object,
             _mockPdfPageEditor.Object,
-            _cache);
+            _cache,
+            _mockFileServicesClient.Object,
+            _mockLocationService.Object);
 
         await Assert.ThrowsAsync<NotFoundException>(() => strategy.Invoke(BuildRequest("789")));
     }
@@ -363,7 +396,14 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         SetupSmallClaimsOrderRepo(123);
         var pageBytes = new byte[] { 1, 2, 3 };
         var handler = SetupHttpClient(HttpStatusCode.OK, pageBytes);
+        var filledBytes = new byte[] { 4, 5, 6 };
+        var filled = new MemoryStream(filledBytes);
+        IReadOnlyDictionary<string, string> capturedValues = null;
         var appendedPages = new List<byte[]>();
+        _mockPdfPageEditor
+            .Setup(p => p.FillFormFields(It.IsAny<MemoryStream>(), It.IsAny<IReadOnlyDictionary<string, string>>(), true))
+            .Callback<MemoryStream, IReadOnlyDictionary<string, string>, bool>((_, values, _) => capturedValues = values)
+            .Returns(filled);
         _mockPdfPageEditor
             .Setup(p => p.AppendPages(It.IsAny<MemoryStream>(), It.IsAny<MemoryStream>()))
             .Callback<MemoryStream, MemoryStream>((_, pages) => appendedPages.Add(pages.ToArray()))
@@ -377,7 +417,52 @@ public class OrderDocumentStrategyTest : ServiceTestBase
 
         Assert.Equal(1, handler.RequestCount);
         Assert.Equal(2, appendedPages.Count);
-        Assert.All(appendedPages, bytes => Assert.Equal(pageBytes, bytes));
+        Assert.All(appendedPages, bytes => Assert.Equal(filledBytes, bytes));
+    }
+
+    [Fact]
+    public async Task Invoke_FillsAndFlattensAdditionalPage_BeforeAppending_ForSmallClaimsDeskOrder()
+    {
+        SetupJudicialClientResponse();
+        SetupSmallClaimsUrl("https://example.com/scl029.pdf");
+        SetupHttpClient(HttpStatusCode.OK, [1, 2, 3]);
+        _mockOrderRepo
+            .Setup(o => o.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(new Order
+            {
+                OrderRequest = new OrderRequest
+                {
+                    FullFileNo = "SC-123",
+                    CourtLocationId = 10,
+                    PackageDocuments = [new() { DocumentId = 123, ReferredDocument = true }],
+                    Referral = new Referral
+                    {
+                        CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+                    }
+                }
+            });
+
+        var filled = new MemoryStream([4, 5, 6]);
+        var merged = new MemoryStream([7, 8, 9]);
+        IReadOnlyDictionary<string, string> capturedValues = null;
+        _mockPdfPageEditor
+            .Setup(p => p.FillFormFields(It.IsAny<MemoryStream>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<bool>()))
+            .Callback<MemoryStream, IReadOnlyDictionary<string, string>, bool>((_, values, _) => capturedValues = values)
+            .Returns(filled);
+        _mockPdfPageEditor
+            .Setup(p => p.AppendPages(It.IsAny<MemoryStream>(), It.IsAny<MemoryStream>()))
+            .Returns(merged);
+        _mockLocationService.Setup(l => l.GetLocationShortNameByCode("10")).ReturnsAsync("Vancouver");
+        var strategy = CreateStrategy();
+
+        var result = await strategy.Invoke(BuildRequest("123"));
+
+        Assert.Same(merged, result);
+        Assert.NotNull(capturedValues);
+        Assert.Equal("SC-123", capturedValues[OrderDocumentStrategy.COURT_FILE_NUMBER_FIELD]);
+        Assert.Equal("Vancouver", capturedValues[OrderDocumentStrategy.COURT_LOCATION_FIELD]);
+        _mockPdfPageEditor.Verify(p => p.FillFormFields(It.IsAny<MemoryStream>(), It.IsAny<IReadOnlyDictionary<string, string>>(), true), Times.Once);
+        _mockPdfPageEditor.Verify(p => p.AppendPages(It.IsAny<MemoryStream>(), filled), Times.Once);
     }
 
     private OrderDocumentStrategy CreateStrategy() => new(
@@ -386,7 +471,9 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockOrderRepo.Object,
         _mockHttpClientFactory.Object,
         _mockPdfPageEditor.Object,
-        _cache);
+        _cache,
+        _mockFileServicesClient.Object,
+        _mockLocationService.Object);
 
     private void SetupSmallClaimsUrl(string url)
     {
@@ -445,5 +532,24 @@ public class OrderDocumentStrategyTest : ServiceTestBase
             RequestCount++;
             return Task.FromResult(new HttpResponseMessage(statusCode) { Content = new ByteArrayContent(content) });
         }
+    }
+
+    private HttpClient SetupHttpClient()
+    {
+        // HttpClient setup
+        var mockHandler = new Mock<HttpMessageHandler>();
+
+        var faker = new Faker();
+        var httpClient = new HttpClient(mockHandler.Object)
+        {
+            BaseAddress = new Uri(faker.Internet.Url())
+        };
+
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        mockHttpClientFactory
+            .Setup(_ => _.CreateClient(It.IsAny<string>()))
+            .Returns(httpClient);
+
+        return httpClient;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using GdPicture14;
 
@@ -25,6 +26,58 @@ public class PdfPageEditor : IPdfPageEditor
 
         merged.Position = 0;
         return merged;
+    }
+
+    public MemoryStream FillFormFields(MemoryStream document, IReadOnlyDictionary<string, string> fieldValues, bool flatten)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(fieldValues);
+
+        document.Position = 0;
+
+        using var pdf = new GdPicturePDF();
+        var loadStatus = pdf.LoadFromStream(document, false);
+        if (loadStatus != GdPictureStatus.OK)
+        {
+            throw new InvalidOperationException($"Failed to load the document: {loadStatus}");
+        }
+
+        var lookup = new Dictionary<string, string>(fieldValues, StringComparer.OrdinalIgnoreCase);
+        var fieldCount = pdf.GetFormFieldsCount();
+        for (var i = 0; i < fieldCount; i++)
+        {
+            var fieldId = pdf.GetFormFieldId(i);
+            if (!lookup.TryGetValue(pdf.GetFormFieldTitle(fieldId), out var value))
+            {
+                continue;
+            }
+
+            var setStatus = pdf.SetFormFieldValue(fieldId, value ?? string.Empty);
+            if (setStatus != GdPictureStatus.OK)
+            {
+                throw new InvalidOperationException($"Failed to set form field value: {setStatus}");
+            }
+        }
+
+        if (flatten)
+        {
+            var flattenStatus = pdf.FlattenFormFields();
+            if (flattenStatus != GdPictureStatus.OK)
+            {
+                throw new InvalidOperationException($"Failed to flatten form fields: {flattenStatus}");
+            }
+        }
+
+        var output = new MemoryStream();
+        var saveStatus = pdf.SaveToStream(output);
+        if (saveStatus != GdPictureStatus.OK)
+        {
+            output.Dispose();
+            throw new InvalidOperationException($"Failed to save the document: {saveStatus}");
+        }
+
+        output.Position = 0;
+        return output;
     }
 
     public MemoryStream RemoveLastPage(MemoryStream document)

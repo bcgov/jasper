@@ -29,7 +29,7 @@ export class CourtListService extends ServiceBase {
         proceeding,
         judgeId: judgeId ?? '',
       },
-      { skipErrorHandler: true }
+      { suppressErrorNotification: true }
     );
   }
 }

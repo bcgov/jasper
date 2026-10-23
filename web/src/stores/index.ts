@@ -12,7 +12,7 @@ export function registerPinia(app: App) {
 export default pinia;
 
 export { useCivilFileStore } from './CivilFileStore';
-export { useCommonStore } from './CommonStore';
+export { ApplicationConfigurationKey, useCommonStore } from './CommonStore';
 export { useCourtFileSearchStore } from './CourtFileSearchStore';
 export { useCourtListStore } from './CourtListStore';
 export { useCriminalFileStore } from './CriminalFileStore';

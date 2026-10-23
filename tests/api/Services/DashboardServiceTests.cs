@@ -1377,7 +1377,9 @@ public class DashboardServiceTests : ServiceTestBase
         var baseDate = new Faker().Date.Past(2).Date;
         var offset = DayOfWeek.Saturday - baseDate.DayOfWeek;
         var saturday = baseDate.AddDays(offset);
-        return saturday.AddDays(new Faker().Random.Int(0, 1));
+        var weekend = saturday.AddDays(new Faker().Random.Int(0, 1));
+        var today = DateTime.Now.ToClientTimezone().Date;
+        return weekend <= today ? weekend : weekend.AddDays(-7);
     }
 
     #endregion Private Methods

@@ -17,6 +17,11 @@ namespace Scv.Core.Exceptions
         public string? Error { get; set; }
 
         /// <summary>
+        /// Gets or sets a stable application error code for client handling.
+        /// </summary>
+        public string? Code { get; set; }
+
+        /// <summary>
         /// get/set - The exception type that threw thew exception.
         /// </summary>
         /// <value></value>
@@ -50,11 +55,18 @@ namespace Scv.Core.Exceptions
         /// <param name="ex"></param>
         /// <param name="message"></param>
         /// <param name="details"></param>
-        public ErrorResponseModel(IHostEnvironment environment, Exception ex, string? message = null, string? details = null)
+        public ErrorResponseModel(
+            IHostEnvironment environment,
+            Exception ex,
+            string? message = null,
+            string? details = null,
+            string? code = null,
+            bool exposeExceptionDetails = true)
         {
-            var showError = !environment.IsProduction();
+            var showError = exposeExceptionDetails && !environment.IsProduction();
             this.Error = showError ? ex.Message : message;
-            this.Type = ex.GetType().Name;
+            this.Code = code;
+            this.Type = exposeExceptionDetails ? ex.GetType().Name : null;
             this.Details = showError ? details ?? ex.GetAllMessages() : null;
             this.StackTrace = showError ? ex.StackTrace : null;
         }

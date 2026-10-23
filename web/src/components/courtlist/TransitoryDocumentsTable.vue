@@ -66,7 +66,9 @@
             :show-select="canViewDocuments"
             return-object
             :item-value="(item) => item.relativePath"
-            :item-selectable="(item) => canViewDocuments && isPdf(item)"
+            :item-selectable="
+              (item) => canViewDocuments && isSupportedByNutrient(item)
+            "
             data-testid="documents-table"
             :items-per-page="-1"
           >
@@ -139,6 +141,7 @@
   import { PERMISSIONS } from '@/constants/permissions';
   import { TransitoryDocumentsService } from '@/services/TransitoryDocumentsService';
   import { useCommonStore } from '@/stores';
+  import { isSupportedTransitoryViewerExtension } from '@/utils/transitoryDocumentFormats';
   import {
     FileMetadataDto,
     TransitoryDocumentSearchResponse,
@@ -281,13 +284,8 @@
     selectedDocuments.value = [];
   };
 
-  const isPdf = (item: FileMetadataDto): boolean => {
-    return item.extension?.toLowerCase() === '.pdf';
-  };
-
   const isSupportedByNutrient = (item: FileMetadataDto): boolean => {
-    const ext = item.extension?.toLowerCase();
-    return ext === '.pdf' || ext === '.doc' || ext === '.docx';
+    return isSupportedTransitoryViewerExtension(item.extension);
   };
 
   const openInNutrient = async (item: FileMetadataDto) => {
@@ -322,16 +320,8 @@
       return;
     }
 
-    const pdfDocuments = selectedDocuments.value.filter((doc) => isPdf(doc));
-    if (pdfDocuments.length === 0) {
-      setDownloadError(
-        'Please select PDF files to view in the document viewer.'
-      );
-      return;
-    }
-
     try {
-      openTransitoryDocumentsInNutrient(router, pdfDocuments, {
+      openTransitoryDocumentsInNutrient(router, selectedDocuments.value, {
         locationId: props.locationId,
         roomCd: props.roomCd,
         date: props.date,

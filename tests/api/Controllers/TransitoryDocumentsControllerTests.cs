@@ -494,7 +494,7 @@ public class TransitoryDocumentsControllerTests
         Assert.Contains("files are required and must contain at least one file.", errors);
 
         _mockDocumentMerger.Verify(
-            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -524,7 +524,7 @@ public class TransitoryDocumentsControllerTests
         Assert.Contains("files are required and must contain at least one file.", errors);
 
         _mockDocumentMerger.Verify(
-            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -554,7 +554,7 @@ public class TransitoryDocumentsControllerTests
         Assert.Contains("files are required and must contain at least one file.", errors);
 
         _mockDocumentMerger.Verify(
-            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -591,7 +591,7 @@ public class TransitoryDocumentsControllerTests
         Assert.Contains("All files must have a valid RelativePath.", errors);
 
         _mockDocumentMerger.Verify(
-            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -625,7 +625,7 @@ public class TransitoryDocumentsControllerTests
         Assert.Contains("All files must have SizeBytes greater than or equal to 0.", errors);
 
         _mockDocumentMerger.Verify(
-            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -665,7 +665,7 @@ public class TransitoryDocumentsControllerTests
         errors.Should().Contain(e => e.Contains("exceeds maximum allowed size"));
 
         _mockDocumentMerger.Verify(
-            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()),
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -700,7 +700,7 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
-            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
+            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResponse);
 
         // Act
@@ -711,7 +711,9 @@ public class TransitoryDocumentsControllerTests
         var actualResponse = Assert.IsType<PdfDocumentResponse>(okResult.Value);
         Assert.Equal(mergedContent, actualResponse.Base64Pdf);
 
-        _mockDocumentMerger.Verify(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()), Times.Once);
+        _mockDocumentMerger.Verify(
+            m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -740,8 +742,8 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
-            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
-            .Callback<PdfDocumentRequest[]>(reqs => capturedRequests = reqs)
+            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()))
+            .Callback<PdfDocumentRequest[], CancellationToken>((reqs, _) => capturedRequests = reqs)
             .ReturnsAsync(new PdfDocumentResponse { Base64Pdf = "test" });
 
         // Act
@@ -782,8 +784,8 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
-            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
-            .Callback<PdfDocumentRequest[]>(reqs => capturedRequests = reqs)
+            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()))
+            .Callback<PdfDocumentRequest[], CancellationToken>((reqs, _) => capturedRequests = reqs)
             .ReturnsAsync(new PdfDocumentResponse { Base64Pdf = "test" });
 
         // Act
@@ -822,7 +824,7 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
-            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
+            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PdfDocumentResponse { Base64Pdf = "test" });
 
         // Act
@@ -860,7 +862,7 @@ public class TransitoryDocumentsControllerTests
             .ReturnsAsync(CreateSearchResponse(request.Files.Select(ToSearchFileMetadata)));
 
         _mockDocumentMerger
-            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>()))
+            .Setup(m => m.MergeDocuments(It.IsAny<PdfDocumentRequest[]>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PdfDocumentResponse { Base64Pdf = "test" });
 
         // Act

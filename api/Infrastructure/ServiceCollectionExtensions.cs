@@ -48,8 +48,10 @@ using Scv.Api.SignalR.Notifications;
 using Scv.Core.Exceptions;
 using Scv.Core.Handler;
 using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Cso.Infrastructure.Options;
 using Scv.Db.Contexts;
+using Scv.Db.Interceptors;
 using Scv.Db.Repositories;
 using Scv.Db.Seeders;
 using Scv.Models.AccessControlManagement;
@@ -219,10 +221,14 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<ConstantSeeder>();
             services.AddScoped<RoleAliasSeeder>();
 
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUser, CurrentUser>();
+            services.AddScoped<AuditInterceptor>();
             services.AddDbContext<JasperDbContext>((serviceProvider, options) =>
             {
                 var mongoClient = serviceProvider.GetRequiredService<IMongoClient>();
-                options.UseMongoDB(mongoClient, dbName);
+                options.UseMongoDB(mongoClient, dbName)
+                    .AddInterceptors(serviceProvider.GetRequiredService<AuditInterceptor>());
             });
 
             services.AddTransient<SeederFactory<JasperDbContext>>();

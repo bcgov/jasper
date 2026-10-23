@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.IO.Packaging;
 using System.Linq;
 using System.Xml;
+using System.Xml.Linq;
 using FileSignatures;
 using FileSignatures.Formats;
 
@@ -40,6 +40,10 @@ internal static class DocumentFormatDetector
 {
     private const string OfficeDocumentRelationshipType =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+    private static readonly XNamespace RelationshipNamespace =
+        "http://schemas.openxmlformats.org/package/2006/relationships";
+    private static readonly XNamespace ContentTypeNamespace =
+        "http://schemas.openxmlformats.org/package/2006/content-types";
     private static readonly IFileFormatInspector Inspector = new FileFormatInspector();
 
     private static readonly IReadOnlyDictionary<string, DocumentFormat> Extensions =
@@ -127,32 +131,66 @@ internal static class DocumentFormatDetector
     private static DocumentFormat DetectOpenXmlPackage(Stream stream)
     {
         stream.Position = 0;
-        using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
-        {
-            if (archive.Entries.Count > OfficePackageLimits.MaximumEntries ||
-                archive.GetEntry("[Content_Types].xml") is not { } contentTypes ||
-                contentTypes.Length > OfficePackageLimits.MaximumContentTypesBytes ||
-                archive.GetEntry("_rels/.rels") is not { } relationships ||
-                relationships.Length > OfficePackageLimits.MaximumRelationshipPartBytes)
-            {
-                return DocumentFormat.Unknown;
-            }
-        }
-
-        stream.Position = 0;
-        using var package = Package.Open(stream, FileMode.Open, FileAccess.Read);
-        var primary = package.GetRelationshipsByType(OfficeDocumentRelationshipType)
-            .FirstOrDefault(relationship => relationship.TargetMode == TargetMode.Internal);
-        if (primary is null)
+        using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
+        if (archive.Entries.Count > OfficePackageLimits.MaximumEntries ||
+            archive.GetEntry("[Content_Types].xml") is not { } contentTypes ||
+            contentTypes.Length > OfficePackageLimits.MaximumContentTypesBytes ||
+            archive.GetEntry("_rels/.rels") is not { } relationships ||
+            relationships.Length > OfficePackageLimits.MaximumRelationshipPartBytes)
         {
             return DocumentFormat.Unknown;
         }
 
-        var partUri = PackUriHelper.ResolvePartUri(primary.SourceUri, primary.TargetUri);
-        return package.PartExists(partUri) &&
-            OpenXmlContentTypes.TryGetValue(package.GetPart(partUri).ContentType, out var format)
+        var relationshipDocument = LoadXml(relationships, OfficePackageLimits.MaximumRelationshipPartBytes);
+        var primary = relationshipDocument
+            .Descendants(RelationshipNamespace + "Relationship")
+            .FirstOrDefault(element =>
+                (string)element.Attribute("Type") == OfficeDocumentRelationshipType &&
+                !string.Equals((string)element.Attribute("TargetMode"), "External", StringComparison.OrdinalIgnoreCase));
+        var target = (string)primary?.Attribute("Target");
+        if (string.IsNullOrWhiteSpace(target) || target.Contains("..", StringComparison.Ordinal))
+        {
+            return DocumentFormat.Unknown;
+        }
+
+        var partName = "/" + target.TrimStart('/').Replace('\\', '/');
+        if (archive.GetEntry(partName.TrimStart('/')) is null)
+        {
+            return DocumentFormat.Unknown;
+        }
+
+        var contentTypeDocument = LoadXml(contentTypes, OfficePackageLimits.MaximumContentTypesBytes);
+        var contentType = contentTypeDocument
+            .Descendants(ContentTypeNamespace + "Override")
+            .Where(element => string.Equals(
+                (string)element.Attribute("PartName"), partName, StringComparison.OrdinalIgnoreCase))
+            .Select(element => (string)element.Attribute("ContentType"))
+            .FirstOrDefault();
+
+        contentType ??= contentTypeDocument
+            .Descendants(ContentTypeNamespace + "Default")
+            .Where(element => string.Equals(
+                (string)element.Attribute("Extension"),
+                Path.GetExtension(partName).TrimStart('.'),
+                StringComparison.OrdinalIgnoreCase))
+            .Select(element => (string)element.Attribute("ContentType"))
+            .FirstOrDefault();
+
+        return contentType is not null && OpenXmlContentTypes.TryGetValue(contentType, out var format)
                 ? format
                 : DocumentFormat.Unknown;
+    }
+
+    private static XDocument LoadXml(ZipArchiveEntry entry, long maximumCharacters)
+    {
+        using var entryStream = entry.Open();
+        using var reader = XmlReader.Create(entryStream, new XmlReaderSettings
+        {
+            DtdProcessing = DtdProcessing.Prohibit,
+            XmlResolver = null,
+            MaxCharactersInDocument = maximumCharacters
+        });
+        return XDocument.Load(reader, LoadOptions.None);
     }
 
     internal static bool MatchesDeclaredFormat(

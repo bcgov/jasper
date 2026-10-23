@@ -74,9 +74,9 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
             input = await CopyToBoundedStreamAsync(request.Stream, overallTimeoutSource.Token);
             var detectedFormat = DocumentFormatDetector.Detect(input);
             ValidateDetectedFormat(safeFileName, declaredFormat, detectedFormat);
-            _securityPreflight.Validate(input, detectedFormat, _options.MaxOutputSizeBytes);
+            _securityPreflight.Validate(input, declaredFormat, _options.MaxOutputSizeBytes);
             input.Position = 0;
-            if (detectedFormat == DocumentFormat.Pdf)
+            if (declaredFormat == DocumentFormat.Pdf)
             {
                 var passThrough = input;
                 input = null;
@@ -84,7 +84,7 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
                     "PDF conversion completed - SourceIdentifier: {SourceIdentifier}, FinalConverter: {FinalConverter}, InputFormat: {InputFormat}, QueueMilliseconds: {QueueMilliseconds}, TotalMilliseconds: {TotalMilliseconds}, OutputBytes: {OutputBytes}",
                     request.SourceIdentifier,
                     "PassThrough",
-                    detectedFormat,
+                    declaredFormat,
                     queueMilliseconds,
                     totalStopwatch.ElapsedMilliseconds,
                     passThrough.Length);
@@ -100,7 +100,7 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
             gateAcquired = true;
             var executionStopwatch = Stopwatch.StartNew();
             var pipelineResult = await _conversionPipeline.ConvertAsync(
-                new DocumentPdfConversionContext(input, detectedFormat, safeFileName, deadlineUtc),
+                new DocumentPdfConversionContext(input, declaredFormat, safeFileName, deadlineUtc),
                 overallTimeoutSource.Token);
             executionStopwatch.Stop();
             executionMilliseconds = executionStopwatch.ElapsedMilliseconds;
@@ -110,7 +110,7 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
                 request.SourceIdentifier,
                 pipelineResult.ConverterName,
                 pipelineResult.AttemptCount,
-                detectedFormat,
+                declaredFormat,
                 queueMilliseconds,
                 executionMilliseconds,
                 totalStopwatch.ElapsedMilliseconds,
@@ -178,7 +178,7 @@ internal sealed class DocumentPdfConversionService : IDocumentPdfConversionServi
             throw new UnprocessableDocumentException(ConversionErrorMessage);
         }
 
-        if (detectedFormat != declaredFormat)
+        if (!DocumentFormatDetector.MatchesDeclaredFormat(declaredFormat, detectedFormat))
         {
             throw new UnsupportedDocumentFormatException(ConversionErrorMessage);
         }

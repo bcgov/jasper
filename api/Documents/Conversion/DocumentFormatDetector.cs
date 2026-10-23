@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.IO.Packaging;
+using System.Linq;
 using System.Xml;
 using FileSignatures;
+using FileSignatures.Formats;
 
 namespace Scv.Api.Documents.Conversion;
 
@@ -34,6 +38,8 @@ public enum DocumentFormat
 
 internal static class DocumentFormatDetector
 {
+    private const string OfficeDocumentRelationshipType =
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     private static readonly IFileFormatInspector Inspector = new FileFormatInspector();
 
     private static readonly IReadOnlyDictionary<string, DocumentFormat> Extensions =
@@ -62,6 +68,22 @@ internal static class DocumentFormatDetector
             [".webp"] = DocumentFormat.Webp
         };
 
+    private static readonly IReadOnlyDictionary<string, DocumentFormat> OpenXmlContentTypes =
+        new Dictionary<string, DocumentFormat>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"] = DocumentFormat.Docx,
+            ["application/vnd.ms-word.document.macroEnabled.main+xml"] = DocumentFormat.Docm,
+            ["application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml"] = DocumentFormat.Dotx,
+            ["application/vnd.ms-word.template.macroEnabledTemplate.main+xml"] = DocumentFormat.Dotm,
+            ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"] = DocumentFormat.Xlsx,
+            ["application/vnd.ms-excel.sheet.macroEnabled.main+xml"] = DocumentFormat.Xlsm,
+            ["application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml"] = DocumentFormat.Xltx,
+            ["application/vnd.ms-excel.template.macroEnabled.main+xml"] = DocumentFormat.Xltm,
+            ["application/vnd.ms-excel.sheet.binary.macroEnabled.main"] = DocumentFormat.Xlsb,
+            ["application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"] = DocumentFormat.Pptx,
+            ["application/vnd.ms-powerpoint.presentation.macroEnabled.main+xml"] = DocumentFormat.Pptm
+        };
+
     internal static bool TryGetDeclaredFormat(string fileName, out DocumentFormat format)
     {
         return Extensions.TryGetValue(Path.GetExtension(fileName ?? string.Empty), out format);
@@ -85,10 +107,14 @@ internal static class DocumentFormatDetector
         {
             stream.Position = 0;
             var detected = Inspector.DetermineFileFormat(stream);
-            return MapDetectedFormat(detected?.Extension);
+            var format = MapDetectedFormat(detected?.Extension);
+            return detected is OfficeOpenXml && format != DocumentFormat.Unknown
+                ? DetectOpenXmlPackage(stream)
+                : format;
         }
         catch (Exception exception) when (exception is
-            IOException or InvalidDataException or XmlException or OpenMcdf.FileFormatException)
+            IOException or InvalidDataException or XmlException or FormatException or
+            ArgumentException or OpenMcdf.FileFormatException)
         {
             return DocumentFormat.Unknown;
         }
@@ -96,6 +122,37 @@ internal static class DocumentFormatDetector
         {
             stream.Position = originalPosition;
         }
+    }
+
+    private static DocumentFormat DetectOpenXmlPackage(Stream stream)
+    {
+        stream.Position = 0;
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+        {
+            if (archive.Entries.Count > OfficePackageLimits.MaximumEntries ||
+                archive.GetEntry("[Content_Types].xml") is not { } contentTypes ||
+                contentTypes.Length > OfficePackageLimits.MaximumContentTypesBytes ||
+                archive.GetEntry("_rels/.rels") is not { } relationships ||
+                relationships.Length > OfficePackageLimits.MaximumRelationshipPartBytes)
+            {
+                return DocumentFormat.Unknown;
+            }
+        }
+
+        stream.Position = 0;
+        using var package = Package.Open(stream, FileMode.Open, FileAccess.Read);
+        var primary = package.GetRelationshipsByType(OfficeDocumentRelationshipType)
+            .FirstOrDefault(relationship => relationship.TargetMode == TargetMode.Internal);
+        if (primary is null)
+        {
+            return DocumentFormat.Unknown;
+        }
+
+        var partUri = PackUriHelper.ResolvePartUri(primary.SourceUri, primary.TargetUri);
+        return package.PartExists(partUri) &&
+            OpenXmlContentTypes.TryGetValue(package.GetPart(partUri).ContentType, out var format)
+                ? format
+                : DocumentFormat.Unknown;
     }
 
     internal static bool MatchesDeclaredFormat(

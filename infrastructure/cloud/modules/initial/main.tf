@@ -30,12 +30,13 @@ module "app_ecr" {
 
 # Lambda functions ECR repository
 module "lambda_ecr" {
-  source      = "../ECR"
-  environment = var.environment
-  app_name    = var.app_name
-  region      = var.region
-  kms_key_id  = module.kms.kms_key_id
-  repo_name   = "lambda"
+  source       = "../ECR"
+  environment  = var.environment
+  app_name     = var.app_name
+  region       = var.region
+  kms_key_id   = module.kms.kms_key_id
+  repo_name    = "lambda"
+  tag_prefixes = ["auth", "proxy"]
 }
 
 # SSM Parameter Store

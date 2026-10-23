@@ -22,3 +22,9 @@ variable "kms_key_id" {
   description = "The KMS Key ID"
   type        = string
 }
+
+variable "tag_prefixes" {
+  description = "Image tag prefixes that expire after 30 days"
+  type        = list(string)
+  default     = ["api", "web"]
+}

@@ -24,6 +24,7 @@ public interface IRepositoryBase<TEntity> where TEntity : EntityBase
     Task AddAsync(TEntity entity);
     Task AddRangeAsync(IEnumerable<TEntity> entities);
     Task UpdateAsync(TEntity entity);
+    Task UpdateRangeAsync(IEnumerable<TEntity> entities);
     Task ReplaceAllAsync(
         string collectionName,
         IEnumerable<TEntity> replacements,
@@ -98,6 +99,12 @@ public class RepositoryBase<TEntity>(JasperDbContext context, IMongoDatabase mon
     public virtual async Task UpdateAsync(TEntity entity)
     {
         _dbSet.Update(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    public virtual async Task UpdateRangeAsync(IEnumerable<TEntity> entities)
+    {
+        _dbSet.UpdateRange(entities);
         await _context.SaveChangesAsync();
     }
 

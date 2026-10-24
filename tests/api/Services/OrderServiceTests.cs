@@ -627,6 +627,26 @@ public class OrderServiceTests : ServiceTestBase
         Assert.Contains("Something went wrong when upserting the Order", result.Errors);
     }
 
+    [Theory]
+    [InlineData(OrderStatus.AwaitingDocumentation)]
+    [InlineData(OrderStatus.Approved)]
+    [InlineData(OrderStatus.OrderMade)]
+    [InlineData(OrderStatus.Unapproved)]
+    public async Task ProcessOrderRequestAsync_ReturnsFailure_WhenANonPendingOrderExists(OrderStatus orderStatus)
+    {
+        var orderRequestDto = CreateValidOrderRequestDto();
+        var order = CreateOrder(orderStatus);
+
+        _mockOrderRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
+            .ReturnsAsync([order]);
+
+        var result = await _orderService.ProcessOrderRequestAsync(orderRequestDto);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("There's an already existing order that has been processed.", result.Errors);
+    }
+
     [Fact]
     public async Task ProcessOrderRequestAsync_LogsInformation_WhenCreatingNewOrder()
     {
@@ -1829,7 +1849,7 @@ public class OrderServiceTests : ServiceTestBase
         };
     }
 
-    private Order CreateOrder()
+    private Order CreateOrder(OrderStatus orderStatus = OrderStatus.Pending)
     {
         return new Order
         {
@@ -1854,6 +1874,7 @@ public class OrderServiceTests : ServiceTestBase
                     }
                 ]
             },
+            Status = orderStatus,
             JudgeId = _faker.Random.Int(1, 100),
         };
     }

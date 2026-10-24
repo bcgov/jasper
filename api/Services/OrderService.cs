@@ -151,14 +151,18 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             var existingOrders = await this.Repo
                 .FindAsync(o => o.OrderRequest.PhysicalFileId == fileId
                     && o.OrderRequest.Referral.SentToPartId.Equals(dto.Referral.SentToPartId)
-                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId
-                    && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.AwaitingDocumentation));
+                    && o.OrderRequest.Referral.ReferredDocumentId == dto.Referral.ReferredDocumentId);
 
             var existingOrder = existingOrders?.FirstOrDefault();
             OrderDto orderDto;
 
             if (existingOrder != null)
             {
+                if (existingOrder.Status != OrderStatus.Pending)
+                {
+                    return OperationResult<OrderDto>.Failure("There's an already existing order that has been processed.");
+                }
+
                 this.Logger.LogInformation("Updating existing order's request for fileId: {FileId}, sentToPartId: {SentToPartId}, referredDocumentId: {ReferredDocumentId} ",
                     fileId, dto.Referral.SentToPartId, dto.Referral.ReferredDocumentId);
 

@@ -52,9 +52,22 @@ public class DocumentMerger(
         PdfDocumentRequest[] documentRequests,
         CancellationToken cancellationToken)
     {
+        return ContainsTransitoryDocuments(documentRequests)
+            ? await MergeConversionAwareDocuments(documentRequests, cancellationToken)
+            : await MergeExistingPdfDocuments(documentRequests, cancellationToken);
+    }
+
+    private static bool ContainsTransitoryDocuments(PdfDocumentRequest[] documentRequests) =>
+        documentRequests.Any(request => request.Type == Scv.Models.Document.DocumentType.TransitoryDocument);
+
+    private async Task<PdfDocumentResponse> MergeConversionAwareDocuments(
+        PdfDocumentRequest[] documentRequests,
+        CancellationToken cancellationToken)
+    {
         var pageRanges = new List<PageRange>();
         MemoryStream mergedStream = null;
         var currentPage = 0;
+        var enforceTransitoryPageLimit = ShouldEnforceTransitoryPageLimit(documentRequests);
         long aggregateConvertedBytes = 0;
         try
         {
@@ -63,14 +76,15 @@ public class DocumentMerger(
                 cancellationToken,
                 async (index, stream) =>
                 {
-                    aggregateConvertedBytes = AddConvertedBytes(aggregateConvertedBytes, stream.Length);
+                    aggregateConvertedBytes = CountConvertedBytes(
+                        aggregateConvertedBytes, stream.Length, documentRequests[index].Type);
                     ValidateRetrievedStream(stream, documentRequests[index], index);
                     cancellationToken.ThrowIfCancellationRequested();
                     using var pdf = new GdPicturePDF();
                     stream.Position = 0;
                     LoadPdfFromStream(pdf, stream, documentRequests[index], index);
                     var pageCount = ValidatePageCount(pdf, documentRequests[index], index);
-                    if (ShouldEnforceTransitoryPageLimit(documentRequests) &&
+                    if (enforceTransitoryPageLimit &&
                         currentPage + pageCount > conversionOptions.MaxPageCount)
                     {
                         throw new Scv.Core.Exceptions.DocumentSizeLimitExceededException(
@@ -80,7 +94,9 @@ public class DocumentMerger(
                     pageRanges.Add(new PageRange { Start = currentPage, End = currentPage + pageCount });
                     currentPage += pageCount;
                     PreparePdfForMerge(pdf, documentRequests[index], index);
-                    using var preparedStream = SavePdfToStream(pdf, documentRequests[index], index);
+                    using var preparedStream = documentRequests[index].Type == Scv.Models.Document.DocumentType.TransitoryDocument
+                        ? SaveConvertedPdfToBoundedStream(pdf, documentRequests[index], index)
+                        : SavePdfToStream(pdf, documentRequests[index], index);
                     mergedStream = MergeIntoAccumulator(mergedStream, preparedStream);
                     await Task.CompletedTask;
                 });
@@ -91,7 +107,7 @@ public class DocumentMerger(
                 throw new InvalidOperationException("No documents were available to merge.");
             }
 
-            return CreateResponse(mergedStream, pageRanges);
+            return CreateConversionAwareResponse(mergedStream, pageRanges);
         }
         finally
         {
@@ -99,6 +115,130 @@ public class DocumentMerger(
             {
                 await mergedStream.DisposeAsync();
             }
+        }
+    }
+
+    private async Task<PdfDocumentResponse> MergeExistingPdfDocuments(
+        PdfDocumentRequest[] documentRequests,
+        CancellationToken cancellationToken)
+    {
+        using var converter = new GdPictureDocumentConverter();
+        var streamsToMerge = await RetrieveExistingPdfStreamsInBatches(documentRequests, cancellationToken);
+
+        try
+        {
+            for (var index = 0; index < streamsToMerge.Length; index++)
+            {
+                ValidateRetrievedStream(streamsToMerge[index], documentRequests[index], index);
+            }
+
+            var pageRanges = new List<PageRange>();
+            var streamsForMerge = new List<MemoryStream>(streamsToMerge.Length);
+            var currentPage = 0;
+            try
+            {
+                for (var index = 0; index < streamsToMerge.Length; index++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var stream = streamsToMerge[index];
+                    try
+                    {
+                        stream.Position = 0;
+                        using var pdf = new GdPicturePDF();
+                        LoadPdfFromStream(pdf, stream, documentRequests[index], index);
+                        var pageCount = ValidatePageCount(pdf, documentRequests[index], index);
+                        pageRanges.Add(new PageRange { Start = currentPage, End = currentPage + pageCount });
+                        currentPage += pageCount;
+                        PreparePdfForMerge(pdf, documentRequests[index], index);
+                        streamsForMerge.Add(SavePdfToStream(pdf, documentRequests[index], index));
+                    }
+                    finally
+                    {
+                        stream.Dispose();
+                        streamsToMerge[index] = null;
+                    }
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                using var outputStream = MergeExistingPdfStreams(converter, streamsForMerge);
+                return CreateResponse(outputStream, pageRanges);
+            }
+            finally
+            {
+                await Task.WhenAll(streamsForMerge.Select(stream => stream.DisposeAsync().AsTask()));
+            }
+        }
+        finally
+        {
+            await Task.WhenAll(streamsToMerge
+                .Where(stream => stream is not null)
+                .Select(stream => stream.DisposeAsync().AsTask()));
+        }
+    }
+
+    private MemoryStream MergeExistingPdfStreams(
+        GdPictureDocumentConverter converter,
+        List<MemoryStream> streamsForMerge)
+    {
+        var outputStream = new MemoryStream();
+        var mergeResult = converter.CombineToPDF([.. streamsForMerge], outputStream, PdfConformance.PDF);
+        if (mergeResult != GdPictureStatus.OK)
+        {
+            outputStream.Dispose();
+            logger.LogError("GdPicture merge failed with status: {Status}. Document count: {Count}",
+                mergeResult, streamsForMerge.Count);
+            throw new InvalidOperationException($"Failed to merge documents: {mergeResult}");
+        }
+
+        logger.LogInformation("Merged {TotalCount} documents.", streamsForMerge.Count);
+        outputStream.Position = 0;
+        return outputStream;
+    }
+
+    private async Task<MemoryStream[]> RetrieveExistingPdfStreamsInBatches(
+        PdfDocumentRequest[] documentRequests,
+        CancellationToken cancellationToken)
+    {
+        var streams = new MemoryStream[documentRequests.Length];
+        var batchSize = GetRetrievalBatchSize();
+        using var retrievalCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        try
+        {
+            for (var batchStart = 0; batchStart < documentRequests.Length; batchStart += batchSize)
+            {
+                retrievalCancellation.Token.ThrowIfCancellationRequested();
+                var batchCount = Math.Min(batchSize, documentRequests.Length - batchStart);
+                var tasks = Enumerable.Range(batchStart, batchCount)
+                    .Select(index => RetrieveStream(index, documentRequests[index],
+                        retrievalCancellation.Token, retrievalCancellation))
+                    .ToArray();
+                (int Index, MemoryStream Stream)[] batch;
+                try
+                {
+                    batch = await Task.WhenAll(tasks);
+                }
+                catch
+                {
+                    await Task.WhenAll(tasks
+                        .Where(task => task.IsCompletedSuccessfully)
+                        .Select(task => task.Result.Stream.DisposeAsync().AsTask()));
+                    throw;
+                }
+
+                foreach (var (index, stream) in batch)
+                {
+                    streams[index] = stream;
+                }
+            }
+
+            return streams;
+        }
+        catch
+        {
+            await Task.WhenAll(streams
+                .Where(stream => stream is not null)
+                .Select(stream => stream.DisposeAsync().AsTask()));
+            throw;
         }
     }
 
@@ -111,6 +251,12 @@ public class DocumentMerger(
 
     private void ValidateRetrievedStream(MemoryStream stream, PdfDocumentRequest documentRequest, int index)
     {
+        if (stream is null)
+        {
+            logger.LogError("Stream {Index} is null for document type {Type}", index, documentRequest.Type);
+            throw new InvalidOperationException($"Document stream {index} is null");
+        }
+
         if (stream.Length == 0)
         {
             logger.LogError("Stream {Index} is empty for document type {Type}", index, documentRequest.Type);
@@ -256,11 +402,21 @@ public class DocumentMerger(
     private MemoryStream SavePdfToStream(
         GdPicturePDF pdf,
         PdfDocumentRequest documentRequest,
-        int index)
+        int index) =>
+        SavePdfToStream(pdf, documentRequest, index, new MemoryStream());
+
+    private MemoryStream SaveConvertedPdfToBoundedStream(
+        GdPicturePDF pdf,
+        PdfDocumentRequest documentRequest,
+        int index) =>
+        SavePdfToStream(pdf, documentRequest, index, CreateBoundedMergeOutputStream());
+
+    private MemoryStream SavePdfToStream(
+        GdPicturePDF pdf,
+        PdfDocumentRequest documentRequest,
+        int index,
+        MemoryStream docStream)
     {
-        var docStream = new BoundedMemoryStream(
-            conversionOptions.MaxOutputSizeBytes,
-            DocumentPdfConversionService.ConversionErrorMessage);
         var saveStatus = pdf.SaveToStream(docStream);
         if (saveStatus != GdPictureStatus.OK)
         {
@@ -276,13 +432,13 @@ public class DocumentMerger(
         return docStream;
     }
 
-    private MemoryStream MergeIntoAccumulator(MemoryStream accumulator, MemoryStream document)
+    private MemoryStream MergeIntoAccumulator(
+        MemoryStream accumulator,
+        MemoryStream document)
     {
         if (accumulator is null)
         {
-            var first = new BoundedMemoryStream(
-                conversionOptions.MaxOutputSizeBytes,
-                DocumentPdfConversionService.ConversionErrorMessage);
+            var first = CreateBoundedMergeOutputStream();
             try
             {
                 document.Position = 0;
@@ -297,9 +453,7 @@ public class DocumentMerger(
             }
         }
 
-        var outputStream = new BoundedMemoryStream(
-            conversionOptions.MaxOutputSizeBytes,
-            DocumentPdfConversionService.ConversionErrorMessage);
+        var outputStream = CreateBoundedMergeOutputStream();
         try
         {
             using var pdf = new GdPicturePDF();
@@ -323,11 +477,25 @@ public class DocumentMerger(
         }
     }
 
-    private PdfDocumentResponse CreateResponse(MemoryStream outputStream, List<PageRange> pageRanges)
+    private MemoryStream CreateBoundedMergeOutputStream() =>
+        new BoundedMemoryStream(
+            conversionOptions.MaxOutputSizeBytes,
+            DocumentPdfConversionService.ConversionErrorMessage);
+
+    internal PdfDocumentResponse CreateConversionAwareResponse(
+        MemoryStream outputStream,
+        List<PageRange> pageRanges)
     {
-        var outputLength = checked((int)outputStream.Length);
         var encodedLength = GetBase64EncodedLength(outputStream.Length);
         ValidateBase64ResponseSize(encodedLength, conversionOptions.MaxBase64ResponseSizeBytes);
+        return CreateResponse(outputStream, pageRanges);
+    }
+
+    private PdfDocumentResponse CreateResponse(
+        MemoryStream outputStream,
+        List<PageRange> pageRanges)
+    {
+        var outputLength = checked((int)outputStream.Length);
 
         var base64Pdf = outputStream.TryGetBuffer(out var buffer)
             ? Convert.ToBase64String(buffer.Array!, buffer.Offset, outputLength)
@@ -359,11 +527,7 @@ public class DocumentMerger(
     {
         using var retrievalCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var retrievalToken = retrievalCancellation.Token;
-        var configuredValue = configuration.GetValue<string>(RetrieveBatchSizeKey);
-        var requestedBatchSize = int.TryParse(configuredValue, out var parsedBatchSize) && parsedBatchSize > 0
-            ? parsedBatchSize
-            : DefaultRetrieveBatchSize;
-        var batchSize = Math.Min(requestedBatchSize, conversionOptions.MaxConcurrentConversions);
+        var batchSize = Math.Min(GetRetrievalBatchSize(), conversionOptions.MaxConcurrentConversions);
 
         for (var batchStart = 0; batchStart < documentRequests.Length; batchStart += batchSize)
         {
@@ -405,8 +569,21 @@ public class DocumentMerger(
         }
     }
 
-    private long AddConvertedBytes(long currentBytes, long streamBytes)
+    private int GetRetrievalBatchSize()
     {
+        var configuredValue = configuration.GetValue<string>(RetrieveBatchSizeKey);
+        return int.TryParse(configuredValue, out var parsedBatchSize) && parsedBatchSize > 0
+            ? parsedBatchSize
+            : DefaultRetrieveBatchSize;
+    }
+
+    internal long CountConvertedBytes(long currentBytes, long streamBytes, Scv.Models.Document.DocumentType documentType)
+    {
+        if (documentType != Scv.Models.Document.DocumentType.TransitoryDocument)
+        {
+            return currentBytes;
+        }
+
         if (currentBytes > conversionOptions.MaxAggregateConvertedOutputSizeBytes - streamBytes)
         {
             throw new Scv.Core.Exceptions.DocumentSizeLimitExceededException(

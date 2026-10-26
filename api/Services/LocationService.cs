@@ -80,6 +80,12 @@ namespace Scv.Api.Services
 
         public async Task<string> GetLocationName(string code) => FindLongDescriptionFromCode(await GetLocations(), code);
 
+        public async Task<string> GetLocationShortNameByCode(string code)
+        {
+            var locations = await GetLocations();
+            return locations.FirstOrDefault(loc => loc.Code == code)?.ShortName;
+        }
+
         //Take the shortDesc -> translate it to code. 
         public async Task<string> GetLocationCodeFromId(string code)
         {

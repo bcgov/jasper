@@ -298,4 +298,35 @@ public class LocationServiceTests : ServiceTestBase
         mockJCLocationClient.Verify(c => c.LocationsGetAsync(null, true, true), Times.Once());
         mockPCSSLocationClient.Verify(c => c.GetLocationsAsync(), Times.Once());
     }
+
+    [Fact]
+    public async Task GetLocationShortNameByCode_ShouldSucceed()
+    {
+        var mockLocationId = _faker.Random.Int();
+        var mockCode = _faker.Random.Double(0, 100).ToString();
+        var mockShortDesc = _faker.Random.AlphaNumeric(5);
+        var mockJCLocations = new List<CodeValue>(
+            [
+                new()
+                {
+                    Code = mockCode,
+                    ShortDesc = mockShortDesc,
+                    LongDesc = string.Join(" ", _faker.Lorem.Words()),
+                    Flex = "Y"
+                }
+            ]);
+        var mockPCSSLocations = new List<Location>(
+            [
+                new()
+                {
+                    LocationId = mockLocationId,
+                    LocationSNm = mockShortDesc
+                }
+            ]);
+
+        var (locationService, _, _, _) = this.SetupLocationService(mockJCLocations, mockPCSSLocations);
+
+        Assert.Equal(mockShortDesc, await locationService.GetLocationShortNameByCode(mockCode));
+        Assert.Null(await locationService.GetLocationShortNameByCode("unknown-code"));
+    }
 }

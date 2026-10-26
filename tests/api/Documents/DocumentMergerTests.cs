@@ -48,6 +48,39 @@ public class DocumentMergerTest : ServiceTestBase
     }
 
     [Fact]
+    public void CountConvertedBytes_MixedRequestCountsOnlyTransitoryStream()
+    {
+        var merger = CreateMerger(
+            Mock.Of<IDocumentRetriever>(),
+            Mock.Of<IPdfMergePreparationStrategyResolver>(),
+            Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(),
+            new DocumentConversionOptions { MaxAggregateConvertedOutputSizeBytes = 40 });
+
+        var convertedBytes = merger.CountConvertedBytes(0, 40, ScvDocumentType.TransitoryDocument);
+        convertedBytes = merger.CountConvertedBytes(convertedBytes, 150, ScvDocumentType.File);
+
+        Assert.Equal(40, convertedBytes);
+        Assert.Throws<DocumentSizeLimitExceededException>(() =>
+            merger.CountConvertedBytes(convertedBytes, 1, ScvDocumentType.TransitoryDocument));
+    }
+
+    [Fact]
+    public void CreateConversionAwareResponse_RejectsOversizedFinalResponse()
+    {
+        var merger = CreateMerger(
+            Mock.Of<IDocumentRetriever>(),
+            Mock.Of<IPdfMergePreparationStrategyResolver>(),
+            Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(),
+            new DocumentConversionOptions { MaxBase64ResponseSizeBytes = 4 });
+
+        using var mergedOutput = new MemoryStream(new byte[4]);
+        Assert.Throws<DocumentSizeLimitExceededException>(() =>
+            merger.CreateConversionAwareResponse(mergedOutput, []));
+    }
+
+    [Fact]
     public async Task MergeDocuments_RejectsAggregateConvertedOutputBeforePdfProcessing()
     {
         var retriever = new Mock<IDocumentRetriever>();
@@ -183,8 +216,14 @@ public class DocumentMergerTest : ServiceTestBase
         var retrieverMock = new Mock<IDocumentRetriever>();
         var preparationStrategyResolverMock = new Mock<IPdfMergePreparationStrategyResolver>();
         var loggerMock = new Mock<ILogger<DocumentMerger>>();
-        var configuration = new ConfigurationBuilder().Build();
-        var merger = CreateMerger(retrieverMock.Object, preparationStrategyResolverMock.Object, loggerMock.Object, configuration);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["DOCUMENT_RETRIEVAL_BATCH_SIZE"] = "10"
+            })
+            .Build();
+        var merger = CreateMerger(retrieverMock.Object, preparationStrategyResolverMock.Object,
+            loggerMock.Object, configuration, new DocumentConversionOptions { MaxConcurrentConversions = 2 });
 
         var activeRequests = 0;
         var maxConcurrentRequests = 0;
@@ -217,7 +256,95 @@ public class DocumentMergerTest : ServiceTestBase
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => merger.MergeDocuments(requests));
 
-        Assert.True(maxConcurrentRequests <= 10, $"Expected at most 10 concurrent requests but saw {maxConcurrentRequests}.");
+        Assert.True(maxConcurrentRequests > 2,
+            $"Conversion concurrency must not limit ordinary PDF retrieval; observed {maxConcurrentRequests}.");
+        Assert.True(maxConcurrentRequests <= 10,
+            $"Expected at most 10 concurrent requests but saw {maxConcurrentRequests}.");
+    }
+
+    [Fact]
+    public async Task MergeDocuments_TransitoryRetrievalFanoutRespectsConversionConcurrency()
+    {
+        var retriever = new Mock<IDocumentRetriever>();
+        var releaseRetrievals = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var twoStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var activeRequests = 0;
+        var maxConcurrentRequests = 0;
+        retriever
+            .Setup(value => value.Retrieve(It.IsAny<PdfDocumentRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(async (PdfDocumentRequest _, CancellationToken cancellationToken) =>
+            {
+                var current = Interlocked.Increment(ref activeRequests);
+                UpdateMaxConcurrentRequests(ref maxConcurrentRequests, current);
+                if (current == 2)
+                {
+                    twoStarted.TrySetResult(true);
+                }
+
+                try
+                {
+                    await releaseRetrievals.Task.WaitAsync(cancellationToken);
+                    return null;
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref activeRequests);
+                }
+            });
+        var merger = CreateMerger(
+            retriever.Object,
+            Mock.Of<IPdfMergePreparationStrategyResolver>(),
+            Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["DOCUMENT_RETRIEVAL_BATCH_SIZE"] = "10"
+            }).Build(),
+            new DocumentConversionOptions { MaxConcurrentConversions = 2 });
+        var requests = Enumerable.Range(0, 6)
+            .Select(_ => new PdfDocumentRequest
+            {
+                Type = ScvDocumentType.TransitoryDocument,
+                Data = new PdfDocumentRequestDetails()
+            })
+            .ToArray();
+
+        var merge = merger.MergeDocuments(requests);
+        var observedMax = 0;
+        try
+        {
+            Assert.True(await twoStarted.Task.WaitAsync(TimeSpan.FromSeconds(1)));
+            observedMax = maxConcurrentRequests;
+        }
+        finally
+        {
+            releaseRetrievals.TrySetResult(true);
+        }
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => merge);
+        Assert.True(observedMax <= 2,
+            $"Expected at most two active transitory retrievals but saw {observedMax}.");
+    }
+
+    [Fact]
+    public async Task MergeDocuments_DoesNotApplyConversionAggregateLimitToOrdinaryPdf()
+    {
+        var retriever = new Mock<IDocumentRetriever>();
+        retriever
+            .Setup(value => value.Retrieve(It.IsAny<PdfDocumentRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream("%PDF-1.7"u8.ToArray()));
+        var merger = CreateMerger(
+            retriever.Object,
+            Mock.Of<IPdfMergePreparationStrategyResolver>(),
+            Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(),
+            new DocumentConversionOptions { MaxAggregateConvertedOutputSizeBytes = 1 });
+
+        var exception = await Record.ExceptionAsync(() => merger.MergeDocuments([
+            new PdfDocumentRequest { Type = ScvDocumentType.File, Data = new PdfDocumentRequestDetails() }
+        ]));
+
+        Assert.NotNull(exception);
+        Assert.IsNotType<DocumentSizeLimitExceededException>(exception);
     }
 
     [Fact]
@@ -271,6 +398,111 @@ public class DocumentMergerTest : ServiceTestBase
 
         Assert.IsType<InvalidOperationException>(exception.InnerException);
         Assert.Equal("Unsupported PDF merge preparation mode: 999", exception.InnerException!.Message);
+    }
+
+    [Fact(Skip = "Requires GdPicture PDFProcessing license; run as a licensed integration test.")]
+    public async Task MergeDocuments_OrdinaryPdfsPreserveOrderAndIgnoreConversionLimits()
+    {
+        var requests = new[]
+        {
+            new PdfDocumentRequest { Type = ScvDocumentType.File, Data = new PdfDocumentRequestDetails() },
+            new PdfDocumentRequest { Type = ScvDocumentType.Report, Data = new PdfDocumentRequestDetails() }
+        };
+        var retriever = new Mock<IDocumentRetriever>();
+        retriever.Setup(value => value.Retrieve(requests[0], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => CreatePdfWithPages(1));
+        retriever.Setup(value => value.Retrieve(requests[1], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => CreatePdfWithPages(2));
+        var resolver = new Mock<IPdfMergePreparationStrategyResolver>();
+        resolver.Setup(value => value.Resolve(It.IsAny<PdfDocumentRequest>()))
+            .Returns(PdfMergePreparationMode.Flatten);
+        var merger = CreateMerger(retriever.Object, resolver.Object, Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(), new DocumentConversionOptions
+            {
+                MaxAggregateConvertedOutputSizeBytes = 1,
+                MaxOutputSizeBytes = 1,
+                MaxBase64ResponseSizeBytes = 1,
+                MaxPageCount = 1,
+                MaxConcurrentConversions = 1
+            });
+
+        var response = await merger.MergeDocuments(requests);
+
+        Assert.Equal(2, response.PageRanges.Count);
+        Assert.Equal((0, 1), (response.PageRanges[0].Start, response.PageRanges[0].End));
+        Assert.Equal((1, 3), (response.PageRanges[1].Start, response.PageRanges[1].End));
+        using var output = new MemoryStream(Convert.FromBase64String(response.Base64Pdf));
+        using var pdf = new GdPicturePDF();
+        Assert.Equal(GdPictureStatus.OK, pdf.LoadFromStream(output, true));
+        Assert.Equal(3, pdf.GetPageCount());
+        resolver.Verify(value => value.Resolve(requests[0]), Times.Once);
+        resolver.Verify(value => value.Resolve(requests[1]), Times.Once);
+    }
+
+    [Fact(Skip = "Requires GdPicture PDFProcessing license; run as a licensed integration test.")]
+    public async Task MergeDocuments_MixedRequestCountsOnlyTransitoryOutputTowardAggregateLimit()
+    {
+        using var transitoryPdf = CreatePdfWithPages(1);
+        using var ordinaryPdf = CreatePdfWithPages(1);
+        var transitoryBytes = transitoryPdf.ToArray();
+        var ordinaryBytes = ordinaryPdf.ToArray();
+        var requests = new[]
+        {
+            new PdfDocumentRequest { Type = ScvDocumentType.TransitoryDocument, Data = new PdfDocumentRequestDetails() },
+            new PdfDocumentRequest { Type = ScvDocumentType.File, Data = new PdfDocumentRequestDetails() }
+        };
+        var retriever = new Mock<IDocumentRetriever>();
+        retriever.Setup(value => value.Retrieve(requests[0], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream(transitoryBytes));
+        retriever.Setup(value => value.Retrieve(requests[1], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream(ordinaryBytes));
+        var resolver = new PdfMergePreparationStrategyResolver([
+            new DefaultPdfMergePreparationStrategy(),
+            new TransitoryDocumentPdfMergePreparationStrategy()
+        ]);
+        var merger = CreateMerger(retriever.Object, resolver, Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(), new DocumentConversionOptions
+            {
+                MaxAggregateConvertedOutputSizeBytes = transitoryBytes.Length + 1,
+                MaxOutputSizeBytes = 1024 * 1024,
+                MaxBase64ResponseSizeBytes = 2 * 1024 * 1024
+            });
+
+        var response = await merger.MergeDocuments(requests);
+
+        Assert.Equal(2, response.PageRanges.Count);
+    }
+
+    [Fact(Skip = "Requires GdPicture PDFProcessing license; run as a licensed integration test.")]
+    public async Task MergeDocuments_MixedRequestStillEnforcesFinalBase64Limit()
+    {
+        using var transitoryPdf = CreatePdfWithPages(1);
+        using var ordinaryPdf = CreatePdfWithPages(1);
+        var transitoryBytes = transitoryPdf.ToArray();
+        var ordinaryBytes = ordinaryPdf.ToArray();
+        var requests = new[]
+        {
+            new PdfDocumentRequest { Type = ScvDocumentType.TransitoryDocument, Data = new PdfDocumentRequestDetails() },
+            new PdfDocumentRequest { Type = ScvDocumentType.File, Data = new PdfDocumentRequestDetails() }
+        };
+        var retriever = new Mock<IDocumentRetriever>();
+        retriever.Setup(value => value.Retrieve(requests[0], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream(transitoryBytes));
+        retriever.Setup(value => value.Retrieve(requests[1], It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream(ordinaryBytes));
+        var resolver = new PdfMergePreparationStrategyResolver([
+            new DefaultPdfMergePreparationStrategy(),
+            new TransitoryDocumentPdfMergePreparationStrategy()
+        ]);
+        var merger = CreateMerger(retriever.Object, resolver, Mock.Of<ILogger<DocumentMerger>>(),
+            new ConfigurationBuilder().Build(), new DocumentConversionOptions
+            {
+                MaxAggregateConvertedOutputSizeBytes = transitoryBytes.Length + 1,
+                MaxOutputSizeBytes = 1024 * 1024,
+                MaxBase64ResponseSizeBytes = 1
+            });
+
+        await Assert.ThrowsAsync<DocumentSizeLimitExceededException>(() => merger.MergeDocuments(requests));
     }
 
     // This test creates and merges PDFs through GdPicture's licensed PDFProcessing feature.
@@ -403,6 +635,21 @@ public class DocumentMergerTest : ServiceTestBase
         var actionId = pdf.NewActionGoTo(PdfDestinationType.DestinationTypeXYZ, destinationPage, 0, 0, 0, 0, 1);
         Assert.True(actionId > 0);
         Assert.Equal(GdPictureStatus.OK, pdf.SetBookmarkAction(bookmarkId, actionId));
+
+        var stream = new MemoryStream();
+        Assert.Equal(GdPictureStatus.OK, pdf.SaveToStream(stream));
+        stream.Position = 0;
+        return stream;
+    }
+
+    private static MemoryStream CreatePdfWithPages(int pageCount)
+    {
+        using var pdf = new GdPicturePDF();
+        Assert.Equal(GdPictureStatus.OK, pdf.NewPDF());
+        for (var page = 0; page < pageCount; page++)
+        {
+            Assert.Equal(GdPictureStatus.OK, pdf.NewPage(8.5f, 11f));
+        }
 
         var stream = new MemoryStream();
         Assert.Equal(GdPictureStatus.OK, pdf.SaveToStream(stream));

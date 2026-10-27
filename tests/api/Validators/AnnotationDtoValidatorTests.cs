@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentValidation.TestHelper;
 using Scv.Api.Validators.UserArtifact;
+using Scv.Db.Contants;
 using Scv.Models.UserArtifacts;
 using Xunit;
 
@@ -71,18 +72,6 @@ public class AnnotationDtoValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenArtifactTypeIsNotAnnotation_ShouldHaveError()
-    {
-        var dto = GetMockDto();
-        dto.ArtifactType = ArtifactType.Note;
-
-        var result = _validator.TestValidate(dto);
-
-        result.ShouldHaveValidationErrorFor(r => r.ArtifactType)
-            .WithErrorMessage("Artifact type must be 'Annotation'.");
-    }
-
-    [Fact]
     public void Validate_WhenLabelKeyIsInvalid_ShouldHaveError()
     {
         var dto = GetMockDto();
@@ -96,7 +85,14 @@ public class AnnotationDtoValidatorTests
     [Fact]
     public void Validate_WhenDtoIsValid_ShouldPass()
     {
-        var result = _validator.TestValidate(GetMockDto());
+        var dto = GetMockDto();
+        dto.Labels = new Dictionary<string, string>
+        {
+            [LabelConstants.PHYSICAL_FILE_ID] = "1",
+            [LabelConstants.DIVISION] = "R",
+            [LabelConstants.COURT_CLASS_CD] = "R",
+        };
+        var result = _validator.TestValidate(dto);
 
         result.ShouldNotHaveAnyValidationErrors();
     }

@@ -143,7 +143,7 @@ public class UserArtifactService(
             if (!IsOwnedBy(existing, currentUserId))
             {
                 return OperationResult.Failure("User is not allowed to delete this user artifact.");
-    }
+            }
 
             MarkAsDeleted(existing, currentUserId);
 
@@ -257,6 +257,20 @@ public class UserArtifactService(
     {
         entity.DeletedDate = DateTime.UtcNow;
         entity.DeletedByUserId = userId;
+    }
+
+    private Task<bool> ValidateUserArtifact(NoteDto noteDto)
+    {
+        noteDto.Labels.TryGetValue(LabelConstants.PHYSICAL_FILE_ID, out var fileIdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(fileIdValue);
+
+        noteDto.Labels.TryGetValue(LabelConstants.DIVISION, out var divisionValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(divisionValue);
+
+        noteDto.Labels.TryGetValue(LabelConstants.COURT_CLASS_CD, out var courtClassCdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(courtClassCdValue);
+
+        return null;
     }
 
     #endregion

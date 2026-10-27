@@ -41,6 +41,7 @@ public class OrderServiceTests : ServiceTestBase
     private readonly Faker _faker;
     private readonly Mock<IRepositoryBase<Order>> _mockOrderRepo;
     private readonly Mock<FileServicesClient> _mockFileServicesClient;
+    private readonly CourtFileService _courtFileService;
     private readonly Mock<IJudgeService> _mockJudgeService;
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<ILogger<OrderService>> _mockLogger;
@@ -108,6 +109,8 @@ public class OrderServiceTests : ServiceTestBase
 
         SetupConfiguration();
 
+        _courtFileService = new CourtFileService(_cache, _mockFileServicesClient.Object, _mockConfiguration.Object);
+
         _judgeId = _faker.Random.Int(1, 1000);
 
         _orderService = new OrderService(
@@ -115,7 +118,7 @@ public class OrderServiceTests : ServiceTestBase
             _mapper,
             _mockLogger.Object,
             _mockOrderRepo.Object,
-            _mockFileServicesClient.Object,
+            _courtFileService,
             _mockConfiguration.Object,
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
@@ -1462,7 +1465,7 @@ public class OrderServiceTests : ServiceTestBase
             _mapper,
             _mockLogger.Object,
             _mockOrderRepo.Object,
-            _mockFileServicesClient.Object,
+            _courtFileService,
             _mockConfiguration.Object,
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
@@ -1545,7 +1548,7 @@ public class OrderServiceTests : ServiceTestBase
             _mapper,
             _mockLogger.Object,
             _mockOrderRepo.Object,
-            _mockFileServicesClient.Object,
+            _courtFileService,
             _mockConfiguration.Object,
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,
@@ -1617,7 +1620,7 @@ public class OrderServiceTests : ServiceTestBase
             _mapper,
             _mockLogger.Object,
             _mockOrderRepo.Object,
-            _mockFileServicesClient.Object,
+            _courtFileService,
             _mockConfiguration.Object,
             _mockJudgeService.Object,
             _mockBackgroundJobClient.Object,

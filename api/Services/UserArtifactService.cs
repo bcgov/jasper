@@ -18,45 +18,44 @@ public class UserArtifactService(
     IMapper mapper,
     ILogger<UserArtifactService> logger,
     IRepositoryBase<UserArtifact> userArtifactRepo,
-    ICurrentUser currentUser) : CrudServiceBase<IRepositoryBase<UserArtifact>, UserArtifact, UserArtifactDto>(
+    ICurrentUser currentUser,
+    ICourtFileService courtFileService) : CrudServiceBase<IRepositoryBase<UserArtifact>, UserArtifact, UserArtifactDto>(
         cache,
         mapper,
         logger,
         userArtifactRepo), IUserArtifactService
 {
     private readonly ICurrentUser _currentUser = currentUser;
+    private readonly ICourtFileService _courtFileService = courtFileService;
 
     public override string CacheName => nameof(UserArtifactService);
 
-    public override Task<OperationResult<UserArtifactDto>> ValidateAsync(UserArtifactDto dto, bool isEdit = false)
+    public async override Task<OperationResult<UserArtifactDto>> ValidateAsync(UserArtifactDto dto, bool isEdit = false)
     {
         var errors = new List<string>();
+        dto.Labels.TryGetValue(LabelConstants.PHYSICAL_FILE_ID, out var fileIdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(fileIdValue);
 
-        switch (dto)
+        dto.Labels.TryGetValue(LabelConstants.COURT_CLASS_CD, out var courtClassCdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(courtClassCdValue);
+
+        var courtFileResult = await _courtFileService.ValidateFileExistsAsync(courtClassCdValue, fileIdValue);
+        if (!courtFileResult.Succeeded)
         {
-            case NoteDto note when string.IsNullOrWhiteSpace(note.Content):
-                errors.Add("Note content is required.");
-                break;
-            case AnnotationDto annotation:
-                if (string.IsNullOrWhiteSpace(annotation.DocumentId))
-                {
-                    errors.Add("Annotation document ID is required.");
-                }
-                if (string.IsNullOrWhiteSpace(annotation.DocumentHash))
-                {
-                    errors.Add("Annotation document hash is required.");
-                }
-                break;
+            errors.AddRange([.. courtFileResult.Errors]);
         }
 
-        if (isEdit && string.IsNullOrWhiteSpace(dto.Id))
+        if (isEdit)
         {
-            errors.Add("Artifact ID is required.");
+            if (dto.UserId != _currentUser.UserId)
+            {
+                errors.Add($"User {dto.UserId} is not allowed to access this user artifact.");
+            }
         }
 
-        return Task.FromResult(errors.Count != 0
+        return errors.Count != 0
             ? OperationResult<UserArtifactDto>.Failure([.. errors])
-            : OperationResult<UserArtifactDto>.Success(dto));
+            : OperationResult<UserArtifactDto>.Success(dto);
     }
 
     public override async Task<List<UserArtifactDto>> GetAllAsync()
@@ -269,20 +268,6 @@ public class UserArtifactService(
     {
         entity.DeletedDate = DateTime.UtcNow;
         entity.DeletedByUserId = userId;
-    }
-
-    private Task<bool> ValidateUserArtifact(NoteDto noteDto)
-    {
-        noteDto.Labels.TryGetValue(LabelConstants.PHYSICAL_FILE_ID, out var fileIdValue);
-        ArgumentNullException.ThrowIfNullOrWhiteSpace(fileIdValue);
-
-        noteDto.Labels.TryGetValue(LabelConstants.DIVISION, out var divisionValue);
-        ArgumentNullException.ThrowIfNullOrWhiteSpace(divisionValue);
-
-        noteDto.Labels.TryGetValue(LabelConstants.COURT_CLASS_CD, out var courtClassCdValue);
-        ArgumentNullException.ThrowIfNullOrWhiteSpace(courtClassCdValue);
-
-        return null;
     }
 
     #endregion

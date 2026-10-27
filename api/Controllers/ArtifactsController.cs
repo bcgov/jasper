@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Scv.Api.Infrastructure.Authorization;
+using Scv.Api.Infrastructure.Validation;
 using Scv.Api.Services;
 using Scv.Models.UserArtifacts;
 
@@ -52,7 +53,7 @@ public class ArtifactsController(
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(string id, [FromQuery] bool includeDeleted = false)
+    public async Task<IActionResult> GetById([ObjectId] string id, [FromQuery] bool includeDeleted = false)
     {
         if (!ObjectId.TryParse(id, out _))
         {
@@ -69,7 +70,7 @@ public class ArtifactsController(
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(string id, UserArtifactDto dto)
+    public async Task<IActionResult> Update([ObjectId] string id, UserArtifactDto dto)
     {
         if (dto == null)
         {
@@ -98,7 +99,7 @@ public class ArtifactsController(
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id)
+    public async Task<IActionResult> Delete([ObjectId] string id)
     {
         if (!ObjectId.TryParse(id, out _))
         {

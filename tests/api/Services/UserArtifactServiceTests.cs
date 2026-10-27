@@ -2,20 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
-using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.UserArtifacts;
@@ -30,7 +28,7 @@ public class UserArtifactServiceTests
 
     private readonly Mock<IRepositoryBase<UserArtifact>> _repo = new();
     private readonly Mock<ILogger<UserArtifactService>> _logger = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessor = new();
+    private readonly Mock<ICurrentUser> _currentUser = new();
     private readonly CachingService _cache;
     private readonly UserArtifactService _service;
 
@@ -50,17 +48,12 @@ public class UserArtifactServiceTests
             mapper,
             _logger.Object,
             _repo.Object,
-            _httpContextAccessor.Object);
+            _currentUser.Object);
     }
 
     private void SetCurrentUser(string userId)
     {
-        var claims = userId == null ? [] : new[] { new Claim(CustomClaimTypes.UserId, userId) };
-        var context = new DefaultHttpContext
-        {
-            User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"))
-        };
-        _httpContextAccessor.Setup(a => a.HttpContext).Returns(context);
+        _currentUser.Setup(c => c.UserId).Returns(userId);
     }
 
     private static Note CreateNote(string id = "note-1", string userId = CurrentUserId, DateTime? deletedDate = null) => new()
@@ -309,7 +302,7 @@ public class UserArtifactServiceTests
     [Fact]
     public async Task GetByIdAsync_NoHttpContext_Throws()
     {
-        _httpContextAccessor.Setup(a => a.HttpContext).Returns((HttpContext)null);
+        _currentUser.Setup(c => c.UserId).Returns((string)null);
 
         var act = () => _service.GetByIdAsync("note-1");
 

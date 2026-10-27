@@ -12,7 +12,7 @@ public enum ArtifactType
 public abstract class UserArtifactDto : BaseDto
 {
     public string UserId { get; set; }
-    public ArtifactType ArtifactType { get; set; }
+    public abstract ArtifactType ArtifactType { get; }
     public Dictionary<string, string> Labels { get; set; } = [];
     public bool IsDeleted => DeletedDate != null;
     public DateTime? DeletedDate { get; set; }

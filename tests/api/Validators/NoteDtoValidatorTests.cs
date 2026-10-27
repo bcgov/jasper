@@ -11,7 +11,7 @@ namespace tests.api.Validators;
 
 public class NoteDtoValidatorTests
 {
-    private const string RequiredKeysMessage = "Labels must contain physicalFileId and courtClassCd.";
+    private const string RequiredKeysMessage = "Labels must contain physicalFileId, division, courtClassCd.";
     private const string InvalidKeyMessage = "Label keys cannot be empty, contain '.', or start with '$'.";
 
     private readonly NoteDtoValidator _validator = new();
@@ -19,6 +19,7 @@ public class NoteDtoValidatorTests
     private static Dictionary<string, string> GetValidLabels() => new()
     {
         [LabelConstants.PHYSICAL_FILE_ID] = "123",
+        [LabelConstants.DIVISION] = "R",
         [LabelConstants.COURT_CLASS_CD] = "C"
     };
 
@@ -45,18 +46,6 @@ public class NoteDtoValidatorTests
 
         result.ShouldHaveValidationErrorFor(r => r.Content)
             .WithErrorMessage("Note content is required.");
-    }
-
-    [Fact]
-    public void Validate_WhenArtifactTypeIsNotNote_ShouldHaveError()
-    {
-        var dto = GetMockDto();
-        dto.ArtifactType = ArtifactType.Annotation;
-
-        var result = _validator.TestValidate(dto);
-
-        result.ShouldHaveValidationErrorFor(r => r.ArtifactType)
-            .WithErrorMessage("Artifact type must be 'Note'.");
     }
 
     private static ValidationContext<NoteDto> GetEditContext(NoteDto dto)

@@ -24,14 +24,6 @@ namespace Scv.Db.Contexts
         public DbSet<CourtLocation> CourtLocations { get; set; }
         public DbSet<UserArtifact> UserArtifacts { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-
-            // For local development
-            this.Database?.AutoTransactionBehavior = AutoTransactionBehavior.Never;
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

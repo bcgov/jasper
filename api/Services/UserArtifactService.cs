@@ -4,10 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
+using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.UserArtifacts;
@@ -19,13 +18,13 @@ public class UserArtifactService(
     IMapper mapper,
     ILogger<UserArtifactService> logger,
     IRepositoryBase<UserArtifact> userArtifactRepo,
-    IHttpContextAccessor httpContextAccessor) : CrudServiceBase<IRepositoryBase<UserArtifact>, UserArtifact, UserArtifactDto>(
+    ICurrentUser currentUser) : CrudServiceBase<IRepositoryBase<UserArtifact>, UserArtifact, UserArtifactDto>(
         cache,
         mapper,
         logger,
         userArtifactRepo), IUserArtifactService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly ICurrentUser _currentUser = currentUser;
 
     public override string CacheName => nameof(UserArtifactService);
 
@@ -157,7 +156,7 @@ public class UserArtifactService(
             if (existing.UserId != currentUserId)
             {
                 return OperationResult.Failure("User is not allowed to delete this user artifact.");
-    }
+            }
 
             MarkAsDeleted(existing, currentUserId);
 
@@ -260,7 +259,7 @@ public class UserArtifactService(
 
     private string GetCurrentUserId()
     {
-        var userId = _httpContextAccessor.HttpContext?.User?.UserId();
+        var userId = _currentUser.UserId;
         return string.IsNullOrWhiteSpace(userId)
             ? throw new InvalidOperationException("No valid user id found.")
             : userId;
@@ -270,6 +269,20 @@ public class UserArtifactService(
     {
         entity.DeletedDate = DateTime.UtcNow;
         entity.DeletedByUserId = userId;
+    }
+
+    private Task<bool> ValidateUserArtifact(NoteDto noteDto)
+    {
+        noteDto.Labels.TryGetValue(LabelConstants.PHYSICAL_FILE_ID, out var fileIdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(fileIdValue);
+
+        noteDto.Labels.TryGetValue(LabelConstants.DIVISION, out var divisionValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(divisionValue);
+
+        noteDto.Labels.TryGetValue(LabelConstants.COURT_CLASS_CD, out var courtClassCdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(courtClassCdValue);
+
+        return null;
     }
 
     #endregion

@@ -20,7 +20,7 @@ public abstract class UserArtifactDtoValidator<TDto> : BaseDtoValidator<TDto> wh
             .Must(labels => labels is null || labels.Keys.All(IsValidLabelKey))
             .WithMessage("Label keys cannot be empty, contain '.', or start with '$'.")
             .Must(labels => labels is not null && RequiredLabelKeys.All(labels.ContainsKey))
-            .WithMessage($"Labels must contain {string.Join(" and ", RequiredLabelKeys)}.");
+            .WithMessage($"Labels must contain {string.Join(", ", RequiredLabelKeys)}.");
     }
 
     private static readonly string[] RequiredLabelKeys = [LabelConstants.PHYSICAL_FILE_ID, LabelConstants.DIVISION, LabelConstants.COURT_CLASS_CD];

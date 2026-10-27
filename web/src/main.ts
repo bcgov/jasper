@@ -4,6 +4,7 @@ import '@fullcalendar/vue3/skeleton.css';
 import '@fullcalendar/vue3/themes/classic/palette.css';
 import '@fullcalendar/vue3/themes/classic/theme.css';
 import 'bootstrap/dist/css/bootstrap.css';
+import './assets/print.css';
 import 'intersection-observer';
 import { createApp } from 'vue';
 import App from './App.vue';

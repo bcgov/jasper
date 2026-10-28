@@ -189,8 +189,20 @@ variable "use_court_locations" {
   default     = false
 }
 
-variable "notify_priority_orders_only" {
-  description = "If true, only priority orders will trigger notifications."
-  type        = bool
-  default     = false
+variable "notify_priority_types" {
+  description = "Comma-separated priority types (PRO, CRTD, OTHR) that trigger order email notifications. Empty means regardless of priority."
+  type        = string
+  default     = ""
+}
+
+variable "notify_order_types" {
+  description = "Comma-separated order types (Order, Desk Order) that trigger order email notifications. Empty means both."
+  type        = string
+  default     = ""
+}
+
+variable "notify_court_classes" {
+  description = "Comma-separated court classes (F, C) that trigger order email notifications. Empty means both."
+  type        = string
+  default     = ""
 }

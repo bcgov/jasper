@@ -45,12 +45,9 @@ public class UserArtifactService(
             errors.AddRange([.. courtFileResult.Errors]);
         }
 
-        if (isEdit)
+        if (isEdit && dto.UserId != _currentUser.UserId)
         {
-            if (dto.UserId != _currentUser.UserId)
-            {
-                errors.Add($"User {dto.UserId} is not allowed to access this user artifact.");
-            }
+            errors.Add($"User {dto.UserId} is not allowed to access this user artifact.");
         }
 
         return errors.Count != 0

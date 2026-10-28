@@ -7,7 +7,7 @@ using Scv.Db.Contants;
 using Scv.Models.UserArtifacts;
 using Xunit;
 
-namespace tests.api.Validators;
+namespace tests.api.Validators.UserArtifact;
 
 public class NoteDtoValidatorTests
 {

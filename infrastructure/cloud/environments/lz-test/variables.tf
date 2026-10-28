@@ -188,3 +188,9 @@ variable "use_court_locations" {
   type        = bool
   default     = false
 }
+
+variable "notify_priority_orders_only" {
+  description = "If true, only priority orders will trigger notifications."
+  type        = bool
+  default     = false
+}

@@ -21,7 +21,10 @@ internal static class RetryErroredOrderSubmitJobHelper
         string retryingLogMessage)
     {
         var erroredOrders = await orderRepo.FindAsync(o =>
-            (o.Status == OrderStatus.Approved || o.Status == OrderStatus.Unapproved || o.Status == OrderStatus.AwaitingDocumentation)
+            (o.Status == OrderStatus.Approved
+                || o.Status == OrderStatus.Unapproved
+                || o.Status == OrderStatus.AwaitingDocumentation
+                || o.Status == OrderStatus.OrderMade)
             && o.SubmitStatus == SubmitStatus.Error);
 
         var orderIds = erroredOrders?

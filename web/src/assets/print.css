@@ -1,0 +1,4 @@
+/* Allow users to choose paper size and orientation in the print dialog. */
+@page {
+  size: auto;
+}

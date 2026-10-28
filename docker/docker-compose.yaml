@@ -31,6 +31,7 @@ services:
       - '8080:1339'
     volumes:
       - '${LOCAL_WORKSPACE_FOLDER-..}/web/src:/opt/app-root/src/src'
+      - '${LOCAL_WORKSPACE_FOLDER-..}/web/index.html:/opt/app-root/src/index.html'
       - '${LOCAL_WORKSPACE_FOLDER-..}/web/package.json:/opt/app-root/src/package.json'
     depends_on:
       - api

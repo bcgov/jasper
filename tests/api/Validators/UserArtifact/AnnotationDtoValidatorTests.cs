@@ -6,7 +6,7 @@ using Scv.Db.Contants;
 using Scv.Models.UserArtifacts;
 using Xunit;
 
-namespace tests.api.Validators;
+namespace tests.api.Validators.UserArtifact;
 
 public class AnnotationDtoValidatorTests
 {
@@ -80,6 +80,62 @@ public class AnnotationDtoValidatorTests
         var result = _validator.TestValidate(dto);
 
         result.ShouldHaveValidationErrorFor(r => r.Labels);
+    }
+
+    [Fact]
+    public void Validate_WhenRequiredLabelKeysAreMissing_ShouldHaveError()
+    {
+        var dto = GetMockDto();
+        dto.Labels = new Dictionary<string, string> { ["a"] = "value" };
+
+        var result = _validator.TestValidate(dto);
+
+        result.ShouldHaveValidationErrorFor(r => r.Labels)
+            .WithErrorMessage($"Labels must contain {LabelConstants.PHYSICAL_FILE_ID}, {LabelConstants.DIVISION}, {LabelConstants.COURT_CLASS_CD}.");
+    }
+
+    [Theory]
+    [InlineData(LabelConstants.PHYSICAL_FILE_ID, null)]
+    [InlineData(LabelConstants.PHYSICAL_FILE_ID, "")]
+    [InlineData(LabelConstants.PHYSICAL_FILE_ID, "   ")]
+    [InlineData(LabelConstants.DIVISION, null)]
+    [InlineData(LabelConstants.DIVISION, "")]
+    [InlineData(LabelConstants.DIVISION, "   ")]
+    [InlineData(LabelConstants.COURT_CLASS_CD, null)]
+    [InlineData(LabelConstants.COURT_CLASS_CD, "")]
+    [InlineData(LabelConstants.COURT_CLASS_CD, "   ")]
+    public void Validate_WhenRequiredLabelValueIsNullOrWhitespace_ShouldHaveError(string key, string value)
+    {
+        var dto = GetMockDto();
+        dto.Labels = new Dictionary<string, string>
+        {
+            [LabelConstants.PHYSICAL_FILE_ID] = "1",
+            [LabelConstants.DIVISION] = "R",
+            [LabelConstants.COURT_CLASS_CD] = "R",
+            [key] = value
+        };
+
+        var result = _validator.TestValidate(dto);
+
+        result.ShouldHaveValidationErrorFor(r => r.Labels)
+            .WithErrorMessage("Required label values cannot be null, empty, or whitespace.");
+    }
+
+    [Fact]
+    public void Validate_WhenOptionalLabelValueIsWhitespace_ShouldNotHaveRequiredValueError()
+    {
+        var dto = GetMockDto();
+        dto.Labels = new Dictionary<string, string>
+        {
+            [LabelConstants.PHYSICAL_FILE_ID] = "1",
+            [LabelConstants.DIVISION] = "R",
+            [LabelConstants.COURT_CLASS_CD] = "R",
+            ["optional"] = "   "
+        };
+
+        var result = _validator.TestValidate(dto);
+
+        result.ShouldNotHaveValidationErrorFor(r => r.Labels);
     }
 
     [Fact]

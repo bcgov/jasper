@@ -107,6 +107,32 @@ public class CourtFileServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task ValidateFileExistsAsync_ReturnsAnError_WhenFileClientReturns404ForCivilFile()
+    {
+        _mockFilesClient
+            .Setup(c => c.FilesCivilGetAsync(AgencyId, PartId, AppCode, FileId))
+            .ThrowsAsync(new ApiException("Not Found", 404, null, null, null));
+
+        var result = await _service.ValidateFileExistsAsync("C", FileId);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains($"Civil file with id: {FileId} is not found.", result.Errors);
+    }
+
+    [Fact]
+    public async Task ValidateFileExistsAsync_ReturnsAnError_WhenFileClientReturns404ForCriminalFile()
+    {
+        _mockFilesClient
+            .Setup(c => c.FilesCriminalGetAsync(AgencyId, PartId, AppCode, FileId))
+            .ThrowsAsync(new ApiException("Not Found", 404, null, null, null));
+
+        var result = await _service.ValidateFileExistsAsync("A", FileId);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains($"Criminal file with id: {FileId} is not found.", result.Errors);
+    }
+
+    [Fact]
     public async Task GetCriminalFileAsync_CachesResult()
     {
         _mockFilesClient
@@ -117,5 +143,18 @@ public class CourtFileServiceTests : ServiceTestBase
         await _service.GetCriminalFileAsync(FileId);
 
         _mockFilesClient.Verify(c => c.FilesCriminalGetAsync(AgencyId, PartId, AppCode, FileId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCivilFileAsync_CachesResult()
+    {
+        _mockFilesClient
+            .Setup(c => c.FilesCivilGetAsync(AgencyId, PartId, AppCode, FileId))
+            .ReturnsAsync(new CivilFileDetailResponse { PhysicalFileId = FileId });
+
+        await _service.GetCivilFileAsync(FileId);
+        await _service.GetCivilFileAsync(FileId);
+
+        _mockFilesClient.Verify(c => c.FilesCivilGetAsync(AgencyId, PartId, AppCode, FileId), Times.Once);
     }
 }

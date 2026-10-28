@@ -57,7 +57,15 @@ public class CourtFileService : ServiceBase, ICourtFileService
         }
         else if (IsCriminalCourtClass(courtClass))
         {
-            var criminalFile = await GetCriminalFileAsync(fileId);
+            CriminalFileDetailResponse criminalFile;
+            try
+            {
+                criminalFile = await GetCriminalFileAsync(fileId);
+            }
+            catch (ApiException ex) when (ex.StatusCode == 404)
+            {
+                return OperationResult.Failure($"Criminal file with id: {fileId} is not found.");
+            }
             if (criminalFile == null)
             {
                 errors.Add($"Criminal file with id: {fileId} is not found.");
@@ -65,7 +73,15 @@ public class CourtFileService : ServiceBase, ICourtFileService
         }
         else if (IsCivilCourtClass(courtClass))
         {
-            var civilFile = await GetCivilFileAsync(fileId);
+            CivilFileDetailResponse civilFile;
+            try
+            {
+                civilFile = await GetCivilFileAsync(fileId);
+            }
+            catch (ApiException ex) when (ex.StatusCode == 404)
+            {
+                return OperationResult.Failure($"Civil file with id: {fileId} is not found.");
+            }
             if (civilFile == null || string.IsNullOrWhiteSpace(civilFile.PhysicalFileId))
             {
                 errors.Add($"Civil file with id: {fileId} is not found.");

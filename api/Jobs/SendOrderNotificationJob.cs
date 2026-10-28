@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Services;
 using Scv.Api.SignalR.Notifications;
@@ -20,12 +21,14 @@ public class SendOrderNotificationJob(
     IEmailTemplateService emailTemplateService,
     IUserService userService,
     OrderReceivedAckNotification orderReceivedAck,
-    ILogger<SendOrderNotificationJob> logger)
+    ILogger<SendOrderNotificationJob> logger,
+    IConfiguration configuration)
 {
     private readonly IJudgeService _judgeService = judgeService;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
     private readonly IUserService _userService = userService;
     private readonly OrderReceivedAckNotification _orderReceivedAck = orderReceivedAck;
+    private readonly IConfiguration _configuration = configuration;
     private readonly ILogger<SendOrderNotificationJob> _logger = logger;
 
     public async Task Execute(OrderDto order)
@@ -81,7 +84,8 @@ public class SendOrderNotificationJob(
 
         await _orderReceivedAck.SendAsync(order, databaseUser.Id);
 
-        if (order.OrderRequest?.Referral?.IsPriority != true)
+        var notifyPriorityOrdersOnly = _configuration.GetValue("NotifyPriorityOrdersOnly", false);
+        if (notifyPriorityOrdersOnly && order.OrderRequest?.Referral?.IsPriority != true)
         {
             _logger.LogInformation("Order for file {FileId} is not marked as priority - skipping email notification",
                 order.OrderRequest.PhysicalFileId);

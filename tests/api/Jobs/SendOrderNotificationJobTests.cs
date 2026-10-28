@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bogus;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Jobs;
@@ -22,6 +24,7 @@ public class SendOrderNotificationJobTests
     private readonly Mock<INotificationService> _mockNotificationService;
     private readonly Mock<ILogger<OrderReceivedAckNotification>> _mockOrderReceivedAckLogger;
     private readonly Mock<ILogger<SendOrderNotificationJob>> _mockLogger;
+    private readonly OrderReceivedAckNotification _orderReceivedAck;
     private readonly SendOrderNotificationJob _job;
 
     public SendOrderNotificationJobTests()
@@ -39,16 +42,57 @@ public class SendOrderNotificationJobTests
             It.IsAny<NotificationDto<OrderReceivedNotificationPayload>>()))
             .Returns(Task.CompletedTask);
 
-        var orderReceivedAck = new OrderReceivedAckNotification(
+        _orderReceivedAck = new OrderReceivedAckNotification(
             _mockNotificationService.Object,
             _mockOrderReceivedAckLogger.Object);
 
-        _job = new SendOrderNotificationJob(
+        // NotifyPriorityOrdersOnly is not set, so it defaults to false.
+        _job = CreateJob();
+    }
+
+    private SendOrderNotificationJob CreateJob(bool? notifyPriorityOrdersOnly = null)
+    {
+        var settings = new Dictionary<string, string>();
+        if (notifyPriorityOrdersOnly.HasValue)
+        {
+            settings["NotifyPriorityOrdersOnly"] = notifyPriorityOrdersOnly.Value.ToString();
+        }
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(settings)
+            .Build();
+
+        return new SendOrderNotificationJob(
             _mockJudgeService.Object,
             _mockEmailTemplateService.Object,
             _mockUserService.Object,
-            orderReceivedAck,
-            _mockLogger.Object);
+            _orderReceivedAck,
+            _mockLogger.Object,
+            configuration);
+    }
+
+    private UserDto SetupJudgeAndUser(int judgeId, string email)
+    {
+        var databaseUser = new UserDto
+        {
+            Id = _faker.Random.AlphaNumeric(24),
+            FirstName = "Test",
+            LastName = "Judge",
+            Email = email,
+            JudgeId = judgeId
+        };
+
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
+            .ReturnsAsync(CreateActiveJudge(judgeId));
+        _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
+            .ReturnsAsync(databaseUser);
+        _mockEmailTemplateService.Setup(s => s.SendEmailTemplateAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<object>()))
+            .Returns(Task.CompletedTask);
+
+        return databaseUser;
     }
 
     [Fact]
@@ -101,7 +145,7 @@ public class SendOrderNotificationJobTests
     }
 
     [Fact]
-    public async Task Execute_LogsInformation_AndSkips_WhenOrderIsNotPriority()
+    public async Task Execute_LogsInformation_AndSkips_WhenNotifyPriorityOrdersOnlyAndOrderIsNotPriority()
     {
         var judgeId = _faker.Random.Int(1, 1000);
         var physicalFileId = _faker.Random.Int(1, 9999);
@@ -124,7 +168,9 @@ public class SendOrderNotificationJobTests
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
             .ReturnsAsync(databaseUser);
-        await _job.Execute(orderDto);
+
+        var job = CreateJob(notifyPriorityOrdersOnly: true);
+        await job.Execute(orderDto);
 
         _mockLogger.Verify(
             x => x.Log(
@@ -137,6 +183,82 @@ public class SendOrderNotificationJobTests
 
         _mockJudgeService.Verify(s => s.GetJudge(It.IsAny<int>()), Times.Once);
         _mockUserService.Verify(s => s.GetByJudgeIdAsync(It.IsAny<int>()), Times.Once);
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    public async Task Execute_SendsEmail_ForNonPriorityOrder_WhenNotifyPriorityOrdersOnlyIsOffOrUnset(bool? notifyPriorityOrdersOnly)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto(priorityType: null));
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(notifyPriorityOrdersOnly);
+        await job.Execute(orderDto);
+
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            "Order Received",
+            judgeEmail,
+            It.IsAny<object>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Execute_SendsEmail_ForPriorityOrder_RegardlessOfNotifyPriorityOrdersOnly(bool? notifyPriorityOrdersOnly)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto());
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(notifyPriorityOrdersOnly);
+        await job.Execute(orderDto);
+
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            "Order Received",
+            judgeEmail,
+            It.IsAny<object>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsEmail_WhenNotifyPriorityOrdersOnlyAndReferralIsNull()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.Referral = null;
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+        SetupJudgeAndUser(judgeId, _faker.Internet.Email());
+
+        var job = CreateJob(notifyPriorityOrdersOnly: true);
+        await job.Execute(orderDto);
+
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_StillSendsAcknowledgement_WhenEmailIsSkippedForNonPriorityOrder()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto(priorityType: null));
+        var databaseUser = SetupJudgeAndUser(judgeId, _faker.Internet.Email());
+
+        var job = CreateJob(notifyPriorityOrdersOnly: true);
+        await job.Execute(orderDto);
+
+        _mockNotificationService.Verify(s => s.NotifyUserWithAckAsync(
+            databaseUser.Id,
+            It.IsAny<NotificationDto<OrderReceivedNotificationPayload>>()), Times.Once);
         _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),

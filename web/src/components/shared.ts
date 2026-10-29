@@ -37,6 +37,9 @@ type MergedDocumentEntry = {
 
 type PdfViewerType = 'file' | 'order' | 'criminal-bundle' | 'judicial-binder';
 
+// Time zone constant for BC (permanent UTC-7)
+const BC_TIME_ZONE = 'America/Whitehorse';
+
 export default {
   getDocumentRequestType(documentType: CourtDocumentType): DocumentRequestType {
     if (documentType === CourtDocumentType.ROP) {
@@ -559,7 +562,7 @@ export default {
   ): Window | null {
     const start = new Date();
     const startStr = start.toLocaleString('en-US', {
-      timeZone: 'America/Vancouver',
+      timeZone: BC_TIME_ZONE,
     });
 
     const startMsg = `Request Tracking - Frontend request to API - CorrelationId: ${correlationId} Start time: ${startStr}`;
@@ -570,7 +573,7 @@ export default {
     if (windowObjectReference !== null) {
       const end = new Date();
       const endStr = end.toLocaleString('en-US', {
-        timeZone: 'America/Vancouver',
+        timeZone: BC_TIME_ZONE,
       });
 
       const duration = (end.getTime() - start.getTime()) / 1000;

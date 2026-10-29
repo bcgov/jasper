@@ -2,6 +2,7 @@
 using System.Linq;
 using Hangfire;
 using Scv.Api.Jobs;
+using Scv.Core.Helpers;
 
 namespace Scv.Api.Helpers;
 
@@ -15,7 +16,7 @@ public static class RecurringJobHelper
         {
             var options = new RecurringJobOptions
             {
-                TimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Vancouver")
+                TimeZone = BcTimeZone.Instance
             };
 
             RecurringJob.AddOrUpdate(

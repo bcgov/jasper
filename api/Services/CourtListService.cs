@@ -170,7 +170,7 @@ namespace Scv.Api.Services
         {
             try
             {
-                var today = DateTime.Now.Date;
+                var today = BcTimeZone.Today;
                 var lookAheadWindow = await _pcssConfigService.GetLookAheadWindowAsync(today, agencyId);
                 var isOutsideLookAheadWindow = proceeding.Date > today.AddDays(lookAheadWindow);
                 if (!_user.HasRoles([JasperRole.ADMIN]) && isOutsideLookAheadWindow)
@@ -264,7 +264,7 @@ namespace Scv.Api.Services
 
         private List<Task<CivilFileAppearancesResponse>> CivilAppearancesTasks(DateTime? proceeding, List<string> fileIds)
         {
-            var targetDateInPast = DateTime.Now > proceeding;
+            var targetDateInPast = BcTimeZone.Now > proceeding;
             var lookForPastAppearances = targetDateInPast ? HistoryYN.Y : HistoryYN.N;
             var lookForFutureAppearances = targetDateInPast ? FutureYN.N : FutureYN.Y;
 
@@ -298,7 +298,7 @@ namespace Scv.Api.Services
 
         private List<Task<CriminalFileAppearancesResponse>> CriminalAppearancesTasks(DateTime? proceeding, List<string> fileIds)
         {
-            var targetDateInPast = DateTime.Now > proceeding;
+            var targetDateInPast = BcTimeZone.Now > proceeding;
             var lookForPastAppearances = targetDateInPast ? HistoryYN.Y : HistoryYN.N;
             var lookForFutureAppearances = targetDateInPast ? FutureYN.N : FutureYN.Y;
 

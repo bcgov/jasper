@@ -18,6 +18,7 @@ using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Models.Criminal.AppearanceDetail;
 using Scv.Api.Services.Files;
 using Scv.Core.Exceptions;
+using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Models.Archive;
 using Scv.Models.Civil.AppearanceDetail;
@@ -445,22 +446,12 @@ namespace Scv.Api.Controllers
                     return Forbid();
             }
 
-            String pacificZone;
-            try
-            {
-                pacificZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").Id;
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                pacificZone = TimeZoneInfo.FindSystemTimeZoneById("America/Vancouver").Id;
-            }
-
-            var start = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.Now, pacificZone);
+            var start = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, BcTimeZone.Instance);
             _logger.LogInformation("Request Tracking - API request to Mule - CorrelationId: {CorrelationId} Start time: {Start}", correlationId, start);
 
             var documentResponse = await _filesService.DocumentAsync(documentId, isCriminal, fileId, correlationId);
 
-            var end = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.Now, pacificZone);
+            var end = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, BcTimeZone.Instance);
             var duration = end.Subtract(start).TotalSeconds;
             _logger.LogInformation("Request Tracking - Mule response received - CorrelationId: {CorrelationId} End time: {End} Duration: {Duration}s", correlationId, end, duration);
 

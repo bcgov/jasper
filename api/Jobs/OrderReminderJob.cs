@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -61,7 +62,7 @@ public class OrderReminderJob(
         var maxReassignmentNotifications = int.TryParse(Configuration.GetNonEmptyValue("ORDER_MAX_REASSIGNMENT_NOTIFICATIONS"), out var maxReassignments)
             ? maxReassignments : 1;
 
-        var today = DateTime.UtcNow.Date;
+        var today = BcTimeZone.Now.Date;
         var firstReminderCutoff = today.AddDays(-reminderThresholdDays);
         var secondReminderCutoff = today.AddDays(-(reassignmentThresholdDays - 1));
         var reassignmentCutoff = today.AddDays(-reassignmentThresholdDays);

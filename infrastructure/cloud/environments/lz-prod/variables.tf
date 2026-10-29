@@ -86,23 +86,6 @@ variable "delete_protection_enabled" {
   default     = true
 }
 
-variable "mongo_node_count" {
-  description = "Number of instances in the DocDB cluster"
-  type        = number
-  default     = 1
-}
-
-variable "mongo_instance_type" {
-  description = "Instance type for the DocDB instances"
-  type        = string
-  default     = "db.t3.medium"
-}
-
-variable "mongousername" {
-  description = "Username for the MongoDB admin user"
-  type        = string
-}
-
 variable "alarm_recipients" {
   description = "List of email addresses to receive alarm notifications"
   type        = list(string)

@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MongoDB.EntityFrameworkCore.Extensions;
 using Scv.Db.Contants;
-using Scv.Db.Interceptors;
 using Scv.Db.Models;
 using Scv.Models.UserArtifacts;
 
@@ -24,16 +23,6 @@ namespace Scv.Db.Contexts
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
         public DbSet<CourtLocation> CourtLocations { get; set; }
         public DbSet<UserArtifact> UserArtifacts { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-
-            // For local development
-            this.Database?.AutoTransactionBehavior = AutoTransactionBehavior.Never;
-
-            optionsBuilder.AddInterceptors(new AuditInterceptor());
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -62,7 +51,7 @@ namespace Scv.Db.Contexts
             {
                 ua.HasKey(a => a.Id);
                 ua.HasIndex(a => a.UserId);
-                ua.Property(a => a.ArtifactType).HasConversion<string>();
+                ua.Property(a => a.ArtifactType).HasConversion<string>().HasElementName("ArtifactType");
                 ua.HasDiscriminator(a => a.ArtifactType)
                   .HasValue<Note>(ArtifactType.Note)
                   .HasValue<Annotation>(ArtifactType.Annotation);

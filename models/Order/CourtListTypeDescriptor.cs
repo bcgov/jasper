@@ -22,4 +22,7 @@ public static class CourtListTypeDescriptor
 
     public static bool IsDeskOrder(string courtListType) =>
         Describe(courtListType) == DESK_ORDER_DESCRIPTION;
+
+    public static bool IsOrder(string courtListType) =>
+        Describe(courtListType) == ORDER_DESCRIPTION;
 }

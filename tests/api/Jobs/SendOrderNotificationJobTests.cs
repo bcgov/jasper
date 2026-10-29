@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bogus;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Jobs;
@@ -22,6 +24,7 @@ public class SendOrderNotificationJobTests
     private readonly Mock<INotificationService> _mockNotificationService;
     private readonly Mock<ILogger<OrderReceivedAckNotification>> _mockOrderReceivedAckLogger;
     private readonly Mock<ILogger<SendOrderNotificationJob>> _mockLogger;
+    private readonly OrderReceivedAckNotification _orderReceivedAck;
     private readonly SendOrderNotificationJob _job;
 
     public SendOrderNotificationJobTests()
@@ -39,16 +42,51 @@ public class SendOrderNotificationJobTests
             It.IsAny<NotificationDto<OrderReceivedNotificationPayload>>()))
             .Returns(Task.CompletedTask);
 
-        var orderReceivedAck = new OrderReceivedAckNotification(
+        _orderReceivedAck = new OrderReceivedAckNotification(
             _mockNotificationService.Object,
             _mockOrderReceivedAckLogger.Object);
 
-        _job = new SendOrderNotificationJob(
+        // No notification filters are configured, so every order is emailed.
+        _job = CreateJob();
+    }
+
+    private SendOrderNotificationJob CreateJob(Dictionary<string, string> settings = null)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(settings ?? [])
+            .Build();
+
+        return new SendOrderNotificationJob(
             _mockJudgeService.Object,
             _mockEmailTemplateService.Object,
             _mockUserService.Object,
-            orderReceivedAck,
-            _mockLogger.Object);
+            _orderReceivedAck,
+            _mockLogger.Object,
+            configuration);
+    }
+
+    private UserDto SetupJudgeAndUser(int judgeId, string email)
+    {
+        var databaseUser = new UserDto
+        {
+            Id = _faker.Random.AlphaNumeric(24),
+            FirstName = "Test",
+            LastName = "Judge",
+            Email = email,
+            JudgeId = judgeId
+        };
+
+        _mockJudgeService.Setup(s => s.GetJudge(judgeId))
+            .ReturnsAsync(CreateActiveJudge(judgeId));
+        _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
+            .ReturnsAsync(databaseUser);
+        _mockEmailTemplateService.Setup(s => s.SendEmailTemplateAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<object>()))
+            .Returns(Task.CompletedTask);
+
+        return databaseUser;
     }
 
     [Fact]
@@ -101,7 +139,7 @@ public class SendOrderNotificationJobTests
     }
 
     [Fact]
-    public async Task Execute_LogsInformation_AndSkips_WhenOrderIsNotPriority()
+    public async Task Execute_LogsInformation_AndSkips_WhenOrderDoesNotMatchPriorityFilter()
     {
         var judgeId = _faker.Random.Int(1, 1000);
         var physicalFileId = _faker.Random.Int(1, 9999);
@@ -124,13 +162,15 @@ public class SendOrderNotificationJobTests
 
         _mockUserService.Setup(s => s.GetByJudgeIdAsync(judgeId))
             .ReturnsAsync(databaseUser);
-        await _job.Execute(orderDto);
+
+        var job = CreateJob(PriorityFilter("PRO,CRTD,OTHR"));
+        await job.Execute(orderDto);
 
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains($"Order for file {physicalFileId} is not marked as priority - skipping email notification")),
+                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains($"Order for file {physicalFileId} does not match the NOTIFY_PRIORITY_TYPES notification filter - skipping email notification")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -142,6 +182,212 @@ public class SendOrderNotificationJobTests
             It.IsAny<string>(),
             It.IsAny<object>()), Times.Never);
     }
+
+    private static Dictionary<string, string> PriorityFilter(string value) =>
+        new() { [OrderNotificationFilter.PriorityTypesKey] = value };
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task Execute_SendsEmail_ForNonPriorityOrder_WhenNoPriorityFilterIsConfigured(string value)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto(priorityType: null));
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(value == null ? null : PriorityFilter(value));
+        await job.Execute(orderDto);
+
+        VerifyEmailSent(judgeEmail);
+    }
+
+    [Theory]
+    [InlineData("PRO")]
+    [InlineData("pro, CRTD")]
+    [InlineData("PRO,CRTD,OTHR")]
+    public async Task Execute_SendsEmail_WhenPriorityTypeIsInFilter(string filter)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto(PriorityTypeDescriptor.PROTECTION_ORDER_TYPE));
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(PriorityFilter(filter));
+        await job.Execute(orderDto);
+
+        VerifyEmailSent(judgeEmail);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsEmail_WhenPriorityTypeIsNotInFilter()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto(PriorityTypeDescriptor.OTHER_ORDER_TYPE));
+        SetupJudgeAndUser(judgeId, _faker.Internet.Email());
+
+        var job = CreateJob(PriorityFilter("PRO"));
+        await job.Execute(orderDto);
+
+        VerifyEmailNotSent();
+    }
+
+    [Fact]
+    public async Task Execute_SkipsEmail_WhenPriorityFilterIsSetAndReferralIsNull()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.Referral = null;
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+        SetupJudgeAndUser(judgeId, _faker.Internet.Email());
+
+        var job = CreateJob(PriorityFilter("PRO"));
+        await job.Execute(orderDto);
+
+        VerifyEmailNotSent();
+    }
+
+    [Theory]
+    [InlineData("Order", "PSC", true)]
+    [InlineData("Order", "PFA", true)]
+    [InlineData("Order", "PSM", false)]
+    [InlineData("Order", "PFM", false)]
+    [InlineData("Desk Order", "PSM", true)]
+    [InlineData("Desk Order", "PFM", true)]
+    [InlineData("Desk Order", "PSC", false)]
+    [InlineData("Order,Desk Order", "PSC", true)]
+    [InlineData("Order,Desk Order", "PSM", true)]
+    [InlineData("Order", null, false)]
+    [InlineData("Order", "XYZ", false)]
+    public async Task Execute_AppliesOrderTypeFilter(string filter, string courtListTypeCd, bool expectEmail)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.Referral.CourtListTypeCd = courtListTypeCd;
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(new() { [OrderNotificationFilter.OrderTypesKey] = filter });
+        await job.Execute(orderDto);
+
+        VerifyEmail(expectEmail, judgeEmail);
+    }
+
+    [Theory]
+    [InlineData("F", "F", true)]
+    [InlineData("F", "C", false)]
+    [InlineData("F", "M", false)]
+    [InlineData("C", "C", true)]
+    [InlineData("C", "M", false)]
+    [InlineData("C", "L", false)]
+    [InlineData("F,C", "F", true)]
+    [InlineData("F,C", "C", true)]
+    [InlineData("F,C", "A", false)]
+    [InlineData("F", "INVALID", false)]
+    public async Task Execute_AppliesCourtClassFilter(string filter, string courtClassCd, bool expectEmail)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderRequestDto = CreateValidOrderRequestDto();
+        orderRequestDto.CourtClassCd = courtClassCd;
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(new() { [OrderNotificationFilter.CourtClassesKey] = filter });
+        await job.Execute(orderDto);
+
+        VerifyEmail(expectEmail, judgeEmail);
+    }
+
+    [Theory]
+    [InlineData("PRO", "Order", "F", "PFA", "F", true)]
+    [InlineData("PRO", "Order", "F", "PSM", "F", false)]
+    [InlineData("PRO", "Order", "F", "PFA", "C", false)]
+    [InlineData("CRTD", "Order", "F", "PFA", "F", false)]
+    [InlineData("PRO", "Desk Order", "C", "PSM", "C", true)]
+    public async Task Execute_RequiresAllFiltersToMatch(
+        string priority, string orderType, string courtClass, string courtListTypeCd, string courtClassCd, bool expectEmail)
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var judgeEmail = _faker.Internet.Email();
+        var orderRequestDto = CreateValidOrderRequestDto(PriorityTypeDescriptor.PROTECTION_ORDER_TYPE);
+        orderRequestDto.Referral.CourtListTypeCd = courtListTypeCd;
+        orderRequestDto.CourtClassCd = courtClassCd;
+        var orderDto = CreateOrderDto(judgeId, orderRequestDto);
+        SetupJudgeAndUser(judgeId, judgeEmail);
+
+        var job = CreateJob(new()
+        {
+            [OrderNotificationFilter.PriorityTypesKey] = priority,
+            [OrderNotificationFilter.OrderTypesKey] = orderType,
+            [OrderNotificationFilter.CourtClassesKey] = courtClass
+        });
+        await job.Execute(orderDto);
+
+        VerifyEmail(expectEmail, judgeEmail);
+    }
+
+    [Fact]
+    public async Task Execute_LogsWarning_AndSkips_WhenFilterValueIsUnrecognized()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto());
+        SetupJudgeAndUser(judgeId, _faker.Internet.Email());
+
+        var job = CreateJob(new() { [OrderNotificationFilter.CourtClassesKey] = "Criminal" });
+        await job.Execute(orderDto);
+
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("NOTIFY_COURT_CLASSES=Criminal")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Once);
+        VerifyEmailNotSent();
+    }
+
+    [Fact]
+    public async Task Execute_StillSendsAcknowledgement_WhenEmailIsSkippedByFilter()
+    {
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto(priorityType: null));
+        var databaseUser = SetupJudgeAndUser(judgeId, _faker.Internet.Email());
+
+        var job = CreateJob(PriorityFilter("PRO"));
+        await job.Execute(orderDto);
+
+        _mockNotificationService.Verify(s => s.NotifyUserWithAckAsync(
+            databaseUser.Id,
+            It.IsAny<NotificationDto<OrderReceivedNotificationPayload>>()), Times.Once);
+        VerifyEmailNotSent();
+    }
+
+    private void VerifyEmail(bool expectEmail, string judgeEmail)
+    {
+        if (expectEmail)
+        {
+            VerifyEmailSent(judgeEmail);
+        }
+        else
+        {
+            VerifyEmailNotSent();
+        }
+    }
+
+    private void VerifyEmailSent(string judgeEmail) =>
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            "Order Received",
+            judgeEmail,
+            It.IsAny<object>()), Times.Once);
+
+    private void VerifyEmailNotSent() =>
+        _mockEmailTemplateService.Verify(s => s.SendEmailTemplateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>()), Times.Never);
 
     [Fact]
     public async Task Execute_LogsWarning_WhenJudgeIdIsNull()

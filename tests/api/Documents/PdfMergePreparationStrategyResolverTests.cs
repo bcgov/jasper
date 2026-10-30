@@ -9,7 +9,7 @@ namespace tests.api.Documents;
 public class PdfMergePreparationStrategyResolverTests
 {
     [Fact]
-    public void Resolve_ReturnsNone_ForTransitoryDocuments()
+    public void Resolve_ReturnsFlatten_ForTransitoryDocuments()
     {
         var resolver = CreateResolver();
 
@@ -19,7 +19,7 @@ public class PdfMergePreparationStrategyResolverTests
             Data = new PdfDocumentRequestDetails { Path = "path/to/document.pdf" }
         });
 
-        Assert.Equal(PdfMergePreparationMode.None, mode);
+        Assert.Equal(PdfMergePreparationMode.Flatten, mode);
     }
 
     [Fact]

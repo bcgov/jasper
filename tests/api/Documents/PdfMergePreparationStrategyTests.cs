@@ -20,14 +20,14 @@ public class PdfMergePreparationStrategyTests
     }
 
     [Fact]
-    public void TransitoryStrategy_ReturnsNone_AndOnlyHandlesTransitoryDocuments()
+    public void TransitoryStrategy_ReturnsFlatten_AndOnlyHandlesTransitoryDocuments()
     {
         var strategy = new TransitoryDocumentPdfMergePreparationStrategy();
 
         var transitoryRequest = new PdfDocumentRequest { Type = DocumentType.TransitoryDocument };
         var fileRequest = new PdfDocumentRequest { Type = DocumentType.File };
 
-        Assert.Equal(PdfMergePreparationMode.None, strategy.PreparationMode);
+        Assert.Equal(PdfMergePreparationMode.Flatten, strategy.PreparationMode);
         Assert.True(strategy.CanHandle(transitoryRequest));
         Assert.False(strategy.CanHandle(fileRequest));
     }

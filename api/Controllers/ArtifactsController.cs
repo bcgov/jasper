@@ -118,6 +118,21 @@ public class ArtifactsController(
         return NoContent();
     }
 
+    [HttpPost]
+    [Route("search")]
+    public async Task<IActionResult> Search(SearchArtifactsCriteria criteria)
+    {
+        var result = await _artifactService.SearchAsync(criteria ?? new SearchArtifactsCriteria());
+        if (!result.Succeeded)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
+        }
+
+        return Ok(result.Payload);
+    }
+
+    #region Private Methods
+
     private async Task<FluentValidation.Results.ValidationResult> ValidateBasicAsync(UserArtifactDto dto, string routeId = null)
     {
         var isEdit = routeId != null;
@@ -149,4 +164,6 @@ public class ArtifactsController(
             }
         };
     }
+
+    #endregion
 }

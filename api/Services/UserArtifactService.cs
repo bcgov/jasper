@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using Scv.Core.Infrastructure;
 using Scv.Db.Contants;
 using Scv.Db.Models;
@@ -241,6 +242,30 @@ public class UserArtifactService(
         }
     }
 
+    public async Task<OperationResult<IEnumerable<UserArtifactDto>>> SearchAsync(SearchArtifactsCriteria criteria = null)
+    {
+        criteria ??= new SearchArtifactsCriteria();
+
+        try
+        {
+            var filter = BuildSearchFilter(criteria, this.GetCurrentUserId());
+
+            var entities = await this.Repo.FindAsync(
+                CollectionNameConstants.USER_ARTIFACTS,
+                filter,
+                options: null);
+
+            var dtos = entities.Select(e => this.Mapper.Map<UserArtifact, UserArtifactDto>(e));
+
+            return OperationResult<IEnumerable<UserArtifactDto>>.Success(dtos);
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error searching user artifacts: {Message}", ex.Message);
+            return OperationResult<IEnumerable<UserArtifactDto>>.Failure("Error when searching user artifacts.");
+        }
+    }
+
     #region Private Methods
 
     private string GetCurrentUserId()
@@ -257,6 +282,56 @@ public class UserArtifactService(
     {
         entity.DeletedDate = DateTime.UtcNow;
         entity.DeletedByUserId = userId;
+    }
+
+    private static FilterDefinition<UserArtifact> BuildSearchFilter(SearchArtifactsCriteria criteria, string userId)
+    {
+        var filterBuilder = Builders<UserArtifact>.Filter;
+        var filter = filterBuilder.Eq(a => a.UserId, userId);
+
+        if (!criteria.IncludeDeleted)
+        {
+            filter &= filterBuilder.Eq(a => a.DeletedDate, null);
+        }
+
+        if (criteria.ArtifactType.HasValue)
+        {
+            filter &= filterBuilder.Eq("ArtifactType", criteria.ArtifactType.Value.ToString());
+        }
+
+        if (criteria.LabelMatches?.Count > 0)
+        {
+            filter = criteria.LabelMatches.Aggregate(
+                filter,
+                (current, label) => current & filterBuilder.Eq($"Labels.{label.Key}", label.Value));
+        }
+
+        if (criteria.Tags?.Count > 0)
+        {
+            filter &= filterBuilder.AnyIn("Tags", criteria.Tags);
+        }
+
+        if (criteria.CreatedAfter.HasValue)
+        {
+            filter &= filterBuilder.Gte(a => a.Ent_Dtm, criteria.CreatedAfter.Value);
+        }
+
+        if (criteria.CreatedBefore.HasValue)
+        {
+            filter &= filterBuilder.Lte(a => a.Ent_Dtm, criteria.CreatedBefore.Value);
+        }
+
+        if (criteria.UpdatedAfter.HasValue)
+        {
+            filter &= filterBuilder.Gte(a => a.Upd_Dtm, criteria.UpdatedAfter.Value);
+        }
+
+        if (criteria.UpdatedBefore.HasValue)
+        {
+            filter &= filterBuilder.Lte(a => a.Upd_Dtm, criteria.UpdatedBefore.Value);
+        }
+
+        return filter;
     }
 
     #endregion

@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using JCCommon.Clients.FileServices;
-using Microsoft.Extensions.Configuration;
+using Scv.Api.Infrastructure.Options;
 using Scv.Models.Order;
 
 namespace Scv.Api.Jobs;
@@ -17,52 +16,32 @@ namespace Scv.Api.Jobs;
 /// <item>NOTIFY_COURT_CLASSES: "F" and/or "C".</item>
 /// </list>
 /// </summary>
-public class OrderNotificationFilter(IConfiguration configuration)
+public class OrderNotificationFilter(OrderNotificationOptions options)
 {
-    public const string PriorityTypesKey = "NOTIFY_PRIORITY_TYPES";
-    public const string OrderTypesKey = "NOTIFY_ORDER_TYPES";
-    public const string CourtClassesKey = "NOTIFY_COURT_CLASSES";
-
-    private static readonly string[] ValidOrderTypes = [CourtListTypeDescriptor.ORDER_DESCRIPTION, CourtListTypeDescriptor.DESK_ORDER_DESCRIPTION];
-    private static readonly CourtClassCd[] ValidCourtClasses = [CourtClassCd.F, CourtClassCd.C];
-
-    private readonly IConfiguration _configuration = configuration;
-
-    public IReadOnlyList<string> GetUnrecognizedValues() =>
-    [
-        .. GetValues(OrderTypesKey)
-            .Where(v => !ValidOrderTypes.Contains(v, StringComparer.OrdinalIgnoreCase))
-            .Select(v => $"{OrderTypesKey}={v}"),
-        .. GetValues(CourtClassesKey)
-            .Where(v => !ValidCourtClasses.Contains(Enum.TryParse<CourtClassCd>(v, true, out var c) ? c : default))
-            .Select(v => $"{CourtClassesKey}={v}"),
-        .. GetValues(PriorityTypesKey)
-            .Where(v => !PriorityTypeDescriptor.PRIORITY_ORDERS.Contains(v, StringComparer.OrdinalIgnoreCase))
-            .Select(v => $"{PriorityTypesKey}={v}")
-    ];
+    private readonly OrderNotificationOptions _options = options;
 
     /// <summary>
     /// Returns null when the order matches all filters; otherwise the name of the first filter that rejected it.
     /// </summary>
     public string GetRejectedFilter(OrderRequestDto orderRequest)
     {
-        var priorityTypes = GetValues(PriorityTypesKey);
+        var priorityTypes = _options.GetPriorityTypes();
         if (priorityTypes.Count > 0
             && !priorityTypes.Contains(orderRequest?.Referral?.PriorityType ?? string.Empty, StringComparer.OrdinalIgnoreCase))
         {
-            return PriorityTypesKey;
+            return OrderNotificationOptions.PriorityTypesKey;
         }
 
-        var orderTypes = GetValues(OrderTypesKey);
+        var orderTypes = _options.GetOrderTypes();
         if (orderTypes.Count > 0 && !orderTypes.Contains(ResolveOrderType(orderRequest), StringComparer.OrdinalIgnoreCase))
         {
-            return OrderTypesKey;
+            return OrderNotificationOptions.OrderTypesKey;
         }
 
-        var courtClasses = GetValues(CourtClassesKey);
+        var courtClasses = _options.GetCourtClasses();
         if (courtClasses.Count > 0 && !courtClasses.Contains(ResolveCourtClass(orderRequest), StringComparer.OrdinalIgnoreCase))
         {
-            return CourtClassesKey;
+            return OrderNotificationOptions.CourtClassesKey;
         }
 
         return null;
@@ -98,8 +77,4 @@ public class OrderNotificationFilter(IConfiguration configuration)
             ? CourtClassCd.C.ToString()
             : string.Empty;
     }
-
-    private List<string> GetValues(string key) =>
-        [.. (_configuration.GetValue<string>(key) ?? string.Empty)
-            .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
 }

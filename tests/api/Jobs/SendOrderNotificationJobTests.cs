@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bogus;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Api.Services;
 using Scv.Api.SignalR.Notifications;
@@ -50,19 +49,15 @@ public class SendOrderNotificationJobTests
         _job = CreateJob();
     }
 
-    private SendOrderNotificationJob CreateJob(Dictionary<string, string> settings = null)
+    private SendOrderNotificationJob CreateJob(OrderNotificationOptions options = null)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(settings ?? [])
-            .Build();
-
         return new SendOrderNotificationJob(
             _mockJudgeService.Object,
             _mockEmailTemplateService.Object,
             _mockUserService.Object,
             _orderReceivedAck,
             _mockLogger.Object,
-            configuration);
+            Microsoft.Extensions.Options.Options.Create(options ?? new OrderNotificationOptions()));
     }
 
     private UserDto SetupJudgeAndUser(int judgeId, string email)
@@ -183,8 +178,8 @@ public class SendOrderNotificationJobTests
             It.IsAny<object>()), Times.Never);
     }
 
-    private static Dictionary<string, string> PriorityFilter(string value) =>
-        new() { [OrderNotificationFilter.PriorityTypesKey] = value };
+    private static OrderNotificationOptions PriorityFilter(string value) =>
+        new() { PriorityTypes = value };
 
     [Theory]
     [InlineData(null)]
@@ -268,7 +263,7 @@ public class SendOrderNotificationJobTests
         var orderDto = CreateOrderDto(judgeId, orderRequestDto);
         SetupJudgeAndUser(judgeId, judgeEmail);
 
-        var job = CreateJob(new() { [OrderNotificationFilter.OrderTypesKey] = filter });
+        var job = CreateJob(new() { OrderTypes = filter });
         await job.Execute(orderDto);
 
         VerifyEmail(expectEmail, judgeEmail);
@@ -294,7 +289,7 @@ public class SendOrderNotificationJobTests
         var orderDto = CreateOrderDto(judgeId, orderRequestDto);
         SetupJudgeAndUser(judgeId, judgeEmail);
 
-        var job = CreateJob(new() { [OrderNotificationFilter.CourtClassesKey] = filter });
+        var job = CreateJob(new() { CourtClasses = filter });
         await job.Execute(orderDto);
 
         VerifyEmail(expectEmail, judgeEmail);
@@ -319,9 +314,9 @@ public class SendOrderNotificationJobTests
 
         var job = CreateJob(new()
         {
-            [OrderNotificationFilter.PriorityTypesKey] = priority,
-            [OrderNotificationFilter.OrderTypesKey] = orderType,
-            [OrderNotificationFilter.CourtClassesKey] = courtClass
+            PriorityTypes = priority,
+            OrderTypes = orderType,
+            CourtClasses = courtClass
         });
         await job.Execute(orderDto);
 
@@ -329,23 +324,15 @@ public class SendOrderNotificationJobTests
     }
 
     [Fact]
-    public async Task Execute_LogsWarning_AndSkips_WhenFilterValueIsUnrecognized()
+    public async Task Execute_Skips_WhenFilterValueIsUnrecognized()
     {
         var judgeId = _faker.Random.Int(1, 1000);
         var orderDto = CreateOrderDto(judgeId, CreateValidOrderRequestDto());
         SetupJudgeAndUser(judgeId, _faker.Internet.Email());
 
-        var job = CreateJob(new() { [OrderNotificationFilter.CourtClassesKey] = "Criminal" });
+        var job = CreateJob(new() { CourtClasses = "Criminal" });
         await job.Execute(orderDto);
 
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("NOTIFY_COURT_CLASSES=Criminal")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
         VerifyEmailNotSent();
     }
 

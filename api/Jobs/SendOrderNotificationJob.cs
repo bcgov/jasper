@@ -1,8 +1,9 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
 using Scv.Api.SignalR.Notifications;
 using Scv.Core.Helpers;
@@ -22,13 +23,13 @@ public class SendOrderNotificationJob(
     IUserService userService,
     OrderReceivedAckNotification orderReceivedAck,
     ILogger<SendOrderNotificationJob> logger,
-    IConfiguration configuration)
+    IOptions<OrderNotificationOptions> options)
 {
     private readonly IJudgeService _judgeService = judgeService;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
     private readonly IUserService _userService = userService;
     private readonly OrderReceivedAckNotification _orderReceivedAck = orderReceivedAck;
-    private readonly OrderNotificationFilter _notificationFilter = new(configuration);
+    private readonly OrderNotificationFilter _notificationFilter = new(options.Value);
     private readonly ILogger<SendOrderNotificationJob> _logger = logger;
 
     public async Task Execute(OrderDto order)
@@ -83,13 +84,6 @@ public class SendOrderNotificationJob(
         }
 
         await _orderReceivedAck.SendAsync(order, databaseUser.Id);
-
-        var unrecognizedValues = _notificationFilter.GetUnrecognizedValues();
-        if (unrecognizedValues.Count > 0)
-        {
-            _logger.LogWarning("Unrecognized order notification filter values: {Values}",
-                string.Join(", ", unrecognizedValues));
-        }
 
         var rejectedFilter = _notificationFilter.GetRejectedFilter(order.OrderRequest);
         if (rejectedFilter != null)

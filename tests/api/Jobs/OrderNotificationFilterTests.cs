@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Models.Order;
 using Xunit;
@@ -13,16 +12,12 @@ public class OrderNotificationFilterTests
         string orderTypes = null,
         string courtClasses = null)
     {
-        var settings = new Dictionary<string, string>();
-        if (priorityTypes != null) settings[OrderNotificationFilter.PriorityTypesKey] = priorityTypes;
-        if (orderTypes != null) settings[OrderNotificationFilter.OrderTypesKey] = orderTypes;
-        if (courtClasses != null) settings[OrderNotificationFilter.CourtClassesKey] = courtClasses;
-
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(settings)
-            .Build();
-
-        return new OrderNotificationFilter(configuration);
+        return new OrderNotificationFilter(new OrderNotificationOptions
+        {
+            PriorityTypes = priorityTypes,
+            OrderTypes = orderTypes,
+            CourtClasses = courtClasses
+        });
     }
 
     private static OrderRequestDto CreateOrderRequest(
@@ -90,7 +85,7 @@ public class OrderNotificationFilterTests
         var filter = CreateFilter(priorityTypes: configured);
 
         Assert.Equal(
-            OrderNotificationFilter.PriorityTypesKey,
+            OrderNotificationOptions.PriorityTypesKey,
             filter.GetRejectedFilter(CreateOrderRequest(priorityType: priorityType)));
     }
 
@@ -99,8 +94,8 @@ public class OrderNotificationFilterTests
     {
         var filter = CreateFilter(priorityTypes: "PRO");
 
-        Assert.Equal(OrderNotificationFilter.PriorityTypesKey, filter.GetRejectedFilter(new OrderRequestDto { Referral = null }));
-        Assert.Equal(OrderNotificationFilter.PriorityTypesKey, filter.GetRejectedFilter(null));
+        Assert.Equal(OrderNotificationOptions.PriorityTypesKey, filter.GetRejectedFilter(new OrderRequestDto { Referral = null }));
+        Assert.Equal(OrderNotificationOptions.PriorityTypesKey, filter.GetRejectedFilter(null));
     }
 
     #endregion
@@ -137,7 +132,7 @@ public class OrderNotificationFilterTests
         var filter = CreateFilter(orderTypes: configured);
 
         Assert.Equal(
-            OrderNotificationFilter.OrderTypesKey,
+            OrderNotificationOptions.OrderTypesKey,
             filter.GetRejectedFilter(CreateOrderRequest(courtListTypeCd: courtListTypeCd)));
     }
 
@@ -146,7 +141,7 @@ public class OrderNotificationFilterTests
     {
         var filter = CreateFilter(orderTypes: "Order");
 
-        Assert.Equal(OrderNotificationFilter.OrderTypesKey, filter.GetRejectedFilter(new OrderRequestDto { Referral = null }));
+        Assert.Equal(OrderNotificationOptions.OrderTypesKey, filter.GetRejectedFilter(new OrderRequestDto { Referral = null }));
     }
 
     #endregion
@@ -182,7 +177,7 @@ public class OrderNotificationFilterTests
         var filter = CreateFilter(courtClasses: configured);
 
         Assert.Equal(
-            OrderNotificationFilter.CourtClassesKey,
+            OrderNotificationOptions.CourtClassesKey,
             filter.GetRejectedFilter(CreateOrderRequest(courtClassCd: courtClassCd)));
     }
 
@@ -202,9 +197,9 @@ public class OrderNotificationFilterTests
     }
 
     [Theory]
-    [InlineData("OTHR", "PSC", "F", OrderNotificationFilter.PriorityTypesKey)]
-    [InlineData("PRO", "PSM", "F", OrderNotificationFilter.OrderTypesKey)]
-    [InlineData("PRO", "PSC", "C", OrderNotificationFilter.CourtClassesKey)]
+    [InlineData("OTHR", "PSC", "F", OrderNotificationOptions.PriorityTypesKey)]
+    [InlineData("PRO", "PSM", "F", OrderNotificationOptions.OrderTypesKey)]
+    [InlineData("PRO", "PSC", "C", OrderNotificationOptions.CourtClassesKey)]
     public void GetRejectedFilter_RejectsWhenAnySingleFilterFails(
         string priorityType, string courtListTypeCd, string courtClassCd, string expectedRejection)
     {
@@ -222,12 +217,12 @@ public class OrderNotificationFilterTests
 
         // All three fail: priority is reported first.
         Assert.Equal(
-            OrderNotificationFilter.PriorityTypesKey,
+            OrderNotificationOptions.PriorityTypesKey,
             filter.GetRejectedFilter(CreateOrderRequest("OTHR", "PSM", "C")));
 
         // Priority passes, order type and class fail: order type is reported first.
         Assert.Equal(
-            OrderNotificationFilter.OrderTypesKey,
+            OrderNotificationOptions.OrderTypesKey,
             filter.GetRejectedFilter(CreateOrderRequest("PRO", "PSM", "C")));
     }
 
@@ -237,66 +232,6 @@ public class OrderNotificationFilterTests
         var filter = CreateFilter(courtClasses: "F");
 
         Assert.Null(filter.GetRejectedFilter(CreateOrderRequest(priorityType: null, courtListTypeCd: null, courtClassCd: "F")));
-    }
-
-    #endregion
-
-    #region GetUnrecognizedValues
-
-    [Fact]
-    public void GetUnrecognizedValues_ReturnsEmpty_WhenNothingConfigured()
-    {
-        Assert.Empty(CreateFilter().GetUnrecognizedValues());
-    }
-
-    [Fact]
-    public void GetUnrecognizedValues_ReturnsEmpty_WhenAllValuesAreRecognized()
-    {
-        var filter = CreateFilter("PRO,crtd, OTHR", "Order,desk order", "F,c");
-
-        Assert.Empty(filter.GetUnrecognizedValues());
-    }
-
-    [Fact]
-    public void GetUnrecognizedValues_ReportsPriorityTypeNotInList()
-    {
-        var filter = CreateFilter(priorityTypes: "PRO,URG");
-
-        Assert.Equal([$"{OrderNotificationFilter.PriorityTypesKey}=URG"], filter.GetUnrecognizedValues());
-    }
-
-    [Fact]
-    public void GetUnrecognizedValues_ReportsUnknownOrderType()
-    {
-        var filter = CreateFilter(orderTypes: "Order,DeskOrder");
-
-        Assert.Equal([$"{OrderNotificationFilter.OrderTypesKey}=DeskOrder"], filter.GetUnrecognizedValues());
-    }
-
-    [Theory]
-    [InlineData("Criminal")]
-    [InlineData("A")]
-    [InlineData("M")]
-    [InlineData("L")]
-    public void GetUnrecognizedValues_ReportsCourtClassOtherThanFamilyOrCivil(string value)
-    {
-        var filter = CreateFilter(courtClasses: $"F,{value}");
-
-        Assert.Equal([$"{OrderNotificationFilter.CourtClassesKey}={value}"], filter.GetUnrecognizedValues());
-    }
-
-    [Fact]
-    public void GetUnrecognizedValues_ReportsValuesFromAllFilters()
-    {
-        var filter = CreateFilter("BAD1", "BAD2", "BAD3");
-
-        Assert.Equal(
-            [
-                $"{OrderNotificationFilter.OrderTypesKey}=BAD2",
-                $"{OrderNotificationFilter.CourtClassesKey}=BAD3",
-                $"{OrderNotificationFilter.PriorityTypesKey}=BAD1"
-            ],
-            filter.GetUnrecognizedValues());
     }
 
     #endregion

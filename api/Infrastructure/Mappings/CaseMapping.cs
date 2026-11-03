@@ -30,7 +30,9 @@ public class CaseMapping : IRegister
             .Map(dest => dest.AgeInDays, src => src.CaseAgeDays)
             .Map(dest => dest.PhysicalFileId, src => src.JustinNo ?? src.PhysicalFileId);
         config.NewConfig<CaseDto, Db.Models.Case>()
-             .Ignore(dest => dest.Id);
+             .Ignore(dest => dest.Id)
+             .Ignore(dest => dest.OverrideDueDate)
+             .Ignore(dest => dest.DeletedAt);
     }
 
     void IRegister.Register(TypeAdapterConfig config)

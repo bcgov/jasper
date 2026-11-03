@@ -11,6 +11,7 @@ using MapsterMapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
@@ -40,7 +41,8 @@ public class CaseServiceTests
         var dbContext = new JasperDbContext(new DbContextOptionsBuilder<JasperDbContext>().Options);
 
         _mockRepo = new Mock<IRepositoryBase<Case>>();
-        _caseService = new CaseService(cachingService, mapper, logger.Object, _mockRepo.Object, dbContext);
+        _caseService = new CaseService(cachingService, mapper, logger.Object, _mockRepo.Object, dbContext,
+            new ConfigurationBuilder().Build());
 
         _testJudgeId = _faker.Random.Int();
     }
@@ -391,4 +393,262 @@ public class CaseServiceTests
             RestrictionCode = restrictionCode
         };
     }
+
+    [Fact]
+    public void Reconcile_MatchesIdsUpdatesSourceAndPreservesOverride()
+    {
+        var old = ReconciliationCase("2026-12-01");
+        var source = ReconciliationCase();
+        source.DueDate = "25-Nov-2026";
+        source.StyleOfCause = "Updated source";
+        var result = CaseService.ReconcileCases([old], [source], DateTime.UtcNow, 30);
+        Assert.Empty(result.Added);
+        Assert.Empty(result.Removed);
+        Assert.Equal("2026-12-01", old.OverrideDueDate);
+        Assert.Equal(source.DueDate, old.DueDate);
+        Assert.Equal(source.StyleOfCause, old.StyleOfCause);
+        Assert.NotEqual(source.Id, old.Id);
+    }
+
+    [Fact]
+    public void Reconcile_EmptyImportDeletesUneditedRowsAndRetainsOriginalDeletionTime()
+    {
+        var now = DateTime.UtcNow;
+        var plain = ReconciliationCase();
+        var overridden = ReconciliationCase("2026-12-01");
+        var result = CaseService.ReconcileCases([plain, overridden], [], now, 30);
+        // Eligible duplicate rows share the override before absence is processed.
+        Assert.Empty(result.Removed);
+        Assert.Equal(now, plain.DeletedAt);
+        Assert.Equal(now, overridden.DeletedAt);
+        CaseService.ReconcileCases([plain, overridden], [], now.AddDays(5), 30);
+        Assert.Equal(now, overridden.DeletedAt);
+    }
+
+    [Fact]
+    public void Reconcile_ExpiresOnlyMissingRowsOutsideRetentionAndRestoresReappearances()
+    {
+        var now = DateTime.UtcNow;
+        var expired = ReconciliationCase("2026-12-01");
+        expired.DeletedAt = now.AddDays(-31);
+        var retained = ReconciliationCase("2026-12-01");
+        retained.AppearanceId = "retained";
+        retained.DeletedAt = now.AddDays(-30);
+        var plain = ReconciliationCase();
+        plain.AppearanceId = "plain";
+        var result = CaseService.ReconcileCases([expired, retained, plain], [], now, 30);
+        Assert.Equal([expired, plain], result.Removed);
+        var source = ReconciliationCase();
+        source.AppearanceId = "retained";
+        CaseService.ReconcileCases([retained], [source], now, 30);
+        Assert.Null(retained.DeletedAt);
+        Assert.Equal("2026-12-01", retained.OverrideDueDate);
+    }
+
+    [Fact]
+    public void Reconcile_PreservesEveryDuplicateAndPropagatesOnlyToEligibleRows()
+    {
+        var old = ReconciliationCase("2026-12-01");
+        var unrelated = ReconciliationCase();
+        unrelated.Reason = CaseService.CONTINUATION_APPR_REASON_CD;
+        var sources = new List<Case> { ReconciliationCase(), ReconciliationCase(), ReconciliationCase() };
+        sources[2].Reason = CaseService.CONTINUATION_APPR_REASON_CD;
+        var result = CaseService.ReconcileCases([old, unrelated], sources, DateTime.UtcNow, 30);
+        Assert.Single(result.Added);
+        Assert.Equal("2026-12-01", result.Added[0].OverrideDueDate);
+        Assert.Null(unrelated.OverrideDueDate);
+        Assert.Empty(result.Removed);
+        Assert.Equal(2, Assert.Single(result.Warnings).ImportedCount);
+    }
+
+    [Fact]
+    public void Reconcile_ConflictsPreserveAllValuesWhileUnrelatedRowsUpdate()
+    {
+        var first = ReconciliationCase("2026-12-01");
+        var second = ReconciliationCase("2026-12-02");
+        var third = ReconciliationCase();
+        third.AppearanceId = "unrelated";
+        var source = ReconciliationCase();
+        var otherSource = ReconciliationCase();
+        otherSource.AppearanceId = third.AppearanceId;
+        otherSource.AgeInDays = 123;
+        var result = CaseService.ReconcileCases([first, second, third], [source, otherSource], DateTime.UtcNow, 30);
+        Assert.Equal("2026-12-01", first.OverrideDueDate);
+        Assert.Equal("2026-12-02", second.OverrideDueDate);
+        Assert.Equal(123, third.AgeInDays);
+        Assert.Empty(result.Removed);
+        Assert.Equal(2, Assert.Single(result.Warnings).ConflictingOverrides.Length);
+        Assert.Single(new[] { first, second }, c => c.DeletedAt != null);
+    }
+
+    [Fact]
+    public void Reconcile_MissingKeysNeverAttachAnOverrideToAnUnidentifiedImport()
+    {
+        var old = ReconciliationCase("2026-12-01");
+        old.AppearanceId = null;
+        var source = ReconciliationCase();
+        source.AppearanceId = null;
+        var result = CaseService.ReconcileCases([old], [source], DateTime.UtcNow, 30);
+        Assert.Same(source, Assert.Single(result.Added));
+        Assert.Null(source.OverrideDueDate);
+        Assert.NotNull(old.DeletedAt);
+        Assert.True(Assert.Single(result.Warnings).MissingBusinessKey);
+    }
+
+    [Fact]
+    public async Task GetAssignedCases_ExcludesSoftDeletedRows()
+    {
+        var active = ReconciliationCase();
+        var deleted = ReconciliationCase("2026-12-01");
+        deleted.DeletedAt = DateTime.UtcNow;
+        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Case, bool>>>()))
+            .ReturnsAsync((Expression<Func<Case, bool>> filter) => new[] { active, deleted }.Where(filter.Compile()));
+        var result = await _caseService.GetAssignedCasesAsync(active.JudgeId.Value);
+        Assert.Equal(active.Id, Assert.Single(result.Payload.ReservedJudgments).Id);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("2026-02-30")]
+    [InlineData("2026-11-01T00:00:00Z")]
+    [InlineData("11/01/2026")]
+    public async Task Override_RejectsInvalidDateBeforeAccessingDatabase(string date)
+    {
+        var result = await _caseService.SetDueDateOverrideAsync(MongoDB.Bson.ObjectId.GenerateNewId().ToString(), 1,
+            new Scv.Models.CaseDueDateOverrideRequest { OverrideDueDate = date, UpdatedDate = DateTime.UtcNow });
+        Assert.Equal(400, result.Status);
+    }
+
+    [Theory]
+    [InlineData("CNT", "S")]
+    [InlineData("DEC", "G")]
+    [InlineData("OTH", "S")]
+    public void Reconcile_UnrelatedDuplicatesArePreservedWithoutOverrideWarnings(string reason, string restriction)
+    {
+        var old = ReconciliationCase();
+        old.Reason = reason;
+        old.RestrictionCode = restriction;
+        var sources = new[] { ReconciliationCase(), ReconciliationCase() };
+        foreach (var source in sources)
+        {
+            source.Reason = reason;
+            source.RestrictionCode = restriction;
+        }
+        var result = CaseService.ReconcileCases([old], [.. sources], DateTime.UtcNow, 30);
+        Assert.Empty(result.Warnings);
+        Assert.Single(result.Added);
+        Assert.Empty(result.Removed);
+    }
+
+    [Fact]
+    public void Reconcile_MixedCategoriesDoNotInflateEligibleDuplicateCounts()
+    {
+        var eligible = ReconciliationCase("2026-12-01");
+        var unrelated = ReconciliationCase();
+        unrelated.Reason = "CNT";
+        var eligibleImport = ReconciliationCase();
+        var unrelatedImport = ReconciliationCase();
+        unrelatedImport.Reason = "CNT";
+        var result = CaseService.ReconcileCases([eligible, unrelated], [eligibleImport, unrelatedImport], DateTime.UtcNow, 30);
+        Assert.Empty(result.Warnings);
+        Assert.Empty(result.Added);
+        Assert.Empty(result.Removed);
+        Assert.Equal("2026-12-01", eligible.OverrideDueDate);
+        Assert.Null(unrelated.OverrideDueDate);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Reconcile_PreExistingConflictsRetainIdsAndDatesDespiteImportOrder(bool reversed)
+    {
+        var first = ReconciliationCase("2026-12-01");
+        first.Id = "000000000000000000000001";
+        first.PartId = "party-a";
+        var second = ReconciliationCase("2026-12-02");
+        second.Id = "000000000000000000000002";
+        second.PartId = "party-b";
+        var sourceA = ReconciliationCase();
+        sourceA.PartId = "party-a";
+        var sourceB = ReconciliationCase();
+        sourceB.PartId = "party-b";
+        var result = CaseService.ReconcileCases([first, second],
+            reversed ? [sourceB, sourceA] : [sourceA, sourceB], DateTime.UtcNow, 30);
+        Assert.Empty(result.Added);
+        Assert.Empty(result.Removed);
+        Assert.Equal("2026-12-01", first.OverrideDueDate);
+        Assert.Equal("2026-12-02", second.OverrideDueDate);
+        Assert.Equal(2, Assert.Single(result.Warnings).ConflictingOverrides.Length);
+        // With pre-existing conflicts the shared key cannot identify an individual source row.
+        Assert.Equal(reversed ? "party-b" : "party-a", first.PartId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Reconcile_AbsentDuplicateJudgmentsDoNotGenerateRecurringWarnings(bool alreadyDeleted)
+    {
+        var now = DateTime.UtcNow;
+        var first = ReconciliationCase("2026-12-01");
+        var second = ReconciliationCase("2026-12-01");
+        if (alreadyDeleted) first.DeletedAt = second.DeletedAt = now.AddDays(-1);
+        var expectedDeletedAt = first.DeletedAt ?? now;
+        var result = CaseService.ReconcileCases([first, second], [], now, 30);
+        Assert.Empty(result.Warnings);
+        Assert.Empty(result.Removed);
+        Assert.All(new[] { first, second }, c => Assert.Equal(expectedDeletedAt, c.DeletedAt));
+        var repeated = CaseService.ReconcileCases([first, second], [], now.AddDays(1), 30);
+        Assert.Empty(repeated.Warnings);
+        Assert.Empty(repeated.Removed);
+        Assert.All(new[] { first, second }, c => Assert.Equal("2026-12-01", c.OverrideDueDate));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Reconcile_HistoricalDuplicatesAloneDoNotWarnWhenOneJudgmentReturns(bool hasActiveSibling)
+    {
+        var first = ReconciliationCase("2026-12-01");
+        var second = ReconciliationCase("2026-12-01");
+        first.DeletedAt = hasActiveSibling ? null : DateTime.UtcNow.AddDays(-1);
+        second.DeletedAt = DateTime.UtcNow.AddDays(-1);
+        var ids = new[] { first.Id, second.Id };
+        var result = CaseService.ReconcileCases([first, second], [ReconciliationCase()], DateTime.UtcNow, 30);
+        Assert.Empty(result.Warnings);
+        Assert.Empty(result.Removed);
+        Assert.Empty(result.Added);
+        Assert.Equal(ids, new[] { first.Id, second.Id });
+        Assert.All(new[] { first, second }, c => Assert.Equal("2026-12-01", c.OverrideDueDate));
+    }
+
+    [Fact]
+    public void Reconcile_HistoricalConflictsWarnWhenRelevantJudgmentsReturn()
+    {
+        var first = ReconciliationCase("2026-12-01");
+        var second = ReconciliationCase("2026-12-02");
+        first.DeletedAt = second.DeletedAt = DateTime.UtcNow.AddDays(-1);
+        var absent = CaseService.ReconcileCases([first, second], [], DateTime.UtcNow, 30);
+        Assert.Empty(absent.Warnings);
+        Assert.Empty(absent.Removed);
+        var unrelated = ReconciliationCase();
+        unrelated.Reason = "CNT";
+        Assert.Empty(CaseService.ReconcileCases([first, second], [unrelated], DateTime.UtcNow, 30).Warnings);
+        var returned = CaseService.ReconcileCases([first, second], [ReconciliationCase()], DateTime.UtcNow, 30);
+        var warning = Assert.Single(returned.Warnings);
+        Assert.Equal(0, warning.ExistingCount);
+        Assert.Equal(1, warning.ImportedCount);
+        Assert.Equal(new[] { "2026-12-01", "2026-12-02" }, warning.ConflictingOverrides);
+        Assert.Empty(returned.Removed);
+        Assert.Equal("2026-12-01", first.OverrideDueDate);
+        Assert.Equal("2026-12-02", second.OverrideDueDate);
+    }
+
+    private static Case ReconciliationCase(string date = null) => new()
+    {
+        JudgeId = 1,
+        PhysicalFileId = "file",
+        AppearanceId = "appearance",
+        OverrideDueDate = date,
+        RestrictionCode = CaseService.SEIZED_RESTRICTION_CD
+    };
 }

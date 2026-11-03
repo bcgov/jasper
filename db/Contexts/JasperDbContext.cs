@@ -52,7 +52,13 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
             modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
             modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
-            modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
+            modelBuilder.Entity<Case>(rj =>
+            {
+                rj.HasKey(r => r.Id);
+                rj.Property(r => r.Upd_Dtm).IsConcurrencyToken();
+                rj.Property(r => r.OverrideDueDate).IsConcurrencyToken();
+                rj.Property(r => r.DeletedAt).IsConcurrencyToken();
+            });
             modelBuilder.Entity<Constant>(c => c.HasKey(c => c.Id));
             modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
             modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));

@@ -22,6 +22,13 @@ namespace Scv.Db.Interceptors
             {
                 var entity = (AuditableObject)entry.Entity;
                 var now = DateTime.UtcNow;
+                if (entity is Case)
+                {
+                    // Mongo stores milliseconds; return exactly the persisted revision to the editor.
+                    now = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
+                    var previous = (DateTime)entry.Property(nameof(AuditableObject.Upd_Dtm)).OriginalValue;
+                    if (now <= previous) now = previous.AddMilliseconds(1);
+                }
 
                 // Get currentUserId will be implemented later
 

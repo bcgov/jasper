@@ -91,11 +91,15 @@ export class HttpService implements IHttpService {
     }
 
     // todo: check for a 403 and handle it
-    if (status === 409) {
+    if (status === 409 && !error.config?.suppressConflictLogout) {
       globalThis.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );
-    } else if (status !== 403 && status !== 401) {
+    } else if (
+      !error.config?.suppressErrorNotification &&
+      status !== 403 &&
+      status !== 401
+    ) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',

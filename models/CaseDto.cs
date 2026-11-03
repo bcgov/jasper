@@ -13,6 +13,8 @@ public class CaseDto : BaseDto
     public string StyleOfCause { get; set; }
     public string Reason { get; set; }
     public string DueDate { get; set; }
+    public string OverrideDueDate { get; set; }
+    public string EffectiveDueDate => OverrideDueDate ?? DueDate;
     public string PartId { get; set; }
     public string RestrictionCode { get; set; }
     public DateTime? UpdatedDate { get; set; }

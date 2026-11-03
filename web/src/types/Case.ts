@@ -10,7 +10,10 @@ export type Case = {
   ageInDays: number;
   styleOfCause: string;
   reason: string;
-  dueDate: string;
+  restrictionCode?: string | null;
+  dueDate: string | null;
+  overrideDueDate?: string | null;
+  effectiveDueDate?: string | null;
   partId: string;
   updatedDate?: string;
 };

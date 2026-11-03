@@ -69,6 +69,10 @@
     <ProjectReference Include="..\transitory-documents-client\transitory-documents-client.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Models\Dars\" />
   </ItemGroup>
 </Project>

@@ -18,6 +18,9 @@ public class Case : EntityBase
     public string StyleOfCause { get; set; }
     public string Reason { get; set; }
     public string DueDate { get; set; }
+    // ISO date-only string; never convert a judge's selection through a time zone.
+    public string OverrideDueDate { get; set; }
+    public DateTime? DeletedAt { get; set; }
     public string PartId { get; set; }
     public string RestrictionCode { get; set; }
 }

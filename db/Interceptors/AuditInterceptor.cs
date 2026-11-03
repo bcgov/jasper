@@ -43,14 +43,22 @@ namespace Scv.Db.Interceptors
             foreach (var entry in entries)
             {
                 var entity = entry.Entity;
+                var timestamp = now;
+                if (entity is Case)
+                {
+                    // Mongo stores milliseconds; return exactly the persisted revision to the editor.
+                    timestamp = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
+                    var previous = (DateTime)entry.Property(nameof(AuditableObject.Upd_Dtm)).OriginalValue;
+                    if (timestamp <= previous) timestamp = previous.AddMilliseconds(1);
+                }
 
                 if (entry.State == EntityState.Added)
                 {
-                    entity.Ent_Dtm = now;
+                    entity.Ent_Dtm = timestamp;
                     entity.Ent_UserId = userId;
                 }
 
-                entity.Upd_Dtm = now;
+                entity.Upd_Dtm = timestamp;
                 entity.Upd_UserId = userId;
             }
         }

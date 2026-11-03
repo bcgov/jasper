@@ -23,6 +23,8 @@
           <v-skeleton-loader class="my-1" type="table" :loading="isLoading">
             <CaseDataTable
               :data="reservedJudgements"
+              :can-edit-due-date="canEditDueDate"
+              :save-due-date="saveDueDate"
               :view-case-details="viewCaseDetails"
               :columns="[
                 'fileNumber',
@@ -121,7 +123,7 @@
 
 <script setup lang="ts">
   import { CaseService } from '@/services';
-  import { useCourtFileSearchStore } from '@/stores';
+  import { useCommonStore, useCourtFileSearchStore } from '@/stores';
   import { AssignedCaseResponse, Case } from '@/types';
   import { ApiResponse } from '@/types/ApiResponse';
   import { KeyValueInfo } from '@/types/common';
@@ -154,6 +156,38 @@
     throw new Error('Service(s) is undefined.');
   }
   const courtFileSearchStore = useCourtFileSearchStore();
+  const commonStore = useCommonStore();
+  const canEditDueDate = (item: Case) => {
+    const user = commonStore.loggedInUserInfo ?? commonStore.userInfo;
+    return (
+      !!user &&
+      user.judgeId > 0 &&
+      item.judgeId === user.judgeId &&
+      !!item.physicalFileId?.trim() &&
+      !!item.appearanceId?.trim() &&
+      (!item.reason?.trim() ||
+        (item.reason.toUpperCase() === 'DEC' &&
+          item.restrictionCode?.toUpperCase() === 'S')) &&
+      user.roles.some((role) =>
+        ['Judge', 'ACJ/Chief Judge', 'RAJ'].includes(role)
+      )
+    );
+  };
+
+  const saveDueDate = async (item: Case, date: string | null) => {
+    const response = await caseService.setDueDateOverride(item, date);
+    if (!response.succeeded) throw new Error(response.errors.join(' '));
+    for (const updated of response.payload) {
+      const displayed = reservedJudgements.value.find(
+        (row) => row.id === updated.id
+      );
+      if (displayed) {
+        Object.assign(displayed, updated, {
+          overrideDueDate: updated.overrideDueDate ?? null,
+        });
+      }
+    }
+  };
 
   const fetchAssignedCases = async (judgeId: number | null) => {
     isLoading.value = true;

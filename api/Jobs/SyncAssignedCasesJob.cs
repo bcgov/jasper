@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Hangfire;
@@ -118,18 +119,61 @@ public class SyncAssignedCasesJob(
                 .Concat(assignedOtherCasesResult.Payload)
                 .ToList();
 
-            // Store the new set and delete the old rows in one transactional replace operation.
-            var replaceResult = await _caseService.ReplaceAllAssignedCasesAsync(retrievedCases);
-            if (!replaceResult.Succeeded)
+            // Reconcile source rows and judge overrides atomically.
+            var syncResult = await _caseService.SyncAllAssignedCasesAsync(retrievedCases);
+            if (!syncResult.Succeeded)
             {
-                throw new InvalidOperationException("Failed to replace assigned cases.");
+                throw new InvalidOperationException("Failed to synchronize assigned cases.");
             }
+
+            await NotifySyncWarnings(syncResult.Payload);
 
             this.Logger.LogInformation("SyncAssignedCasesJob completed successfully.");
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException("Error occurred while processing today's cases.", ex);
+        }
+    }
+
+    private async Task NotifySyncWarnings(List<CaseSyncWarning> warnings)
+    {
+        if (warnings == null || warnings.Count == 0) return;
+        foreach (var warning in warnings)
+        {
+            this.Logger.LogWarning(
+                "Assigned case matching warning: JudgeId={JudgeId}, PhysicalFileId={PhysicalFileId}, AppearanceId={AppearanceId}, ExistingCount={ExistingCount}, ImportedCount={ImportedCount}, MissingBusinessKey={MissingBusinessKey}, ConflictingOverrides={ConflictingOverrides}",
+                warning.JudgeId, warning.PhysicalFileId, warning.AppearanceId, warning.ExistingCount,
+                warning.ImportedCount, warning.MissingBusinessKey, string.Join(", ", warning.ConflictingOverrides));
+        }
+
+        try
+        {
+            var recipients = this.Configuration.GetSection("JOBS:FailureEmail:Recipients")
+                .Get<string[]>()?.Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray() ?? [];
+            if (recipients.Length == 0)
+            {
+                this.Logger.LogWarning("Assigned case warning email skipped: no administrator recipients configured.");
+                return;
+            }
+            var rows = warnings.Select(w => $"<tr><td>{w.JudgeId}</td><td>{WebUtility.HtmlEncode(w.PhysicalFileId)}</td>"
+                + $"<td>{WebUtility.HtmlEncode(w.AppearanceId)}</td><td>{w.ExistingCount}</td><td>{w.ImportedCount}</td>"
+                + $"<td>{w.MissingBusinessKey}</td><td>{WebUtility.HtmlEncode(string.Join(", ", w.ConflictingOverrides))}</td></tr>");
+            var body = "<p>Assigned case synchronization committed with matching warnings.</p>";
+            if (warnings.Any(w => !w.MissingBusinessKey && (w.ExistingCount > 1 || w.ImportedCount > 1)))
+                body += "<p>Multiple eligible reserved judgment/decision records share a business key.</p>";
+            if (warnings.Any(w => w.MissingBusinessKey))
+                body += "<p>Some imported records have incomplete business keys and could not be matched to existing cases.</p>";
+            if (warnings.Any(w => w.ConflictingOverrides.Length > 0))
+                body += "<p>Conflicting saved overrides were preserved and require administrator review.</p>";
+            body += "<table><tr><th>Judge</th><th>Physical file</th><th>Appearance</th><th>Existing active rows</th><th>Imported rows</th><th>Missing key</th><th>Conflicting overrides</th></tr>"
+                + string.Join("", rows) + "</table>";
+            await _emailService.SendEmailAsync(this.Configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT"),
+                recipients[0], "JASPER assigned case synchronization warnings", body, ccEmails: recipients.Skip(1));
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Assigned case synchronization committed, but its warning email could not be sent.");
         }
     }
 

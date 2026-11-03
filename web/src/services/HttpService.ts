@@ -84,7 +84,7 @@ export class HttpService implements IHttpService {
     }
 
     // todo: check for a 403 and handle it
-    if (status === 409) {
+    if (status === 409 && !error.config?.suppressConflictLogout) {
       globalThis.location.replace(
         `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
       );

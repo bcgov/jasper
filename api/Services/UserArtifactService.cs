@@ -45,11 +45,6 @@ public class UserArtifactService(
             errors.AddRange([.. courtFileResult.Errors]);
         }
 
-        if (isEdit && dto.UserId != _currentUser.UserId)
-        {
-            errors.Add($"User {dto.UserId} is not allowed to access this user artifact.");
-        }
-
         return errors.Count != 0
             ? OperationResult<UserArtifactDto>.Failure([.. errors])
             : OperationResult<UserArtifactDto>.Success(dto);
@@ -58,7 +53,7 @@ public class UserArtifactService(
     public override async Task<List<UserArtifactDto>> GetAllAsync()
     {
         var currentUserId = this.GetCurrentUserId();
-        var entities = await this.Repo.FindAsync(a => a.UserId == currentUserId && a.DeletedDate == null);
+        var entities = await this.Repo.FindAsync(a => a.Ent_UserId == currentUserId && a.DeletedDate == null);
 
         return [.. entities.Select(e => this.Mapper.Map<UserArtifact, UserArtifactDto>(e))];
     }
@@ -70,7 +65,9 @@ public class UserArtifactService(
     {
         var currentUserId = this.GetCurrentUserId();
         var entity = await this.Repo.GetByIdAsync(id);
-        if (entity == null || entity.UserId != currentUserId || (entity.DeletedDate != null && !includeDeleted))
+        if (entity == null
+            || !IsOwnedBy(entity, currentUserId)
+            || (entity.DeletedDate != null && !includeDeleted))
         {
             return null;
         }
@@ -80,11 +77,8 @@ public class UserArtifactService(
 
     public override async Task<OperationResult<UserArtifactDto>> AddAsync(UserArtifactDto dto)
     {
-        var currentUserId = this.GetCurrentUserId();
-
         try
         {
-            dto.UserId = currentUserId;
             dto.DeletedDate = null;
             dto.DeletedByUserId = null;
 
@@ -116,7 +110,6 @@ public class UserArtifactService(
 
             foreach (var dto in dtos)
             {
-                dto.UserId = currentUserId;
                 dto.DeletedDate = null;
                 dto.DeletedByUserId = null;
             }
@@ -149,7 +142,7 @@ public class UserArtifactService(
                 return OperationResult.Failure("User artifact not found.");
             }
 
-            if (existing.UserId != currentUserId)
+            if (!IsOwnedBy(existing, currentUserId))
             {
                 return OperationResult.Failure("User is not allowed to delete this user artifact.");
             }
@@ -182,7 +175,7 @@ public class UserArtifactService(
                 return OperationResult.Failure("No user artifacts found.");
             }
 
-            if (existing.Any(e => e.UserId != currentUserId))
+            if (existing.Any(e => !IsOwnedBy(e, currentUserId)))
             {
                 return OperationResult.Failure("User is not allowed to delete one or more of these user artifacts.");
             }
@@ -214,7 +207,7 @@ public class UserArtifactService(
                 return OperationResult<UserArtifactDto>.Failure("User artifact not found.");
             }
 
-            if (existing.UserId != currentUserId)
+            if (!IsOwnedBy(existing, currentUserId))
             {
                 return OperationResult<UserArtifactDto>.Failure("User is not allowed to modify this user artifact.");
             }
@@ -232,7 +225,6 @@ public class UserArtifactService(
                 return OperationResult<UserArtifactDto>.Failure("Artifact type cannot be changed.");
             }
 
-            dto.UserId = existing.UserId;
             dto.DeletedDate = existing.DeletedDate;
             dto.DeletedByUserId = existing.DeletedByUserId;
 
@@ -260,6 +252,8 @@ public class UserArtifactService(
             ? throw new InvalidOperationException("No valid user id found.")
             : userId;
     }
+
+    private static bool IsOwnedBy(UserArtifact artifact, string userId) => artifact.Ent_UserId == userId;
 
     private static void MarkAsDeleted(UserArtifact entity, string userId)
     {

@@ -11,8 +11,6 @@ namespace Scv.Db.Models;
 [Collection(CollectionNameConstants.USER_ARTIFACTS)]
 public abstract class UserArtifact : EntityBase
 {
-    public string UserId { get; set; }
-
     [BsonRepresentation(BsonType.String)]
     public ArtifactType ArtifactType { get; set; }
 

@@ -62,7 +62,7 @@ public class UserArtifactServiceTests
     private static Note CreateNote(string id = "note-1", string userId = CurrentUserId, DateTime? deletedDate = null) => new()
     {
         Id = id,
-        UserId = userId,
+        Ent_UserId = userId,
         ArtifactType = ArtifactType.Note,
         Content = "content",
         Tags = ["tag"],
@@ -75,7 +75,7 @@ public class UserArtifactServiceTests
     private static Annotation CreateAnnotation(string id = "ann-1", string userId = CurrentUserId) => new()
     {
         Id = id,
-        UserId = userId,
+        Ent_UserId = userId,
         ArtifactType = ArtifactType.Annotation,
         DocumentId = "doc-1",
         DocumentHash = "hash-1",
@@ -87,9 +87,9 @@ public class UserArtifactServiceTests
     private const string PhysicalFileId = "12345";
     private const string CourtClassCd = "A";
 
-    private static NoteDto CreateNoteDto(string userId = CurrentUserId, string fileId = PhysicalFileId, string courtClassCd = CourtClassCd)
+    private static NoteDto CreateNoteDto(string fileId = PhysicalFileId, string courtClassCd = CourtClassCd)
     {
-        var dto = new NoteDto { Id = "note-1", UserId = userId, Content = "content" };
+        var dto = new NoteDto { Id = "note-1", Content = "content" };
 
         if (fileId != null)
         {
@@ -123,17 +123,6 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_Add_DoesNotCheckOwnership()
-    {
-        var dto = CreateNoteDto(userId: OtherUserId);
-        SetupCourtFileValidation(OperationResult.Success());
-
-        var result = await _service.ValidateAsync(dto, isEdit: false);
-
-        result.Succeeded.Should().BeTrue();
-    }
-
-    [Fact]
     public async Task ValidateAsync_CourtFileValidationFails_ReturnsCourtFileErrors()
     {
         var dto = CreateNoteDto();
@@ -146,9 +135,9 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_Edit_SameUser_ReturnsSuccess()
+    public async Task ValidateAsync_Edit_ValidCourtFile_ReturnsSuccess()
     {
-        var dto = CreateNoteDto(userId: CurrentUserId);
+        var dto = CreateNoteDto();
         SetupCourtFileValidation(OperationResult.Success());
 
         var result = await _service.ValidateAsync(dto, isEdit: true);
@@ -158,36 +147,9 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_Edit_DifferentUser_ReturnsFailure()
+    public async Task ValidateAsync_Edit_InvalidCourtFile_ReturnsCourtFileErrors()
     {
-        var dto = CreateNoteDto(userId: OtherUserId);
-        SetupCourtFileValidation(OperationResult.Success());
-
-        var result = await _service.ValidateAsync(dto, isEdit: true);
-
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().ContainSingle()
-            .Which.Should().Be($"User {OtherUserId} is not allowed to access this user artifact.");
-    }
-
-    [Fact]
-    public async Task ValidateAsync_Edit_DifferentUserAndInvalidCourtFile_ReturnsAllErrors()
-    {
-        var dto = CreateNoteDto(userId: OtherUserId);
-        SetupCourtFileValidation(OperationResult.Failure("Invalid CourtClassCd: A"));
-
-        var result = await _service.ValidateAsync(dto, isEdit: true);
-
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().BeEquivalentTo(
-            "Invalid CourtClassCd: A",
-            $"User {OtherUserId} is not allowed to access this user artifact.");
-    }
-
-    [Fact]
-    public async Task ValidateAsync_Edit_InvalidCourtFile_SameUser_ReturnsOnlyCourtFileErrors()
-    {
-        var dto = CreateNoteDto(userId: CurrentUserId);
+        var dto = CreateNoteDto();
         SetupCourtFileValidation(OperationResult.Failure("Civil file with id: 12345 is not found."));
 
         var result = await _service.ValidateAsync(dto, isEdit: true);
@@ -201,7 +163,6 @@ public class UserArtifactServiceTests
     {
         var dto = new AnnotationDto
         {
-            UserId = CurrentUserId,
             DocumentId = "doc-1",
             DocumentHash = "hash-1",
             Labels = new Dictionary<string, string>
@@ -283,6 +244,10 @@ public class UserArtifactServiceTests
         predicate(CreateNote(userId: CurrentUserId)).Should().BeTrue();
         predicate(CreateNote(userId: OtherUserId)).Should().BeFalse();
         predicate(CreateNote(deletedDate: DateTime.UtcNow)).Should().BeFalse();
+
+        var updatedBySystem = CreateNote();
+        updatedBySystem.Upd_UserId = "system";
+        predicate(updatedBySystem).Should().BeTrue();
     }
 
     [Fact]
@@ -317,6 +282,18 @@ public class UserArtifactServiceTests
         var result = await _service.GetByIdAsync("missing");
 
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_OwnedArtifactLastUpdatedBySomeoneElse_ReturnsArtifact()
+    {
+        var note = CreateNote();
+        note.Upd_UserId = "system";
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(note);
+
+        var result = await _service.GetByIdAsync("note-1");
+
+        result.Should().BeOfType<NoteDto>();
     }
 
     [Fact]
@@ -402,17 +379,6 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task AddAsync_NoAuthenticatedUser_ThrowsInsteadOfReturningFailure()
-    {
-        SetCurrentUser(null);
-
-        var act = () => _service.AddAsync(new NoteDto { Content = "x" });
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        _repo.Verify(r => r.AddAsync(It.IsAny<UserArtifact>()), Times.Never);
-    }
-
-    [Fact]
     public async Task UpdateAsync_NoAuthenticatedUser_ThrowsInsteadOfReturningFailure()
     {
         SetCurrentUser(null);
@@ -438,7 +404,6 @@ public class UserArtifactServiceTests
         {
             Content = "hello",
             Tags = ["a"],
-            UserId = OtherUserId,
             DeletedDate = DateTime.UtcNow,
             DeletedByUserId = OtherUserId
         };
@@ -447,7 +412,6 @@ public class UserArtifactServiceTests
 
         result.Succeeded.Should().BeTrue();
         var note = added.Should().BeOfType<Note>().Subject;
-        note.UserId.Should().Be(CurrentUserId);
         note.DeletedDate.Should().BeNull();
         note.DeletedByUserId.Should().BeNull();
         note.Content.Should().Be("hello");
@@ -455,7 +419,6 @@ public class UserArtifactServiceTests
         note.ArtifactType.Should().Be(ArtifactType.Note);
 
         var payload = result.Payload.Should().BeOfType<NoteDto>().Subject;
-        payload.UserId.Should().Be(CurrentUserId);
         payload.Content.Should().Be("hello");
         payload.IsDeleted.Should().BeFalse();
     }
@@ -532,8 +495,8 @@ public class UserArtifactServiceTests
             .Returns(Task.CompletedTask);
         var dtos = new List<UserArtifactDto>
         {
-            new NoteDto { Content = "a", UserId = OtherUserId, DeletedDate = DateTime.UtcNow, DeletedByUserId = OtherUserId },
-            new AnnotationDto { DocumentId = "d", DocumentHash = "h", UserId = OtherUserId }
+            new NoteDto { Content = "a", DeletedDate = DateTime.UtcNow, DeletedByUserId = OtherUserId },
+            new AnnotationDto { DocumentId = "d", DocumentHash = "h" }
         };
 
         var result = await _service.AddRangeAsync(dtos);
@@ -544,7 +507,6 @@ public class UserArtifactServiceTests
         added[1].Should().BeOfType<Annotation>();
         added.Should().AllSatisfy(a =>
         {
-            a.UserId.Should().Be(CurrentUserId);
             a.DeletedDate.Should().BeNull();
             a.DeletedByUserId.Should().BeNull();
         });
@@ -633,7 +595,7 @@ public class UserArtifactServiceTests
         payload.Content.Should().Be("updated");
         payload.Tags.Should().Equal("x", "y");
         existing.Content.Should().Be("updated");
-        existing.UserId.Should().Be(CurrentUserId);
+        existing.Ent_UserId.Should().Be(CurrentUserId);
         existing.Id.Should().Be("note-1");
         _repo.Verify(r => r.UpdateAsync(existing), Times.Once);
     }
@@ -660,7 +622,7 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_ClientCannotOverrideOwnerOrDeletionFields()
+    public async Task UpdateAsync_ClientCannotOverrideDeletionFields_AndOwnerIsKept()
     {
         var existing = CreateNote();
         _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(existing);
@@ -670,13 +632,12 @@ public class UserArtifactServiceTests
         {
             Id = "note-1",
             Content = "updated",
-            UserId = OtherUserId,
             DeletedDate = DateTime.UtcNow,
             DeletedByUserId = OtherUserId
         });
 
         result.Succeeded.Should().BeTrue();
-        existing.UserId.Should().Be(CurrentUserId);
+        existing.Ent_UserId.Should().Be(CurrentUserId);
         existing.DeletedDate.Should().BeNull();
         existing.DeletedByUserId.Should().BeNull();
     }

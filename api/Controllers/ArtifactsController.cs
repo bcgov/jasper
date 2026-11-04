@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Scv.Api.Infrastructure.Authorization;
@@ -92,7 +93,9 @@ public class ArtifactsController(
         var result = await _artifactService.UpdateAsync(dto);
         if (!result.Succeeded)
         {
-            return BadRequest(new { error = result.Errors });
+            return result.Errors.Any(e => e.Contains("not found"))
+                ? NotFound(new { error = result.Errors })
+                : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
 
         return Ok(result.Payload);

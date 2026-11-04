@@ -50,7 +50,7 @@ namespace Scv.Db.Contexts
             modelBuilder.Entity<UserArtifact>(ua =>
             {
                 ua.HasKey(a => a.Id);
-                ua.HasIndex(a => a.UserId);
+                ua.HasIndex(a => a.Ent_UserId);
                 ua.Property(a => a.ArtifactType).HasConversion<string>().HasElementName("ArtifactType");
                 ua.HasDiscriminator(a => a.ArtifactType)
                   .HasValue<Note>(ArtifactType.Note)

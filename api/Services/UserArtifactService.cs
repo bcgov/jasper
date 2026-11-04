@@ -99,8 +99,6 @@ public class UserArtifactService(
 
     public override async Task<OperationResult<UserArtifactDto>> AddRangeAsync(List<UserArtifactDto> dtos)
     {
-        var currentUserId = this.GetCurrentUserId();
-
         try
         {
             if (dtos == null || dtos.Count == 0)

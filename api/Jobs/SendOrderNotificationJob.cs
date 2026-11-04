@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Scv.Api.Infrastructure.Options;
 using Scv.Api.Services;
 using Scv.Api.SignalR.Notifications;
 using Scv.Core.Helpers;
@@ -20,12 +22,14 @@ public class SendOrderNotificationJob(
     IEmailTemplateService emailTemplateService,
     IUserService userService,
     OrderReceivedAckNotification orderReceivedAck,
-    ILogger<SendOrderNotificationJob> logger)
+    ILogger<SendOrderNotificationJob> logger,
+    IOptions<OrderNotificationOptions> options)
 {
     private readonly IJudgeService _judgeService = judgeService;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
     private readonly IUserService _userService = userService;
     private readonly OrderReceivedAckNotification _orderReceivedAck = orderReceivedAck;
+    private readonly OrderNotificationFilter _notificationFilter = new(options.Value);
     private readonly ILogger<SendOrderNotificationJob> _logger = logger;
 
     public async Task Execute(OrderDto order)
@@ -81,10 +85,11 @@ public class SendOrderNotificationJob(
 
         await _orderReceivedAck.SendAsync(order, databaseUser.Id);
 
-        if (order.OrderRequest?.Referral?.IsPriority != true)
+        var rejectedFilter = _notificationFilter.GetRejectedFilter(order.OrderRequest);
+        if (rejectedFilter != null)
         {
-            _logger.LogInformation("Order for file {FileId} is not marked as priority - skipping email notification",
-                order.OrderRequest.PhysicalFileId);
+            _logger.LogInformation("Order for file {FileId} does not match the {Filter} notification filter - skipping email notification",
+                order.OrderRequest?.PhysicalFileId, rejectedFilter);
             return;
         }
 

@@ -21,5 +21,8 @@ public static class CourtListTypeDescriptor
     }
 
     public static bool IsDeskOrder(string courtListType) =>
-        Describe(courtListType) == DESK_ORDER_DESCRIPTION;
+        courtListType is PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE or PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+
+    public static bool IsOrder(string courtListType) =>
+        courtListType is SMALL_CLAIMS_COURT_LIST_TYPE or FAMILY_COURT_LIST_TYPE;
 }

@@ -71,6 +71,11 @@ namespace Scv.Api
             services.Configure<JobsOrderReminderOptions>(Configuration.GetSection("JOBS:OrderReminder"));
             services.Configure<CleanupSignalRMessagesJobOptions>(Configuration.GetSection("JOBS:CleanupSignalRMessages"));
 
+            services.AddOptions<OrderNotificationOptions>()
+                .Bind(Configuration)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
             services.AddLogging(options =>
             {
                 options.Services.Configure<SimpleConsoleFormatterOptions>(c =>

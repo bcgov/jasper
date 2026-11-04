@@ -13,6 +13,7 @@ using PCSSCommon.Models;
 using Scv.Api.Infrastructure.Options;
 using Scv.Api.Jobs;
 using Scv.Api.Services;
+using Scv.Core.Helpers;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
@@ -199,7 +200,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var participantId = 123.45;
-        var reminderDate = DateTime.UtcNow.AddDays(-6); // Past reminder threshold (5 days)
+        var reminderDate = BcTimeZone.Now.AddDays(-6); // Past reminder threshold (5 days)
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
         var user = CreateTestUser(judgeId, "judge@example.com");
@@ -260,7 +261,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var participantId = 123.45;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId, rajPartId);
@@ -323,7 +324,7 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         var judgeId = 101;
         var participantId = 123.45;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
 
         // Setup config to return null/empty strings to trigger the default behavior in TryParse
@@ -346,7 +347,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = _faker.Random.Int(min: 1, max: 10);
         var participantId = _faker.Random.Double();
-        var entryDate = DateTime.UtcNow.Date.AddDays(-9);
+        var entryDate = BcTimeZone.Now.Date.AddDays(-9);
         var order = CreateTestOrder(judgeId, participantId, entryDate);
         order.ReminderNotificationsSent = 1;
 
@@ -378,7 +379,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = _faker.Random.Int(min: 1, max: 10);
         var participantId = _faker.Random.Double();
-        var entryDate = DateTime.UtcNow.Date.AddDays(-9);
+        var entryDate = BcTimeZone.Now.Date.AddDays(-9);
         var order = CreateTestOrder(judgeId, participantId, entryDate);
         order.ReminderNotificationsSent = 0;
 
@@ -399,7 +400,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = _faker.Random.Int(min: 1, max: 10);
         var participantId = _faker.Random.Double();
-        var entryDate = DateTime.UtcNow.Date.AddDays(-6);
+        var entryDate = BcTimeZone.Now.Date.AddDays(-6);
         var order = CreateTestOrder(judgeId, participantId, entryDate);
         order.ReminderNotificationsSent = 1;
 
@@ -419,7 +420,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = _faker.Random.Int(min: 1, max: 10);
         var participantId = _faker.Random.Double();
-        var entryDate = DateTime.UtcNow.Date.AddDays(-11);
+        var entryDate = BcTimeZone.Now.Date.AddDays(-11);
         var order = CreateTestOrder(judgeId, participantId, entryDate);
         order.ReminderNotificationsSent = 0;
 
@@ -442,7 +443,7 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         SetupConfiguration("5", "10", maxReminders: "2");
 
-        var order = CreateTestOrder(_faker.Random.Int(min: 1, max: 10), _faker.Random.Double(), DateTime.UtcNow.Date.AddDays(-4));
+        var order = CreateTestOrder(_faker.Random.Int(min: 1, max: 10), _faker.Random.Double(), BcTimeZone.Now.Date.AddDays(-4));
         _mockOrderRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Order, bool>>>()))
             .ReturnsAsync([order]);
 
@@ -462,7 +463,7 @@ public class OrderReminderJobTests : ServiceTestBase
     {
         SetupConfiguration("5", "10");
 
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var participantId = 123.45;
         var order = CreateTestOrder(101, participantId, reminderDate);
         order.JudgeId = 0; // No judge assigned
@@ -488,7 +489,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var participantId = 123.45;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
 
         _mockOrderRepo
@@ -515,7 +516,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var participantId = 123.45;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
 
@@ -546,7 +547,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var participantId = 123.45;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
         var user = CreateTestUser(judgeId, null); // No email
@@ -577,7 +578,7 @@ public class OrderReminderJobTests : ServiceTestBase
         SetupConfiguration("5", "10");
 
         var judgeId = 101;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var expectedPriority = "Protection Orders";
         var expectedCaseNumber = "TEST-123";
         var expectedLocation = "Test City";
@@ -649,7 +650,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var participantId = 123.45;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
 
@@ -684,7 +685,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId = 101;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
@@ -739,7 +740,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId = 101;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
@@ -802,7 +803,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId = 101;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
@@ -847,7 +848,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId = 101;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
@@ -891,7 +892,7 @@ public class OrderReminderJobTests : ServiceTestBase
         SetupConfiguration("5", "10", "2", "1");
 
         var judgeId = 101;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
         order.ReminderNotificationsSent = 2; // Already at max
@@ -915,7 +916,7 @@ public class OrderReminderJobTests : ServiceTestBase
         SetupConfiguration("5", "10", "1", "2");
 
         var judgeId = 101;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         order.ReassignmentNotificationsSent = 2; // Already at max
@@ -943,7 +944,7 @@ public class OrderReminderJobTests : ServiceTestBase
         SetupConfiguration("5", "10");
 
         var judgeId = 101;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.45;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
@@ -983,7 +984,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var raj1PartId = 123.45;
         var raj2Id = 202;
         var raj2PartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId = 123.47;
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
@@ -1039,7 +1040,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId = 101;
         var participantId = 123.45;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var order = CreateTestOrder(judgeId, participantId, reminderDate);
         var judge = CreateTestJudge(judgeId);
         judge.Names = null; // No names
@@ -1086,7 +1087,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var participantId = 123.45;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var order = CreateTestOrder(judgeId, participantId, reassignmentDate);
         var judge = CreateTestJudge(judgeId);
         var raj = CreateTestRAJ(rajId, rajPartId);
@@ -1142,7 +1143,7 @@ public class OrderReminderJobTests : ServiceTestBase
 
         var judgeId1 = 101;
         var judgeId2 = 102;
-        var reminderDate = DateTime.UtcNow.AddDays(-6);
+        var reminderDate = BcTimeZone.Now.AddDays(-6);
         var participantId1 = 123.45;
         var participantId2 = 124.45;
         var order1 = CreateTestOrder(judgeId1, participantId1, reminderDate);
@@ -1195,7 +1196,7 @@ public class OrderReminderJobTests : ServiceTestBase
         var judgeId2 = 102;
         var rajId = 201;
         var rajPartId = 123.46;
-        var reassignmentDate = DateTime.UtcNow.AddDays(-11);
+        var reassignmentDate = BcTimeZone.Now.AddDays(-11);
         var participantId1 = 123.45;
         var participantId2 = 124.45;
         var order1 = CreateTestOrder(judgeId1, participantId1, reassignmentDate);

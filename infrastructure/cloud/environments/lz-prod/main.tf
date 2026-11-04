@@ -325,6 +325,18 @@ module "ecs_api_td" {
       {
         name  = "USE_COURT_LOCATIONS"
         value = tostring(var.use_court_locations)
+      },
+      {
+        name  = "NOTIFY_PRIORITY_TYPES"
+        value = var.notify_priority_types
+      },
+      {
+        name  = "NOTIFY_ORDER_TYPES"
+        value = var.notify_order_types
+      },
+      {
+        name  = "NOTIFY_COURT_CLASSES"
+        value = var.notify_court_classes
       }
     ],
     # ClamAV connection settings - only injected when the sidecar is enabled

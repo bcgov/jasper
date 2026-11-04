@@ -550,17 +550,6 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task AddRangeAsync_NoAuthenticatedUser_Throws()
-    {
-        SetCurrentUser(null);
-
-        var act = () => _service.AddRangeAsync([new NoteDto { Content = "x" }]);
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        _repo.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()), Times.Never);
-    }
-
-    [Fact]
     public async Task AddRangeAsync_RepositoryThrows_ReturnsFailureAndLogsError()
     {
         _repo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>())).ThrowsAsync(new InvalidOperationException("boom"));

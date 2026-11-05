@@ -4,10 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
+using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.UserArtifacts;
@@ -19,51 +18,42 @@ public class UserArtifactService(
     IMapper mapper,
     ILogger<UserArtifactService> logger,
     IRepositoryBase<UserArtifact> userArtifactRepo,
-    IHttpContextAccessor httpContextAccessor) : CrudServiceBase<IRepositoryBase<UserArtifact>, UserArtifact, UserArtifactDto>(
+    ICurrentUser currentUser,
+    ICourtFileService courtFileService) : CrudServiceBase<IRepositoryBase<UserArtifact>, UserArtifact, UserArtifactDto>(
         cache,
         mapper,
         logger,
         userArtifactRepo), IUserArtifactService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly ICourtFileService _courtFileService = courtFileService;
 
     public override string CacheName => nameof(UserArtifactService);
 
-    public override Task<OperationResult<UserArtifactDto>> ValidateAsync(UserArtifactDto dto, bool isEdit = false)
+    public async override Task<OperationResult<UserArtifactDto>> ValidateAsync(UserArtifactDto dto, bool isEdit = false)
     {
         var errors = new List<string>();
+        dto.Labels.TryGetValue(LabelConstants.PHYSICAL_FILE_ID, out var fileIdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(fileIdValue);
 
-        switch (dto)
+        dto.Labels.TryGetValue(LabelConstants.COURT_CLASS_CD, out var courtClassCdValue);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(courtClassCdValue);
+
+        var courtFileResult = await _courtFileService.ValidateFileExistsAsync(courtClassCdValue, fileIdValue);
+        if (!courtFileResult.Succeeded)
         {
-            case NoteDto note when string.IsNullOrWhiteSpace(note.Content):
-                errors.Add("Note content is required.");
-                break;
-            case AnnotationDto annotation:
-                if (string.IsNullOrWhiteSpace(annotation.DocumentId))
-                {
-                    errors.Add("Annotation document ID is required.");
-                }
-                if (string.IsNullOrWhiteSpace(annotation.DocumentHash))
-                {
-                    errors.Add("Annotation document hash is required.");
-                }
-                break;
+            errors.AddRange([.. courtFileResult.Errors]);
         }
 
-        if (isEdit && string.IsNullOrWhiteSpace(dto.Id))
-        {
-            errors.Add("Artifact ID is required.");
-        }
-
-        return Task.FromResult(errors.Count != 0
+        return errors.Count != 0
             ? OperationResult<UserArtifactDto>.Failure([.. errors])
-            : OperationResult<UserArtifactDto>.Success(dto));
+            : OperationResult<UserArtifactDto>.Success(dto);
     }
 
     public override async Task<List<UserArtifactDto>> GetAllAsync()
     {
         var currentUserId = this.GetCurrentUserId();
-        var entities = await this.Repo.FindAsync(a => a.UserId == currentUserId && a.DeletedDate == null);
+        var entities = await this.Repo.FindAsync(a => a.Ent_UserId == currentUserId && a.DeletedDate == null);
 
         return [.. entities.Select(e => this.Mapper.Map<UserArtifact, UserArtifactDto>(e))];
     }
@@ -75,7 +65,9 @@ public class UserArtifactService(
     {
         var currentUserId = this.GetCurrentUserId();
         var entity = await this.Repo.GetByIdAsync(id);
-        if (entity == null || entity.UserId != currentUserId || (entity.DeletedDate != null && !includeDeleted))
+        if (entity == null
+            || !IsOwnedBy(entity, currentUserId)
+            || (entity.DeletedDate != null && !includeDeleted))
         {
             return null;
         }
@@ -85,11 +77,8 @@ public class UserArtifactService(
 
     public override async Task<OperationResult<UserArtifactDto>> AddAsync(UserArtifactDto dto)
     {
-        var currentUserId = this.GetCurrentUserId();
-
         try
         {
-            dto.UserId = currentUserId;
             dto.DeletedDate = null;
             dto.DeletedByUserId = null;
 
@@ -110,8 +99,6 @@ public class UserArtifactService(
 
     public override async Task<OperationResult<UserArtifactDto>> AddRangeAsync(List<UserArtifactDto> dtos)
     {
-        var currentUserId = this.GetCurrentUserId();
-
         try
         {
             if (dtos == null || dtos.Count == 0)
@@ -121,7 +108,6 @@ public class UserArtifactService(
 
             foreach (var dto in dtos)
             {
-                dto.UserId = currentUserId;
                 dto.DeletedDate = null;
                 dto.DeletedByUserId = null;
             }
@@ -154,7 +140,7 @@ public class UserArtifactService(
                 return OperationResult.Failure("User artifact not found.");
             }
 
-            if (existing.UserId != currentUserId)
+            if (!IsOwnedBy(existing, currentUserId))
             {
                 return OperationResult.Failure("User is not allowed to delete this user artifact.");
             }
@@ -187,7 +173,7 @@ public class UserArtifactService(
                 return OperationResult.Failure("No user artifacts found.");
             }
 
-            if (existing.Any(e => e.UserId != currentUserId))
+            if (existing.Any(e => !IsOwnedBy(e, currentUserId)))
             {
                 return OperationResult.Failure("User is not allowed to delete one or more of these user artifacts.");
             }
@@ -219,7 +205,7 @@ public class UserArtifactService(
                 return OperationResult<UserArtifactDto>.Failure("User artifact not found.");
             }
 
-            if (existing.UserId != currentUserId)
+            if (!IsOwnedBy(existing, currentUserId))
             {
                 return OperationResult<UserArtifactDto>.Failure("User is not allowed to modify this user artifact.");
             }
@@ -237,7 +223,6 @@ public class UserArtifactService(
                 return OperationResult<UserArtifactDto>.Failure("Artifact type cannot be changed.");
             }
 
-            dto.UserId = existing.UserId;
             dto.DeletedDate = existing.DeletedDate;
             dto.DeletedByUserId = existing.DeletedByUserId;
 
@@ -260,11 +245,13 @@ public class UserArtifactService(
 
     private string GetCurrentUserId()
     {
-        var userId = _httpContextAccessor.HttpContext?.User?.UserId();
+        var userId = _currentUser.UserId;
         return string.IsNullOrWhiteSpace(userId)
             ? throw new InvalidOperationException("No valid user id found.")
             : userId;
     }
+
+    private static bool IsOwnedBy(UserArtifact artifact, string userId) => artifact.Ent_UserId == userId;
 
     private static void MarkAsDeleted(UserArtifact entity, string userId)
     {

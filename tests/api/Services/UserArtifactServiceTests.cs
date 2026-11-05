@@ -2,20 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
-using Scv.Core.Helpers;
+using Scv.Core.Infrastructure;
+using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.UserArtifacts;
@@ -30,7 +29,8 @@ public class UserArtifactServiceTests
 
     private readonly Mock<IRepositoryBase<UserArtifact>> _repo = new();
     private readonly Mock<ILogger<UserArtifactService>> _logger = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessor = new();
+    private readonly Mock<ICurrentUser> _currentUser = new();
+    private readonly Mock<ICourtFileService> _courtFileService = new();
     private readonly CachingService _cache;
     private readonly UserArtifactService _service;
 
@@ -50,23 +50,19 @@ public class UserArtifactServiceTests
             mapper,
             _logger.Object,
             _repo.Object,
-            _httpContextAccessor.Object);
+            _currentUser.Object,
+            _courtFileService.Object);
     }
 
     private void SetCurrentUser(string userId)
     {
-        var claims = userId == null ? [] : new[] { new Claim(CustomClaimTypes.UserId, userId) };
-        var context = new DefaultHttpContext
-        {
-            User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"))
-        };
-        _httpContextAccessor.Setup(a => a.HttpContext).Returns(context);
+        _currentUser.Setup(c => c.UserId).Returns(userId);
     }
 
     private static Note CreateNote(string id = "note-1", string userId = CurrentUserId, DateTime? deletedDate = null) => new()
     {
         Id = id,
-        UserId = userId,
+        Ent_UserId = userId,
         ArtifactType = ArtifactType.Note,
         Content = "content",
         Tags = ["tag"],
@@ -79,7 +75,7 @@ public class UserArtifactServiceTests
     private static Annotation CreateAnnotation(string id = "ann-1", string userId = CurrentUserId) => new()
     {
         Id = id,
-        UserId = userId,
+        Ent_UserId = userId,
         ArtifactType = ArtifactType.Annotation,
         DocumentId = "doc-1",
         DocumentHash = "hash-1",
@@ -88,98 +84,127 @@ public class UserArtifactServiceTests
 
     #region ValidateAsync
 
-    [Fact]
-    public async Task ValidateAsync_ValidNote_ReturnsSuccess()
+    private const string PhysicalFileId = "12345";
+    private const string CourtClassCd = "A";
+
+    private static NoteDto CreateNoteDto(string fileId = PhysicalFileId, string courtClassCd = CourtClassCd)
     {
-        var dto = new NoteDto { Content = "hello" };
+        var dto = new NoteDto { Id = "note-1", Content = "content" };
+
+        if (fileId != null)
+        {
+            dto.Labels[LabelConstants.PHYSICAL_FILE_ID] = fileId;
+        }
+
+        if (courtClassCd != null)
+        {
+            dto.Labels[LabelConstants.COURT_CLASS_CD] = courtClassCd;
+        }
+
+        return dto;
+    }
+
+    private void SetupCourtFileValidation(OperationResult result) =>
+        _courtFileService
+            .Setup(s => s.ValidateFileExistsAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(result);
+
+    [Fact]
+    public async Task ValidateAsync_Add_ValidCourtFile_ReturnsSuccess()
+    {
+        var dto = CreateNoteDto();
+        SetupCourtFileValidation(OperationResult.Success());
 
         var result = await _service.ValidateAsync(dto);
 
         result.Succeeded.Should().BeTrue();
         result.Payload.Should().BeSameAs(dto);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task ValidateAsync_NoteWithoutContent_ReturnsFailure(string content)
-    {
-        var result = await _service.ValidateAsync(new NoteDto { Content = content });
-
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().ContainSingle().Which.Should().Be("Note content is required.");
+        _courtFileService.Verify(s => s.ValidateFileExistsAsync(CourtClassCd, PhysicalFileId), Times.Once);
     }
 
     [Fact]
-    public async Task ValidateAsync_ValidAnnotation_ReturnsSuccess()
+    public async Task ValidateAsync_CourtFileValidationFails_ReturnsCourtFileErrors()
     {
-        var result = await _service.ValidateAsync(new AnnotationDto { DocumentId = "d", DocumentHash = "h" });
+        var dto = CreateNoteDto();
+        SetupCourtFileValidation(OperationResult.Failure("Criminal file with id: 12345 is not found."));
+
+        var result = await _service.ValidateAsync(dto);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Be("Criminal file with id: 12345 is not found.");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_Edit_ValidCourtFile_ReturnsSuccess()
+    {
+        var dto = CreateNoteDto();
+        SetupCourtFileValidation(OperationResult.Success());
+
+        var result = await _service.ValidateAsync(dto, isEdit: true);
 
         result.Succeeded.Should().BeTrue();
+        result.Payload.Should().BeSameAs(dto);
     }
 
     [Fact]
-    public async Task ValidateAsync_AnnotationMissingDocumentIdAndHash_ReturnsBothErrors()
+    public async Task ValidateAsync_Edit_InvalidCourtFile_ReturnsCourtFileErrors()
     {
-        var result = await _service.ValidateAsync(new AnnotationDto());
+        var dto = CreateNoteDto();
+        SetupCourtFileValidation(OperationResult.Failure("Civil file with id: 12345 is not found."));
+
+        var result = await _service.ValidateAsync(dto, isEdit: true);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().BeEquivalentTo(
-            "Annotation document ID is required.",
-            "Annotation document hash is required.");
+        result.Errors.Should().ContainSingle().Which.Should().Be("Civil file with id: 12345 is not found.");
     }
 
     [Fact]
-    public async Task ValidateAsync_AnnotationMissingDocumentId_ReturnsDocumentIdError()
+    public async Task ValidateAsync_Annotation_ValidatesCourtFileFromLabels()
     {
-        var result = await _service.ValidateAsync(new AnnotationDto { DocumentHash = "h" });
+        var dto = new AnnotationDto
+        {
+            DocumentId = "doc-1",
+            DocumentHash = "hash-1",
+            Labels = new Dictionary<string, string>
+            {
+                [LabelConstants.PHYSICAL_FILE_ID] = "999",
+                [LabelConstants.COURT_CLASS_CD] = "C"
+            }
+        };
+        SetupCourtFileValidation(OperationResult.Success());
 
-        result.Errors.Should().ContainSingle().Which.Should().Be("Annotation document ID is required.");
-    }
+        var result = await _service.ValidateAsync(dto);
 
-    [Fact]
-    public async Task ValidateAsync_AnnotationMissingDocumentHash_ReturnsDocumentHashError()
-    {
-        var result = await _service.ValidateAsync(new AnnotationDto { DocumentId = "d" });
-
-        result.Errors.Should().ContainSingle().Which.Should().Be("Annotation document hash is required.");
+        result.Succeeded.Should().BeTrue();
+        _courtFileService.Verify(s => s.ValidateFileExistsAsync("C", "999"), Times.Once);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public async Task ValidateAsync_EditWithoutId_ReturnsFailure(string id)
+    public async Task ValidateAsync_MissingPhysicalFileId_Throws(string fileId)
     {
-        var result = await _service.ValidateAsync(new NoteDto { Id = id, Content = "x" }, isEdit: true);
+        var dto = CreateNoteDto(fileId: fileId);
 
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().ContainSingle().Which.Should().Be("Artifact ID is required.");
+        var act = () => _service.ValidateAsync(dto);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+        _courtFileService.Verify(s => s.ValidateFileExistsAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
-    [Fact]
-    public async Task ValidateAsync_EditWithId_ReturnsSuccess()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task ValidateAsync_MissingCourtClassCd_Throws(string courtClassCd)
     {
-        var result = await _service.ValidateAsync(new NoteDto { Id = "id", Content = "x" }, isEdit: true);
+        var dto = CreateNoteDto(courtClassCd: courtClassCd);
 
-        result.Succeeded.Should().BeTrue();
-    }
+        var act = () => _service.ValidateAsync(dto);
 
-    [Fact]
-    public async Task ValidateAsync_AddWithoutId_ReturnsSuccess()
-    {
-        var result = await _service.ValidateAsync(new NoteDto { Content = "x" }, isEdit: false);
-
-        result.Succeeded.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task ValidateAsync_InvalidEditNote_ReturnsAllErrors()
-    {
-        var result = await _service.ValidateAsync(new NoteDto { Id = null, Content = null }, isEdit: true);
-
-        result.Errors.Should().BeEquivalentTo("Note content is required.", "Artifact ID is required.");
+        await act.Should().ThrowAsync<ArgumentException>();
+        _courtFileService.Verify(s => s.ValidateFileExistsAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     #endregion
@@ -219,6 +244,10 @@ public class UserArtifactServiceTests
         predicate(CreateNote(userId: CurrentUserId)).Should().BeTrue();
         predicate(CreateNote(userId: OtherUserId)).Should().BeFalse();
         predicate(CreateNote(deletedDate: DateTime.UtcNow)).Should().BeFalse();
+
+        var updatedBySystem = CreateNote();
+        updatedBySystem.Upd_UserId = "system";
+        predicate(updatedBySystem).Should().BeTrue();
     }
 
     [Fact]
@@ -253,6 +282,18 @@ public class UserArtifactServiceTests
         var result = await _service.GetByIdAsync("missing");
 
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_OwnedArtifactLastUpdatedBySomeoneElse_ReturnsArtifact()
+    {
+        var note = CreateNote();
+        note.Upd_UserId = "system";
+        _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(note);
+
+        var result = await _service.GetByIdAsync("note-1");
+
+        result.Should().BeOfType<NoteDto>();
     }
 
     [Fact]
@@ -309,7 +350,7 @@ public class UserArtifactServiceTests
     [Fact]
     public async Task GetByIdAsync_NoHttpContext_Throws()
     {
-        _httpContextAccessor.Setup(a => a.HttpContext).Returns((HttpContext)null);
+        _currentUser.Setup(c => c.UserId).Returns((string)null);
 
         var act = () => _service.GetByIdAsync("note-1");
 
@@ -338,17 +379,6 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task AddAsync_NoAuthenticatedUser_ThrowsInsteadOfReturningFailure()
-    {
-        SetCurrentUser(null);
-
-        var act = () => _service.AddAsync(new NoteDto { Content = "x" });
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        _repo.Verify(r => r.AddAsync(It.IsAny<UserArtifact>()), Times.Never);
-    }
-
-    [Fact]
     public async Task UpdateAsync_NoAuthenticatedUser_ThrowsInsteadOfReturningFailure()
     {
         SetCurrentUser(null);
@@ -374,7 +404,6 @@ public class UserArtifactServiceTests
         {
             Content = "hello",
             Tags = ["a"],
-            UserId = OtherUserId,
             DeletedDate = DateTime.UtcNow,
             DeletedByUserId = OtherUserId
         };
@@ -383,7 +412,6 @@ public class UserArtifactServiceTests
 
         result.Succeeded.Should().BeTrue();
         var note = added.Should().BeOfType<Note>().Subject;
-        note.UserId.Should().Be(CurrentUserId);
         note.DeletedDate.Should().BeNull();
         note.DeletedByUserId.Should().BeNull();
         note.Content.Should().Be("hello");
@@ -391,7 +419,6 @@ public class UserArtifactServiceTests
         note.ArtifactType.Should().Be(ArtifactType.Note);
 
         var payload = result.Payload.Should().BeOfType<NoteDto>().Subject;
-        payload.UserId.Should().Be(CurrentUserId);
         payload.Content.Should().Be("hello");
         payload.IsDeleted.Should().BeFalse();
     }
@@ -468,8 +495,8 @@ public class UserArtifactServiceTests
             .Returns(Task.CompletedTask);
         var dtos = new List<UserArtifactDto>
         {
-            new NoteDto { Content = "a", UserId = OtherUserId, DeletedDate = DateTime.UtcNow, DeletedByUserId = OtherUserId },
-            new AnnotationDto { DocumentId = "d", DocumentHash = "h", UserId = OtherUserId }
+            new NoteDto { Content = "a", DeletedDate = DateTime.UtcNow, DeletedByUserId = OtherUserId },
+            new AnnotationDto { DocumentId = "d", DocumentHash = "h" }
         };
 
         var result = await _service.AddRangeAsync(dtos);
@@ -480,7 +507,6 @@ public class UserArtifactServiceTests
         added[1].Should().BeOfType<Annotation>();
         added.Should().AllSatisfy(a =>
         {
-            a.UserId.Should().Be(CurrentUserId);
             a.DeletedDate.Should().BeNull();
             a.DeletedByUserId.Should().BeNull();
         });
@@ -524,17 +550,6 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task AddRangeAsync_NoAuthenticatedUser_Throws()
-    {
-        SetCurrentUser(null);
-
-        var act = () => _service.AddRangeAsync([new NoteDto { Content = "x" }]);
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        _repo.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>()), Times.Never);
-    }
-
-    [Fact]
     public async Task AddRangeAsync_RepositoryThrows_ReturnsFailureAndLogsError()
     {
         _repo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<UserArtifact>>())).ThrowsAsync(new InvalidOperationException("boom"));
@@ -569,7 +584,7 @@ public class UserArtifactServiceTests
         payload.Content.Should().Be("updated");
         payload.Tags.Should().Equal("x", "y");
         existing.Content.Should().Be("updated");
-        existing.UserId.Should().Be(CurrentUserId);
+        existing.Ent_UserId.Should().Be(CurrentUserId);
         existing.Id.Should().Be("note-1");
         _repo.Verify(r => r.UpdateAsync(existing), Times.Once);
     }
@@ -596,7 +611,7 @@ public class UserArtifactServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_ClientCannotOverrideOwnerOrDeletionFields()
+    public async Task UpdateAsync_ClientCannotOverrideDeletionFields_AndOwnerIsKept()
     {
         var existing = CreateNote();
         _repo.Setup(r => r.GetByIdAsync("note-1")).ReturnsAsync(existing);
@@ -606,13 +621,12 @@ public class UserArtifactServiceTests
         {
             Id = "note-1",
             Content = "updated",
-            UserId = OtherUserId,
             DeletedDate = DateTime.UtcNow,
             DeletedByUserId = OtherUserId
         });
 
         result.Succeeded.Should().BeTrue();
-        existing.UserId.Should().Be(CurrentUserId);
+        existing.Ent_UserId.Should().Be(CurrentUserId);
         existing.DeletedDate.Should().BeNull();
         existing.DeletedByUserId.Should().BeNull();
     }

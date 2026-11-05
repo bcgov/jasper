@@ -40,14 +40,13 @@ public class UserArtifactDtoConverterTests
     [InlineData("NOTE")]
     public void ReadJson_Should_Create_NoteDto(string discriminator)
     {
-        var json = $$"""{"artifactType":"{{discriminator}}","content":"hello","userId":"u1","tags":["a","b"]}""";
+        var json = $$"""{"artifactType":"{{discriminator}}","content":"hello","tags":["a","b"]}""";
 
         var result = JsonConvert.DeserializeObject<UserArtifactDto>(json, GetSettings());
 
         var note = result.Should().BeOfType<NoteDto>().Subject;
         note.ArtifactType.Should().Be(ArtifactType.Note);
         note.Content.Should().Be("hello");
-        note.UserId.Should().Be("u1");
         note.Tags.Should().Equal("a", "b");
     }
 
@@ -84,7 +83,6 @@ public class UserArtifactDtoConverterTests
         var json = """
         {
             "artifactType": "Note",
-            "userId": "user",
             "labels": { "k": "v" },
             "createdDate": "2025-01-02T03:04:05Z",
             "deletedByUserId": "deleter"
@@ -93,7 +91,6 @@ public class UserArtifactDtoConverterTests
 
         var result = JsonConvert.DeserializeObject<UserArtifactDto>(json, GetSettings());
 
-        result.UserId.Should().Be("user");
         result.Labels.Should().BeEquivalentTo(new Dictionary<string, string> { ["k"] = "v" });
         result.CreatedDate.Should().Be(new DateTime(2025, 1, 2, 3, 4, 5, DateTimeKind.Utc));
         result.DeletedByUserId.Should().Be("deleter");

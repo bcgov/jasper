@@ -14,12 +14,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Extractors;
 using Scv.Api.Jobs;
 using Scv.Api.SignalR.Notifications;
-using Scv.Core.ContractResolver;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
 using Scv.Db.Models;
@@ -40,12 +38,10 @@ public interface IOrderService : ICrudService<OrderDto>
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
 {
-    private readonly FileServicesClient _filesClient;
+    private readonly ICourtFileService _courtFileService;
     private readonly IJudgeService _judgeService;
     private readonly IBackgroundJobClient _backgroundJobClient;
-    private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
-    private readonly string _requestPartId;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IJudicialServicesClient _judicialClient;
     private readonly IDeskOrderDetailsExtractor _deskOrderDetailsExtractor;
@@ -61,7 +57,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         IMapper mapper,
         ILogger<OrderService> logger,
         IRepositoryBase<Order> orderRepo,
-        FileServicesClient filesClient,
+        ICourtFileService courtFileService,
         IConfiguration configuration,
         IJudgeService judgeService,
         IBackgroundJobClient backgroundJobClient,
@@ -79,13 +75,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             orderRepo)
     {
         _judgeService = judgeService;
-        _filesClient = filesClient;
+        _courtFileService = courtFileService;
         _backgroundJobClient = backgroundJobClient;
-        _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
 
-        _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
         _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
-        _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
         _httpContextAccessor = httpContextAccessor;
         _judicialClient = judicialClient;
         _deskOrderDetailsExtractor = deskOrderDetailsExtractor;
@@ -100,33 +93,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         var errors = new List<string>();
 
         // Validate file existence based on court class
-        var fileId = dto.PhysicalFileId;
-        if (!Enum.TryParse<CourtClassCd>(dto.CourtClassCd, true, out var courtClass))
-        {
-            errors.Add($"Invalid CourtClassCd: {dto.CourtClassCd}");
-            return OperationResult<OrderDto>.Failure([.. errors]);
-        }
-
-        if (IsCriminalCourtClass(courtClass))
-        {
-            var criminalFile = await FetchCriminalFileAsync(fileId);
-            if (criminalFile == null)
-            {
-                errors.Add($"Criminal file with id: {fileId} is not found.");
-            }
-        }
-        else if (IsCivilCourtClass(courtClass))
-        {
-            var civilFile = await FetchCivilFileAsync(fileId);
-            if (civilFile == null || string.IsNullOrWhiteSpace(civilFile.PhysicalFileId))
-            {
-                errors.Add($"Civil file with id: {fileId} is not found.");
-            }
-        }
-        else
-        {
-            errors.Add($"Unsupported CourtClassCd: {courtClass}.");
-        }
+        var fileResult = await _courtFileService.ValidateFileExistsAsync(dto.CourtClassCd, dto.PhysicalFileId.ToString());
+        errors.AddRange(fileResult.Errors);
 
         // Validate judge existence
         var judges = await _judgeService.GetJudges();
@@ -429,29 +397,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
     }
 
-    private static bool IsCriminalCourtClass(CourtClassCd courtClass) =>
-        courtClass is CourtClassCd.A or CourtClassCd.Y or CourtClassCd.T;
-
-    private static bool IsCivilCourtClass(CourtClassCd courtClass) =>
-        courtClass is CourtClassCd.C or CourtClassCd.F or CourtClassCd.L or CourtClassCd.M;
-
-    private Task<CriminalFileDetailResponse> FetchCriminalFileAsync(int? fileId) =>
-        GetDataFromCache(
-            $"{CacheName}-CriminalFile-{_requestAgencyIdentifierId}-{_requestPartId}-{fileId}",
-            () => _filesClient.FilesCriminalGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId.ToString()));
-
-    private Task<CivilFileDetailResponse> FetchCivilFileAsync(int? fileId) =>
-        GetDataFromCache(
-            $"{CacheName}-CivilFile-{_requestAgencyIdentifierId}-{_requestPartId}-{fileId}",
-            () => _filesClient.FilesCivilGetAsync(_requestAgencyIdentifierId, _requestPartId, _applicationCode, fileId.ToString()));
-
     private async Task<OperationResult<OrderDto>> PopulateOrder(OrderRequestDto dto, OrderDto orderDto)
     {
         var styleOfCause = string.Empty;
         Enum.TryParse<CourtClassCd>(dto.CourtClassCd, true, out var courtClass);
-        if (IsCriminalCourtClass(courtClass))
+        if (CourtFileService.IsCriminalCourtClass(courtClass))
         {
-            var criminalFile = await FetchCriminalFileAsync(dto.PhysicalFileId);
+            var criminalFile = await _courtFileService.GetCriminalFileAsync(dto.PhysicalFileId.ToString());
             if (criminalFile != null && criminalFile.Participant != null && criminalFile.Participant.Count > 0)
             {
                 var participant = criminalFile.Participant.First();
@@ -460,9 +412,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                     : participant.OrgNm;
             }
         }
-        else if (IsCivilCourtClass(courtClass))
+        else if (CourtFileService.IsCivilCourtClass(courtClass))
         {
-            var civilFile = await FetchCivilFileAsync(dto.PhysicalFileId);
+            var civilFile = await _courtFileService.GetCivilFileAsync(dto.PhysicalFileId.ToString());
             if (civilFile != null && !string.IsNullOrWhiteSpace(civilFile.PhysicalFileId))
             {
                 styleOfCause = civilFile.SocTxt;

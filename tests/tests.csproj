@@ -22,7 +22,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.10" />
-    <PackageReference Include="OpenMcdf" Version="3.2.0" />
+    <PackageReference Include="OpenMcdf" Version="3.4.0" />
     <PackageReference Include="OfficeIMO.Reader.Pdf" Version="3.4.4" />
   </ItemGroup>
   <ItemGroup>

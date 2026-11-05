@@ -26,9 +26,7 @@
     <None Remove="Models\Calendar\**" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource
-      Include="Documents\Conversion\Resources\LibreOfficeSecurityProfile.xcu"
-      LogicalName="Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu" />
+    <EmbeddedResource Include="Documents\Conversion\Resources\LibreOfficeSecurityProfile.xcu" LogicalName="Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.108.1" />
@@ -64,7 +62,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.6" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
-    <PackageReference Include="OpenMcdf" Version="3.3.0" />
+    <PackageReference Include="OpenMcdf" Version="3.4.0" />
     <PackageReference Include="OfficeIMO.Excel.Pdf" Version="3.4.4" />
     <PackageReference Include="OfficeIMO.OpenDocument.Odt.Pdf" Version="3.4.4" />
     <PackageReference Include="OfficeIMO.PowerPoint.Pdf" Version="3.4.4" />

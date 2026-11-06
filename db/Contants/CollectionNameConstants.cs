@@ -5,6 +5,7 @@
 /// </summary>
 public static class CollectionNameConstants
 {
+    public const string APP_DOCUMENTS = "app_documents";
     public const string BINDERS = "binders";
     public const string CASES = "cases";
     public const string CONSTANTS = "constants";

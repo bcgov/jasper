@@ -463,6 +463,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<IPcssSyncService, PcssSyncService>();
             services.AddScoped<IPcssConfigService, PcssConfigService>();
             services.AddScoped<IAntiVirusService, ClamAvAntiVirusService>();
+            services.AddScoped<IFileUploadProcessor, FileUploadProcessor>();
             services.AddScoped<IExcelParser, ExcelParser>();
 
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
@@ -473,6 +474,7 @@ namespace Scv.Api.Infrastructure
                 services.AddScoped<ICrudService<GroupDto>, GroupService>();
                 services.AddScoped<ICaseService, CaseService>();
                 services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IAppDocumentService, AppDocumentService>();
                 services.AddScoped<IConfigurationService, ConfigurationService>();
                 services.AddScoped<IDarsService, DarsService>();
                 services.AddScoped<IBinderFactory, BinderFactory>();

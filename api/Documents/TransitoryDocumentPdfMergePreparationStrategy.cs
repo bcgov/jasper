@@ -4,7 +4,7 @@ namespace Scv.Api.Documents;
 
 public class TransitoryDocumentPdfMergePreparationStrategy : IPdfMergePreparationStrategy
 {
-    public PdfMergePreparationMode PreparationMode => PdfMergePreparationMode.None;
+    public PdfMergePreparationMode PreparationMode => PdfMergePreparationMode.Flatten;
 
     public bool CanHandle(PdfDocumentRequest documentRequest)
     {

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
 using System.Threading;
@@ -12,6 +12,7 @@ using MongoDB.Bson;
 using Moq;
 using Scv.Api.Controllers;
 using Scv.Api.Models;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Api.Validators;
 using Scv.Core.Helpers;
@@ -50,7 +51,7 @@ public class UsersControllerTests
             _releaseNotesViewedRequestValidator,
             _mockFileUploadRequestValidator.Object,
             _mockLogger.Object,
-            _mockAntiVirusService.Object
+            new FileUploadProcessor(_mockAntiVirusService.Object, Mock.Of<ILogger<FileUploadProcessor>>())
         );
 
         var identity = new ClaimsIdentity(claims, "TestAuthType");

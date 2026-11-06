@@ -4,58 +4,58 @@ using Scv.Db.Contants;
 using Scv.Db.Models;
 using Scv.Models.UserArtifacts;
 
-namespace Scv.Db.Contexts
-{
-    public class JasperDbContext(DbContextOptions<JasperDbContext> options) : DbContext(options)
-    {
-        public DbSet<Permission> Permissions { get; init; }
-        public DbSet<Role> Roles { get; init; }
-        public DbSet<RoleAlias> RoleAliases { get; init; }
-        public DbSet<Group> Groups { get; init; }
-        public DbSet<GroupAlias> GroupAliases { get; init; }
-        public DbSet<User> Users { get; init; }
-        public DbSet<Binder> Binders { get; set; }
-        public DbSet<DocumentCategory> DocumentCategories { get; set; }
-        public DbSet<Case> Cases { get; set; }
-        public DbSet<Constant> Constants { get; set; }
-        public DbSet<QuickLink> QuickLinks { get; set; }
-        public DbSet<Order> Orders { get; set; }
-        public DbSet<EmailTemplate> EmailTemplates { get; set; }
-        public DbSet<CourtLocation> CourtLocations { get; set; }
-        public DbSet<UserArtifact> UserArtifacts { get; set; }
+namespace Scv.Db.Contexts;
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+public class JasperDbContext(DbContextOptions<JasperDbContext> options) : DbContext(options)
+{
+    public DbSet<Permission> Permissions { get; init; }
+    public DbSet<Role> Roles { get; init; }
+    public DbSet<RoleAlias> RoleAliases { get; init; }
+    public DbSet<Group> Groups { get; init; }
+    public DbSet<GroupAlias> GroupAliases { get; init; }
+    public DbSet<User> Users { get; init; }
+    public DbSet<Binder> Binders { get; set; }
+    public DbSet<DocumentCategory> DocumentCategories { get; set; }
+    public DbSet<Case> Cases { get; set; }
+    public DbSet<Constant> Constants { get; set; }
+    public DbSet<QuickLink> QuickLinks { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<EmailTemplate> EmailTemplates { get; set; }
+    public DbSet<CourtLocation> CourtLocations { get; set; }
+    public DbSet<UserArtifact> UserArtifacts { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<Permission>();
+        modelBuilder.Entity<Role>();
+        modelBuilder.Entity<RoleAlias>();
+        modelBuilder.Entity<Group>();
+        modelBuilder.Entity<GroupAlias>();
+        modelBuilder.Entity<User>(u =>
         {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<Permission>();
-            modelBuilder.Entity<Role>();
-            modelBuilder.Entity<RoleAlias>();
-            modelBuilder.Entity<Group>();
-            modelBuilder.Entity<GroupAlias>();
-            modelBuilder.Entity<User>(u =>
-            {
-                u.HasKey(u => u.Id);
-                u.HasIndex(u => u.Email).IsUnique();
-                u.ToCollection(CollectionNameConstants.USERS);
-            });
-            modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
-            modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
-            modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
-            modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
-            modelBuilder.Entity<Constant>(c => c.HasKey(c => c.Id));
-            modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
-            modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));
-            modelBuilder.Entity<EmailTemplate>(o => o.HasKey(o => o.Id));
-            modelBuilder.Entity<CourtLocation>(cl => cl.HasKey(cl => cl.Id));
-            modelBuilder.Entity<UserArtifact>(ua =>
-            {
-                ua.HasKey(a => a.Id);
-                ua.HasIndex(a => a.Ent_UserId);
-                ua.Property(a => a.ArtifactType).HasConversion<string>().HasElementName("ArtifactType");
-                ua.HasDiscriminator(a => a.ArtifactType)
-                  .HasValue<Note>(ArtifactType.Note)
-                  .HasValue<Annotation>(ArtifactType.Annotation);
-            });
-        }
+            u.HasKey(u => u.Id);
+            u.HasIndex(u => u.Email).IsUnique();
+            u.ToCollection(CollectionNameConstants.USERS);
+        });
+        modelBuilder.Entity<Tag>(t => t.HasKey(jb => jb.Id));
+        modelBuilder.Entity<Binder>(jb => jb.HasKey(jb => jb.Id));
+        modelBuilder.Entity<DocumentCategory>(dc => dc.HasKey(c => c.Id));
+        modelBuilder.Entity<Case>(rj => rj.HasKey(r => r.Id));
+        modelBuilder.Entity<Constant>(c => c.HasKey(c => c.Id));
+        modelBuilder.Entity<QuickLink>(ql => ql.HasKey(q => q.Id));
+        modelBuilder.Entity<Order>(o => o.HasKey(o => o.Id));
+        modelBuilder.Entity<EmailTemplate>(o => o.HasKey(o => o.Id));
+        modelBuilder.Entity<CourtLocation>(cl => cl.HasKey(cl => cl.Id));
+        modelBuilder.Entity<UserArtifact>(ua =>
+        {
+            ua.HasKey(a => a.Id);
+            ua.HasIndex(a => a.Ent_UserId);
+            ua.Property(a => a.ArtifactType).HasConversion<string>().HasElementName("ArtifactType");
+            ua.HasDiscriminator(a => a.ArtifactType)
+              .HasValue<Note>(ArtifactType.Note)
+              .HasValue<Annotation>(ArtifactType.Annotation);
+        });
+        modelBuilder.Entity<AppDocument>(ad => ad.HasKey(ad => ad.Id));
     }
 }

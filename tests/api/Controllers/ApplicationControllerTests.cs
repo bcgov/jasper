@@ -1,9 +1,12 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Bogus;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Scv.Api.Controllers;
+using Scv.Api.Models;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Core.Exceptions;
 using Xunit;
@@ -30,7 +33,12 @@ public class ApplicationControllerTests
             .Setup(x => x.GetConfigurationAsync())
             .ReturnsAsync([]);
 
-        return new ApplicationController(configuration, configurationService.Object);
+        return new ApplicationController(
+            configuration,
+            configurationService.Object,
+            Mock.Of<IValidator<AppDocumentUploadRequest>>(),
+            Mock.Of<IFileUploadProcessor>(),
+            Mock.Of<IAppDocumentService>());
     }
 
     #region Unit Tests

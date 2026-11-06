@@ -21,6 +21,7 @@ public class EmailTemplate : EntityBase
             Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) Received{{ else }}Order Received{{ end }} for {{ location_shortname }} {{ case_file_number }}",
             Body = @"Dear Judge <b>{{ last_name }}</b>,<br /><br />
                      You have received an order for {{ location_name }} {{ case_file_number }} on {{ date_received }}. <br /><br />
+                     Please open JASPER to view the order. <br /><br />
                      Regards,<br />
                      JASPER Support Team<br /><br />
                      <i>Please note: This is an automated message. Please do not reply directly to this email.</i>"
@@ -42,6 +43,7 @@ public class EmailTemplate : EntityBase
             Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is still waiting to be processed.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete {{ location_name }} {{ case_file_number }} as soon as possible.<br /><br />
+                     Please open JASPER to view the order. <br /><br />
                      Regards,<br />
                      JASPER Support Team<br /><br />
                      <i>Please note: This is an automated message. Please do not reply directly to this email.</i>"
@@ -52,6 +54,7 @@ public class EmailTemplate : EntityBase
             Subject = @"{{ if is_priority }}Priority Order ({{ priority_type_desc }}) {{ else }}Order{{ end }} {{ location_name }} {{ case_file_number }} is overdue and has been assigned to you.",
             Body = @"Dear Judge {{ judge_name }},<br /><br />
                      The following order was received on {{ date_received }} and has not yet been completed. Please review and complete {{ location_name }} {{ case_file_number }} as soon as possible.<br /><br />
+                     Please open JASPER to view the order. <br /><br />
                      Regards,<br />
                      JASPER Support Team<br /><br />
                      <i>Please note: This is an automated message. Please do not reply directly to this email.</i>",

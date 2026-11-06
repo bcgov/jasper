@@ -1,41 +1,83 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
+using Scv.Api.Processors;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
+using Scv.Core.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AppDocument;
 
 namespace Scv.Api.Services;
 
-public interface IAppDocumentService : ICrudService<AppDocumentDto>
+public interface IAppDocumentService
 {
-    Task<OperationResult<AppDocumentDto>> GetAppDocumentByKeyAsync(string key);
+    Task<AppDocumentDto> GetAppDocumentByKeyAsync(string key);
+    Task<OperationResult<AppDocumentDto>> UpsertAsync(string key, UploadedFile file);
 }
 
 public class AppDocumentService(
     IAppCache cache,
     IMapper mapper,
     ILogger<AppDocumentService> logger,
-    IRepositoryBase<AppDocument> repository) : CrudServiceBase<IRepositoryBase<AppDocument>, AppDocument, AppDocumentDto>(cache, mapper, logger, repository), IAppDocumentService
+    IRepositoryBase<AppDocument> repository) : ServiceBase(cache), IAppDocumentService
 {
+    private readonly IMapper _mapper = mapper;
+    private readonly ILogger<AppDocumentService> _logger = logger;
+    private readonly IRepositoryBase<AppDocument> _repo = repository;
+
     public override string CacheName => nameof(AppDocumentService);
 
-    public override Task<OperationResult<AppDocumentDto>> ValidateAsync(AppDocumentDto dto, bool isEdit = false)
-        => Task.FromResult(OperationResult<AppDocumentDto>.Success(dto));
-
-    public async Task<OperationResult<AppDocumentDto>> GetAppDocumentByKeyAsync(string key)
-    {
-        var appDocument = (await this.Repo.FindAsync(x => x.Key == key))?.FirstOrDefault();
-        if (appDocument is null)
+    public async Task<AppDocumentDto> GetAppDocumentByKeyAsync(string key)
+        => await GetDataFromCache(GetCacheKey(key), async () =>
         {
-            this.Logger.LogWarning("App document with key: {Key} is not found", key.SanitizeForLog());
-            return OperationResult<AppDocumentDto>.Failure($"App document with key '{key}' not found.");
+            var appDocument = await FindByKeyAsync(key);
+            if (appDocument is null)
+            {
+                _logger.LogWarning("App document with key: {Key} is not found", key.SanitizeForLog());
+                return null;
+            }
+
+            return _mapper.Map<AppDocumentDto>(appDocument);
+        });
+
+    public async Task<OperationResult<AppDocumentDto>> UpsertAsync(string key, UploadedFile file)
+    {
+        try
+        {
+            var existing = await FindByKeyAsync(key);
+            if (existing == null)
+            {
+                existing = _mapper.Map<AppDocument>(file);
+                existing.Key = key;
+                await _repo.AddAsync(existing);
+            }
+            else
+            {
+                _mapper.Map(file, existing);
+                await _repo.UpdateAsync(existing);
+            }
+
+            InvalidateCache(GetCacheKey(key));
+
+            var dto = _mapper.Map<AppDocumentDto>(existing);
+            dto.Data = null; // Do not return the file content
+
+            return OperationResult<AppDocumentDto>.Success(dto);
         }
-        var dto = Mapper.Map<AppDocumentDto>(appDocument);
-        return OperationResult<AppDocumentDto>.Success(dto);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error upserting app document with key: {Key}", key.SanitizeForLog());
+            return OperationResult<AppDocumentDto>.Failure("An error occurred while upserting the app document.");
+        }
     }
+
+    private string GetCacheKey(string key) => $"{CacheName}:{key}";
+
+    private async Task<AppDocument> FindByKeyAsync(string key)
+        => (await _repo.FindAsync(x => x.Key == key))?.FirstOrDefault();
 }

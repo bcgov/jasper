@@ -12,7 +12,6 @@ using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
-using Scv.Models.AppDocument;
 
 namespace Scv.Api.Controllers;
 
@@ -60,7 +59,7 @@ public class ApplicationController(
     /// Creates or replaces the app document with the provided key. The name, content type, size and data are derived from the file.
     /// The file is validated and scanned for viruses before being stored.
     /// </summary>
-    /// <param name="request">The upload request containing the key and the PDF file.</param>
+    /// <param name="request">The upload request containing the key and the file.</param>
     /// <returns>The saved app document without its data.</returns>
     [HttpPut("documents")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
@@ -72,28 +71,12 @@ public class ApplicationController(
             return BadRequest(upload.Errors[0]);
         }
 
-        var existing = await _appDocumentService.GetAppDocumentByKeyAsync(request.Key);
-
-        var appDocument = new AppDocumentDto
-        {
-            Id = existing.Succeeded ? existing.Payload.Id : null,
-            Key = request.Key,
-            Name = upload.Payload.FileName,
-            ContentType = upload.Payload.ContentType,
-            Size = upload.Payload.Content.Length,
-            Data = upload.Payload.Content
-        };
-
-        var result = existing.Succeeded
-            ? await _appDocumentService.UpdateAsync(appDocument)
-            : await _appDocumentService.AddAsync(appDocument);
-
+        var result = await _appDocumentService.UpsertAsync(request.Key, upload.Payload);
         if (!result.Succeeded)
         {
-            return BadRequest(result.Errors);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
 
-        result.Payload.Data = null;
         return Ok(result.Payload);
     }
 }

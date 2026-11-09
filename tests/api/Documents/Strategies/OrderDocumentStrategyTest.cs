@@ -12,7 +12,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scv.Api.Constants;
 using Scv.Api.Documents;
 using Scv.Api.Documents.Strategies;
 using Scv.Api.Services;
@@ -267,19 +266,18 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Invoke_ReturnsOriginalDocument_AndLogsWarning_WhenSmallClaimsTemplateIsMissing(bool templateExistsWithoutData)
+    public async Task Invoke_ThrowsInvalidOperationException_AndLogsWarning_WhenSmallClaimsTemplateIsMissing(bool templateExistsWithoutData)
     {
         SetupJudicialClientResponse();
         SetupSmallClaimsOrderRepo(123);
         _mockAppDocumentService
-            .Setup(s => s.GetAppDocumentByKeyAsync(AppDocumentKeys.SmallClaimsAddtlPageTemplate))
+            .Setup(s => s.GetAppDocumentByKeyAsync(AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE))
             .ReturnsAsync(templateExistsWithoutData ? new AppDocumentDto { Data = null } : null);
         var strategy = CreateStrategy();
 
-        var result = await strategy.Invoke(BuildRequest("123"));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => strategy.Invoke(BuildRequest("123")));
 
-        result.Position = 0;
-        Assert.Equal(_fakeContentBytes, result.ToArray());
+        Assert.Equal("Small Claims Additional Page template is missing.", exception.Message);
         _mockPdfPageEditor.Verify(p => p.FillFormFields(It.IsAny<MemoryStream>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<bool>()), Times.Never);
         _mockPdfPageEditor.Verify(p => p.AppendPages(It.IsAny<MemoryStream>(), It.IsAny<MemoryStream>()), Times.Never);
         _mockLogger.Verify(l => l.Log(
@@ -369,7 +367,6 @@ public class OrderDocumentStrategyTest : ServiceTestBase
         _mockConfiguration.Object,
         _mockOrderRepo.Object,
         _mockPdfPageEditor.Object,
-        _cache,
         _mockLocationService.Object,
         _mockAppDocumentService.Object,
         _mockLogger.Object);
@@ -377,8 +374,8 @@ public class OrderDocumentStrategyTest : ServiceTestBase
     private void SetupSmallClaimsTemplate(byte[] data)
     {
         _mockAppDocumentService
-            .Setup(s => s.GetAppDocumentByKeyAsync(AppDocumentKeys.SmallClaimsAddtlPageTemplate))
-            .ReturnsAsync(new AppDocumentDto { Key = AppDocumentKeys.SmallClaimsAddtlPageTemplate, Data = data });
+            .Setup(s => s.GetAppDocumentByKeyAsync(AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE))
+            .ReturnsAsync(new AppDocumentDto { Key = AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE, Data = data });
     }
 
     private void SetupSmallClaimsOrderRepo(int packageDocumentId) =>

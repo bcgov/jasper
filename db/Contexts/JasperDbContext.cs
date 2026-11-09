@@ -23,6 +23,7 @@ public class JasperDbContext(DbContextOptions<JasperDbContext> options) : DbCont
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<CourtLocation> CourtLocations { get; set; }
     public DbSet<UserArtifact> UserArtifacts { get; set; }
+    public DbSet<AppDocument> AppDocuments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +57,10 @@ public class JasperDbContext(DbContextOptions<JasperDbContext> options) : DbCont
               .HasValue<Note>(ArtifactType.Note)
               .HasValue<Annotation>(ArtifactType.Annotation);
         });
-        modelBuilder.Entity<AppDocument>(ad => ad.HasKey(ad => ad.Id));
+        modelBuilder.Entity<AppDocument>(ad =>
+        {
+            ad.HasKey(ad => ad.Id);
+            ad.HasIndex(ad => ad.Key).IsUnique();
+        });
     }
 }

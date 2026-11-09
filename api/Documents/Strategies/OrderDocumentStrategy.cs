@@ -6,12 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
-using LazyCache;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Scv.Api.Constants;
 using Scv.Api.Services;
 using Scv.Core.ContractResolver;
 using Scv.Core.Exceptions;
@@ -28,7 +26,6 @@ public class OrderDocumentStrategy : IDocumentStrategy
     private readonly IJudicialServicesClient _judicialClient;
     private readonly IRepositoryBase<Order> _orderRepository;
     private readonly IPdfPageEditor _pdfPageEditor;
-    private readonly IAppCache _cache;
 
     private readonly ILocationService _locationService;
     private readonly ILogger<OrderDocumentStrategy> _logger;
@@ -46,7 +43,6 @@ public class OrderDocumentStrategy : IDocumentStrategy
         IConfiguration configuration,
         IRepositoryBase<Order> orderRepository,
         IPdfPageEditor pdfPageEditor,
-        IAppCache cache,
         ILocationService locationService,
         IAppDocumentService appDocumentService,
         ILogger<OrderDocumentStrategy> logger)
@@ -55,7 +51,6 @@ public class OrderDocumentStrategy : IDocumentStrategy
         _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
         _orderRepository = orderRepository;
         _pdfPageEditor = pdfPageEditor;
-        _cache = cache;
         _locationService = locationService;
         _logger = logger;
         _appDocumentService = appDocumentService;
@@ -141,12 +136,12 @@ public class OrderDocumentStrategy : IDocumentStrategy
 
     private async Task<MemoryStream> AppendSmallClaimsAdditionalPage(MemoryStream documentStream, OrderRequest request)
     {
-        var smallClaimsPageResult = await _appDocumentService.GetAppDocumentByKeyAsync(AppDocumentKeys.SmallClaimsAddtlPageTemplate);
+        var smallClaimsPageResult = await _appDocumentService.GetAppDocumentByKeyAsync(AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE);
         if (smallClaimsPageResult == null || smallClaimsPageResult.Data == null)
         {
-            // Return the original document if the small claims additional page template is not found.
-            _logger.LogWarning("Small Claims Additional Page template not found in AppDocumentService. Key: {Key}", AppDocumentKeys.SmallClaimsAddtlPageTemplate);
-            return documentStream;
+            _logger.LogWarning("Small Claims Additional Page template not found in AppDocumentService. Key: {Key}", AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE);
+            await documentStream.DisposeAsync();
+            throw new InvalidOperationException("Small Claims Additional Page template is missing.");
         }
 
         using var templateStream = new MemoryStream(smallClaimsPageResult.Data);

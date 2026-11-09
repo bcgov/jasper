@@ -13,8 +13,10 @@ public class AppDocumentMapping : IRegister
 
         config.NewConfig<UploadedFile, AppDocument>()
             .Map(dest => dest.Name, src => src.FileName)
-            .Map(dest => dest.ContentType, src => src.ContentType)
             .Map(dest => dest.Size, src => src.Content.Length)
-            .Map(dest => dest.Data, src => src.Content);
+            .Map(dest => dest.Data, src => src.Content)
+            .Ignore(dest => dest.TargetSize)
+            .Ignore(dest => dest.ContentType)
+            .Ignore(dest => dest.Key);
     }
 }

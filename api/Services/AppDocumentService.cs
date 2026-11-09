@@ -17,7 +17,7 @@ namespace Scv.Api.Services;
 public interface IAppDocumentService
 {
     Task<AppDocumentDto> GetAppDocumentByKeyAsync(string key);
-    Task<OperationResult<AppDocumentDto>> UpsertAsync(string key, UploadedFile file);
+    Task<OperationResult<AppDocumentDto>> UpdateAsync(string key, UploadedFile file);
 }
 
 public class AppDocumentService(
@@ -45,16 +45,14 @@ public class AppDocumentService(
             return _mapper.Map<AppDocumentDto>(appDocument);
         });
 
-    public async Task<OperationResult<AppDocumentDto>> UpsertAsync(string key, UploadedFile file)
+    public async Task<OperationResult<AppDocumentDto>> UpdateAsync(string key, UploadedFile file)
     {
         try
         {
             var existing = await FindByKeyAsync(key);
             if (existing == null)
             {
-                existing = _mapper.Map<AppDocument>(file);
-                existing.Key = key;
-                await _repo.AddAsync(existing);
+                return OperationResult<AppDocumentDto>.Failure("App document not found.");
             }
             else
             {
@@ -71,8 +69,8 @@ public class AppDocumentService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error upserting app document with key: {Key}", key.SanitizeForLog());
-            return OperationResult<AppDocumentDto>.Failure("An error occurred while upserting the app document.");
+            _logger.LogError(ex, "Error updating app document with key: {Key}", key.SanitizeForLog());
+            return OperationResult<AppDocumentDto>.Failure("An error occurred while updating the app document.");
         }
     }
 

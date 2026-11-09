@@ -56,8 +56,7 @@ public class ApplicationController(
     }
 
     /// <summary>
-    /// Creates or replaces the app document with the provided key. The name, content type, size and data are derived from the file.
-    /// The file is validated and scanned for viruses before being stored.
+    /// Uploads the app document file with the specified key. Default app document records are seeded in the databse and this  allows for updating the real file content.
     /// </summary>
     /// <param name="request">The upload request containing the key and the file.</param>
     /// <returns>The saved app document without its data.</returns>
@@ -71,10 +70,12 @@ public class ApplicationController(
             return BadRequest(upload.Errors[0]);
         }
 
-        var result = await _appDocumentService.UpsertAsync(request.Key, upload.Payload);
+        var result = await _appDocumentService.UpdateAsync(request.Key, upload.Payload);
         if (!result.Succeeded)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
+            return result.Errors.Any(e => e.Contains("not found"))
+                ? NotFound(new { error = result.Errors })
+                : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
 
         return Ok(result.Payload);

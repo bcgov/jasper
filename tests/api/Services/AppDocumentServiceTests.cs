@@ -41,27 +41,7 @@ public class AppDocumentServiceTests
     private static UploadedFile CreateUpload() => new([1, 2, 3], "application/pdf", "template.pdf");
 
     [Fact]
-    public async Task UpsertAsync_WhenKeyDoesNotExist_ShouldAddEntityWithGeneratedId()
-    {
-        AppDocument added = null;
-        _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<AppDocument, bool>>>()))
-            .ReturnsAsync(new List<AppDocument>());
-        _mockRepo.Setup(r => r.AddAsync(It.IsAny<AppDocument>()))
-            .Callback<AppDocument>(e => added = e)
-            .Returns(Task.CompletedTask);
-
-        var result = await _service.UpsertAsync("KEY", CreateUpload());
-
-        Assert.True(result.Succeeded);
-        Assert.NotNull(added);
-        Assert.False(string.IsNullOrEmpty(added.Id));
-        Assert.Equal("KEY", added.Key);
-        Assert.Equal(3, added.Size);
-        Assert.Null(result.Payload.Data);
-    }
-
-    [Fact]
-    public async Task UpsertAsync_WhenKeyExists_ShouldUpdateExistingEntityKeepingId()
+    public async Task UpdateAsync_WhenKeyExists_ShouldUpdateExistingEntityKeepingId()
     {
         var existing = new AppDocument { Key = "KEY", Name = "old.pdf" };
         var originalId = existing.Id;
@@ -69,29 +49,30 @@ public class AppDocumentServiceTests
             .ReturnsAsync(new List<AppDocument> { existing });
         _mockRepo.Setup(r => r.UpdateAsync(It.IsAny<AppDocument>())).Returns(Task.CompletedTask);
 
-        var result = await _service.UpsertAsync("KEY", CreateUpload());
+        var result = await _service.UpdateAsync("KEY", CreateUpload());
 
         Assert.True(result.Succeeded);
         Assert.Equal(originalId, existing.Id);
         Assert.Equal("template.pdf", existing.Name);
+        Assert.Null(result.Payload.Data);
         _mockRepo.Verify(r => r.UpdateAsync(existing), Times.Once);
     }
 
     [Fact]
-    public async Task UpsertAsync_WhenRepositoryThrows_ShouldReturnFailure()
+    public async Task UpdateAsync_WhenKeyIsNotFound_ShouldReturnFailureAndNotCallUpdate()
     {
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<AppDocument, bool>>>()))
-            .ReturnsAsync(new List<AppDocument>());
-        _mockRepo.Setup(r => r.AddAsync(It.IsAny<AppDocument>())).ThrowsAsync(new InvalidOperationException("boom"));
+            .ReturnsAsync([]);
 
-        var result = await _service.UpsertAsync("KEY", CreateUpload());
+        var result = await _service.UpdateAsync("KEY", CreateUpload());
 
         Assert.False(result.Succeeded);
-        Assert.Contains("An error occurred while upserting the app document.", result.Errors);
+        Assert.Contains("App document not found.", result.Errors);
+        _mockRepo.Verify(r => r.UpdateAsync(It.IsAny<AppDocument>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetAppDocumentByKeyAsync_ShouldCacheResultUntilUpsert()
+    public async Task GetAppDocumentByKeyAsync_ShouldCacheResultUntilUpdateAsync()
     {
         var existing = new AppDocument { Key = "KEY", Name = "old.pdf" };
         _mockRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<AppDocument, bool>>>()))
@@ -105,9 +86,9 @@ public class AppDocumentServiceTests
         Assert.Same(first, second);
         _mockRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<AppDocument, bool>>>()), Times.Once);
 
-        await _service.UpsertAsync("KEY", CreateUpload());
-        var afterUpsert = await _service.GetAppDocumentByKeyAsync("KEY");
+        await _service.UpdateAsync("KEY", CreateUpload());
+        var afterUpdate = await _service.GetAppDocumentByKeyAsync("KEY");
 
-        Assert.Equal("template.pdf", afterUpsert.Name);
+        Assert.Equal("template.pdf", afterUpdate.Name);
     }
 }

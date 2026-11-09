@@ -220,6 +220,7 @@ namespace Scv.Api.Infrastructure
             services.AddScoped<EmailTemplateSeeder>();
             services.AddScoped<ConstantSeeder>();
             services.AddScoped<RoleAliasSeeder>();
+            services.AddScoped<AppDocumentSeeder>();
 
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUser, CurrentUser>();

@@ -31,7 +31,7 @@
       LogicalName="Scv.Api.Documents.Conversion.LibreOfficeSecurityProfile.xcu" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Lambda" Version="4.0.111" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.111.3" />
     <PackageReference Include="AnyAscii" Version="0.3.3" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="ColeSoft.Extensions.Logging.Splunk" Version="1.0.72" />

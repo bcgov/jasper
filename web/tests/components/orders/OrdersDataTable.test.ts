@@ -1,7 +1,7 @@
 import { Order } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
-import { mdiAccountSwitch } from '@mdi/js';
+import { mdiAccountSwitchOutline } from '@mdi/js';
 import { mount } from '@vue/test-utils';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
 import TooltipIcon from 'CMP/shared/TooltipIcon.vue';
@@ -359,7 +359,7 @@ describe('OrdersDataTable.vue', () => {
     const cells = wrapper.findAll('.package-cell');
     const tooltip = cells[0].findComponent(TooltipIcon);
     expect(tooltip.props()).toMatchObject({
-      icon: mdiAccountSwitch,
+      icon: mdiAccountSwitchOutline,
       text: 'Original Recipient',
       location: 'top',
     });

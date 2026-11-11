@@ -4,7 +4,6 @@ import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
 import { mdiAccountSwitchOutline } from '@mdi/js';
 import { mount } from '@vue/test-utils';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
-import TooltipIcon from 'CMP/shared/TooltipIcon.vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent } from 'vue';
 
@@ -56,6 +55,10 @@ const mockData: Order[] = [
     priorityTypeDesc: 'Test Priority Description',
     courtListType: 'Order',
     courtListTypeDescription: 'Order',
+    packageDocuments: [],
+    relevantCeisDocuments: [],
+    hasSupportingDocs: false,
+    originalSentToName: '',
   },
   {
     id: '2',
@@ -73,6 +76,10 @@ const mockData: Order[] = [
     priorityTypeDesc: 'Important',
     courtListType: 'Application',
     courtListTypeDescription: 'Application',
+    packageDocuments: [],
+    relevantCeisDocuments: [],
+    hasSupportingDocs: false,
+    originalSentToName: '',
   },
 ];
 
@@ -357,13 +364,15 @@ describe('OrdersDataTable.vue', () => {
     });
 
     const cells = wrapper.findAll('.package-cell');
-    const tooltip = cells[0].findComponent(TooltipIcon);
+    const tooltip = cells[0].findComponent({ name: 'TooltipIcon' });
     expect(tooltip.props()).toMatchObject({
       icon: mdiAccountSwitchOutline,
-      text: 'Original Recipient',
+      text: 'Original Judge: Original Recipient',
       location: 'top',
     });
-    expect(cells[1].findComponent(TooltipIcon).exists()).toBe(false);
+    expect(cells[1].findComponent({ name: 'TooltipIcon' }).exists()).toBe(
+      false
+    );
     await cells[0].get('a').trigger('click');
     expect(viewOrderDetails).toHaveBeenCalledWith(orders[0]);
   });
@@ -380,8 +389,8 @@ describe('OrdersDataTable.vue', () => {
     const cell = wrapper.get('.package-cell');
     expect(cell.text()).toContain('12345');
     expect(cell.find('a').exists()).toBe(false);
-    expect(cell.getComponent(TooltipIcon).props('text')).toBe(
-      'Original Recipient'
+    expect(cell.getComponent({ name: 'TooltipIcon' }).props('text')).toBe(
+      'Original Judge: Original Recipient'
     );
   });
 

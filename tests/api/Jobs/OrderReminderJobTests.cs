@@ -721,11 +721,16 @@ public class OrderReminderJobTests : ServiceTestBase
                 It.IsAny<object>()))
             .Returns(Task.CompletedTask);
 
+        var originalName = order.OrderRequest.Referral.SentToName;
+        var originalPartId = order.OrderRequest.Referral.SentToPartId;
+
         await _job.Execute();
 
         var expectedRajName = $"{raj.FirstName} {raj.LastName}".Trim();
         _mockOrderRepo.Verify(
             r => r.UpdateAsync(It.Is<Order>(o =>
+                o.OriginalSentToName == originalName &&
+                o.OriginalSentToPartId == originalPartId &&
                 o.OrderRequest.Referral.SentToPartId == rajPartId &&
                 o.OrderRequest.Referral.SentToName == expectedRajName)),
             Times.AtLeastOnce

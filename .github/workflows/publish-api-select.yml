@@ -80,12 +80,6 @@ jobs:
             [dns]
               nameservers=["8.8.8.8","1.1.1.1"]
 
-      - name: DNS diagnostics
-        run: |
-          resolvectl status | head -20 || cat /etc/resolv.conf
-          for ns in 8.8.8.8 1.1.1.1; do echo "== $ns"; nslookup archive.ubuntu.com $ns || true; done
-          echo "== default resolver"; nslookup archive.ubuntu.com || true
-
       - name: Build and Push Image to ghcr.io
         id: build_image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

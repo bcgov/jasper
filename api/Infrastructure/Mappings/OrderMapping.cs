@@ -46,8 +46,8 @@ public class OrderMapping : IRegister
             .Map(dest => dest.ReceivedDate, src => src.Ent_Dtm.ToString(PCSSCommonConstants.DATE_FORMAT, CultureInfo.InvariantCulture))
             .Map(dest => dest.PackageDocuments, src => src.OrderRequest.PackageDocuments)
             .Map(dest => dest.RelevantCeisDocuments, src => src.OrderRequest.RelevantCeisDocuments)
-            .Map(dest => dest.OriginalRecipientName, src => src.ReassignmentNotificationsSent > 0
-                ? src.OrderRequest.Referral.SentToName
+            .Map(dest => dest.OriginalSentToName, src => src.ReassignmentNotificationsSent > 0 && !string.IsNullOrWhiteSpace(src.OriginalSentToName)
+                ? src.OriginalSentToName
                 : null)
             .AfterMapping((src, dest) =>
             {

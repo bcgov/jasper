@@ -343,8 +343,8 @@ describe('OrdersDataTable.vue', () => {
 
   it('shows the original recipient tooltip only for orders with a recipient', async () => {
     const orders = [
-      { ...mockData[0], originalRecipientName: 'Original Recipient' },
-      { ...mockData[1], originalRecipientName: '' },
+      { ...mockData[0], originalSentToName: 'Original Recipient' },
+      { ...mockData[1], originalSentToName: '' },
     ];
     const viewOrderDetails = vi.fn();
     const wrapper = mount(OrdersDataTable, {
@@ -371,7 +371,7 @@ describe('OrdersDataTable.vue', () => {
   it('shows the recipient tooltip next to a non-clickable package number', () => {
     const wrapper = mount(OrdersDataTable, {
       props: {
-        data: [{ ...mockData[0], originalRecipientName: 'Original Recipient' }],
+        data: [{ ...mockData[0], originalSentToName: 'Original Recipient' }],
         viewCaseDetails: mockViewCaseDetails,
       },
       global: { stubs: { VDataTableVirtual: VDataTableVirtualStub } },

@@ -24,6 +24,8 @@ public class Order : EntityBase
     public byte[] SupportingDocumentData { get; set; }
     public int ReminderNotificationsSent { get; set; } = 0;
     public int ReassignmentNotificationsSent { get; set; } = 0;
+    public double? OriginalSentToPartId { get; set; }
+    public string OriginalSentToName { get; set; }
 }
 
 public class OrderRequest

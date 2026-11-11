@@ -16,10 +16,10 @@
         {{ item.packageId }}
       </a>
       <span v-else>{{ item.packageId }}</span>
-      <span v-if="item.originalRecipientName" class="ms-2">
+      <span v-if="item.originalSentToName" class="ms-2">
         <TooltipIcon
           :icon="mdiAccountSwitchOutline"
-          :text="item.originalRecipientName"
+          :text="`Original Judge: ${item.originalSentToName}`"
           location="top"
         />
       </span>

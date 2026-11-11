@@ -152,6 +152,11 @@ public class OrderReminderJob(
             if (order.JudgeId != raj.PersonId)
             {
                 order.JudgeId = raj.PersonId;
+
+                // Store the original recipient info before reassigning
+                order.OriginalSentToName = order.OrderRequest.Referral.SentToName;
+                order.OriginalSentToPartId = order.OrderRequest.Referral.SentToPartId;
+
                 order.OrderRequest.Referral.SentToPartId = raj.ParticipantId;
                 order.OrderRequest.Referral.SentToName = GetRajName(raj);
                 await _orderRepo.UpdateAsync(order);

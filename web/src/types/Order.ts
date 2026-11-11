@@ -19,7 +19,7 @@ export interface Order {
   packageDocuments: PackageDocument[];
   relevantCeisDocuments: RelevantCeisDocument[];
   hasSupportingDocs: boolean;
-  originalRecipientName: string;
+  originalSentToName: string;
 }
 
 export interface PackageDocument {

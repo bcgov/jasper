@@ -16,6 +16,13 @@
         {{ item.packageId }}
       </a>
       <span v-else>{{ item.packageId }}</span>
+      <span v-if="item.originalSentToName" class="ms-2">
+        <TooltipIcon
+          :icon="mdiAccountSwitchOutline"
+          :text="`Original Judge: ${item.originalSentToName}`"
+          location="top"
+        />
+      </span>
     </template>
     <template #[`item.courtClass`]="{ item }">
       <span :class="[getCourtClassStyle(item.courtClass)]">
@@ -33,10 +40,12 @@
   </v-data-table-virtual>
 </template>
 <script setup lang="ts">
+  import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { Order } from '@/types';
   import { DataTableHeader } from '@/types/shared';
   import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
+  import { mdiAccountSwitchOutline } from '@mdi/js';
   import { DateTime } from 'luxon';
   import { computed, ref } from 'vue';
 

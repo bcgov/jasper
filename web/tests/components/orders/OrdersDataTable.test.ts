@@ -1,6 +1,7 @@
 import { Order } from '@/types';
 import { OrderReviewStatus } from '@/types/common';
 import { formatDateInstanceToDDMMMYYYY } from '@/utils/dateUtils';
+import { mdiAccountSwitchOutline } from '@mdi/js';
 import { mount } from '@vue/test-utils';
 import OrdersDataTable from 'CMP/orders/OrdersDataTable.vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -54,6 +55,10 @@ const mockData: Order[] = [
     priorityTypeDesc: 'Test Priority Description',
     courtListType: 'Order',
     courtListTypeDescription: 'Order',
+    packageDocuments: [],
+    relevantCeisDocuments: [],
+    hasSupportingDocs: false,
+    originalSentToName: '',
   },
   {
     id: '2',
@@ -71,6 +76,10 @@ const mockData: Order[] = [
     priorityTypeDesc: 'Important',
     courtListType: 'Application',
     courtListTypeDescription: 'Application',
+    packageDocuments: [],
+    relevantCeisDocuments: [],
+    hasSupportingDocs: false,
+    originalSentToName: '',
   },
 ];
 
@@ -87,6 +96,9 @@ const VDataTableVirtualStub = defineComponent({
   },
   template: `
     <div>
+      <div v-for="item in items" :key="item.id" class="package-cell">
+        <slot name="item.packageId" :item="item" />
+      </div>
       <slot name="item.priorityTypeDesc" :item="items[0]" />
       <slot name="item.courtListType" :item="items[0]" />
     </div>
@@ -334,6 +346,52 @@ describe('OrdersDataTable.vue', () => {
     });
 
     expect(wrapper.text()).toContain('Test Priority Description');
+  });
+
+  it('shows the original recipient tooltip only for orders with a recipient', async () => {
+    const orders = [
+      { ...mockData[0], originalSentToName: 'Original Recipient' },
+      { ...mockData[1], originalSentToName: '' },
+    ];
+    const viewOrderDetails = vi.fn();
+    const wrapper = mount(OrdersDataTable, {
+      props: {
+        data: orders,
+        viewOrderDetails,
+        viewCaseDetails: mockViewCaseDetails,
+      },
+      global: { stubs: { VDataTableVirtual: VDataTableVirtualStub } },
+    });
+
+    const cells = wrapper.findAll('.package-cell');
+    const tooltip = cells[0].findComponent({ name: 'TooltipIcon' });
+    expect(tooltip.props()).toMatchObject({
+      icon: mdiAccountSwitchOutline,
+      text: 'Original Judge: Original Recipient',
+      location: 'top',
+    });
+    expect(cells[1].findComponent({ name: 'TooltipIcon' }).exists()).toBe(
+      false
+    );
+    await cells[0].get('a').trigger('click');
+    expect(viewOrderDetails).toHaveBeenCalledWith(orders[0]);
+  });
+
+  it('shows the recipient tooltip next to a non-clickable package number', () => {
+    const wrapper = mount(OrdersDataTable, {
+      props: {
+        data: [{ ...mockData[0], originalSentToName: 'Original Recipient' }],
+        viewCaseDetails: mockViewCaseDetails,
+      },
+      global: { stubs: { VDataTableVirtual: VDataTableVirtualStub } },
+    });
+
+    const cell = wrapper.get('.package-cell');
+    expect(cell.text()).toContain('12345');
+    expect(cell.find('a').exists()).toBe(false);
+    expect(cell.getComponent({ name: 'TooltipIcon' }).props('text')).toBe(
+      'Original Judge: Original Recipient'
+    );
   });
 
   describe('isAgedOrder', () => {

@@ -25,7 +25,7 @@ public class Order : EntityBase
     public int ReminderNotificationsSent { get; set; } = 0;
     public int ReassignmentNotificationsSent { get; set; } = 0;
     public double? OriginalSentToPartId { get; set; }
-    public string OriginalSentToName { get; set; }
+    public string? OriginalSentToName { get; set; }
 }
 
 public class OrderRequest

@@ -20,5 +20,5 @@ public class OrderViewDto : BaseDto
     public List<PackageDocumentDto> PackageDocuments { get; set; } = [];
     public List<RelevantCeisDocumentDto> RelevantCeisDocuments { get; set; } = [];
     public bool HasSupportingDocs => (this.PackageDocuments?.Any(pd => !pd.ReferredDocument) == true) || (this.RelevantCeisDocuments?.Count > 0);
-    public string OriginalSentToName { get; set; }
+    public string? OriginalSentToName { get; set; }
 }

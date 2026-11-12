@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
-using JCCommon.Clients.FileServices;
-using LazyCache;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Scv.Api.Services;
 using Scv.Core.ContractResolver;
@@ -26,48 +24,39 @@ namespace Scv.Api.Documents.Strategies;
 public class OrderDocumentStrategy : IDocumentStrategy
 {
     private readonly IJudicialServicesClient _judicialClient;
-    private readonly IConfiguration _configuration;
     private readonly IRepositoryBase<Order> _orderRepository;
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IPdfPageEditor _pdfPageEditor;
-    private readonly IAppCache _cache;
 
-    private readonly FileServicesClient _filesClient;
     private readonly ILocationService _locationService;
+    private readonly ILogger<OrderDocumentStrategy> _logger;
+    private readonly IAppDocumentService _appDocumentService;
     private readonly string _applicationCode;
     private readonly string _requestAgencyIdentifierId;
-    private readonly string _requestPartId;
 
     public DocumentType Type => DocumentType.Order;
 
     public const string COURT_FILE_NUMBER_FIELD = "cfn";
-    public const string COURT_ROOM_FIELD = "crtnum";
     public const string COURT_LOCATION_FIELD = "location";
 
     public OrderDocumentStrategy(
         IJudicialServicesClient judicialClient,
         IConfiguration configuration,
         IRepositoryBase<Order> orderRepository,
-        IHttpClientFactory httpClientFactory,
         IPdfPageEditor pdfPageEditor,
-        IAppCache cache,
-        FileServicesClient filesClient,
-        ILocationService locationService)
+        ILocationService locationService,
+        IAppDocumentService appDocumentService,
+        ILogger<OrderDocumentStrategy> logger)
     {
         _judicialClient = judicialClient;
         _judicialClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
-        _configuration = configuration;
         _orderRepository = orderRepository;
-        _httpClientFactory = httpClientFactory;
         _pdfPageEditor = pdfPageEditor;
-        _cache = cache;
-        _filesClient = filesClient;
         _locationService = locationService;
-        _filesClient.JsonSerializerSettings.ContractResolver = new SafeContractResolver { NamingStrategy = new CamelCaseNamingStrategy() };
+        _logger = logger;
+        _appDocumentService = appDocumentService;
 
         _applicationCode = configuration.GetNonEmptyValue("Request:ApplicationCd");
         _requestAgencyIdentifierId = configuration.GetNonEmptyValue("Request:AgencyIdentifierId");
-        _requestPartId = configuration.GetNonEmptyValue("Request:PartId");
     }
 
     public async Task<MemoryStream> Invoke(PdfDocumentRequestDetails documentRequest)
@@ -147,15 +136,15 @@ public class OrderDocumentStrategy : IDocumentStrategy
 
     private async Task<MemoryStream> AppendSmallClaimsAdditionalPage(MemoryStream documentStream, OrderRequest request)
     {
-        await using var originalDocumentStream = documentStream;
+        var smallClaimsPageResult = await _appDocumentService.GetAppDocumentByKeyAsync(AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE);
+        if (smallClaimsPageResult == null || smallClaimsPageResult.Data == null)
+        {
+            _logger.LogWarning("Small Claims Additional Page template not found in AppDocumentService. Key: {Key}", AppDocument.SMALL_CLAIMS_ADDTL_DOCUMENT_TEMPLATE);
+            await documentStream.DisposeAsync();
+            throw new InvalidOperationException("Small Claims Additional Page template is missing.");
+        }
 
-        var url = _configuration.GetNonEmptyValue("ORDER_SCL029_URL");
-        ArgumentNullException.ThrowIfNullOrWhiteSpace(url);
-
-        // Cache the downloaded bytes, not the HttpResponseMessage: its content stream can only be read once.
-        var pageBytes = await _cache.GetOrAddAsync("SmallClaimsPage", () => DownloadSmallClaimsPage(url));
-
-        using var templateStream = new MemoryStream(pageBytes);
+        using var templateStream = new MemoryStream(smallClaimsPageResult.Data);
 
         // Flatten so the prefilled values are static text and not treated as user edits by the frontend.
         using var additionalPageStream = _pdfPageEditor.FillFormFields(
@@ -169,73 +158,12 @@ public class OrderDocumentStrategy : IDocumentStrategy
         return mergedStream;
     }
 
-    private async Task<byte[]> DownloadSmallClaimsPage(string url)
-    {
-        var client = _httpClientFactory.CreateClient();
-        using var response = await client.GetAsync(url);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsByteArrayAsync();
-    }
-
     private async Task<Dictionary<string, string>> BuildSmallClaimsFieldValues(OrderRequest request) =>
         new()
         {
             [COURT_FILE_NUMBER_FIELD] = request.FullFileNo,
-            [COURT_LOCATION_FIELD] = await GetLocationShortName(request) ?? string.Empty,
-            [COURT_ROOM_FIELD] = await GetAppearanceCourtRoom(request) ?? string.Empty
+            [COURT_LOCATION_FIELD] = await GetLocationShortName(request) ?? string.Empty
         };
-
-    private async Task<string> GetAppearanceCourtRoom(OrderRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.InitiatingAppearanceId))
-        {
-            return null;
-        }
-
-        ArgumentNullException.ThrowIfNull(request.PhysicalFileId);
-
-        if (!Enum.TryParse<FileDetailPcssCourtDivisionCd>(request.CourtDivisionCd, true, out var divisionEnum))
-        {
-            throw new InvalidDataException($"Invalid court division code: {request.CourtDivisionCd}");
-        }
-
-        return divisionEnum switch
-        {
-            FileDetailPcssCourtDivisionCd.R => await GetCriminalAppearanceCourtRoom(request),
-            FileDetailPcssCourtDivisionCd.I => await GetCivilAppearanceCourtRoom(request),
-            _ => throw new InvalidDataException($"Unsupported court division code: {request.CourtDivisionCd}")
-        };
-    }
-
-    private async Task<string> GetCriminalAppearanceCourtRoom(OrderRequest request)
-    {
-        var appearances = await _filesClient.FilesCriminalAppearancesAsync(
-            _requestAgencyIdentifierId,
-            _requestPartId,
-            _applicationCode,
-            FutureYN.Y,
-            HistoryYN.Y,
-            request.PhysicalFileId.ToString());
-
-        return appearances?.ApprDetail?
-            .FirstOrDefault(a => a.AppearanceId == request.InitiatingAppearanceId)?
-            .CourtRoomCd;
-    }
-
-    private async Task<string> GetCivilAppearanceCourtRoom(OrderRequest request)
-    {
-        var appearances = await _filesClient.FilesCivilAppearancesAsync(
-            _requestAgencyIdentifierId,
-            _requestPartId,
-            _applicationCode,
-            FutureYN.Y,
-            HistoryYN.Y,
-            request.PhysicalFileId.ToString());
-
-        return appearances?.ApprDetail?
-            .FirstOrDefault(a => a.AppearanceId == request.InitiatingAppearanceId)?
-            .CourtRoomCd;
-    }
 
     private async Task<string> GetLocationShortName(OrderRequest request)
     {

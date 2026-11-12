@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
@@ -9,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Validation;
 using Scv.Api.Models;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
@@ -26,13 +26,13 @@ public class UsersController(
     IValidator<ReleaseNotesViewedRequestDto> releaseNotesViewedRequestValidator,
     IValidator<FileUploadRequest> fileUploadRequestValidator,
     ILogger<UsersController> logger,
-    IAntiVirusService antiVirusService
+    IFileUploadProcessor fileUploadProcessor
 ) : AccessControlManagementControllerBase<IUserService, UserDto>(userService, validator)
 {
     private readonly IValidator<ReleaseNotesViewedRequestDto> _releaseNotesViewedRequestValidator = releaseNotesViewedRequestValidator;
     private readonly IValidator<FileUploadRequest> _fileUploadRequestValidator = fileUploadRequestValidator;
     private readonly ILogger<UsersController> _logger = logger;
-    private readonly IAntiVirusService _antiVirusService = antiVirusService;
+    private readonly IFileUploadProcessor _fileUploadProcessor = fileUploadProcessor;
 
     /// <summary>
     /// Get all active users
@@ -191,30 +191,13 @@ public class UsersController(
         FileUploadRequest request,
         Func<byte[], string, Task<OperationResult>> uploadAsync)
     {
-        if (request == null)
+        var upload = await _fileUploadProcessor.ValidateAndScanAsync(request, _fileUploadRequestValidator);
+        if (!upload.Succeeded)
         {
-            return BadRequest("No file was uploaded.");
+            return BadRequest(upload.Errors[0]);
         }
 
-        var validationResult = await _fileUploadRequestValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
-        }
-
-        var file = request.File;
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-
-        memoryStream.Position = 0;
-        var (isClean, message) = await _antiVirusService.ScanAsync(memoryStream);
-        if (!isClean)
-        {
-            _logger.LogWarning("The uploaded file failed the antivirus scan: {Message}", message);
-            return BadRequest("The uploaded file failed the antivirus scan.");
-        }
-
-        var result = await uploadAsync(memoryStream.ToArray(), file.ContentType);
+        var result = await uploadAsync(upload.Payload.Content, upload.Payload.ContentType);
         if (!result.Succeeded)
         {
             var error = result.Errors.Count > 0 ? result.Errors[0] : null;

@@ -10,7 +10,7 @@ import {
   mdiFountainPenTip,
   mdiNotebookOutline,
 } from '@mdi/js';
-import { ToolbarItem } from '@nutrient-sdk/viewer';
+import { Instance, ToolbarItem } from '@nutrient-sdk/viewer';
 import { inject, watch, WatchStopHandle } from 'vue';
 import { FilePDFStrategy } from './FilePDFStrategy';
 import { PDFViewerToolbarContext } from './PDFViewerTypes';
@@ -191,6 +191,21 @@ export class OrderPDFStrategy extends FilePDFStrategy {
     return [...base.slice(0, insertAt), ...extras, ...base.slice(insertAt)];
   }
 
+  private applyBadgeCount(instance: Instance, count: number): void {
+    const root = instance.contentDocument;
+    // Viewer root is either a shadow root or a plain document.
+    const host =
+      root instanceof ShadowRoot
+        ? (root.host as HTMLElement)
+        : root.documentElement;
+    const safeCount = Number.isFinite(Number(count))
+      ? Math.max(0, Math.trunc(Number(count)))
+      : 0;
+    const label = safeCount > 9 ? '9+' : String(safeCount);
+
+    host.style.setProperty('--jasper-badge-count', `"${label}"`);
+  }
+
   addCustomToolbarItems(context: PDFViewerToolbarContext): ToolbarItem[] {
     const additionalToolbarItems: ToolbarItem[] = [];
 
@@ -218,11 +233,16 @@ export class OrderPDFStrategy extends FilePDFStrategy {
       },
     });
 
-    if (this.currentOrder?.hasSupportingDocs) {
+    if ((this.currentOrder?.supportingDocsCount ?? 0) > 0) {
+      this.applyBadgeCount(
+        context.instance,
+        this.currentOrder!.supportingDocsCount
+      );
       additionalToolbarItems.push({
         type: 'custom',
         id: OrderPDFStrategy.ID_OPEN_SUPPORTING_DOCS,
         title: 'View Supporting Documents',
+        className: 'jasper-badge-btn',
         icon: `<svg><path d="${mdiFileDocumentMultipleOutline}"/></svg>`,
         onPress: () => viewOrderSupportingDocuments(this.currentOrder!),
       });

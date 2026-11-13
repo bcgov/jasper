@@ -88,7 +88,7 @@ const createMockOrder = (
   status: OrderReviewStatus.Unapproved,
   packageDocuments: [],
   relevantCeisDocuments: [],
-  hasSupportingDocs: false,
+  supportingDocsCount: 0,
   ...overrides,
 });
 
@@ -170,6 +170,7 @@ const createMockContext = (
       pageInfoForIndex: vi.fn().mockReturnValue({ width: 600, height: 800 }),
       create: vi.fn().mockResolvedValue([createdAnnotation]),
       setSelectedAnnotations: vi.fn(),
+      contentDocument: { documentElement: document.createElement('html') },
     },
     nutrientViewer: {
       Annotations: {
@@ -540,7 +541,7 @@ describe('OrderPDFStrategy', () => {
 
   describe('initialize', () => {
     it('fetches the order and stores it as the current order', async () => {
-      const order = createMockOrder('123', { hasSupportingDocs: true });
+      const order = createMockOrder('123', { supportingDocsCount: 1 });
       mockOrderService.getOrder.mockResolvedValue(order);
 
       const strategy = new OrderPDFStrategy();
@@ -642,7 +643,7 @@ describe('OrderPDFStrategy', () => {
 
     it('does not include a supporting-documents item when the order has none', async () => {
       mockOrderService.getOrder.mockResolvedValue(
-        createMockOrder('123', { hasSupportingDocs: false })
+        createMockOrder('123', { supportingDocsCount: 0 })
       );
 
       const strategy = new OrderPDFStrategy();
@@ -742,7 +743,7 @@ describe('OrderPDFStrategy', () => {
     });
 
     it('open-supporting-documents invokes viewOrderSupportingDocuments with the current order', async () => {
-      const order = createMockOrder('123', { hasSupportingDocs: true });
+      const order = createMockOrder('123', { supportingDocsCount: 1 });
       mockOrderService.getOrder.mockResolvedValue(order);
 
       const strategy = new OrderPDFStrategy();
@@ -1007,7 +1008,7 @@ describe('OrderPDFStrategy', () => {
 
     it('inserts extras in the expected order: spacer, open-supporting-documents, open-information, image, open-document-review', async () => {
       mockOrderService.getOrder.mockResolvedValue(
-        createMockOrder('123', { hasSupportingDocs: true })
+        createMockOrder('123', { supportingDocsCount: 1 })
       );
 
       const strategy = createOrderPDFStrategyForAnotherJudge();

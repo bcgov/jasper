@@ -1,17 +1,48 @@
 .jasper-submit-btn {
-  width: auto !important;
-  padding: 0 12px !important;
-  border-radius: 4px !important;
-  background-color: var(--bg-blue-800) !important;
-  cursor: pointer !important;
-  margin: 0 12px !important;
+  width: auto;
+  padding: 0 12px;
+  border-radius: 4px;
+  background-color: var(--bg-blue-800);
+  cursor: pointer;
+  margin: 0 12px;
 }
 
 .jasper-submit-btn:hover {
-  background-color: var(--bg-blue-500) !important;
+  background-color: var(--bg-blue-500);
 }
 
 .jasper-submit-btn__label {
-  color: #ffffff !important;
+  color: var(--text-white-500);
   white-space: nowrap;
+}
+
+.jasper-badge-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.jasper-badge-btn:hover,
+.jasper-badge-btn:focus-visible {
+  background-color: var(--bg-blue-100);
+}
+
+.jasper-badge-btn::after {
+  content: var(--jasper-badge-count, '');
+  display: flex;
+  position: absolute;
+  top: 2px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background-color: var(--text-red-500);
+  color: var(--text-white-500);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
 }

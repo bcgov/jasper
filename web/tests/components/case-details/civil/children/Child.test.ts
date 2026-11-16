@@ -9,8 +9,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 describe('Child.vue', () => {
   beforeAll(() => {
     vi.useFakeTimers();
-    // Set a fixed date for consistent test results
-    vi.setSystemTime(new Date('2025-08-08T00:00:00-07:00'));
+    // Match the local calendar date used by the component's age calculation.
+    vi.setSystemTime(new Date(2025, 7, 8));
   });
 
   afterAll(() => {

@@ -75,8 +75,8 @@ describe('HttpService response interceptor', () => {
     }
   );
 
-  it('delivers a real 409 to the table and retains the unsaved date', async () => {
-    const service = new CaseService(httpReturning(409));
+  it.each([400, 403, 409, 500])('shows one shared error toast for due date HTTP %i without logging out', async (status) => {
+    const service = new CaseService(httpReturning(status));
     const wrapper = mount(CaseDataTable, {
       props: {
         data: [row],
@@ -92,12 +92,39 @@ describe('HttpService response interceptor', () => {
       errors: Record<string, string>;
       saveOverride: (item: Case) => Promise<void>;
     };
-    vm.drafts[row.id] = '2026-12-01';
+    vm.drafts[row.id] = '01-Dec-2026';
     await vm.saveOverride(row);
-    expect(vm.errors[row.id]).toBe(conflictMessage);
-    expect(vm.drafts[row.id]).toBe('2026-12-01');
+    expect(vm.errors[row.id]).toBe('');
+    expect(vm.drafts[row.id]).toBeUndefined();
     expect(replace).not.toHaveBeenCalled();
-    expect(notify).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledWith(conflictMessage, '#b84157', 'Error');
+  });
+
+  it('shows one shared error toast for a failed due date network request', async () => {
+    const http = httpReturning(200);
+    http.client.defaults.adapter = async (config) => {
+      throw new AxiosError('Network Error', AxiosError.ERR_NETWORK, config);
+    };
+    const service = new CaseService(http);
+    const wrapper = mount(CaseDataTable, {
+      props: {
+        data: [row],
+        viewCaseDetails: vi.fn(),
+        canEditDueDate: () => true,
+        saveDueDate: async (item, date) => {
+          await service.setDueDateOverride(item, date);
+        },
+      },
+    });
+    const vm = wrapper.vm as any;
+    vm.drafts[row.id] = '01-Dec-2026';
+    await vm.saveOverride(row);
+    expect(vm.drafts[row.id]).toBeUndefined();
+    expect(vm.saving[row.id]).toBe(false);
+    expect(notify).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledWith('Network Error', '#b84157', 'Error');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('retains logout behaviour for an ordinary 409', async () => {

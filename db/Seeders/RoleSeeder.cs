@@ -266,6 +266,7 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
     {
         return
         [
+            Permission.EDIT_RESERVED_JUDGMENTS_DUE_DATE,
             Permission.VIEW_DASHBOARD,
             Permission.VIEW_OWN_SCHEDULE,
             Permission.VIEW_OTHER_CALENDARS,
@@ -310,6 +311,7 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
     {
         return
         [
+            Permission.EDIT_RESERVED_JUDGMENTS_DUE_DATE,
             Permission.VIEW_DASHBOARD,
             Permission.VIEW_OWN_SCHEDULE,
             Permission.VIEW_OTHER_CALENDARS,
@@ -357,6 +359,7 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
     {
         return
         [
+            Permission.EDIT_RESERVED_JUDGMENTS_DUE_DATE,
             Permission.VIEW_DASHBOARD,
             Permission.VIEW_OWN_SCHEDULE,
             Permission.VIEW_OTHER_CALENDARS,
@@ -407,6 +410,7 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
     {
         return
         [
+            Permission.EDIT_RESERVED_JUDGMENTS_DUE_DATE,
             Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
             Permission.VIEW_TRANSITORY_DOCUMENTS,
             Permission.LIST_TRANSITORY_DOCUMENTS

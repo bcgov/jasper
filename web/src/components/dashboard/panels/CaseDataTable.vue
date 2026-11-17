@@ -17,30 +17,54 @@
     </template>
     <template #[`item.dueDate`]="{ item }">
       <div
-        v-if="saveDueDate && canEditDueDate?.(item)"
+        v-if="columns?.includes('dueDate') && saveDueDate && canEditDueDate?.(item)"
         class="d-flex align-start ga-2"
+        @focusout="saveOnFocusOut(item, $event)"
       >
         <v-text-field
           :model-value="
-            drafts[item.id] ?? inputDate(item.overrideDueDate ?? item.dueDate)
+            drafts[item.id] ?? displayDate(item.overrideDueDate ?? item.dueDate)
           "
-          type="date"
           aria-label="Due date override"
+          placeholder="DD-MMM-YYYY"
           density="compact"
           min-width="180"
           clearable
           :disabled="saving[item.id]"
+          :loading="saving[item.id]"
           :error-messages="errors[item.id]"
           hide-details="auto"
           @update:model-value="drafts[item.id] = $event ?? ''"
-        />
-        <v-btn
-          size="small"
-          :loading="saving[item.id]"
-          :disabled="drafts[item.id] === undefined"
-          @click="saveOverride(item)"
-          >Save</v-btn
+          @update:focused="focused[item.id] = $event"
+          @keydown.enter.prevent="saveOverride(item)"
+          @keydown.esc.prevent="cancelOverride(item)"
         >
+          <template #append-inner>
+            <v-menu
+              v-model="menus[item.id]"
+              :close-on-content-click="false"
+              @update:model-value="saveOnPickerClose(item, $event)"
+            >
+              <template #activator="{ props: activatorProps }">
+                <v-btn
+                  v-bind="activatorProps"
+                  :icon="mdiCalendarMonthOutline"
+                  aria-label="Choose due date"
+                  variant="text"
+                  size="x-small"
+                  :disabled="saving[item.id]"
+                  @mousedown.prevent
+                  @keydown.enter.stop
+                />
+              </template>
+              <v-date-picker
+                :model-value="pickerDate(item)"
+                hide-header
+                @update:model-value="selectDate(item, $event)"
+              />
+            </v-menu>
+          </template>
+        </v-text-field>
       </div>
       <span v-else>{{
         displayDate(
@@ -54,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+  import { useSnackbarStore } from '@/stores/SnackbarStore';
   import { Case } from '@/types';
   import { DataTableHeader } from '@/types/shared';
   import {
@@ -63,7 +88,8 @@
     parseDDMMMYYYYToDate,
   } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
-  import { computed, ref } from 'vue';
+  import { mdiCalendarMonthOutline } from '@mdi/js';
+  import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
   const props = defineProps<{
     data: Case[];
@@ -85,37 +111,173 @@
   }>();
 
   const sortBy = ref(props.sortBy || [{ key: 'dueDate', order: 'asc' }]);
+  const snackbarStore = useSnackbarStore();
   const drafts = ref<Record<string, string>>({});
   const errors = ref<Record<string, string>>({});
   const saving = ref<Record<string, boolean>>({});
+  const menus = ref<Record<string, boolean>>({});
+  const focused = ref<Record<string, boolean>>({});
+  let active = true;
+  let generation = 0;
+
+  onBeforeUnmount(() => {
+    active = false;
+  });
+  watch(
+    () => props.data,
+    () => {
+      generation++;
+      drafts.value = {};
+      errors.value = {};
+      saving.value = {};
+      menus.value = {};
+      focused.value = {};
+    },
+    { flush: 'sync' }
+  );
+
+  // A duplicate row may receive a new revision from another row's save.
+  watch(
+    () => props.data.map((item) => ({
+      id: item.id,
+      updatedDate: item.updatedDate,
+      overrideDueDate: item.overrideDueDate,
+      dueDate: item.dueDate,
+      editable: !!props.canEditDueDate?.(item),
+    })),
+    (rows, previous) => {
+      const previousRows = new Map(previous.map((row) => [row.id, row]));
+      for (const row of rows) {
+        const old = previousRows.get(row.id);
+        if (
+          old && (
+            row.updatedDate !== old.updatedDate ||
+            row.overrideDueDate !== old.overrideDueDate ||
+            row.dueDate !== old.dueDate ||
+            row.editable !== old.editable
+          )
+        ) {
+          delete drafts.value[row.id];
+          delete errors.value[row.id];
+          delete menus.value[row.id];
+        }
+      }
+    },
+    { flush: 'sync' }
+  );
 
   const inputDate = (value: string | null | undefined) => {
     if (!value) return '';
-    if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(value)) {
+      const date = value.slice(0, 10);
+      const parsed = parseDDMMMYYYYToDate(formatDateToDDMMMYYYY(date));
+      return formatDateInstanceToYYYYMMDD(parsed) === date ? date : '';
+    }
     return formatDateInstanceToYYYYMMDD(parseDDMMMYYYYToDate(value));
   };
   const displayDate = (value: string | null | undefined) =>
     formatDateToDDMMMYYYY(inputDate(value));
 
+  const parseDraft = (value: string): string | null | undefined => {
+    const text = value.trim();
+    if (!text) return null;
+    if (!/^\d{2}-[a-z]{3}-\d{4}$/i.test(text)) return undefined;
+    const normalized =
+      text.slice(0, 3) + text[3].toUpperCase() +
+      text.slice(4, 6).toLowerCase() + text.slice(6);
+    const date = parseDDMMMYYYYToDate(normalized);
+    return date ? formatDateInstanceToYYYYMMDD(date) : undefined;
+  };
+
+  const pickerDate = (item: Case) => {
+    const value = drafts.value[item.id];
+    const date = value === undefined
+      ? displayDate(item.overrideDueDate ?? item.dueDate) : value;
+    const parsed = parseDraft(date);
+    return parsed ? parseDDMMMYYYYToDate(formatDateToDDMMMYYYY(parsed)) : null;
+  };
+
+  const selectDate = async (item: Case, date: unknown) => {
+    if (saving.value[item.id]) return;
+    const isoDate = date instanceof Date ? formatDateInstanceToYYYYMMDD(date) : '';
+    if (!isoDate || inputDate(isoDate) !== isoDate) {
+      errors.value[item.id] = 'Enter a valid date as DD-MMM-YYYY.';
+      return;
+    }
+    drafts.value[item.id] = formatDateToDDMMMYYYY(isoDate);
+    errors.value[item.id] = '';
+    menus.value[item.id] = false;
+    await saveOverride(item);
+  };
+
+  const saveOnFocusOut = (item: Case, event: FocusEvent) => {
+    const editor = event.currentTarget as HTMLElement;
+    const target = event.relatedTarget;
+    if ((target instanceof Node && editor.contains(target)) || menus.value[item.id])
+      return;
+    return saveOverride(item);
+  };
+
+  const saveOnPickerClose = (item: Case, open: boolean) => {
+    if (!open && !focused.value[item.id]) return saveOverride(item);
+  };
+
+  const cancelOverride = (item: Case) => {
+    if (saving.value[item.id]) return;
+    delete drafts.value[item.id];
+    delete errors.value[item.id];
+    menus.value[item.id] = false;
+  };
+
   const saveOverride = async (item: Case) => {
     if (
       !props.saveDueDate ||
       !props.canEditDueDate?.(item) ||
-      saving.value[item.id]
+      saving.value[item.id] ||
+      drafts.value[item.id] === undefined
     )
       return;
+    const date = parseDraft(drafts.value[item.id]);
+    if (date === undefined) {
+      errors.value[item.id] = 'Enter a valid date as DD-MMM-YYYY.';
+      return;
+    }
+    if (date === (item.overrideDueDate ?? null)) {
+      cancelOverride(item);
+      return;
+    }
+    const version = generation;
     saving.value[item.id] = true;
     errors.value[item.id] = '';
+    menus.value[item.id] = false;
     try {
-      await props.saveDueDate(item, drafts.value[item.id] || null);
-      delete drafts.value[item.id];
+      await props.saveDueDate(item, date);
+      if (active && version === generation) delete drafts.value[item.id];
     } catch (error: any) {
-      errors.value[item.id] =
-        error?.originalError?.response?.data?.errors?.join(' ') ||
+      if (!active || version !== generation) return;
+      // Restore the last persisted value and report the failure through the shared API error toast.
+      delete drafts.value[item.id];
+      const response = error?.originalError?.response ?? error?.response;
+      const responseErrors = response?.data?.errors;
+      const validationMessage = Array.isArray(responseErrors)
+        ? responseErrors.join(' ')
+        : responseErrors && typeof responseErrors === 'object'
+          ? Object.values(responseErrors).flat().join(' ') : '';
+      const messages: Record<number, string> = {
+        400: 'The due date was rejected. Enter a valid date as DD-MMM-YYYY.',
+        403: 'You no longer have permission to edit this due date.',
+        404: 'This case is no longer available. Refresh before editing.',
+        409: 'This case has changed. Refresh before editing its due date.',
+        500: 'Unable to save the due date. Please try again.',
+      };
+      const message =
+        validationMessage ||
+        messages[response?.status] ||
         error?.message ||
         'Unable to save the due date. Please try again.';
+      snackbarStore.showSnackbar(message, '#b84157', 'Error');
     } finally {
-      saving.value[item.id] = false;
+      if (active && version === generation) saving.value[item.id] = false;
     }
   };
 

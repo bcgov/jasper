@@ -176,6 +176,10 @@ public class CaseServiceMongoTests : IAsyncLifetime
     public async Task Override_SavesEditsClearsDuplicatesAndReturnsPersistedRevisions()
     {
         var first = Row();
+        first.Reason = "DEC";
+        first.StyleOfCause = "Original parties";
+        first.AppearanceDate = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+        first.PartId = "original-part";
         var second = Row();
         var tombstone = Row(date: "2026-12-01");
         tombstone.DeletedAt = DateTime.UtcNow.AddDays(-1);
@@ -192,12 +196,17 @@ public class CaseServiceMongoTests : IAsyncLifetime
             Assert.Equal(200, result.Status);
             Assert.Equal(2, result.Result.Payload.Count);
             var persisted = await Read();
-            Assert.All(persisted.Where(c => c.Reason == null), c => Assert.Equal(date, c.OverrideDueDate));
+            Assert.All(persisted.Where(c => c.Reason == null || c.Reason == "DEC"), c => Assert.Equal(date, c.OverrideDueDate));
             Assert.Null(persisted.Single(c => c.Reason == "CNT").OverrideDueDate);
             Assert.Equal(persisted.Single(c => c.Id == first.Id).Upd_Dtm,
                 result.Result.Payload.Single(c => c.Id == first.Id).UpdatedDate);
             Assert.All(result.Result.Payload, c => Assert.Equal(date ?? c.DueDate, c.EffectiveDueDate));
             Assert.All(result.Result.Payload, c => Assert.Equal("25-Nov-2026", c.DueDate));
+            var saved = persisted.Single(c => c.Id == first.Id);
+            Assert.Equal(first.AppearanceDate, saved.AppearanceDate);
+            Assert.Equal(first.StyleOfCause, saved.StyleOfCause);
+            Assert.Equal(first.PartId, saved.PartId);
+            Assert.Equal("DEC", saved.Reason);
         }
     }
 
@@ -209,22 +218,50 @@ public class CaseServiceMongoTests : IAsyncLifetime
         deleted.DeletedAt = DateTime.UtcNow;
         var ineligible = Row("continuation");
         ineligible.Reason = "CNT";
+        var missingKey = Row();
+        missingKey.PhysicalFileId = " ";
         var conflict = Row("conflict", "2026-12-01");
-        await Seed(active, deleted, ineligible, conflict, Row("conflict", "2026-12-02"));
+        await Seed(active, deleted, ineligible, missingKey, conflict, Row("conflict", "2026-12-02"));
         foreach (var (row, judge, status) in new[]
         {
             (active, 2, 403), (deleted, 1, 409), (ineligible, 1, 409),
-            (conflict, 1, 409), (Row("missing"), 1, 404)
+            (missingKey, 1, 409), (conflict, 1, 409), (Row("missing"), 1, 404)
         })
         {
             await using var edit = Context();
             var result = await Service(edit).SetDueDateOverrideAsync(row.Id, judge,
                 new CaseDueDateOverrideRequest { OverrideDueDate = "2026-12-10", UpdatedDate = row.Upd_Dtm });
             Assert.Equal(status, result.Status);
+            Assert.Null((await Read()).Single(c => c.Id == active.Id).OverrideDueDate);
         }
         await using var staleEdit = Context();
         Assert.Equal(409, (await Service(staleEdit).SetDueDateOverrideAsync(active.Id, 1,
             new CaseDueDateOverrideRequest { UpdatedDate = active.Upd_Dtm.AddMilliseconds(-1) })).Status);
+    }
+
+    [MongoCaseFact]
+    public async Task Override_ValidatesDatesAndRejectsAnOldRevisionAfterSuccessfulSave()
+    {
+        var original = Row();
+        await Seed(original);
+        foreach (var date in new[] { "2026-02-30", "01-Dec-2026", "2026-12-01T00:00:00Z", "", "partial" })
+        {
+            await using var invalid = Context();
+            Assert.Equal(400, (await Service(invalid).SetDueDateOverrideAsync(original.Id, 1,
+                new CaseDueDateOverrideRequest { OverrideDueDate = date, UpdatedDate = original.Upd_Dtm })).Status);
+            Assert.Null(Assert.Single(await Read()).OverrideDueDate);
+        }
+        await using (var edit = Context())
+            Assert.Equal(200, (await Service(edit).SetDueDateOverrideAsync(original.Id, 1,
+                new CaseDueDateOverrideRequest { OverrideDueDate = "2028-02-29", UpdatedDate = original.Upd_Dtm })).Status);
+        await using (var stale = Context())
+            Assert.Equal(409, (await Service(stale).SetDueDateOverrideAsync(original.Id, 1,
+                new CaseDueDateOverrideRequest { OverrideDueDate = "2026-12-02", UpdatedDate = original.Upd_Dtm })).Status);
+        await using var refreshed = Context();
+        var row = Assert.Single((await Service(refreshed).GetAssignedCasesAsync(1)).Payload.ReservedJudgments);
+        Assert.Equal("2028-02-29", row.OverrideDueDate);
+        Assert.Equal("25-Nov-2026", row.DueDate);
+        Assert.Equal(Assert.Single(await Read()).Upd_Dtm, row.UpdatedDate);
     }
 
     [MongoCaseFact]

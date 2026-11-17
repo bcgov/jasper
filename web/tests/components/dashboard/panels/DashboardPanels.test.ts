@@ -1,4 +1,5 @@
 import { useCommonStore, useCourtFileSearchStore } from '@/stores';
+import { PERMISSIONS } from '@/constants/permissions';
 import { AssignedCaseResponse, Case } from '@/types';
 import { ApiResponse } from '@/types/ApiResponse';
 import { CourtClassEnum, UserInfo } from '@/types/common';
@@ -12,9 +13,13 @@ import { nextTick } from 'vue';
 const mockData: ApiResponse<AssignedCaseResponse> = {
   succeeded: true,
   payload: {
+    dueDateEditingJudgeId: 1,
     reservedJudgments: [
       {
         id: 'case1',
+        judgeId: 1,
+        appearanceId: 'appearance-1',
+        updatedDate: '2026-11-03T12:00:00Z',
         courtClass: 'CC',
         physicalFileId: 'phys-1',
         courtFileNumber: 'CF-12345',
@@ -22,6 +27,9 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
       } as Case,
       {
         id: 'case2',
+        judgeId: 1,
+        appearanceId: 'appearance-2',
+        updatedDate: '2026-11-03T12:00:00Z',
         courtClass: 'SC',
         physicalFileId: 'phys-2',
         courtFileNumber: 'CF-67890',
@@ -67,7 +75,7 @@ const mockData: ApiResponse<AssignedCaseResponse> = {
 };
 
 const createCaseService = () => ({
-  getAssignedCases: vi.fn().mockResolvedValue(mockData),
+  getAssignedCases: vi.fn().mockImplementation(async () => structuredClone(mockData)),
   setDueDateOverride: vi.fn(),
 });
 
@@ -85,8 +93,9 @@ describe('DashboardPanels.vue', () => {
     windowOpenSpy.mockRestore();
   });
 
-  function mountComponent() {
-    return mount(DashboardPanels, {
+  function mountComponent(judgeId?: number) {
+    const wrapper = mount(DashboardPanels, {
+      props: { judgeId },
       global: {
         plugins: [createPinia()],
         provide: {
@@ -94,23 +103,35 @@ describe('DashboardPanels.vue', () => {
         },
       },
     });
+    useCommonStore().loggedInUserInfo = {
+      judgeId: 1,
+      isActive: true,
+      roles: ['Judge'],
+      permissions: [PERMISSIONS.EDIT_RESERVED_JUDGMENTS_DUE_DATE],
+    } as UserInfo;
+    return wrapper;
   }
 
   it('uses the signed-in judge when the selected schedule belongs to another judge', async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const common = useCommonStore();
-    common.loggedInUserInfo = { judgeId: 1, roles: ['Judge'] } as UserInfo;
+    common.loggedInUserInfo = {
+      judgeId: 1, isActive: true, roles: [], permissions: [PERMISSIONS.EDIT_RESERVED_JUDGMENTS_DUE_DATE],
+    } as unknown as UserInfo;
     common.userInfo = { judgeId: 2, roles: ['Judge'] } as UserInfo;
     const vm = wrapper.vm as any;
     const row = {
       judgeId: 1,
       physicalFileId: 'file',
       appearanceId: 'appearance',
+      updatedDate: '2026-11-03T12:00:00Z',
     };
     expect(vm.canEditDueDate(row)).toBe(true);
     expect(vm.canEditDueDate({ ...row, judgeId: 2 })).toBe(false);
     common.loggedInUserInfo.roles = ['System Administrator'];
+    expect(vm.canEditDueDate(row)).toBe(true);
+    common.loggedInUserInfo.permissions = [];
     expect(vm.canEditDueDate(row)).toBe(false);
   });
 
@@ -124,6 +145,7 @@ describe('DashboardPanels.vue', () => {
     { reason: 'CNT', restrictionCode: 'S' },
     { reason: 'DEC', restrictionCode: 'G' },
     { reason: 'DEC', restrictionCode: undefined },
+    { updatedDate: undefined },
   ])(
     'does not offer editing for a known ineligible record: %j',
     async (fields) => {
@@ -131,13 +153,16 @@ describe('DashboardPanels.vue', () => {
       await flushPromises();
       useCommonStore().loggedInUserInfo = {
         judgeId: 1,
+        isActive: true,
         roles: ['Judge'],
+        permissions: [PERMISSIONS.EDIT_RESERVED_JUDGMENTS_DUE_DATE],
       } as UserInfo;
       expect(
         (wrapper.vm as any).canEditDueDate({
           judgeId: 1,
           physicalFileId: 'file',
           appearanceId: 'appearance',
+          updatedDate: '2026-11-03T12:00:00Z',
           ...fields,
         })
       ).toBe(false);
@@ -157,13 +182,16 @@ describe('DashboardPanels.vue', () => {
       await flushPromises();
       useCommonStore().loggedInUserInfo = {
         judgeId: 1,
+        isActive: true,
         roles: ['Judge'],
+        permissions: [PERMISSIONS.EDIT_RESERVED_JUDGMENTS_DUE_DATE],
       } as UserInfo;
       expect(
         (wrapper.vm as any).canEditDueDate({
           judgeId: 1,
           physicalFileId: 'file',
           appearanceId: 'appearance',
+          updatedDate: '2026-11-03T12:00:00Z',
           ...fields,
         })
       ).toBe(true);
@@ -198,12 +226,123 @@ describe('DashboardPanels.vue', () => {
     caseService.setDueDateOverride.mockResolvedValue({
       succeeded: true,
       errors: [],
-      payload: vm.reservedJudgements.map((row: Case) => ({ id: row.id })),
+      payload: vm.reservedJudgements.map((row: Case) => ({ ...row, overrideDueDate: undefined })),
     });
     await vm.saveDueDate(vm.reservedJudgements[0], null);
     expect(
       vm.reservedJudgements.every((row: Case) => row.overrideDueDate === null)
     ).toBe(true);
+  });
+
+  it('does not offer editing without a verified write identity or signed-in permissions', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    const row = vm.reservedJudgements[0];
+    expect(vm.canEditDueDate(row)).toBe(true);
+    vm.dueDateEditingJudgeId = null;
+    expect(vm.canEditDueDate(row)).toBe(false);
+    vm.dueDateEditingJudgeId = 1;
+    const common = useCommonStore();
+    common.userInfo = common.loggedInUserInfo;
+    common.loggedInUserInfo = null;
+    expect(vm.canEditDueDate(row)).toBe(false);
+    await expect(vm.saveDueDate(row, '2026-12-01')).rejects.toThrow('cannot edit');
+    expect(caseService.setDueDateOverride).not.toHaveBeenCalled();
+  });
+
+  it('prevents overlapping saves for duplicate-key rows and updates only returned rows', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    const row = vm.reservedJudgements[0];
+    vm.reservedJudgements.push({ ...row, id: 'duplicate' });
+    let complete!: (value: unknown) => void;
+    caseService.setDueDateOverride.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
+    const saving = vm.saveDueDate(row, '2026-12-01');
+    await expect(vm.saveDueDate(vm.reservedJudgements[2], '2026-12-02')).rejects.toThrow('already being saved');
+    expect(caseService.setDueDateOverride).toHaveBeenCalledOnce();
+    complete({ succeeded: true, errors: [], payload: [row, vm.reservedJudgements[2]].map(value => ({
+      ...value, overrideDueDate: '2026-12-01', updatedDate: '2026-11-16T12:00:00Z',
+    })) });
+    await saving;
+    expect(vm.reservedJudgements[0].overrideDueDate).toBe('2026-12-01');
+    expect(vm.reservedJudgements[2].updatedDate).toBe('2026-11-16T12:00:00Z');
+    expect(vm.reservedJudgements[1].overrideDueDate).toBeUndefined();
+  });
+
+  it('ignores a completed save after switching judges even when the new response reuses an ID', async () => {
+    const wrapper = mountComponent(1);
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    const row = vm.reservedJudgements[0];
+    let complete!: (value: unknown) => void;
+    caseService.setDueDateOverride.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
+    const saving = vm.saveDueDate(row, '2026-12-01');
+    await wrapper.setProps({ judgeId: 2 });
+    await flushPromises();
+    complete({ succeeded: true, errors: [], payload: [{ ...row, overrideDueDate: '2026-12-01' }] });
+    await saving;
+    expect(vm.reservedJudgements[0].overrideDueDate).toBeUndefined();
+  });
+
+  it('ignores a completed save after unmounting', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    const row = vm.reservedJudgements[0];
+    let complete!: (value: unknown) => void;
+    caseService.setDueDateOverride.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
+    const saving = vm.saveDueDate(row, '2026-12-01');
+    wrapper.unmount();
+    complete({ succeeded: true, errors: [], payload: [{ ...row, overrideDueDate: '2026-12-01' }] });
+    await saving;
+    expect(row.overrideDueDate).toBeUndefined();
+  });
+
+  it('uses only the newest judge GET response', async () => {
+    const wrapper = mountComponent(1);
+    await flushPromises();
+    let older!: (value: unknown) => void;
+    caseService.getAssignedCases.mockImplementationOnce(() => new Promise(resolve => { older = resolve; }));
+    await wrapper.setProps({ judgeId: 2 });
+    const newest = structuredClone(mockData);
+    newest.payload.reservedJudgments[0].styleOfCause = 'Newest judge response';
+    caseService.getAssignedCases.mockResolvedValueOnce(newest);
+    await wrapper.setProps({ judgeId: 3 });
+    await flushPromises();
+    older(structuredClone(mockData));
+    await flushPromises();
+    expect((wrapper.vm as any).reservedJudgements[0].styleOfCause).toBe('Newest judge response');
+    expect((wrapper.vm as any).isLoading).toBe(false);
+  });
+
+  it('shows saved overrides again after refetch and component remount', async () => {
+    const persisted = structuredClone(mockData);
+    persisted.payload.reservedJudgments[0].overrideDueDate = '2026-12-01';
+    caseService.getAssignedCases.mockResolvedValue(persisted);
+    const wrapper = mountComponent(1);
+    await flushPromises();
+    expect((wrapper.vm as any).reservedJudgements[0].overrideDueDate).toBe('2026-12-01');
+    await wrapper.setProps({ judgeId: 2 });
+    await wrapper.setProps({ judgeId: 1 });
+    await flushPromises();
+    expect((wrapper.vm as any).reservedJudgements[0].overrideDueDate).toBe('2026-12-01');
+    wrapper.unmount();
+    const remounted = mountComponent(1);
+    await flushPromises();
+    expect((remounted.vm as any).reservedJudgements[0].overrideDueDate).toBe('2026-12-01');
+  });
+
+  it('does not mutate a persisted row on failed saves', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    const row = vm.reservedJudgements[0];
+    caseService.setDueDateOverride.mockResolvedValue({ succeeded: false, errors: ['Save rejected.'] });
+    await expect(vm.saveDueDate(row, '2026-12-01')).rejects.toThrow('Save rejected.');
+    expect(row.overrideDueDate).toBeUndefined();
+    expect(row.updatedDate).toBe('2026-11-03T12:00:00Z');
   });
 
   it('renders v-skeleton-loader on initial load', async () => {

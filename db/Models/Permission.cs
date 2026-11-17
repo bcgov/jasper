@@ -20,6 +20,7 @@ namespace Scv.Db.Models
         public const string VIEW_OTHER_JUDGE_SCHEDULE = "VIEW_OTHER_JUDGE_SCHEDULE";
         public const string VIEW_OTHER_CALENDARS = "VIEW_OTHER_CALENDARS";
         public const string VIEW_RESERVED_JUDGMENTS = "VIEW_RESERVED_JUDGMENTS";
+        public const string EDIT_RESERVED_JUDGMENTS_DUE_DATE = "EDIT_RESERVED_JUDGMENTS_DUE_DATE";
         public const string VIEW_CONTINUATIONS = "VIEW_CONTINUATIONS";
         public const string COURT_CALENDAR_ACTIVITY_PROVINCE = "COURT_CALENDAR_ACTIVITY_PROVINCE";
         public const string COURT_CALENDAR_ACTIVITY_REGION = "COURT_CALENDAR_ACTIVITY_REGION";
@@ -145,6 +146,13 @@ namespace Scv.Db.Models
                 Code = VIEW_RESERVED_JUDGMENTS,
                 Name = "View Reserved Judgments",
                 Description = "Permission to view reserved judgments",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = EDIT_RESERVED_JUDGMENTS_DUE_DATE,
+                Name = "Edit Reserved Judgment Due Dates",
+                Description = "Permission to edit due dates for owned reserved judgments and decisions",
                 IsActive = true
             },
             new Permission

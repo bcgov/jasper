@@ -49,6 +49,60 @@ public class DeskOrderDetailsExtractorTests
         Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL)]
+    [InlineData(DeskOrderDetailsExtractor.REJECTION_REASONS_SHORT_LABEL)]
+    public void Extract_ReturnsRejectionReasons_WhenEitherReasonsLabelIsUsed(string label)
+    {
+        var rejectionReasons = _faker.Lorem.Sentence();
+        var directionsText = _faker.Lorem.Sentence();
+        var term = _faker.Lorem.Sentence();
+
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(label));
+            body.AppendChild(ParagraphOf(rejectionReasons));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(directionsText));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(term));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.Equal(rejectionReasons, result.ReasonsForRejection);
+        Assert.Equal(directionsText, result.Directions);
+        Assert.Single(result.OrderTerms);
+    }
+
+    [Theory]
+    [InlineData("Reasons for Rejection: (see below)")]
+    [InlineData("Reasons: (see below)")]
+    [InlineData("  reasons:   ")]
+    public void Extract_ReturnsRejectionReasons_WhenLabelParagraphHasTrailingTextOrDifferentCase(string label)
+    {
+        var rejectionReasons = _faker.Lorem.Sentence();
+        var directionsText = _faker.Lorem.Sentence();
+        var term = _faker.Lorem.Sentence();
+
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(label));
+            body.AppendChild(ParagraphOf(rejectionReasons));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(directionsText));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(ParagraphOf(term));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var result = _extractor.Extract(stream);
+
+        Assert.Equal(rejectionReasons, result.ReasonsForRejection);
+        Assert.Equal(directionsText, result.Directions);
+    }
+
     [Fact]
     public void Extract_ReturnsDirectionsAndOrderTerms_WhenDocumentIsValid()
     {

@@ -14,6 +14,7 @@ namespace Scv.Api.Documents.Extractors;
 public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 {
     public const string REJECTION_REASONS_LABEL = "Reasons for Rejection:";
+    public const string REJECTION_REASONS_SHORT_LABEL = "Reasons:";
     public const string DIRECTIONS_LABEL = "Directions:";
     public const string ORDER_TERMS_LABEL = "Terms of Order:";
     public const string SIGNATURE_TAG = "Insert Signature";
@@ -123,7 +124,7 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
         {
             var child = body.ChildElements[i];
 
-            if (rejectionReasonsIndex < 0 && IsLabelMatch(child.InnerText, REJECTION_REASONS_LABEL))
+            if (rejectionReasonsIndex < 0 && IsLabelMatch(child.InnerText, REJECTION_REASONS_LABEL, REJECTION_REASONS_SHORT_LABEL))
             {
                 rejectionReasonsIndex = i;
             }
@@ -145,8 +146,12 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
         return (rejectionReasonsIndex, directionsIndex, orderTermsIndex, signatureIndex);
     }
 
-    private static bool IsLabelMatch(string text, string label) =>
-        string.Equals(text?.Trim(), label, StringComparison.OrdinalIgnoreCase);
+    private static bool IsLabelMatch(string text, params string[] labels)
+    {
+        var trimmed = text?.Trim();
+        return !string.IsNullOrEmpty(trimmed)
+            && labels.Any(label => trimmed.StartsWith(label, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static bool HasSignatureTag(OpenXmlElement element)
     {

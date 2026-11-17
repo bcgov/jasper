@@ -3,6 +3,7 @@
     :headers="headers"
     :items="data"
     :sort-by="sortBy"
+    :row-props="getRowProps"
     fixed-header
   >
     <template #[`item.courtClass`]="{ item }">
@@ -89,7 +90,7 @@
   } from '@/utils/dateUtils';
   import { getCourtClassLabel, getCourtClassStyle } from '@/utils/utils';
   import { mdiCalendarMonthOutline } from '@mdi/js';
-  import { computed, onBeforeUnmount, ref, watch } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
   const props = defineProps<{
     data: Case[];
@@ -108,6 +109,7 @@
       | 'caseAge'
     )[];
     sortBy?: { key: string; order: 'asc' | 'desc' }[];
+    highlightReservedJudgments?: boolean;
   }>();
 
   const sortBy = ref(props.sortBy || [{ key: 'dueDate', order: 'asc' }]);
@@ -117,11 +119,22 @@
   const saving = ref<Record<string, boolean>>({});
   const menus = ref<Record<string, boolean>>({});
   const focused = ref<Record<string, boolean>>({});
+  const today = ref(formatDateInstanceToYYYYMMDD(new Date()));
+  let dateRefreshTimer: ReturnType<typeof setInterval> | undefined;
   let active = true;
   let generation = 0;
 
+  onMounted(() => {
+    if (props.highlightReservedJudgments) {
+      dateRefreshTimer = setInterval(() => {
+        today.value = formatDateInstanceToYYYYMMDD(new Date());
+      }, 60_000);
+    }
+  });
+
   onBeforeUnmount(() => {
     active = false;
+    clearInterval(dateRefreshTimer);
   });
   watch(
     () => props.data,
@@ -177,6 +190,33 @@
   };
   const displayDate = (value: string | null | undefined) =>
     formatDateToDDMMMYYYY(inputDate(value));
+
+  const businessDaysUntil = (value: string | null | undefined) => {
+    const date = inputDate(value);
+    if (!date || date < today.value) return undefined;
+
+    const dueDate = parseDDMMMYYYYToDate(formatDateToDDMMMYYYY(date));
+    const cursor = parseDDMMMYYYYToDate(formatDateToDDMMMYYYY(today.value));
+    if (!dueDate || !cursor) return undefined;
+
+    let days = 0;
+    // Count weekdays after today, stopping once the highlighting window is exceeded.
+    while (cursor < dueDate && days <= 7) {
+      cursor.setDate(cursor.getDate() + 1);
+      if (cursor.getDay() !== 0 && cursor.getDay() !== 6) days++;
+    }
+    return days;
+  };
+
+  const getRowProps = ({ item }: { item: Case }) => {
+    // The reserved judgments panel also contains scheduled decisions with a reason code.
+    if (!props.highlightReservedJudgments || item.reason?.trim()) return {};
+
+    const days = businessDaysUntil(item.overrideDueDate ?? item.dueDate);
+    if (days === undefined || days > 7) return {};
+
+    return { class: days <= 3 ? 'due-date-urgent' : 'due-date-warning' };
+  };
 
   const parseDraft = (value: string): string | null | undefined => {
     const text = value.trim();
@@ -351,3 +391,19 @@
     return columnKeys.map((key) => allColumns[key]);
   });
 </script>
+
+<style scoped>
+  :deep(tr.due-date-warning),
+  :deep(tr.due-date-warning > td),
+  :deep(tr.due-date-warning:hover),
+  :deep(tr.due-date-warning:hover > td) {
+    background-color: var(--bg-yellow-500);
+  }
+
+  :deep(tr.due-date-urgent),
+  :deep(tr.due-date-urgent > td),
+  :deep(tr.due-date-urgent:hover),
+  :deep(tr.due-date-urgent:hover > td) {
+    background-color: color-mix(in srgb, var(--bg-red-500) 15%, white);
+  }
+</style>

@@ -23,6 +23,7 @@
           <v-skeleton-loader class="my-1" type="table" :loading="isLoading">
             <CaseDataTable
               :data="reservedJudgements"
+              highlight-reserved-judgments
               :can-edit-due-date="canEditDueDate"
               :save-due-date="saveDueDate"
               :view-case-details="viewCaseDetails"

@@ -33,6 +33,7 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
     Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
     Task<OperationResult> SubmitOrder(string id);
+    Task<OperationResult> RetrySubmitOrderAsync(int packageId);
     Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId);
     Task<byte[]> GetSupportingDocumentByPackageIdAsync(int packageId, int judgeId);
     Task<OperationResult> ReplaceSupportingDocumentByPackageIdAsync(int packageId, int judgeId, byte[] data);
@@ -349,6 +350,26 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 ? OperationResult.Failure("Failed to submit order to CSO.")
                 : errorResult;
         }
+    }
+
+    public async Task<OperationResult> RetrySubmitOrderAsync(int packageId)
+    {
+        var orders = await Repo.FindAsync(o => o.OrderRequest.Referral.PackageId == packageId);
+        var order = orders.FirstOrDefault();
+        if (order is null)
+        {
+            return OperationResult.Failure("Order not found");
+        }
+
+        if (order.SubmitStatus != SubmitStatus.Error)
+        {
+            return OperationResult.Failure($"Only orders with submit status '{SubmitStatus.Error}' can be retried.");
+        }
+
+        _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(order.Id));
+        this.Logger.LogInformation("Order {OrderId} submission retry enqueued.", order.Id.SanitizeForLog());
+
+        return OperationResult.Success();
     }
 
     public async Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId)

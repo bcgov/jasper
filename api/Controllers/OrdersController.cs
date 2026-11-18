@@ -64,6 +64,30 @@ public class OrdersController(
     }
 
     /// <summary>
+    /// Resubmits the specified package that failed to submit previously.
+    /// </summary>
+    /// <param name="packageId">The package id.</param>
+    [HttpPost]
+    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
+    [Route("package/{packageId:int}/retry-submit")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
+    public async Task<IActionResult> RetrySubmitOrder([FromRoute] int packageId)
+    {
+        var result = await _orderService.RetrySubmitOrderAsync(packageId);
+        if (!result.Succeeded)
+        {
+            return result.Errors.Any(e => e.Contains("not found"))
+                ? NotFound(new { error = result.Errors })
+                : BadRequest(new { error = result.Errors });
+        }
+
+        return Accepted();
+    }
+
+    /// <summary>
     /// Downloads the supporting document (docx) of the judge's order by package id. This is a temporary endpoint
     /// </summary>
     /// <param name="packageId">The package id of the order's referral.</param>

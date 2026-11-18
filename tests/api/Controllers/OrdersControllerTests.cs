@@ -672,6 +672,8 @@ public class OrdersControllerTests
         new(
             _mockOrderRequestValidator.Object,
             _mockOrderReviewValidator.Object,
+            Mock.Of<IValidator<SupportingDocumentUploadRequest>>(),
+            Mock.Of<IFileUploadProcessor>(),
             _mockOrderService.Object)
         {
             ControllerContext = new ControllerContext

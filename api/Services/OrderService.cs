@@ -33,7 +33,7 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
     Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
     Task<OperationResult> SubmitOrder(string id);
-    Task<OperationResult> RetrySubmitOrderAsync(int packageId);
+    Task<OperationResult> RetrySubmitOrderAsync(int packageId, int judgeId);
     Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId);
     Task<byte[]> GetSupportingDocumentByPackageIdAsync(int packageId, int judgeId);
     Task<OperationResult> ReplaceSupportingDocumentByPackageIdAsync(int packageId, int judgeId, byte[] data);
@@ -352,9 +352,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
     }
 
-    public async Task<OperationResult> RetrySubmitOrderAsync(int packageId)
+    public async Task<OperationResult> RetrySubmitOrderAsync(int packageId, int judgeId)
     {
-        var orders = await Repo.FindAsync(o => o.OrderRequest.Referral.PackageId == packageId);
+        var orders = await Repo.FindAsync(o => o.JudgeId == judgeId && o.OrderRequest.Referral.PackageId == packageId);
         var order = orders.FirstOrDefault();
         if (order is null)
         {

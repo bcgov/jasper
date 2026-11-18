@@ -67,6 +67,7 @@ public class OrdersController(
     /// Resubmits the specified package that failed to submit previously.
     /// </summary>
     /// <param name="packageId">The package id.</param>
+    /// <param name="judgeId">The override judge id.</param>
     [HttpPost]
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("package/{packageId:int}/retry-submit")]
@@ -74,9 +75,9 @@ public class OrdersController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public async Task<IActionResult> RetrySubmitOrder([FromRoute] int packageId)
+    public async Task<IActionResult> RetrySubmitOrder([FromRoute] int packageId, int? judgeId = null)
     {
-        var result = await _orderService.RetrySubmitOrderAsync(packageId);
+        var result = await _orderService.RetrySubmitOrderAsync(packageId, this.User.JudgeId(judgeId));
         if (!result.Succeeded)
         {
             return result.Errors.Any(e => e.Contains("not found"))

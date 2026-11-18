@@ -6,9 +6,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Validation;
+using Scv.Api.Models;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
 using Scv.Core.Infrastructure;
+using Scv.Db.Models;
 using Scv.Models.Order;
 
 namespace Scv.Api.Controllers;
@@ -18,10 +21,14 @@ namespace Scv.Api.Controllers;
 public class OrdersController(
     IValidator<OrderRequestDto> orderRequestValidator,
     IValidator<OrderReviewDto> orderReviewValidator,
+    IValidator<SupportingDocumentUploadRequest> supportingDocumentUploadRequestValidator,
+    IFileUploadProcessor fileUploadProcessor,
     IOrderService orderService) : ControllerBase
 {
     private readonly IValidator<OrderRequestDto> _orderRequestValidator = orderRequestValidator;
     private readonly IValidator<OrderReviewDto> _orderReviewValidator = orderReviewValidator;
+    private readonly IValidator<SupportingDocumentUploadRequest> _supportingDocumentUploadRequestValidator = supportingDocumentUploadRequestValidator;
+    private readonly IFileUploadProcessor _fileUploadProcessor = fileUploadProcessor;
     private readonly IOrderService _orderService = orderService;
 
     /// <summary>
@@ -54,6 +61,57 @@ public class OrdersController(
             return NotFound("Order not found.");
         }
         return Ok(judgeOrder);
+    }
+
+    /// <summary>
+    /// Downloads the supporting document (docx) of the judge's order by package id. This is a temporary endpoint
+    /// </summary>
+    /// <param name="packageId">The package id of the order's referral.</param>
+    /// <param name="judgeId">The override judge id.</param>
+    [HttpGet]
+    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
+    [Route("package/{packageId:int}/supporting-document")]
+    [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
+    public async Task<IActionResult> GetSupportingDocument([FromRoute] int packageId, int? judgeId = null)
+    {
+        var bytes = await _orderService.GetSupportingDocumentByPackageIdAsync(packageId, this.User.JudgeId(judgeId));
+        if (bytes == null)
+        {
+            return NotFound("Supporting document not found.");
+        }
+
+        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"supporting-document-{packageId}.docx");
+    }
+
+    /// <summary>
+    /// Overwrites the supporting document (docx) of the judge's order by package id.
+    /// </summary>
+    /// <param name="packageId">The package id of the order's referral.</param>
+    /// <param name="request">The upload request containing the replacement .docx file.</param>
+    /// <param name="judgeId">The override judge id.</param>
+    [HttpPut]
+    [Route("package/{packageId:int}/supporting-document")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
+    public async Task<IActionResult> ReplaceSupportingDocument([FromRoute] int packageId, [FromForm] SupportingDocumentUploadRequest request, int? judgeId = null)
+    {
+        var upload = await _fileUploadProcessor.ValidateAndScanAsync(request, _supportingDocumentUploadRequestValidator);
+        if (!upload.Succeeded)
+        {
+            return BadRequest(upload.Errors[0]);
+        }
+
+        var result = await _orderService.ReplaceSupportingDocumentByPackageIdAsync(packageId, this.User.JudgeId(judgeId), upload.Payload.Content);
+        if (!result.Succeeded)
+        {
+            return result.Errors.Any(e => e.Contains("not found"))
+                ? NotFound(new { error = result.Errors })
+                : BadRequest(new { error = result.Errors });
+        }
+
+        return NoContent();
     }
 
     /// <summary>

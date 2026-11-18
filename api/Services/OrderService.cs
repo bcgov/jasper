@@ -34,6 +34,8 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
     Task<OperationResult> SubmitOrder(string id);
     Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId);
+    Task<byte[]> GetSupportingDocumentByPackageIdAsync(int packageId, int judgeId);
+    Task<OperationResult> ReplaceSupportingDocumentByPackageIdAsync(int packageId, int judgeId, byte[] data);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
@@ -357,6 +359,34 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return null;
         }
         return Mapper.Map<OrderViewDto>(order);
+    }
+
+    public async Task<byte[]> GetSupportingDocumentByPackageIdAsync(int packageId, int judgeId)
+    {
+        var orders = await Repo.FindAsync(o => o.JudgeId == judgeId && o.OrderRequest.Referral.PackageId == packageId);
+        var data = orders.FirstOrDefault()?.SupportingDocumentData;
+        return data is { Length: > 0 } ? data : null;
+    }
+
+    public async Task<OperationResult> ReplaceSupportingDocumentByPackageIdAsync(int packageId, int judgeId, byte[] data)
+    {
+        if (data is not { Length: > 0 })
+        {
+            return OperationResult.Failure("Supporting document is empty.");
+        }
+
+        var orders = await Repo.FindAsync(o => o.JudgeId == judgeId && o.OrderRequest.Referral.PackageId == packageId);
+        var order = orders.FirstOrDefault();
+        if (order is null)
+        {
+            return OperationResult.Failure("Order not found");
+        }
+
+        order.SupportingDocumentData = data;
+        await Repo.UpdateAsync(order);
+        this.InvalidateCache(this.CacheName);
+
+        return OperationResult.Success();
     }
 
     #region Private Methods

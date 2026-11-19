@@ -105,7 +105,7 @@ public class OrdersController(
             return NotFound("Supporting document not found.");
         }
 
-        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"supporting-document-{packageId}.docx");
+        return File(bytes, SupportingDocumentUploadRequest.DocxContentType, $"supporting-document-{packageId}.docx");
     }
 
     /// <summary>

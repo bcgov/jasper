@@ -41,6 +41,8 @@ public interface IOrderService : ICrudService<OrderDto>
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
 {
+    private const string OrderNotFoundMessage = "Order not found";
+
     private readonly ICourtFileService _courtFileService;
     private readonly IJudgeService _judgeService;
     private readonly IBackgroundJobClient _backgroundJobClient;
@@ -206,7 +208,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             var order = await Repo.GetByIdAsync(id);
             if (order is null)
             {
-                return OperationResult.Failure("Order not found");
+                return OperationResult.Failure(OrderNotFoundMessage);
             }
 
             var user = _httpContextAccessor.HttpContext?.User;
@@ -295,7 +297,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         if (order is null)
         {
             this.Logger.LogWarning("Order {OrderId} not found for submission.", id);
-            return OperationResult.Failure("Order not found");
+            return OperationResult.Failure(OrderNotFoundMessage);
         }
 
         var orderDto = Mapper.Map<OrderDto>(order);
@@ -358,7 +360,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         var order = orders.FirstOrDefault();
         if (order is null)
         {
-            return OperationResult.Failure("Order not found");
+            return OperationResult.Failure(OrderNotFoundMessage);
         }
 
         if (order.SubmitStatus != SubmitStatus.Error)
@@ -400,7 +402,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         var order = orders.FirstOrDefault();
         if (order is null)
         {
-            return OperationResult.Failure("Order not found");
+            return OperationResult.Failure(OrderNotFoundMessage);
         }
 
         order.SupportingDocumentData = data;

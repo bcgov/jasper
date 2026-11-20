@@ -77,6 +77,11 @@ public class OrdersController(
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
     public async Task<IActionResult> RetrySubmitOrder([FromRoute] int packageId, int? judgeId = null)
     {
+        if (judgeId.HasValue && judgeId.Value != this.User.JudgeId() && !this.User.CanViewOthersSchedule())
+        {
+            return Forbid("You are not authorized to access this resource.");
+        }
+
         var result = await _orderService.RetrySubmitOrderAsync(packageId, this.User.JudgeId(judgeId));
         if (!result.Succeeded)
         {
@@ -89,7 +94,7 @@ public class OrdersController(
     }
 
     /// <summary>
-    /// Downloads the supporting document (docx) of the judge's order by package id. This is a temporary endpoint
+    /// Downloads the supporting document data (docx) of the judge's order by package id.
     /// </summary>
     /// <param name="packageId">The package id of the order's referral.</param>
     /// <param name="judgeId">The override judge id.</param>
@@ -97,8 +102,13 @@ public class OrdersController(
     [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("package/{packageId:int}/supporting-document")]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public async Task<IActionResult> GetSupportingDocument([FromRoute] int packageId, int? judgeId = null)
+    public async Task<IActionResult> GetSupportingDocumentData([FromRoute] int packageId, int? judgeId = null)
     {
+        if (judgeId.HasValue && judgeId.Value != this.User.JudgeId() && !this.User.CanViewOthersSchedule())
+        {
+            return Forbid("You are not authorized to access this resource.");
+        }
+
         var bytes = await _orderService.GetSupportingDocumentByPackageIdAsync(packageId, this.User.JudgeId(judgeId));
         if (bytes == null)
         {
@@ -109,19 +119,25 @@ public class OrdersController(
     }
 
     /// <summary>
-    /// Overwrites the supporting document (docx) of the judge's order by package id.
+    /// Overwrites the supporting document data (docx) of the judge's order by package id.
     /// </summary>
     /// <param name="packageId">The package id of the order's referral.</param>
     /// <param name="request">The upload request containing the replacement .docx file.</param>
     /// <param name="judgeId">The override judge id.</param>
     [HttpPut]
+    [Authorize(AuthenticationSchemes = "SiteMinder, OpenIdConnect", Policy = nameof(ProviderAuthorizationHandler))]
     [Route("package/{packageId:int}/supporting-document")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [RequiresPermission(permissions: Permission.LOCK_UNLOCK_USERS)]
-    public async Task<IActionResult> ReplaceSupportingDocument([FromRoute] int packageId, [FromForm] SupportingDocumentUploadRequest request, int? judgeId = null)
+    public async Task<IActionResult> ReplaceSupportingDocumentData([FromRoute] int packageId, [FromForm] SupportingDocumentUploadRequest request, int? judgeId = null)
     {
+        if (judgeId.HasValue && judgeId.Value != this.User.JudgeId() && !this.User.CanViewOthersSchedule())
+        {
+            return Forbid("You are not authorized to access this resource.");
+        }
+
         var upload = await _fileUploadProcessor.ValidateAndScanAsync(request, _supportingDocumentUploadRequestValidator);
         if (!upload.Succeeded)
         {

@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Scv.Api.Controllers;
+using Scv.Api.Models;
+using Scv.Api.Processors;
 using Scv.Api.Services;
 using Scv.Core.Helpers;
 using Scv.Core.Infrastructure;
@@ -41,6 +43,8 @@ public class OrdersControllerTests
         _controller = new OrdersController(
             _mockOrderRequestValidator.Object,
             _mockOrderReviewValidator.Object,
+            Mock.Of<IValidator<SupportingDocumentUploadRequest>>(),
+            Mock.Of<IFileUploadProcessor>(),
             _mockOrderService.Object);
 
         var claims = new List<Claim>
@@ -668,6 +672,8 @@ public class OrdersControllerTests
         new(
             _mockOrderRequestValidator.Object,
             _mockOrderReviewValidator.Object,
+            Mock.Of<IValidator<SupportingDocumentUploadRequest>>(),
+            Mock.Of<IFileUploadProcessor>(),
             _mockOrderService.Object)
         {
             ControllerContext = new ControllerContext

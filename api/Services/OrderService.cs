@@ -33,11 +33,16 @@ public interface IOrderService : ICrudService<OrderDto>
     Task<OperationResult> ReviewOrder(string id, OrderReviewDto orderReview);
     Task<IEnumerable<OrderViewDto>> GetJudgeOrdersAsync(int judgeId);
     Task<OperationResult> SubmitOrder(string id);
+    Task<OperationResult> RetrySubmitOrderAsync(int packageId, int judgeId);
     Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId);
+    Task<byte[]> GetSupportingDocumentByPackageIdAsync(int packageId, int judgeId);
+    Task<OperationResult> ReplaceSupportingDocumentByPackageIdAsync(int packageId, int judgeId, byte[] data);
 }
 
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
 {
+    private const string OrderNotFoundMessage = "Order not found";
+
     private readonly ICourtFileService _courtFileService;
     private readonly IJudgeService _judgeService;
     private readonly IBackgroundJobClient _backgroundJobClient;
@@ -203,7 +208,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             var order = await Repo.GetByIdAsync(id);
             if (order is null)
             {
-                return OperationResult.Failure("Order not found");
+                return OperationResult.Failure(OrderNotFoundMessage);
             }
 
             var user = _httpContextAccessor.HttpContext?.User;
@@ -292,7 +297,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         if (order is null)
         {
             this.Logger.LogWarning("Order {OrderId} not found for submission.", id);
-            return OperationResult.Failure("Order not found");
+            return OperationResult.Failure(OrderNotFoundMessage);
         }
 
         var orderDto = Mapper.Map<OrderDto>(order);
@@ -349,6 +354,26 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
     }
 
+    public async Task<OperationResult> RetrySubmitOrderAsync(int packageId, int judgeId)
+    {
+        var orders = await Repo.FindAsync(o => o.JudgeId == judgeId && o.OrderRequest.Referral.PackageId == packageId);
+        var order = orders.FirstOrDefault();
+        if (order is null)
+        {
+            return OperationResult.Failure(OrderNotFoundMessage);
+        }
+
+        if (order.SubmitStatus != SubmitStatus.Error)
+        {
+            return OperationResult.Failure($"Only orders with submit status '{SubmitStatus.Error}' can be retried.");
+        }
+
+        _backgroundJobClient.Enqueue<SubmitOrderJob>(job => job.Execute(order.Id));
+        this.Logger.LogInformation("Order {OrderId} submission retry enqueued.", order.Id.SanitizeForLog());
+
+        return OperationResult.Success();
+    }
+
     public async Task<OrderViewDto> GetOrderByIdAsync(string id, int judgeId)
     {
         var order = await Repo.GetByIdAsync(id);
@@ -357,6 +382,34 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             return null;
         }
         return Mapper.Map<OrderViewDto>(order);
+    }
+
+    public async Task<byte[]> GetSupportingDocumentByPackageIdAsync(int packageId, int judgeId)
+    {
+        var orders = await Repo.FindAsync(o => o.JudgeId == judgeId && o.OrderRequest.Referral.PackageId == packageId);
+        var data = orders.FirstOrDefault()?.SupportingDocumentData;
+        return data is { Length: > 0 } ? data : null;
+    }
+
+    public async Task<OperationResult> ReplaceSupportingDocumentByPackageIdAsync(int packageId, int judgeId, byte[] data)
+    {
+        if (data is not { Length: > 0 })
+        {
+            return OperationResult.Failure("Supporting document is empty.");
+        }
+
+        var orders = await Repo.FindAsync(o => o.JudgeId == judgeId && o.OrderRequest.Referral.PackageId == packageId);
+        var order = orders.FirstOrDefault();
+        if (order is null)
+        {
+            return OperationResult.Failure(OrderNotFoundMessage);
+        }
+
+        order.SupportingDocumentData = data;
+        await Repo.UpdateAsync(order);
+        this.InvalidateCache(this.CacheName);
+
+        return OperationResult.Success();
     }
 
     #region Private Methods

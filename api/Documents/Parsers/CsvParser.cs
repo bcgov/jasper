@@ -1,23 +1,21 @@
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using CsvHelper;
-using CsvHelper.Configuration;
 
 namespace Scv.Api.Documents.Parsers;
 
 public class CsvParser : ICsvParser
 {
-    public IEnumerable<T> Parse<T>(MemoryStream csvStream, string delimeter = "\t") where T : class
+    public IEnumerable<T> Parse<T>(MemoryStream csvStream, char delimeter = '\t') where T : class
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        var options = new CsvReaderOptions
         {
-            Delimiter = delimeter
+            Separator = delimeter
         };
 
         using var reader = new StreamReader(csvStream);
-        using var csv = new CsvReader(reader, config);
+        using var csv = CsvReader.Create(reader, options);
         var records = csv.GetRecords<T>().ToList();
 
         return records;

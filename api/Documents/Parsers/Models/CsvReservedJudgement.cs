@@ -1,36 +1,37 @@
 using System;
-using CsvHelper.Configuration.Attributes;
+using CsvHelper;
 
 namespace Scv.Api.Documents.Parsers.Models;
 
-public class CsvReservedJudgement
+[CsvRecord]
+public partial class CsvReservedJudgement
 {
-    [Name("Appearance Date")]
+    [CsvColumn("Appearance Date")]
     public DateTime AppearanceDate { get; set; }
-    [Name("Court Class Category Structure Code")]
+    [CsvColumn("Court Class Category Structure Code")]
     public string CourtClass { get; set; }
-    [Name("COURT_FILE_NO")]
+    [CsvColumn("COURT_FILE_NO")]
     public string CourtFileNumber { get; set; }
-    [Name("File Number")]
+    [CsvColumn("File Number")]
     public string FileNumber { get; set; }
-    [Name("Adjudicator Last Name, First Name")]
+    [CsvColumn("Adjudicator Last Name, First Name")]
     public string AdjudicatorLastNameFirstName { get; set; }
-    [Name("Adjudicator Type Description")]
+    [CsvColumn("Adjudicator Type Description")]
     public string AdjudicatorTypeDescription { get; set; }
-    [Name("Facility Code")]
+    [CsvColumn("Facility Code")]
     public string FacilityCode { get; set; }
-    [Name("Facility Description")]
+    [CsvColumn("Facility Description")]
     public string FacilityDescription { get; set; }
-    [Name("Reserved Judgement Yes No Code")]
+    [CsvColumn("Reserved Judgement Yes No Code")]
     public char ReservedJudgementYesNoCode { get; set; }
-    [Name("RFJ Filed Date")]
+    [CsvColumn("RFJ Filed Date")]
     public DateTime? RFJFiledDate { get; set; }
-    [Name("RJ Multi Yes No Code")]
+    [CsvColumn("RJ Multi Yes No Code")]
     public char RJMultiYesNoCode { get; set; }
-    [Name("RJ Outstanding Yes No Code")]
+    [CsvColumn("RJ Outstanding Yes No Code")]
     public char RJOutstandingYesNoCode { get; set; }
-    [Name("Age in Days")]
+    [CsvColumn("Age in Days")]
     public int AgeInDays { get; set; }
-    [Name("Age in Months")]
+    [CsvColumn("Age in Months")]
     public float AgeInMonths { get; set; }
 }

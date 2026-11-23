@@ -116,6 +116,10 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.SET_DEFAULT_HOME_SCREEN,
             Permission.ADD_EDIT_OWN_NOTES_ONLY,
             Permission.VIEW_VACATION_PAYOUT,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
 
@@ -162,7 +166,11 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.ACCESS_DARS,
             Permission.VIEW_QUICK_LINKS,
             Permission.SET_DEFAULT_HOME_SCREEN,
-            Permission.ADD_EDIT_OWN_NOTES_ONLY
+            Permission.ADD_EDIT_OWN_NOTES_ONLY,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
 
@@ -207,6 +215,10 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.ACCESS_DARS,
             Permission.VIEW_QUICK_LINKS,
             Permission.VIEW_VACATION_PAYOUT,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
 
@@ -257,6 +269,10 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.SET_DEFAULT_HOME_SCREEN,
             Permission.ADD_EDIT_OWN_NOTES_ONLY,
             Permission.VIEW_VACATION_PAYOUT,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
     #endregion Training and Administration Group Permissions
@@ -302,7 +318,11 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_QUICK_LINKS,
             Permission.SET_DEFAULT_HOME_SCREEN,
             Permission.ADD_EDIT_OWN_NOTES_ONLY,
-            Permission.VIEW_ORDERS_DASHBOARD
+            Permission.VIEW_ORDERS_DASHBOARD,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
 
@@ -349,7 +369,11 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_QUICK_LINKS,
             Permission.SET_DEFAULT_HOME_SCREEN,
             Permission.ADD_EDIT_OWN_NOTES_ONLY,
-            Permission.VIEW_ORDERS_DASHBOARD
+            Permission.VIEW_ORDERS_DASHBOARD,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
 
@@ -396,7 +420,11 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
             Permission.VIEW_QUICK_LINKS,
             Permission.SET_DEFAULT_HOME_SCREEN,
             Permission.ADD_EDIT_OWN_NOTES_ONLY,
-            Permission.VIEW_ORDERS_DASHBOARD
+            Permission.VIEW_ORDERS_DASHBOARD,
+
+            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
+            Permission.VIEW_TRANSITORY_DOCUMENTS,
+            Permission.LIST_TRANSITORY_DOCUMENTS
         ];
     }
     #endregion Judiciary Group Permissions
@@ -407,9 +435,6 @@ public class RoleSeeder(ILogger<RoleSeeder> logger) : SeederBase<JasperDbContext
     {
         return
         [
-            Permission.DOWNLOAD_TRANSITORY_DOCUMENTS,
-            Permission.VIEW_TRANSITORY_DOCUMENTS,
-            Permission.LIST_TRANSITORY_DOCUMENTS,
             Permission.VIEW_ORDERS_DASHBOARD
         ];
     }

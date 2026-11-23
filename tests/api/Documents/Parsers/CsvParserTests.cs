@@ -1,22 +1,24 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using CsvHelper;
 using Xunit;
 
 namespace tests.api.Documents.Parsers;
 
-public class CsvParserTest
+public partial class CsvParserTest
 {
-    private class TestRecord
+    [CsvRecord]
+    internal partial class TestRecord
     {
         public string Name { get; set; }
         public int Age { get; set; }
     }
 
     [Theory]
-    [InlineData("Name\tAge\nAlice\t30\nBob\t25", "\t")]
-    [InlineData("Name,Age\nAlice,30\nBob,25", ",")]
-    public void Parse_ReturnsCorrectRecords_UsingDifferentDelimiters(string csvContent, string delimiter)
+    [InlineData("Name\tAge\nAlice\t30\nBob\t25", '\t')]
+    [InlineData("Name,Age\nAlice,30\nBob,25", ',')]
+    public void Parse_ReturnsCorrectRecords_UsingDifferentDelimiters(string csvContent, char delimiter)
     {
         var csvStream = new MemoryStream(Encoding.UTF8.GetBytes(csvContent));
         var parser = new Scv.Api.Documents.Parsers.CsvParser();

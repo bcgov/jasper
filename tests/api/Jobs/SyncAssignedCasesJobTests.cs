@@ -230,7 +230,7 @@ public class SyncAssignedCasesJobTests
         _mockEmailService.Setup(s => s.GetAttachmentsAsStreamsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(attachments);
 
-        _mockCsvParser.Setup(p => p.Parse<CsvReservedJudgement>(It.IsAny<MemoryStream>(), "\t"))
+        _mockCsvParser.Setup(p => p.Parse<CsvReservedJudgement>(It.IsAny<MemoryStream>(), '\t'))
             .Returns(csvData);
 
         _mockJudgeService.Setup(s => s.GetJudges(null, null))
@@ -244,7 +244,7 @@ public class SyncAssignedCasesJobTests
 
         await _job.Execute();
 
-        _mockCsvParser.Verify(p => p.Parse<CsvReservedJudgement>(It.IsAny<MemoryStream>(), "\t"), Times.Once);
+        _mockCsvParser.Verify(p => p.Parse<CsvReservedJudgement>(It.IsAny<MemoryStream>(), '\t'), Times.Once);
     }
 
     [Fact]

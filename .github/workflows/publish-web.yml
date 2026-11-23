@@ -6,6 +6,9 @@ on:
       - master
     paths:
       - 'web/**'
+      - 'docker/web/**'
+      - 'docker/nginx-runtime/**'
+      - 'docker/vue-on-nginx/**'
 
   release:
     types: [published]

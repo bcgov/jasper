@@ -1147,7 +1147,6 @@ public class OrderServiceTests : ServiceTestBase
     [InlineData(OrderStatus.Approved, SubmitStatus.Error)]
     [InlineData(OrderStatus.OrderMade, SubmitStatus.Pending)]
     [InlineData(OrderStatus.Unapproved, SubmitStatus.Submitted)]
-    [InlineData(OrderStatus.AwaitingDocumentation, SubmitStatus.Pending)]
     public async Task ReviewOrder_ReturnsFailure_WhenOrderHasAlreadyBeenProcessed(OrderStatus status, SubmitStatus submitStatus)
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
@@ -1173,16 +1172,16 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task ReviewOrder_ResetsSubmitStatus_WhenReviewingOrderAwaitingDocumentation()
+    public async Task ReviewOrder_SetsSubmitStatusToPending_WhenReviewingPendingOrder()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
         var judgeId = _faker.Random.Int(1, 1000);
         var orderReview = new OrderReviewDto { Status = OrderStatus.Approved };
 
-        var order = CreateOrder(OrderStatus.AwaitingDocumentation);
+        var order = CreateOrder(OrderStatus.Pending);
         order.Id = orderId;
         order.JudgeId = judgeId;
-        order.SubmitStatus = SubmitStatus.Submitted;
+        order.SubmitStatus = SubmitStatus.Error;
 
         _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId)).ReturnsAsync(order);
         _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);

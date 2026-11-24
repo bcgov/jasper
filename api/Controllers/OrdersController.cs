@@ -216,8 +216,13 @@ public class OrdersController(
 
         if (!result.Succeeded)
         {
-            return result.Errors.Any(e => e.Contains("not found"))
-                ? NotFound(new { error = result.Errors })
+            if (result.Errors.Any(e => e.Contains("not found")))
+            {
+                return NotFound(new { error = result.Errors });
+            }
+
+            return result.Errors.Contains(OrderService.OrderAlreadyProcessedMessage)
+                ? BadRequest(new { error = result.Errors })
                 : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Errors });
         }
 

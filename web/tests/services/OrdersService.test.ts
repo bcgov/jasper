@@ -189,7 +189,10 @@ describe('OrderService', () => {
 
       expect(mockHttpService.patch).toHaveBeenCalledWith(
         'api/orders/1/review',
-        mockReview
+        mockReview,
+        {},
+        'json',
+        { suppressErrorNotification: true }
       );
     });
 
@@ -202,7 +205,10 @@ describe('OrderService', () => {
       );
       expect(mockHttpService.patch).toHaveBeenCalledWith(
         'api/orders/1/review',
-        mockReview
+        mockReview,
+        {},
+        'json',
+        { suppressErrorNotification: true }
       );
     });
   });

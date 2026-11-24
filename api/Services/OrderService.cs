@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using CSOCommon.Clients.JudicialServices;
 using CSOCommon.Models;
@@ -42,6 +43,8 @@ public interface IOrderService : ICrudService<OrderDto>
 public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, OrderDto>, IOrderService
 {
     private const string OrderNotFoundMessage = "Order not found";
+
+    public const string OrderAlreadyProcessedMessage = "Order has already been processed.";
 
     private readonly ICourtFileService _courtFileService;
     private readonly IJudgeService _judgeService;
@@ -212,16 +215,10 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             }
 
             var user = _httpContextAccessor.HttpContext?.User;
-            if (user == null)
+            var canReviewOrder = CheckOrderReviewEligibility(order, user, id);
+            if (!canReviewOrder.Succeeded)
             {
-                return OperationResult.Failure("No authenticated user context available to review this Order.");
-            }
-
-            var assignedJudgeId = order.JudgeId;
-            var judgeId = user.JudgeId();
-            if (assignedJudgeId != judgeId)
-            {
-                return OperationResult.Failure("Judge is not assigned to review this Order.");
+                return canReviewOrder;
             }
 
             var documentScan = await ScanReviewDocumentAsync(orderReview.DocumentData, "signed");
@@ -245,19 +242,15 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 
             orderReview.Adapt(orderDto);
 
+            // Ensure SubmitStatus is Pending so it can be processed for submission.
+            orderDto.SubmitStatus = SubmitStatus.Pending;
+
             if (orderDto.OrderRequest?.Referral?.IsDeskOrder == true)
             {
-                var deskOrderValidation = ValidateDeskOrder(orderDto);
-                if (!deskOrderValidation.Succeeded)
+                var deskOrderResult = ApplyDeskOrderReview(orderDto, orderReview);
+                if (!deskOrderResult.Succeeded)
                 {
-                    return deskOrderValidation;
-                }
-
-                // Remove appended additional small claims page if it has not been touched by the user.
-                if (orderDto.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
-                    && orderReview.IsAppendedPageDirty == false)
-                {
-                    orderDto.DocumentData = RemoveSmallClaimsAdditionalPage(orderDto.DocumentData);
+                    return deskOrderResult;
                 }
             }
 
@@ -280,6 +273,48 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         }
     }
 
+    private OperationResult CheckOrderReviewEligibility(Order order, ClaimsPrincipal user, string id)
+    {
+        if (user == null)
+        {
+            return OperationResult.Failure("No authenticated user context available to review this Order.");
+        }
+
+        if (order.JudgeId != user.JudgeId())
+        {
+            return OperationResult.Failure("Judge is not assigned to review this Order.");
+        }
+
+        // Only a Pending order can be reviewed; any other status means it has already been processed.
+        if (order.Status != OrderStatus.Pending)
+        {
+            this.Logger.LogWarning(
+                "Order {OrderId} cannot be submitted. Status: {Status}, SubmitStatus: {SubmitStatus}.",
+                id.SanitizeForLog(), order.Status, order.SubmitStatus);
+            return OperationResult.Failure(OrderAlreadyProcessedMessage);
+        }
+
+        return OperationResult.Success();
+    }
+
+    private OperationResult ApplyDeskOrderReview(OrderDto orderDto, OrderReviewDto orderReview)
+    {
+        var deskOrderValidation = ValidateDeskOrder(orderDto);
+        if (!deskOrderValidation.Succeeded)
+        {
+            return deskOrderValidation;
+        }
+
+        // Remove appended additional small claims page if it has not been touched by the user.
+        if (orderDto.OrderRequest?.Referral?.CourtListTypeCd == CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_SMALL_CLAIMS_TYPE
+            && orderReview.IsAppendedPageDirty == false)
+        {
+            orderDto.DocumentData = RemoveSmallClaimsAdditionalPage(orderDto.DocumentData);
+        }
+
+        return OperationResult.Success();
+    }
+
     public override Task<OperationResult<OrderDto>> ValidateAsync(OrderDto dto, bool isEdit = false)
     {
         throw new NotImplementedException();
@@ -298,6 +333,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         {
             this.Logger.LogWarning("Order {OrderId} not found for submission.", id);
             return OperationResult.Failure(OrderNotFoundMessage);
+        }
+
+        // Duplicate or retried jobs must not resubmit (or flip to Error) an order that CSO already accepted.
+        if (order.SubmitStatus == SubmitStatus.Submitted)
+        {
+            this.Logger.LogWarning("Order {OrderId} was already submitted to CSO. Skipping.", id.SanitizeForLog());
+            return OperationResult.Success();
         }
 
         var orderDto = Mapper.Map<OrderDto>(order);

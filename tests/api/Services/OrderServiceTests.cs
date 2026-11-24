@@ -1142,9 +1142,76 @@ public class OrderServiceTests : ServiceTestBase
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Never);
     }
 
+    [Theory]
+    [InlineData(OrderStatus.Approved, SubmitStatus.Submitted)]
+    [InlineData(OrderStatus.Approved, SubmitStatus.Error)]
+    [InlineData(OrderStatus.OrderMade, SubmitStatus.Pending)]
+    [InlineData(OrderStatus.Unapproved, SubmitStatus.Submitted)]
+    public async Task ReviewOrder_ReturnsFailure_WhenOrderHasAlreadyBeenProcessed(OrderStatus status, SubmitStatus submitStatus)
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto { Status = OrderStatus.Approved };
+
+        var order = CreateOrder(status);
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+        order.SubmitStatus = submitStatus;
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId)).ReturnsAsync(order);
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(OrderService.OrderAlreadyProcessedMessage, result.Errors);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Never);
+        _mockBackgroundJobClient.Verify(c => c.Create(
+            It.IsAny<Hangfire.Common.Job>(),
+            It.IsAny<Hangfire.States.IState>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReviewOrder_SetsSubmitStatusToPending_WhenReviewingPendingOrder()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var judgeId = _faker.Random.Int(1, 1000);
+        var orderReview = new OrderReviewDto { Status = OrderStatus.Approved };
+
+        var order = CreateOrder(OrderStatus.Pending);
+        order.Id = orderId;
+        order.JudgeId = judgeId;
+        order.SubmitStatus = SubmitStatus.Error;
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId)).ReturnsAsync(order);
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+        SetupHttpContextWithJudge(judgeId);
+
+        var result = await _orderService.ReviewOrder(orderId, orderReview);
+
+        Assert.True(result.Succeeded);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o =>
+            o.Status == OrderStatus.Approved && o.SubmitStatus == SubmitStatus.Pending)), Times.Once);
+    }
+
     #endregion
 
     #region SubmitOrder Tests
+
+    [Fact]
+    public async Task SubmitOrder_ReturnsSuccessWithoutResubmitting_WhenOrderAlreadySubmitted()
+    {
+        var order = CreateOrder(OrderStatus.Approved);
+        order.SubmitStatus = SubmitStatus.Submitted;
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.True(result.Succeeded);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.IsAny<Order>()), Times.Never);
+    }
 
     [Fact]
     public async Task SubmitOrder_ReturnsFailure_WhenOrderNotFound()

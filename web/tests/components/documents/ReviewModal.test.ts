@@ -330,6 +330,66 @@ describe('ReviewModal.vue', () => {
     });
   });
 
+  describe('Submit failure', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    const submitWithError = async (error: unknown) => {
+      reviewOrderMock.mockRejectedValueOnce(error);
+      const wrapper = createWrapper({ canApprove: true });
+      await wrapper.find('[color="success"]').trigger('click');
+      await flushPromises();
+      return wrapper;
+    };
+
+    it('should show the server error message and stay on the review form', async () => {
+      const wrapper = await submitWithError({
+        originalError: {
+          response: { data: { error: ['Order has already been processed.'] } },
+        },
+      });
+
+      expect(wrapper.find('[data-testid="review-submit-error"]').text()).toBe(
+        'Order has already been processed.'
+      );
+      expect(wrapper.text()).not.toContain('Review Submitted');
+    });
+
+    it('should show the validation messages when the API returns an array', async () => {
+      const wrapper = await submitWithError({
+        originalError: { response: { data: ['Status is invalid.'] } },
+      });
+
+      expect(wrapper.find('[data-testid="review-submit-error"]').text()).toBe(
+        'Status is invalid.'
+      );
+    });
+
+    it('should show a generic message when the error has no server message', async () => {
+      const wrapper = await submitWithError(new Error('Network Error'));
+
+      expect(
+        wrapper.find('[data-testid="review-submit-error"]').text()
+      ).toContain('Unable to submit your review');
+    });
+
+    it('should clear the error when the review is submitted again', async () => {
+      const wrapper = await submitWithError(new Error('Network Error'));
+      expect(wrapper.find('[data-testid="review-submit-error"]').exists()).toBe(
+        true
+      );
+
+      await wrapper.find('[color="success"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="review-submit-error"]').exists()).toBe(
+        false
+      );
+      expect(wrapper.text()).toContain('Review Submitted');
+    });
+  });
+
   describe('Optional file upload', () => {
     const createUploadWrapper = () =>
       mount(ReviewModal, {

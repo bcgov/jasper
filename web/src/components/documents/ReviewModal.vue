@@ -111,6 +111,16 @@
                 : 'Document signature is required before submitting.'
             }}
           </v-alert>
+          <v-alert
+            v-if="submitError"
+            type="error"
+            variant="tonal"
+            density="comfortable"
+            :class="{ 'mt-3': !canApprove }"
+            data-testid="review-submit-error"
+          >
+            {{ submitError }}
+          </v-alert>
         </v-card-text>
         <!-- Actions -->
         <v-card-actions class="px-6 py-4">
@@ -186,6 +196,7 @@
   const selectedUpload = ref<File | null>(null);
   const submitted = ref<boolean>(false);
   const submitting = ref<boolean>(false);
+  const submitError = ref<string>('');
   const pendingStatus = ref<OrderReviewStatus | null>(null);
   const autoCloseSeconds = ref<number>(0);
   const closeBlocked = ref<boolean>(false);
@@ -217,11 +228,24 @@
       comments.value = '';
       submitted.value = false;
       submitting.value = false;
+      submitError.value = '';
       pendingStatus.value = null;
       closeBlocked.value = false;
       cancelAutoClose();
     }
   });
+
+  const DEFAULT_SUBMIT_ERROR =
+    'Unable to submit your review. Please try again or contact your Administrator.';
+
+  const getSubmitErrorMessage = (error: any): string => {
+    const data = error?.originalError?.response?.data;
+    const messages: unknown = Array.isArray(data) ? data : data?.error;
+    if (Array.isArray(messages) && messages.length > 0) {
+      return messages.join(' ');
+    }
+    return DEFAULT_SUBMIT_ERROR;
+  };
 
   const submitReview = async (status: OrderReviewStatus) => {
     if (submitting.value) return;
@@ -245,6 +269,7 @@
     };
 
     submitting.value = true;
+    submitError.value = '';
     pendingStatus.value = status;
     try {
       await props.reviewOrder(review);
@@ -252,6 +277,7 @@
       startAutoClose();
     } catch (error) {
       console.error('Order review submission failed:', error);
+      submitError.value = getSubmitErrorMessage(error);
     } finally {
       submitting.value = false;
       pendingStatus.value = null;

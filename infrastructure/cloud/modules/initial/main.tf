@@ -26,6 +26,11 @@ module "app_ecr" {
   region      = var.region
   kms_key_id  = module.kms.kms_key_id
   repo_name   = "app"
+
+  tagged_image_patterns = [
+    "api-*",
+    "web-*"
+  ]
 }
 
 # Lambda functions ECR repository
@@ -36,6 +41,13 @@ module "lambda_ecr" {
   region      = var.region
   kms_key_id  = module.kms.kms_key_id
   repo_name   = "lambda"
+
+  tagged_image_patterns = [
+    "auth.authorizer-*",
+    "auth.rotate-key-*",
+    "proxy.get-assigned-cases-request-*",
+    "proxy.proxy-request-*"
+  ]
 }
 
 # SSM Parameter Store

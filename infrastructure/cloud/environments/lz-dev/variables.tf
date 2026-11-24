@@ -183,12 +183,6 @@ variable "use_mongo_tls_pem" {
   default     = false
 }
 
-variable "use_court_locations" {
-  description = "If true, court locations will be used in the application. If false, users will be redirected to the courts website."
-  type        = bool
-  default     = false
-}
-
 variable "notify_priority_types" {
   description = "Comma-separated priority types (PRO, CRTD, OTHR) that trigger order email notifications. Empty means regardless of priority."
   type        = string

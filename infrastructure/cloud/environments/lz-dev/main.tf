@@ -317,10 +317,6 @@ module "ecs_api_td" {
         value = tostring(var.use_mongo_tls_pem)
       },
       {
-        name  = "USE_COURT_LOCATIONS"
-        value = tostring(var.use_court_locations)
-      },
-      {
         name  = "NOTIFY_PRIORITY_TYPES"
         value = var.notify_priority_types
       },

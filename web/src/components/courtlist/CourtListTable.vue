@@ -88,7 +88,7 @@
 
       <template v-if="item.homeLocationNm">
         <v-btn
-          v-if="commonStore.appInfo?.useCourtLocations"
+          v-if="canUseEnhancedCourtLocation"
           variant="text"
           icon
           size="small"
@@ -184,7 +184,8 @@
   import FileMarkers from '@/components/shared/FileMarkers.vue';
   import TooltipIcon from '@/components/shared/TooltipIcon.vue';
   import { bannerClasses } from '@/constants/bannerClasses';
-  import { useCommonStore, useCourtFileSearchStore } from '@/stores';
+  import { PERMISSIONS } from '@/constants/permissions';
+  import { useCourtFileSearchStore } from '@/stores';
   import {
     CourtClassEnum,
     CourtLevelEnum,
@@ -195,7 +196,11 @@
   import { CourtListAppearance } from '@/types/courtlist';
   import { BinderRequest } from '@/types/DocumentBundleRequest';
   import { hoursMinsFormatter } from '@/utils/dateUtils';
-  import { getCourtClassLabel, getEnumName } from '@/utils/utils';
+  import {
+    getCourtClassLabel,
+    getEnumName,
+    hasPermission,
+  } from '@/utils/utils';
   import {
     mdiBank,
     mdiCheck,
@@ -225,7 +230,10 @@
       order: 'asc',
     },
   ] as const);
-  const commonStore = useCommonStore();
+
+  const canUseEnhancedCourtLocation = computed(() =>
+    hasPermission(PERMISSIONS.USE_ENHANCED_COURT_LOCATION)
+  );
 
   const props = defineProps<{
     data: CourtListAppearance[];

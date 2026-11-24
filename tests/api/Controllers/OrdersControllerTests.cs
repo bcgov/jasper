@@ -399,6 +399,25 @@ public class OrdersControllerTests
     }
 
     [Fact]
+    public async Task ReviewOrder_ReturnsBadRequest_WhenOrderAlreadyProcessed()
+    {
+        var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        var orderReview = new OrderReviewDto
+        {
+            Status = OrderStatus.Approved,
+            Comments = "Test"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ReviewOrder(orderId, orderReview))
+            .ReturnsAsync(OperationResult.Failure(OrderService.OrderAlreadyProcessedMessage));
+
+        var result = await _controller.ReviewOrder(orderId, orderReview);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
     public async Task ReviewOrder_ReturnsInternalServerError_WhenJudgeNotAssigned()
     {
         var orderId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();

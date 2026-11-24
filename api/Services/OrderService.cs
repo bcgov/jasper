@@ -43,6 +43,8 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
 {
     private const string OrderNotFoundMessage = "Order not found";
 
+    public const string OrderAlreadyProcessedMessage = "Order has already been processed.";
+
     private readonly ICourtFileService _courtFileService;
     private readonly IJudgeService _judgeService;
     private readonly IBackgroundJobClient _backgroundJobClient;
@@ -224,6 +226,16 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
                 return OperationResult.Failure("Judge is not assigned to review this Order.");
             }
 
+            // Order in db should be Pending (Status and SubmitStatus)
+            var canBeSubmitted = order.Status == OrderStatus.Pending || order.SubmitStatus == SubmitStatus.Pending;
+            if (!canBeSubmitted)
+            {
+                this.Logger.LogWarning(
+                    "Order {OrderId} cannot be submitted. Status: {Status}, SubmitStatus: {SubmitStatus}.",
+                    id.SanitizeForLog(), order.Status, order.SubmitStatus);
+                return OperationResult.Failure(OrderAlreadyProcessedMessage);
+            }
+
             var documentScan = await ScanReviewDocumentAsync(orderReview.DocumentData, "signed");
             if (!documentScan.Succeeded)
             {
@@ -244,6 +256,9 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             }
 
             orderReview.Adapt(orderDto);
+
+            // Ensure SubmitStatus is Pending so it can be processed for submission.
+            orderDto.SubmitStatus = SubmitStatus.Pending;
 
             if (orderDto.OrderRequest?.Referral?.IsDeskOrder == true)
             {
@@ -298,6 +313,13 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         {
             this.Logger.LogWarning("Order {OrderId} not found for submission.", id);
             return OperationResult.Failure(OrderNotFoundMessage);
+        }
+
+        // Duplicate or retried jobs must not resubmit (or flip to Error) an order that CSO already accepted.
+        if (order.SubmitStatus == SubmitStatus.Submitted)
+        {
+            this.Logger.LogWarning("Order {OrderId} was already submitted to CSO. Skipping.", id.SanitizeForLog());
+            return OperationResult.Success();
         }
 
         var orderDto = Mapper.Map<OrderDto>(order);

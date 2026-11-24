@@ -27,34 +27,37 @@ resource "aws_ecr_lifecycle_policy" "ecr_lifecycle_policy" {
   repository = aws_ecr_repository.ecr_repository.name
 
   policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1
-        description  = "Remove untagged images after 7 days"
-        selection = {
-          tagStatus   = "untagged"
-          countType   = "sinceImagePushed"
-          countUnit   = "days"
-          countNumber = 7
+    rules = concat(
+      [
+        {
+          rulePriority = 1
+          description  = "Remove untagged images after 7 days"
+          selection = {
+            tagStatus   = "untagged"
+            countType   = "sinceImagePushed"
+            countUnit   = "days"
+            countNumber = 7
+          }
+          action = {
+            type = "expire"
+          }
         }
-        action = {
-          type = "expire"
+      ],
+      [
+        for index, pattern in sort(tolist(var.tagged_image_patterns)) : {
+          rulePriority = index + 2
+          description  = "Retain latest 10 images matching ${pattern}"
+          selection = {
+            tagStatus      = "tagged"
+            tagPatternList = [pattern]
+            countType      = "imageCountMoreThan"
+            countNumber    = 10
+          }
+          action = {
+            type = "expire"
+          }
         }
-      },
-      {
-        rulePriority = 2
-        description  = "Remove tagged images older than 30 days"
-        selection = {
-          tagStatus   = "tagged"
-          tagPrefixList = ["api", "web"]
-          countType   = "sinceImagePushed"
-          countUnit   = "days"
-          countNumber = 30
-        }
-        action = {
-          type = "expire"
-        }
-      }
-    ]
+      ]
+    )
   })
 }

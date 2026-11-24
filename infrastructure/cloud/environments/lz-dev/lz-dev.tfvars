@@ -49,7 +49,6 @@ clamav_config = {
 use_existing_mongo_tls_secret  = true
 existing_mongo_tls_secret_name = "external/jasper-mongo-tls-lz-dev"
 use_mongo_tls_pem              = true
-use_court_locations            = true
 notify_priority_types          = ""
 notify_order_types             = ""
 notify_court_classes           = ""

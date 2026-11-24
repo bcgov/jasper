@@ -49,7 +49,7 @@
         <v-col>
           <h5>
             <button
-              v-if="commonStore.appInfo?.useCourtLocations"
+              v-if="canUseEnhancedCourtLocation"
               type="button"
               class="link-button text-decoration-underline cursor-pointer"
               @click="
@@ -76,11 +76,10 @@
   import { PERMISSIONS } from '@/constants/permissions';
   import { useCommonStore } from '@/stores';
   import { CourtListCardInfo } from '@/types/courtlist';
-  import { resolveCourtLocation } from '@/utils/utils';
+  import { hasPermission, resolveCourtLocation } from '@/utils/utils';
   import { mdiOpenInNew } from '@mdi/js';
   import { computed, PropType } from 'vue';
   import { useRouter } from 'vue-router';
-
   const props = defineProps({
     cardInfo: {
       type: Object as PropType<CourtListCardInfo>,
@@ -109,6 +108,10 @@
       commonStore.userInfo?.permissions?.includes(
         PERMISSIONS.LIST_TRANSITORY_DOCUMENTS
       ) ?? false
+  );
+
+  const canUseEnhancedCourtLocation = computed(() =>
+    hasPermission(PERMISSIONS.USE_ENHANCED_COURT_LOCATION)
   );
 
   const openSharedFolder = (): void => {

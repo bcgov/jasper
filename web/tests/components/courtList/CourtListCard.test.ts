@@ -1,5 +1,5 @@
 import { useCommonStore } from '@/stores';
-import { ApplicationInfo, UserInfo } from '@/types/common';
+import { UserInfo } from '@/types/common';
 import { CourtListCardInfo } from '@/types/courtlist';
 import { mount } from '@vue/test-utils';
 import CourtListCard from 'CMP/courtlist/CourtListCard.vue';
@@ -41,19 +41,8 @@ const setUserPermissions = (permissions: string[] = []) => {
   return commonStore;
 };
 
-const createWrapper = (
-  permissions: string[] = [],
-  options: {
-    useCourtLocations?: boolean;
-  } = {}
-) => {
+const createWrapper = (permissions: string[] = []) => {
   setUserPermissions(permissions);
-  if (options.useCourtLocations !== undefined) {
-    const commonStore = useCommonStore();
-    commonStore.appInfo = {
-      useCourtLocations: options.useCourtLocations,
-    } as ApplicationInfo;
-  }
   const card: CourtListCardInfo = {
     courtListLocation: 'Court A',
     courtListLocationID: 1,
@@ -144,10 +133,8 @@ describe('CourtListCard.vue', () => {
     );
   });
 
-  it('renders the info link with "See more" text when useCourtLocations is disabled', async () => {
-    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
-      useCourtLocations: false,
-    });
+  it('renders the info link with "See more" text when user lacks the enhanced court location permission', async () => {
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS']);
     const commonStore = useCommonStore();
     commonStore.updateCourtRoomsAndLocations([
       { locationId: '1', name: 'Court A', infoLink: 'link' },
@@ -161,10 +148,11 @@ describe('CourtListCard.vue', () => {
     expect(wrapper.find('button.link-button').exists()).toBe(false);
   });
 
-  it('renders the location info button when useCourtLocations is enabled', () => {
-    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
-      useCourtLocations: true,
-    });
+  it('renders the location info button when user has the enhanced court location permission', () => {
+    const wrapper = createWrapper([
+      'LIST_TRANSITORY_DOCUMENTS',
+      'USE_ENHANCED_COURT_LOCATION',
+    ]);
 
     const button = wrapper.find('button.link-button');
     expect(button.exists()).toBe(true);
@@ -173,9 +161,10 @@ describe('CourtListCard.vue', () => {
   });
 
   it('emits open-location-info with location details when the info button is clicked', async () => {
-    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
-      useCourtLocations: true,
-    });
+    const wrapper = createWrapper([
+      'LIST_TRANSITORY_DOCUMENTS',
+      'USE_ENHANCED_COURT_LOCATION',
+    ]);
 
     await wrapper.find('button.link-button').trigger('click');
 
@@ -185,9 +174,7 @@ describe('CourtListCard.vue', () => {
   });
 
   it('matches the location by name when the id does not match', async () => {
-    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS'], {
-      useCourtLocations: false,
-    });
+    const wrapper = createWrapper(['LIST_TRANSITORY_DOCUMENTS']);
     const commonStore = useCommonStore();
     commonStore.updateCourtRoomsAndLocations([
       { locationId: '99', name: 'Court A', infoLink: 'name-match-link' },

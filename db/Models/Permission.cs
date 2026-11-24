@@ -71,6 +71,7 @@ namespace Scv.Db.Models
         public const string VIEW_QUICK_LINKS = "VIEW_QUICK_LINKS";
         public const string SET_DEFAULT_HOME_SCREEN = "SET_DEFAULT_HOME_SCREEN";
         public const string ADD_EDIT_OWN_NOTES_ONLY = "ADD_EDIT_OWN_NOTES_ONLY";
+        public const string USE_ENHANCED_COURT_LOCATION = "USE_ENHANCED_COURT_LOCATION";
 
         public static readonly List<Permission> ALL_PERMISIONS =
         [
@@ -418,6 +419,13 @@ namespace Scv.Db.Models
                 Code = ADD_EDIT_OWN_NOTES_ONLY,
                 Name = "Add/Edit Own Notes Only",
                 Description = "Permissions to add/edit own notes only",
+                IsActive = true
+            },
+            new Permission
+            {
+                Code = USE_ENHANCED_COURT_LOCATION,
+                Name = "Use Enhanced Court Location",
+                Description = "Permissions to use enhanced court location",
                 IsActive = true
             }
         ];

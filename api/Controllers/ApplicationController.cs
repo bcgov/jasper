@@ -43,7 +43,6 @@ public class ApplicationController(
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.
             InformationalVersion ?? assembly.GetName().Version?.ToString() ?? "Unknown";
         var dbConfig = await _configurationService.GetConfigurationAsync();
-        var useCourtLocations = _configuration?.GetValue<bool>("USE_COURT_LOCATIONS") ?? false;
 
         return Ok(new
         {
@@ -51,7 +50,6 @@ public class ApplicationController(
             NutrientFeLicenseKey = _configuration.GetNonEmptyValue("NUTRIENT_FE_LICENSE_KEY"),
             Environment = _configuration.GetNonEmptyValue("ASPNETCORE_ENVIRONMENT"),
             Configuration = dbConfig,
-            UseCourtLocations = useCourtLocations
         });
     }
 

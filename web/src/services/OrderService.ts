@@ -10,7 +10,13 @@ export class OrderService extends ServiceBase {
   }
 
   review = (orderId: string, review: OrderReview): Promise<void> => {
-    return this.httpService.patch(`${this.baseUrl}/${orderId}/review`, review);
+    return this.httpService.patch(
+      `${this.baseUrl}/${orderId}/review`,
+      review,
+      {},
+      'json',
+      { suppressErrorNotification: true }
+    );
   };
 
   getOrders(judgeId: number | null = null): Promise<Order[]> {

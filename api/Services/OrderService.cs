@@ -349,7 +349,7 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             orderDto.SubmitStatus = SubmitStatus.Error;
             var errorResult = await UpdateAsync(orderDto);
             return errorResult.Succeeded
-                ? OperationResult.Failure("Failed to submit order to CSO.")
+                ? OperationResult.Failure($"Failed to submit order to CSO: {ex.Message}")
                 : errorResult;
         }
     }

@@ -118,6 +118,8 @@ namespace Scv.Api.Infrastructure.Authentication
                 options.ResponseType = OpenIdConnectResponseType.Code;
                 options.UsePkce = true;
                 options.SaveTokens = true;
+                options.ProtocolValidator.NonceLifetime = TimeSpan.FromMinutes(20);
+                options.RemoteAuthenticationTimeout = TimeSpan.FromMinutes(20);
                 options.CallbackPath = "/api/auth/signin-oidc";
                 options.Scope.Add("groups");
                 options.Events = new OpenIdConnectEvents

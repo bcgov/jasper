@@ -44,13 +44,15 @@ namespace Scv.Api.Services
 
             try
             {
-                var matchingUser = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
-                if (matchingUser == null)
+                var match = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
+                if (match == null)
                 {
                     return false;
                 }
 
-                var roleNames = await GetPcssRoleNamesAsync(matchingUser.UserId.Value, userDto.Email);
+                var matchingUser = match.User;
+                var expectedGuid = match.UsedFallback ? userDto.NativeGuid : null;
+                var roleNames = await GetPcssRoleNamesAsync(matchingUser.UserId.Value, userDto.Email, expectedGuid);
                 if (roleNames == null)
                 {
                     return false;
@@ -101,10 +103,11 @@ namespace Scv.Api.Services
             }
         }
 
-        private async Task<UserItem> GetMatchingPcssUserAsync(string nativeGuid, string email, bool forceUpdateCache = false)
+        private async Task<PcssUserMatch> GetMatchingPcssUserAsync(string nativeGuid, string email, bool forceUpdateCache = false)
         {
             _logger.LogInformation("Requesting user information from PCSS for {Email}.", email);
-            var matchingUser = await _authorizationService.GetUserByGuid(nativeGuid, forceUpdateCache);
+            var match = await _authorizationService.GetUserByGuid(nativeGuid, forceUpdateCache);
+            var matchingUser = match?.User;
 
             _logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
                 nativeGuid,
@@ -116,7 +119,7 @@ namespace Scv.Api.Services
                 return null;
             }
 
-            return matchingUser;
+            return match;
         }
 
         private Task<List<string>> GetGroupIdsForUserAsync(IEnumerable<string> roleNames, string email) =>
@@ -125,9 +128,9 @@ namespace Scv.Api.Services
         private Task<List<string>> GetRoleIdsForUserAsync(IEnumerable<string> roleNames, string email) =>
             GetIdsForUserAsync(roleNames, email, "roles", _roleService.GetRolesByAliases, r => r.Id);
 
-        private async Task<IEnumerable<string>> GetPcssRoleNamesAsync(int pcssUserId, string email)
+        private async Task<IEnumerable<string>> GetPcssRoleNamesAsync(int pcssUserId, string email, string expectedGuid)
         {
-            var roleNameResult = await _authorizationService.GetPcssUserRoleNames(pcssUserId);
+            var roleNameResult = await _authorizationService.GetPcssUserRoleNames(pcssUserId, expectedGuid);
             if (roleNameResult == null || roleNameResult.Errors.Any())
             {
                 _logger.LogWarning("Failed to get PCSS roles for user {Email}: {Errors}",

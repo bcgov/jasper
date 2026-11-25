@@ -7,22 +7,22 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
-using PCSSCommon.Clients.AuthorizationServices;
 using Scv.Api.Jobs;
+using Scv.Api.Services;
 using Xunit;
 
 namespace tests.api.Jobs;
 
 public class PrimePcssUserCacheJobTests
 {
-    private readonly Mock<IAuthorizationServicesClient> _mockPcssAuthorizationServiceClient;
+    private readonly Mock<IPcssAuthorizationService> _authorizationService;
     private readonly Mock<ILogger<PrimePcssUserCacheJob>> _mockLogger;
     private readonly IAppCache _cache;
     private readonly Mock<IMapper> _mapper;
 
     public PrimePcssUserCacheJobTests()
     {
-        _mockPcssAuthorizationServiceClient = new Mock<IAuthorizationServicesClient>();
+        _authorizationService = new Mock<IPcssAuthorizationService>();
         _mockLogger = new Mock<ILogger<PrimePcssUserCacheJob>>();
         _mapper = new Mock<IMapper>();
 
@@ -50,7 +50,7 @@ public class PrimePcssUserCacheJobTests
             _cache,
             _mapper.Object,
             _mockLogger.Object,
-            _mockPcssAuthorizationServiceClient.Object);
+            _authorizationService.Object);
 
         Assert.Equal(nameof(PrimePcssUserCacheJob), job.JobName);
     }
@@ -67,7 +67,7 @@ public class PrimePcssUserCacheJobTests
             _cache,
             _mapper.Object,
             _mockLogger.Object,
-            _mockPcssAuthorizationServiceClient.Object);
+            _authorizationService.Object);
 
         var schedule = job.CronSchedule;
 
@@ -90,7 +90,7 @@ public class PrimePcssUserCacheJobTests
             _cache,
             _mapper.Object,
             _mockLogger.Object,
-            _mockPcssAuthorizationServiceClient.Object);
+            _authorizationService.Object);
 
         var schedule = job.CronSchedule;
 
@@ -108,7 +108,7 @@ public class PrimePcssUserCacheJobTests
             _cache,
             _mapper.Object,
             _mockLogger.Object,
-            _mockPcssAuthorizationServiceClient.Object);
+            _authorizationService.Object);
 
         var schedule = job.CronSchedule;
 
@@ -126,7 +126,7 @@ public class PrimePcssUserCacheJobTests
             _cache,
             _mapper.Object,
             _mockLogger.Object,
-            _mockPcssAuthorizationServiceClient.Object);
+            _authorizationService.Object);
 
         Assert.Throws<ArgumentException>(() => _ = job.CronSchedule);
     }

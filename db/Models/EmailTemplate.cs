@@ -5,13 +5,13 @@ using Scv.Db.Contants;
 namespace Scv.Db.Models;
 
 [Collection(CollectionNameConstants.EMAIL_TEMPLATES)]
-
 public class EmailTemplate : EntityBase
 {
     public const string ORDER_RECEIVED = "Order Received";
     public const string JOB_FAILURE = "Job Failure";
     public const string ORDER_REMINDER = "Order Reminder";
     public const string ORDER_REASSIGNMENT = "Order Reassignment";
+    public const string ORDER_SUBMISSION_FAILED = "Order Submission Failed";
 
     public static readonly List<EmailTemplate> ALL_EMAIL_TEMPLATES =
     [
@@ -59,6 +59,20 @@ public class EmailTemplate : EntityBase
                      JASPER Support Team<br /><br />
                      <i>Please note: This is an automated message. Please do not reply directly to this email.</i>",
             Cc = "{{ support_account }}"
+        },
+        new EmailTemplate
+        {
+            TemplateName = ORDER_SUBMISSION_FAILED,
+            Subject = @"Order Submission Failed for Judge {{ judge_name }} - Package # {{ package_id }}",
+            Body = @"Order with Package # {{ package_id }} has failed to submit. Please see below for more details:<br />
+                     Id: {{ order_id }}<br />
+                     Package Id: {{ package_id }}<br />
+                     Judge Id: {{ judge_id }}<br />
+                     Court List Type: {{ court_list_type }}<br />
+                     Priority Type: {{ priority_type }}<br />
+                     Order Status: {{ order_status }}<br />
+                     Submit Status: {{ submit_status }}<br />
+                     Error Message: {{ error_message }} "
         }
     ];
 

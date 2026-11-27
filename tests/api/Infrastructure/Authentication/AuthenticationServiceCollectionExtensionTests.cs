@@ -98,6 +98,35 @@ public class AuthenticationServiceCollectionExtensionTests
         _userService.Verify(s => s.GetByIdWithPermissionsAsync(UserId), Times.Once);
     }
 
+    [Fact]
+    public async Task TokenValidated_UsesConfiguredJudgeWhenPcssSynchronizationRemovesPersonalMapping()
+    {
+        var user = new UserDto { Id = UserId, NativeGuid = NativeGuid, IsActive = true, JudgeId = 456 };
+        var persisted = new UserDto
+        {
+            Id = UserId,
+            NativeGuid = NativeGuid,
+            IsActive = true,
+            Roles = ["Judge"],
+            GroupIds = ["judiciary"]
+        };
+        _userService.Setup(s => s.GetForPcssSyncAsync(NativeGuid, Email)).ReturnsAsync(user);
+        _userService.Setup(s => s.GetByIdWithPermissionsAsync(UserId)).ReturnsAsync(persisted);
+        _userService.Setup(s => s.UpdateFromPcssAsync(user)).ReturnsAsync(OperationResult.Success());
+        _pcssSyncService.Setup(s => s.UpdateUserFromPcss(user))
+            .Callback<UserDto>(dto => dto.JudgeId = null)
+            .ReturnsAsync(new PcssSyncResult(PcssSyncOutcome.Synchronized, HasChanges: true));
+
+        using var services = CreateServices();
+        var context = await ValidateTokenAsync(services);
+
+        Assert.Null(context.Result);
+        Assert.Equal("True", context.Principal.FindFirst(CustomClaimTypes.IsActive)?.Value);
+        Assert.Equal("Judge", context.Principal.FindFirst(CustomClaimTypes.Role)?.Value);
+        Assert.Equal("123", context.Principal.FindFirst(CustomClaimTypes.JudgeId)?.Value);
+        Assert.Equal("1", context.Principal.FindFirst(CustomClaimTypes.JudgeHomeLocationId)?.Value);
+    }
+
     [Theory]
     [InlineData(PcssSyncOutcome.Synchronized, false)]
     [InlineData(PcssSyncOutcome.Synchronized, true)]
@@ -132,14 +161,26 @@ public class AuthenticationServiceCollectionExtensionTests
     {
         var user = new UserDto
         {
-            Id = UserId, NativeGuid = NativeGuid, IsActive = true, IsPendingRegistration = true, JudgeId = 456,
-            GroupIds = ["judiciary"], RoleIds = ["judge"]
+            Id = UserId,
+            NativeGuid = NativeGuid,
+            IsActive = true,
+            IsPendingRegistration = true,
+            JudgeId = 456,
+            GroupIds = ["judiciary"],
+            RoleIds = ["judge"]
         };
         _userService.Setup(s => s.GetForPcssSyncAsync(NativeGuid, Email)).ReturnsAsync(user);
         var persisted = new UserDto
         {
-            Id = UserId, NativeGuid = NativeGuid, IsActive = true, IsPendingRegistration = true, JudgeId = 456,
-            GroupIds = ["judiciary"], RoleIds = ["judge"], Roles = ["Judge"], Permissions = ["Read"]
+            Id = UserId,
+            NativeGuid = NativeGuid,
+            IsActive = true,
+            IsPendingRegistration = true,
+            JudgeId = 456,
+            GroupIds = ["judiciary"],
+            RoleIds = ["judge"],
+            Roles = ["Judge"],
+            Permissions = ["Read"]
         };
         _userService.Setup(s => s.GetByIdWithPermissionsAsync(UserId)).ReturnsAsync(persisted);
 
@@ -202,19 +243,29 @@ public class AuthenticationServiceCollectionExtensionTests
     }
 
     [Theory]
-    [InlineData(true, true, 456, true)]
-    [InlineData(false, true, 456, false)]
-    [InlineData(true, false, 456, false)]
-    [InlineData(true, true, null, false)]
-    [InlineData(true, true, 0, false)]
+    [InlineData(true, true, 456, "456")]
+    [InlineData(true, true, null, "123")]
+    [InlineData(true, true, 0, "123")]
+    [InlineData(true, true, -1, "123")]
+    [InlineData(false, true, 456, null)]
+    [InlineData(false, true, null, null)]
+    [InlineData(true, false, 456, null)]
+    [InlineData(true, false, null, null)]
     public async Task TokenValidated_UsesOnlyPersistedEligibilityAndClaimsAfterPcssFailure(
-        bool isActive, bool hasRoles, int? judgeId, bool canSignIn)
+        bool isActive, bool hasRoles, int? judgeId, string expectedJudgeClaim)
     {
         var user = new UserDto { Id = UserId, NativeGuid = NativeGuid };
         var persisted = new UserDto
         {
-            Id = UserId, NativeGuid = NativeGuid, IsActive = isActive, IsPendingRegistration = true, JudgeId = judgeId,
-            GroupIds = ["stored-group"], Roles = hasRoles ? ["Stored role"] : [], Permissions = ["Stored permission"]
+            Id = UserId,
+            NativeGuid = NativeGuid,
+            IsActive = isActive,
+            IsPendingRegistration = true,
+            JudgeId = judgeId,
+            GroupIds = ["stored-group"],
+            RoleIds = ["stored-role"],
+            Roles = hasRoles ? ["Stored role"] : [],
+            Permissions = ["Stored permission"]
         };
         _userService.Setup(s => s.GetForPcssSyncAsync(NativeGuid, Email)).ReturnsAsync(user);
         _userService.Setup(s => s.GetByIdWithPermissionsAsync(UserId)).ReturnsAsync(persisted);
@@ -231,14 +282,15 @@ public class AuthenticationServiceCollectionExtensionTests
             })
             .ReturnsAsync(new PcssSyncResult(PcssSyncOutcome.Failed, HasChanges: true));
 
-        using var services = CreateServices();
-        var context = await ValidateTokenAsync(services);
+        var judges = new Mock<IJudgeService>();
+        using var services = CreateServices(judgeService: judges.Object);
+        var context = await ValidateTokenAsync(services, externalJudgeId: "789");
 
-        if (canSignIn)
+        if (expectedJudgeClaim != null)
         {
             Assert.Null(context.Result);
             Assert.Equal(UserId, context.Principal.FindFirst(CustomClaimTypes.UserId)?.Value);
-            Assert.Equal("456", context.Principal.FindFirst(CustomClaimTypes.JudgeId)?.Value);
+            Assert.Equal(expectedJudgeClaim, context.Principal.FindFirst(CustomClaimTypes.JudgeId)?.Value);
             Assert.Equal("1", context.Principal.FindFirst(CustomClaimTypes.JudgeHomeLocationId)?.Value);
             Assert.Equal("stored-group", Assert.Single(context.Principal.FindAll(CustomClaimTypes.Groups)).Value);
             Assert.Equal("Stored role", Assert.Single(context.Principal.FindAll(CustomClaimTypes.Role)).Value);
@@ -249,12 +301,15 @@ public class AuthenticationServiceCollectionExtensionTests
             Assert.NotNull(context.Result?.Failure);
             Assert.Null(context.Principal.FindFirst(CustomClaimTypes.UserId));
             Assert.Null(context.Principal.FindFirst(CustomClaimTypes.Role));
+            Assert.Null(context.Principal.FindFirst(CustomClaimTypes.JudgeId));
+            Assert.Null(context.Principal.FindFirst(CustomClaimTypes.JudgeHomeLocationId));
         }
 
         Assert.True(persisted.IsPendingRegistration);
         _userService.Verify(s => s.GetByIdWithPermissionsAsync(UserId), Times.Once);
         _userService.Verify(s => s.GetByIdWithPermissionsAsync("partial-user"), Times.Never);
         _userService.Verify(s => s.UpdateFromPcssAsync(It.IsAny<UserDto>()), Times.Never);
+        judges.Verify(s => s.GetJudges(null, null), Times.Never);
     }
 
     [Fact]
@@ -262,8 +317,12 @@ public class AuthenticationServiceCollectionExtensionTests
     {
         var user = new UserDto
         {
-            Id = UserId, NativeGuid = "02000000000000000000000000000000", IsActive = true,
-            JudgeId = 456, Roles = ["Judge"], GroupIds = ["judiciary"]
+            Id = UserId,
+            NativeGuid = "02000000000000000000000000000000",
+            IsActive = true,
+            JudgeId = 456,
+            Roles = ["Judge"],
+            GroupIds = ["judiciary"]
         };
         _userService.Setup(s => s.GetForPcssSyncAsync(NativeGuid, Email)).ReturnsAsync(user);
 
@@ -360,6 +419,8 @@ public class AuthenticationServiceCollectionExtensionTests
 
         Assert.Null(context.Result);
         Assert.Equal("Manual role", context.Principal.FindFirst(CustomClaimTypes.Role)?.Value);
+        Assert.Equal("123", context.Principal.FindFirst(CustomClaimTypes.JudgeId)?.Value);
+        Assert.Equal("1", context.Principal.FindFirst(CustomClaimTypes.JudgeHomeLocationId)?.Value);
         _pcssSyncService.Verify(s => s.UpdateUserFromPcss(It.IsAny<UserDto>()), Times.Never);
         _userService.Verify(s => s.UpdateFromPcssAsync(It.IsAny<UserDto>()), Times.Never);
     }

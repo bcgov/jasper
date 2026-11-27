@@ -31,6 +31,6 @@ public class UserDto : BaseDto
     public List<string> Roles { get; set; } = [];
     public List<string> Permissions { get; set; } = [];
 
-    public bool HasJasperAccess() => IsActive && Roles?.Count > 0 && JudgeId is not (null or 0);
+    public bool HasJasperAccess() => IsActive && Roles?.Count > 0;
 }
 

@@ -578,9 +578,19 @@ public class UserServiceTests : ServiceTestBase
             _mockGroupRepo.Object, _mockRoleRepo.Object, _mockPermissionRepo.Object, _mockLocationService.Object);
         var user = new User
         {
-            FirstName = "Test", LastName = "User", Email = "user@example.com", IsActive = true, IsPendingRegistration = true,
-            JudgeId = 123, GroupIds = ["group"], ADUsername = "manual-ad", UserGuid = "idir-id",
-            Signature = [1], SignatureContentType = "image/png", Initials = [2], InitialsContentType = "image/png",
+            FirstName = "Test",
+            LastName = "User",
+            Email = "user@example.com",
+            IsActive = true,
+            IsPendingRegistration = true,
+            JudgeId = 123,
+            GroupIds = ["group"],
+            ADUsername = "manual-ad",
+            UserGuid = "idir-id",
+            Signature = [1],
+            SignatureContentType = "image/png",
+            Initials = [2],
+            InitialsContentType = "image/png",
             ReleaseNotes = new UserReleaseNotes { LastViewedVersion = "1.0.0" }
         };
         await repo.AddAsync(user);

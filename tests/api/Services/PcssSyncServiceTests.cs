@@ -103,8 +103,13 @@ namespace Scv.Api.Tests.Services
             // Arrange
             var userDto = new UserDto
             {
-                Email = "test@test.com", NativeGuid = "guid", IsActive = true,
-                GroupIds = ["pcss-group"], RoleIds = ["pcss-role"], IsPendingRegistration = true, JudgeId = 456
+                Email = "test@test.com",
+                NativeGuid = "guid",
+                IsActive = true,
+                GroupIds = ["pcss-group"],
+                RoleIds = ["pcss-role"],
+                IsPendingRegistration = true,
+                JudgeId = 456
             };
             _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
                 .ReturnsAsync((UserItem)null);
@@ -146,8 +151,12 @@ namespace Scv.Api.Tests.Services
             // Arrange
             var userDto = new UserDto
             {
-                Email = "test@test.com", NativeGuid = "guid", IsActive = true, IsPendingRegistration = true,
-                GroupIds = ["existing-group"], RoleIds = ["existing-role"]
+                Email = "test@test.com",
+                NativeGuid = "guid",
+                IsActive = true,
+                IsPendingRegistration = true,
+                GroupIds = ["existing-group"],
+                RoleIds = ["existing-role"]
             };
             var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
             _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
@@ -511,8 +520,11 @@ namespace Scv.Api.Tests.Services
         {
             var userDto = new UserDto
             {
-                NativeGuid = "guid", IsPendingRegistration = true, IsActive = true,
-                GroupIds = ["old-group"], RoleIds = ["old-role"]
+                NativeGuid = "guid",
+                IsPendingRegistration = true,
+                IsActive = true,
+                GroupIds = ["old-group"],
+                RoleIds = ["old-role"]
             };
             _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
                 .ReturnsAsync(new UserItem { UserId = 123 });

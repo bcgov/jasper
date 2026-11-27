@@ -329,12 +329,13 @@ namespace Scv.Api.Infrastructure.Authentication
             {
                 if (context.Result == null)
                 {
-                    var judgeId = usedStoredAuthorization
-                        ? userDto.JudgeId.ToString()
-                        : judge?.PersonId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeId");
+                    var mappedJudgeId = usedStoredAuthorization && userDto.JudgeId is > 0
+                        ? userDto.JudgeId
+                        : judge?.PersonId;
+                    var judgeId = mappedJudgeId?.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeId");
                     var homeLocationId = judge?.HomeLocationId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
                     logger.LogDebug("Logged user in with judge person id: {JudgePersonId}, judge home location id: {JudgeLocationId}",
-                        usedStoredAuthorization ? userDto.JudgeId : judge?.PersonId, judge?.HomeLocationId);
+                        mappedJudgeId, judge?.HomeLocationId);
                     AddDefaultJudgeClaims(logger, claims, judgeId, homeLocationId);
                 }
             }

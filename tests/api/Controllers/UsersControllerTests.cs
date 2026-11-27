@@ -290,7 +290,7 @@ public class UsersControllerTests
     }
 
     [Fact]
-    public async Task RequestAccess_UpdatesPendingRegistration_WhenJudgeMappingIsMissing()
+    public async Task RequestAccess_PreservesStoredProfile_WhenStartingPendingRegistration()
     {
         // Arrange
         var email = _faker.Internet.Email();
@@ -305,10 +305,15 @@ public class UsersControllerTests
 
         var existingUser = new UserDto
         {
-            Email = email, IsActive = true, FirstName = "Judge", NativeGuid = "guid", UserGuid = "idir-guid",
-            HasSignature = true, HasInitials = true, ReleaseNotes = new UserReleaseNotesDto { LastViewedVersion = "1.0.0" }
+            Email = email,
+            FirstName = "Judge",
+            NativeGuid = "guid",
+            UserGuid = "idir-guid",
+            HasSignature = true,
+            HasInitials = true,
+            ReleaseNotes = new UserReleaseNotesDto { LastViewedVersion = "1.0.0" }
         };
-        var userWithRoles = new UserDto { Email = email, IsActive = true, Roles = ["Judge"], RoleIds = ["inherited-role"] };
+        var userWithUnresolvedRoles = new UserDto { Email = email, RoleIds = ["unresolved-role"] };
 
         _mockValidator
             .Setup(v => v.ValidateAsync(It.IsAny<UserDto>(), default))
@@ -327,7 +332,7 @@ public class UsersControllerTests
             .ReturnsAsync(existingUser);
         _mockUserService
             .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
-            .ReturnsAsync(userWithRoles);
+            .ReturnsAsync(userWithUnresolvedRoles);
 
         _mockUserService
             .Setup(s => s.UpdateAsync(It.IsAny<UserDto>()))
@@ -371,8 +376,11 @@ public class UsersControllerTests
         Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
     }
 
-    [Fact]
-    public async Task RequestAccess_ReturnsAlreadyAuthorized_WhenDatabaseUserHasAccess()
+    [Theory]
+    [InlineData(456)]
+    [InlineData(null)]
+    [InlineData(0)]
+    public async Task RequestAccess_ReturnsAlreadyAuthorized_WhenDatabaseUserHasAccess(int? judgeId)
     {
         var userId = ObjectId.GenerateNewId().ToString();
         var controller = CreateControllerWithContext([
@@ -384,7 +392,7 @@ public class UsersControllerTests
             Email = "current@example.com",
             IsActive = true,
             IsPendingRegistration = true,
-            JudgeId = 456,
+            JudgeId = judgeId,
             Roles = ["Judge"]
         };
         _mockUserService.Setup(s => s.GetByIdWithPermissionsAsync(userId)).ReturnsAsync(databaseUser);
@@ -394,6 +402,7 @@ public class UsersControllerTests
         Assert.True(JObject.FromObject(result.Value).Value<bool>("alreadyAuthorized"));
         Assert.Equal("current@example.com", databaseUser.Email);
         Assert.True(databaseUser.IsPendingRegistration);
+        _mockUserService.Verify(s => s.GetByIdAsync(userId), Times.Never);
         _mockUserService.Verify(s => s.UpdateAsync(It.IsAny<UserDto>()), Times.Never);
     }
 

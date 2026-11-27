@@ -4,8 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bogus;
 using LazyCache;
+using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -107,7 +109,8 @@ public class TransitoryDocumentsServiceTests : ServiceTestBase
             keycloakOptions,
             _mockConfig.Object,
             _mapper,
-            new CachingService());
+            new CachingService(new Lazy<ICacheProvider>(() =>
+                new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions())))));
 
         return (service, mockTdClient, mockLocationService, mockKeycloakTokenService);
     }

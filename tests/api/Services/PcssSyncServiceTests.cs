@@ -365,23 +365,28 @@ namespace Scv.Api.Tests.Services
                 Email = "test@test.com",
                 NativeGuid = "guid",
                 JudgeId = 456,
-                IsActive = false,
-                GroupIds = []
+                IsActive = true,
+                IsPendingRegistration = false,
+                GroupIds = ["group1"],
+                RoleIds = ["role1"]
             };
-            var pcssUser = new UserItem { GUID = "guid", UserId = 123, GivenName = "John", Surname = "Doe", Email = "test@test.com" };
+            var pcssUser = new UserItem { GUID = "guid", UserId = 123 };
             _authorizationServiceMock.Setup(x => x.GetUserByGuid("guid", true))
                 .ReturnsAsync(pcssUser);
 
             _authorizationServiceMock.Setup(x => x.GetPcssUserRoleNames(123))
                 .ReturnsAsync(OperationResult<IEnumerable<string>>.Success(["role"]));
 
-            var groups = new List<GroupDto>();
             _groupServiceMock.Setup(x => x.GetGroupsByAliases(It.IsAny<IEnumerable<string>>()))
-                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success(groups));
+                .ReturnsAsync(OperationResult<IEnumerable<GroupDto>>.Success([new GroupDto { Id = "group1" }]));
 
-            var roles = new List<RoleDto>();
             _roleServiceMock.Setup(x => x.GetRolesByAliases(It.IsAny<IEnumerable<string>>()))
-                .ReturnsAsync(OperationResult<IEnumerable<RoleDto>>.Success(roles));
+                .ReturnsAsync(OperationResult<IEnumerable<RoleDto>>.Success([new RoleDto { Id = "role1" }]));
+
+            _groupRepoMock.Setup(x => x.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+                .ReturnsAsync([]);
+            _roleRepoMock.Setup(x => x.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+                .ReturnsAsync([]);
 
             var judges = new List<PersonSearchItem>();
             _judgeServiceMock.Setup(x => x.GetJudges(null, null))
@@ -393,6 +398,9 @@ namespace Scv.Api.Tests.Services
             // Assert
             Assert.Equal(new PcssSyncResult(PcssSyncOutcome.Synchronized, true), result);
             Assert.Null(userDto.JudgeId);
+            Assert.True(userDto.IsActive);
+            Assert.Equal("group1", Assert.Single(userDto.GroupIds));
+            Assert.Equal("role1", Assert.Single(userDto.RoleIds));
         }
 
         [Fact]

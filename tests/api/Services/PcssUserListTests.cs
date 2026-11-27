@@ -360,7 +360,11 @@ public class PcssUserListTests
         response.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("""
-                {"userId":42,"roles":[{"name":"test-role","effectiveDate":"2000-01-01"}]}
+                {
+                    "userId": 42,
+                    "homeLocationId": 1,
+                    "roles": [{ "name": "test-role", "numberOfUsers": 1, "effectiveDate": "2000-01-01" }]
+                }
                 """)
         });
         var result = await roles;

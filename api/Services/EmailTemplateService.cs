@@ -1,9 +1,12 @@
 using System;
 using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scriban;
+using Scriban.Runtime;
 using Scv.Core.Helpers.Extensions;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -33,12 +36,18 @@ public class EmailTemplateService(
             }
 
             var emailTemplate = emailTemplateResult.First();
+            var isFailureEmail = templateName is EmailTemplate.JOB_FAILURE or EmailTemplate.ORDER_SUBMISSION_FAILED;
 
             var templateSubject = Template.Parse(emailTemplate.Subject);
             var subject = await templateSubject.RenderAsync(data);
+            if (isFailureEmail)
+            {
+                subject = AddDeploymentPrefix(subject, configuration["DEPLOYMENT_ENVIRONMENT"]);
+            }
 
             var templateBody = Template.Parse(emailTemplate.Body);
-            var body = await templateBody.RenderAsync(data);
+            var bodyData = isFailureEmail && data is not null ? EncodeFailureEmailBodyData(data) : data;
+            var body = await templateBody.RenderAsync(bodyData);
 
             var mailbox = configuration.GetNonEmptyValue("AZURE:SERVICE_ACCOUNT");
 
@@ -61,5 +70,36 @@ public class EmailTemplateService(
         {
             logger.LogError(ex, "Failed to send template email '{TemplateName}': {Message}", templateName, ex.Message);
         }
+    }
+
+    private static string AddDeploymentPrefix(string subject, string deploymentEnvironment)
+    {
+        var environment = deploymentEnvironment?.Trim().ToUpperInvariant() switch
+        {
+            "DEV" or "LZ-DEV" => "DEV",
+            "TEST" or "LZ-TEST" => "TEST",
+            "PROD" or "LZ-PROD" => "PROD",
+            _ => "UNKNOWN"
+        };
+
+        // Stored templates and configured subjects can already supply an environment prefix.
+        var subjectText = Regex.Replace(subject.TrimStart(), @"^(?:\[(?:DEV|TEST|PROD|UNKNOWN)\]\s*)+", "",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+        return $"[{environment}] {subjectText}";
+    }
+
+    private static ScriptObject EncodeFailureEmailBodyData(object data)
+    {
+        var bodyData = new ScriptObject();
+        bodyData.Import(data);
+        foreach (var key in bodyData.Keys.ToArray())
+        {
+            if (bodyData[key] is string value)
+            {
+                bodyData[key] = WebUtility.HtmlEncode(value);
+            }
+        }
+
+        return bodyData;
     }
 }

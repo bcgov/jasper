@@ -1739,6 +1739,91 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task SubmitOrder_RetainsSupportingDocumentAndPersistsError_WhenExtractionFails()
+    {
+        var supportingDocument = _faker.Random.Bytes(32);
+        var order = SetupUnsignedFamilyDeskOrder(supportingDocument);
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Throws(new InvalidDataException("Private document content"));
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        var failure = Assert.IsType<DeskOrderExtractionFailure>(result);
+        var error = Assert.Single(failure.Errors);
+        Assert.StartsWith("Could not extract Reasons for Rejection, Directions or Terms of Order from the Word desk order.", error);
+        Assert.Contains("The order was not sent to CSO.", error);
+        Assert.DoesNotContain("Private document content", error);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitStatus == SubmitStatus.Error
+            && o.SubmitAttempts == 1 && o.SupportingDocumentData.SequenceEqual(supportingDocument))), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitOrder_ReturnsPersistenceFailure_WhenExtractionErrorStatusCannotBeSaved()
+    {
+        var order = SetupUnsignedFamilyDeskOrder(_faker.Random.Bytes(32));
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Throws(new DeskOrderExtractionException(DeskOrderExtractionError.InvalidSignatureMarker));
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>()))
+            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.IsNotType<DeskOrderExtractionFailure>(result);
+        Assert.Equal("Error when updating data.", Assert.Single(result.Errors));
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitStatus == SubmitStatus.Error)), Times.Once);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("The supporting document is not a valid Word (.docx) document.", null)]
+    [InlineData("The Word desk order is missing required sections or has them in the wrong order.", new[]
+    {
+        DeskOrderDetailsExtractor.DIRECTIONS_LABEL,
+        DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL,
+        DeskOrderDetailsExtractor.ORDER_TERMS_LABEL,
+        DeskOrderDetailsExtractor.SIGNATURE_TAG
+    })]
+    [InlineData("Could not extract Terms of Order because the signature marker is missing or invalid.", new[]
+    {
+        DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL,
+        DeskOrderDetailsExtractor.DIRECTIONS_LABEL,
+        DeskOrderDetailsExtractor.ORDER_TERMS_LABEL
+    })]
+    public async Task SubmitOrder_ReturnsSpecificSafeDescription_WhenDeskOrderCannotBeExtracted(
+        string expectedDescription, string[] sectionLabels)
+    {
+        byte[] supportingDocument = [0x00];
+        if (sectionLabels is not null)
+        {
+            using var document = BuildDocxStream(body =>
+            {
+                foreach (var label in sectionLabels)
+                {
+                    body.AppendChild(ParagraphOf(label));
+                }
+            });
+            supportingDocument = document.ToArray();
+        }
+
+        var order = SetupUnsignedFamilyDeskOrder(supportingDocument);
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+        var extractor = new DeskOrderDetailsExtractor();
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Returns((Stream stream) => extractor.Extract(stream));
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        var failure = Assert.IsType<DeskOrderExtractionFailure>(result);
+        var error = Assert.Single(failure.Errors);
+        Assert.StartsWith(expectedDescription, error);
+        Assert.Contains("The order was not sent to CSO.", error);
+        Assert.EndsWith("Replace the supporting document and retry.", error);
+    }
+
+    [Fact]
     public async Task SubmitOrder_ReturnsFailure_WhenCsoSubmitFails()
     {
         var order = CreateOrder();
@@ -1759,7 +1844,7 @@ public class OrderServiceTests : ServiceTestBase
 
         _mockJudicialClient
             .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
-            .ThrowsAsync(new Exception("CSO submission failed"));
+            .ThrowsAsync(new Exception("Private CSO response body"));
 
         var result = await _orderService.SubmitOrder(order.Id);
 
@@ -1767,7 +1852,8 @@ public class OrderServiceTests : ServiceTestBase
         _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
         _mockJudgeService.Verify(d => d.GetJudges(null, null), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
-        Assert.Contains("Failed to submit order to CSO.", result.Errors);
+        Assert.IsNotType<DeskOrderExtractionFailure>(result);
+        Assert.Equal("Failed to submit order to CSO.", Assert.Single(result.Errors));
     }
 
     #endregion
@@ -1850,6 +1936,21 @@ public class OrderServiceTests : ServiceTestBase
                 }
             ]
         };
+    }
+
+    private Order SetupUnsignedFamilyDeskOrder(byte[] supportingDocument)
+    {
+        var order = CreateOrder(OrderStatus.OrderMade);
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+        order.SupportingDocumentData = supportingDocument;
+        order.SubmitStatus = SubmitStatus.Pending;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([new PersonSearchItem { PersonId = order.JudgeId, ParticipantId = order.OrderRequest.Referral.SentToPartId }]);
+        return order;
     }
 
     private Order CreateOrder(OrderStatus orderStatus = OrderStatus.Pending)

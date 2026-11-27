@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Office2010.Word;
 using DocumentFormat.OpenXml.Packaging;
@@ -10,6 +11,20 @@ using Scv.Core.Helpers;
 using Scv.Models.Order;
 
 namespace Scv.Api.Documents.Extractors;
+
+internal enum DeskOrderExtractionError
+{
+    Unexpected,
+    InvalidWordDocument,
+    InvalidRequiredSections,
+    InvalidSignatureMarker
+}
+
+internal sealed class DeskOrderExtractionException(DeskOrderExtractionError error, Exception innerException = null)
+    : Exception($"Failed to extract details from the Word desk order ({error}).", innerException)
+{
+    public DeskOrderExtractionError Error { get; } = error;
+}
 
 public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 {
@@ -26,26 +41,37 @@ public class DeskOrderDetailsExtractor : IDeskOrderDetailsExtractor
 
         if (!DocumentHelper.IsDocXDocument(stream))
         {
-            throw new InvalidDataException("Stream is not a valid Word (.docx) document.");
+            throw new DeskOrderExtractionException(DeskOrderExtractionError.InvalidWordDocument);
         }
 
-        using var wordDoc = WordprocessingDocument.Open(stream, false);
+        try
+        {
+            using var wordDoc = WordprocessingDocument.Open(stream, false);
+            var body = wordDoc.MainDocumentPart?.Document?.Body
+                ?? throw new DeskOrderExtractionException(DeskOrderExtractionError.InvalidWordDocument);
+            return ExtractFromBody(body);
+        }
+        catch (Exception ex) when (ex is OpenXmlPackageException or FileFormatException or InvalidDataException or XmlException)
+        {
+            throw new DeskOrderExtractionException(DeskOrderExtractionError.InvalidWordDocument, ex);
+        }
+    }
 
-        var body = (wordDoc.MainDocumentPart?.Document?.Body)
-            ?? throw new InvalidDataException("Unable to extract desk order details from the document body.");
-
+    private static DeskOrderDetailsDto ExtractFromBody(Body body)
+    {
         // Get the indices of the  "Reasons for Rejection:", "Directions:", "Terms of Order:" section and
         // the signature section to be able to extract the relevant content for each section
         var (rejectionReasonsIndex, directionsIndex, orderTermsIndex, signatureIndex) = GetSectionIndices(body);
 
-        if (rejectionReasonsIndex == -1 || directionsIndex == -1 || orderTermsIndex == -1 || directionsIndex >= orderTermsIndex)
+        if (rejectionReasonsIndex == -1 || directionsIndex == -1 || orderTermsIndex == -1
+            || rejectionReasonsIndex >= directionsIndex || directionsIndex >= orderTermsIndex)
         {
-            throw new InvalidDataException("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.");
+            throw new DeskOrderExtractionException(DeskOrderExtractionError.InvalidRequiredSections);
         }
 
         if (signatureIndex == -1 || orderTermsIndex >= signatureIndex)
         {
-            throw new InvalidDataException("Unable to extract order terms from the document body.");
+            throw new DeskOrderExtractionException(DeskOrderExtractionError.InvalidSignatureMarker);
         }
 
         // Whatever is between "Reasons for Rejection:" and "Directions:" is the Reasons for Rejection content.

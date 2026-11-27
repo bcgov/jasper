@@ -23,17 +23,20 @@ public class DeskOrderDetailsExtractorTests
         Assert.Throws<ArgumentNullException>(() => _extractor.Extract(null));
     }
 
-    [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenStreamIsNotWordDocument()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Extract_ReportsInvalidWordDocument_WhenStreamIsNotWordDocument(bool hasDocxHeader)
     {
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("this is plain text, not a docx"));
+        byte[] bytes = hasDocxHeader ? [0x50, 0x4B, 0x03, 0x04] : Encoding.UTF8.GetBytes("Plain text");
+        using var stream = new MemoryStream(bytes);
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Stream is not a valid Word (.docx) document.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var ex = Assert.Throws<DeskOrderExtractionException>(() => _extractor.Extract(stream));
+        Assert.Equal(DeskOrderExtractionError.InvalidWordDocument, ex.Error);
     }
 
     [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenDirectionsLabelIsMissing()
+    public void Extract_ReportsInvalidRequiredSections_WhenDirectionsLabelIsMissing()
     {
         var term = _faker.Lorem.Sentence();
         using var stream = BuildDocxStream(body =>
@@ -45,8 +48,25 @@ public class DeskOrderDetailsExtractorTests
             body.AppendChild(SignatureSdt());
         });
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var ex = Assert.Throws<DeskOrderExtractionException>(() => _extractor.Extract(stream));
+        Assert.Equal(DeskOrderExtractionError.InvalidRequiredSections, ex.Error);
+    }
+
+    [Theory]
+    [InlineData(DeskOrderDetailsExtractor.REJECTION_REASONS_LABEL)]
+    [InlineData(DeskOrderDetailsExtractor.REJECTION_REASONS_SHORT_LABEL)]
+    public void Extract_RejectsRejectionReasonsAfterDirections(string reasonsLabel)
+    {
+        using var stream = BuildDocxStream(body =>
+        {
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.DIRECTIONS_LABEL));
+            body.AppendChild(ParagraphOf(reasonsLabel));
+            body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
+            body.AppendChild(SignatureSdt());
+        });
+
+        var ex = Assert.Throws<DeskOrderExtractionException>(() => _extractor.Extract(stream));
+        Assert.Equal(DeskOrderExtractionError.InvalidRequiredSections, ex.Error);
     }
 
     [Theory]
@@ -282,7 +302,7 @@ public class DeskOrderDetailsExtractorTests
     }
 
     [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenOrderTermsLabelMissing()
+    public void Extract_ReportsInvalidRequiredSections_WhenOrderTermsLabelIsMissing()
     {
         using var stream = BuildDocxStream(body =>
         {
@@ -293,12 +313,14 @@ public class DeskOrderDetailsExtractorTests
             body.AppendChild(SignatureSdt());
         });
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var ex = Assert.Throws<DeskOrderExtractionException>(() => _extractor.Extract(stream));
+        Assert.Equal(DeskOrderExtractionError.InvalidRequiredSections, ex.Error);
     }
 
-    [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenSignatureMissing()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Different content control")]
+    public void Extract_ReportsInvalidSignatureMarker_WhenSignatureIsMissingOrInvalid(string signatureTag)
     {
         using var stream = BuildDocxStream(body =>
         {
@@ -308,11 +330,14 @@ public class DeskOrderDetailsExtractorTests
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
             body.AppendChild(ParagraphOf(DeskOrderDetailsExtractor.ORDER_TERMS_LABEL));
             body.AppendChild(ParagraphOf(_faker.Lorem.Sentence()));
-            // No signature element follows the order terms label.
+            if (signatureTag is not null)
+            {
+                body.AppendChild(SignatureSdt(signatureTag));
+            }
         });
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract order terms from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var ex = Assert.Throws<DeskOrderExtractionException>(() => _extractor.Extract(stream));
+        Assert.Equal(DeskOrderExtractionError.InvalidSignatureMarker, ex.Error);
     }
 
     [Theory]
@@ -439,7 +464,7 @@ public class DeskOrderDetailsExtractorTests
     }
 
     [Fact]
-    public void Extract_ThrowsInvalidDataException_WhenRejectionReasonsLabelIsMissing()
+    public void Extract_ReportsInvalidRequiredSections_WhenRejectionReasonsLabelIsMissing()
     {
         using var stream = BuildDocxStream(body =>
         {
@@ -450,8 +475,8 @@ public class DeskOrderDetailsExtractorTests
             body.AppendChild(SignatureSdt());
         });
 
-        var ex = Assert.Throws<InvalidDataException>(() => _extractor.Extract(stream));
-        Assert.Contains("Unable to extract desk order details (reasons for rejection, directions or order terms) from the document body.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var ex = Assert.Throws<DeskOrderExtractionException>(() => _extractor.Extract(stream));
+        Assert.Equal(DeskOrderExtractionError.InvalidRequiredSections, ex.Error);
     }
 
     [Fact]

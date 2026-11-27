@@ -297,6 +297,10 @@ module "ecs_api_td" {
         value = var.region
       },
       {
+        name  = "DEPLOYMENT_ENVIRONMENT"
+        value = var.environment
+      },
+      {
         name  = "AWS_GET_ASSIGNED_CASES_LAMBDA_NAME"
         value = "${module.lambda.lambda_functions["get-assigned-cases-request"].name}"
       },

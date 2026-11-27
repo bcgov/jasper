@@ -47,14 +47,14 @@ namespace Scv.Api.Services
         public async Task<PCSSAuthServices.UserItem> GetUserByGuid(string userGuid, bool forceRefresh = false)
         {
             var pcssUsers = await GetUsers();
-            var matchingUser = pcssUsers?.FirstOrDefault(pu => pu.GUID == userGuid);
+            var matchingUser = pcssUsers?.SingleOrDefault(user => string.Equals(user.GUID, userGuid, StringComparison.OrdinalIgnoreCase));
 
             // This insures that the cache will not ignore brand new users just added to PCSS. Also updates the cache here after fetching.
             if (matchingUser is null && forceRefresh)
             {
                 _logger.LogDebug("Force refreshing cache for userGuid: {UserGuid}", userGuid);
                 var updatedPcssUsers = await GetUsersInternal(forceRefresh: true);
-                matchingUser = updatedPcssUsers?.FirstOrDefault(pu => pu.GUID == userGuid);
+                matchingUser = updatedPcssUsers?.SingleOrDefault(user => string.Equals(user.GUID, userGuid, StringComparison.OrdinalIgnoreCase));
             }
             return matchingUser;
         }
@@ -64,18 +64,13 @@ namespace Scv.Api.Services
             _logger.LogInformation("Fetching roles for user with ID {UserId}.", userId);
             var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId);
             var userRoles = user?.Roles;
-
-            var userRoleNames = userRoles?
-                .Where(IsRoleActive)
-                .Select(ur => ur.Name)
-                .Distinct();
-
-            if (userRoleNames == null || !userRoleNames.Any())
+            if (userRoles == null || userRoles.Any(role => string.IsNullOrWhiteSpace(role?.Name)))
             {
-                _logger.LogWarning("No roles found for user with ID {UserId}.", userId);
-                return OperationResult<IEnumerable<string>>.Failure("User not found or has no roles.");
+                _logger.LogWarning("PCSS did not return role data for user with ID {UserId}.", userId);
+                return OperationResult<IEnumerable<string>>.Failure("PCSS did not return user role data.");
             }
 
+            var userRoleNames = userRoles.Where(IsRoleActive).Select(ur => ur.Name).Distinct().ToList();
             _logger.LogInformation("Roles successfully fetched for user with ID {UserId}.", userId);
             _logger.LogDebug("Fetched Roles {UserId}. {Roles}", userId, userRoles);
             return OperationResult<IEnumerable<string>>.Success(userRoleNames);
@@ -163,7 +158,8 @@ namespace Scv.Api.Services
         private async Task<ICollection<PCSSAuthServices.UserItem>> FetchUsersFromSource()
         {
             _logger.LogInformation("Fetching users from PCSS.");
-            return await _pcssAuthorizationServiceClient.GetUsersAsync();
+            return await _pcssAuthorizationServiceClient.GetUsersAsync()
+                ?? throw new InvalidOperationException("PCSS did not return a user list.");
         }
 
         private void UpdateUsersCache(ICollection<PCSSAuthServices.UserItem> updatedUsers)

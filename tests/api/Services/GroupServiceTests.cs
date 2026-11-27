@@ -232,13 +232,44 @@ public class GroupServiceTests
         _mockUserRepo.Verify(g => g.UpdateAsync(It.IsAny<User>()), Times.Once);
     }
 
-    [Fact]
-    public async Task GetGroupsByAliases_ShouldReturnFailure_WhenAliasesNotFound()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetGroupsByAliases_ShouldReturnEmptyGroups_WhenAliasIsUnknownOrIntentionallyUnmapped(bool unmapped)
     {
         // Arrange
         var aliases = new List<string> { _faker.Random.Word() };
         _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(unmapped ? [new GroupAlias { Name = aliases[0] }] : []);
+
+        // Act
+        var result = await _groupService.GetGroupsByAliases(aliases);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Succeeded);
+        Assert.Empty(result.Payload);
+        _mockGroupRepo.Verify(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetGroupsByAliases_ShouldReturnFailure_WhenAliasGroupIsMissing(bool hasPartialMapping)
+    {
+        // Arrange
+        var aliases = new[] { "missing", "valid" };
+        var group = new Group { Id = ObjectId.GenerateNewId().ToString(), Name = "Group", Description = "Valid target" };
+        var groupAliases = new List<GroupAlias> { new() { Name = "missing", GroupId = "missing-group" } };
+        if (hasPartialMapping)
+        {
+            groupAliases.Add(new GroupAlias { Name = "valid", GroupId = group.Id });
+        }
+        _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
+            .ReturnsAsync(groupAliases);
+
+        _mockGroupRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            .ReturnsAsync(hasPartialMapping ? [group] : []);
 
         // Act
         var result = await _groupService.GetGroupsByAliases(aliases);
@@ -247,41 +278,46 @@ public class GroupServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("Group alias not found.", result.Errors[0]);
     }
 
     [Fact]
-    public async Task GetGroupsByAliases_ShouldSucceed_WhenGroupIdsMismatch()
+    public async Task GetGroupsByAliases_ShouldFail_WhenSeededAliasHasNoTarget()
     {
-        // Arrange
-        var aliases = new List<string> { _faker.Random.Word() };
-        var groupAlias = new GroupAlias { Name = aliases[0], GroupId = ObjectId.GenerateNewId().ToString() };
         _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
-            .ReturnsAsync([groupAlias]);
+            .ReturnsAsync([new GroupAlias { Name = RoleAlias.JUDGE }]);
 
-        _mockGroupRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
-            .ReturnsAsync([]);
+        var result = await _groupService.GetGroupsByAliases([RoleAlias.JUDGE]);
 
-        // Act
+        Assert.False(result.Succeeded);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetGroupsByAliases_ShouldFail_WhenARequestedSeededAliasIsMissing(bool hasOtherMapping)
+    {
+        string[] aliases = hasOtherMapping ? [RoleAlias.JUDGE, RoleAlias.JUDGE_ALT] : [RoleAlias.JUDGE];
+        _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
+            .ReturnsAsync(hasOtherMapping ? [new GroupAlias { Name = RoleAlias.JUDGE_ALT, GroupId = "judiciary" }] : []);
+
         var result = await _groupService.GetGroupsByAliases(aliases);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Succeeded);
-        Assert.Empty(result.Errors);
+        Assert.False(result.Succeeded);
+        Assert.Equal("A seeded group alias is missing.", Assert.Single(result.Errors));
+        _mockGroupRepo.Verify(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Never);
     }
 
     [Fact]
     public async Task GetGroupsByAliases_ShouldReturnSuccess_WhenGroupsFound()
     {
         // Arrange
-        var aliases = new List<string> { _faker.Random.Word() };
+        var aliases = new List<string> { _faker.Random.Word(), "unmapped", "unknown" };
         var groupId = ObjectId.GenerateNewId().ToString();
         var groupAlias = new GroupAlias { Name = aliases[0], GroupId = groupId };
         var group = new Group { Id = groupId, Name = _faker.Company.CompanyName(), Description = _faker.Lorem.Paragraph() };
 
         _mockGroupAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<GroupAlias, bool>>>()))
-            .ReturnsAsync([groupAlias]);
+            .ReturnsAsync([groupAlias, new GroupAlias { Name = "unmapped" }]);
 
         _mockGroupRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
             .ReturnsAsync([group]);

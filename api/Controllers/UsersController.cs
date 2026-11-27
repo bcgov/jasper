@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using Scv.Api.Infrastructure.Authorization;
 using Scv.Api.Infrastructure.Validation;
 using Scv.Api.Models;
@@ -105,7 +106,7 @@ public class UsersController(
     /// <summary>
     /// Allows a new user without authorization to JASPER to request access to the application.
     /// </summary>
-    /// <returns>The user resulting from the access request.</returns>
+    /// <returns>The updated user, or an alreadyAuthorized response if the user already has access.</returns>
     [HttpPut]
     [Route("request-access")]
     public async Task<IActionResult> RequestAccess()
@@ -117,32 +118,41 @@ public class UsersController(
             return BadRequest("Invalid user. Please contact the JASPER admin.");
         }
 
-        var existingUserResponse = await base.GetById(User.UserId());
-
-        var email = User.Email();
-        if (existingUserResponse is OkObjectResult okResult)
+        if (!ObjectId.TryParse(userId, out _))
         {
-            var existingUser = (UserDto)okResult.Value;
-            if (existingUser != null)
-            {
-                if (email != existingUser.Email)
-                {
-                    existingUser.Email = email;
-                }
-                existingUser.IsPendingRegistration = true;
-                var result = await base.Update(User.UserId(), existingUser);
+            return BadRequest("Invalid ID.");
+        }
 
-                return result;
-            }
-            else
-            {
-                return NotFound("Unable to locate JASPER user. Please contact the JASPER admin.");
-            }
-        }
-        else
+        var userWithRoles = await Service.GetByIdWithPermissionsAsync(userId);
+        if (userWithRoles == null)
         {
-            return existingUserResponse;
+            return NotFound();
         }
+
+        var hasRoles = userWithRoles.Roles?.Count > 0;
+        if (userWithRoles.HasJasperAccess())
+        {
+            return Ok(new { alreadyAuthorized = true });
+        }
+        if (!userWithRoles.IsActive && hasRoles)
+        {
+            return Forbid();
+        }
+        if (userWithRoles.IsActive && !hasRoles)
+        {
+            return BadRequest(new[] { "Invalid user. Please contact the JASPER admin." });
+        }
+
+        // Use the stored DTO for the update so inherited roles stay assigned to their groups.
+        var existingUser = await Service.GetByIdAsync(userId);
+        if (existingUser == null)
+        {
+            return NotFound();
+        }
+
+        existingUser.Email = User.Email();
+        existingUser.IsPendingRegistration = true;
+        return await base.Update(userId, existingUser);
     }
 
     /// <summary>

@@ -79,16 +79,46 @@ public class UserService(
         return await PopulateUserPermissionsAndRolesAsync(this.Mapper.Map<UserDto>(result.Single()));
     }
 
-    public async Task<UserDto> GetByGuidWithPermissionsAsync(string guid)
+    public async Task<UserDto> GetForPcssSyncAsync(string guid, string email)
     {
-        var result = await this.Repo.FindAsync(u => u.NativeGuid == guid);
-        if (result == null || !result.Any())
+        var user = (await Repo.FindAsync(u => u.NativeGuid == guid)).SingleOrDefault();
+        if (user == null && !string.IsNullOrWhiteSpace(email))
         {
-            this.Logger.LogInformation("User with guid: {Guid} is not found", guid.SanitizeForLog());
-            return null;
+            user = (await Repo.FindAsync(u => u.Email == email)).SingleOrDefault();
         }
 
-        return await PopulateUserPermissionsAndRolesAsync(this.Mapper.Map<UserDto>(result.Single()));
+        return user == null ? null : Mapper.Map<UserDto>(user);
+    }
+
+    public async Task<OperationResult> UpdateFromPcssAsync(UserDto dto)
+    {
+        try
+        {
+            var user = await Repo.GetByIdAsync(dto.Id);
+            if (user == null)
+            {
+                return OperationResult.Failure("User not found.");
+            }
+
+            user.NativeGuid = dto.NativeGuid;
+            user.FirstName = dto.FirstName ?? user.FirstName;
+            user.LastName = dto.LastName ?? user.LastName;
+            user.Email = dto.Email?.ToLower() ?? user.Email;
+            user.JudgeId = dto.JudgeId;
+            user.IsActive = dto.IsActive;
+            user.IsPendingRegistration = dto.IsPendingRegistration;
+            user.GroupIds = dto.GroupIds.DistinctList() ?? [];
+            user.RoleIds = dto.RoleIds.DistinctList() ?? [];
+
+            await Repo.UpdateAsync(user);
+            InvalidateCache(CacheName);
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unable to save PCSS synchronization for user {UserId}.", dto.Id.SanitizeForLog());
+            return OperationResult.Failure("Unable to save PCSS synchronization.");
+        }
     }
 
     public async Task<UserDto> GetByIdWithPermissionsAsync(string userId)

@@ -204,13 +204,16 @@ namespace Scv.Core.Helpers.Extensions
         public static string? ProvjudUserGuid(this ClaimsPrincipal claimsPrincipal)
         {
             var base64Guid = claimsPrincipal?.FindFirstValue(CustomClaimTypes.ProvjudUserGuid);
-            if (string.IsNullOrWhiteSpace(base64Guid))
+            Span<byte> guidBytes = stackalloc byte[16];
+            if (string.IsNullOrWhiteSpace(base64Guid)
+                || !Convert.TryFromBase64String(base64Guid, guidBytes, out var bytesWritten)
+                || bytesWritten != guidBytes.Length
+                || new Guid(guidBytes) == Guid.Empty)
             {
                 return null;
             }
-            byte[] decodedBytes = Convert.FromBase64String(base64Guid);
-            string hex = Convert.ToHexStringLower(decodedBytes);
-            return hex;
+
+            return Convert.ToHexStringLower(guidBytes);
         }
 
         public static string? ExternalJudgeId(this ClaimsPrincipal claimsPrincipal)

@@ -9,6 +9,7 @@ using Scv.Api.Controllers;
 using Scv.Api.Infrastructure.Authentication;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
+using Scv.Models.AccessControlManagement;
 using static Scv.Api.Infrastructure.Authorization.ProviderAuthorizationHandler;
 
 namespace Scv.Api.Infrastructure.Authorization
@@ -30,29 +31,49 @@ namespace Scv.Api.Infrastructure.Authorization
         protected async override Task HandleRequirementAsync(AuthorizationHandlerContext context, ProviderRequirement requirement)
         {
             var user = context.User;
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
             var httpContext = context.Resource as DefaultHttpContext;
             var endpoint = httpContext?.GetEndpoint();
             var actionDescriptor = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>();
             var isUserController = actionDescriptor?.ControllerTypeInfo?.Name == nameof(UsersController);
+            var isRequestAccess = isUserController && actionDescriptor.ActionName == nameof(UsersController.RequestAccess);
+            var isAuthInfo = actionDescriptor?.ControllerTypeInfo?.Name == nameof(AuthController)
+                && actionDescriptor.ActionName == nameof(AuthController.UserInfo);
+            var isPcssUser = user.ProvjudUserGuid() != null;
 
             var userId = context.User.UserId();
+            UserDto databaseUser = null;
             if (!string.IsNullOrWhiteSpace(userId))
             {
-                var databaseUser = await _userService.GetByIdWithPermissionsAsync(userId);
-                if (databaseUser == null || context.User.HasChanged(databaseUser))
+                databaseUser = await _userService.GetByIdWithPermissionsAsync(userId);
+                if (databaseUser == null || (!isRequestAccess && context.User.HasChanged(databaseUser)))
                 {
                     context.Fail(new AuthorizationFailureReason(this, "User claims changed since last authentication."));
                     return;
                 }
             }
 
-            if (isUserController && (actionDescriptor.ActionName == nameof(UsersController.RequestAccess) || actionDescriptor.ActionName == nameof(UsersController.GetMyUser)))
+            if (isRequestAccess || (isUserController && actionDescriptor.ActionName == nameof(UsersController.GetMyUser))
+                || (isAuthInfo && isPcssUser && databaseUser != null))
             {
                 context.Succeed(requirement);
                 return;
             }
 
-            // authorize siteminder users, and Federated (ie. provjud) users that have at least one group assigned.
+            if (isPcssUser)
+            {
+                if (databaseUser?.IsActive == true && databaseUser.GroupIds?.Count > 0 && databaseUser.Roles?.Count > 0)
+                {
+                    context.Succeed(requirement);
+                }
+                return;
+            }
+
+            // Authorize the remaining providers using their existing group rules.
             if (user.Identity.AuthenticationType == SiteMinderAuthenticationHandler.SiteMinder
                 || (user.Identity.AuthenticationType == TokenValidationParameters.DefaultAuthenticationType && user.Groups().Count > 0))
             {

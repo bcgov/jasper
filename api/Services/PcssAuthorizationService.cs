@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Core.Helpers.Extensions;
@@ -18,10 +23,18 @@ namespace Scv.Api.Services
     {
         #region Variables
 
-        private const string UsersCacheKey = "Users";
+        private const string UsersCacheKey = "PCSS:Users";
+        private static readonly TimeSpan UserListTimeout = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan FallbackWindow = TimeSpan.FromMinutes(5);
+        // The scoped service and the priming job share the same LazyCache instance.
+        private static readonly ConditionalWeakTable<IAppCache, UserCacheState> CacheStates = new();
         private readonly IAppCache _cache;
         private readonly PCSSAuthServices.IAuthorizationServicesClient _pcssAuthorizationServiceClient;
         private readonly ILogger<PcssAuthorizationService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly TimeProvider _timeProvider;
+        private readonly TimeSpan _freshDuration;
+        private readonly UserCacheState _cacheState;
 
         #endregion Variables
 
@@ -31,38 +44,67 @@ namespace Scv.Api.Services
             IConfiguration configuration,
             PCSSAuthServices.IAuthorizationServicesClient pcssAuthorizationServiceClient,
             IAppCache cache,
-            ILogger<PcssAuthorizationService> logger
+            ILogger<PcssAuthorizationService> logger,
+            IHttpContextAccessor httpContextAccessor = null,
+            TimeProvider timeProvider = null
         )
         {
             _pcssAuthorizationServiceClient = pcssAuthorizationServiceClient;
             _cache = cache;
             _logger = logger;
-            _cache.DefaultCachePolicy.DefaultCacheDurationSeconds = int.Parse(configuration.GetNonEmptyValue("Caching:UserExpiryMinutes")) * 60;
+            _httpContextAccessor = httpContextAccessor;
+            _timeProvider = timeProvider ?? TimeProvider.System;
+            _freshDuration = TimeSpan.FromMinutes(int.Parse(configuration.GetNonEmptyValue("Caching:UserExpiryMinutes")));
+            _cacheState = CacheStates.GetValue(cache, _ => new UserCacheState());
         }
 
         #endregion Constructor
 
-        public Task<ICollection<PCSSAuthServices.UserItem>> GetUsers() => GetUsersInternal(forceRefresh: false);
+        private CancellationToken RequestAborted => _httpContextAccessor?.HttpContext?.RequestAborted ?? CancellationToken.None;
 
-        public async Task<PCSSAuthServices.UserItem> GetUserByGuid(string userGuid, bool forceRefresh = false)
+        public Task<ICollection<PCSSAuthServices.UserItem>> GetUsers() => GetFreshUsers(RequestAborted);
+
+        public Task<ICollection<PCSSAuthServices.UserItem>> RefreshUsers(CancellationToken cancellationToken = default) =>
+            FetchAndCacheUsers(cancellationToken);
+
+        public async Task<PcssUserMatch> GetUserByGuid(string userGuid, bool forceRefresh = false)
         {
-            var pcssUsers = await GetUsers();
-            var matchingUser = pcssUsers?.FirstOrDefault(pu => pu.GUID == userGuid);
+            var cancellationToken = RequestAborted;
+            var matchingUser = await FindUserByGuid(userGuid, forceRefresh: false, cancellationToken);
 
-            // This insures that the cache will not ignore brand new users just added to PCSS. Also updates the cache here after fetching.
+            // A user newly added to PCSS may be missing from the cached list.
+            // On a cache miss, the initial fetch and forced refresh can each take up to 60 seconds.
             if (matchingUser is null && forceRefresh)
             {
                 _logger.LogDebug("Force refreshing cache for userGuid: {UserGuid}", userGuid);
-                var updatedPcssUsers = await GetUsersInternal(forceRefresh: true);
-                matchingUser = updatedPcssUsers?.FirstOrDefault(pu => pu.GUID == userGuid);
+                matchingUser = await FindUserByGuid(userGuid, forceRefresh: true, cancellationToken);
             }
             return matchingUser;
         }
 
-        public async Task<OperationResult<IEnumerable<string>>> GetPcssUserRoleNames(int userId)
+        public async Task<OperationResult<IEnumerable<string>>> GetPcssUserRoleNames(int userId, string expectedGuid = null)
         {
             _logger.LogInformation("Fetching roles for user with ID {UserId}.", userId);
-            var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId);
+            var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId, CancellationToken.None);
+
+            if (expectedGuid != null)
+            {
+                var liveUserId = user?.UserId;
+                var liveGuid = user?.GUID;
+                var hasGuid = !string.IsNullOrWhiteSpace(liveGuid);
+                if ((liveUserId.HasValue && liveUserId.Value != userId) ||
+                    (hasGuid && !string.Equals(liveGuid, expectedGuid, StringComparison.Ordinal)))
+                {
+                    throw new PcssFallbackIdentityMismatchException();
+                }
+
+                if (!liveUserId.HasValue || !hasGuid)
+                {
+                    _logger.LogWarning("The individual PCSS user response did not confirm the fallback identity mapping.");
+                    return OperationResult<IEnumerable<string>>.Failure("The PCSS user identity could not be confirmed.");
+                }
+            }
+
             var userRoles = user?.Roles;
 
             var userRoleNames = userRoles?
@@ -148,43 +190,152 @@ namespace Scv.Api.Services
             return false;
         }
 
-        private async Task<ICollection<PCSSAuthServices.UserItem>> GetUsersInternal(bool forceRefresh)
+        private async Task<PcssUserMatch> FindUserByGuid(
+            string userGuid, bool forceRefresh, CancellationToken cancellationToken)
         {
-            if (!forceRefresh)
+            try
             {
-                return await GetDataFromCache(UsersCacheKey, FetchUsersFromSource);
+                var users = forceRefresh
+                    ? await RefreshUsers(cancellationToken)
+                    : await GetFreshUsers(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                var match = users?.FirstOrDefault(user => user.GUID == userGuid);
+                return match == null ? null : new PcssUserMatch(match);
+            }
+            catch (Exception ex) when (ex is UserListTimeoutException or
+                PCSSAuthServices.ApiException { StatusCode: (int)HttpStatusCode.GatewayTimeout })
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var snapshot = ReadUserListSnapshot();
+                var now = _timeProvider.GetUtcNow();
+                var eligible = snapshot != null && now < snapshot.ExpiresAt;
+                var deadlineExceeded = ex is UserListTimeoutException;
+                // The generated API exception includes the upstream response body.
+                _logger.Log(eligible ? LogLevel.Warning : LogLevel.Debug, deadlineExceeded ? ex : null,
+                    "PCSS user-list fallback check. Reason: {Reason}. Cached data age in seconds: {CacheAgeSeconds}. Eligible fallback: {FallbackAvailable}.",
+                    deadlineExceeded ? "User list request deadline exceeded" : "PCSS returned HTTP 504 Gateway Timeout",
+                    (now - snapshot?.RetrievedAt)?.TotalSeconds, eligible);
+
+                if (!eligible)
+                {
+                    throw;
+                }
+
+                var match = snapshot.Users.FirstOrDefault(user => user.GUID == userGuid);
+                return match == null ? null : new PcssUserMatch(match, UsedFallback: true);
+            }
+        }
+
+        private async Task<ICollection<PCSSAuthServices.UserItem>> GetFreshUsers(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<ICollection<PCSSAuthServices.UserItem>> pendingRead;
+            lock (_cacheState)
+            {
+                var snapshot = ReadFreshUserListSnapshot();
+                if (snapshot != null)
+                {
+                    return snapshot.Users;
+                }
+
+                pendingRead = _cacheState.PendingRead ?? PopulateUsersCache();
+                // A synchronously completed fetch has already cleared the pending read.
+                _cacheState.PendingRead = pendingRead.IsCompleted ? null : pendingRead;
             }
 
-            var refreshedUsers = await FetchUsersFromSource();
-            UpdateUsersCache(refreshedUsers);
-            return refreshedUsers;
+            // Cancel this caller's wait independently of the shared read's request deadline.
+            return await pendingRead.WaitAsync(cancellationToken);
         }
 
-        private async Task<ICollection<PCSSAuthServices.UserItem>> FetchUsersFromSource()
+        private UserListSnapshot ReadUserListSnapshot() =>
+            _cache.TryGetValue<UserListSnapshot>(UsersCacheKey, out var snapshot) ? snapshot : null;
+
+        private UserListSnapshot ReadFreshUserListSnapshot()
         {
-            _logger.LogInformation("Fetching users from PCSS.");
-            return await _pcssAuthorizationServiceClient.GetUsersAsync();
+            var snapshot = ReadUserListSnapshot();
+            return snapshot != null && _timeProvider.GetUtcNow() < snapshot.FreshUntil ? snapshot : null;
         }
 
-        private void UpdateUsersCache(ICollection<PCSSAuthServices.UserItem> updatedUsers)
+        private async Task<ICollection<PCSSAuthServices.UserItem>> PopulateUsersCache()
         {
-            if (updatedUsers == null)
+            try
             {
-                return;
+                return await FetchAndCacheUsers(CancellationToken.None);
+            }
+            finally
+            {
+                lock (_cacheState)
+                {
+                    _cacheState.PendingRead = null;
+                }
+            }
+        }
+
+        private async Task<ICollection<PCSSAuthServices.UserItem>> FetchAndCacheUsers(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var version = Interlocked.Increment(ref _cacheState.NextVersion);
+            using var deadline = new CancellationTokenSource(UserListTimeout, _timeProvider);
+            using var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
+            ICollection<PCSSAuthServices.UserItem> users;
+            try
+            {
+                _logger.LogInformation("Fetching users from PCSS.");
+                users = await _pcssAuthorizationServiceClient.GetUsersAsync(request.Token);
+            }
+            catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException("The PCSS user list request was canceled.", ex, cancellationToken);
+            }
+            catch (OperationCanceledException ex) when (deadline.IsCancellationRequested && ex.CancellationToken == request.Token)
+            {
+                throw new UserListTimeoutException(ex);
             }
 
-            var cacheDuration = TimeSpan.FromSeconds(_cache.DefaultCachePolicy.DefaultCacheDurationSeconds);
-            _cache.Add(UsersCacheKey, updatedUsers, cacheDuration);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (users == null)
+            {
+                return null;
+            }
+
+            if (users.Any(user => user == null))
+            {
+                throw new InvalidDataException("The PCSS user list contains a null user.");
+            }
+
+            var retrievedAt = _timeProvider.GetUtcNow();
+            var freshUntil = retrievedAt.Add(_freshDuration);
+            var snapshot = new UserListSnapshot(users, retrievedAt, freshUntil, freshUntil.Add(FallbackWindow));
+            lock (_cacheState)
+            {
+                if (version < _cacheState.PublishedVersion)
+                {
+                    // A later request has already published its authoritative response.
+                    return ReadFreshUserListSnapshot()?.Users;
+                }
+
+                _cache.Add(UsersCacheKey, snapshot, snapshot.ExpiresAt);
+                _cacheState.PublishedVersion = version;
+                return users;
+            }
         }
 
-        private async Task<T> GetDataFromCache<T>(string key, Func<Task<T>> fetchFunction)
+        private sealed record UserListSnapshot(
+            ICollection<PCSSAuthServices.UserItem> Users,
+            DateTimeOffset RetrievedAt,
+            DateTimeOffset FreshUntil,
+            DateTimeOffset ExpiresAt);
+
+        private sealed class UserCacheState
         {
-            _logger.LogDebug("Attempting to fetch data for key {CacheKey} from cache.", key);
-            return await _cache.GetOrAddAsync(key, async () =>
-            {
-                _logger.LogDebug("Cache miss for key {CacheKey}. Fetching data.", key);
-                return await fetchFunction.Invoke();
-            });
+            public long NextVersion;
+            public long PublishedVersion;
+            public Task<ICollection<PCSSAuthServices.UserItem>> PendingRead;
+        }
+
+        private sealed class UserListTimeoutException(OperationCanceledException innerException)
+            : TimeoutException("The PCSS user list request exceeded its deadline.", innerException)
+        {
         }
 
         #endregion Helpers

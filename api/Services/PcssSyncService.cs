@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -14,7 +15,8 @@ namespace Scv.Api.Services
 {
     public interface IPcssSyncService
     {
-        public Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false);
+        public Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false,
+            CancellationToken cancellationToken = default);
     }
 
     public class PcssSyncService(
@@ -34,7 +36,8 @@ namespace Scv.Api.Services
         private readonly IRoleService _roleService = roleService;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
-        public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false)
+        public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(userDto.NativeGuid))
             {
@@ -44,13 +47,18 @@ namespace Scv.Api.Services
 
             try
             {
-                var matchingUser = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
-                if (matchingUser == null)
+                cancellationToken.ThrowIfCancellationRequested();
+                var match = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (match == null)
                 {
                     return false;
                 }
 
-                var roleNames = await GetPcssRoleNamesAsync(matchingUser.UserId.Value, userDto.Email);
+                var matchingUser = match.User;
+                var expectedGuid = match.UsedFallback ? userDto.NativeGuid : null;
+                var roleNames = await GetPcssRoleNamesAsync(matchingUser.UserId.Value, userDto.Email, expectedGuid);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (roleNames == null)
                 {
                     return false;
@@ -92,19 +100,22 @@ namespace Scv.Api.Services
                     }
                 }
 
-                return ApplyUserChanges(userDto, groupIds, roleIds, judgeId, matchingUser);
+                cancellationToken.ThrowIfCancellationRequested();
+                return ApplyUserChanges(userDto, groupIds, roleIds, judgeId, match.UsedFallback ? null : matchingUser);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PcssFallbackIdentityMismatchException)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 _logger.LogError(e, "Unable to get user or groups from PCSS for {Email}.", userDto.Email);
                 return false;
             }
         }
 
-        private async Task<UserItem> GetMatchingPcssUserAsync(string nativeGuid, string email, bool forceUpdateCache = false)
+        private async Task<PcssUserMatch> GetMatchingPcssUserAsync(string nativeGuid, string email, bool forceUpdateCache = false)
         {
             _logger.LogInformation("Requesting user information from PCSS for {Email}.", email);
-            var matchingUser = await _authorizationService.GetUserByGuid(nativeGuid, forceUpdateCache);
+            var match = await _authorizationService.GetUserByGuid(nativeGuid, forceUpdateCache);
+            var matchingUser = match?.User;
 
             _logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
                 nativeGuid,
@@ -116,7 +127,7 @@ namespace Scv.Api.Services
                 return null;
             }
 
-            return matchingUser;
+            return match;
         }
 
         private Task<List<string>> GetGroupIdsForUserAsync(IEnumerable<string> roleNames, string email) =>
@@ -125,9 +136,9 @@ namespace Scv.Api.Services
         private Task<List<string>> GetRoleIdsForUserAsync(IEnumerable<string> roleNames, string email) =>
             GetIdsForUserAsync(roleNames, email, "roles", _roleService.GetRolesByAliases, r => r.Id);
 
-        private async Task<IEnumerable<string>> GetPcssRoleNamesAsync(int pcssUserId, string email)
+        private async Task<IEnumerable<string>> GetPcssRoleNamesAsync(int pcssUserId, string email, string expectedGuid)
         {
-            var roleNameResult = await _authorizationService.GetPcssUserRoleNames(pcssUserId);
+            var roleNameResult = await _authorizationService.GetPcssUserRoleNames(pcssUserId, expectedGuid);
             if (roleNameResult == null || roleNameResult.Errors.Any())
             {
                 _logger.LogWarning("Failed to get PCSS roles for user {Email}: {Errors}",
@@ -154,7 +165,7 @@ namespace Scv.Api.Services
             return null;
         }
 
-        private bool ApplyUserChanges(UserDto userDto, List<string> groupIds, List<string> roleIds, int? judgeId, UserItem user)
+        private bool ApplyUserChanges(UserDto userDto, List<string> groupIds, List<string> roleIds, int? judgeId, UserItem profile)
         {
             var isActive = groupIds.Count > 0;
             var hasChanges = false;
@@ -165,22 +176,25 @@ namespace Scv.Api.Services
                 hasChanges = true;
             }
 
-            if (userDto.FirstName != user.GivenName)
+            if (profile != null)
             {
-                userDto.FirstName = user.GivenName;
-                hasChanges = true;
-            }
+                if (userDto.FirstName != profile.GivenName)
+                {
+                    userDto.FirstName = profile.GivenName;
+                    hasChanges = true;
+                }
 
-            if (userDto.LastName != user.Surname)
-            {
-                userDto.LastName = user.Surname;
-                hasChanges = true;
-            }
+                if (userDto.LastName != profile.Surname)
+                {
+                    userDto.LastName = profile.Surname;
+                    hasChanges = true;
+                }
 
-            if (userDto.Email != null && userDto.Email != user.Email)
-            {
-                userDto.Email = user.Email;
-                hasChanges = true;
+                if (userDto.Email != null && userDto.Email != profile.Email)
+                {
+                    userDto.Email = profile.Email;
+                    hasChanges = true;
+                }
             }
 
             if (userDto.IsActive != isActive)

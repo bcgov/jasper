@@ -434,9 +434,11 @@ namespace Scv.Api.Infrastructure
                     // Configure the TimebankServicesClient after creation
                     // This is a workaround since we can't use the UpdateJsonSerializerSettings partial method
                 });
+            services.AddTransient<PcssUserListResponseHandler>();
             services
                 .AddHttpClient<PCSSAuthorizationServices.IAuthorizationServicesClient, PCSSAuthorizationServices.AuthorizationServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
-                .AddHttpMessageHandler<TimingHandler>();
+                .AddHttpMessageHandler<TimingHandler>()
+                .AddHttpMessageHandler<PcssUserListResponseHandler>();
             services
                 .AddHttpClient<PCSSActivityServices.ActivityServicesClient>(client => { ConfigureHttpClient(client, configuration, "PCSS"); })
                 .AddHttpMessageHandler<TimingHandler>();

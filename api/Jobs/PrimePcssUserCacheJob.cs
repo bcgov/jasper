@@ -5,8 +5,8 @@ using LazyCache;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
-using PCSSAuthServices = PCSSCommon.Clients.AuthorizationServices;
 
 namespace Scv.Api.Jobs
 {
@@ -15,10 +15,8 @@ namespace Scv.Api.Jobs
         IAppCache cache,
         IMapper mapper,
         ILogger<PrimePcssUserCacheJob> logger,
-        PCSSAuthServices.IAuthorizationServicesClient pcssAuthorizationServiceClient) : RecurringJobBase<PrimePcssUserCacheJob>(configuration, cache, mapper, logger)
+        IPcssAuthorizationService authorizationService) : RecurringJobBase<PrimePcssUserCacheJob>(configuration, cache, mapper, logger)
     {
-        private readonly PCSSAuthServices.IAuthorizationServicesClient _pcssAuthorizationServiceClient = pcssAuthorizationServiceClient;
-
         public override string JobName => nameof(PrimePcssUserCacheJob);
 
         public override string CronSchedule
@@ -36,14 +34,7 @@ namespace Scv.Api.Jobs
             {
                 this.Logger.LogInformation("Starting to prime PCSS user cache.");
 
-                // Fetch directly from client to bypass existing cache and ensure fresh data
-                var users = await _pcssAuthorizationServiceClient.GetUsersAsync();
-
-                var cacheDurationMinutes = int.Parse(this.Configuration.GetNonEmptyValue("Caching:UserExpiryMinutes"));
-                var cacheDuration = TimeSpan.FromMinutes(cacheDurationMinutes);
-
-                // Overwrite the cache
-                this.Cache.Add("Users", users, cacheDuration);
+                var users = await authorizationService.RefreshUsers();
 
                 this.Logger.LogInformation("Successfully primed PCSS user cache with {Count} users.", users.Count);
             }

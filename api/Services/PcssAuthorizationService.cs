@@ -84,7 +84,7 @@ namespace Scv.Api.Services
         public async Task<OperationResult<IEnumerable<string>>> GetPcssUserRoleNames(int userId, string expectedGuid = null)
         {
             _logger.LogInformation("Fetching roles for user with ID {UserId}.", userId);
-            var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId);
+            var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId, CancellationToken.None);
 
             if (expectedGuid != null && (user?.UserId != userId || string.IsNullOrWhiteSpace(user.GUID) ||
                 !string.Equals(user.GUID, expectedGuid, StringComparison.Ordinal)))
@@ -190,13 +190,13 @@ namespace Scv.Api.Services
                 var match = users?.FirstOrDefault(user => user.GUID == userGuid);
                 return match == null ? null : new PcssUserMatch(match);
             }
-            catch (UserListTimeoutException)
+            catch (UserListTimeoutException ex)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var snapshot = _cache.Get<UserListSnapshot>(UsersCacheKey);
+                var snapshot = ReadUserListSnapshot();
                 var now = _timeProvider.GetUtcNow();
                 var eligible = snapshot != null && now < snapshot.ExpiresAt;
-                _logger.Log(eligible ? LogLevel.Warning : LogLevel.Debug,
+                _logger.Log(eligible ? LogLevel.Warning : LogLevel.Debug, ex,
                     "PCSS user-list fallback check. Reason: {Reason}. Cached data age in seconds: {CacheAgeSeconds}. Eligible fallback: {FallbackAvailable}.",
                     "User list request deadline exceeded", (now - snapshot?.RetrievedAt)?.TotalSeconds, eligible);
 
@@ -216,10 +216,10 @@ namespace Scv.Api.Services
             Task<ICollection<PCSSAuthServices.UserItem>> pendingRead;
             lock (_cacheState)
             {
-                var users = ReadFreshUsers();
-                if (users != null)
+                var snapshot = ReadFreshUserListSnapshot();
+                if (snapshot != null)
                 {
-                    return users;
+                    return snapshot.Users;
                 }
 
                 pendingRead = _cacheState.PendingRead ?? PopulateUsersCache();
@@ -231,10 +231,13 @@ namespace Scv.Api.Services
             return await pendingRead.WaitAsync(cancellationToken);
         }
 
-        private ICollection<PCSSAuthServices.UserItem> ReadFreshUsers()
+        private UserListSnapshot ReadUserListSnapshot() =>
+            _cache.TryGetValue<UserListSnapshot>(UsersCacheKey, out var snapshot) ? snapshot : null;
+
+        private UserListSnapshot ReadFreshUserListSnapshot()
         {
-            var snapshot = _cache.Get<UserListSnapshot>(UsersCacheKey);
-            return snapshot != null && _timeProvider.GetUtcNow() < snapshot.FreshUntil ? snapshot.Users : null;
+            var snapshot = ReadUserListSnapshot();
+            return snapshot != null && _timeProvider.GetUtcNow() < snapshot.FreshUntil ? snapshot : null;
         }
 
         private async Task<ICollection<PCSSAuthServices.UserItem>> PopulateUsersCache()
@@ -292,7 +295,7 @@ namespace Scv.Api.Services
                 if (version < _cacheState.PublishedVersion)
                 {
                     // A later request has already published its authoritative response.
-                    return ReadFreshUsers();
+                    return ReadFreshUserListSnapshot()?.Users;
                 }
 
                 _cache.Add(UsersCacheKey, snapshot, snapshot.ExpiresAt);

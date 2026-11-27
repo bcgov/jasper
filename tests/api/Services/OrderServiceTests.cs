@@ -1739,6 +1739,35 @@ public class OrderServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task SubmitOrder_RetainsSupportingDocumentAndPersistsError_WhenExtractionFails()
+    {
+        var supportingDocument = _faker.Random.Bytes(32);
+        var order = CreateOrder(OrderStatus.OrderMade);
+        order.OrderRequest.Referral.CourtListTypeCd = CourtListTypeDescriptor.PROVINCIAL_COURT_DESK_ORDER_FAMILY_LIST_TYPE;
+        order.SupportingDocumentData = supportingDocument;
+        order.SubmitStatus = SubmitStatus.Pending;
+        SetupHttpContextWithGuid();
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
+        _mockOrderRepo.Setup(r => r.UpdateAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+        _mockJudgeService
+            .Setup(d => d.GetJudges(null, null))
+            .ReturnsAsync([new PersonSearchItem { PersonId = order.JudgeId, ParticipantId = order.OrderRequest.Referral.SentToPartId }]);
+        _mockDeskOrderDetailsExtractor.Setup(d => d.Extract(It.IsAny<Stream>()))
+            .Throws(new InvalidDataException("Private document content"));
+
+        var result = await _orderService.SubmitOrder(order.Id);
+
+        var failure = Assert.IsType<DeskOrderExtractionFailure>(result);
+        var error = Assert.Single(failure.Errors);
+        Assert.Contains("The order was not sent to CSO.", error);
+        Assert.DoesNotContain("Private document content", error);
+        _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Never);
+        _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitStatus == SubmitStatus.Error
+            && o.SubmitAttempts == 1 && o.SupportingDocumentData.SequenceEqual(supportingDocument))), Times.Once);
+    }
+
+    [Fact]
     public async Task SubmitOrder_ReturnsFailure_WhenCsoSubmitFails()
     {
         var order = CreateOrder();
@@ -1759,7 +1788,7 @@ public class OrderServiceTests : ServiceTestBase
 
         _mockJudicialClient
             .Setup(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()))
-            .ThrowsAsync(new Exception("CSO submission failed"));
+            .ThrowsAsync(new Exception("Private CSO response body"));
 
         var result = await _orderService.SubmitOrder(order.Id);
 
@@ -1767,7 +1796,8 @@ public class OrderServiceTests : ServiceTestBase
         _mockJudicialClient.Verify(c => c.SaveJudicialActionAsync(It.IsAny<Guid>(), It.IsAny<double>(), It.IsAny<JudicialAction>()), Times.Once);
         _mockJudgeService.Verify(d => d.GetJudges(null, null), Times.Once);
         _mockOrderRepo.Verify(r => r.UpdateAsync(It.Is<Order>(o => o.SubmitAttempts == 3)), Times.Once);
-        Assert.Contains("Failed to submit order to CSO: CSO submission failed", result.Errors);
+        Assert.IsNotType<DeskOrderExtractionFailure>(result);
+        Assert.Equal("Failed to submit order to CSO.", Assert.Single(result.Errors));
     }
 
     #endregion

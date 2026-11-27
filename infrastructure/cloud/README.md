@@ -43,6 +43,12 @@ This repository includes Terraform scripts for provisioning and managing JASPER'
 5. Select working branch
 6. Click `Run workflow` button.
 
+## Failure email environment
+
+The API task definition sets `DEPLOYMENT_ENVIRONMENT` from the Terraform deployment name. The `lz-dev`, `lz-test`, and `lz-prod` deployments produce `[DEV]`, `[TEST]`, and `[PROD]` subjects. API instances with a missing or unrecognized value use `[UNKNOWN]`.
+
+Apply the infrastructure change in each environment so the API task definition includes the setting. The API adds the prefix after rendering `Job Failure` and `Order Submission Failed` subjects. Existing database templates and configured subject text require no manual update. New databases receive the templates through the existing seeder.
+
 ## Connecting to an ECS container
 
 The DevContainer for the project includes the tools needed to shell into an ECS container. This includes the `aws` cli and the AWS Session Manager Plugin.

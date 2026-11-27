@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scv.Api.Services;
 using Scv.Core.Helpers.Extensions;
+using Scv.Core.Infrastructure;
 using Scv.Db.Models;
 using Scv.Models.Order;
 
@@ -33,43 +34,67 @@ public class SubmitOrderJob(
             throw new ArgumentException("Order id is required.", nameof(orderId));
         }
 
-        var result = await _orderService.SubmitOrder(orderId);
+        OperationResult result;
+        try
+        {
+            result = await _orderService.SubmitOrder(orderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error submitting order {OrderId}.", orderId);
+            throw;
+        }
+
         if (!result.Succeeded)
         {
             var errorMessage = string.Join(", ", result.Errors);
-
-            await this.NotifyForJobSubmissionFailure(orderId, errorMessage);
-
             _logger.LogWarning(
                 "Submit order failed for order {OrderId}: {Errors}",
                 orderId,
                 errorMessage);
+
+            if (result is DeskOrderExtractionFailure)
+            {
+                await NotifyForExtractionFailure(orderId, errorMessage);
+            }
+
             throw new InvalidOperationException($"Failed to submit order {orderId}.");
         }
     }
 
-    private async Task NotifyForJobSubmissionFailure(string orderId, string errorMessage)
+    private async Task NotifyForExtractionFailure(string orderId, string errorMessage)
     {
-        var order = await _orderService.GetByIdAsync(orderId);
-        var supportAccount = _configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
-        var emailData = CreateEmailData(order, errorMessage);
+        try
+        {
+            var order = await _orderService.GetByIdAsync(orderId);
+            if (order is null)
+            {
+                _logger.LogWarning("Order {OrderId} not found when preparing the extraction failure email.", orderId);
+                return;
+            }
 
-        await _emailTemplateService.SendEmailTemplateAsync(
-            EmailTemplate.ORDER_SUBMISSION_FAILED,
-            supportAccount,
-            emailData);
+            var supportAccount = _configuration.GetNonEmptyValue("SUPPORT_ACCOUNT");
+            await _emailTemplateService.SendEmailTemplateAsync(
+                EmailTemplate.ORDER_SUBMISSION_FAILED,
+                supportAccount,
+                CreateEmailData(order, errorMessage));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to notify support of the extraction failure for order {OrderId}.", orderId);
+        }
     }
 
     private static object CreateEmailData(OrderDto order, string errorMessage) => new
     {
         OrderId = order.Id,
-        JudgeName = order?.OrderRequest?.Referral?.SentToName,
-        PackageId = order?.OrderRequest?.Referral?.PackageId,
+        JudgeName = order.OrderRequest?.Referral?.SentToName,
+        PackageId = order.OrderRequest?.Referral?.PackageId,
         JudgeId = order.JudgeId,
-        CourtListType = order?.OrderRequest?.Referral?.CourtListTypeCd,
-        PriorityType = order?.OrderRequest?.Referral?.PriorityType,
-        OrderStatus = order?.Status,
-        SubmitStatus = order?.SubmitStatus,
+        CourtListType = order.OrderRequest?.Referral?.CourtListTypeCd,
+        PriorityType = order.OrderRequest?.Referral?.PriorityType,
+        OrderStatus = order.Status,
+        SubmitStatus = order.SubmitStatus,
         ErrorMessage = errorMessage
     };
 }

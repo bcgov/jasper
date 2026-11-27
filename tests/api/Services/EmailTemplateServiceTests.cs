@@ -4,9 +4,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bogus;
+using Hangfire;
+using Hangfire.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Scv.Api.Jobs;
 using Scv.Api.Services;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
@@ -73,6 +76,45 @@ public class EmailTemplateServiceTests
             It.IsAny<IEnumerable<string>>(),
             null),
             Times.Once);
+    }
+
+    [Theory]
+    [InlineData("lz-dev", "DEV", "Operations job alert")]
+    [InlineData("lz-test", "TEST", "Operations job alert")]
+    [InlineData("lz-prod", "PROD", "[PROD] [dev] Operations job alert")]
+    [InlineData(null, "UNKNOWN", "Operations job alert")]
+    [InlineData("unrecognized", "UNKNOWN", "Operations job alert")]
+    public async Task SendEmailTemplateAsync_PrefixesBothStoredFailureEmailSubjects(
+        string deploymentEnvironment, string expectedPrefix, string configuredSubject)
+    {
+        const string recipient = "support@test.com";
+        const string orderId = "order-<id>";
+        const string rawCsoResponse = "Private CSO response body";
+        _mockConfiguration.SetupGet(c => c["DEPLOYMENT_ENVIRONMENT"]).Returns(deploymentEnvironment);
+        _mockConfiguration.SetupGet(c => c["ASPNETCORE_ENVIRONMENT"]).Returns("Production");
+        _mockEmailTemplateRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<EmailTemplate, bool>>>()))
+            .ReturnsAsync((Expression<Func<EmailTemplate, bool>> predicate) => EmailTemplate.ALL_EMAIL_TEMPLATES.Where(predicate.Compile()));
+
+        var backgroundJob = new BackgroundJob("job-123", Job.FromExpression<SubmitOrderJob>(job => job.Execute(orderId)), DateTime.UtcNow);
+        var genericData = JobFailureEmailFilterAttribute.CreateEmailData(backgroundJob, new Exception(rawCsoResponse), configuredSubject);
+        await _emailTemplateService.SendEmailTemplateAsync(EmailTemplate.JOB_FAILURE, recipient, genericData);
+        await _emailTemplateService.SendEmailTemplateAsync(EmailTemplate.ORDER_SUBMISSION_FAILED, recipient, new
+        {
+            OrderId = orderId,
+            JudgeName = "Judge A & B",
+            PackageId = 12345,
+            CourtListType = "<court>",
+            ErrorMessage = Assert.Single(new DeskOrderExtractionFailure().Errors)
+        });
+
+        _mockEmailService.Verify(s => s.SendEmailAsync(
+            It.IsAny<string>(), recipient, $"[{expectedPrefix}] Operations job alert",
+            It.Is<string>(body => body.Contains("Order submission failed. See application logs for details.")
+                && body.Contains("order-&lt;id&gt;") && !body.Contains(rawCsoResponse)), null, null, null), Times.Once);
+        _mockEmailService.Verify(s => s.SendEmailAsync(
+            It.IsAny<string>(), recipient, $"[{expectedPrefix}] Order Submission Failed for Judge Judge A & B - Package # 12345",
+            It.Is<string>(body => body.Contains("order-&lt;id&gt;") && body.Contains("&lt;court&gt;")
+                && body.Contains("The order was not sent to CSO.")), null, null, null), Times.Once);
     }
 
     [Fact]

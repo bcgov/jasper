@@ -26,6 +26,32 @@ using Scv.Models.Order;
 
 namespace Scv.Api.Services;
 
+internal sealed class DeskOrderExtractionFailure(DeskOrderExtractionError error = DeskOrderExtractionError.Unexpected)
+    : OperationResult(false, [Describe(error)])
+{
+    private static string Describe(DeskOrderExtractionError error)
+    {
+        var (description, instruction) = error switch
+        {
+            DeskOrderExtractionError.InvalidWordDocument => (
+                "The supporting document is not a valid Word (.docx) document.",
+                "Check that the replacement file opens in Word and is saved as .docx."),
+            DeskOrderExtractionError.InvalidRequiredSections => (
+                "The Word desk order is missing required sections or has them in the wrong order.",
+                "Check for Reasons for Rejection, Directions, Terms of Order, and Signature in that sequence."),
+            DeskOrderExtractionError.InvalidSignatureMarker => (
+                "Could not extract Terms of Order because the signature marker is missing or invalid.",
+                "Check that the Insert Signature marker follows Terms of Order."),
+            _ => (
+                "Could not extract Reasons for Rejection, Directions or Terms of Order from the Word desk order.",
+                "Check that the supporting file is a valid .docx and contains these sections in order: "
+                    + "Reasons for Rejection, Directions, Terms of Order, then Signature.")
+        };
+
+        return $"{description} The order was not sent to CSO. {instruction} Replace the supporting document and retry.";
+    }
+}
+
 public interface IOrderService : ICrudService<OrderDto>
 {
     Task<OperationResult> ValidateOrderRequestAsync(OrderRequestDto dto);
@@ -348,9 +374,14 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
             this.Logger.LogError(ex, "Unexpected error submitting order {OrderId}.", id);
             orderDto.SubmitStatus = SubmitStatus.Error;
             var errorResult = await UpdateAsync(orderDto);
-            return errorResult.Succeeded
-                ? OperationResult.Failure($"Failed to submit order to CSO: {ex.Message}")
-                : errorResult;
+            if (!errorResult.Succeeded)
+            {
+                return errorResult;
+            }
+
+            return ex is DeskOrderExtractionException extractionException
+                ? new DeskOrderExtractionFailure(extractionException.Error)
+                : OperationResult.Failure("Failed to submit order to CSO.");
         }
     }
 
@@ -598,10 +629,17 @@ public class OrderService : CrudServiceBase<IRepositoryBase<Order>, Order, Order
         // Family Desk order is not signed, extract directions and terms from the supporting document.
         actionDto.Document = [];
 
-        var bytes = Convert.FromBase64String(orderDto.SupportingDocumentData);
-        using var stream = new MemoryStream(bytes);
-
-        var deskOrderDetails = _deskOrderDetailsExtractor.Extract(stream);
+        DeskOrderDetailsDto deskOrderDetails;
+        try
+        {
+            var bytes = Convert.FromBase64String(orderDto.SupportingDocumentData);
+            using var stream = new MemoryStream(bytes);
+            deskOrderDetails = _deskOrderDetailsExtractor.Extract(stream);
+        }
+        catch (Exception ex) when (ex is not DeskOrderExtractionException)
+        {
+            throw new DeskOrderExtractionException(DeskOrderExtractionError.Unexpected, ex);
+        }
 
         this.Logger.LogInformation("Reasons for Rejection, Directions and Order Terms extracted successfully for Order {OrderId}.", orderDto.Id);
 

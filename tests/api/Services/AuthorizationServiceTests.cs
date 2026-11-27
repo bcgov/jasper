@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,6 +46,31 @@ public class AuthorizationServiceTests
     }
 
     [Fact]
+    public async Task GetUserByGuid_ShouldFail_WhenRefreshedUserListIsMissing()
+    {
+        _mockPcssAuthorizationServiceClient
+            .SetupSequence(client => client.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserItem>())
+            .ReturnsAsync((ICollection<UserItem>)null);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _authorizationService.GetUserByGuid("guid", forceRefresh: true));
+    }
+
+    [Fact]
+    public async Task GetUserByGuid_MatchesGuidFromRefreshedListRegardlessOfHexCase()
+    {
+        var user = new UserItem { GUID = "ABC", UserId = 123 };
+        _mockPcssAuthorizationServiceClient
+            .SetupSequence(client => client.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserItem>())
+            .ReturnsAsync(new List<UserItem> { user });
+
+        var result = await _authorizationService.GetUserByGuid("abc", forceRefresh: true);
+
+        Assert.Same(user, result);
+    }
+
+    [Fact]
     public async Task GetUsers_ShouldReturnUsersFromPcss()
     {
         // Arrange
@@ -68,14 +94,16 @@ public class AuthorizationServiceTests
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUsersAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task GetPcssUserRoleNames_ShouldReturnFailure_WhenUserNotFound()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetPcssUserRoleNames_ShouldReturnFailure_WhenUserOrRoleDataIsMissing(bool hasUser)
     {
         // Arrange
         var userId = _faker.Random.Int();
         _mockPcssAuthorizationServiceClient
             .Setup(client => client.GetUserAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserItem)null);
+            .ReturnsAsync(hasUser ? new UserItem { UserId = userId, Roles = null } : null);
 
         // Act
         var result = await _authorizationService.GetPcssUserRoleNames(userId);
@@ -84,12 +112,12 @@ public class AuthorizationServiceTests
         Assert.NotNull(result);
         Assert.False(result.Succeeded);
         Assert.Single(result.Errors);
-        Assert.Equal("User not found or has no roles.", result.Errors[0]);
+        Assert.Equal("PCSS did not return user role data.", result.Errors[0]);
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUserAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task GetPcssUserRoleNames_ShouldReturnFailure_WhenUserHasNoRoles()
+    public async Task GetPcssUserRoleNames_ShouldReturnEmptyRoles_WhenUserHasNoRoles()
     {
         // Arrange
         var userId = _faker.Random.Int();
@@ -108,10 +136,38 @@ public class AuthorizationServiceTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.False(result.Succeeded);
-        Assert.Single(result.Errors);
-        Assert.Equal("User not found or has no roles.", result.Errors[0]);
+        Assert.True(result.Succeeded);
+        Assert.Empty(result.Payload);
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUserAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPcssUserRoleNames_ShouldReturnOnlyCurrentlyEffectiveUnexpiredRoles()
+    {
+        var now = DateTime.Now;
+        var past = now.AddDays(-1).ToString("o", CultureInfo.InvariantCulture);
+        var future = now.AddDays(1).ToString("o", CultureInfo.InvariantCulture);
+        _mockPcssAuthorizationServiceClient
+            .Setup(client => client.GetUserAsync(123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserItem
+            {
+                UserId = 123,
+                Roles =
+                [
+                    new EffectiveRoleItem { Name = "Invalid effective date", EffectiveDate = "invalid", ExpiryDate = future },
+                    new EffectiveRoleItem { Name = "Invalid expiry date", EffectiveDate = past, ExpiryDate = "invalid" },
+                    new EffectiveRoleItem { Name = "Missing effective date", ExpiryDate = future },
+                    new EffectiveRoleItem { Name = "Expired", EffectiveDate = past, ExpiryDate = past },
+                    new EffectiveRoleItem { Name = "Future", EffectiveDate = future },
+                    new EffectiveRoleItem { Name = "Current", EffectiveDate = past, ExpiryDate = future },
+                    new EffectiveRoleItem { Name = "No expiry", EffectiveDate = past }
+                ]
+            });
+
+        var result = await _authorizationService.GetPcssUserRoleNames(123);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(new[] { "Current", "No expiry" }, result.Payload);
     }
 
     [Fact]

@@ -30,5 +30,7 @@ public class UserDto : BaseDto
     public List<string> RoleIds { get; set; } = [];
     public List<string> Roles { get; set; } = [];
     public List<string> Permissions { get; set; } = [];
+
+    public bool HasJasperAccess() => IsActive && Roles?.Count > 0;
 }
 

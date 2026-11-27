@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Scv.Api.Controllers;
 using Scv.Api.Models;
 using Scv.Api.Processors;
@@ -101,6 +102,9 @@ public class UsersControllerTests
         _mockUserService
             .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
             .ReturnsAsync(existingUser);
+        _mockUserService
+            .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
+            .ReturnsAsync(existingUser);
 
         _mockUserService
             .Setup(s => s.UpdateAsync(It.IsAny<UserDto>()))
@@ -114,6 +118,7 @@ public class UsersControllerTests
         var updatedResult = Assert.IsType<OkObjectResult>(actionResult);
         var userDto = Assert.IsType<UserDto>(updatedResult.Value);
         Assert.Equal(email, userDto.Email);
+        Assert.True(userDto.IsPendingRegistration);
     }
 
     [Fact]
@@ -134,6 +139,9 @@ public class UsersControllerTests
 
         _mockUserService
             .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(existingUser);
+        _mockUserService
+            .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
             .ReturnsAsync(existingUser);
 
         _mockUserService
@@ -193,6 +201,9 @@ public class UsersControllerTests
         _mockUserService
             .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
             .ReturnsAsync(existingUser);
+        _mockUserService
+            .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
+            .ReturnsAsync(existingUser);
 
         _mockUserService
             .Setup(s => s.UpdateAsync(It.IsAny<UserDto>()))
@@ -223,9 +234,8 @@ public class UsersControllerTests
 
         var controller = CreateControllerWithContext(claims);
 
-        // Mock base.GetById to return null
         _mockUserService
-            .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
+            .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
             .ReturnsAsync((UserDto)null);
 
         // Act
@@ -267,6 +277,9 @@ public class UsersControllerTests
         _mockUserService
             .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
             .ReturnsAsync(existingUser);
+        _mockUserService
+            .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
+            .ReturnsAsync(existingUser);
 
         // Act
         var result = await controller.RequestAccess();
@@ -277,7 +290,7 @@ public class UsersControllerTests
     }
 
     [Fact]
-    public async Task RequestAccess_UpdatesUser_WhenEmailIsUnchanged()
+    public async Task RequestAccess_PreservesStoredProfile_WhenStartingPendingRegistration()
     {
         // Arrange
         var email = _faker.Internet.Email();
@@ -290,7 +303,17 @@ public class UsersControllerTests
 
         var controller = CreateControllerWithContext(claims);
 
-        var existingUser = new UserDto { Email = email };
+        var existingUser = new UserDto
+        {
+            Email = email,
+            FirstName = "Judge",
+            NativeGuid = "guid",
+            UserGuid = "idir-guid",
+            HasSignature = true,
+            HasInitials = true,
+            ReleaseNotes = new UserReleaseNotesDto { LastViewedVersion = "1.0.0" }
+        };
+        var userWithUnresolvedRoles = new UserDto { Email = email, RoleIds = ["unresolved-role"] };
 
         _mockValidator
             .Setup(v => v.ValidateAsync(It.IsAny<UserDto>(), default))
@@ -307,6 +330,9 @@ public class UsersControllerTests
         _mockUserService
             .Setup(s => s.GetByIdAsync(It.IsAny<string>()))
             .ReturnsAsync(existingUser);
+        _mockUserService
+            .Setup(s => s.GetByIdWithPermissionsAsync(It.IsAny<string>()))
+            .ReturnsAsync(userWithUnresolvedRoles);
 
         _mockUserService
             .Setup(s => s.UpdateAsync(It.IsAny<UserDto>()))
@@ -320,6 +346,14 @@ public class UsersControllerTests
         var okResult = Assert.IsType<OkObjectResult>(actionResult);
         var userDto = Assert.IsType<UserDto>(okResult.Value);
         Assert.Equal(email, userDto.Email);
+        Assert.True(userDto.IsPendingRegistration);
+        Assert.Empty(userDto.RoleIds);
+        Assert.Equal("Judge", userDto.FirstName);
+        Assert.Equal("guid", userDto.NativeGuid);
+        Assert.Equal("idir-guid", userDto.UserGuid);
+        Assert.True(userDto.HasSignature);
+        Assert.True(userDto.HasInitials);
+        Assert.Equal("1.0.0", userDto.ReleaseNotes.LastViewedVersion);
 
         // Ensure UpdateAsync was called
         _mockUserService.Verify(s => s.UpdateAsync(It.IsAny<UserDto>()), Times.Once);
@@ -340,6 +374,53 @@ public class UsersControllerTests
         var actionResult = Assert.IsType<ActionResult>(result, exactMatch: false);
         var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
         Assert.Equal("Invalid user. Please contact the JASPER admin.", badRequest.Value);
+    }
+
+    [Theory]
+    [InlineData(456)]
+    [InlineData(null)]
+    [InlineData(0)]
+    public async Task RequestAccess_ReturnsAlreadyAuthorized_WhenDatabaseUserHasAccess(int? judgeId)
+    {
+        var userId = ObjectId.GenerateNewId().ToString();
+        var controller = CreateControllerWithContext([
+            new(CustomClaimTypes.UserId, userId),
+            new(ClaimTypes.Email, "stale@example.com")
+        ]);
+        var databaseUser = new UserDto
+        {
+            Email = "current@example.com",
+            IsActive = true,
+            IsPendingRegistration = true,
+            JudgeId = judgeId,
+            Roles = ["Judge"]
+        };
+        _mockUserService.Setup(s => s.GetByIdWithPermissionsAsync(userId)).ReturnsAsync(databaseUser);
+
+        var result = Assert.IsType<OkObjectResult>(await controller.RequestAccess());
+
+        Assert.True(JObject.FromObject(result.Value).Value<bool>("alreadyAuthorized"));
+        Assert.Equal("current@example.com", databaseUser.Email);
+        Assert.True(databaseUser.IsPendingRegistration);
+        _mockUserService.Verify(s => s.GetByIdAsync(userId), Times.Never);
+        _mockUserService.Verify(s => s.UpdateAsync(It.IsAny<UserDto>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestAccess_ReturnsForbidden_WhenDatabaseUserIsDisabled()
+    {
+        var userId = ObjectId.GenerateNewId().ToString();
+        var controller = CreateControllerWithContext([
+            new(CustomClaimTypes.UserId, userId),
+            new(CustomClaimTypes.IsActive, "True"),
+            new(ClaimTypes.Email, "judge@example.com")
+        ]);
+        var databaseUser = new UserDto { IsPendingRegistration = false, Roles = ["Judge"] };
+        _mockUserService.Setup(s => s.GetByIdWithPermissionsAsync(userId)).ReturnsAsync(databaseUser);
+
+        Assert.IsType<ForbidResult>(await controller.RequestAccess());
+        Assert.False(databaseUser.IsPendingRegistration);
+        _mockUserService.Verify(s => s.UpdateAsync(It.IsAny<UserDto>()), Times.Never);
     }
 
     [Fact]

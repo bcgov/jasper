@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -393,38 +394,16 @@ public class RoleServiceTests
         _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once);
     }
 
-    [Fact]
-    public async Task GetRolesByAliases_ShouldReturnFailure_WhenNoAliasesMatch()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetRolesByAliases_ShouldReturnEmptyRoles_WhenAliasIsUnknownOrIntentionallyUnmapped(bool unmapped)
     {
         var fakeAlias = _faker.Random.AlphaNumeric(10);
 
         _mockRoleAliasRepo
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
-            .ReturnsAsync([]);
-
-        var result = await _roleService.GetRolesByAliases([fakeAlias]);
-
-        Assert.NotNull(result);
-        Assert.False(result.Succeeded);
-        Assert.Single(result.Errors);
-        Assert.Equal("Role alias not found.", result.Errors[0]);
-        _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
-        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GetRolesByAliases_ShouldReturnEmptyPayload_WhenAliasHasNoMatchingRole()
-    {
-        var fakeAlias = _faker.Random.AlphaNumeric(10);
-        var fakeRoleId = _faker.Random.AlphaNumeric(10);
-
-        _mockRoleAliasRepo
-            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
-            .ReturnsAsync([new RoleAlias { Name = fakeAlias, RoleId = fakeRoleId }]);
-
-        _mockRoleRepo
-            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(unmapped ? [new RoleAlias { Name = fakeAlias }] : []);
 
         var result = await _roleService.GetRolesByAliases([fakeAlias]);
 
@@ -432,7 +411,65 @@ public class RoleServiceTests
         Assert.True(result.Succeeded);
         Assert.Empty(result.Payload);
         _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
+        _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetRolesByAliases_ShouldReturnFailure_WhenAliasHasNoMatchingRole(bool hasPartialMapping)
+    {
+        var fakeAlias = _faker.Random.AlphaNumeric(10);
+        var fakeRoleId = _faker.Random.AlphaNumeric(10);
+        var role = new Role { Id = "valid-role", Name = "Valid", Description = "Valid target" };
+        var aliases = new List<RoleAlias> { new() { Name = fakeAlias, RoleId = fakeRoleId } };
+        if (hasPartialMapping)
+        {
+            aliases.Add(new RoleAlias { Name = "valid", RoleId = role.Id });
+        }
+
+        _mockRoleAliasRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync(aliases);
+
+        _mockRoleRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync(hasPartialMapping ? [role] : []);
+
+        var result = await _roleService.GetRolesByAliases([fakeAlias, "valid"]);
+
+        Assert.NotNull(result);
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Errors);
+        _mockRoleAliasRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()), Times.Once);
         _mockRoleRepo.Verify(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRolesByAliases_ShouldFail_WhenSeededAliasHasNoTarget()
+    {
+        _mockRoleAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync([new RoleAlias { Name = RoleAlias.JUDGE }]);
+
+        var result = await _roleService.GetRolesByAliases([RoleAlias.JUDGE]);
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetRolesByAliases_ShouldFail_WhenARequestedSeededAliasIsMissing(bool hasOtherMapping)
+    {
+        string[] aliases = hasOtherMapping ? [RoleAlias.JUDGE, RoleAlias.JUDGE_ALT] : [RoleAlias.JUDGE];
+        _mockRoleAliasRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<RoleAlias, bool>>>()))
+            .ReturnsAsync(hasOtherMapping ? [new RoleAlias { Name = RoleAlias.JUDGE_ALT, RoleId = "judge" }] : []);
+
+        var result = await _roleService.GetRolesByAliases(aliases);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("A seeded role alias is missing.", Assert.Single(result.Errors));
+        _mockRoleRepo.Verify(repo => repo.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()), Times.Never);
     }
 
     [Fact]

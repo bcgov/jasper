@@ -40,28 +40,38 @@ public class GroupService(
 
     public async Task<OperationResult<IEnumerable<GroupDto>>> GetGroupsByAliases(IEnumerable<string> aliases)
     {
-        var errors = new List<string>();
         var groupAliases = await this._groupAliasRepo.FindAsync(ga => aliases.Contains(ga.Name));
         Logger.LogDebug("Found {GroupAliases} in JASPER based on input aliases: {Aliases}", JsonConvert.SerializeObject(groupAliases), aliases);
 
-        if (!groupAliases.Any())
+        var missingAlias = GroupAlias.ALL_GROUP_ALIASES.FirstOrDefault(seed =>
+            aliases.Contains(seed.Name) && !groupAliases.Any(alias => alias.Name == seed.Name));
+        if (missingAlias != null)
         {
-            errors.Add("Group alias not found.");
+            Logger.LogError("Seeded group alias {Alias} is missing.", missingAlias.Name);
+            return OperationResult<IEnumerable<GroupDto>>.Failure("A seeded group alias is missing.");
         }
-        else
+
+        // The seeder assigns a group to every built-in alias. Custom aliases may be intentionally unmapped.
+        if (groupAliases.Any(alias => alias.GroupId == null && GroupAlias.ALL_GROUP_ALIASES.Any(seed => seed.Name == alias.Name)))
         {
-            var groupIds = groupAliases.Select(ga => ga.GroupId).Distinct().Where(g => g != null).ToArray();
-            var groups = await this.Repo.FindAsync(g => groupIds.Contains(g.Id));
-
-            if (groupIds.Length != groups.Count())
-            {
-                Logger.LogError("One or more group aliases do not have a corresponding group.");
-                // this is a non-fatal error, but indicates an issue with one or more aliases.
-            }
-
-            return OperationResult<IEnumerable<GroupDto>>.Success(this.Mapper.Map<IEnumerable<GroupDto>>(groups));
+            Logger.LogError("A seeded group alias is missing its target.");
+            return OperationResult<IEnumerable<GroupDto>>.Failure("A seeded group alias is missing its target.");
         }
-        return OperationResult<IEnumerable<GroupDto>>.Failure([.. errors]);
+
+        var groupIds = groupAliases.Select(alias => alias.GroupId).Where(id => id != null).Distinct().ToArray();
+        if (groupIds.Length == 0)
+        {
+            return OperationResult<IEnumerable<GroupDto>>.Success([]);
+        }
+
+        var groups = await this.Repo.FindAsync(g => groupIds.Contains(g.Id));
+        if (groupIds.Except(groups.Select(group => group.Id)).Any())
+        {
+            Logger.LogError("One or more group aliases do not have a corresponding group.");
+            return OperationResult<IEnumerable<GroupDto>>.Failure("One or more group aliases do not have a corresponding group.");
+        }
+
+        return OperationResult<IEnumerable<GroupDto>>.Success(this.Mapper.Map<IEnumerable<GroupDto>>(groups));
     }
 
     public override async Task<OperationResult<GroupDto>> ValidateAsync(GroupDto dto, bool isEdit = false)

@@ -98,26 +98,37 @@ public class RoleService(
 
     public async Task<OperationResult<IEnumerable<RoleDto>>> GetRolesByAliases(IEnumerable<string> aliases)
     {
-        var errors = new List<string>();
         var roleAliases = await _roleAliasRepo.FindAsync(ra => aliases.Contains(ra.Name));
         Logger.LogDebug("Found {RoleAliases} in JASPER based on input aliases: {Aliases}", JsonConvert.SerializeObject(roleAliases), aliases);
 
-        if (!roleAliases.Any())
+        var missingAlias = RoleAlias.ALL_ROLE_ALIASES.FirstOrDefault(seed =>
+            aliases.Contains(seed.Name) && !roleAliases.Any(alias => alias.Name == seed.Name));
+        if (missingAlias != null)
         {
-            errors.Add("Role alias not found.");
+            Logger.LogError("Seeded role alias {Alias} is missing.", missingAlias.Name);
+            return OperationResult<IEnumerable<RoleDto>>.Failure("A seeded role alias is missing.");
         }
-        else
+
+        // The seeder assigns a role to every built-in alias. Custom aliases may be intentionally unmapped.
+        if (roleAliases.Any(alias => alias.RoleId == null && RoleAlias.ALL_ROLE_ALIASES.Any(seed => seed.Name == alias.Name)))
         {
-            var roleIds = roleAliases.Select(ra => ra.RoleId).Distinct().Where(r => r != null).ToArray();
-            var roles = await this.Repo.FindAsync(r => roleIds.Contains(r.Id));
-
-            if (roleIds.Count() != roles.Count())
-            {
-                Logger.LogError("One or more role aliases do not have a corresponding role.");
-            }
-
-            return OperationResult<IEnumerable<RoleDto>>.Success(this.Mapper.Map<IEnumerable<RoleDto>>(roles));
+            Logger.LogError("A seeded role alias is missing its target.");
+            return OperationResult<IEnumerable<RoleDto>>.Failure("A seeded role alias is missing its target.");
         }
-        return OperationResult<IEnumerable<RoleDto>>.Failure([.. errors]);
+
+        var roleIds = roleAliases.Select(alias => alias.RoleId).Where(id => id != null).Distinct().ToArray();
+        if (roleIds.Length == 0)
+        {
+            return OperationResult<IEnumerable<RoleDto>>.Success([]);
+        }
+
+        var roles = await this.Repo.FindAsync(r => roleIds.Contains(r.Id));
+        if (roleIds.Except(roles.Select(role => role.Id)).Any())
+        {
+            Logger.LogError("One or more role aliases do not have a corresponding role.");
+            return OperationResult<IEnumerable<RoleDto>>.Failure("One or more role aliases do not have a corresponding role.");
+        }
+
+        return OperationResult<IEnumerable<RoleDto>>.Success(this.Mapper.Map<IEnumerable<RoleDto>>(roles));
     }
 }

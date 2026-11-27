@@ -12,9 +12,18 @@ using Scv.Models.AccessControlManagement;
 
 namespace Scv.Api.Services
 {
+    public enum PcssSyncOutcome
+    {
+        Failed,
+        Synchronized,
+        NoAccess
+    }
+
+    public readonly record struct PcssSyncResult(PcssSyncOutcome Outcome, bool HasChanges = false);
+
     public interface IPcssSyncService
     {
-        public Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false);
+        public Task<PcssSyncResult> UpdateUserFromPcss(UserDto userDto);
     }
 
     public class PcssSyncService(
@@ -34,41 +43,58 @@ namespace Scv.Api.Services
         private readonly IRoleService _roleService = roleService;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
-        public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false)
+        public async Task<PcssSyncResult> UpdateUserFromPcss(UserDto userDto)
         {
-            if (string.IsNullOrEmpty(userDto.NativeGuid))
+            if (string.IsNullOrWhiteSpace(userDto.NativeGuid))
             {
                 _logger.LogInformation("User {Email} has no ProvJud GUID, cannot map to PCSS", userDto.Email);
-                return false;
+                return new(PcssSyncOutcome.NoAccess);
             }
 
             try
             {
-                var matchingUser = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
-                if (matchingUser == null)
+                var matchingUser = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email);
+                List<string> groupIds = [];
+                List<string> roleIds = [];
+                var judgeId = userDto.JudgeId;
+
+                if (matchingUser != null)
                 {
-                    return false;
+                    if (matchingUser.UserId is not int pcssUserId)
+                    {
+                        _logger.LogWarning("The PCSS user matching {Email} has no valid user ID", userDto.Email);
+                        return new(PcssSyncOutcome.Failed);
+                    }
+
+                    var roleNames = await GetPcssRoleNamesAsync(pcssUserId, userDto.Email);
+                    if (roleNames == null)
+                    {
+                        return new(PcssSyncOutcome.Failed);
+                    }
+
+                    if (roleNames.Any())
+                    {
+                        groupIds = await GetGroupIdsForUserAsync(roleNames, userDto.Email);
+                        if (groupIds == null)
+                        {
+                            return new(PcssSyncOutcome.Failed);
+                        }
+
+                        roleIds = await GetRoleIdsForUserAsync(roleNames, userDto.Email);
+                        if (roleIds == null)
+                        {
+                            return new(PcssSyncOutcome.Failed);
+                        }
+                    }
+
+                    judgeId = await GetJudgeIdForUserAsync(pcssUserId, userDto.Email);
                 }
 
-                var roleNames = await GetPcssRoleNamesAsync(matchingUser.UserId.Value, userDto.Email);
-                if (roleNames == null)
+                var outcome = groupIds.Count > 0 ? PcssSyncOutcome.Synchronized : PcssSyncOutcome.NoAccess;
+                if (outcome == PcssSyncOutcome.NoAccess)
                 {
-                    return false;
+                    roleIds.Clear();
                 }
-
-                var groupIds = await GetGroupIdsForUserAsync(roleNames, userDto.Email);
-                if (groupIds == null)
-                {
-                    return false;
-                }
-
-                var roleIds = await GetRoleIdsForUserAsync(roleNames, userDto.Email);
-                if (roleIds == null)
-                {
-                    return false;
-                }
-
-                var judgeId = await GetJudgeIdForUserAsync(matchingUser.UserId.Value, userDto.Email);
 
                 // For testing manually-assigned groups/roles that are used for Transitory Documents.
                 var currentGroupIds = userDto.GroupIds ?? [];
@@ -88,32 +114,35 @@ namespace Scv.Api.Services
                         && !groupIds.Contains(testingGroupId))
                     {
                         groupIds.Add(testingGroupId);
-                        roleIds.Add(developerRoleId);
+                        // With group-inherited roles, TESTING already supplies DEVELOPER.
+                        if (roleIds.Count > 0 || outcome == PcssSyncOutcome.NoAccess)
+                        {
+                            roleIds.Add(developerRoleId);
+                        }
                     }
                 }
 
-                return ApplyUserChanges(userDto, groupIds, roleIds, judgeId, matchingUser);
+                return new(outcome, ApplyUserChanges(userDto, groupIds, roleIds, judgeId, matchingUser));
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Unable to get user or groups from PCSS for {Email}.", userDto.Email);
-                return false;
+                return new(PcssSyncOutcome.Failed);
             }
         }
 
-        private async Task<UserItem> GetMatchingPcssUserAsync(string nativeGuid, string email, bool forceUpdateCache = false)
+        private async Task<UserItem> GetMatchingPcssUserAsync(string nativeGuid, string email)
         {
             _logger.LogInformation("Requesting user information from PCSS for {Email}.", email);
-            var matchingUser = await _authorizationService.GetUserByGuid(nativeGuid, forceUpdateCache);
+            var matchingUser = await _authorizationService.GetUserByGuid(nativeGuid, forceRefresh: true);
 
             _logger.LogDebug("PCSS user lookup by GUID {UserGuid} returned: {MatchingUser}",
                 nativeGuid,
                 matchingUser != null ? JsonConvert.SerializeObject(matchingUser) : "No match");
 
-            if (matchingUser == null || !matchingUser.UserId.HasValue)
+            if (matchingUser == null)
             {
                 _logger.LogWarning("No matching PCSS user found for {Email} with GUID {UserGuid}", email, nativeGuid);
-                return null;
             }
 
             return matchingUser;
@@ -128,7 +157,7 @@ namespace Scv.Api.Services
         private async Task<IEnumerable<string>> GetPcssRoleNamesAsync(int pcssUserId, string email)
         {
             var roleNameResult = await _authorizationService.GetPcssUserRoleNames(pcssUserId);
-            if (roleNameResult == null || roleNameResult.Errors.Any())
+            if (roleNameResult?.Succeeded != true || roleNameResult.Payload == null)
             {
                 _logger.LogWarning("Failed to get PCSS roles for user {Email}: {Errors}",
                     email,
@@ -165,19 +194,19 @@ namespace Scv.Api.Services
                 hasChanges = true;
             }
 
-            if (userDto.FirstName != user.GivenName)
+            if (user?.GivenName != null && userDto.FirstName != user.GivenName)
             {
                 userDto.FirstName = user.GivenName;
                 hasChanges = true;
             }
 
-            if (userDto.LastName != user.Surname)
+            if (user?.Surname != null && userDto.LastName != user.Surname)
             {
                 userDto.LastName = user.Surname;
                 hasChanges = true;
             }
 
-            if (userDto.Email != null && userDto.Email != user.Email)
+            if (user?.Email != null && userDto.Email != null && userDto.Email != user.Email)
             {
                 userDto.Email = user.Email;
                 hasChanges = true;
@@ -186,6 +215,12 @@ namespace Scv.Api.Services
             if (userDto.IsActive != isActive)
             {
                 userDto.IsActive = isActive;
+                hasChanges = true;
+            }
+
+            if (user != null && userDto.IsPendingRegistration != false)
+            {
+                userDto.IsPendingRegistration = false;
                 hasChanges = true;
             }
 
@@ -222,7 +257,7 @@ namespace Scv.Api.Services
             Func<T, string> getId)
         {
             var result = await getByAliases(roleNames);
-            if (result == null || result.Errors.Any())
+            if (result?.Succeeded != true || result.Payload == null)
             {
                 _logger.LogWarning("Failed to get {EntityName} for user {Email}: {Errors}",
                     entityName,

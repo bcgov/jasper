@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,6 +36,12 @@ namespace Scv.Api.Infrastructure.Authentication
 {
     public static class AuthenticationServiceCollectionExtension
     {
+        private const string PcssAuthorizationFailure = "Unable to establish JASPER access from PCSS.";
+        private const string AuthErrorParameter = "authError";
+        private const string PcssAuthError = "pcss_authorization_failed";
+        private const string GenericAuthError = "authentication_failed";
+        private static readonly object PcssAuthorizationFailed = new();
+
         public static IServiceCollection AddScvAuthentication(this IServiceCollection services,
             IWebHostEnvironment env, IConfiguration configuration)
         {
@@ -129,6 +136,18 @@ namespace Scv.Api.Infrastructure.Authentication
                         context.Properties.Items[".TokenNames"] = "refresh_token;token_type;expires_at";
                         return Task.CompletedTask;
                     },
+                    OnRemoteFailure = async context =>
+                    {
+                        var isPcssFailure = context.HttpContext.Items.ContainsKey(PcssAuthorizationFailed);
+                        if (isPcssFailure)
+                        {
+                            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        }
+
+                        var error = isPcssFailure ? PcssAuthError : GenericAuthError;
+                        context.HandleResponse();
+                        context.Response.Redirect(QueryHelpers.AddQueryString(GetFrontendBasePath(context.Request), AuthErrorParameter, error));
+                    },
 #pragma warning disable 1998
                     OnTokenValidated = async context =>
 #pragma warning restore 1998
@@ -160,13 +179,25 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         ]);
 
-                        await OnPostAuthSuccess(configuration, context, logger, claims);
+                        try
+                        {
+                            await OnPostAuthSuccess(configuration, context, logger, claims);
+                        }
+                        catch (Exception ex) when (RequiresPcssAuthorization(context.Principal))
+                        {
+                            logger.LogError(ex, "Unable to verify Provincial Court authorization during sign-in.");
+                            FailPcssAuthorization(context);
+                        }
 
-                        identity.AddClaims(claims);
+                        if (context.Result == null)
+                        {
+                            identity.AddClaims(claims);
+                        }
                     },
                     OnRedirectToIdentityProvider = context =>
                     {
-                        if (context.ProtocolMessage.RequestType == OpenIdConnectRequestType.Authentication && !context.Request.Path.StartsWithSegments("/api/auth/login"))
+                        if (context.ProtocolMessage.RequestType == OpenIdConnectRequestType.Authentication
+                            && (!context.Request.Path.StartsWithSegments("/api/auth/login") || IsAuthFailureReturnUrl(context.Request)))
                         {
                             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                             context.HandleResponse();
@@ -257,8 +288,21 @@ namespace Scv.Api.Infrastructure.Authentication
             List<Claim> claims)
         {
             PersonSearchItem judge = null;
+            UserDto userDto = null;
+            var usedStoredAuthorization = false;
+            var isMongoDbConfigured = IsMongoDbConfigured(configuration);
+            var usePcssSync = isMongoDbConfigured && RequiresPcssAuthorization(context.Principal);
             try
             {
+                if (usePcssSync)
+                {
+                    (userDto, usedStoredAuthorization) = await HandleMongoDbUser(context, logger, claims);
+                    if (usedStoredAuthorization || context.Result != null)
+                    {
+                        return;
+                    }
+                }
+
                 if (int.TryParse(context.Principal.ExternalJudgeId(), out int externalJudgeId))
                 {
                     judge = await GetJudgeById(context, externalJudgeId);
@@ -268,9 +312,12 @@ namespace Scv.Api.Infrastructure.Authentication
                     logger.LogWarning("Failed to parse external judge id: {ExternalJudgeId}", context.Principal.ExternalJudgeId());
                 }
 
-                if (IsMongoDbConfigured(configuration))
+                if (isMongoDbConfigured)
                 {
-                    var userDto = await HandleMongoDbUser(context, logger, claims);
+                    if (!usePcssSync)
+                    {
+                        (userDto, _) = await HandleMongoDbUser(context, logger, claims);
+                    }
 
                     if (userDto?.JudgeId.HasValue == true)
                     {
@@ -280,116 +327,158 @@ namespace Scv.Api.Infrastructure.Authentication
             }
             finally
             {
-                var judgeId = judge?.PersonId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeId");
-                var homeLocationId = judge?.HomeLocationId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
-                logger.LogDebug("Logged user in with judge person id: {JudgePersonId}, judge home location id: {JudgeLocationId}", judge?.PersonId, judge?.HomeLocationId);
-                AddDefaultJudgeClaims(logger, claims, judgeId, homeLocationId);
+                if (context.Result == null)
+                {
+                    var mappedJudgeId = usedStoredAuthorization && userDto.JudgeId is > 0
+                        ? userDto.JudgeId
+                        : judge?.PersonId;
+                    var judgeId = mappedJudgeId?.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeId");
+                    var homeLocationId = judge?.HomeLocationId.ToString() ?? configuration.GetNonEmptyValue("PCSS:JudgeHomeLocationId");
+                    logger.LogDebug("Logged user in with judge person id: {JudgePersonId}, judge home location id: {JudgeLocationId}",
+                        mappedJudgeId, judge?.HomeLocationId);
+                    AddDefaultJudgeClaims(logger, claims, judgeId, homeLocationId);
+                }
             }
         }
 
-        private static async Task<UserDto> HandleMongoDbUser(
+        private static async Task<(UserDto User, bool UsedStoredAuthorization)> HandleMongoDbUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
             ILogger logger,
             List<Claim> claims)
         {
             UserDto userDto = null;
+            var useStoredAuthorization = false;
+            var requiresPcss = RequiresPcssAuthorization(context.Principal);
             try
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<IPcssSyncService>();
                 var provjudUserGuid = context.Principal.ProvjudUserGuid();
-
-                if (string.IsNullOrWhiteSpace(provjudUserGuid) && IsProvincialCourtEmail(context.Principal.Email()))
+                if (requiresPcss && provjudUserGuid == null)
                 {
                     logger.LogInformation("provjud user unexpectedly missing guid - retrying. User {Email}", context.Principal.Email());
-                    try
+                    // The IDP mapper can populate the GUID after the initial login.
+                    provjudUserGuid = await RefreshKeycloakUserInfoAsync(context, logger);
+                    if (provjudUserGuid == null)
                     {
-                        await RefreshKeycloakUserInfoAsync(context, logger); // When a new user is created in keycloak, the IDP mapper runs after initial login, so re-request user info in order to populate the user object GUID.
+                        FailPcssAuthorization(context);
+                        return default;
                     }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Failed to refresh Keycloak userinfo; continuing with existing claims.");
-                    }
-                    provjudUserGuid = context.Principal.ProvjudUserGuid();
-                }
-
-                userDto = null;
-                if (!string.IsNullOrWhiteSpace(provjudUserGuid))
-                {
-                    userDto = await userService.GetByGuidWithPermissionsAsync(provjudUserGuid);
                 }
 
                 var email = context.Principal.Email();
-
-                if (userDto == null && !string.IsNullOrWhiteSpace(email))
+                if (requiresPcss)
+                {
+                    userDto = await userService.GetForPcssSyncAsync(provjudUserGuid, email);
+                }
+                else if (!string.IsNullOrWhiteSpace(email))
                 {
                     userDto = await userService.GetWithPermissionsAsync(email);
                 }
-                if (userDto == null)
+
+                var isNewUser = userDto == null;
+                userDto ??= BuildNewUser(context, provjudUserGuid);
+                var userId = userDto.Id;
+
+                if (requiresPcss)
                 {
-                    var newUser = await BuildNewUser(context, pcssSyncService);
-                    logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(newUser));
-                    var result = await userService.AddAsync(newUser);
-                    if (result.Payload == null || result.Errors.Any())
-                    {
-                        logger.LogError("Error creating new user in JASPER database: {Errors}", string.Join(", ", result.Errors));
-                        return null;
-                    }
-                    userDto = await userService.GetByIdWithPermissionsAsync(result.Payload.Id); // re-fetch to get permissions and roles;
-                }
-                else if (provjudUserGuid != null)
-                {
-                    if (string.IsNullOrEmpty(userDto.NativeGuid))
-                    {
-                        userDto.NativeGuid = provjudUserGuid; // For new keycloak users, the initial logon may not have the ProvjudUserGuid claim populated. If we have it now, add it for more reliable mapping.
-                    }
-                    else if (userDto.NativeGuid != provjudUserGuid)
+                    var nativeGuidChanged = string.IsNullOrWhiteSpace(userDto.NativeGuid);
+                    if (!nativeGuidChanged && userDto.NativeGuid != provjudUserGuid)
                     {
                         logger.LogWarning("User with keycloak guid returned mismatched guid from JASPER database. {NativeGuid} {ProvjudUserGuid}", userDto.NativeGuid, provjudUserGuid);
-                        return userDto;
+                        FailPcssAuthorization(context);
+                        return default;
                     }
-                    // Update existing user with latest PCSS data
-                    logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
-                    var updated = await pcssSyncService.UpdateUserFromPcss(userDto);
-                    if (updated)
+
+                    userDto.NativeGuid = provjudUserGuid;
+                    var pcssSyncService = context.HttpContext.RequestServices.GetRequiredService<IPcssSyncService>();
+                    logger.LogInformation("Synchronizing user {Email} with latest PCSS data", userDto.Email);
+                    var syncResult = await pcssSyncService.UpdateUserFromPcss(userDto);
+                    useStoredAuthorization = syncResult.Outcome == PcssSyncOutcome.Failed;
+                    if (useStoredAuthorization && isNewUser)
                     {
-                        var updateResult = await userService.UpdateAsync(userDto);
-                        if (updateResult.Errors.Any())
+                        FailPcssAuthorization(context);
+                        return default;
+                    }
+
+                    if (!useStoredAuthorization && !isNewUser && (nativeGuidChanged || syncResult.HasChanges))
+                    {
+                        var updateResult = await userService.UpdateFromPcssAsync(userDto);
+                        if (!updateResult.Succeeded)
                         {
-                            logger.LogError("Error updating user in JASPER database: {Errors}", string.Join(", ", updateResult.Errors));
-                        }
-                        else
-                        {
-                            userDto = await userService.GetByIdWithPermissionsAsync(userDto.Id); // re-fetch to get updated permissions and roles
+                            logger.LogError("Error saving user in JASPER database: {Errors}", string.Join(", ", updateResult.Errors));
+                            FailPcssAuthorization(context);
+                            return default;
                         }
                     }
                 }
+
+                if (isNewUser)
+                {
+                    logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(userDto));
+                    var result = await userService.AddAsync(userDto);
+                    if (!result.Succeeded || result.Payload == null)
+                    {
+                        logger.LogError("Error saving user in JASPER database: {Errors}", string.Join(", ", result.Errors));
+                        if (requiresPcss)
+                        {
+                            FailPcssAuthorization(context);
+                        }
+                        return default;
+                    }
+                    userId = result.Payload.Id;
+                }
+
+                if (isNewUser || requiresPcss)
+                {
+                    userDto = await userService.GetByIdWithPermissionsAsync(userId);
+                }
+
+                if (requiresPcss && userDto == null)
+                {
+                    logger.LogError("Unable to reload the JASPER user after synchronization with PCSS.");
+                    FailPcssAuthorization(context);
+                    return default;
+                }
+
+                if (useStoredAuthorization)
+                {
+                    if (!userDto.HasJasperAccess())
+                    {
+                        FailPcssAuthorization(context);
+                        return default;
+                    }
+
+                    logger.LogWarning("PCSS synchronization failed for user {UserId}. Continuing sign-in with stored JASPER authorization.",
+                        userId.SanitizeForLog());
+                }
+
                 AddUserClaims(claims, userDto);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Something went wrong during post authentication process: {Exception}", ex);
+                if (requiresPcss)
+                {
+                    FailPcssAuthorization(context);
+                    return default;
+                }
             }
-            return userDto;
+            return (userDto, useStoredAuthorization);
         }
 
-        private static async Task<UserDto> BuildNewUser(
+        private static UserDto BuildNewUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            IPcssSyncService pcssSyncService)
+            string provjudUserGuid)
         {
-            UserDto userDto = new()
+            return new UserDto
             {
                 FirstName = context.Principal.FindFirstValue(ClaimTypes.GivenName),
                 LastName = context.Principal.FindFirstValue(ClaimTypes.Surname),
                 Email = context.Principal.Email(),
                 UserGuid = context.Principal.IdirUserGuid(),
-                NativeGuid = context.Principal.ProvjudUserGuid(),
+                NativeGuid = provjudUserGuid,
                 IsActive = false,
             };
-
-            await pcssSyncService.UpdateUserFromPcss(userDto, true);
-
-            return userDto;
         }
 
         private static async Task<PersonSearchItem> GetJudgeById(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context, int judgeId)
@@ -429,17 +518,47 @@ namespace Scv.Api.Infrastructure.Authentication
             claims.AddRange(userDto.GroupIds.Select(g => new Claim(CustomClaimTypes.Groups, g)));
         }
 
-        private static bool IsProvincialCourtEmail(string email)
-            => !string.IsNullOrWhiteSpace(email)
-                && email.EndsWith("@provincialcourt.bc.ca", StringComparison.OrdinalIgnoreCase);
+        private static bool RequiresPcssAuthorization(ClaimsPrincipal user)
+            => user.HasClaim(claim => claim.Type == CustomClaimTypes.ProvjudUserGuid && !string.IsNullOrWhiteSpace(claim.Value))
+                || (!user.IsIdirUser() && !user.IsVcUser()
+                    && user.Email()?.EndsWith("@provincialcourt.bc.ca", StringComparison.OrdinalIgnoreCase) == true);
 
-        private static async Task RefreshKeycloakUserInfoAsync(
+        private static void FailPcssAuthorization(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context)
+        {
+            context.HttpContext.Items[PcssAuthorizationFailed] = true;
+            context.Fail(PcssAuthorizationFailure);
+        }
+
+        private static string GetFrontendBasePath(HttpRequest request)
+        {
+            var path = request.PathBase.Value?.TrimEnd('/') ?? string.Empty;
+            // The proxy supplies PathBase. Keep the redirect on this origin and reject ambiguous path segments.
+            if (path.Length == 0 || path[0] != '/' || path[1..].Split('/').Any(segment =>
+                segment.Length == 0 || segment is "." or ".."
+                || segment.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not ('.' or '-' or '_'))))
+            {
+                return "/";
+            }
+
+            return path + "/";
+        }
+
+        private static bool IsAuthFailureReturnUrl(HttpRequest request)
+        {
+            // Older frontends immediately challenge again on a 401 during initialization.
+            return Uri.TryCreate(request.Query["redirectUri"].ToString(), UriKind.Absolute, out var returnUrl)
+                && returnUrl.AbsolutePath == GetFrontendBasePath(request)
+                && QueryHelpers.ParseQuery(returnUrl.Query).TryGetValue(AuthErrorParameter, out var error)
+                && (error == PcssAuthError || error == GenericAuthError);
+        }
+
+        private static async Task<string> RefreshKeycloakUserInfoAsync(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
             ILogger logger)
         {
             if (context.Principal?.Identity is not ClaimsIdentity identity)
             {
-                return;
+                return null;
             }
 
             var accessToken = context.TokenEndpointResponse?.AccessToken
@@ -448,7 +567,7 @@ namespace Scv.Api.Infrastructure.Authentication
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 logger.LogWarning("Unable to refresh Keycloak userinfo because access token is missing.");
-                return;
+                return null;
             }
 
             var configuration = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
@@ -483,17 +602,21 @@ namespace Scv.Api.Infrastructure.Authentication
             if (response.IsError)
             {
                 logger.LogWarning("Failed to refresh Keycloak userinfo: {Error}", response.Error);
-                return;
+                return null;
             }
 
-            if (string.IsNullOrWhiteSpace(identity.FindFirst(CustomClaimTypes.ProvjudUserGuid)?.Value))
+            var provjudClaim = response.Claims.FirstOrDefault(claim => claim.Type == CustomClaimTypes.ProvjudUserGuid);
+            if (provjudClaim == null)
             {
-                var provjudClaim = response.Claims.FirstOrDefault(claim => claim.Type == CustomClaimTypes.ProvjudUserGuid);
-                if (provjudClaim != null)
-                {
-                    identity.AddClaim(provjudClaim);
-                }
+                return null;
             }
+
+            foreach (var claim in identity.FindAll(CustomClaimTypes.ProvjudUserGuid).ToList())
+            {
+                identity.RemoveClaim(claim);
+            }
+            identity.AddClaim(provjudClaim);
+            return context.Principal.ProvjudUserGuid();
         }
     }
 }

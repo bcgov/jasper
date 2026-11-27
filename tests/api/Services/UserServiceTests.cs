@@ -9,13 +9,16 @@ using LazyCache;
 using LazyCache.Providers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using Moq;
 using Scv.Api.Infrastructure.Mappings;
 using Scv.Api.Services;
 using Scv.Core.Helpers;
+using Scv.Db.Contexts;
 using Scv.Db.Models;
 using Scv.Db.Repositories;
 using Scv.Models.AccessControlManagement;
@@ -548,90 +551,89 @@ public class UserServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task GetByGuidWithPermissionsAsync_ShouldReturnNull_WhenGuidDoesNotExist()
+    public async Task GetForPcssSyncAsync_ShouldFallBackToEmailWithoutPopulatingInheritedRoles()
     {
-        _mockUserRepo
-            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
-            .ReturnsAsync((IEnumerable<User>)null);
+        const string email = "user@example.com";
+        var user = new User { FirstName = "Test", LastName = "User", Email = email, GroupIds = ["group"] };
+        _mockUserRepo.Setup(repo => repo.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync((Expression<Func<User, bool>> predicate) => new[] { user }.Where(predicate.Compile()).ToList());
 
-        var result = await _userService.GetByGuidWithPermissionsAsync(_faker.Random.Guid().ToString());
+        var result = await _userService.GetForPcssSyncAsync("guid", email);
 
-        Assert.Null(result);
-        _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
+        Assert.Equal(user.Id, result.Id);
+        Assert.Empty(result.RoleIds);
+        _mockGroupRepo.Verify(repo => repo.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetByGuidWithPermissionsAsync_ShouldReturnNull_WhenGuidDoesNotExistAndReturnsEmpty()
+    public async Task UpdateFromPcssAsync_PersistsNullJudgeIdAndKeepsInheritedRolesAndUnrelatedFields()
     {
-        _mockUserRepo
-            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
-            .ReturnsAsync([]);
+        var config = new TypeAdapterConfig();
+        config.Apply(new AccessControlManagementMapping());
+        var options = new DbContextOptionsBuilder<JasperDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        await using var context = new UserPersistenceContext(options);
+        var repo = new RepositoryBase<User>(context, Mock.Of<IMongoDatabase>());
+        var service = new UserService(Mock.Of<IAppCache>(), new Mapper(config), Mock.Of<ILogger<UserService>>(), repo,
+            _mockGroupRepo.Object, _mockRoleRepo.Object, _mockPermissionRepo.Object, _mockLocationService.Object);
+        var user = new User
+        {
+            FirstName = "Test",
+            LastName = "User",
+            Email = "user@example.com",
+            IsActive = true,
+            IsPendingRegistration = true,
+            JudgeId = 123,
+            GroupIds = ["group"],
+            ADUsername = "manual-ad",
+            UserGuid = "idir-id",
+            Signature = [1],
+            SignatureContentType = "image/png",
+            Initials = [2],
+            InitialsContentType = "image/png",
+            ReleaseNotes = new UserReleaseNotes { LastViewedVersion = "1.0.0" }
+        };
+        await repo.AddAsync(user);
+        _mockGroupRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            .ReturnsAsync([new Group { Id = "group", Name = "Judiciary", Description = "Judiciary group", RoleIds = ["judge"] }]);
+        _mockRoleRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
+            .ReturnsAsync([new Role { Id = "judge", Name = "Judge", Description = "Judge role" }]);
 
-        var result = await _userService.GetByGuidWithPermissionsAsync(_faker.Random.Guid().ToString());
+        var dto = await service.GetForPcssSyncAsync("guid", user.Email);
+        dto.JudgeId = null;
+        dto.NativeGuid = "guid";
+        dto.IsPendingRegistration = false;
+        var result = await service.UpdateFromPcssAsync(dto);
+        context.ChangeTracker.Clear();
+        var persisted = await repo.GetByIdAsync(user.Id);
+        var resolved = await service.GetByIdWithPermissionsAsync(user.Id);
 
-        Assert.Null(result);
-        _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
+        Assert.True(result.Succeeded);
+        Assert.Null(persisted.JudgeId);
+        Assert.Equal("guid", persisted.NativeGuid);
+        Assert.False(persisted.IsPendingRegistration);
+        Assert.Empty(persisted.RoleIds);
+        Assert.Equal("Judge", Assert.Single(resolved.Roles));
+        Assert.Equal("manual-ad", persisted.ADUsername);
+        Assert.Equal("idir-id", persisted.UserGuid);
+        Assert.Equal(new byte[] { 1 }, persisted.Signature);
+        Assert.Equal(new byte[] { 2 }, persisted.Initials);
+        Assert.Equal("1.0.0", persisted.ReleaseNotes.LastViewedVersion);
     }
 
-    [Fact]
-    public async Task GetByGuidWithPermissionsAsync_ShouldReturnUserWithPermissions()
+    private sealed class UserPersistenceContext(DbContextOptions<JasperDbContext> options) : JasperDbContext(options)
     {
-        var groupName = _faker.Lorem.Word();
-        var roleName = _faker.Lorem.Word();
-        var permissionCode = _faker.Lorem.Word();
-        var guid = _faker.Random.Guid().ToString();
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            foreach (var entity in modelBuilder.Model.GetEntityTypes()
+                .Where(entity => entity.ClrType != typeof(User) && entity.ClrType != typeof(UserReleaseNotes)).ToList())
+            {
+                modelBuilder.Ignore(entity.ClrType);
+            }
 
-        _mockUserRepo
-            .Setup(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()))
-            .ReturnsAsync([
-                new() {
-                    Id = ObjectId.GenerateNewId().ToString(),
-                    NativeGuid = guid,
-                    FirstName = _faker.Person.FirstName,
-                    LastName = _faker.Person.LastName,
-                    Email = _faker.Internet.Email(),
-                    GroupIds = [ObjectId.GenerateNewId().ToString()],
-                    RoleIds = [ObjectId.GenerateNewId().ToString()]
-                }
-            ]);
-        _mockGroupRepo
-            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Group, bool>>>()))
-            .ReturnsAsync([
-                new() {
-                    Id = ObjectId.GenerateNewId().ToString(),
-                    Name = groupName,
-                    Description = _faker.Lorem.Paragraph(),
-                    RoleIds = [ObjectId.GenerateNewId().ToString()]
-                }
-            ]);
-        _mockRoleRepo
-            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Role, bool>>>()))
-            .ReturnsAsync([
-                new() {
-                    Id = ObjectId.GenerateNewId().ToString(),
-                    Name = roleName,
-                    Description = _faker.Lorem.Paragraph(),
-                    PermissionIds = [ObjectId.GenerateNewId().ToString()]
-                }
-            ]);
-        _mockPermissionRepo
-            .Setup(g => g.FindAsync(It.IsAny<Expression<Func<Permission, bool>>>()))
-            .ReturnsAsync([
-                new() {
-                    Id = ObjectId.GenerateNewId().ToString(),
-                    Name = _faker.Lorem.Word(),
-                    Code = permissionCode,
-                    Description = _faker.Lorem.Paragraph(),
-                }
-            ]);
-
-        var result = await _userService.GetByGuidWithPermissionsAsync(guid);
-
-        Assert.NotNull(result);
-        Assert.Contains(groupName, result.Groups);
-        Assert.Contains(roleName, result.Roles);
-        Assert.Contains(permissionCode, result.Permissions);
-        _mockUserRepo.Verify(u => u.FindAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once());
+            modelBuilder.Entity<User>().HasKey(user => user.Id);
+            modelBuilder.Entity<User>().OwnsOne(user => user.ReleaseNotes);
+        }
     }
 
     [Fact]

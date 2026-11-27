@@ -1,4 +1,3 @@
-using System;
 using Scv.Api.Documents.Conversion;
 using Scv.Api.Infrastructure.Options;
 using Scv.Core.Exceptions;

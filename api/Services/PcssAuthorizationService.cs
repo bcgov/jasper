@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -86,11 +87,22 @@ namespace Scv.Api.Services
             _logger.LogInformation("Fetching roles for user with ID {UserId}.", userId);
             var user = await this._pcssAuthorizationServiceClient.GetUserAsync(userId, CancellationToken.None);
 
-            if (expectedGuid != null && (user?.UserId != userId || string.IsNullOrWhiteSpace(user.GUID) ||
-                !string.Equals(user.GUID, expectedGuid, StringComparison.Ordinal)))
+            if (expectedGuid != null)
             {
-                _logger.LogWarning("The individual PCSS user response did not confirm the fallback identity mapping.");
-                return OperationResult<IEnumerable<string>>.Failure("The PCSS user identity could not be confirmed.");
+                var liveUserId = user?.UserId;
+                var liveGuid = user?.GUID;
+                var hasGuid = !string.IsNullOrWhiteSpace(liveGuid);
+                if ((liveUserId.HasValue && liveUserId.Value != userId) ||
+                    (hasGuid && !string.Equals(liveGuid, expectedGuid, StringComparison.Ordinal)))
+                {
+                    throw new PcssFallbackIdentityMismatchException();
+                }
+
+                if (!liveUserId.HasValue || !hasGuid)
+                {
+                    _logger.LogWarning("The individual PCSS user response did not confirm the fallback identity mapping.");
+                    return OperationResult<IEnumerable<string>>.Failure("The PCSS user identity could not be confirmed.");
+                }
             }
 
             var userRoles = user?.Roles;
@@ -190,15 +202,19 @@ namespace Scv.Api.Services
                 var match = users?.FirstOrDefault(user => user.GUID == userGuid);
                 return match == null ? null : new PcssUserMatch(match);
             }
-            catch (UserListTimeoutException ex)
+            catch (Exception ex) when (ex is UserListTimeoutException or
+                PCSSAuthServices.ApiException { StatusCode: (int)HttpStatusCode.GatewayTimeout })
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var snapshot = ReadUserListSnapshot();
                 var now = _timeProvider.GetUtcNow();
                 var eligible = snapshot != null && now < snapshot.ExpiresAt;
-                _logger.Log(eligible ? LogLevel.Warning : LogLevel.Debug, ex,
+                var deadlineExceeded = ex is UserListTimeoutException;
+                // The generated API exception includes the upstream response body.
+                _logger.Log(eligible ? LogLevel.Warning : LogLevel.Debug, deadlineExceeded ? ex : null,
                     "PCSS user-list fallback check. Reason: {Reason}. Cached data age in seconds: {CacheAgeSeconds}. Eligible fallback: {FallbackAvailable}.",
-                    "User list request deadline exceeded", (now - snapshot?.RetrievedAt)?.TotalSeconds, eligible);
+                    deadlineExceeded ? "User list request deadline exceeded" : "PCSS returned HTTP 504 Gateway Timeout",
+                    (now - snapshot?.RetrievedAt)?.TotalSeconds, eligible);
 
                 if (!eligible)
                 {

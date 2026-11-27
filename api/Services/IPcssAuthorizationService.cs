@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,4 +17,9 @@ namespace Scv.Api.Services
     }
 
     public sealed record PcssUserMatch(PCSSAuthServices.UserItem User, bool UsedFallback = false);
+
+    internal sealed class PcssFallbackIdentityMismatchException()
+        : Exception("The live PCSS user identity contradicts the cached mapping.")
+    {
+    }
 }

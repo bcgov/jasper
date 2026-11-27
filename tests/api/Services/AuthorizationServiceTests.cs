@@ -151,10 +151,8 @@ public class AuthorizationServiceTests
 
     [Theory]
     [InlineData("fallback-guid", 42, true)]
-    [InlineData("relinked-guid", 42, false)]
     [InlineData(null, 42, false)]
     [InlineData("  ", 42, false)]
-    [InlineData("fallback-guid", 43, false)]
     [InlineData("fallback-guid", null, false)]
     public async Task GetPcssUserRoleNames_ConfirmsFallbackMappingBeforeUsingLiveRoles(
         string liveGuid, int? liveUserId, bool expectedSuccess)
@@ -182,5 +180,18 @@ public class AuthorizationServiceTests
 
         _mockPcssAuthorizationServiceClient.Verify(client => client.GetUserAsync(mappedUserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockPcssAuthorizationServiceClient.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData("relinked-guid", null)]
+    [InlineData(null, 43)]
+    public async Task GetPcssUserRoleNames_RejectsContradictedFallbackIdentityEvenWhenAnotherFieldIsMissing(
+        string liveGuid, int? liveUserId)
+    {
+        _mockPcssAuthorizationServiceClient.Setup(client => client.GetUserAsync(42, CancellationToken.None))
+            .ReturnsAsync(new UserItem { GUID = liveGuid, UserId = liveUserId });
+
+        await Assert.ThrowsAsync<PcssFallbackIdentityMismatchException>(() =>
+            _authorizationService.GetPcssUserRoleNames(42, expectedGuid: "fallback-guid"));
     }
 }

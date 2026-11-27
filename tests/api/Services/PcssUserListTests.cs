@@ -295,9 +295,10 @@ public class PcssUserListTests
 
     [Theory]
     [InlineData(HttpStatusCode.OK)]
+    [InlineData(HttpStatusCode.GatewayTimeout)]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task StalledListBodyIsCanceledWithoutTreatingHttpErrorsAsFallback(HttpStatusCode statusCode)
+    public async Task StalledListBodyIsCanceledAndOnlyTimeoutsCanUseFallback(HttpStatusCode statusCode)
     {
         var body = new StalledResponseContent();
         using var httpClient = CreateHttpClient(request =>
@@ -313,7 +314,7 @@ public class PcssUserListTests
         Assert.True(body.ReadStarted);
         _time.Advance(Deadline);
 
-        if (statusCode == HttpStatusCode.OK)
+        if (statusCode is HttpStatusCode.OK or HttpStatusCode.GatewayTimeout)
         {
             Assert.Equal(new PcssUserMatch(_knownUser, UsedFallback: true), await lookup);
         }
@@ -325,6 +326,48 @@ public class PcssUserListTests
 
         Assert.True(body.ReadToken.IsCancellationRequested);
         Assert.True(body.Disposed);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GatewayTimeoutWithoutEligibleSnapshotPreservesTheHttpFailure(bool primeExpiredSnapshot)
+    {
+        if (primeExpiredSnapshot)
+        {
+            ReturnUsers(_knownUser);
+            await CreateService().GetUsers();
+            _time.Advance(FreshDuration + FallbackWindow);
+        }
+
+        using var httpClient = CreateHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.GatewayTimeout)
+        {
+            Content = new StringContent("Gateway timeout")
+        }));
+        var service = CreateService(new AuthorizationServicesClient(httpClient));
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => service.GetUserByGuid(_knownUser.GUID));
+
+        Assert.Equal((int)HttpStatusCode.GatewayTimeout, error.StatusCode);
+    }
+
+    [Fact]
+    public async Task CallerCancellationTakesPrecedenceOverGatewayTimeoutFallback()
+    {
+        ReturnUsers(_knownUser);
+        await CreateService().GetUsers();
+        _time.Advance(FreshDuration);
+        using var cancellation = new CancellationTokenSource();
+        _httpContext.HttpContext = new DefaultHttpContext { RequestAborted = cancellation.Token };
+        _client.Setup(client => client.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken _) =>
+            {
+                cancellation.Cancel();
+                return Task.FromException<ICollection<UserItem>>(new ApiException("Gateway timeout",
+                    (int)HttpStatusCode.GatewayTimeout, null, null, null));
+            });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CreateService().GetUserByGuid(_knownUser.GUID));
     }
 
     [Fact]

@@ -126,6 +126,12 @@ namespace Scv.Api.Infrastructure.Authentication
                 {
                     OnTicketReceived = context =>
                     {
+                        if (IsPcssLoginCanceled(configuration, context.HttpContext, context.Principal))
+                        {
+                            context.HandleResponse();
+                            return Task.CompletedTask;
+                        }
+
                         context.Properties.Items.Remove(".Token.id_token");
                         context.Properties.Items.Remove(".Token.access_token");
                         context.Properties.Items[".TokenNames"] = "refresh_token;token_type;expires_at";
@@ -162,7 +168,24 @@ namespace Scv.Api.Infrastructure.Authentication
                             new Claim(CustomClaimTypes.IsSupremeUser, isSupremeUser.ToString()),
                         ]);
 
-                        await OnPostAuthSuccess(configuration, context, logger, claims);
+                        try
+                        {
+                            await OnPostAuthSuccess(configuration, context, logger, claims);
+                            if (IsPcssLoginCanceled(configuration, context.HttpContext, context.Principal))
+                            {
+                                context.HttpContext.RequestAborted.ThrowIfCancellationRequested();
+                            }
+                        }
+                        catch (PcssFallbackIdentityMismatchException ex)
+                        {
+                            context.Fail(ex);
+                            return;
+                        }
+                        catch (OperationCanceledException ex) when (context.HttpContext.RequestAborted.IsCancellationRequested)
+                        {
+                            context.Fail(ex);
+                            return;
+                        }
 
                         identity.AddClaims(claims);
                     },
@@ -295,6 +318,9 @@ namespace Scv.Api.Infrastructure.Authentication
             List<Claim> claims)
         {
             UserDto userDto = null;
+            var cancellationToken = IsProvincialCourtLogin(context.Principal)
+                ? context.HttpContext.RequestAborted
+                : CancellationToken.None;
             try
             {
                 var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
@@ -329,8 +355,9 @@ namespace Scv.Api.Infrastructure.Authentication
                 }
                 if (userDto == null)
                 {
-                    var newUser = await BuildNewUser(context, pcssSyncService);
+                    var newUser = await BuildNewUser(context, pcssSyncService, cancellationToken);
                     logger.LogInformation("Creating new user in JASPER database: {NewUser}", JsonConvert.SerializeObject(newUser));
+                    cancellationToken.ThrowIfCancellationRequested();
                     var result = await userService.AddAsync(newUser);
                     if (result.Payload == null || result.Errors.Any())
                     {
@@ -352,7 +379,8 @@ namespace Scv.Api.Infrastructure.Authentication
                     }
                     // Update existing user with latest PCSS data
                     logger.LogInformation("Updating existing user {Email} with latest PCSS data", userDto.Email);
-                    var updated = await pcssSyncService.UpdateUserFromPcss(userDto);
+                    var updated = await pcssSyncService.UpdateUserFromPcss(userDto, cancellationToken: cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (updated)
                     {
                         var updateResult = await userService.UpdateAsync(userDto);
@@ -368,8 +396,9 @@ namespace Scv.Api.Infrastructure.Authentication
                 }
                 AddUserClaims(claims, userDto);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not PcssFallbackIdentityMismatchException)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 logger.LogError(ex, "Something went wrong during post authentication process: {Exception}", ex);
             }
             return userDto;
@@ -377,7 +406,8 @@ namespace Scv.Api.Infrastructure.Authentication
 
         private static async Task<UserDto> BuildNewUser(
             Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context,
-            IPcssSyncService pcssSyncService)
+            IPcssSyncService pcssSyncService,
+            CancellationToken cancellationToken)
         {
             UserDto userDto = new()
             {
@@ -389,7 +419,7 @@ namespace Scv.Api.Infrastructure.Authentication
                 IsActive = false,
             };
 
-            await pcssSyncService.UpdateUserFromPcss(userDto, true);
+            await pcssSyncService.UpdateUserFromPcss(userDto, forceUpdateCache: true, cancellationToken);
 
             return userDto;
         }
@@ -407,6 +437,13 @@ namespace Scv.Api.Infrastructure.Authentication
             var connectionString = configuration.GetValue<string>("MONGODB_CONNECTION_STRING");
             return !string.IsNullOrWhiteSpace(connectionString);
         }
+
+        private static bool IsPcssLoginCanceled(IConfiguration configuration, HttpContext context, ClaimsPrincipal principal) =>
+            context.RequestAborted.IsCancellationRequested && IsMongoDbConfigured(configuration) && IsProvincialCourtLogin(principal);
+
+        private static bool IsProvincialCourtLogin(ClaimsPrincipal principal) =>
+            !string.IsNullOrWhiteSpace(principal?.FindFirstValue(CustomClaimTypes.ProvjudUserGuid)) ||
+            IsProvincialCourtEmail(principal.Email());
 
         private static void AddDefaultJudgeClaims(ILogger logger, List<Claim> claims, string judgeId, string homeLocationId)
         {

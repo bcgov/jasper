@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -14,7 +15,8 @@ namespace Scv.Api.Services
 {
     public interface IPcssSyncService
     {
-        public Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false);
+        public Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false,
+            CancellationToken cancellationToken = default);
     }
 
     public class PcssSyncService(
@@ -34,7 +36,8 @@ namespace Scv.Api.Services
         private readonly IRoleService _roleService = roleService;
         private readonly ILogger<PcssSyncService> _logger = logger;
 
-        public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false)
+        public async Task<bool> UpdateUserFromPcss(UserDto userDto, bool forceUpdateCache = false,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(userDto.NativeGuid))
             {
@@ -44,7 +47,9 @@ namespace Scv.Api.Services
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var match = await GetMatchingPcssUserAsync(userDto.NativeGuid, userDto.Email, forceUpdateCache);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (match == null)
                 {
                     return false;
@@ -53,6 +58,7 @@ namespace Scv.Api.Services
                 var matchingUser = match.User;
                 var expectedGuid = match.UsedFallback ? userDto.NativeGuid : null;
                 var roleNames = await GetPcssRoleNamesAsync(matchingUser.UserId.Value, userDto.Email, expectedGuid);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (roleNames == null)
                 {
                     return false;
@@ -94,10 +100,12 @@ namespace Scv.Api.Services
                     }
                 }
 
-                return ApplyUserChanges(userDto, groupIds, roleIds, judgeId, matchingUser);
+                cancellationToken.ThrowIfCancellationRequested();
+                return ApplyUserChanges(userDto, groupIds, roleIds, judgeId, match.UsedFallback ? null : matchingUser);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PcssFallbackIdentityMismatchException)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 _logger.LogError(e, "Unable to get user or groups from PCSS for {Email}.", userDto.Email);
                 return false;
             }
@@ -157,7 +165,7 @@ namespace Scv.Api.Services
             return null;
         }
 
-        private bool ApplyUserChanges(UserDto userDto, List<string> groupIds, List<string> roleIds, int? judgeId, UserItem user)
+        private bool ApplyUserChanges(UserDto userDto, List<string> groupIds, List<string> roleIds, int? judgeId, UserItem profile)
         {
             var isActive = groupIds.Count > 0;
             var hasChanges = false;
@@ -168,22 +176,25 @@ namespace Scv.Api.Services
                 hasChanges = true;
             }
 
-            if (userDto.FirstName != user.GivenName)
+            if (profile != null)
             {
-                userDto.FirstName = user.GivenName;
-                hasChanges = true;
-            }
+                if (userDto.FirstName != profile.GivenName)
+                {
+                    userDto.FirstName = profile.GivenName;
+                    hasChanges = true;
+                }
 
-            if (userDto.LastName != user.Surname)
-            {
-                userDto.LastName = user.Surname;
-                hasChanges = true;
-            }
+                if (userDto.LastName != profile.Surname)
+                {
+                    userDto.LastName = profile.Surname;
+                    hasChanges = true;
+                }
 
-            if (userDto.Email != null && userDto.Email != user.Email)
-            {
-                userDto.Email = user.Email;
-                hasChanges = true;
+                if (userDto.Email != null && userDto.Email != profile.Email)
+                {
+                    userDto.Email = profile.Email;
+                    hasChanges = true;
+                }
             }
 
             if (userDto.IsActive != isActive)

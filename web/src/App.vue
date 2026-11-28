@@ -1,25 +1,38 @@
 <template>
   <v-theme-provider :theme="theme">
     <div
-      v-if="!commonStore.isInitialized"
-      class="d-flex align-center justify-center ma-3"
+      v-if="commonStore.sessionState === SESSION_STATES.INITIALIZING"
+      class="d-flex align-center justify-center ga-3 ma-3"
+      role="status"
     >
       <v-progress-circular indeterminate color="primary" />
+      <span>Verifying your JASPER access...</span>
     </div>
     <v-app v-else>
-      <ProfileOffCanvas v-model="profile" />
-      <AppBar @open-profile="profile = true" />
+      <ProfileOffCanvas v-if="isAuthorized" v-model="profile" />
+      <AppBar v-if="isAuthorized" @open-profile="profile = true" />
       <v-main>
-        <router-view />
+        <AuthenticationFailed
+          v-if="commonStore.sessionState === SESSION_STATES.FAILED"
+        />
+        <router-view
+          v-else-if="
+            $route?.name === 'RequestAccess'
+              ? commonStore.sessionState === SESSION_STATES.ACCESS_REQUIRED
+              : isAuthorized
+          "
+        />
       </v-main>
-      <DarsAccessModal v-model="darsStore.isModalVisible" />
+      <DarsAccessModal v-if="isAuthorized" v-model="darsStore.isModalVisible" />
       <Snackbar />
     </v-app>
   </v-theme-provider>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { SESSION_STATES } from '@/constants/sessionStates';
+  import { computed, ref } from 'vue';
+  import AuthenticationFailed from './components/dashboard/AuthenticationFailed.vue';
   import DarsAccessModal from './components/dashboard/DarsAccessModal.vue';
   import AppBar from './components/shared/AppBar.vue';
   import ProfileOffCanvas from './components/shared/ProfileOffCanvas.vue';
@@ -31,6 +44,9 @@
   const themeStore = useThemeStore();
   const darsStore = useDarsStore();
   const commonStore = useCommonStore();
+  const isAuthorized = computed(
+    () => commonStore.sessionState === SESSION_STATES.AUTHORIZED
+  );
   const theme = themeStore.state;
   const profile = ref(false);
 </script>

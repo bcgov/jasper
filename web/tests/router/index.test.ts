@@ -1,217 +1,58 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PERMISSIONS } from '@/constants/permissions';
+import { SESSION_STATES } from '@/constants/sessionStates';
+import { createAppRouter } from '@/router';
+import { useCommonStore } from '@/stores/CommonStore';
+import { callTrackPageView } from '@/utils/snowplowUtils';
+import type { UserInfo } from '@/types/common';
+import { createPinia } from 'pinia';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createApp } from 'vue';
 
-type RouteResult = { path: string } | boolean | undefined;
-type RouteLike = {
-  path: string;
-  name: string;
-  meta?: { requiredPermission?: string };
-};
+vi.mock('@/utils/snowplowUtils');
+vi.mock('@/components/dashboard/Dashboard.vue', () => ({ default: {} }));
+vi.mock('@/components/courtlist/CourtList.vue', () => ({ default: {} }));
+vi.mock('@/components/courtlist/TransitoryDocumentsPage.vue', () => ({ default: {} }));
 
-interface RouterHooks {
-  beforeEach?: (
-    to: RouteLike,
-    from: unknown
-  ) => Promise<RouteResult> | RouteResult;
-  afterEach?: () => void;
-}
+describe('JASPER router', () => {
+  const documentRoute = '/transitory-documents/location/1/room/1/date/2025-11-01';
+  let router: ReturnType<typeof createAppRouter>;
+  let store: ReturnType<typeof useCommonStore>;
 
-interface MockStore {
-  isInitialized: boolean;
-  userInfo: {
-    roles: string[];
-    isActive: boolean;
-    judgeId: number | null;
-    permissions?: string[];
-  };
-}
-
-describe('router/index', () => {
-  const hooks: RouterHooks = {};
-
-  let mockStore: MockStore;
-  const callTrackPageView = vi.fn();
-  const initializeSessionSettings = vi.fn().mockResolvedValue(true);
-
-  const loadRouter = async () => {
-    vi.resetModules();
-    hooks.beforeEach = undefined;
-    hooks.afterEach = undefined;
-
-    vi.doMock('@/stores', () => ({
-      useCommonStore: () => mockStore,
-    }));
-
-    vi.doMock('@/utils/snowplowUtils', () => ({
-      callTrackPageView,
-    }));
-
-    vi.doMock('@/utils/utils', () => ({
-      initializeSessionSettings,
-      isPositiveInteger: (n: number) => Number.isInteger(n) && n > 0,
-    }));
-
-    vi.doMock('vue-router', () => ({
-      createWebHistory: vi.fn(),
-      createRouter: vi.fn(() => ({
-        beforeEach: (cb: RouterHooks['beforeEach']) => {
-          hooks.beforeEach = cb;
-        },
-        afterEach: (cb: () => void) => {
-          hooks.afterEach = cb;
-        },
-      })),
-    }));
-
-    await import('@/router/index');
-  };
-
-  beforeEach(() => {
-    mockStore = {
-      isInitialized: false,
-      userInfo: {
-        roles: ['role-1'],
-        isActive: true,
-        judgeId: 123,
-      },
-    };
-    callTrackPageView.mockClear();
-    initializeSessionSettings.mockClear();
+  beforeEach(async () => {
+    vi.stubEnv('BASE_URL', '/');
+    history.replaceState(null, '', '/dashboard');
+    const pinia = createPinia();
+    const app = createApp({});
+    app.use(pinia);
+    store = useCommonStore(pinia);
+    store.sessionState = SESSION_STATES.AUTHORIZED;
+    router = createAppRouter();
+    app.use(router);
+    await router.isReady();
   });
 
-  it('allows root path without auth guard', async () => {
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      { path: '/', name: 'HomeView' },
-      {}
-    );
-
-    expect(result).toBe(true);
+  afterEach(() => {
+    router.options.history.destroy();
+    vi.unstubAllEnvs();
   });
 
-  it('redirects to request access when user is unauthorized', async () => {
-    mockStore.userInfo = {
-      roles: [],
-      isActive: true,
-      judgeId: null,
-    };
-
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      { path: '/dashboard', name: 'DashboardView' },
-      {}
-    );
-
-    expect(result).toEqual({ path: '/request-access' });
+  it('redirects a user who lacks the route permission to court list', async () => {
+    store.userInfo = { permissions: [] } as unknown as UserInfo;
+    await router.push(documentRoute);
+    expect(router.currentRoute.value.name).toBe('CourtList');
   });
 
-  it('allows navigation to request access for unauthorized user', async () => {
-    mockStore.userInfo = {
-      roles: [],
-      isActive: false,
-      judgeId: null,
-    };
-
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      { path: '/request-access', name: 'RequestAccess' },
-      {}
-    );
-
-    expect(result).toBe(true);
+  it('keeps the requested route when the user has the required permission', async () => {
+    store.userInfo = {
+      permissions: [PERMISSIONS.LIST_TRANSITORY_DOCUMENTS],
+    } as unknown as UserInfo;
+    await router.push(documentRoute);
+    expect(router.currentRoute.value.name).toBe('TransitoryDocuments');
+    expect(callTrackPageView).toHaveBeenCalled();
   });
 
-  it('redirects authorized user away from request access', async () => {
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      { path: '/request-access', name: 'RequestAccess' },
-      {}
-    );
-
-    expect(result).toEqual({ path: '/' });
-  });
-
-  it('allows authorized user to access other routes', async () => {
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      { path: '/dashboard', name: 'DashboardView' },
-      {}
-    );
-
-    expect(result).toBe(true);
-  });
-
-  it('redirects users without the required permission', async () => {
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      {
-        path: '/transitory-documents/location/1/room/101/date/2025-11-01',
-        name: 'TransitoryDocuments',
-        meta: { requiredPermission: 'LIST_TRANSITORY_DOCUMENTS' },
-      },
-      {}
-    );
-
-    expect(result).toEqual({ path: '/court-list' });
-  });
-
-  it('allows users with the required permission', async () => {
-    mockStore.userInfo.permissions = ['LIST_TRANSITORY_DOCUMENTS'];
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      {
-        path: '/transitory-documents/location/1/room/101/date/2025-11-01',
-        name: 'TransitoryDocuments',
-        meta: { requiredPermission: 'LIST_TRANSITORY_DOCUMENTS' },
-      },
-      {}
-    );
-
-    expect(result).toBe(true);
-  });
-
-  it('allows navigation when store is already initialized', async () => {
-    mockStore.isInitialized = true;
-
-    await loadRouter();
-
-    const result = await hooks.beforeEach?.(
-      { path: '/dashboard', name: 'DashboardView' },
-      {}
-    );
-
-    expect(result).toBe(true);
-  });
-
-  it('tracks page view on afterEach hook', async () => {
-    await loadRouter();
-
-    hooks.afterEach?.();
-
-    expect(callTrackPageView).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls initializeSessionSettings when store is not yet initialized', async () => {
-    mockStore.isInitialized = false;
-
-    await loadRouter();
-    await hooks.beforeEach?.({ path: '/dashboard', name: 'DashboardView' }, {});
-
-    expect(initializeSessionSettings).toHaveBeenCalledTimes(1);
-  });
-
-  it('skips initializeSessionSettings when store is already initialized', async () => {
-    mockStore.isInitialized = true;
-
-    await loadRouter();
-    await hooks.beforeEach?.({ path: '/dashboard', name: 'DashboardView' }, {});
-
-    expect(initializeSessionSettings).not.toHaveBeenCalled();
+  it('redirects an authorized user away from the access request route', async () => {
+    await router.push('/request-access');
+    expect(router.currentRoute.value.name).toBe('DashboardView');
   });
 });

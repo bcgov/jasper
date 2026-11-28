@@ -83,6 +83,7 @@
   import { useOrderBadgePulse } from '@/composables/useOrderBadgePulse.js';
   import { isDeskOrder, useOrderCounts } from '@/composables/useOrderCounts';
   import { PERMISSIONS } from '@/constants/permissions';
+  import { SESSION_STATES } from '@/constants/sessionStates';
   import { JudgeService, OrderService } from '@/services';
   import { NotificationsService } from '@/signalr/notifications';
   import { useCommonStore } from '@/stores';
@@ -153,7 +154,7 @@
   );
 
   const canInitializeNotifications = computed(
-    () => commonStore.isInitialized && !!commonStore.userInfo
+    () => commonStore.sessionState === SESSION_STATES.AUTHORIZED
   );
 
   const canInitializeOrderFeatures = computed(

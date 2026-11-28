@@ -1,4 +1,5 @@
-import { UserInfo } from '@/types/common';
+import { CustomAxiosConfig } from '@/types';
+import { AccessRequestResponse, UserRecord } from '@/types/common';
 import { HttpService } from './HttpService';
 import { ServiceBase } from './ServiceBase';
 
@@ -7,8 +8,8 @@ export class UserService extends ServiceBase {
     super(httpService);
   }
 
-  async requestAccess(): Promise<UserInfo> {
-    return await this.httpService.put<UserInfo>(
+  async requestAccess(): Promise<AccessRequestResponse> {
+    return await this.httpService.put<AccessRequestResponse>(
       `api/users/request-access`,
       {},
       {},
@@ -17,8 +18,8 @@ export class UserService extends ServiceBase {
     );
   }
 
-  async getMyUser(): Promise<UserInfo> {
-    return await this.httpService.get<UserInfo>(`api/users/me`);
+  async getMyUser(config: CustomAxiosConfig = {}): Promise<UserRecord> {
+    return await this.httpService.get<UserRecord>(`api/users/me`, {}, config);
   }
 
   async markReleaseNotesViewed(version: string): Promise<void> {

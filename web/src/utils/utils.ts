@@ -1,17 +1,20 @@
+import { SESSION_STATES } from '@/constants/sessionStates';
 import { beautifyDate } from '@/filters';
 import { ApplicationService } from '@/services/ApplicationService';
 import { AuthService } from '@/services/AuthService';
 import { LookupService } from '@/services/LookupService';
+import redirectHandlerService from '@/services/RedirectHandlerService';
 import { UserService } from '@/services/UserService';
 import { useCommonStore } from '@/stores';
 import { CommonStore } from '@/stores/CommonStore';
+import { getApiErrorResponse } from '@/types/ApiResponse';
 import { civilAppearancesListType } from '@/types/civil';
 import { civilApprDetailType } from '@/types/civil/jsonTypes';
 import {
   CourtClassEnum,
   CourtRoomsJsonInfoType,
   LookupCode,
-  UserInfo,
+  UserRecord,
 } from '@/types/common';
 import { criminalAppearancesListType } from '@/types/criminal';
 import { criminalApprDetailType } from '@/types/criminal/jsonTypes';
@@ -19,56 +22,138 @@ import _ from 'underscore';
 import { inject } from 'vue';
 import { LocationQueryValue } from 'vue-router';
 
-export const initializeSessionSettings = async (): Promise<boolean> => {
+const sessionInitializations = new WeakMap<CommonStore, Promise<void>>();
+
+const isValidJudgeId = (id: number | null | undefined): id is number =>
+  typeof id === 'number' && Number.isInteger(id) && id > 0;
+
+export function useSessionInitializer() {
   const commonStore = useCommonStore();
   const authService = inject<AuthService>('authService');
   const appService = inject<ApplicationService>('applicationService');
   const userService = inject<UserService>('userService');
 
-  try {
-    commonStore.setIsInitialized(false);
-    const userInfo = await authService?.getUserInfo();
-    if (!userInfo) {
-      console.error('User info not available.');
-      commonStore.setLoggedInUserInfo(null);
-      commonStore.setUserInfo(null);
-      return false;
+  async function loadSession() {
+    const previousUser = commonStore.userInfo;
+    const previousLogin = commonStore.loggedInUserInfo;
+    commonStore.clearSession(SESSION_STATES.INITIALIZING);
+
+    try {
+      if (!authService || !userService || !appService) {
+        throw new Error('Session services are unavailable.');
+      }
+
+      const authUser = await authService.getUserInfo();
+      if (commonStore.sessionState !== SESSION_STATES.INITIALIZING) return;
+      if (!authUser || typeof authUser.isActive !== 'boolean') {
+        throw new Error('Authentication information is unavailable.');
+      }
+
+      let user: UserRecord;
+      try {
+        user = await userService.getMyUser({ sessionInitialization: true });
+      } catch (error) {
+        const status = getApiErrorResponse(error)?.status;
+        if (status !== 400 && status !== 404) throw error;
+        if (commonStore.sessionState === SESSION_STATES.INITIALIZING) {
+          redirectHandlerService.clearAttempt();
+          commonStore.clearSession(SESSION_STATES.ACCESS_REQUIRED);
+        }
+        return;
+      }
+
+      if (commonStore.sessionState !== SESSION_STATES.INITIALIZING) return;
+      if (
+        !user ||
+        typeof user.id !== 'string' ||
+        !user.id.trim() ||
+        user.id !== authUser.userId ||
+        typeof user.isActive !== 'boolean' ||
+        !Array.isArray(user.roles) ||
+        !user.roles.every((role) => typeof role === 'string' && role.trim())
+      ) {
+        throw new Error('Current user information is incomplete.');
+      }
+
+      const userInfo = {
+        ...authUser,
+        ...user,
+        email: authUser.email || user.email || '',
+        judgeId: 0,
+        permissions: Array.isArray(user.permissions) ? user.permissions : [],
+      };
+
+      if (!user.isActive || user.roles.length === 0) {
+        redirectHandlerService.clearAttempt();
+        commonStore.$patch({
+          userInfo,
+          sessionState: SESSION_STATES.ACCESS_REQUIRED,
+        });
+        return;
+      }
+
+      // Eligibility comes from the database. The server supplies the default judge context.
+      const judgeId = isValidJudgeId(user.judgeId)
+        ? user.judgeId
+        : authUser.judgeId;
+      if (!isValidJudgeId(judgeId)) {
+        throw new Error(
+          'No valid judge context is available for the current user.'
+        );
+      }
+      const currentUserInfo = { ...userInfo, judgeId };
+
+      if (
+        previousUser?.userId === user.id &&
+        previousLogin?.userId === user.id &&
+        previousLogin.judgeId === authUser.judgeId &&
+        isValidJudgeId(previousUser.judgeId) &&
+        previousUser.judgeId !== authUser.judgeId &&
+        previousUser.judgeId !== judgeId
+      ) {
+        currentUserInfo.judgeId = previousUser.judgeId;
+        currentUserInfo.judgeHomeLocationId = previousUser.judgeHomeLocationId;
+      }
+
+      const appInfo = await appService.getApplicationInfo();
+      if (commonStore.sessionState !== SESSION_STATES.INITIALIZING) return;
+      if (!appInfo || typeof appInfo.version !== 'string') {
+        throw new Error('Application information is unavailable.');
+      }
+
+      redirectHandlerService.clearAttempt();
+      commonStore.$patch({
+        loggedInUserInfo: authUser,
+        userInfo: currentUserInfo,
+        appInfo,
+        sessionState: SESSION_STATES.AUTHORIZED,
+      });
+    } catch (error) {
+      if (commonStore.sessionState !== SESSION_STATES.INITIALIZING) return;
+      const status = getApiErrorResponse(error)?.status;
+      if (
+        redirectHandlerService.isRedirecting ||
+        ((status === 401 || status === 409) &&
+          redirectHandlerService.trySessionRedirect(status))
+      ) {
+        return;
+      }
+      commonStore.clearSession(SESSION_STATES.FAILED);
+      redirectHandlerService.markInitializationFailed();
     }
-
-    const [appInfo, myUserInfo] = await Promise.all([
-      appService?.getApplicationInfo(),
-      userService?.getMyUser(),
-    ]);
-
-    const currentUserInfo = commonStore.userInfo;
-    const mergedUserInfo =
-      userInfo || myUserInfo
-        ? ({ ...userInfo, ...myUserInfo } as UserInfo)
-        : null;
-
-    // Preserve the judge override selected in the UI when session info refreshes.
-    if (
-      mergedUserInfo &&
-      currentUserInfo?.judgeId &&
-      currentUserInfo.judgeId !== userInfo.judgeId
-    ) {
-      mergedUserInfo.judgeId = currentUserInfo.judgeId;
-      mergedUserInfo.judgeHomeLocationId = currentUserInfo.judgeHomeLocationId;
-    }
-
-    commonStore.setLoggedInUserInfo(userInfo ?? null);
-    commonStore.setUserInfo(mergedUserInfo);
-    commonStore.appInfo = appInfo ?? null;
-    return true;
-  } catch (error) {
-    console.log(error);
-    commonStore.setLoggedInUserInfo(null);
-    commonStore.setUserInfo(null);
-    return false;
-  } finally {
-    commonStore.setIsInitialized(true);
   }
-};
+
+  return function initializeSessionSettings(): Promise<void> {
+    const pending = sessionInitializations.get(commonStore);
+    if (pending) return pending;
+
+    const task = loadSession().finally(() => {
+      sessionInitializations.delete(commonStore);
+    });
+    sessionInitializations.set(commonStore, task);
+    return task;
+  };
+}
 
 export const splunkLog = (message) => {
   // TODO: This has to be refactored to use a better way to call Splunk via REST API

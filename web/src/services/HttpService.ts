@@ -1,3 +1,5 @@
+import { SESSION_STATES } from '@/constants/sessionStates';
+import { useCommonStore } from '@/stores/CommonStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { CustomAxiosConfig } from '@/types';
 import { CustomAPIError } from '@/types/ApiResponse';
@@ -79,24 +81,22 @@ export class HttpService implements IHttpService {
 
     const status = error?.response?.status;
 
-    if (status === 401) {
-      redirectHandlerService.handleUnauthorized(globalThis.location.href);
+    if (error.config?.sessionInitialization) {
+      return Promise.reject(
+        new CustomAPIError<AxiosError>(error.message, error)
+      );
     }
 
-    // todo: check for a 403 and handle it
-    if (status === 409) {
-      globalThis.location.replace(
-        `${import.meta.env.BASE_URL}api/auth/logout?redirectUri=/`
-      );
-    } else if (
-      !error.config?.suppressErrorNotification &&
-      status !== 403 &&
-      status !== 401
-    ) {
+    if (status === 401 || status === 409) {
+      if (!redirectHandlerService.trySessionRedirect(status)) {
+        useCommonStore().clearSession(SESSION_STATES.FAILED);
+        redirectHandlerService.markInitializationFailed();
+      }
+    } else if (!error.config?.suppressErrorNotification && status !== 403) {
       // The user should be notified about unhandled server exceptions.
       this.snackBarStore.showSnackbar(
         'Something went wrong, please contact your Administrator.',
-        '#b84157',
+        'error',
         'Error'
       );
     }

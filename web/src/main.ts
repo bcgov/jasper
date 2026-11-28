@@ -1,3 +1,4 @@
+import { SESSION_STATES } from '@/constants/sessionStates';
 import { registerPlugins } from '@/plugins';
 import { callRefreshLinkClickTracking } from '@/utils/snowplowUtils';
 import '@fullcalendar/vue3/skeleton.css';
@@ -10,24 +11,34 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import './assets/colors.css';
 import './filters';
-import router from './router/index';
+import { createAppRouter } from './router/index';
 import { registerRouter } from './services';
+import redirectHandlerService from './services/RedirectHandlerService';
 import { registerPinia, useCommonStore } from './stores';
 
 const bootstrap = async () => {
+  const authenticationFailed =
+    redirectHandlerService.hasAuthenticationFailure();
   const app = createApp(App);
   registerPinia(app);
 
-  app.use(router);
-
-  registerRouter(app);
-
-  // Set isInitialized to false to ensure
-  // user/app info is refetched on app mount.
   const commonStore = useCommonStore();
-  commonStore.setIsInitialized(false);
-
+  if (authenticationFailed) {
+    commonStore.clearSession(SESSION_STATES.FAILED);
+  } else {
+    commonStore.sessionState = SESSION_STATES.INITIALIZING;
+  }
+  registerRouter(app);
   registerPlugins(app);
+
+  if (!authenticationFailed) {
+    if (location.pathname === '/') {
+      const url = new URL(location.href);
+      url.pathname = import.meta.env.BASE_URL;
+      history.replaceState(history.state, '', url);
+    }
+    app.use(createAppRouter());
+  }
   app.mount('#app');
 
   // Initialize Snowplow link click tracking after app mounts
@@ -51,11 +62,6 @@ const bootstrap = async () => {
     childList: true,
     subtree: true,
   });
-
-  // Redirect from / to /jasper/
-  if (location.pathname == '/') {
-    history.pushState({ page: 'home' }, '', import.meta.env.BASE_URL);
-  }
 };
 
 try {
@@ -63,5 +69,8 @@ try {
 } catch (error) {
   console.error('Failed to bootstrap application.', error);
   const commonStore = useCommonStore();
-  commonStore.setIsInitialized(false);
+  commonStore.clearSession(SESSION_STATES.FAILED);
+  if (!redirectHandlerService.hasAuthenticationFailure()) {
+    redirectHandlerService.markInitializationFailed();
+  }
 }

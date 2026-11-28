@@ -109,6 +109,26 @@ export interface UserInfo {
   hasInitials: boolean;
 }
 
+export interface UserRecord {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  isActive: boolean;
+  isPendingRegistration?: boolean;
+  judgeId?: number | null;
+  releaseNotes?: ReleaseNotesInfo | null;
+  hasSignature: boolean;
+  hasInitials: boolean;
+  groupIds: string[];
+  groups: string[];
+  roleIds: string[];
+  roles: string[];
+  permissions: string[];
+}
+
+export type AccessRequestResponse = UserRecord | { alreadyAuthorized: true };
+
 export interface LookupCode {
   codeType: string;
   code: string;

@@ -1,142 +1,118 @@
 import RequestAccess from '@/components/dashboard/RequestAccess.vue';
-import { useCommonStore } from '@/stores';
+import { SESSION_STATES } from '@/constants/sessionStates';
+import { useCommonStore } from '@/stores/CommonStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { CustomAPIError } from '@/types/ApiResponse';
+import type { UserInfo } from '@/types/common';
 import { flushPromises, mount } from '@vue/test-utils';
 import { AxiosError } from 'axios';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { createMemoryHistory, createRouter } from 'vue-router';
 
-// Mock UserService
-const mockRequestAccess = vi.fn();
-const mockGetMyUser = vi.fn();
-const mockUserService = {
-  requestAccess: mockRequestAccess,
-  getMyUser: mockGetMyUser,
-};
+describe('RequestAccess', () => {
+  const submit = vi.fn();
+  const getMyUser = vi.fn();
+  const record = {
+    userId: 'user-1',
+    email: 'test@example.com',
+    isActive: false,
+    roles: [],
+    isPendingRegistration: true,
+  } as unknown as UserInfo;
 
-// Mock stores
-vi.mock('@/stores');
-vi.mock('@/services');
-
-// Helper to mount component with provide
-const mountComponent = async (options = {}) => {
-  const wrapper = mount(RequestAccess, {
-    global: {
-      provide: {
-        userService: mockUserService,
-      },
-    },
-    ...options,
-  });
-  await flushPromises();
-  return wrapper;
-};
-
-describe('RequestAccess.vue', () => {
-  let snackStore: ReturnType<typeof useSnackbarStore>;
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    (useCommonStore as any).mockReturnValue({
-      userInfo: { email: 'test@example.com' },
-    });
-    snackStore = useSnackbarStore();
-  });
-
-  it('renders correctly (snapshot)', async () => {
-    mockGetMyUser.mockResolvedValue(undefined);
-    const wrapper = await mountComponent();
-
-    await vi.waitFor(() => {
-      expect(wrapper.html()).toMatchSnapshot();
-    });
-  });
-
-  it('disables input and button when isSubmitted is true', async () => {
-    mockGetMyUser.mockResolvedValue({
-      email: 'test@example.com',
-      isPendingRegistration: true,
-    });
-
-    const wrapper = await mountComponent();
-
-    expect(wrapper.find('v-text-field').attributes('disabled')).toBeDefined();
-    expect(wrapper.find('v-btn').attributes('disabled')).toBeDefined();
-    expect(wrapper.text()).toContain('Your request has been submitted!');
-  });
-
-  it('shows user disabled badge if user is inactive with roles', async () => {
-    mockGetMyUser.mockResolvedValue({
-      email: 'test@example.com',
-      isActive: false,
-      roles: [1, 2],
-    });
-
-    const wrapper = await mountComponent();
-    await nextTick();
-
-    expect(wrapper.text()).toContain('Your user has been disabled.');
-  });
-
-  it('shows user invalid badge if user is not pending, not disabled', async () => {
-    mockGetMyUser.mockResolvedValue({
-      email: 'test@example.com',
-      isActive: true,
-      isPendingRegistration: false,
-      roles: [],
-    });
-
-    const wrapper = await mountComponent();
-    await nextTick();
-
-    expect(wrapper.text()).toContain(
-      'Warning, you do not have valid access to JASPER.'
-    );
-  });
-
-  it('calls requestAccess and sets isSubmitted on success', async () => {
-    mockGetMyUser.mockResolvedValue(undefined);
-    mockRequestAccess.mockResolvedValue({ email: 'test@example.com' });
-
-    const wrapper = await mountComponent();
-    await nextTick();
-    wrapper.find('v-btn').trigger('click');
-    await flushPromises();
-
-    expect(wrapper.text()).toContain('Your request has been submitted!');
-  });
-
-  it('calls requestAccess and displays errors returned from backend', async () => {
-    mockGetMyUser.mockResolvedValue(undefined);
-    const axiosError = new AxiosError('test error');
-    mockRequestAccess.mockRejectedValue(
-      new CustomAPIError(axiosError.message, axiosError)
-    );
-    snackStore.showSnackbar = vi.fn();
-
-    const wrapper = await mountComponent();
-    await nextTick();
-    wrapper.find('v-btn').trigger('click');
-    await nextTick();
-
-    expect(mockRequestAccess).toHaveBeenCalled();
-    expect(snackStore.showSnackbar).toHaveBeenCalled();
-  });
-
-  it('does not call requestAccess if email is empty', async () => {
-    (useCommonStore as any).mockReturnValue({
-      userInfo: { email: '' },
-    });
-    mockGetMyUser.mockResolvedValue(undefined);
-
+  function open(user: UserInfo | null = record) {
+    const pinia = createPinia();
+    const store = useCommonStore(pinia);
+    store.$patch({ userInfo: user, sessionState: SESSION_STATES.ACCESS_REQUIRED });
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     const wrapper = mount(RequestAccess, {
-      global: { provide: { userService: mockUserService } },
+      global: {
+        plugins: [pinia, router],
+        provide: {
+          userService: { requestAccess: submit, getMyUser },
+          authService: {},
+          applicationService: {},
+        },
+        stubs: {
+          VBtn: { template: '<button><slot /></button>' },
+        },
+      },
     });
-    await flushPromises();
-    wrapper.find('v-btn').trigger('click');
-    await nextTick();
+    return { wrapper, snackbar: useSnackbarStore(pinia) };
+  }
 
-    expect(mockRequestAccess).not.toHaveBeenCalled();
+  beforeEach(() => {
+    submit.mockReset();
+    getMyUser.mockReset();
+  });
+
+  it('allows a pending user to submit and shows confirmation only on this visit', async () => {
+    let finishSubmission!: (response: { id: string }) => void;
+    submit.mockImplementation(() => new Promise((resolve) => {
+      finishSubmission = resolve;
+    }));
+    const { wrapper } = open();
+    const button = wrapper.get('button');
+
+    expect(button.attributes('disabled')).toBeUndefined();
+    expect(wrapper.text()).not.toContain('Your request has been submitted!');
+    expect(getMyUser).not.toHaveBeenCalled();
+
+    await button.trigger('click');
+    expect(button.attributes('disabled')).toBeDefined();
+    await button.trigger('click');
+    expect(submit).toHaveBeenCalledTimes(1);
+
+    finishSubmission({ id: record.userId });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Your request has been submitted!');
+    expect(button.attributes('disabled')).toBeDefined();
+    wrapper.unmount();
+
+    const nextVisit = open().wrapper;
+    expect(nextVisit.get('button').attributes('disabled')).toBeUndefined();
+    expect(nextVisit.text()).not.toContain('Your request has been submitted!');
+    nextVisit.unmount();
+  });
+
+  it.each([
+    { data: ['First error.', 'Second error.'], message: 'First error. Second error.' },
+    { data: 'Account error.', message: 'Account error.' },
+    { data: { error: ['Validation failed.'] }, message: 'Validation failed.' },
+    { data: { errors: { email: ['Email is required.'] } }, message: 'Email is required.' },
+    { data: '', message: 'Please try again or contact your JASPER administrator.' },
+  ])('shows a visible error and enables submission again ($message)', async ({ data, message }) => {
+    const cause = new AxiosError('Failed');
+    cause.response = { data } as NonNullable<AxiosError['response']>;
+    submit.mockRejectedValueOnce(new CustomAPIError(cause.message, cause));
+    const { wrapper, snackbar } = open();
+
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+    expect(snackbar.title).toBe('Unable to submit access request');
+    expect(snackbar.message).toBe(message);
+    expect(snackbar.isVisible).toBe(true);
+    expect(snackbar.color).toBe('error');
+    expect(wrapper.get('button').attributes('disabled')).toBeUndefined();
+    expect(wrapper.text()).not.toContain('Your request has been submitted!');
+    wrapper.unmount();
+  });
+
+  it.each([
+    { user: { ...record, roles: ['Judge'] }, warning: 'Your user has been disabled.' },
+    { user: { ...record, isActive: true }, warning: 'Warning, you do not have valid access to JASPER.' },
+    { user: null, warning: 'Warning, you do not have valid access to JASPER.' },
+    { user: { ...record, email: '' }, warning: 'Warning, you do not have valid access to JASPER.' },
+  ])('blocks invalid or disabled accounts and preserves the warning ($warning)', async ({ user, warning }) => {
+    const { wrapper } = open(user);
+
+    expect(wrapper.text()).toContain(warning);
+    const button = wrapper.get('button');
+    expect(button.attributes('disabled')).toBeDefined();
+    await button.trigger('click');
+    expect(submit).not.toHaveBeenCalled();
+    expect(getMyUser).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 });

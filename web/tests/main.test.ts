@@ -1,3 +1,4 @@
+import { SESSION_STATES, type SessionState } from '@/constants/sessionStates';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('main bootstrap', () => {
@@ -5,90 +6,43 @@ describe('main bootstrap', () => {
   const registerRouter = vi.fn();
   const registerPinia = vi.fn();
   const callRefreshLinkClickTracking = vi.fn();
-  const setIsInitialized = vi.fn();
-
+  const router = { name: 'router' };
+  const createAppRouter = vi.fn(() => router);
+  const store = {
+    sessionState: SESSION_STATES.AUTHORIZED as SessionState,
+    clearSession: vi.fn(),
+  };
   const use = vi.fn();
   const mount = vi.fn();
-
   const observe = vi.fn();
-  const pushStateSpy = vi.spyOn(history, 'pushState');
 
-  const router = { name: 'router' };
-
-  const loadMain = async (options?: {
-    pathname?: string;
-    throwOnMount?: boolean;
-  }) => {
+  const loadMain = async (pathname: string) => {
     vi.resetModules();
-
-    registerPlugins.mockClear();
-    registerRouter.mockClear();
-    registerPinia.mockClear();
-    callRefreshLinkClickTracking.mockClear();
-    setIsInitialized.mockClear();
-    use.mockClear();
-    mount.mockClear();
-    observe.mockClear();
-    pushStateSpy.mockClear();
-
-    const pathname = options?.pathname ?? '/';
-    history.pushState({}, '', pathname);
-
-    class MutationObserverMock {
-      constructor(private readonly _callback: MutationCallback) {}
-
+    history.replaceState({}, '', pathname);
+    vi.stubGlobal('MutationObserver', class {
       observe = observe;
-    }
-
-    vi.stubGlobal('MutationObserver', MutationObserverMock);
-
-    vi.doMock('vue', async () => {
-      const actual = await vi.importActual<typeof import('vue')>('vue');
-      return {
-        ...actual,
-        createApp: vi.fn(() => ({
-          use,
-          mount: options?.throwOnMount
-            ? vi.fn().mockImplementation(() => {
-                throw new Error('bootstrap failed');
-              })
-            : mount,
-        })),
-      };
     });
-
-    vi.doMock('@/App.vue', () => ({
-      default: { name: 'App' },
+    vi.doMock('vue', async () => ({
+      ...(await vi.importActual<typeof import('vue')>('vue')),
+      createApp: vi.fn(() => ({ use, mount })),
     }));
-
-    vi.doMock('@/plugins', () => ({
-      registerPlugins,
-    }));
-
-    vi.doMock('@/utils/snowplowUtils', () => ({
-      callRefreshLinkClickTracking,
-    }));
-
-    vi.doMock('@/router/index', () => ({
-      default: router,
-    }));
-
-    vi.doMock('@/services', () => ({
-      registerRouter,
-    }));
-
+    vi.doMock('@/App.vue', () => ({ default: { name: 'App' } }));
+    vi.doMock('@/plugins', () => ({ registerPlugins }));
+    vi.doMock('@/utils/snowplowUtils', () => ({ callRefreshLinkClickTracking }));
+    vi.doMock('@/router/index', () => ({ createAppRouter }));
+    vi.doMock('@/services', () => ({ registerRouter }));
     vi.doMock('@/stores', () => ({
       registerPinia,
-      useCommonStore: () => ({
-        setIsInitialized,
-      }),
+      useCommonStore: () => store,
     }));
 
     await import('@/main');
   };
 
   beforeEach(() => {
-    vi.stubEnv('BASE_URL', '/jasper/');
+    vi.stubEnv('BASE_URL', '/apps/jasper/');
+    store.sessionState = SESSION_STATES.AUTHORIZED;
+    createAppRouter.mockImplementation(() => router);
   });
 
   afterEach(() => {
@@ -97,43 +51,46 @@ describe('main bootstrap', () => {
     vi.clearAllMocks();
   });
 
-  it('bootstraps app, initializes session settings, and clears loading state', async () => {
-    await loadMain({ pathname: '/' });
+  it('sets up Pinia, resets session state and provides services before initial navigation', async () => {
+    createAppRouter.mockImplementation(() => {
+      expect(store.sessionState).toBe(SESSION_STATES.INITIALIZING);
+      expect(registerPinia).toHaveBeenCalled();
+      expect(registerRouter).toHaveBeenCalled();
+      return router;
+    });
+    await loadMain('/?fromA2A=true#detail');
 
-    expect(registerPinia).toHaveBeenCalledTimes(1);
-    expect(registerRouter).toHaveBeenCalledTimes(1);
-    expect(registerPlugins).toHaveBeenCalledTimes(1);
+    expect(registerPlugins).toHaveBeenCalledOnce();
     expect(use).toHaveBeenCalledWith(router);
     expect(mount).toHaveBeenCalledWith('#app');
-
-    expect(setIsInitialized).toHaveBeenCalledWith(false);
-    expect(callRefreshLinkClickTracking).toHaveBeenCalledTimes(1);
-    expect(observe).toHaveBeenCalledWith(document.body, {
-      childList: true,
-      subtree: true,
-    });
-    expect(pushStateSpy).toHaveBeenCalled();
+    expect(location.pathname + location.search + location.hash).toBe('/apps/jasper/?fromA2A=true#detail');
+    expect(callRefreshLinkClickTracking).toHaveBeenCalledOnce();
+    expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
   });
 
-  it('handles bootstrap failure and still clears loading state', async () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
+  it.each([
+    ['pcss_authorization_failed', '/'],
+    ['authentication_failed', '/apps/jasper/'],
+  ])('preserves %s on arrival and refresh, and skips initial router navigation', async (code, path) => {
+    const url = path + '?authError=' + code;
+    await loadMain(url);
+    await loadMain(url);
 
-    await loadMain({ pathname: '/dashboard', throwOnMount: true });
+    expect(store.clearSession).toHaveBeenCalledTimes(2);
+    expect(store.clearSession).toHaveBeenCalledWith(SESSION_STATES.FAILED);
+    expect(createAppRouter).not.toHaveBeenCalled();
+    expect(use).not.toHaveBeenCalled();
+    expect(mount).toHaveBeenCalledTimes(2);
+    expect(location.pathname + location.search).toBe(url);
+  });
 
-    expect(setIsInitialized).toHaveBeenCalledWith(false);
+  it('clears session state when bootstrap fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mount.mockImplementationOnce(() => { throw new Error('bootstrap failed'); });
+    await loadMain('/apps/jasper/dashboard');
+    expect(store.clearSession).toHaveBeenCalledWith(SESSION_STATES.FAILED);
     expect(callRefreshLinkClickTracking).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Failed to bootstrap application.',
-      expect.any(Error)
-    );
-    expect(pushStateSpy).not.toHaveBeenCalledWith(
-      { page: 'home' },
-      '',
-      expect.any(String)
-    );
-
-    consoleErrorSpy.mockRestore();
+    expect(consoleError).toHaveBeenCalledWith('Failed to bootstrap application.', expect.any(Error));
+    consoleError.mockRestore();
   });
 });

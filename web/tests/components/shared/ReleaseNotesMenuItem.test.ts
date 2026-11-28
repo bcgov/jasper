@@ -38,6 +38,8 @@ const makeUserInfo = (overrides: Partial<UserInfo> = {}): UserInfo => ({
   judgeHomeLocationId: 1,
   email: 'test@example.com',
   userTitle: 'Judge Example',
+  hasSignature: false,
+  hasInitials: false,
   ...overrides,
 });
 
@@ -110,16 +112,19 @@ describe('ReleaseNotesMenuItem.vue', () => {
     expect(wrapper.find('.release-notes-emphasis').exists()).toBe(true);
   });
 
-  it('opens release notes and updates user info after mark succeeds', async () => {
+  it('updates release notes metadata and retains the effective judge', async () => {
     const commonStore = useCommonStore();
     commonStore.appInfo = makeAppInfo({ version: '3.1.0' });
     commonStore.userInfo = makeUserInfo({
+      judgeId: 75,
+      judgeHomeLocationId: 8,
       releaseNotes: { lastViewedVersion: '3.0.0' },
     });
 
-    const refreshedUser = makeUserInfo({
+    const refreshedUser = {
+      id: commonStore.userInfo.userId,
       releaseNotes: { lastViewedVersion: '3.1.0' },
-    });
+    };
 
     mockUserService.markReleaseNotesViewed.mockResolvedValue(undefined);
     mockUserService.getMyUser.mockResolvedValue(refreshedUser);
@@ -144,6 +149,10 @@ describe('ReleaseNotesMenuItem.vue', () => {
     );
     expect(mockUserService.getMyUser).toHaveBeenCalled();
     expect(commonStore.userInfo?.releaseNotes?.lastViewedVersion).toBe('3.1.0');
+    expect(commonStore.userInfo).toMatchObject({
+      judgeId: 75,
+      judgeHomeLocationId: 8,
+    });
   });
 
   it('does not mark viewed when app version is missing', async () => {

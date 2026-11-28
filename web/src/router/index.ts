@@ -1,7 +1,8 @@
 import { useCommonStore } from '@/stores';
 import { PERMISSIONS } from '@/constants/permissions';
+import { SESSION_STATES } from '@/constants/sessionStates';
 import { callTrackPageView } from '@/utils/snowplowUtils';
-import { initializeSessionSettings, isPositiveInteger } from '@/utils/utils';
+import { useSessionInitializer } from '@/utils/utils';
 import {
   createRouter,
   createWebHistory,
@@ -12,15 +13,11 @@ import {
 function authGuard(to: RouteLocationNormalizedGeneric) {
   const commonStore = useCommonStore();
 
-  // Check user's access control only when user data is fully loaded (commonStore.isInitializing is false).
-  const isAuthorized =
-    isPositiveInteger(commonStore.userInfo?.roles?.length) &&
-    commonStore.userInfo?.isActive === true &&
-    !!commonStore.userInfo?.judgeId;
-
-  if (!isAuthorized) {
+  if (commonStore.sessionState === SESSION_STATES.ACCESS_REQUIRED) {
     return to.name === 'RequestAccess' ? true : { path: '/request-access' };
   }
+
+  if (commonStore.sessionState !== SESSION_STATES.AUTHORIZED) return false;
 
   if (to.name === 'RequestAccess') {
     return { path: '/' };
@@ -118,30 +115,24 @@ const routes: RouteRecordRaw[] = [
   },
 ];
 
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes,
-});
+export function createAppRouter() {
+  const router = createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes,
+  });
 
-router.beforeEach(async (to) => {
-  const commonStore = useCommonStore();
-
-  // Initialize session settings if not already initialized. This
-  // ensures that user data is loaded before performing auth
-  // checks in authGuard.
-  if (!commonStore.isInitialized) {
-    await initializeSessionSettings();
-  }
-
-  if (to.path === '/') {
-    return true;
-  } else {
+  router.beforeEach(async (to) => {
+    const commonStore = useCommonStore();
+    if (commonStore.sessionState === SESSION_STATES.INITIALIZING) {
+      const initializeSessionSettings = useSessionInitializer();
+      await initializeSessionSettings();
+    }
     return authGuard(to);
-  }
-});
+  });
 
-router.afterEach(() => {
-  callTrackPageView();
-});
+  router.afterEach(() => {
+    callTrackPageView();
+  });
 
-export default router;
+  return router;
+}

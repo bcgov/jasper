@@ -9,6 +9,12 @@ export class AuthService {
   }
 
   async getUserInfo(): Promise<UserInfo> {
-    return await this.httpService.get<UserInfo>(`api/auth/info`);
+    return await this.httpService.get<UserInfo>(
+      `api/auth/info`,
+      {},
+      {
+        sessionInitialization: true,
+      }
+    );
   }
 }

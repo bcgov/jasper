@@ -9,6 +9,12 @@ export class ApplicationService {
   }
 
   async getApplicationInfo(): Promise<ApplicationInfo> {
-    return await this.httpService.get<ApplicationInfo>(`api/application/info`);
+    return await this.httpService.get<ApplicationInfo>(
+      `api/application/info`,
+      {},
+      {
+        sessionInitialization: true,
+      }
+    );
   }
 }

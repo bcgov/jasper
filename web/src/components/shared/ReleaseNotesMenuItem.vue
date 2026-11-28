@@ -43,7 +43,13 @@
 
     try {
       const user = await userService.getMyUser();
-      commonStore.setUserInfo(user ?? null);
+      const currentUser = commonStore.userInfo;
+      if (currentUser && user?.id === currentUser.userId) {
+        commonStore.setUserInfo({
+          ...currentUser,
+          releaseNotes: user.releaseNotes,
+        });
+      }
     } catch (error) {
       console.error(
         'Failed to load release notes state for current user.',

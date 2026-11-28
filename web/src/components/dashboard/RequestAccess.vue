@@ -15,7 +15,7 @@
             <v-col cols="12" sm="10" md="8" xs="10">
               <v-text-field
                 id="email"
-                v-model="selectedEmail"
+                :model-value="selectedEmail"
                 label="Email"
                 :disabled="true"
                 persistent-hint
@@ -31,7 +31,7 @@
               color="primary"
               class="py-2 px-5"
               @click="requestAccess"
-              :disabled="isSubmitted || isUserInvalid || isUserDisabled"
+              :disabled="!canSubmit"
             >
               {{ isSubmitted ? 'Submitted' : 'Submit Your Request' }}
             </v-btn>
@@ -75,71 +75,112 @@
 
 <script setup lang="ts">
   import logo from '@/assets/jasper-logo.svg?url';
+  import { SESSION_STATES } from '@/constants/sessionStates';
   import { UserService } from '@/services/UserService';
   import { useCommonStore } from '@/stores';
   import { useSnackbarStore } from '@/stores/SnackbarStore';
-  import { CustomAPIError } from '@/types/ApiResponse';
-  import { isPositiveInteger } from '@/utils/utils';
-  import axios, { AxiosError } from 'axios';
-  import _ from 'underscore';
-  import { inject, onMounted, ref } from 'vue';
+  import { getApiErrorResponse } from '@/types/ApiResponse';
+  import { useSessionInitializer } from '@/utils/utils';
+  import { computed, inject, ref } from 'vue';
+  import { useRouter } from 'vue-router';
 
   const commonStore = useCommonStore();
   const snackBarStore = useSnackbarStore();
-  const selectedEmail = ref<string>(commonStore.userInfo?.email ?? '');
-  const isUserDisabled = ref(false);
-  const isUserInvalid = ref(false);
+  const selectedEmail = computed(() => commonStore.userInfo?.email ?? '');
+  const isUserDisabled = computed(
+    () =>
+      commonStore.userInfo?.isActive === false &&
+      commonStore.userInfo.roles.length > 0
+  );
+  const isUserInvalid = computed(() => {
+    const user = commonStore.userInfo;
+    return (
+      !user ||
+      (user.isActive && user.roles.length === 0) ||
+      (!isUserDisabled.value && !selectedEmail.value.trim())
+    );
+  });
   const isSubmitted = ref(false);
+  const isSubmitting = ref(false);
+  const canSubmit = computed(
+    () =>
+      commonStore.sessionState === SESSION_STATES.ACCESS_REQUIRED &&
+      !isSubmitted.value &&
+      !isSubmitting.value &&
+      !isUserInvalid.value &&
+      !isUserDisabled.value
+  );
   const userService = inject<UserService>('userService');
+  const initializeSessionSettings = useSessionInitializer();
+  const router = useRouter();
+
+  function errorMessage(data: unknown): string {
+    if (typeof data === 'string') return data.trim();
+    if (Array.isArray(data)) {
+      return data
+        .filter((item) => typeof item === 'string')
+        .join(' ')
+        .trim();
+    }
+    if (data && typeof data === 'object') {
+      const { error, errors, message, detail, title } = data as Record<
+        string,
+        unknown
+      >;
+      const validationErrors =
+        errors && typeof errors === 'object' && !Array.isArray(errors)
+          ? Object.values(errors).flat()
+          : errors;
+      return (
+        [error, validationErrors, message, detail, title]
+          .filter((value) => typeof value === 'string' || Array.isArray(value))
+          .map(errorMessage)
+          .find(Boolean) ?? ''
+      );
+    }
+    return '';
+  }
 
   const requestAccess = async (): Promise<void> => {
-    if (!_.isEmpty(selectedEmail.value)) {
-      try {
-        const accessRequest = await userService?.requestAccess();
-        if (accessRequest?.email === selectedEmail.value) {
-          isSubmitted.value = true;
-        } else {
-          throw Error();
-        }
-      } catch (error) {
-        if (
-          error instanceof CustomAPIError &&
-          axios.isAxiosError(
-            (error as CustomAPIError<AxiosError>).originalError
-          )
-        ) {
-          snackBarStore.showSnackbar(
-            `${(error as CustomAPIError<AxiosError<[]>>)?.originalError?.response?.data?.join(' ') ?? ''}`,
-            '#b84157',
-            'Unable to submit access request'
-          );
-        }
+    if (!canSubmit.value) return;
+    isSubmitting.value = true;
+
+    try {
+      const response = await userService?.requestAccess();
+      if (!response || typeof response !== 'object') {
+        throw new Error('Access request response is unavailable.');
       }
+      if (
+        'alreadyAuthorized' in response &&
+        response.alreadyAuthorized === true
+      ) {
+        await initializeSessionSettings();
+        if (commonStore.sessionState === SESSION_STATES.AUTHORIZED) {
+          await router.replace({ name: 'DashboardView' });
+        } else if (
+          commonStore.sessionState === SESSION_STATES.ACCESS_REQUIRED
+        ) {
+          throw new Error('JASPER access could not be confirmed.');
+        }
+      } else if (
+        'id' in response &&
+        response.id === commonStore.userInfo?.userId
+      ) {
+        isSubmitted.value = true;
+      } else {
+        throw new Error('Access request response is incomplete.');
+      }
+    } catch (error) {
+      snackBarStore.showSnackbar(
+        errorMessage(getApiErrorResponse(error)?.data) ||
+          'Please try again or contact your JASPER administrator.',
+        'error',
+        'Unable to submit access request'
+      );
+    } finally {
+      isSubmitting.value = false;
     }
   };
-
-  const checkForUser = async (): Promise<void> => {
-    const user = await userService?.getMyUser();
-
-    if (!commonStore.userInfo && user?.email) {
-      selectedEmail.value = user.email;
-    }
-
-    if (!user?.isActive && isPositiveInteger(user?.roles?.length)) {
-      isUserDisabled.value = true;
-    } else if (user?.isPendingRegistration) {
-      isSubmitted.value = true;
-    } else if (
-      (user?.isActive && !isPositiveInteger(user?.roles?.length)) ||
-      !user
-    ) {
-      isUserInvalid.value = true;
-    }
-  };
-
-  onMounted(async () => {
-    await checkForUser();
-  });
 </script>
 
 <style scoped>

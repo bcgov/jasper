@@ -1,6 +1,5 @@
 import { HttpService } from '@/services/HttpService';
 import { UserService } from '@/services/UserService';
-import { UserInfo } from '@/types/common';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 const mockHttpService = {
@@ -25,7 +24,7 @@ describe('UserService', () => {
   });
 
   describe('requestAccess', () => {
-    const mockUser = { userId: '1' } as unknown as UserInfo;
+    const mockUser = { id: '1' };
 
     it('should call the correct URL and skip the error handler', async () => {
       (mockHttpService.put as Mock).mockResolvedValueOnce(mockUser);
@@ -51,14 +50,18 @@ describe('UserService', () => {
   });
 
   describe('getMyUser', () => {
-    const mockUser = { userId: '1' } as unknown as UserInfo;
+    const mockUser = { id: '1' };
 
     it('should call the correct URL', async () => {
       (mockHttpService.get as Mock).mockResolvedValueOnce(mockUser);
 
       const result = await service.getMyUser();
 
-      expect(mockHttpService.get).toHaveBeenCalledWith('api/users/me');
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'api/users/me',
+        {},
+        {}
+      );
       expect(result).toEqual(mockUser);
     });
 

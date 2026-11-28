@@ -1,3 +1,5 @@
+import { isAxiosError } from 'axios';
+
 export interface ApiResponse<T> {
   payload: T;
   succeeded: boolean;
@@ -29,4 +31,9 @@ export class CustomAPIError<T> extends Error {
     this.name = 'CustomAPIError';
     this.originalError = originalError; // Store the original Axios error
   }
+}
+
+export function getApiErrorResponse(error: unknown) {
+  const cause = error instanceof CustomAPIError ? error.originalError : error;
+  return isAxiosError<unknown>(cause) ? cause.response : undefined;
 }

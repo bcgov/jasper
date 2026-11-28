@@ -1,3 +1,4 @@
+import { SESSION_STATES } from '@/constants/sessionStates';
 import {
   ApplicationConfigurationKey,
   useCommonStore,
@@ -11,13 +12,24 @@ describe('CommonStore', () => {
     setActivePinia(createPinia());
   });
 
-  it('updates initialization state with setIsInitializing', () => {
+  it('clears session data while retaining existing preferences', () => {
     const store = useCommonStore();
 
-    expect(store.isInitialized).toBe(false);
-    store.setIsInitialized(true);
+    expect(store.sessionState).toBe(SESSION_STATES.INITIALIZING);
+    store.$patch({
+      sessionState: SESSION_STATES.AUTHORIZED,
+      loggedInUserInfo: { userId: 'user-1' } as UserInfo,
+      userInfo: { userId: 'user-1' } as UserInfo,
+      appInfo: { version: '1.0' } as ApplicationInfo,
+      displayName: 'Saved name',
+    });
+    store.clearSession(SESSION_STATES.FAILED);
 
-    expect(store.isInitialized).toBe(true);
+    expect(store.sessionState).toBe(SESSION_STATES.FAILED);
+    expect(store.loggedInUserInfo).toBeNull();
+    expect(store.userInfo).toBeNull();
+    expect(store.appInfo).toBeNull();
+    expect(store.displayName).toBe('Saved name');
   });
 
   it('prefers userInfo title over loggedInUserInfo title', () => {

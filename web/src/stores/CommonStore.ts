@@ -1,3 +1,4 @@
+import { SESSION_STATES, type SessionState } from '@/constants/sessionStates';
 import {
   ApplicationInfo,
   CourtRoomsJsonInfoType,
@@ -19,9 +20,24 @@ enum appearanceStatus {
 }
 
 export const useCommonStore = defineStore('CommonStore', {
-  persist: true,
+  persist: {
+    // Keep the previous user snapshots for the existing judge selection.
+    pick: [
+      'displayName',
+      'loggedInUserInfo',
+      'userInfo',
+      'time',
+      'duration',
+      'statusStyle',
+      'iconStyles',
+      'courtRoomsAndLocations',
+      'roles',
+      'enableArchive',
+      'email',
+    ],
+  },
   state: () => ({
-    isInitialized: false,
+    sessionState: SESSION_STATES.INITIALIZING as SessionState,
     displayName: '',
     loggedInUserInfo: null as UserInfo | null,
     userInfo: null as UserInfo | null,
@@ -58,8 +74,15 @@ export const useCommonStore = defineStore('CommonStore', {
     },
   },
   actions: {
-    setIsInitialized(isInitialized: boolean): void {
-      this.isInitialized = isInitialized;
+    clearSession(
+      sessionState: Exclude<SessionState, typeof SESSION_STATES.AUTHORIZED>
+    ): void {
+      this.$patch({
+        sessionState,
+        loggedInUserInfo: null,
+        userInfo: null,
+        appInfo: null,
+      });
     },
     setLoggedInUserInfo(loggedInUserInfo: UserInfo | null): void {
       this.loggedInUserInfo = loggedInUserInfo;
